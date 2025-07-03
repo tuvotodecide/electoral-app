@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "89837410757",
+    "project_id": "wallet-aa",
+    "storage_bucket": "wallet-aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:89837410757:android:7ea8f3ed09f71bd15f93ac",
+        "android_client_info": {
+          "package_name": "com.wirawallet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPooy1-AEd-ZdJ8ZSLRsjBnr362sJF_Cw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

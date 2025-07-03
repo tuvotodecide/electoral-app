@@ -1,0 +1,17 @@
+export const API_ENDPOINTS = {
+  USERS: 'users',
+  KYC: 'kyc',
+  FIND: 'find',
+  PUBLIC: 'public',
+  STORE: 'store',
+  LOAD: 'load',
+  DECRYPT:'decrypt',
+  FIND_PUBLIC: 'find-public',
+  GUARDIANS:'guardians',
+  MYGUARDIANS:'my-guardians',
+  MYGUARDIANSALL:'myguardiansAll',
+  INVITE:'invite',
+  INVITATION:'invitation',
+  DELETE:'delete',
+  PUSHLOG:'pushlog',
+};

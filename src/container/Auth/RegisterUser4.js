@@ -1,0 +1,149 @@
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Image,
+  StyleSheet,
+  PermissionsAndroid,
+  Platform,
+  Alert,
+} from 'react-native';
+import {launchCamera} from 'react-native-image-picker';
+import {useSelector} from 'react-redux';
+
+// Custom imports
+import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CHeader from '../../components/common/CHeader';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import {moderateScale} from '../../common/constants';
+import CText from '../../components/common/CText';
+import {styles} from '../../themes';
+import CButton from '../../components/common/CButton';
+import {AuthNav} from '../../navigation/NavigationKey';
+import StepIndicator from '../../components/authComponents/StepIndicator';
+import String from '../../i18n/String';
+
+export default function RegisterUser4({navigation, route}) {
+  const {dni = '', frontImage, backImage} = route.params;
+  const [selfie, setSelfie] = useState(null);
+  const colors = useSelector(state => state.theme.theme);
+
+  useEffect(() => {
+    const openCamera = async () => {
+      const granted = await requestCameraPermission();
+      if (!granted) {
+        Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
+        return;
+      }
+
+      launchCamera(
+        {
+          mediaType: 'photo',
+          quality: 0.8,
+          saveToPhotos: true,
+        },
+        response => {
+          if (response?.assets) {
+            setSelfie(response.assets[0]);
+          } else if (response.errorCode) {
+            console.warn('Error al abrir la cámara:', response.errorMessage);
+          }
+        },
+      );
+    };
+
+    openCamera();
+  }, []);
+
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Permiso de cámara',
+          message: 'La app necesita acceder a la cámara para tomar fotos.',
+          buttonPositive: 'Aceptar',
+          buttonNegative: 'Cancelar',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
+  };
+
+  const onPressNext = () => {
+    if (!selfie) {
+      Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
+      return;
+    }
+    navigation.navigate(AuthNav.RegisterUser5, {
+      dni,
+      frontImage,
+      backImage,
+      selfie,
+    });
+  };
+
+  return (
+    <CSafeAreaView>
+      <StepIndicator step={4} />
+      <CHeader />
+      <KeyBoardAvoidWrapper
+        containerStyle={[
+          styles.justifyBetween,
+          styles.flex,
+          {top: moderateScale(10)},
+        ]}>
+        <View style={localStyle.mainContainer}>
+          <CText type={'B16'}>{String.takePhoto}</CText>
+          <View
+            style={[
+              localStyle.imageBox,
+              {backgroundColor: colors.inputBackground},
+            ]}>
+            {selfie ? (
+              <Image source={{uri: selfie.uri}} style={localStyle.image} />
+            ) : (
+              <CText type="R14" color={colors.primary}>
+                {String.loadingCamera}
+              </CText>
+            )}
+          </View>
+        </View>
+      </KeyBoardAvoidWrapper>
+      <View style={localStyle.bottomTextContainer}>
+        <CButton
+          title={'Siguiente'}
+          onPress={onPressNext}
+          type={'B16'}
+          containerStyle={localStyle.btnStyle}
+        />
+      </View>
+    </CSafeAreaView>
+  );
+}
+
+const localStyle = StyleSheet.create({
+  mainContainer: {
+    ...styles.ph20,
+    gap: 10,
+  },
+  imageBox: {
+    height: 400,
+    borderRadius: moderateScale(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: moderateScale(10),
+  },
+  image: {
+    height: '100%',
+    width: '100%',
+    borderRadius: moderateScale(10),
+  },
+  btnStyle: {
+    ...styles.selfCenter,
+  },
+  bottomTextContainer: {
+    ...styles.ph20,
+    gap: 5,
+  },
+});
