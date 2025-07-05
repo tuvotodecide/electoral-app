@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Alert} from 'react-native';
+import {Alert, StyleSheet} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
@@ -119,11 +119,7 @@ const PhotoReviewScreen = () => {
       colors={colors}
       headerTitle="Acta"
       instructionsText="Revise la foto por favor"
-      instructionsStyle={{
-        fontSize: moderateScale(18),
-        fontWeight: '500',
-        color: colors.text || '#000000',
-      }}
+      instructionsStyle={styles.instructionsStyle}
       photoUri={photoUri}
       partyResults={partyResults}
       voteSummaryResults={voteSummaryResults}
@@ -137,5 +133,13 @@ const PhotoReviewScreen = () => {
     />
   );
 };
+
+const styles = StyleSheet.create({
+  instructionsStyle: {
+    fontSize: moderateScale(18),
+    fontWeight: '500',
+    color: '#000000',
+  },
+});
 
 export default PhotoReviewScreen;
