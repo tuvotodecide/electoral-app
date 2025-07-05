@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
-import {Alert} from 'react-native';
+import {Alert, TouchableOpacity} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
+import CText from '../../../components/common/CText';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
 import {moderateScale} from '../../../common/constants';
 
@@ -72,47 +73,75 @@ const PhotoReviewScreen = () => {
   };
 
   // Action buttons for PhotoReviewScreen
-  const actionButtons = !isEditing
-    ? [
-        {
-          text: 'Editar',
-          onPress: handleEdit,
-          style: {
-            backgroundColor: '#fff',
-            borderColor: colors.primary || '#459151',
-            borderWidth: moderateScale(1),
-            flex: 1,
-            marginRight: moderateScale(8),
-          },
-          textStyle: {
-            color: colors.primary || '#459151',
-          },
-        },
-        {
-          text: 'Siguiente',
-          onPress: handleNext,
-          style: {
-            backgroundColor: colors.primary || '#459151',
-            flex: 1,
-            marginLeft: moderateScale(8),
-          },
-          textStyle: {
+  const actionButtons = !isEditing ? (
+    <>
+      {/* Edit Button */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#fff',
+          borderColor: colors.primary,
+          borderWidth: moderateScale(1),
+          paddingVertical: moderateScale(12),
+          paddingHorizontal: moderateScale(24),
+          borderRadius: moderateScale(8),
+          flex: 1,
+          marginRight: moderateScale(8),
+          alignItems: 'center',
+        }}
+        onPress={handleEdit}>
+        <CText
+          style={{
+            color: colors.primary,
+            fontSize: moderateScale(16),
+            fontWeight: '600',
+          }}>
+          Editar
+        </CText>
+      </TouchableOpacity>
+
+      {/* Next Button */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: colors.primary,
+          paddingVertical: moderateScale(12),
+          paddingHorizontal: moderateScale(24),
+          borderRadius: moderateScale(8),
+          flex: 1,
+          marginLeft: moderateScale(8),
+          alignItems: 'center',
+        }}
+        onPress={handleNext}>
+        <CText
+          style={{
             color: '#fff',
-          },
-        },
-      ]
-    : [
-        {
-          text: 'Guardar',
-          onPress: handleSave,
-          style: {
-            backgroundColor: colors.primary || '#459151',
-          },
-          textStyle: {
-            color: '#fff',
-          },
-        },
-      ];
+            fontSize: moderateScale(16),
+            fontWeight: '600',
+          }}>
+          Siguiente
+        </CText>
+      </TouchableOpacity>
+    </>
+  ) : (
+    // Save Button when editing
+    <TouchableOpacity
+      style={{
+        backgroundColor: colors.primary,
+        paddingVertical: moderateScale(12),
+        paddingHorizontal: moderateScale(24),
+        borderRadius: moderateScale(8),
+        alignItems: 'center',
+      }}
+      onPress={handleSave}>
+      <CText
+        style={{
+          color: '#fff',
+          fontSize: moderateScale(16),
+          fontWeight: '600',
+        }}>
+        Guardar
+      </CText>
+    </TouchableOpacity>
+  );
 
   return (
     <BaseActaReviewScreen

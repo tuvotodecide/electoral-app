@@ -68,7 +68,7 @@ export default function HomeScreen({navigation}) {
       onPress: () =>
         navigation.navigate(StackNav.MisAtestiguamientosListScreen),
       iconComponent: Ionicons,
-    },  
+    },
   ];
 
   return (
