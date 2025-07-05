@@ -27,12 +27,15 @@ import PhotoReviewScreen from '../container/Voto/SubirActa/PhotoReviewScreen';
 import PhotoConfirmationScreen from '../container/Voto/SubirActa/PhotoConfirmationScreen';
 import AtestiguarActa from '../container/Voto/AtestiguarActa/AtestiguarActa';
 import CualEsCorrectaScreen from '../container/Voto/AtestiguarActa/CualEsCorrectaScreen';
+import ActaReviewScreen from '../container/Voto/AtestiguarActa/ActaReviewScreen';
+import ActaCertificationScreen from '../container/Voto/AtestiguarActa/ActaCertificationScreen';
 import AnunciarConteo from '../container/Voto/AnunciarConteo/AnunciarConteo';
 import BuscarMesaConteo from '../container/Voto/AnunciarConteo/BuscarMesaConteo';
 import DetalleMesaConteo from '../container/Voto/AnunciarConteo/DetalleMesaConteo';
 import MisAtestiguamientos from '../container/Voto/MisAtestiguamientos/MisAtestiguamientos';
+import MisAtestiguamientosListScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosListScreen';
+import MisAtestiguamientosDetailScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosDetailScreen';
 
-import HomeScreen from '../container/TabBar/Home/HomeScreen';
 import CryptoScreen from '../container/TabBar/Market/Crypto/CryptoScreen';
 import MarketScreen from '../container/TabBar/Market/MarketScreen';
 import NFTsScreen from '../container/TabBar/Market/NFTs/NFTsScreen';
@@ -162,10 +165,14 @@ export const StackRoute = {
   PhotoConfirmationScreen,
   AtestiguarActa,
   CualEsCorrectaScreen,
+  ActaReviewScreen,
+  ActaCertificationScreen,
   AnunciarConteo,
   BuscarMesaConteo,
   DetalleMesaConteo,
   MisAtestiguamientos,
+  MisAtestiguamientosListScreen,
+  MisAtestiguamientosDetailScreen,
 
   CryptoScreen,
   NFTsScreen,

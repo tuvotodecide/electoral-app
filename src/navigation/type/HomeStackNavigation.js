@@ -49,6 +49,14 @@ export default function HomeStackNavigation() {
         component={StackRoute.CualEsCorrectaScreen}
       />
       <HomeStack.Screen
+        name={StackNav.ActaReviewScreen}
+        component={StackRoute.ActaReviewScreen}
+      />
+      <HomeStack.Screen
+        name={StackNav.ActaCertificationScreen}
+        component={StackRoute.ActaCertificationScreen}
+      />
+      <HomeStack.Screen
         name={StackNav.AnunciarConteo}
         component={StackRoute.AnunciarConteo}
       />
@@ -63,6 +71,14 @@ export default function HomeStackNavigation() {
       <HomeStack.Screen
         name={StackNav.MisAtestiguamientos}
         component={StackRoute.MisAtestiguamientos}
+      />
+      <HomeStack.Screen
+        name={StackNav.MisAtestiguamientosListScreen}
+        component={StackRoute.MisAtestiguamientosListScreen}
+      />
+      <HomeStack.Screen
+        name={StackNav.MisAtestiguamientosDetailScreen}
+        component={StackRoute.MisAtestiguamientosDetailScreen}
       />
     </HomeStack.Navigator>
   );

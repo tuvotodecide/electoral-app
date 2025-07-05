@@ -16,12 +16,16 @@ export const StackNav = {
   // Atestiguar Acta
   AtestiguarActa: 'AtestiguarActa',
   CualEsCorrectaScreen: 'CualEsCorrectaScreen',
+  ActaReviewScreen: 'ActaReviewScreen',
+  ActaCertificationScreen: 'ActaCertificationScreen',
   // Anunciar Conteo
   AnunciarConteo: 'AnunciarConteo',
   BuscarMesaConteo: 'BuscarMesaConteo',
   DetalleMesaConteo: 'DetalleMesaConteo',
   // Mis Atestiguamientos
   MisAtestiguamientos: 'MisAtestiguamientos',
+  MisAtestiguamientosListScreen: 'MisAtestiguamientosListScreen',
+  MisAtestiguamientosDetailScreen: 'MisAtestiguamientosDetailScreen',
 
   StockScreen: 'StockScreen',
   CryptoScreen: 'CryptoScreen',

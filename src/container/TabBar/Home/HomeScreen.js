@@ -1,17 +1,9 @@
-import {
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  Image,
-  Dimensions,
-} from 'react-native';
+import {StyleSheet, TouchableOpacity, View, Dimensions} from 'react-native';
 import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import {useSelector} from 'react-redux';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 const deviceWidth = Dimensions.get('window').width;
@@ -42,7 +34,6 @@ const MiVotoLogo = () => (
 );
 
 export default function HomeScreen({navigation}) {
-  const colors = useSelector(state => state.theme.theme);
   // Simulación de usuario
   const userFullName = 'Juan Pérez Cuéllar';
 
@@ -74,16 +65,10 @@ export default function HomeScreen({navigation}) {
       icon: 'bar-chart-outline',
       title: 'Mis atestiguamientos',
       description: 'Revisa tu historial',
-      onPress: () => navigation.navigate(StackNav.MisAtestiguamientos),
+      onPress: () =>
+        navigation.navigate(StackNav.MisAtestiguamientosListScreen),
       iconComponent: Ionicons,
-    },
-    {
-      icon: 'settings-outline',
-      title: 'Test Cámara',
-      description: 'Prueba permisos de cámara',
-      onPress: () => navigation.navigate('CameraPermissionTest'),
-      iconComponent: Ionicons,
-    },
+    },  
   ];
 
   return (

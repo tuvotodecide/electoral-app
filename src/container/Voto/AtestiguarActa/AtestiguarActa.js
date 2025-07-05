@@ -90,7 +90,7 @@ const SearchMesaScreen = () => {
         <TouchableOpacity style={styles.bellIcon}>
           <Ionicons
             name="notifications-outline"
-            size={moderateScale(36)}
+            size={moderateScale(34)}
             color={colors.text || '#2F2F2F'}
           />
         </TouchableOpacity>
@@ -195,20 +195,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bellIcon: {
-    padding: moderateScale(8),
+    padding: moderateScale(7),
   },
   chooseMesaContainer: {
-    backgroundColor: '#E9EFF1', // Match container background
+    backgroundColor: '#ffffff', // Match container background
+    fontSize: moderateScale(14),
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8),
   },
   chooseMesaText: {
-    fontSize: moderateScale(14),
-    color: '#868686',
+    fontSize: moderateScale(18),
+    paddingLeft: moderateScale(8),
+    color: '#000000',
     fontWeight: '500',
   },
   searchInputContainer: {
-    backgroundColor: '#E9EFF1', // Match container background
+    backgroundColor: '#ffffff', // Match container background
     paddingHorizontal: moderateScale(16),
     paddingBottom: moderateScale(12),
   },
@@ -228,20 +230,25 @@ const styles = StyleSheet.create({
   locationInfoBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2F7', // Light blue background
-    borderRadius: moderateScale(8),
+    backgroundColor: '#D1ECF1', // Light blue background
+    borderRadius: moderateScale(10),
     paddingVertical: moderateScale(10),
     paddingHorizontal: moderateScale(12),
     marginHorizontal: moderateScale(16),
     marginBottom: moderateScale(16),
+    borderColor: '#0C5460', // Border color to match background
+    borderWidth: 1,
   },
   locationIcon: {
     marginRight: moderateScale(8),
+    color: '#0C5460', // Green icon color
+    fontSize: moderateScale(20),
   },
   locationInfoText: {
     fontSize: moderateScale(12),
-    color: '#459151', // Green text color
+    color: '#0C5460', // Green text color
     fontWeight: '500',
+    
   },
   mesaList: {
     flex: 1,
@@ -251,6 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: moderateScale(8),
     padding: moderateScale(16),
+    paddingLeft: moderateScale(30),
     marginBottom: moderateScale(12),
     elevation: 2,
     shadowColor: '#000',

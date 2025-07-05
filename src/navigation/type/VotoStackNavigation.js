@@ -35,12 +35,28 @@ export default function VotoStackNavigation() {
         component={StackRoute.CualEsCorrectaScreen}
       />
       <VotoStack.Screen
+        name={StackNav.ActaReviewScreen}
+        component={StackRoute.ActaReviewScreen}
+      />
+      <VotoStack.Screen
+        name={StackNav.ActaCertificationScreen}
+        component={StackRoute.ActaCertificationScreen}
+      />
+      <VotoStack.Screen
         name={StackNav.AnunciarConteo}
         component={StackRoute.AnunciarConteo}
       />
       <VotoStack.Screen
         name={StackNav.MisAtestiguamientos}
         component={StackRoute.MisAtestiguamientos}
+      />
+      <VotoStack.Screen
+        name={StackNav.MisAtestiguamientosListScreen}
+        component={StackRoute.MisAtestiguamientosListScreen}
+      />
+      <VotoStack.Screen
+        name={StackNav.MisAtestiguamientosDetailScreen}
+        component={StackRoute.MisAtestiguamientosDetailScreen}
       />
       <VotoStack.Screen
         name="CameraScreen"

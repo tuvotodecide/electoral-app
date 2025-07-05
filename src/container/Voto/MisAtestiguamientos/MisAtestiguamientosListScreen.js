@@ -10,16 +10,17 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import CText from '../../../components/common/CText'; // Adjust path as needed
+import CText from '../../../components/common/CText';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants'; // Adjust path as needed
+import {moderateScale} from '../../../common/constants';
+import {StackNav} from '../../../navigation/NavigationKey';
 
-const CualEsCorrectaScreen = () => {
+const MisAtestiguamientosListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {mesaData, photoUri} = route.params || {};
+  const {mesaData} = route.params || {};
 
   // State to keep track of the currently selected image
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -32,12 +33,12 @@ const CualEsCorrectaScreen = () => {
     setSelectedImageId(imageId);
   };
 
-  const handleVerMasDetalles = () => {
+  const handleVerMas = () => {
     if (selectedImageId) {
       const selectedImage = dummyImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
-        // Navigate to ActaReviewScreen, passing the specific photoUri and mesaData
-        navigation.navigate('ActaReviewScreen', {
+        // Navigate to MisAtestiguamientosDetailScreen
+        navigation.navigate(StackNav.MisAtestiguamientosDetailScreen, {
           photoUri: selectedImage.uri,
           mesaData: mesaData,
         });
@@ -50,22 +51,26 @@ const CualEsCorrectaScreen = () => {
     }
   };
 
-  const handleDatosNoCorrectos = () => {
-    console.log('Estos datos no son correctos pressed');
-    Alert.alert(
-      'Información',
-      'Se ha reportado que los datos no son correctos.',
-    );
-  };
-
-  // Dummy data for multiple images (you'll replace this with actual logic)
+  // Dummy data for attestation images
   const dummyImages = [
     {
       id: '1',
-      uri: photoUri || 'https://placehold.co/400x200/cccccc/000000?text=Acta+1',
+      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+1',
+      fecha: '15/12/2024',
+      mesa: 'Mesa 001',
     },
-    {id: '2', uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+2'},
-    {id: '3', uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+3'},
+    {
+      id: '2',
+      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+2',
+      fecha: '14/12/2024',
+      mesa: 'Mesa 045',
+    },
+    {
+      id: '3',
+      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+3',
+      fecha: '13/12/2024',
+      mesa: 'Mesa 102',
+    },
   ];
 
   return (
@@ -79,9 +84,7 @@ const CualEsCorrectaScreen = () => {
             color={colors.black || '#2F2F2F'}
           />
         </TouchableOpacity>
-        <CText style={styles.headerTitle}>
-          Mesa {mesaData?.numero || 'N/A'}
-        </CText>
+        <CText style={styles.headerTitle}>Mis Atestiguamientos</CText>
         <View style={styles.headerSpacer} />
         <TouchableOpacity style={styles.bellIcon}>
           <Ionicons
@@ -95,7 +98,7 @@ const CualEsCorrectaScreen = () => {
       {/* Question Text */}
       <View style={styles.questionContainer}>
         <CText style={styles.questionText}>
-          ¿Cuál de estas es la correcta?
+          Selecciona el acta que deseas revisar
         </CText>
       </View>
 
@@ -109,6 +112,10 @@ const CualEsCorrectaScreen = () => {
                 selectedImageId === image.id && styles.imageCardSelected,
               ]}
               onPress={() => handleImagePress(image.id)}>
+              <View style={styles.imageHeader}>
+                <CText style={styles.mesaText}>{image.mesa}</CText>
+                <CText style={styles.fechaText}>{image.fecha}</CText>
+              </View>
               <Image
                 source={{uri: image.uri}}
                 style={styles.imageDisplay}
@@ -131,23 +138,12 @@ const CualEsCorrectaScreen = () => {
             {selectedImageId === image.id && (
               <TouchableOpacity
                 style={styles.detailsButton}
-                onPress={handleVerMasDetalles}>
-                <CText style={styles.detailsButtonText}>Ver mas detalles</CText>
+                onPress={handleVerMas}>
+                <CText style={styles.detailsButtonText}>Ver más</CText>
               </TouchableOpacity>
             )}
           </React.Fragment>
         ))}
-
-        {/* "Estos datos no son correctos" button remains at the bottom of the ScrollView */}
-        {selectedImageId && (
-          <TouchableOpacity
-            style={styles.datosNoCorrectosButton}
-            onPress={handleDatosNoCorrectos}>
-            <CText style={styles.datosNoCorrectosButtonText}>
-              Estos datos no son correctos
-            </CText>
-          </TouchableOpacity>
-        )}
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -176,7 +172,7 @@ const CualEsCorrectaScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', // White background
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
@@ -203,7 +199,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(8),
   },
   questionContainer: {
-    backgroundColor: '#D1ECF1', // Light blue background
+    backgroundColor: '#D1ECF1',
     borderColor: '#0C5460',
     borderWidth: 1,
     borderRadius: moderateScale(10),
@@ -216,7 +212,7 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontSize: moderateScale(14),
-    color: '#0C5460', // Green text color
+    color: '#0C5460',
     fontWeight: '500',
   },
   imageList: {
@@ -227,17 +223,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: moderateScale(8),
     padding: moderateScale(8),
-    marginBottom: moderateScale(12), // Adjusted margin to accommodate the button below
+    marginBottom: moderateScale(12),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    position: 'relative', // Needed for absolute positioning of corner borders
+    position: 'relative',
   },
   imageCardSelected: {
     borderWidth: 2,
-    borderColor: '#4CAF50', // Green border when selected
+    borderColor: '#4CAF50',
+  },
+  imageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: moderateScale(8),
+    paddingHorizontal: moderateScale(4),
+  },
+  mesaText: {
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    color: '#2F2F2F',
+  },
+  fechaText: {
+    fontSize: moderateScale(12),
+    color: '#868686',
   },
   imageDisplay: {
     width: '100%',
@@ -247,10 +259,10 @@ const styles = StyleSheet.create({
   // Styles for the corner borders
   cornerBorder: {
     position: 'absolute',
-    width: moderateScale(20), // Length of the corner lines
-    height: moderateScale(20), // Length of the corner lines
-    borderColor: '#2F2F2F', // Black color for corner lines
-    borderWidth: 2, // Thickness of the corner lines
+    width: moderateScale(20),
+    height: moderateScale(20),
+    borderColor: '#2F2F2F',
+    borderWidth: 2,
   },
   topLeftCorner: {
     top: moderateScale(8),
@@ -276,36 +288,19 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
-  // Removed actionButtonsContainer as buttons are now rendered conditionally within the ScrollView
   detailsButton: {
-    backgroundColor: '#459151', // Green button
+    backgroundColor: '#459151',
     paddingVertical: moderateScale(12),
     borderRadius: moderateScale(8),
     alignItems: 'center',
-    marginTop: moderateScale(-8), // Adjust this margin to position it correctly below the image card
-    marginBottom: moderateScale(12), // Space between this button and the next image card
-    marginHorizontal: moderateScale(16), // Match horizontal padding of imageCard
+    marginTop: moderateScale(-8),
+    marginBottom: moderateScale(12),
+    marginHorizontal: moderateScale(16),
   },
   detailsButtonText: {
     fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#fff',
-  },
-  datosNoCorrectosButton: {
-    backgroundColor: '#FFFFFF', // White background
-    paddingVertical: moderateScale(14),
-    borderRadius: moderateScale(8),
-    alignItems: 'center',
-    marginTop: moderateScale(16), // Margin to separate from the last details button or image card
-    marginBottom: moderateScale(24), // Space before bottom nav
-    marginHorizontal: moderateScale(16), // Match horizontal padding of imageCard
-    borderWidth: 1, // Add border
-    borderColor: '#D32F2F', // Red border color
-  },
-  datosNoCorrectosButtonText: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    color: '#D32F2F', // Red text color
   },
   bottomNavigation: {
     flexDirection: 'row',
@@ -327,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CualEsCorrectaScreen;
+export default MisAtestiguamientosListScreen;
