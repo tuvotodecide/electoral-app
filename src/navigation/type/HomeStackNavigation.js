@@ -45,6 +45,10 @@ export default function HomeStackNavigation() {
         component={StackRoute.AtestiguarActa}
       />
       <HomeStack.Screen
+        name={StackNav.CualEsCorrectaScreen}
+        component={StackRoute.CualEsCorrectaScreen}
+      />
+      <HomeStack.Screen
         name={StackNav.AnunciarConteo}
         component={StackRoute.AnunciarConteo}
       />

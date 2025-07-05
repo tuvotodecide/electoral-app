@@ -31,6 +31,10 @@ export default function VotoStackNavigation() {
         component={StackRoute.AtestiguarActa}
       />
       <VotoStack.Screen
+        name={StackNav.CualEsCorrectaScreen}
+        component={StackRoute.CualEsCorrectaScreen}
+      />
+      <VotoStack.Screen
         name={StackNav.AnunciarConteo}
         component={StackRoute.AnunciarConteo}
       />
@@ -41,6 +45,11 @@ export default function VotoStackNavigation() {
       <VotoStack.Screen
         name="CameraScreen"
         component={CameraScreen}
+        options={{headerShown: false}}
+      />
+      <VotoStack.Screen
+        name="PhotoReviewScreen"
+        component={StackRoute.PhotoReviewScreen}
         options={{headerShown: false}}
       />
     </VotoStack.Navigator>

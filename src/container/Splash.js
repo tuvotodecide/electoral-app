@@ -25,7 +25,7 @@ export default function Splash({navigation}) {
     const asyncProcess = async () => {
       try {
         let asyncData = await initialStorageValueGet();
-        let {themeColor} = asyncData;
+        let {themeColor, onBoardingValue} = asyncData;
         if (asyncData) {
           if (themeColor) {
             if (themeColor === 'light') {

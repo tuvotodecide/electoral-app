@@ -15,6 +15,7 @@ export const StackNav = {
   PhotoConfirmationScreen: 'PhotoConfirmationScreen',
   // Atestiguar Acta
   AtestiguarActa: 'AtestiguarActa',
+  CualEsCorrectaScreen: 'CualEsCorrectaScreen',
   // Anunciar Conteo
   AnunciarConteo: 'AnunciarConteo',
   BuscarMesaConteo: 'BuscarMesaConteo',

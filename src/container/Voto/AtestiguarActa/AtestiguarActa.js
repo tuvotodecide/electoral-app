@@ -1,195 +1,292 @@
 import React, {useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, FlatList} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import {StackNav} from '../../../navigation/NavigationKey';
+import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
+import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
+import FontAwesome from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome for location icon
+import {moderateScale} from '../../../common/constants'; // Assuming this path is correct for your project
 
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CText from '../../../components/common/CText';
-import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
+const SearchMesaScreen = () => {
+  const navigation = useNavigation();
+  const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
+  const [searchText, setSearchText] = useState('');
 
-export default function AtestiguarActa({navigation}) {
-  const colors = useSelector(state => state.theme.theme);
-
-  // Datos de ejemplo de actas disponibles para atestiguar
-  const [actasDisponibles] = useState([
+  // Dummy data for mesa list
+  const mesas = [
     {
-      id: 1,
-      mesa: 'Mesa 001',
-      escuela: 'Escuela Primaria N° 15',
-      direccion: 'Av. Corrientes 1234',
-      hora: '14:30',
-      estado: 'Pendiente',
+      id: '1',
+      numero: '1',
+      recinto: 'Colegio 23 de marzo',
+      direccion: 'Provincia Murillo - La Paz',
+      codigo: '1234',
     },
     {
-      id: 2,
-      mesa: 'Mesa 002',
-      escuela: 'Instituto San José',
-      direccion: 'San Martín 567',
-      hora: '15:45',
-      estado: 'Pendiente',
+      id: '2',
+      numero: '2',
+      recinto: 'Colegio 23 de marzo',
+      direccion: 'Provincia Murillo - La Paz',
+      codigo: '1234',
     },
     {
-      id: 3,
-      mesa: 'Mesa 003',
-      escuela: 'Colegio Nacional',
-      direccion: 'Belgrano 890',
-      hora: '16:20',
-      estado: 'En revisión',
+      id: '3',
+      numero: '3',
+      recinto: 'Colegio 23 de marzo',
+      direccion: 'Provincia Murillo - La Paz',
+      codigo: '1234',
     },
-  ]);
+    {
+      id: '4',
+      numero: '4',
+      recinto: 'Colegio 23 de marzo',
+      direccion: 'Provincia Murillo - La Paz',
+      codigo: '1234',
+    },
+    {
+      id: '5',
+      numero: '5',
+      recinto: 'Colegio 23 de marzo',
+      direccion: 'Provincia Murillo - La Paz',
+      codigo: '1234',
+    },
+  ];
 
-  const renderActaItem = ({item}) => (
-    <TouchableOpacity
-      style={[localStyle.actaCard, {backgroundColor: colors.inputBg}]}
-      onPress={() => handleAtestiguar(item)}>
-      <View style={localStyle.cardHeader}>
-        <CText type={'B16'} color={colors.textColor}>
-          {item.mesa}
-        </CText>
-        <View
-          style={[
-            localStyle.statusBadge,
-            {
-              backgroundColor:
-                item.estado === 'Pendiente' ? '#FFF3CD' : '#D1ECF1',
-            },
-          ]}>
-          <CText
-            type={'R12'}
-            color={item.estado === 'Pendiente' ? '#856404' : '#0C5460'}>
-            {item.estado}
-          </CText>
-        </View>
-      </View>
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
-      <CText type={'R14'} color={colors.grayScale500} style={styles.mt5}>
-        {item.escuela}
-      </CText>
-      <CText type={'R12'} color={colors.grayScale500}>
-        {item.direccion}
-      </CText>
-
-      <View style={localStyle.cardFooter}>
-        <View style={localStyle.timeContainer}>
-          <Ionicons
-            name="time-outline"
-            size={moderateScale(16)}
-            color={colors.grayScale500}
-          />
-          <CText type={'R12'} color={colors.grayScale500} style={styles.ml5}>
-            Subida: {item.hora}
-          </CText>
-        </View>
-        <Ionicons
-          name="chevron-forward"
-          size={moderateScale(20)}
-          color={colors.grayScale500}
-        />
-      </View>
-    </TouchableOpacity>
-  );
-
-  const handleAtestiguar = acta => {
-    console.log('Atestiguar acta:', acta);
-    // Aquí navegarías a la pantalla de detalle del acta
+  const handleMesaPress = mesa => {
+    console.log('Navegando a CualEsCorrectaScreen con mesa:', mesa.numero); // Debugging log
+    // Navega a CualEsCorrectaScreen, pasando los datos de la mesa y un photoUri de ejemplo.
+    // Este es el comportamiento solicitado: SearchMesaScreen -> CualEsCorrectaScreen
+    navigation.navigate(StackNav.CualEsCorrectaScreen, {
+      mesaData: mesa,
+      photoUri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+de+Mesa', // URI de foto de ejemplo
+    });
   };
 
   return (
-    <CSafeAreaView
-      style={[localStyle.container, {backgroundColor: colors.backgroundColor}]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={localStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="arrow-back"
-            size={moderateScale(24)}
-            color={colors.textColor}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <MaterialIcons
+            name="keyboard-arrow-left"
+            size={moderateScale(36)}
+            color={colors.black || '#2F2F2F'}
           />
         </TouchableOpacity>
-        <CText type={'B18'} color={colors.textColor}>
-          Atestiguar Acta
-        </CText>
-        <View style={{width: moderateScale(24)}} />
+        <CText style={styles.headerTitle}>Buscar Mesa</CText>
+        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.bellIcon}>
+          <Ionicons
+            name="notifications-outline"
+            size={moderateScale(36)}
+            color={colors.text || '#2F2F2F'}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* Content */}
-      <View style={localStyle.content}>
-        <View style={localStyle.infoContainer}>
-          <Ionicons
-            name="eye-outline"
-            size={moderateScale(40)}
-            color={colors.primary}
-          />
-          <CText type={'B18'} style={[styles.ml10, {color: colors.textColor}]}>
-            Actas Disponibles
-          </CText>
-        </View>
+      {/* Choose Mesa Text */}
+      <View style={styles.chooseMesaContainer}>
+        <CText style={styles.chooseMesaText}>Elije una mesa por favor:</CText>
+      </View>
 
-        <CText
-          type={'R14'}
-          color={colors.grayScale500}
-          style={[styles.mb20, styles.ph5]}>
-          Selecciona un acta para revisar y validar su contenido.
-        </CText>
-
-        <FlatList
-          data={actasDisponibles}
-          renderItem={renderActaItem}
-          keyExtractor={item => item.id.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.pb20}
+      {/* Search Input */}
+      <View style={styles.searchInputContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar mesa"
+          placeholderTextColor="#868686"
+          value={searchText}
+          onChangeText={setSearchText}
         />
       </View>
-    </CSafeAreaView>
-  );
-}
 
-const localStyle = StyleSheet.create({
+      {/* Location Info Bar */}
+      <View style={styles.locationInfoBar}>
+        <FontAwesome
+          name="map-marker" // Location icon
+          size={moderateScale(16)}
+          color="#459151"
+          style={styles.locationIcon}
+        />
+        <CText style={styles.locationInfoText}>
+          La siguiente lista se basa en su ubicacion
+        </CText>
+      </View>
+
+      {/* Mesa List */}
+      <ScrollView style={styles.mesaList} showsVerticalScrollIndicator={false}>
+        {mesas.map(mesa => (
+          <TouchableOpacity
+            key={mesa.id}
+            style={styles.mesaCard}
+            onPress={() => handleMesaPress(mesa)} // Llama a la función de navegación
+          >
+            <CText style={styles.mesaCardTitle}>Mesa {mesa.numero}</CText>
+            <CText style={styles.mesaCardDetail}>Recinto: {mesa.recinto}</CText>
+            <CText style={styles.mesaCardDetail}>
+              Direccion: {mesa.direccion}
+            </CText>
+            <CText style={styles.mesaCardDetail}>
+              Codigo de Mesa: {mesa.codigo}
+            </CText>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNavigation}>
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons
+            name="home-outline"
+            size={moderateScale(24)}
+            color={colors.primary || '#459151'}
+          />
+          <CText style={styles.navText}>Inicio</CText>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons
+            name="person-outline"
+            size={moderateScale(24)}
+            color={colors.text || '#868686'}
+          />
+          <CText style={styles.navText}>Perfil</CText>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF', // Light gray background as per image
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    ...styles.ph20,
-    ...styles.pv15,
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(12),
+    backgroundColor: '#fff',
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
-  content: {
+  backButton: {
+    padding: moderateScale(8),
+  },
+  headerTitle: {
+    fontSize: moderateScale(18),
+    fontWeight: '600',
+    color: '#2F2F2F',
+    marginLeft: moderateScale(8),
+  },
+  headerSpacer: {
     flex: 1,
-    ...styles.ph20,
   },
-  infoContainer: {
+  bellIcon: {
+    padding: moderateScale(8),
+  },
+  chooseMesaContainer: {
+    backgroundColor: '#E9EFF1', // Match container background
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(8),
+  },
+  chooseMesaText: {
+    fontSize: moderateScale(14),
+    color: '#868686',
+    fontWeight: '500',
+  },
+  searchInputContainer: {
+    backgroundColor: '#E9EFF1', // Match container background
+    paddingHorizontal: moderateScale(16),
+    paddingBottom: moderateScale(12),
+  },
+  searchInput: {
+    height: moderateScale(40),
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(8),
+    paddingHorizontal: moderateScale(12),
+    fontSize: moderateScale(14),
+    color: '#2F2F2F',
+    elevation: 1, // Subtle shadow
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  locationInfoBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    ...styles.mb10,
+    backgroundColor: '#E0F2F7', // Light blue background
+    borderRadius: moderateScale(8),
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(12),
+    marginHorizontal: moderateScale(16),
+    marginBottom: moderateScale(16),
   },
-  actaCard: {
-    ...styles.p15,
-    borderRadius: moderateScale(12),
-    ...styles.mb15,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+  locationIcon: {
+    marginRight: moderateScale(8),
   },
-  cardHeader: {
+  locationInfoText: {
+    fontSize: moderateScale(12),
+    color: '#459151', // Green text color
+    fontWeight: '500',
+  },
+  mesaList: {
+    flex: 1,
+    paddingHorizontal: moderateScale(16),
+  },
+  mesaCard: {
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(8),
+    padding: moderateScale(16),
+    marginBottom: moderateScale(12),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  mesaCardTitle: {
+    fontSize: moderateScale(18),
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: moderateScale(4),
+  },
+  mesaCardDetail: {
+    fontSize: moderateScale(14),
+    color: '#868686',
+    marginBottom: moderateScale(2),
+  },
+  bottomNavigation: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#FFFFFF',
+    paddingVertical: moderateScale(10),
   },
-  statusBadge: {
-    ...styles.ph10,
-    ...styles.pv5,
-    borderRadius: moderateScale(12),
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  navItem: {
     alignItems: 'center',
-    ...styles.mt10,
+    padding: moderateScale(8),
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  navText: {
+    fontSize: moderateScale(12),
+    color: '#868686',
+    marginTop: moderateScale(4),
   },
 });
+
+export default SearchMesaScreen;
