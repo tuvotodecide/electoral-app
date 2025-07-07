@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   Text,
   Modal,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -34,18 +34,24 @@ export default function DetalleMesaConteo({navigation, route}) {
     setModalVisible(true);
   };
 
+  const [loading, setLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
+
   const handleConfirmConteo = () => {
-    setModalVisible(false);
-    Alert.alert(
-      '¡Conteo Anunciado!',
-      'El conteo ha sido anunciado exitosamente.',
-      [
-        {
-          text: 'Aceptar',
-          onPress: () => navigation.popToTop(),
-        },
-      ],
-    );
+    setLoading(true);
+
+    // Simular tiempo de carga
+    setTimeout(() => {
+      setLoading(false);
+      setSuccess(true);
+
+      // Esperar unos segundos y luego cerrar el modal y navegar al home
+      setTimeout(() => {
+        setModalVisible(false);
+        setSuccess(false);
+        navigation.popToTop();
+      }, 1500);
+    }, 1500);
   };
 
   const handleCancelConteo = () => {
@@ -108,31 +114,60 @@ export default function DetalleMesaConteo({navigation, route}) {
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={stylesx.modalOverlay}>
           <View style={stylesx.modalContent}>
-            <View style={stylesx.modalHeader}>
-              <Ionicons
-                name="checkmark-circle"
-                size={moderateScale(60)}
-                color="#4F9858"
-                style={stylesx.modalIcon}
-              />
-              <CText style={stylesx.modalTitle}>¿Estás seguro?</CText>
-              <CText style={stylesx.modalSubtitle}>
-                ¿Deseas anunciar el conteo de la mesa {mesa.numero}?
-              </CText>
-            </View>
+            {loading ? (
+              <View style={stylesx.modalHeader}>
+                <ActivityIndicator
+                  size="large"
+                  color="#4F9858"
+                  style={{marginBottom: 20}}
+                />
+                <CText style={stylesx.modalTitle}>Procesando...</CText>
+                <CText style={stylesx.modalSubtitle}>
+                  Estamos anunciando el conteo de la mesa {mesa.numero}
+                </CText>
+              </View>
+            ) : success ? (
+              <View style={stylesx.modalHeader}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={moderateScale(60)}
+                  color="#4F9858"
+                  style={stylesx.modalIcon}
+                />
+                <CText style={stylesx.modalTitle}>¡Conteo Anunciado!</CText>
+                <CText style={stylesx.modalSubtitle}>
+                  El conteo ha sido anunciado exitosamente.
+                </CText>
+              </View>
+            ) : (
+              <>
+                <View style={stylesx.modalHeader}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={moderateScale(60)}
+                    color="#4F9858"
+                    style={stylesx.modalIcon}
+                  />
+                  <CText style={stylesx.modalTitle}>¿Estás seguro?</CText>
+                  <CText style={stylesx.modalSubtitle}>
+                    ¿Deseas anunciar el conteo de la mesa {mesa.numero}?
+                  </CText>
+                </View>
 
-            <View style={stylesx.modalButtons}>
-              <TouchableOpacity
-                style={stylesx.cancelButton}
-                onPress={handleCancelConteo}>
-                <CText style={stylesx.cancelButtonText}>Cancelar</CText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={stylesx.confirmButton}
-                onPress={handleConfirmConteo}>
-                <CText style={stylesx.confirmButtonText}>Confirmar</CText>
-              </TouchableOpacity>
-            </View>
+                <View style={stylesx.modalButtons}>
+                  <TouchableOpacity
+                    style={stylesx.cancelButton}
+                    onPress={handleCancelConteo}>
+                    <CText style={stylesx.cancelButtonText}>Cancelar</CText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={stylesx.confirmButton}
+                    onPress={handleConfirmConteo}>
+                    <CText style={stylesx.confirmButtonText}>Confirmar</CText>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
