@@ -17,6 +17,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
+import {StackNav} from '../../../navigation/NavigationKey';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -40,21 +41,40 @@ const ActaCertificationScreen = () => {
   };
 
   const handleCertifico = () => {
+    console.log('ActaCertificationScreen - handleCertifico called');
     setStep(0);
     setShowConfirmModal(true);
   };
 
   const confirmCertification = () => {
+    console.log('ActaCertificationScreen - confirmCertification called');
     setStep(1);
     // Simulate loading time
     setTimeout(() => {
-      setStep(2);
-      setTimeout(() => {
-        setShowConfirmModal(false);
-        setStep(0);
-        // Navigate back to the main screen
+      console.log('ActaCertificationScreen - navigating to SuccessScreen');
+      console.log('StackNav.SuccessScreen value:', StackNav.SuccessScreen);
+      console.log('Navigation object:', navigation);
+      console.log('Params to send:', {
+        successType: 'certify',
+        mesaData: mesaData,
+        autoNavigateDelay: 5000,
+        showAutoNavigation: true,
+      });
+      setShowConfirmModal(false);
+      setStep(0);
+      // Navigate to success screen
+      try {
+        navigation.navigate(StackNav.SuccessScreen, {
+          successType: 'certify',
+          mesaData: mesaData,
+          autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
+          showAutoNavigation: true,
+        });
+      } catch (error) {
+        console.error('Error navigating to SuccessScreen:', error);
+        // Fallback navigation
         navigation.navigate('AtestiguarActa');
-      }, 2000);
+      }
     }, 2000);
   };
 
@@ -145,55 +165,9 @@ const ActaCertificationScreen = () => {
                 </Text>
               </>
             )}
-            {step === 2 && (
-              <>
-                <View style={modalStyles.iconCircleSuccess}>
-                  <Ionicons name="checkmark" size={48} color="#459151" />
-                </View>
-                <Text style={modalStyles.successTitle}>
-                  Actividad Registrada Exitosamente!
-                </Text>
-                <View style={modalStyles.logoContainer}>
-                  {/* Si tienes los logos locales, pon la ruta */}
-                  {/* <Image
-                  source={require('RUTA/AL/LOGO1.png')}
-                  style={modalStyles.logoImg}
-                  resizeMode="contain"
-                />
-                <Image
-                  source={require('RUTA/AL/LOGO2.png')}
-                  style={modalStyles.logoImg}
-                  resizeMode="contain"
-                />*/}
-                </View>
-                <Text style={modalStyles.initiativeText}>
-                  Iniciativa voluntaria de:
-                </Text>
-              </>
-            )}
           </View>
         </View>
       </Modal>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="home-outline"
-            size={moderateScale(24)}
-            color={colors.primary || '#459151'}
-          />
-          <CText style={styles.navText}>Inicio</CText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="person-outline"
-            size={moderateScale(24)}
-            color={colors.text || '#868686'}
-          />
-          <CText style={styles.navText}>Perfil</CText>
-        </TouchableOpacity>
-      </View>
     </CSafeAreaView>
   );
 };
@@ -461,24 +435,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  bottomNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingVertical: moderateScale(10),
-  },
-  navItem: {
-    alignItems: 'center',
-    padding: moderateScale(8),
-  },
-  navText: {
-    fontSize: moderateScale(12),
-    color: '#868686',
-    marginTop: moderateScale(4),
-  },
 });
 export const modalStyles = StyleSheet.create({
   modalOverlay: {
@@ -511,17 +467,6 @@ export const modalStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  iconCircleSuccess: {
-    width: 60,
-    height: 60,
-    borderRadius: 32,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#459151',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
   confirmTitle: {
     fontSize: 18,
     color: '#2F2F2F',
@@ -539,11 +484,6 @@ export const modalStyles = StyleSheet.create({
   },
   loading: {
     marginBottom: 18,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
   },
   cancelButton: {
     flex: 1,
@@ -585,26 +525,6 @@ export const modalStyles = StyleSheet.create({
     color: '#868686',
     textAlign: 'center',
     marginTop: 4,
-  },
-  successTitle: {
-    fontSize: 17,
-    color: '#2F2F2F',
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 0,
-    fontWeight: '600',
-  },
-  logoImg: {
-    width: 40,
-    height: 40,
-    marginTop: 8,
-    marginHorizontal: 2,
-  },
-  initiativeText: {
-    marginTop: 12,
-    fontSize: 13,
-    color: '#7B7B7B',
-    textAlign: 'center',
   },
 });
 

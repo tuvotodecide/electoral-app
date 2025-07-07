@@ -42,15 +42,15 @@ const PhotoConfirmationScreen = () => {
     setStep(1);
     // Simulate loading time
     setTimeout(() => {
-      setStep(2);
-      setTimeout(() => {
-        setShowConfirmModal(false);
-        setStep(0);
-        // Navigate back to the main screen
-        navigation.navigate(StackNav.TabNavigation, {
-          screen: 'HomeScreen',
-        });
-      }, 2000);
+      setShowConfirmModal(false);
+      setStep(0);
+      // Navigate to success screen instead of showing success modal
+      navigation.navigate(StackNav.SuccessScreen, {
+        successType: 'publish',
+        mesaData: mesaData,
+        autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
+        showAutoNavigation: true,
+      });
     }, 2000);
   };
 
@@ -143,20 +143,6 @@ const PhotoConfirmationScreen = () => {
                 </Text>
               </>
             )}
-            {step === 2 && (
-              <>
-                <View style={modalStyles.iconCircleSuccess}>
-                  <Ionicons name="checkmark" size={48} color="#459151" />
-                </View>
-                <Text style={modalStyles.successTitle}>
-                  ¡Acta Publicada y Certificada Exitosamente!
-                </Text>
-                <View style={modalStyles.logoContainer}></View>
-                <Text style={modalStyles.initiativeText}>
-                  Iniciativa voluntaria de:
-                </Text>
-              </>
-            )}
           </View>
         </View>
       </Modal>
@@ -186,15 +172,6 @@ const modalStyles = StyleSheet.create({
   },
   iconCircleWarning: {
     backgroundColor: '#fdf4f4',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: moderateScale(16),
-  },
-  iconCircleSuccess: {
-    backgroundColor: '#e8f5e9',
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -257,28 +234,6 @@ const modalStyles = StyleSheet.create({
     fontSize: moderateScale(16),
     color: '#2F2F2F',
     textAlign: 'center',
-  },
-  successTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-    color: '#459151',
-    textAlign: 'center',
-    marginBottom: moderateScale(16),
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: moderateScale(16),
-    marginBottom: moderateScale(16),
-  },
-  logoImg: {
-    width: 50,
-    height: 50,
-  },
-  initiativeText: {
-    fontSize: moderateScale(14),
-    color: '#868686',
   },
 });
 

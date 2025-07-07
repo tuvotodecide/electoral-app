@@ -89,32 +89,5 @@ export const MesaCard = ({mesa, onPress, styles}) => (
   </TouchableOpacity>
 );
 
-// Bottom Navigation Component
-export const BottomNavigation = ({
-  colors,
-  onHomePress,
-  onProfilePress,
-  styles,
-}) => (
-  <View style={styles.bottomNavigation}>
-    <TouchableOpacity style={styles.navItem} onPress={onHomePress}>
-      <Ionicons
-        name="home-outline"
-        size={moderateScale(24)}
-        color={colors.primary || '#459151'}
-      />
-      <CText style={styles.navText}>Inicioooo</CText>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
-      <Ionicons
-        name="person-outline"
-        size={moderateScale(24)}
-        color={colors.text || '#868686'}
-      />
-      <CText style={styles.navText}>Perfil</CText>
-    </TouchableOpacity>
-  </View>
-);
-
 // Export UniversalHeader for use in other components
 export {default as UniversalHeader} from './UniversalHeader';

@@ -41,6 +41,10 @@ export default function HomeStackNavigation() {
         component={StackRoute.PhotoConfirmationScreen}
       />
       <HomeStack.Screen
+        name={StackNav.SuccessScreen}
+        component={StackRoute.SuccessScreen}
+      />
+      <HomeStack.Screen
         name={StackNav.AtestiguarActa}
         component={StackRoute.AtestiguarActa}
       />

@@ -25,6 +25,7 @@ import CameraScreen from '../container/Voto/SubirActa/CameraScreen';
 import CameraPermissionTest from '../container/Voto/SubirActa/CameraPermissionTest';
 import PhotoReviewScreen from '../container/Voto/SubirActa/PhotoReviewScreen';
 import PhotoConfirmationScreen from '../container/Voto/SubirActa/PhotoConfirmationScreen';
+import SuccessScreen from '../container/Voto/common/SuccessScreen';
 import AtestiguarActa from '../container/Voto/AtestiguarActa/AtestiguarActa';
 import CualEsCorrectaScreen from '../container/Voto/AtestiguarActa/CualEsCorrectaScreen';
 import ActaReviewScreen from '../container/Voto/AtestiguarActa/ActaReviewScreen';
@@ -163,6 +164,7 @@ export const StackRoute = {
   CameraPermissionTest,
   PhotoReviewScreen,
   PhotoConfirmationScreen,
+  SuccessScreen,
   AtestiguarActa,
   CualEsCorrectaScreen,
   ActaReviewScreen,

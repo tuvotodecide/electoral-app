@@ -27,7 +27,7 @@ const UniversalHeader = ({
       {title}
     </CText>
     <View style={styles.headerSpacer} />
-    {showNotification && (
+    {/* {showNotification && (
       <TouchableOpacity
         style={[styles.bellIcon, customStyles.bellIcon]}
         onPress={onNotificationPress}>
@@ -37,7 +37,7 @@ const UniversalHeader = ({
           color={colors?.text || '#2F2F2F'}
         />
       </TouchableOpacity>
-    )}
+    )} */}
   </View>
 );
 

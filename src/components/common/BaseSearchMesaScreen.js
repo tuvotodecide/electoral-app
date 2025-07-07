@@ -7,7 +7,6 @@ import {
   LocationInfoBar,
   SearchInput,
   MesaCard,
-  BottomNavigation,
 } from './SearchMesaComponents';
 
 const BaseSearchMesaScreen = ({
@@ -33,10 +32,6 @@ const BaseSearchMesaScreen = ({
   // Mesa list props
   mesas,
   onMesaPress,
-
-  // Navigation props
-  onHomePress,
-  onProfilePress,
 
   // Layout props
   showLocationFirst = false, // Control order of location bar and search input
@@ -105,13 +100,6 @@ const BaseSearchMesaScreen = ({
           />
         ))}
       </ScrollView>
-
-      <BottomNavigation
-        colors={colors}
-        onHomePress={onHomePress}
-        onProfilePress={onProfilePress}
-        styles={styles}
-      />
     </SafeAreaView>
   );
 };

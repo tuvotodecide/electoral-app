@@ -73,7 +73,6 @@ export default function HomeScreen({navigation}) {
 
   return (
     <CSafeAreaView style={stylesx.bg}>
-      {/* ===== Header ===== */}
       <View style={stylesx.headerRow}>
         <MiVotoLogo />
         <TouchableOpacity onPress={onPressNotification}>

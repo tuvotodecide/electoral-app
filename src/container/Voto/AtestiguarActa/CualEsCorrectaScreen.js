@@ -250,24 +250,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#D32F2F', // Red text color
   },
-  bottomNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#FFFFFF',
-    paddingVertical: moderateScale(10),
-  },
-  navItem: {
-    alignItems: 'center',
-    padding: moderateScale(8),
-  },
-  navText: {
-    fontSize: moderateScale(12),
-    color: '#868686',
-    marginTop: moderateScale(4),
-  },
 });
 
 export default CualEsCorrectaScreen;

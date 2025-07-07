@@ -90,7 +90,7 @@ export default {
   loading: 'Cargando...',
 
   //page 10
-  welcomeTitle: '¡Bienvenido a Wira Wallet!',
+  welcomeTitle: '¡Bienvenido a Tu Voto!',
   verifiedIdentity: 'Identidad verificada. Ya puedes usar tu billetera.',
   activosTitle: 'Activos',
   activosDesc: 'Compra, guarda y vende criptomonedas libremente',

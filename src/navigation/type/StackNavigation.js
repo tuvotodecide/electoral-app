@@ -413,6 +413,11 @@ export default function StackNavigation() {
         component={StackRoute.PhotoConfirmationScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.SuccessScreen}
+        component={StackRoute.SuccessScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

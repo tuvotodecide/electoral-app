@@ -13,6 +13,7 @@ export const StackNav = {
   CameraPermissionTest: 'CameraPermissionTest',
   PhotoReviewScreen: 'PhotoReviewScreen',
   PhotoConfirmationScreen: 'PhotoConfirmationScreen',
+  SuccessScreen: 'SuccessScreen',
   // Atestiguar Acta
   AtestiguarActa: 'AtestiguarActa',
   CualEsCorrectaScreen: 'CualEsCorrectaScreen',

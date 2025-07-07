@@ -110,23 +110,5 @@ export const createSearchMesaStyles = () => {
       color: '#868686',
       marginBottom: moderateScale(2),
     },
-    bottomNavigation: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      borderTopWidth: 1,
-      borderTopColor: '#FFFFFF',
-      paddingVertical: moderateScale(10),
-    },
-    navItem: {
-      alignItems: 'center',
-      padding: moderateScale(8),
-    },
-    navText: {
-      fontSize: moderateScale(12),
-      color: '#868686',
-      marginTop: moderateScale(4),
-    },
   });
 };

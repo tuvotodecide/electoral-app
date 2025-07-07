@@ -23,7 +23,11 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar
   const currentRoute = state.routes[state.index];
   const routeName = getFocusedRouteNameFromRoute(currentRoute) ?? '';
-  const hideTabBarScreens = ['CameraScreen', 'CameraPermissionTest'];
+  const hideTabBarScreens = [
+    'CameraScreen',
+    'CameraPermissionTest',
+    'SuccessScreen',
+  ];
 
   console.log(
     'TabBar - Current route:',
