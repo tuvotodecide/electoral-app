@@ -128,13 +128,8 @@ const SuccessScreen = () => {
         setTimeLeft(prev => {
           const newTime = prev - 1;
           console.log('SuccessScreen - Countdown:', newTime);
-          if (newTime <= 0) {
-            console.log('SuccessScreen - Time up, navigating to home');
-            clearInterval(countdown);
-            handleContinue();
-            return 0;
-          }
-          return newTime;
+          // Solo actualizamos el contador sin efectos secundarios
+          return newTime > 0 ? newTime : 0;
         });
       }, 1000);
 
@@ -143,6 +138,20 @@ const SuccessScreen = () => {
       };
     }
   }, [showAutoNavigation, autoNavigateDelay]);
+
+  // Efecto separado para manejar la navegación cuando el contador llega a cero
+  useEffect(() => {
+    // Si el contador ha llegado a 0 y está habilitada la navegación automática
+    if (timeLeft === 0 && showAutoNavigation && autoNavigateDelay > 0) {
+      console.log('SuccessScreen - Time up, navigating to home');
+      // Usamos un setTimeout para asegurar que no ejecutamos la navegación durante el render
+      const navigateTimer = setTimeout(() => {
+        handleContinue();
+      }, 100);
+
+      return () => clearTimeout(navigateTimer);
+    }
+  }, [timeLeft, showAutoNavigation, autoNavigateDelay]);
 
   return (
     <CSafeAreaView style={styles.container}>
