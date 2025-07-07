@@ -40,8 +40,10 @@ const SuccessScreen = () => {
       case 'publish':
         return {
           title: '¡Acta Publicada y Certificada Exitosamente!',
-          subtitle: `El acta de la mesa ${
-            mesaData?.numero || 'N/A'
+          subtitle: `El acta de la mesa ${mesaData?.numero || 'N/A'} de ${
+            mesaData?.recinto ||
+            mesaData?.ubicacion ||
+            'ubicación no disponible'
           } ha sido publicada y certificada en la Blockchain`,
           buttonText: 'Inicio',
           showInitiativeText: true,
@@ -51,6 +53,10 @@ const SuccessScreen = () => {
           title: '¡Acta Certificada Exitosamente!',
           subtitle: `Has certificado correctamente el acta de la mesa ${
             mesaData?.numero || 'N/A'
+          } de ${
+            mesaData?.recinto ||
+            mesaData?.ubicacion ||
+            'ubicación no disponible'
           }`,
           buttonText: 'Inicio',
           showInitiativeText: false,

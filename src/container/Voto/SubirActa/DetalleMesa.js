@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  Image,
-  Modal,
-  Alert,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Image, Modal} from 'react-native';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -31,8 +23,10 @@ const mockMesa = {
 
 export default function DetalleMesa({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  // const {mesa} = route.params;
-  const mesa = mockMesa;
+  // Usar datos reales de la mesa desde la navegación, con mockMesa como fallback
+  const mesa = route.params?.mesa || mockMesa;
+
+  console.log('DetalleMesa - Mesa recibida:', mesa);
 
   // Si viene una imagen desde CameraScreen, úsala
   const [capturedImage, setCapturedImage] = React.useState(
@@ -46,24 +40,19 @@ export default function DetalleMesa({navigation, route}) {
   const handleTakePhoto = () => {
     navigation.navigate(StackNav.CameraScreen, {
       mesaData: {
-        numero: route.params?.mesa?.numero || 'N/A',
-        ubicacion: route.params?.mesa?.ubicacion || 'Ubicación no disponible',
+        ...mesa,
+        ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
       },
     });
   };
 
   const handleConfirmPhoto = () => {
     setModalVisible(false);
-    Alert.alert(
-      '¡Foto Enviada!',
-      'El acta ha sido subida exitosamente para su revisión.',
-      [
-        {
-          text: 'Aceptar',
-          onPress: () => navigation.popToTop(),
-        },
-      ],
-    );
+    navigation.navigate(StackNav.SuccessScreen, {
+      title: '¡Foto Enviada!',
+      message: 'El acta ha sido subida exitosamente para su revisión.',
+      returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
+    });
   };
 
   const handleRetakePhoto = () => {
@@ -72,8 +61,8 @@ export default function DetalleMesa({navigation, route}) {
     // Navegar de vuelta a la cámara para tomar otra foto
     navigation.navigate(StackNav.CameraScreen, {
       mesaData: {
-        numero: route.params?.mesa?.numero || 'N/A',
-        ubicacion: route.params?.mesa?.ubicacion || 'Ubicación no disponible',
+        ...mesa,
+        ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
       },
     });
   };
@@ -131,11 +120,11 @@ export default function DetalleMesa({navigation, route}) {
             justifyContent: 'space-between',
           }}>
           <View style={{flex: 1, marginRight: 14}}>
-            <Text style={stylesx.mesaTitle}>Mesa 1234</Text>
-            <Text style={stylesx.label}>Recinto: {mesa.recinto}</Text>
-            <Text style={stylesx.label}>{mesa.colegio}</Text>
-            <Text style={stylesx.label}>{mesa.provincia}</Text>
-            <Text style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</Text>
+            <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+            <CText style={stylesx.label}>Recinto: {mesa.recinto}</CText>
+            <CText style={stylesx.label}>{mesa.colegio}</CText>
+            <CText style={stylesx.label}>{mesa.provincia}</CText>
+            <CText style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</CText>
           </View>
           <MaterialIcons
             name="how-to-vote"

@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Text,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
@@ -89,7 +88,7 @@ const ActaCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title="Certificación de Acta"
+        title={`Mesa ${mesaData?.numero || 'N/A'}`}
         showNotification={true}
       />
 
@@ -131,21 +130,21 @@ const ActaCertificationScreen = () => {
                   <Ionicons name="alert-outline" size={48} color="#da2a2a" />
                 </View>
                 <View style={modalStyles.spacer} />
-                <Text style={modalStyles.confirmTitle}>
+                <CText style={modalStyles.confirmTitle}>
                   ¿Estás seguro de que deseas{'\n'}Certificar la información?
-                </Text>
+                </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
-                    <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
+                    <CText style={modalStyles.cancelButtonText}>Cancelar</CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
-                    <Text style={modalStyles.confirmButtonText}>
+                    <CText style={modalStyles.confirmButtonText}>
                       Certificar
-                    </Text>
+                    </CText>
                   </TouchableOpacity>
                 </View>
               </>
@@ -157,12 +156,12 @@ const ActaCertificationScreen = () => {
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <Text style={modalStyles.loadingTitle}>
+                <CText style={modalStyles.loadingTitle}>
                   Por favor, espere.....
-                </Text>
-                <Text style={modalStyles.loadingSubtext}>
+                </CText>
+                <CText style={modalStyles.loadingSubtext}>
                   La información se está guardando en la Blockchain
-                </Text>
+                </CText>
               </>
             )}
           </View>

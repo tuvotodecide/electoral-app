@@ -7,18 +7,25 @@ const ActaReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, mesaData} = route.params || {};
+  const {
+    photoUri,
+    mesaData,
+    partyResults: routePartyResults,
+    voteSummaryResults: routeVoteSummaryResults,
+  } = route.params || {};
 
-  // Static data for the party results table
-  const partyResults = [
+  console.log('ActaReviewScreen - Received params:', route.params);
+
+  // Use dynamic data if available, otherwise fallback to static data
+  const partyResults = routePartyResults || [
     {id: 'unidad', partido: 'Unidad', presidente: '33', diputado: '29'},
     {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '3', diputado: '1'},
     {id: 'pdc', partido: 'PDC', presidente: '17', diputado: '16'},
     {id: 'morena', partido: 'Morena', presidente: '1', diputado: '0'},
   ];
 
-  // Static data for the vote summary table
-  const voteSummaryResults = [
+  // Use dynamic data if available, otherwise fallback to static data
+  const voteSummaryResults = routeVoteSummaryResults || [
     {id: 'validos', label: 'Válidos', value1: '141', value2: '176'},
     {id: 'blancos', label: 'Blancos', value1: '64', value2: '3'},
     {id: 'nulos', label: 'Nulos', value1: '6', value2: '9'},

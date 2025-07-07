@@ -1,6 +1,6 @@
 import React from 'react';
 import {ScrollView} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import CSafeAreaView from './CSafeAreaView';
 import {
   SearchMesaHeader,
   ChooseMesaText,
@@ -76,7 +76,7 @@ const BaseSearchMesaScreen = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       <SearchMesaHeader
         colors={colors}
         onBack={onBack}
@@ -100,7 +100,7 @@ const BaseSearchMesaScreen = ({
           />
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </CSafeAreaView>
   );
 };
 

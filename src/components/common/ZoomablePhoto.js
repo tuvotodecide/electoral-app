@@ -4,48 +4,21 @@ import {
   PinchGestureHandler,
   PanGestureHandler,
   TapGestureHandler,
+  State,
 } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedGestureHandler,
   withSpring,
+  runOnJS,
   clamp,
 } from 'react-native-reanimated';
 import {moderateScale} from '../../common/constants';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
-// Constantes calculadas fuera de los worklets
-const PHOTO_HEIGHT = moderateScale(200);
-const CONTAINER_PADDING = moderateScale(8);
-const CORNER_SIZE = moderateScale(20);
-const CORNER_BORDER_WIDTH = 2;
-const BORDER_RADIUS = moderateScale(4);
-const CONTAINER_BORDER_RADIUS = moderateScale(8);
-const MARGIN_BOTTOM = moderateScale(16);
-
-export const PhotoContainer = ({photoUri, enableZoom = false}) => {
-  if (enableZoom) {
-    return <ZoomablePhotoContainer photoUri={photoUri} />;
-  }
-
-  return (
-    <View style={styles.photoContainer}>
-      <Image
-        source={{uri: photoUri}}
-        style={styles.photo}
-        resizeMode="contain"
-      />
-      <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.topRightCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
-    </View>
-  );
-};
-
-const ZoomablePhotoContainer = ({photoUri}) => {
+const ZoomablePhoto = ({photoUri}) => {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -71,8 +44,7 @@ const ZoomablePhotoContainer = ({photoUri}) => {
       // Calcular el desplazamiento basado en el punto focal
       const deltaX =
         (originX.value - SCREEN_WIDTH / 2) * (newScale - lastScale.value);
-      const deltaY =
-        (originY.value - PHOTO_HEIGHT / 2) * (newScale - lastScale.value);
+      const deltaY = (originY.value - 100) * (newScale - lastScale.value); // 100 es aprox la altura del contenedor
 
       translateX.value = lastTranslateX.value - deltaX;
       translateY.value = lastTranslateY.value - deltaY;
@@ -92,7 +64,7 @@ const ZoomablePhotoContainer = ({photoUri}) => {
       } else {
         // Limitar el desplazamiento para que no se salga de los bordes
         const maxTranslateX = (SCREEN_WIDTH * (scale.value - 1)) / 2;
-        const maxTranslateY = (PHOTO_HEIGHT * (scale.value - 1)) / 2;
+        const maxTranslateY = (moderateScale(200) * (scale.value - 1)) / 2;
 
         translateX.value = withSpring(
           clamp(translateX.value, -maxTranslateX, maxTranslateX),
@@ -114,7 +86,7 @@ const ZoomablePhotoContainer = ({photoUri}) => {
     onActive: event => {
       if (scale.value > 1) {
         const maxTranslateX = (SCREEN_WIDTH * (scale.value - 1)) / 2;
-        const maxTranslateY = (PHOTO_HEIGHT * (scale.value - 1)) / 2;
+        const maxTranslateY = (moderateScale(200) * (scale.value - 1)) / 2;
 
         translateX.value = clamp(
           lastTranslateX.value + event.translationX,
@@ -202,9 +174,9 @@ const ZoomablePhotoContainer = ({photoUri}) => {
 const styles = StyleSheet.create({
   photoContainer: {
     backgroundColor: '#fff',
-    borderRadius: CONTAINER_BORDER_RADIUS,
-    padding: CONTAINER_PADDING,
-    marginBottom: MARGIN_BOTTOM,
+    borderRadius: moderateScale(8),
+    padding: moderateScale(8),
+    marginBottom: moderateScale(16),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -215,45 +187,45 @@ const styles = StyleSheet.create({
   },
   photoWrapper: {
     width: '100%',
-    height: PHOTO_HEIGHT,
+    height: moderateScale(200),
   },
   photo: {
     width: '100%',
-    height: PHOTO_HEIGHT,
-    borderRadius: BORDER_RADIUS,
+    height: '100%',
+    borderRadius: moderateScale(4),
   },
   cornerBorder: {
     position: 'absolute',
-    width: CORNER_SIZE,
-    height: CORNER_SIZE,
+    width: moderateScale(20),
+    height: moderateScale(20),
     borderColor: '#2F2F2F',
-    borderWidth: CORNER_BORDER_WIDTH,
+    borderWidth: 2,
     zIndex: 1, // Para que estén por encima de la imagen
   },
   topLeftCorner: {
-    top: CONTAINER_PADDING,
-    left: CONTAINER_PADDING,
+    top: moderateScale(8),
+    left: moderateScale(8),
     borderRightWidth: 0,
     borderBottomWidth: 0,
   },
   topRightCorner: {
-    top: CONTAINER_PADDING,
-    right: CONTAINER_PADDING,
+    top: moderateScale(8),
+    right: moderateScale(8),
     borderLeftWidth: 0,
     borderBottomWidth: 0,
   },
   bottomLeftCorner: {
-    bottom: CONTAINER_PADDING,
-    left: CONTAINER_PADDING,
+    bottom: moderateScale(8),
+    left: moderateScale(8),
     borderRightWidth: 0,
     borderTopWidth: 0,
   },
   bottomRightCorner: {
-    bottom: CONTAINER_PADDING,
-    right: CONTAINER_PADDING,
+    bottom: moderateScale(8),
+    right: moderateScale(8),
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
 });
 
-export default PhotoContainer;
+export default ZoomablePhoto;

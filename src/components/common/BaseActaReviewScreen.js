@@ -1,6 +1,7 @@
-import React from 'react';
-import {View, StyleSheet, ScrollView} from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import React, {useState} from 'react';
+import {View, StyleSheet, ScrollView, Dimensions} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
 import {
@@ -31,7 +32,7 @@ const BaseActaReviewScreen = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       {/* Header */}
       <ActaHeader onBack={onBack} title={headerTitle} colors={colors} />
 
@@ -41,6 +42,28 @@ const BaseActaReviewScreen = ({
         style={instructionsStyle}
       />
 
+      {/* Mesa Info - solo para PhotoReviewScreen */}
+      {showMesaInfo && (
+        <View style={styles.mesaInfoContainer}>
+          <View style={styles.mesaTitle}>
+            <CText style={styles.mesaTitleText}>
+              Mesa {mesaData?.numero || 'N/A'}
+            </CText>
+          </View>
+          <View style={styles.mesaSubtitle}>
+            <CText style={styles.mesaSubtitleText}>
+              {mesaData?.recinto || mesaData?.escuela || 'Recinto N/A'}
+            </CText>
+          </View>
+        </View>
+      )}
+
+      {/* Photo - Estática (no se mueve con el scroll) */}
+      <View style={styles.photoSection}>
+        <PhotoContainer photoUri={photoUri} enableZoom={true} />
+      </View>
+
+      {/* Contenido scrolleable debajo de la foto */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={[
@@ -48,25 +71,6 @@ const BaseActaReviewScreen = ({
           {paddingBottom: moderateScale(100) + insets.bottom}, // Espacio para TabNavigation
         ]}
         showsVerticalScrollIndicator={false}>
-        {/* Mesa Info - solo para PhotoReviewScreen */}
-        {showMesaInfo && (
-          <View style={styles.mesaInfoContainer}>
-            <View style={styles.mesaTitle}>
-              <CText style={styles.mesaTitleText}>
-                Mesa {mesaData?.numero || 'N/A'}
-              </CText>
-            </View>
-            <View style={styles.mesaSubtitle}>
-              <CText style={styles.mesaSubtitleText}>
-                {mesaData?.escuela || 'Escuela N/A'}
-              </CText>
-            </View>
-          </View>
-        )}
-
-        {/* Photo */}
-        <PhotoContainer photoUri={photoUri} />
-
         {/* Party Results Table */}
         <PartyTable
           partyResults={partyResults}
@@ -84,7 +88,7 @@ const BaseActaReviewScreen = ({
         {/* Action Buttons */}
         {actionButtons && <ActionButtons buttons={actionButtons} />}
       </ScrollView>
-    </SafeAreaView>
+    </CSafeAreaView>
   );
 };
 
@@ -93,9 +97,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  photoSection: {
+    paddingHorizontal: 16,
+    // La imagen se mantiene estática aquí
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
+    marginTop: moderateScale(8), // Pequeño espacio entre foto y contenido
   },
   scrollContent: {
     flexGrow: 1,
@@ -110,6 +119,8 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     shadowRadius: 0,
+    paddingHorizontal: 16,
+    marginBottom: moderateScale(8),
   },
   mesaTitleText: {
     fontSize: 20,

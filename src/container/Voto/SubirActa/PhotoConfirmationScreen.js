@@ -4,9 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Alert,
   Modal,
-  Text,
   ActivityIndicator,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -25,7 +23,9 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const {mesaData} = route.params || {}; // Destructure mesaData from route params
+  const {mesaData, photoUri} = route.params || {}; // Destructure mesaData and photoUri from route params
+  console.log('PhotoConfirmationScreen - Received data:', {mesaData, photoUri});
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -80,9 +80,9 @@ const PhotoConfirmationScreen = () => {
       {/* Main Content */}
       <View style={styles.content}>
         <CText style={styles.mainText}>
-          Yo Juan Perez Cuellar.... texto mas amplio
+          Yo
+          <CText style={styles.mainTextBold}> Juan Perez Cuellar</CText>
         </CText>
-        <CText style={styles.subText}>Yo Juan Perez Cuellar</CText>
 
         <TouchableOpacity
           style={styles.publishButton}
@@ -91,7 +91,10 @@ const PhotoConfirmationScreen = () => {
         </TouchableOpacity>
 
         <CText style={styles.confirmationText}>
-          que es la ACTA CORRECTA de la mesa {mesaData?.numero || 'N/A'}
+          que es la ACTA CORRECTA de la {mesaData?.numero || 'N/A'} ubicada en{' '}
+          {mesaData?.recinto ||
+            mesaData?.ubicacion ||
+            'ubicación no disponible'}
         </CText>
       </View>
 
@@ -108,22 +111,22 @@ const PhotoConfirmationScreen = () => {
                   <Ionicons name="alert-outline" size={48} color="#da2a2a" />
                 </View>
                 <View style={modalStyles.spacer} />
-                <Text style={modalStyles.confirmTitle}>
+                <CText style={modalStyles.confirmTitle}>
                   ¿Estás seguro de que deseas publicar y certificar la
                   información?
-                </Text>
+                </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
-                    <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
+                    <CText style={modalStyles.cancelButtonText}>Cancelar</CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
-                    <Text style={modalStyles.confirmButtonText}>
+                    <CText style={modalStyles.confirmButtonText}>
                       Publicar y Certificar
-                    </Text>
+                    </CText>
                   </TouchableOpacity>
                 </View>
               </>
@@ -135,12 +138,12 @@ const PhotoConfirmationScreen = () => {
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <Text style={modalStyles.loadingTitle}>
+                <CText style={modalStyles.loadingTitle}>
                   Por favor, espere.....
-                </Text>
-                <Text style={modalStyles.loadingSubtext}>
+                </CText>
+                <CText style={modalStyles.loadingSubtext}>
                   La información se está guardando en la Blockchain
-                </Text>
+                </CText>
               </>
             )}
           </View>

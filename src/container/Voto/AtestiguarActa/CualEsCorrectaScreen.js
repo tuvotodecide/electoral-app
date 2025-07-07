@@ -1,29 +1,113 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText'; // Adjust path as needed
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants'; // Adjust path as needed
+import {fetchActasByMesa} from '../../../data/mockMesas';
 
 const CualEsCorrectaScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {mesaData, photoUri} = route.params || {};
+  console.log('CualEsCorrectaScreen - Received params:', route.params);
+  console.log('CualEsCorrectaScreen - mesaData:', mesaData);
+  console.log('CualEsCorrectaScreen - photoUri:', photoUri);
 
   // State to keep track of the currently selected image
   const [selectedImageId, setSelectedImageId] = useState(null);
+
+  // Estados para el modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    type: 'info',
+    title: '',
+    message: '',
+    buttonText: 'Aceptar',
+  });
+
+  // Estados para las actas de la mesa
+  const [isLoadingActas, setIsLoadingActas] = useState(true);
+  const [actaImages, setActaImages] = useState([]);
+  const [partyResults, setPartyResults] = useState([]);
+  const [voteSummaryResults, setVoteSummaryResults] = useState([]);
+
+  // Cargar actas de la mesa al montar el componente
+  useEffect(() => {
+    if (mesaData?.id) {
+      loadActasByMesa(mesaData.id);
+    }
+  }, [mesaData]);
+
+  const loadActasByMesa = async mesaId => {
+    try {
+      setIsLoadingActas(true);
+      console.log('CualEsCorrectaScreen: Loading actas for mesa:', mesaId);
+      const response = await fetchActasByMesa(mesaId);
+
+      if (response.success) {
+        console.log(
+          'CualEsCorrectaScreen: Actas loaded successfully:',
+          response.data,
+        );
+        setActaImages(response.data.images);
+        setPartyResults(response.data.partyResults);
+        setVoteSummaryResults(response.data.voteSummaryResults);
+      } else {
+        console.error('CualEsCorrectaScreen: Failed to load actas');
+        showModal(
+          'error',
+          'Error',
+          'No se pudieron cargar las actas de esta mesa',
+        );
+        // Fallback con imagen por defecto
+        setActaImages([
+          {
+            id: '1',
+            uri:
+              photoUri ||
+              'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('CualEsCorrectaScreen: Error loading actas:', error);
+      showModal('error', 'Error', 'Error al cargar las actas');
+      // Fallback con imagen por defecto
+      setActaImages([
+        {
+          id: '1',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+        },
+      ]);
+    } finally {
+      setIsLoadingActas(false);
+    }
+  };
+
+  const showModal = (type, title, message, buttonText = 'Aceptar') => {
+    setModalConfig({type, title, message, buttonText});
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
 
   const handleBack = () => {
     navigation.goBack();
@@ -35,16 +119,19 @@ const CualEsCorrectaScreen = () => {
 
   const handleVerMasDetalles = () => {
     if (selectedImageId) {
-      const selectedImage = dummyImages.find(img => img.id === selectedImageId);
+      const selectedImage = actaImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
-        // Navigate to ActaReviewScreen, passing the specific photoUri and mesaData
+        // Navigate to ActaReviewScreen, passing the specific photoUri, mesaData, and results
         navigation.navigate('ActaReviewScreen', {
           photoUri: selectedImage.uri,
           mesaData: mesaData,
+          partyResults: partyResults,
+          voteSummaryResults: voteSummaryResults,
         });
       }
     } else {
-      Alert.alert(
+      showModal(
+        'warning',
         'Selección Requerida',
         'Por favor, selecciona una imagen primero.',
       );
@@ -53,21 +140,12 @@ const CualEsCorrectaScreen = () => {
 
   const handleDatosNoCorrectos = () => {
     console.log('Estos datos no son correctos pressed');
-    Alert.alert(
+    showModal(
+      'info',
       'Información',
       'Se ha reportado que los datos no son correctos.',
     );
   };
-
-  // Dummy data for multiple images (you'll replace this with actual logic)
-  const dummyImages = [
-    {
-      id: '1',
-      uri: photoUri || 'https://placehold.co/400x200/cccccc/000000?text=Acta+1',
-    },
-    {id: '2', uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+2'},
-    {id: '3', uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+3'},
-  ];
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -86,56 +164,79 @@ const CualEsCorrectaScreen = () => {
         </CText>
       </View>
 
-      {/* Image List */}
-      <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
-        {dummyImages.map(image => (
-          <React.Fragment key={image.id}>
-            <TouchableOpacity
-              style={[
-                styles.imageCard,
-                selectedImageId === image.id && styles.imageCardSelected,
-              ]}
-              onPress={() => handleImagePress(image.id)}>
-              <Image
-                source={{uri: image.uri}}
-                style={styles.imageDisplay}
-                resizeMode="contain"
-              />
-              {selectedImageId === image.id && (
-                <>
-                  {/* Corner borders - black color */}
-                  <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                  <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                  <View
-                    style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                  />
-                  <View
-                    style={[styles.cornerBorder, styles.bottomRightCorner]}
-                  />
-                </>
-              )}
-            </TouchableOpacity>
-            {selectedImageId === image.id && (
+      {/* Loading indicator for actas */}
+      {isLoadingActas ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+          <CText style={styles.loadingText}>Cargando actas de la mesa...</CText>
+        </View>
+      ) : (
+        /* Image List */
+        <ScrollView
+          style={styles.imageList}
+          showsVerticalScrollIndicator={false}>
+          {actaImages.map(image => (
+            <React.Fragment key={image.id}>
               <TouchableOpacity
-                style={styles.detailsButton}
-                onPress={handleVerMasDetalles}>
-                <CText style={styles.detailsButtonText}>Ver mas detalles</CText>
+                style={[
+                  styles.imageCard,
+                  selectedImageId === image.id && styles.imageCardSelected,
+                ]}
+                onPress={() => handleImagePress(image.id)}>
+                <Image
+                  source={{uri: image.uri}}
+                  style={styles.imageDisplay}
+                  resizeMode="contain"
+                />
+                {selectedImageId === image.id && (
+                  <>
+                    {/* Corner borders - black color */}
+                    <View style={[styles.cornerBorder, styles.topLeftCorner]} />
+                    <View
+                      style={[styles.cornerBorder, styles.topRightCorner]}
+                    />
+                    <View
+                      style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                    />
+                    <View
+                      style={[styles.cornerBorder, styles.bottomRightCorner]}
+                    />
+                  </>
+                )}
               </TouchableOpacity>
-            )}
-          </React.Fragment>
-        ))}
+              {selectedImageId === image.id && (
+                <TouchableOpacity
+                  style={styles.detailsButton}
+                  onPress={handleVerMasDetalles}>
+                  <CText style={styles.detailsButtonText}>
+                    Ver mas detalles
+                  </CText>
+                </TouchableOpacity>
+              )}
+            </React.Fragment>
+          ))}
+          {/* "Estos datos no son correctos" button remains at the bottom of the ScrollView */}
+          {selectedImageId && (
+            <TouchableOpacity
+              style={styles.datosNoCorrectosButton}
+              onPress={handleDatosNoCorrectos}>
+              <CText style={styles.datosNoCorrectosButtonText}>
+                Estos datos no son correctos
+              </CText>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      )}
 
-        {/* "Estos datos no son correctos" button remains at the bottom of the ScrollView */}
-        {selectedImageId && (
-          <TouchableOpacity
-            style={styles.datosNoCorrectosButton}
-            onPress={handleDatosNoCorrectos}>
-            <CText style={styles.datosNoCorrectosButtonText}>
-              Estos datos no son correctos
-            </CText>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+      {/* Custom Modal */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={closeModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        buttonText={modalConfig.buttonText}
+      />
     </CSafeAreaView>
   );
 };
@@ -144,6 +245,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff', // White background
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   questionContainer: {
     backgroundColor: '#D1ECF1', // Light blue background

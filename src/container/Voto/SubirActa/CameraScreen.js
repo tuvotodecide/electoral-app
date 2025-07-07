@@ -3,7 +3,6 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  Text,
   Image,
   ActivityIndicator,
   Dimensions,
@@ -14,6 +13,7 @@ import {
   useCameraPermission,
 } from 'react-native-vision-camera';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import CText from '../../../components/common/CText';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 const windowWidth = Dimensions.get('window').width;
@@ -35,9 +35,9 @@ export default function CameraScreen({navigation, route}) {
   if (!device || !hasPermission) {
     return (
       <View style={styles.centered}>
-        <Text style={{color: '#fff', fontSize: 16}}>
+        <CText style={{color: '#fff', fontSize: 16}}>
           No se puede usar la cámara
-        </Text>
+        </CText>
       </View>
     );
   }
@@ -59,9 +59,12 @@ export default function CameraScreen({navigation, route}) {
 
   // Ir a siguiente pantalla
   const handleNext = () => {
+    const mesaInfo = route.params?.mesaData || {};
+    console.log('CameraScreen - Navigating with mesa data:', mesaInfo);
+
     navigation.navigate(StackNav.PhotoReviewScreen, {
       photoUri: `file://${photo.path}`,
-      mesaData: route.params?.mesaData || {},
+      mesaData: mesaInfo,
     });
   };
 
@@ -96,7 +99,7 @@ export default function CameraScreen({navigation, route}) {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Tomar foto</Text>
+                <CText style={styles.buttonText}>Tomar foto</CText>
               )}
             </TouchableOpacity>
           </View>
@@ -117,7 +120,7 @@ export default function CameraScreen({navigation, route}) {
             <TouchableOpacity
               style={[styles.captureButton, {backgroundColor: '#4F9858'}]}
               onPress={handleNext}>
-              <Text style={styles.buttonText}>Siguiente</Text>
+              <CText style={styles.buttonText}>Siguiente</CText>
             </TouchableOpacity>
           </View>
         </View>

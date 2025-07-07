@@ -11,8 +11,11 @@ export const useSearchMesaLogic = navigationTarget => {
     navigation.goBack();
   };
 
-  const handleMesaPress = mesa => {
-    navigation.navigate(navigationTarget, {mesa});
+  const handleMesaPress = mesaOrParams => {
+    // Si es un objeto con mesaData y photoUri, pasarlo directamente
+    // Si no, asumir que es una mesa simple y envolverla
+    const params = mesaOrParams.mesaData ? mesaOrParams : {mesa: mesaOrParams};
+    navigation.navigate(navigationTarget, params);
   };
 
   const handleNotificationPress = () => {

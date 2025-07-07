@@ -1,9 +1,11 @@
 import React, {useState} from 'react';
-import {Alert, StyleSheet} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
+import {StackNav} from '../../../navigation/NavigationKey';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -13,6 +15,9 @@ const PhotoReviewScreen = () => {
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
+
+  // Estados para el modal
+  const [modalVisible, setModalVisible] = useState(false);
 
   // State for the new party results table
   const [partyResults, setPartyResults] = useState([
@@ -37,12 +42,26 @@ const PhotoReviewScreen = () => {
   // Handler for saving changes
   const handleSave = () => {
     setIsEditing(false);
-    Alert.alert('Guardado', 'Los cambios han sido guardados correctamente.');
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
   };
 
   // Handler for navigating to the next screen
   const handleNext = () => {
-    navigation.navigate('PhotoConfirmationScreen', {
+    console.log(
+      'PhotoReviewScreen - Navigating to PhotoConfirmationScreen with:',
+      {
+        photoUri,
+        mesaData,
+        partyResults,
+        voteSummaryResults,
+      },
+    );
+
+    navigation.navigate(StackNav.PhotoConfirmationScreen, {
       photoUri,
       mesaData,
       partyResults,
@@ -115,22 +134,33 @@ const PhotoReviewScreen = () => {
       ];
 
   return (
-    <BaseActaReviewScreen
-      colors={colors}
-      headerTitle="Acta"
-      instructionsText="Revise la foto por favor"
-      instructionsStyle={styles.instructionsStyle}
-      photoUri={photoUri}
-      partyResults={partyResults}
-      voteSummaryResults={voteSummaryResults}
-      isEditing={isEditing}
-      onPartyUpdate={updatePartyResult}
-      onVoteSummaryUpdate={updateVoteSummaryResult}
-      actionButtons={actionButtons}
-      onBack={handleBack}
-      showMesaInfo={true}
-      mesaData={mesaData}
-    />
+    <>
+      <BaseActaReviewScreen
+        colors={colors}
+        headerTitle={`Mesa ${mesaData?.numero || 'N/A'}`}
+        instructionsText="Revise la foto por favor"
+        instructionsStyle={styles.instructionsStyle}
+        photoUri={photoUri}
+        partyResults={partyResults}
+        voteSummaryResults={voteSummaryResults}
+        isEditing={isEditing}
+        onPartyUpdate={updatePartyResult}
+        onVoteSummaryUpdate={updateVoteSummaryResult}
+        actionButtons={actionButtons}
+        onBack={handleBack}
+        showMesaInfo={true}
+        mesaData={mesaData}
+      />
+
+      <CustomModal
+        visible={modalVisible}
+        onClose={closeModal}
+        type="success"
+        title="Guardado"
+        message="Los cambios han sido guardados correctamente."
+        buttonText="Aceptar"
+      />
+    </>
   );
 };
 
