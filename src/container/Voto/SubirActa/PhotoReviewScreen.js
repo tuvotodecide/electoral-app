@@ -3,6 +3,7 @@ import {StyleSheet} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import String from '../../../i18n/String';
 import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
@@ -21,17 +22,17 @@ const PhotoReviewScreen = () => {
 
   // State for the new party results table
   const [partyResults, setPartyResults] = useState([
-    {id: 'unidad', partido: 'Unidad', presidente: '33', diputado: '29'},
+    {id: 'unidad', partido: String.unidad, presidente: '33', diputado: '29'},
     {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '3', diputado: '1'},
-    {id: 'pdc', partido: 'PDC', presidente: '17', diputado: '16'},
-    {id: 'morena', partido: 'Morena', presidente: '1', diputado: '0'},
+    {id: 'pdc', partido: String.pdc, presidente: '17', diputado: '16'},
+    {id: 'morena', partido: String.morena, presidente: '1', diputado: '0'},
   ]);
 
   // New state for the vote summary table (Votos, Blancos, Nulos)
   const [voteSummaryResults, setVoteSummaryResults] = useState([
-    {id: 'validos', label: 'Válidos', value1: '141', value2: '176'},
-    {id: 'blancos', label: 'Blancos', value1: '64', value2: '3'},
-    {id: 'nulos', label: 'Nulos', value1: '6', value2: '9'},
+    {id: 'validos', label: String.valid, value1: '141', value2: '176'},
+    {id: 'blancos', label: String.blank, value1: '64', value2: '3'},
+    {id: 'nulos', label: String.null, value1: '6', value2: '9'},
   ]);
 
   // Handler for editing votes

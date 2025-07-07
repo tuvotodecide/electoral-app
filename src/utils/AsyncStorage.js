@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ON_BOARDING, THEME} from '../common/constants';
+import {jsonSafe} from './jsonSafe';
 
 const setOnBoarding = async v =>
   AsyncStorage.setItem(ON_BOARDING, JSON.stringify(v));
@@ -25,7 +26,7 @@ const initialStorageValueGet = async () => {
 };
 
 const setAsyncStorageData = async (k, v) =>
-  AsyncStorage.setItem(k, JSON.stringify(v));
+  AsyncStorage.setItem(k, jsonSafe(v));
 const getAsyncStorageData = async k =>
   JSON.parse(await AsyncStorage.getItem(k));
 

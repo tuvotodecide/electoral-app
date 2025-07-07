@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "89837410757",
-    "project_id": "wallet-aa",
-    "storage_bucket": "wallet-aa.firebasestorage.app"
+    "project_number": "276274178267",
+    "project_id": "tu-voto-decide",
+    "storage_bucket": "tu-voto-decide.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:89837410757:android:7ea8f3ed09f71bd15f93ac",
+        "mobilesdk_app_id": "1:276274178267:android:7c2dc1124237a4c9cc44fe",
         "android_client_info": {
-          "package_name": "com.wirawallet"
+          "package_name": "com.tuvotodecide"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCPooy1-AEd-ZdJ8ZSLRsjBnr362sJF_Cw"
+          "current_key": "AIzaSyAD8oju9DzL9VS99y9QEb3rYNsLSyFU9yA"
         }
       ],
       "services": {

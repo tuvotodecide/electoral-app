@@ -78,9 +78,9 @@ android {
     buildToolsVersion =  rootProject.ext.buildToolsVersion
     compileSdk = rootProject.ext.compileSdkVersion
 
-    namespace "com.wirawallet"
+    namespace "com.tuvotodecide"
     defaultConfig {
-        applicationId = "com.wirawallet"
+        applicationId = "com.tuvotodecide"
         minSdkVersion  = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
         versionCode =  1
@@ -112,7 +112,7 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            
+
         }
     }
 }

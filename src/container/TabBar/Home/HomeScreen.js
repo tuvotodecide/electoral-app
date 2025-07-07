@@ -4,6 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 const deviceWidth = Dimensions.get('window').width;
@@ -27,44 +28,53 @@ const MiVotoLogo = () => (
       <View style={stylesx.flagCheckOutline} />
     </View>
     <View style={{marginLeft: 8}}>
-      <CText style={stylesx.logoTitle}>Mi Voto</CText>
+      <CText style={stylesx.logoTitle}>Tu voto decide</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
   </View>
 );
 
 export default function HomeScreen({navigation}) {
-  // Simulación de usuario
-  const userFullName = 'Juan Pérez Cuéllar';
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+  const userFullName = data.name || '(sin nombre)';
+
+  // const userFullName = 'Usuario';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
 
   const menuItems = [
     {
       icon: 'camera-outline',
-      title: 'Subir Acta',
-      description: 'Cargá fotos del acta de una mesa.',
+      title: String.uploadActa,
+      description: String.uploadActaDescription,
       onPress: () => navigation.navigate(StackNav.BuscarMesa),
       iconComponent: Ionicons,
     },
     {
       icon: 'eye-outline',
-      title: 'Atestiguar Acta',
-      description: 'Validá un acta ya subida en una mesa.',
+      title: String.witnessActa,
+      description: String.witnessActaDescription,
       onPress: () => navigation.navigate(StackNav.AtestiguarActa),
       iconComponent: Ionicons,
     },
     {
       icon: 'megaphone-outline',
-      title: 'Anunciar Conteo',
-      description: 'Avisar el inicio del conteo.',
+      title: String.announceCount,
+      description: String.announceCountDescription,
       onPress: () => navigation.navigate(StackNav.AnunciarConteo),
       iconComponent: Ionicons,
     },
     {
       icon: 'bar-chart-outline',
-      title: 'Mis atestiguamientos',
-      description: 'Revisa tu historial',
+      title: String.myWitnesses,
+      description: String.myWitnessesDescription,
       onPress: () =>
         navigation.navigate(StackNav.MisAtestiguamientosListScreen),
       iconComponent: Ionicons,
@@ -82,7 +92,7 @@ export default function HomeScreen({navigation}) {
 
       {/* ===== Bienvenida ===== */}
       <View style={stylesx.welcomeContainer}>
-        <CText style={stylesx.bienvenido}>¡Bienvenido,</CText>
+        <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
         <CText style={stylesx.nombre}>{userFullName}!</CText>
       </View>
 

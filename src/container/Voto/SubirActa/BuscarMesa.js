@@ -12,6 +12,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
@@ -21,7 +22,7 @@ import {fetchMesas, fetchNearbyMesas} from '../../../data/mockMesas';
 export default function BuscarMesa({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
-  const [sortOrder, setSortOrder] = useState('Ascendente');
+  const [sortOrder, setSortOrder] = useState(String.ascending);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isLoadingMesas, setIsLoadingMesas] = useState(true);
   const [mesas, setMesas] = useState([]);
@@ -32,7 +33,7 @@ export default function BuscarMesa({navigation}) {
     type: 'info',
     title: '',
     message: '',
-    buttonText: 'Aceptar',
+    buttonText: String.accept,
   });
 
   // Cargar mesas al montar el componente
@@ -40,7 +41,7 @@ export default function BuscarMesa({navigation}) {
     loadMesas();
   }, []);
 
-  const showModal = (type, title, message, buttonText = 'Aceptar') => {
+  const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
@@ -63,11 +64,11 @@ export default function BuscarMesa({navigation}) {
         setMesas(response.data);
       } else {
         console.error('BuscarMesa: Failed to load mesas');
-        showModal('error', 'Error', 'No se pudieron cargar las mesas');
+        showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
       console.error('BuscarMesa: Error loading mesas:', error);
-      showModal('error', 'Error', 'Error al cargar las mesas');
+      showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoadingMesas(false);
     }
@@ -81,7 +82,7 @@ export default function BuscarMesa({navigation}) {
   );
 
   const sortedMesas = [...filteredMesas].sort((a, b) => {
-    if (sortOrder === 'Ascendente') {
+    if (sortOrder === String.ascending) {
       return a.numero.localeCompare(b.numero);
     } else {
       return b.numero.localeCompare(a.numero);
@@ -93,7 +94,9 @@ export default function BuscarMesa({navigation}) {
   };
 
   const toggleSort = () => {
-    setSortOrder(sortOrder === 'Ascendente' ? 'Descendente' : 'Ascendente');
+    setSortOrder(
+      sortOrder === String.ascending ? String.descending : String.ascending,
+    );
   };
 
   const handleNearbyMesas = async () => {
@@ -114,16 +117,16 @@ export default function BuscarMesa({navigation}) {
         setMesas(response.data);
         showModal(
           'success',
-          'Éxito',
-          `Se encontraron ${response.data.length} mesas cercanas`,
+          String.success,
+          String.foundNearbyTables.replace('{count}', response.data.length),
         );
       } else {
         console.error('BuscarMesa: Failed to load nearby mesas');
-        showModal('error', 'Error', 'No se pudieron cargar las mesas cercanas');
+        showModal('error', String.error, String.couldNotLoadNearbyTables);
       }
     } catch (error) {
       console.error('BuscarMesa: Error loading nearby mesas:', error);
-      showModal('error', 'Error', 'Error al buscar mesas cercanas');
+      showModal('error', String.error, String.errorSearchingNearbyTables);
     } finally {
       setIsLoadingLocation(false);
     }
@@ -138,7 +141,7 @@ export default function BuscarMesa({navigation}) {
           {item.numero}
         </CText>
         <CText style={localStyle.codigoMesaText}>
-          Código de mesa: {item.codigo}
+          {String.tableCode} {item.codigo}
         </CText>
       </View>
       <CText style={localStyle.colegioText} color={colors.textColor}>
@@ -153,7 +156,7 @@ export default function BuscarMesa({navigation}) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title="Buscar mesa"
+        title={String.searchTable}
         showNotification={false}
       />
 
@@ -161,7 +164,7 @@ export default function BuscarMesa({navigation}) {
       {isLoadingMesas ? (
         <View style={localStyle.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
-          <CText style={localStyle.loadingText}>Cargando mesas...</CText>
+          <CText style={localStyle.loadingText}>{String.loadingTables}</CText>
         </View>
       ) : (
         <>
@@ -219,7 +222,7 @@ export default function BuscarMesa({navigation}) {
                 />
               )}
               <CText style={localStyle.cercaDeTiText}>
-                {isLoadingLocation ? 'Buscando...' : 'Cerca de ti'}
+                {isLoadingLocation ? String.searching : String.nearYou}
               </CText>
             </TouchableOpacity>
           </View>

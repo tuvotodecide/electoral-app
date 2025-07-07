@@ -5,6 +5,7 @@ import {
   useCameraPermission,
   useCameraDevice,
 } from 'react-native-vision-camera';
+import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 export default function CameraPermissionTest({navigation}) {
@@ -54,45 +55,45 @@ export default function CameraPermissionTest({navigation}) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Test de Permisos de Cámara</Text>
+      <Text style={styles.title}>{String.cameraPermissionTest}</Text>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Hook hasPermission:</Text>
+        <Text style={styles.label}>{String.hookHasPermission}</Text>
         <Text style={styles.value}>{hasPermission ? 'true' : 'false'}</Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Permission Status:</Text>
+        <Text style={styles.label}>{String.permissionStatus}</Text>
         <Text style={styles.value}>{permissionStatus}</Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Camera Device:</Text>
+        <Text style={styles.label}>{String.cameraDevice}</Text>
         <Text style={styles.value}>
-          {device ? 'Available' : 'Not Available'}
+          {device ? String.available : String.notAvailable}
         </Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Back Camera:</Text>
+        <Text style={styles.label}>{String.backCamera}</Text>
         <Text style={styles.value}>
-          {backDevice ? 'Disponible' : 'No disponible'}
+          {backDevice ? String.available : String.notAvailable}
         </Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Front Camera:</Text>
+        <Text style={styles.label}>{String.frontCamera}</Text>
         <Text style={styles.value}>
-          {frontDevice ? 'Disponible' : 'No disponible'}
+          {frontDevice ? String.available : String.notAvailable}
         </Text>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={checkPermissions}>
-        <Text style={styles.buttonText}>Verificar Permisos</Text>
+        <Text style={styles.buttonText}>{String.checkPermissions}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleRequestPermission}>
-        <Text style={styles.buttonText}>Solicitar Permisos</Text>
+        <Text style={styles.buttonText}>{String.requestPermissions}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

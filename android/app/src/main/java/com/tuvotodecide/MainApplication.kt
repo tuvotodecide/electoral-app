@@ -1,4 +1,4 @@
-package com.wirawallet
+package com.tuvotodecide
 
 import android.app.Application
 import android.app.NotificationChannel

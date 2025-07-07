@@ -6,6 +6,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import {moderateScale} from '../../../common/constants';
 import {fontConfig} from 'react-native-paper/lib/typescript/styles/fonts';
@@ -49,8 +50,8 @@ export default function DetalleMesa({navigation, route}) {
   const handleConfirmPhoto = () => {
     setModalVisible(false);
     navigation.navigate(StackNav.SuccessScreen, {
-      title: '¡Foto Enviada!',
-      message: 'El acta ha sido subida exitosamente para su revisión.',
+      title: String.photoSentTitle,
+      message: String.photoSentMessage,
       returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
     });
   };
@@ -121,10 +122,14 @@ export default function DetalleMesa({navigation, route}) {
           }}>
           <View style={{flex: 1, marginRight: 14}}>
             <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-            <CText style={stylesx.label}>Recinto: {mesa.recinto}</CText>
+            <CText style={stylesx.label}>
+              {String.venue} {mesa.recinto}
+            </CText>
             <CText style={stylesx.label}>{mesa.colegio}</CText>
             <CText style={stylesx.label}>{mesa.provincia}</CText>
-            <CText style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</CText>
+            <CText style={stylesx.label}>
+              {String.tableCode} {mesa.codigo}
+            </CText>
           </View>
           <MaterialIcons
             name="how-to-vote"
@@ -143,9 +148,7 @@ export default function DetalleMesa({navigation, route}) {
           color={'#226678'}
           style={{marginRight: 7}}
         />
-        <CText style={stylesx.iaText}>
-          La IA seleccionará la foto más clara
-        </CText>
+        <CText style={stylesx.iaText}>{String.aiWillSelectClearestPhoto}</CText>
       </View>
 
       {/* BOTÓN TOMAR FOTO */}
@@ -153,7 +156,7 @@ export default function DetalleMesa({navigation, route}) {
         style={stylesx.takePhotoBtn}
         activeOpacity={0.85}
         onPress={handleTakePhoto}>
-        <CText style={stylesx.takePhotoBtnText}>Tomar Foto</CText>
+        <CText style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
       </TouchableOpacity>
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}
@@ -167,7 +170,7 @@ export default function DetalleMesa({navigation, route}) {
               borderBottomColor: '#E5E5E5',
             }}>
             <CText type={'B18'} color={colors.textColor}>
-              Vista Previa
+              {String.preview}
             </CText>
           </View>
           {capturedImage && (
@@ -191,7 +194,7 @@ export default function DetalleMesa({navigation, route}) {
               }}
               onPress={handleRetakePhoto}>
               <CText type={'B14'} color={colors.grayScale600}>
-                Tomar otra
+                {String.retakePhoto}
               </CText>
             </TouchableOpacity>
             <TouchableOpacity
@@ -204,7 +207,7 @@ export default function DetalleMesa({navigation, route}) {
               }}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white}>
-                Confirmar y Enviar
+                {String.confirmAndSend}
               </CText>
             </TouchableOpacity>
           </View>

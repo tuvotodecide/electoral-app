@@ -1,5 +1,5 @@
 export default {
-  //Regiter user
+  //Register user
   //page 1
   titleReg:
     'Para crear tu billetera y proteger tu cuenta, necesitamos verificar tu identidad.',
@@ -175,12 +175,12 @@ export default {
   viewMyRewards: 'Ver mis recompensas',
   rewardHistoryDescription: 'Historial y estado de tus tokens WIRA acumulados',
   accumulatedAmount: 'Monto Acumulado',
-  pendingInvitationsSent: 'Invitaciones enviadad pendientes',
+  pendingInvitationsSent: 'Invitaciones enviadas pendientes',
   registeredInvitations: 'Invitaciones registradas',
 
   //Inicio
   connectTitle: 'Aplicación Electoral',
-  connectItem1: 'Cobros  y pagos con USDT',
+  connectItem1: 'Cobros y pagos con USDT',
   connectItem2: 'Protegida con blockchain',
   connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
@@ -195,7 +195,7 @@ export default {
   onBoardingDescriptionText1:
     'Crea tu billetera, protege tu identidad y recupera el acceso fácilmente cuando lo necesites.',
   onBoardingDescriptionText2:
-    'Escanea un QR o ingresa una dirección sin preocuparte por reder ni tarifas.',
+    'Escanea un QR o ingresa una dirección sin preocuparte por red ni tarifas.',
   onBoardingDescriptionText3:
     'Selecciona contactos de confianza como guardianes. Si pierdes el acceso, ellos te ayudan a volver.',
   onBoardingDescriptionText4:
@@ -465,7 +465,7 @@ export default {
   myPassport: 'My Passport',
   verifyYourIdentity: 'Verify Your Identity',
   identityVerifyDescription:
-    'To help protect you from fraud and identity theft, and to comly with federal regulations, wee need some info.',
+    'To help protect you from fraud and identity theft, and to comply with federal regulations, we need some info.',
   takeSelfieWithIDCard: 'Take a Selfie with ID Card',
   pleaseLookAtCameraAndHoldStill: 'Please look at the camera and hold still',
   takePicture: 'Take Picture',
@@ -756,7 +756,7 @@ export default {
   inviteYourFriends: 'Invite your friends',
   helenaJourneys: 'Helena journeys',
   inviteYourFrText:
-    'I earnied $5 in assets by finishing 1 lesson about 4 investments',
+    'I earned $5 in assets by finishing 1 lesson about 4 investments',
   useReferralCodeAndEarnCommission: 'Use referral code and earn commission',
   instagram: 'Instagram',
   more: 'More',
@@ -806,7 +806,7 @@ export default {
   redeem: 'Redeem',
   aboutGold: 'About Gold',
   aboutGoldText:
-    'Gold investment generally provides good protection against dollar deprecation, and infla-tion and thus acts as a store of value.',
+    'Gold investment generally provides good protection against dollar depreciation, and inflation and thus acts as a store of value.',
   viewMore: 'View more',
   marketOverview: 'Market Overview',
   close: 'Close',
@@ -923,4 +923,93 @@ export default {
   logOut: 'Cerrar sesión',
   areYouSureWantToLogout: '¿Seguro que quieres cerrar sesión?',
   pleaseSelectReason: 'Please Select Your Reason',
+
+  // ========== VOTACIÓN / ELECTORAL COMPONENTS ==========
+  // Home Screen
+  homeWelcome: '¡Bienvenido,',
+  uploadActa: 'Subir Acta',
+  uploadActaDescription: 'Sube el acta de tu mesa.',
+  witnessActa: 'Atestiguar Acta',
+  witnessActaDescription: 'Valida un acta ya subida en una mesa.',
+  announceCount: 'Anunciar Conteo',
+  announceCountDescription: 'Avisar el inicio del conteo.',
+  myWitnesses: 'Mis atestiguamientos',
+  myWitnessesDescription: 'Revisa tu historial',
+
+  // Buscar Mesa Screen
+  searchTable: 'Buscar mesa',
+  loadingTables: 'Cargando mesas...',
+  searching: 'Buscando...',
+  nearYou: 'Cerca de ti',
+  ascending: 'Ascendente',
+  descending: 'Descendente',
+  accept: 'Aceptar',
+  error: 'Error',
+  success: 'Éxito',
+  couldNotLoadTables: 'No se pudieron cargar las mesas',
+  errorLoadingTables: 'Error al cargar las mesas',
+  couldNotLoadNearbyTables: 'No se pudieron cargar las mesas cercanas',
+  errorSearchingNearbyTables: 'Error al buscar mesas cercanas',
+  foundNearbyTables: 'Se encontraron {count} mesas cercanas',
+  tableCode: 'Código de mesa:',
+
+  // Mis Atestiguamientos Screen
+  myWitnessesTitle: 'Mis Atestiguamientos',
+  selectDocumentToReview: 'Selecciona el acta que deseas revisar',
+  errorLoadingWitnesses: 'Error al cargar los atestiguamientos',
+  connectionError: 'Error de conexión',
+  connectionErrorMessage:
+    'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
+  selectionRequired: 'Selección Requerida',
+  pleaseSelectDocument: 'Por favor, selecciona un acta para continuar.',
+
+  // Photo Review Screen
+  unidad: 'Unidad',
+  pdc: 'PDC',
+  morena: 'Morena',
+  valid: 'Válidos',
+  blank: 'Blancos',
+  null: 'Nulos',
+
+  // Success Screen
+  documentPublishedSuccessTitle: '¡Acta Publicada y Certificada Exitosamente!',
+  documentPublishedSuccessSubtitle:
+    'El acta de la mesa {tableNumber} de {location} ha sido publicada en la blockchain y certificada por testigos.',
+  documentCertifiedSuccessTitle: '¡Acta Certificada Exitosamente!',
+  documentCertifiedSuccessSubtitle:
+    'Has certificado correctamente el acta de la mesa {tableNumber} de {location}.',
+  operationSuccessTitle: '¡Operación Exitosa!',
+  operationSuccessSubtitle: 'La operación se ha completado correctamente',
+  backToHome: 'Volver al inicio',
+  viewDetails: 'Ver detalles',
+
+  // Detalle Mesa Screen
+  photoSentTitle: '¡Foto Enviada!',
+  photoSentMessage:
+    'Tu foto del acta ha sido enviada exitosamente y está siendo procesada.',
+  tableDetails: 'Detalles de la Mesa',
+  takePhoto: 'Tomar Foto',
+  retakePhoto: 'Tomar otra foto',
+  confirmAndSend: 'Confirmar y Enviar',
+  preview: 'Vista Previa',
+
+  // Camera and permissions
+  available: 'Disponible',
+  notAvailable: 'No disponible',
+  biometryNotAvailable: 'Biometría no disponible',
+  locationNotAvailable: 'ubicación no disponible',
+
+  // Camera Permission Test buttons
+  checkPermissions: 'Verificar Permisos',
+  requestPermissions: 'Solicitar Permisos',
+
+  // Additional generic keys
+  venue: 'Recinto:',
+  aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara',
+  cameraPermissionTest: 'Test de Permisos de Cámara',
+  hookHasPermission: 'Hook hasPermission:',
+  permissionStatus: 'Permission Status:',
+  cameraDevice: 'Camera Device:',
+  backCamera: 'Back Camera:',
+  frontCamera: 'Front Camera:',
 };

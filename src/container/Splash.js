@@ -48,8 +48,6 @@ export default function Splash({navigation}) {
           // return;
 
           // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
-          // Descomenta este bloque y comenta AuthTest para usar el flujo real
-
           const alive = await isSessionValid();
           if (alive) navigation.replace(StackNav.TabNavigation);
           else navigation.replace(StackNav.AuthNavigation); // OnBoarding no está disponible, ir a Auth

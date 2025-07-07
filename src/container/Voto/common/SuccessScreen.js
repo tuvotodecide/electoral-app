@@ -4,6 +4,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
+import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
@@ -39,33 +40,37 @@ const SuccessScreen = () => {
     switch (successType) {
       case 'publish':
         return {
-          title: '¡Acta Publicada y Certificada Exitosamente!',
-          subtitle: `El acta de la mesa ${mesaData?.numero || 'N/A'} de ${
-            mesaData?.recinto ||
-            mesaData?.ubicacion ||
-            'ubicación no disponible'
-          } ha sido publicada y certificada en la Blockchain`,
-          buttonText: 'Inicio',
+          title: String.documentPublishedSuccessTitle,
+          subtitle: String.documentPublishedSuccessSubtitle
+            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace(
+              '{location}',
+              mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                String.locationNotAvailable,
+            ),
+          buttonText: String.backToHome,
           showInitiativeText: true,
         };
       case 'certify':
         return {
-          title: '¡Acta Certificada Exitosamente!',
-          subtitle: `Has certificado correctamente el acta de la mesa ${
-            mesaData?.numero || 'N/A'
-          } de ${
-            mesaData?.recinto ||
-            mesaData?.ubicacion ||
-            'ubicación no disponible'
-          }`,
-          buttonText: 'Inicio',
+          title: String.documentCertifiedSuccessTitle,
+          subtitle: String.documentCertifiedSuccessSubtitle
+            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace(
+              '{location}',
+              mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                String.locationNotAvailable,
+            ),
+          buttonText: String.backToHome,
           showInitiativeText: false,
         };
       default:
         return {
-          title: '¡Operación Exitosa!',
-          subtitle: 'La operación se ha completado correctamente',
-          buttonText: 'Inicio',
+          title: String.operationSuccessTitle,
+          subtitle: String.operationSuccessSubtitle,
+          buttonText: String.backToHome,
           showInitiativeText: false,
         };
     }

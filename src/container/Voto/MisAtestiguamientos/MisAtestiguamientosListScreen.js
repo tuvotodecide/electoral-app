@@ -11,6 +11,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -52,9 +53,8 @@ const MisAtestiguamientosListScreen = () => {
         setAtestiguamientos(response.data);
       } else {
         setModalData({
-          title: 'Error',
-          message:
-            response.message || 'No se pudieron cargar los atestiguamientos',
+          title: String.error,
+          message: response.message || String.errorLoadingWitnesses,
           type: 'error',
         });
         setModalVisible(true);
@@ -65,8 +65,8 @@ const MisAtestiguamientosListScreen = () => {
         error,
       );
       setModalData({
-        title: 'Error de conexión',
-        message: 'No se pudo conectar con el servidor. Intenta nuevamente.',
+        title: String.connectionError,
+        message: String.connectionErrorMessage,
         type: 'error',
       });
       setModalVisible(true);
@@ -97,8 +97,8 @@ const MisAtestiguamientosListScreen = () => {
       }
     } else {
       setModalData({
-        title: 'Selección Requerida',
-        message: 'Por favor, selecciona una imagen primero.',
+        title: String.selectionRequired,
+        message: String.pleaseSelectDocument,
         type: 'warning',
       });
       setModalVisible(true);
@@ -133,14 +133,14 @@ const MisAtestiguamientosListScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title="Mis Atestiguamientos"
+        title={String.myWitnessesTitle}
         showNotification={true}
       />
 
       {/* Question Text */}
       <View style={styles.questionContainer}>
         <CText style={styles.questionText}>
-          Selecciona el acta que deseas revisar
+          {String.selectDocumentToReview}
         </CText>
       </View>
 

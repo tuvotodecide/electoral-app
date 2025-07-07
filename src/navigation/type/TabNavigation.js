@@ -1,23 +1,42 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import {AppState, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
-
-import {moderateScale} from '../../common/constants';
 import {TabNav} from '../NavigationKey';
 import {TabRoute} from '../NavigationRoute';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
+import {clearSession, isSessionValid, startSession} from '../../utils/Session';
+import {clearWallet} from '../../redux/action/walletAction';
+import {clearAuth} from '../../redux/slices/authSlice';
 
 function useKeepAlive() {
   const dispatch = useDispatch();
   useEffect(() => {}, []);
+  useEffect(() => {
+    const renew = () => startSession();
+    const sub = AppState.addEventListener('change', s => {
+      if (s === 'active') renew();
+    });
+    const id = setInterval(async () => {
+      if (!(await isSessionValid())) {
+        dispatch(clearWallet());
+        dispatch(clearAuth());
+        await clearSession();
+      }
+    }, 30_000);
+    return () => {
+      sub.remove();
+      clearInterval(id);
+    };
+  }, []);
 }
 
 function CustomTabBar({state, descriptors, navigation, colors}) {
+  useKeepAlive();
   const insets = useSafeAreaInsets();
 
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar

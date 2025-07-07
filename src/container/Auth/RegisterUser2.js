@@ -39,14 +39,12 @@ export default function RegisterUser2({navigation}) {
   const handleCheckAndNext = () => {
     if (idNumber.trim() === REVIEW_DNI) {
       dispatch(setSecrets(DEMO_SECRETS));
+      startSession();
 
-      startSession().then(() =>
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.TabNavigation}],
-        }),
-      );
-
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.TabNavigation}],
+      });
       return;
     }
     if (!isFormValid()) return;
@@ -103,7 +101,7 @@ export default function RegisterUser2({navigation}) {
           <TextInput
             value={idNumber}
             onChangeText={setIdNumber}
-            onEndEditing={handleCheckAndNext}  
+            onEndEditing={handleCheckAndNext}
             placeholder={String.idPlaceholder}
             placeholderTextColor={colors.grayScale500}
             style={[
