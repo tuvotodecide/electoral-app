@@ -11,7 +11,7 @@ const deviceWidth = Dimensions.get('window').width;
 const CARD_MARGIN = 10;
 const CARD_WIDTH = (deviceWidth - 3 * CARD_MARGIN) / 2; // 2 cards + margins
 
-// Logo personalizado con bandera boliviana
+
 const MiVotoLogo = () => (
   <View style={stylesx.logoRow}>
     {/* Bandera */}
