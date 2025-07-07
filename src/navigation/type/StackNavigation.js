@@ -3,6 +3,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
 import CameraScreen from '../../container/Voto/SubirActa/CameraScreen';
+import AuthNavigationTest from './AuthNavigationTest';
 
 const Stack = createStackNavigator();
 
@@ -14,6 +15,13 @@ export default function StackNavigation() {
       }}
       initialRouteName={StackNav.Splash}>
       <Stack.Screen name={StackNav.Splash} component={StackRoute.Splash} />
+      <Stack.Screen name="AuthTest" component={StackRoute.AuthTest} />
+
+      {/* Rutas de Test */}
+      <Stack.Screen name="AuthNavigationTest" component={AuthNavigationTest} />
+      <Stack.Screen name="ConnectTest" component={StackRoute.ConnectTest} />
+      <Stack.Screen name="LoginUserTest" component={StackRoute.LoginUserTest} />
+
       {/* <Stack.Screen
         name={StackNav.OnBoarding}
         component={StackRoute.OnBoarding}
@@ -57,8 +65,8 @@ export default function StackNavigation() {
         component={StackRoute.DetalleMesaConteo}
       />
       <Stack.Screen
-        name={StackNav.MisAtestiguamientos}
-        component={StackRoute.MisAtestiguamientos}
+        name={StackNav.MisAtestiguamientosDetailScreen}
+        component={StackRoute.MisAtestiguamientosDetailScreen}
       />
 
       <Stack.Screen

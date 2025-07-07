@@ -7,18 +7,18 @@ const MisAtestiguamientosDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri} = route.params || {};
+  const {photoUri, mesaData} = route.params || {};
 
-  // Static data for the party results table
-  const partyResults = [
+  // Usar los datos específicos del atestiguamiento seleccionado
+  const partyResults = mesaData?.partyResults || [
     {id: 'unidad', partido: 'Unidad', presidente: '33', diputado: '29'},
     {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '3', diputado: '1'},
     {id: 'pdc', partido: 'PDC', presidente: '17', diputado: '16'},
     {id: 'morena', partido: 'Morena', presidente: '1', diputado: '0'},
   ];
 
-  // Static data for the vote summary table
-  const voteSummaryResults = [
+  // Usar los datos específicos del resumen de votos del atestiguamiento
+  const voteSummaryResults = mesaData?.voteSummaryResults || [
     {id: 'validos', label: 'Válidos', value1: '141', value2: '176'},
     {id: 'blancos', label: 'Blancos', value1: '64', value2: '3'},
     {id: 'nulos', label: 'Nulos', value1: '6', value2: '9'},
@@ -53,11 +53,19 @@ const MisAtestiguamientosDetailScreen = () => {
     borderRadius: 8,
   };
 
+  // Crear título dinámico con información de la mesa
+  const headerTitle = mesaData
+    ? `${mesaData.mesa} - ${mesaData.fecha}`
+    : 'Detalle del Atestiguamiento';
+  const instructionsText = mesaData
+    ? `Resultados atestiguados de ${mesaData.mesa} - ${mesaData.recinto}`
+    : 'Los votos registrados de la mesa';
+
   return (
     <BaseActaReviewScreen
       colors={colors}
-      headerTitle="Detalle del Atestiguamiento"
-      instructionsText="Los votos registrados de la mesa"
+      headerTitle={headerTitle}
+      instructionsText={instructionsText}
       instructionsStyle={customInstructionsStyle}
       photoUri={photoUri}
       partyResults={partyResults}

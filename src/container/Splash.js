@@ -37,14 +37,24 @@ export default function Splash({navigation}) {
             // Si no hay tema guardado, usar light por defecto
             dispatch(changeThemeAction(colors.light));
           }
-          // BYPASS COMPLETO PARA DESARROLLO - Ir directo a la vista principal
+          // ========== MODO DE DESARROLLO - USANDO AuthTest ==========
+          // AuthTest simula todo el flujo de auth pero con usuario automático
+          // console.log('Splash: Usando AuthTest para desarrollo');
+          // navigation.replace('AuthTest'); // Navegar a AuthTest
+          // return;
+
+          // Modo Desarrollo Bypass directo a TabNavigation
           navigation.replace(StackNav.TabNavigation);
           return;
-          // Código original:
-          //const alive = await isSessionValid();
-          //if (alive) navigation.replace(StackNav.TabNavigation);
-          //else if (onBoardingValue) navigation.replace(StackNav.AuthNavigation);
-          //else navigation.replace(StackNav.OnBoarding);
+
+          // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
+          // Descomenta este bloque y comenta AuthTest para usar el flujo real
+          /*
+          const alive = await isSessionValid();
+          if (alive) navigation.replace(StackNav.TabNavigation);
+          else if (onBoardingValue) navigation.replace(StackNav.AuthNavigation);
+          else navigation.replace(StackNav.OnBoarding);
+          */
         }
       } catch (e) {
         console.log('error ', e);

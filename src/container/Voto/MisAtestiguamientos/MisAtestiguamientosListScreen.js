@@ -1,21 +1,23 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
+import {fetchMisAtestiguamientos} from '../../../data/mockMesas';
 
 const MisAtestiguamientosListScreen = () => {
   const navigation = useNavigation();
@@ -23,8 +25,55 @@ const MisAtestiguamientosListScreen = () => {
   const colors = useSelector(state => state.theme.theme);
   const {mesaData} = route.params || {};
 
-  // State to keep track of the currently selected image
+  // Estados para la carga de datos
+  const [atestiguamientos, setAtestiguamientos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalData, setModalData] = useState({});
   const [selectedImageId, setSelectedImageId] = useState(null);
+
+  // Cargar atestiguamientos al montar el componente
+  useEffect(() => {
+    loadAtestiguamientos();
+  }, []);
+
+  const loadAtestiguamientos = async () => {
+    setLoading(true);
+    try {
+      console.log(
+        'MisAtestiguamientosListScreen: Fetching atestiguamientos...',
+      );
+      const response = await fetchMisAtestiguamientos();
+      if (response.success) {
+        console.log(
+          'MisAtestiguamientosListScreen: Data loaded successfully:',
+          response.data,
+        );
+        setAtestiguamientos(response.data);
+      } else {
+        setModalData({
+          title: 'Error',
+          message:
+            response.message || 'No se pudieron cargar los atestiguamientos',
+          type: 'error',
+        });
+        setModalVisible(true);
+      }
+    } catch (error) {
+      console.log(
+        'MisAtestiguamientosListScreen: Error loading atestiguamientos:',
+        error,
+      );
+      setModalData({
+        title: 'Error de conexión',
+        message: 'No se pudo conectar con el servidor. Intenta nuevamente.',
+        type: 'error',
+      });
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     navigation.goBack();
@@ -36,19 +85,23 @@ const MisAtestiguamientosListScreen = () => {
 
   const handleVerMas = () => {
     if (selectedImageId) {
-      const selectedImage = dummyImages.find(img => img.id === selectedImageId);
-      if (selectedImage) {
+      const selectedAtestiguamiento = atestiguamientos.find(
+        item => item.id.toString() === selectedImageId,
+      );
+      if (selectedAtestiguamiento) {
         // Navigate to MisAtestiguamientosDetailScreen
         navigation.navigate(StackNav.MisAtestiguamientosDetailScreen, {
-          photoUri: selectedImage.uri,
-          mesaData: mesaData,
+          photoUri: selectedAtestiguamiento.imagen,
+          mesaData: selectedAtestiguamiento,
         });
       }
     } else {
-      Alert.alert(
-        'Selección Requerida',
-        'Por favor, selecciona una imagen primero.',
-      );
+      setModalData({
+        title: 'Selección Requerida',
+        message: 'Por favor, selecciona una imagen primero.',
+        type: 'warning',
+      });
+      setModalVisible(true);
     }
   };
 
@@ -91,49 +144,74 @@ const MisAtestiguamientosListScreen = () => {
         </CText>
       </View>
 
-      {/* Image List */}
-      <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
-        {dummyImages.map(image => (
-          <React.Fragment key={image.id}>
-            <TouchableOpacity
-              style={[
-                styles.imageCard,
-                selectedImageId === image.id && styles.imageCardSelected,
-              ]}
-              onPress={() => handleImagePress(image.id)}>
-              <View style={styles.imageHeader}>
-                <CText style={styles.mesaText}>{image.mesa}</CText>
-                <CText style={styles.fechaText}>{image.fecha}</CText>
-              </View>
-              <Image
-                source={{uri: image.uri}}
-                style={styles.imageDisplay}
-                resizeMode="contain"
-              />
-              {selectedImageId === image.id && (
-                <>
-                  {/* Corner borders - black color */}
-                  <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                  <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                  <View
-                    style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                  />
-                  <View
-                    style={[styles.cornerBorder, styles.bottomRightCorner]}
-                  />
-                </>
-              )}
-            </TouchableOpacity>
-            {selectedImageId === image.id && (
+      {/* Content */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary || '#459151'} />
+          <CText style={styles.loadingText}>Cargando atestiguamientos...</CText>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.imageList}
+          showsVerticalScrollIndicator={false}>
+          {atestiguamientos.map(atestiguamiento => (
+            <React.Fragment key={atestiguamiento.id}>
               <TouchableOpacity
-                style={styles.detailsButton}
-                onPress={handleVerMas}>
-                <CText style={styles.detailsButtonText}>Ver más</CText>
+                style={[
+                  styles.imageCard,
+                  selectedImageId === atestiguamiento.id.toString() &&
+                    styles.imageCardSelected,
+                ]}
+                onPress={() => handleImagePress(atestiguamiento.id.toString())}>
+                <View style={styles.imageHeader}>
+                  <CText style={styles.mesaText}>{atestiguamiento.mesa}</CText>
+                  <CText style={styles.fechaText}>
+                    {atestiguamiento.fecha} - {atestiguamiento.hora}
+                  </CText>
+                </View>
+                <Image
+                  source={{uri: atestiguamiento.imagen}}
+                  style={styles.imageDisplay}
+                  resizeMode="contain"
+                />
+                {selectedImageId === atestiguamiento.id.toString() && (
+                  <>
+                    {/* Corner borders - black color */}
+                    <View style={[styles.cornerBorder, styles.topLeftCorner]} />
+                    <View
+                      style={[styles.cornerBorder, styles.topRightCorner]}
+                    />
+                    <View
+                      style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                    />
+                    <View
+                      style={[styles.cornerBorder, styles.bottomRightCorner]}
+                    />
+                  </>
+                )}
               </TouchableOpacity>
-            )}
-          </React.Fragment>
-        ))}
-      </ScrollView>
+              {selectedImageId === atestiguamiento.id.toString() && (
+                <TouchableOpacity
+                  style={styles.detailsButton}
+                  onPress={handleVerMas}>
+                  <CText style={styles.detailsButtonText}>Ver más</CText>
+                </TouchableOpacity>
+              )}
+            </React.Fragment>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Modal de Error/Advertencia */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+        confirmText="Entendido"
+        onConfirm={() => setModalVisible(false)}
+      />
     </CSafeAreaView>
   );
 };
@@ -142,6 +220,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: moderateScale(50),
+  },
+  loadingText: {
+    fontSize: moderateScale(16),
+    color: '#868686',
+    marginTop: moderateScale(10),
   },
   questionContainer: {
     backgroundColor: '#D1ECF1',

@@ -317,3 +317,172 @@ export const fetchNearbyMesasConteo = async () => {
     }, 2000); // 2 segundos de delay
   });
 };
+
+// Mock data para atestiguamientos del usuario
+export const mockAtestiguamientosData = [
+  {
+    id: 1,
+    mesa: 'Mesa 001',
+    fecha: '2024-10-27',
+    hora: '18:30',
+    escuela: 'Escuela Primaria N° 15',
+    estado: 'Completado',
+    imagen:
+      'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+    recinto: 'Escuela Primaria N° 15',
+    provincia: 'Provincia Murillo - La Paz',
+    partyResults: [
+      {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
+      {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
+      {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
+    ],
+    voteSummaryResults: [
+      {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
+      {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
+      {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
+    ],
+  },
+  {
+    id: 2,
+    mesa: 'Mesa 002',
+    fecha: '2024-10-27',
+    hora: '17:45',
+    escuela: 'Instituto San José',
+    estado: 'Pendiente revisión',
+    imagen:
+      'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+    recinto: 'Instituto San José',
+    provincia: 'Provincia Murillo - La Paz',
+    partyResults: [
+      {id: 'unidad', partido: 'Unidad', presidente: '67', diputado: '59'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '23', diputado: '18'},
+      {id: 'pdc', partido: 'PDC', presidente: '41', diputado: '44'},
+      {id: 'morena', partido: 'Morena', presidente: '7', diputado: '5'},
+    ],
+    voteSummaryResults: [
+      {id: 'validos', label: 'Válidos', value1: '138', value2: '126'},
+      {id: 'blancos', label: 'Blancos', value1: '22', value2: '18'},
+      {id: 'nulos', label: 'Nulos', value1: '8', value2: '12'},
+    ],
+  },
+  {
+    id: 3,
+    mesa: 'Mesa 003',
+    fecha: '2024-10-27',
+    hora: '16:20',
+    escuela: 'Colegio Nacional',
+    estado: 'Completado',
+    imagen:
+      'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+    recinto: 'Colegio Nacional',
+    provincia: 'Provincia Murillo - La Paz',
+    partyResults: [
+      {id: 'unidad', partido: 'Unidad', presidente: '92', diputado: '88'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '34', diputado: '29'},
+      {id: 'pdc', partido: 'PDC', presidente: '56', diputado: '61'},
+      {id: 'morena', partido: 'Morena', presidente: '11', diputado: '8'},
+    ],
+    voteSummaryResults: [
+      {id: 'validos', label: 'Válidos', value1: '193', value2: '186'},
+      {id: 'blancos', label: 'Blancos', value1: '28', value2: '24'},
+      {id: 'nulos', label: 'Nulos', value1: '12', value2: '15'},
+    ],
+  },
+  {
+    id: 4,
+    mesa: 'Mesa 004',
+    fecha: '2024-10-26',
+    hora: '19:15',
+    escuela: 'Escuela Técnica N° 2',
+    estado: 'Completado',
+    imagen:
+      'https://placehold.co/400x300/fff8e1/FFC107?text=Acta+Mesa+4+Opcion+2',
+    recinto: 'Escuela Técnica N° 2',
+    provincia: 'Provincia Murillo - La Paz',
+    partyResults: [
+      {id: 'unidad', partido: 'Unidad', presidente: '76', diputado: '72'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '19', diputado: '15'},
+      {id: 'pdc', partido: 'PDC', presidente: '33', diputado: '38'},
+      {id: 'morena', partido: 'Morena', presidente: '6', diputado: '4'},
+    ],
+    voteSummaryResults: [
+      {id: 'validos', label: 'Válidos', value1: '134', value2: '129'},
+      {id: 'blancos', label: 'Blancos', value1: '19', value2: '16'},
+      {id: 'nulos', label: 'Nulos', value1: '7', value2: '9'},
+    ],
+  },
+  {
+    id: 5,
+    mesa: 'Mesa 005',
+    fecha: '2024-10-25',
+    hora: '20:30',
+    escuela: 'Colegio Santa María',
+    estado: 'Pendiente revisión',
+    imagen:
+      'https://placehold.co/400x300/e8eaf6/3F51B5?text=Acta+Mesa+5+Opcion+2',
+    recinto: 'Colegio Santa María',
+    provincia: 'Provincia Murillo - La Paz',
+    partyResults: [
+      {id: 'unidad', partido: 'Unidad', presidente: '54', diputado: '51'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '28', diputado: '24'},
+      {id: 'pdc', partido: 'PDC', presidente: '39', diputado: '42'},
+      {id: 'morena', partido: 'Morena', presidente: '9', diputado: '7'},
+    ],
+    voteSummaryResults: [
+      {id: 'validos', label: 'Válidos', value1: '130', value2: '124'},
+      {id: 'blancos', label: 'Blancos', value1: '25', value2: '21'},
+      {id: 'nulos', label: 'Nulos', value1: '10', value2: '13'},
+    ],
+  },
+];
+
+// Simular llamada a API para obtener atestiguamientos del usuario
+export const fetchMisAtestiguamientos = async () => {
+  return new Promise(resolve => {
+    console.log('API Mock: Fetching mis atestiguamientos...');
+    // Simular delay de red
+    setTimeout(() => {
+      console.log(
+        'API Mock: Mis atestiguamientos fetched successfully:',
+        mockAtestiguamientosData.length,
+      );
+      resolve({
+        success: true,
+        data: mockAtestiguamientosData,
+        message: 'Atestiguamientos cargados exitosamente',
+      });
+    }, 1200); // 1.2 segundos de delay
+  });
+};
+
+// Simular llamada a API para obtener detalle de un atestiguamiento
+export const fetchDetalleAtestiguamiento = async id => {
+  return new Promise(resolve => {
+    console.log('API Mock: Fetching detalle atestiguamiento for ID:', id);
+    // Simular delay de red
+    setTimeout(() => {
+      const atestiguamiento = mockAtestiguamientosData.find(
+        item => item.id === id,
+      );
+      if (atestiguamiento) {
+        console.log(
+          'API Mock: Detalle atestiguamiento fetched:',
+          atestiguamiento,
+        );
+        resolve({
+          success: true,
+          data: atestiguamiento,
+          message: 'Detalle de atestiguamiento encontrado',
+        });
+      } else {
+        console.log('API Mock: Atestiguamiento not found for ID:', id);
+        resolve({
+          success: false,
+          data: null,
+          message: 'Atestiguamiento no encontrado',
+        });
+      }
+    }, 800); // 0.8 segundos de delay
+  });
+};

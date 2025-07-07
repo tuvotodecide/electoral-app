@@ -33,7 +33,7 @@ export async function registerNotifications() {
 
 async function display(remoteMessage) {
   await notifee.displayNotification({
-    title: remoteMessage.notification?.title ?? 'Wira Wallet',
+    title: remoteMessage.notification?.title ?? 'Tu Voto',
     body: remoteMessage.notification?.body ?? 'Mensaje nuevo',
     android: {
       channelId: 'high_prio',

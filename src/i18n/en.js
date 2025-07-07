@@ -79,7 +79,7 @@ export default {
   //page 8
   pinAccessTitle: 'Crea tu PIN de acceso',
   pinAccessDescription:
-    'Este PIN protegerá tu acceso a Wira Wallet. Lo necesitarás cada vez que inicies sesión en la aplicación.',
+    'Este PIN protegerá tu acceso a Tu Voto. Lo necesitarás cada vez que inicies sesión en la aplicación.',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
@@ -186,7 +186,7 @@ export default {
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   connectBtnLogin: 'Tengo una cuenta',
-  wira: 'Wira Wallet',
+  wira: 'Tu Voto',
   onBoardingTitleText1: 'Tu identidad digital. Tu billetera. Tu control.',
   onBoardingTitleText2: 'Envía y recibe tokens fácilmente',
   onBoardingTitleText3: 'Recupera tu cuenta con ayuda',
@@ -339,7 +339,7 @@ export default {
   addGuardian: 'Agregar guardián',
   addGuardianSubtitle:
     'Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.',
-  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Wira Wallet',
+  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto.',
   active: 'Activo',
   pending: 'Pendiente',
   rejected: 'Rechazado',

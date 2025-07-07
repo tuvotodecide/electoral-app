@@ -76,9 +76,15 @@ export default function Profile({navigation}) {
     try {
       setIsModalVisible(false);
       setTimeout(() => {
+        // CONFIGURACIÓN PARA DESARROLLO:
+        // - AuthTest: Mantiene el flujo de test activo
+        // - StackNav.AuthNavigation: Flujo real de autenticación
+        // Cambiar entre estos según necesites
+
         navigation.reset({
           index: 0,
-          routes: [{name: StackNav.AuthNavigation}],
+          routes: [{name: 'AuthTest'}], // MODO TEST: Usar AuthTest para desarrollo
+          // routes: [{name: StackNav.AuthNavigation}], // MODO REAL: Descomentar para producción
         });
       }, 500);
       return true;

@@ -16,6 +16,11 @@ import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 // import OnBoarding from '../container/OnBoarding';
 import Splash from '../container/Splash';
+import AuthTest from '../container/AuthTest';
+
+// Pantallas de Test
+import ConnectTest from '../container/ConnectTest';
+import LoginUserTest from '../container/Auth/LoginUserTest';
 
 // Pantallas de Voto
 // import SubirActa from '../container/Voto/SubirActa';
@@ -33,7 +38,6 @@ import ActaCertificationScreen from '../container/Voto/AtestiguarActa/ActaCertif
 import AnunciarConteo from '../container/Voto/AnunciarConteo/AnunciarConteo';
 import BuscarMesaConteo from '../container/Voto/AnunciarConteo/BuscarMesaConteo';
 import DetalleMesaConteo from '../container/Voto/AnunciarConteo/DetalleMesaConteo';
-import MisAtestiguamientos from '../container/Voto/MisAtestiguamientos/MisAtestiguamientos';
 import MisAtestiguamientosListScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosListScreen';
 import MisAtestiguamientosDetailScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosDetailScreen';
 
@@ -153,8 +157,14 @@ import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
   Splash,
+  AuthTest,
   AuthNavigation,
   TabNavigation,
+
+  // Rutas de Test - Solo componentes de pantalla
+  ConnectTest,
+  LoginUserTest,
+  // AuthNavigationTest es un navegador, no va aquí
 
   // Pantallas de Voto
   // SubirActa,
@@ -172,7 +182,6 @@ export const StackRoute = {
   AnunciarConteo,
   BuscarMesaConteo,
   DetalleMesaConteo,
-  MisAtestiguamientos,
   MisAtestiguamientosListScreen,
   MisAtestiguamientosDetailScreen,
 

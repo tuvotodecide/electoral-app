@@ -400,8 +400,7 @@ export const LatestNewsData = [
   },
 ];
 
-export const LatestNewsDataV2 = [
-];
+export const LatestNewsDataV2 = [];
 
 export const MarketCategoryData = [
   {
@@ -1581,7 +1580,7 @@ export const SecuryData = [
         lightIcon: <IdentityVerification_Light />,
         title: String.security4Title,
         value: String.security4Subtitle,
-        rightIcon: 'switch', 
+        rightIcon: 'switch',
       },
     ],
   },
@@ -1599,38 +1598,38 @@ export const ProfileDataV2 = [
         value: String.personalDataValue,
         route: StackNav.PersonalDetails,
       },
-      {
-        id: 2,
-        darkIcon: <IdentityVerification_Dark />,
-        lightIcon: <IdentityVerification_Light />,
-        title: String.qrBackup,
-        value: String.qrBackupValue,
-        route: StackNav.RecuperationQR,
-      },
-      {
-        id: 3,
-        darkIcon: <Privacy_Dark />,
-        lightIcon: <Privacy_Light />,
-        title: String.guardians,
-        value: String.guardiansValue,
-        route: StackNav.Guardians,
-      },
-      {
-        id: 4,
-        darkIcon: <History_Dark />,
-        lightIcon: <History_Light />,
-        title: String.transactionHistory,
-        value: String.transactionHistoryValue,
-        route: StackNav.TransactionHistory,
-      },
-      {
-        id: 2345,
-        darkIcon: <GiftIcon />,
-        lightIcon: <GiftIcon />,
-        title: String.earnRewards,
-        value: String.earnRewardsValue,
-        route: StackNav.Reward,
-      },
+      // {
+      //   id: 2,
+      //   darkIcon: <IdentityVerification_Dark />,
+      //   lightIcon: <IdentityVerification_Light />,
+      //   title: String.qrBackup,
+      //   value: String.qrBackupValue,
+      //   route: StackNav.RecuperationQR,
+      // },
+      // {
+      //   id: 3,
+      //   darkIcon: <Privacy_Dark />,
+      //   lightIcon: <Privacy_Light />,
+      //   title: String.guardians,
+      //   value: String.guardiansValue,
+      //   route: StackNav.Guardians,
+      // },
+      // {
+      //   id: 4,
+      //   darkIcon: <History_Dark />,
+      //   lightIcon: <History_Light />,
+      //   title: String.transactionHistory,
+      //   value: String.transactionHistoryValue,
+      //   route: StackNav.TransactionHistory,
+      // },
+      // {
+      //   id: 2345,
+      //   darkIcon: <GiftIcon />,
+      //   lightIcon: <GiftIcon />,
+      //   title: String.earnRewards,
+      //   value: String.earnRewardsValue,
+      //   route: StackNav.Reward,
+      // },
     ],
   },
 ];
@@ -3049,17 +3048,23 @@ export const userCoinsAvailable = [
     title: 'BTC',
     iconUrl: 'https://assets.coingecko.com/coins/images/1/standard/bitcoin.png',
     iconSize: moderateScale(25),
-  },{
+  },
+  {
     title: 'ETH',
-    iconUrl: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png',
+    iconUrl:
+      'https://assets.coingecko.com/coins/images/279/standard/ethereum.png',
     iconSize: moderateScale(25),
-  },{
+  },
+  {
     title: 'USDT',
-    iconUrl: 'https://assets.coingecko.com/coins/images/325/standard/Tether.png',
+    iconUrl:
+      'https://assets.coingecko.com/coins/images/325/standard/Tether.png',
     iconSize: moderateScale(25),
-  },{
+  },
+  {
     title: 'BNB',
-    iconUrl: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png',
+    iconUrl:
+      'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png',
     iconSize: moderateScale(25),
-  }
-]
+  },
+];

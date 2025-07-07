@@ -73,10 +73,6 @@ export default function HomeStackNavigation() {
         component={StackRoute.DetalleMesaConteo}
       />
       <HomeStack.Screen
-        name={StackNav.MisAtestiguamientos}
-        component={StackRoute.MisAtestiguamientos}
-      />
-      <HomeStack.Screen
         name={StackNav.MisAtestiguamientosListScreen}
         component={StackRoute.MisAtestiguamientosListScreen}
       />
