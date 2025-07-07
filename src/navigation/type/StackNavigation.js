@@ -143,7 +143,6 @@ export default function StackNavigation() {
         name={StackNav.CreatedByCollection}
         component={StackRoute.CreatedByCollection}
       />
-      {/* Perfil */}
       <Stack.Screen
         name={StackNav.PersonalDetails}
         component={StackRoute.PersonalDetails}

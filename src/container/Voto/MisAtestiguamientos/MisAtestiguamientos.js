@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 
@@ -160,19 +161,12 @@ export default function MisAtestiguamientos({navigation}) {
     <CSafeAreaView
       style={[localStyle.container, {backgroundColor: colors.backgroundColor}]}>
       {/* Header */}
-      <View style={localStyle.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="arrow-back"
-            size={moderateScale(24)}
-            color={colors.textColor}
-          />
-        </TouchableOpacity>
-        <CText type={'B18'} color={colors.textColor}>
-          Mis Atestiguamientos
-        </CText>
-        <View style={{width: moderateScale(24)}} />
-      </View>
+      <UniversalHeader
+        colors={colors}
+        onBack={() => navigation.goBack()}
+        title="Mis Atestiguamientos"
+        showNotification={false}
+      />
 
       {/* Content */}
       <View style={localStyle.content}>
@@ -216,13 +210,7 @@ export default function MisAtestiguamientos({navigation}) {
 const localStyle = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...styles.ph20,
-    ...styles.pv15,
+    paddingBottom: moderateScale(100), // Espacio para el TabNavigation
   },
   content: {
     flex: 1,

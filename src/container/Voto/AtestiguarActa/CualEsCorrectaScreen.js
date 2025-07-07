@@ -7,10 +7,11 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText'; // Adjust path as needed
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants'; // Adjust path as needed
@@ -69,28 +70,14 @@ const CualEsCorrectaScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialIcons
-            name="keyboard-arrow-left"
-            size={moderateScale(36)}
-            color={colors.black || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-        <CText style={styles.headerTitle}>
-          Mesa {mesaData?.numero || 'N/A'}
-        </CText>
-        <View style={styles.headerSpacer} />
-        <TouchableOpacity style={styles.bellIcon}>
-          <Ionicons
-            name="notifications-outline"
-            size={moderateScale(36)}
-            color={colors.text || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-      </View>
+      <UniversalHeader
+        colors={colors}
+        onBack={handleBack}
+        title={`Mesa ${mesaData?.numero || 'N/A'}`}
+        showNotification={true}
+      />
 
       {/* Question Text */}
       <View style={styles.questionContainer}>
@@ -149,27 +136,7 @@ const CualEsCorrectaScreen = () => {
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="home-outline"
-            size={moderateScale(24)}
-            color={colors.primary || '#459151'}
-          />
-          <CText style={styles.navText}>Inicio</CText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="person-outline"
-            size={moderateScale(24)}
-            color={colors.text || '#868686'}
-          />
-          <CText style={styles.navText}>Perfil</CText>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </CSafeAreaView>
   );
 };
 
@@ -177,30 +144,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff', // White background
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
-  },
-  backButton: {
-    padding: moderateScale(8),
-  },
-  headerTitle: {
-    fontSize: moderateScale(24),
-    fontWeight: '600',
-    color: '#2F2F2F',
-    marginLeft: moderateScale(8),
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  bellIcon: {
-    padding: moderateScale(8),
   },
   questionContainer: {
     backgroundColor: '#D1ECF1', // Light blue background

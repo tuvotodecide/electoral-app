@@ -23,12 +23,7 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar
   const currentRoute = state.routes[state.index];
   const routeName = getFocusedRouteNameFromRoute(currentRoute) ?? '';
-  const hideTabBarScreens = [
-    'CameraScreen',
-    'CameraPermissionTest',
-    'PhotoReviewScreen',
-    'PhotoConfirmationScreen',
-  ];
+  const hideTabBarScreens = ['CameraScreen', 'CameraPermissionTest'];
 
   console.log(
     'TabBar - Current route:',
@@ -127,9 +122,6 @@ export default function TabNavigation() {
   );
 }
 
-// ====================================================================
-// ESTILOS 100% PARECIDOS AL DISEÑO
-// ====================================================================
 const stylesx = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
@@ -150,7 +142,7 @@ const stylesx = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 7,
     elevation: 14,
-    // marginHorizontal: 8,  // <-- ELIMINA ESTA LÍNEA
+    zIndex: 1000, // Asegurar que esté por encima del contenido
   },
   tabButton: {
     flex: 1,

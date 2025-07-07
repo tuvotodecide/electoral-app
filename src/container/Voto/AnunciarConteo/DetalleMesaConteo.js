@@ -13,6 +13,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import {moderateScale} from '../../../common/constants';
 
 // Solo para demo, en tu app vendrá desde navigation
@@ -54,21 +55,12 @@ export default function DetalleMesaConteo({navigation, route}) {
   return (
     <CSafeAreaView style={stylesx.container}>
       {/* HEADER */}
-      <View style={stylesx.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={stylesx.backButton}>
-          <Ionicons
-            name="arrow-back"
-            size={moderateScale(24)}
-            color={colors.textColor}
-          />
-        </TouchableOpacity>
-        <CText style={stylesx.headerTitle} color={colors.textColor}>
-          Información de la mesa
-        </CText>
-        <View style={{width: moderateScale(24)}} />
-      </View>
+      <UniversalHeader
+        colors={colors}
+        onBack={() => navigation.goBack()}
+        title="Información de la mesa"
+        showNotification={false}
+      />
 
       {/* DATOS DE LA MESA */}
       <View
@@ -154,28 +146,6 @@ const stylesx = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: moderateScale(5),
-    paddingHorizontal: moderateScale(10),
-    paddingBottom: moderateScale(7),
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-  },
-  backButton: {
-    width: 30,
-    height: 36,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginRight: moderateScale(30),
   },
   bigBold: {
     fontSize: 18,

@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
@@ -63,26 +64,14 @@ const ActaCertificationScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialIcons
-            name="keyboard-arrow-left"
-            size={moderateScale(36)}
-            color={colors.black || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-        <CText style={styles.headerTitle}>Certificación de Acta</CText>
-        <View style={styles.headerSpacer} />
-        <TouchableOpacity style={styles.bellIcon}>
-          <Ionicons
-            name="notifications-outline"
-            size={moderateScale(36)}
-            color={colors.text || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-      </View>
+      <UniversalHeader
+        colors={colors}
+        onBack={handleBack}
+        title="Certificación de Acta"
+        showNotification={true}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Certification Message */}
@@ -205,7 +194,7 @@ const ActaCertificationScreen = () => {
           <CText style={styles.navText}>Perfil</CText>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </CSafeAreaView>
   );
 };
 
@@ -213,30 +202,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
-  },
-  backButton: {
-    padding: moderateScale(8),
-  },
-  headerTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '600',
-    color: '#2F2F2F',
-    marginLeft: moderateScale(8),
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  bellIcon: {
-    padding: moderateScale(8),
   },
   content: {
     flex: 1,

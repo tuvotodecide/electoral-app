@@ -12,7 +12,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import CStandardHeader from '../../../components/common/CStandardHeader';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 
@@ -99,7 +99,12 @@ export default function BuscarMesa({navigation}) {
 
   return (
     <CSafeAreaView style={localStyle.container}>
-      <CStandardHeader title="Buscar mesa" />
+      <UniversalHeader
+        colors={colors}
+        onBack={() => navigation.goBack()}
+        title="Buscar mesa"
+        showNotification={false}
+      />
 
       {/* Search Bar */}
       <View style={localStyle.searchContainer}>

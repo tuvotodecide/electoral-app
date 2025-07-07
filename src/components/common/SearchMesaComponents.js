@@ -4,9 +4,10 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import CText from './CText';
+import UniversalHeader from './UniversalHeader';
 import {moderateScale} from '../../common/constants';
 
-// Header Component
+// Header Component - Ahora usa UniversalHeader
 export const SearchMesaHeader = ({
   colors,
   onBack,
@@ -15,26 +16,19 @@ export const SearchMesaHeader = ({
   onNotificationPress,
   styles,
 }) => (
-  <View style={styles.header}>
-    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-      <MaterialIcons
-        name="keyboard-arrow-left"
-        size={moderateScale(36)}
-        color={colors.black || '#2F2F2F'}
-      />
-    </TouchableOpacity>
-    <CText style={styles.headerTitle}>{title}</CText>
-    <View style={styles.headerSpacer} />
-    {showNotification && (
-      <TouchableOpacity style={styles.bellIcon} onPress={onNotificationPress}>
-        <Ionicons
-          name="notifications-outline"
-          size={moderateScale(34)}
-          color={colors.text || '#2F2F2F'}
-        />
-      </TouchableOpacity>
-    )}
-  </View>
+  <UniversalHeader
+    colors={colors}
+    onBack={onBack}
+    title={title}
+    showNotification={showNotification}
+    onNotificationPress={onNotificationPress}
+    customStyles={{
+      header: styles?.header,
+      backButton: styles?.backButton,
+      headerTitle: styles?.headerTitle,
+      bellIcon: styles?.bellIcon,
+    }}
+  />
 );
 
 // Choose Mesa Text Component
@@ -109,7 +103,7 @@ export const BottomNavigation = ({
         size={moderateScale(24)}
         color={colors.primary || '#459151'}
       />
-      <CText style={styles.navText}>Inicio</CText>
+      <CText style={styles.navText}>Inicioooo</CText>
     </TouchableOpacity>
     <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
       <Ionicons
@@ -121,3 +115,6 @@ export const BottomNavigation = ({
     </TouchableOpacity>
   </View>
 );
+
+// Export UniversalHeader for use in other components
+export {default as UniversalHeader} from './UniversalHeader';

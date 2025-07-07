@@ -1,7 +1,8 @@
 import React from 'react';
 import {View, StyleSheet, ScrollView} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import CText from './CText';
+import {moderateScale} from '../../common/constants';
 import {
   ActaHeader,
   InstructionsContainer,
@@ -9,7 +10,6 @@ import {
   PartyTable,
   VoteSummaryTable,
   ActionButtons,
-  BottomNavigation,
 } from './ActaReviewComponents';
 
 const BaseActaReviewScreen = ({
@@ -28,6 +28,8 @@ const BaseActaReviewScreen = ({
   showMesaInfo = false,
   mesaData,
 }) => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -39,7 +41,13 @@ const BaseActaReviewScreen = ({
         style={instructionsStyle}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: moderateScale(100) + insets.bottom } // Espacio para TabNavigation
+        ]}
+        showsVerticalScrollIndicator={false}>
         {/* Mesa Info - solo para PhotoReviewScreen */}
         {showMesaInfo && (
           <View style={styles.mesaInfoContainer}>
@@ -76,9 +84,6 @@ const BaseActaReviewScreen = ({
         {/* Action Buttons */}
         {actionButtons && <ActionButtons buttons={actionButtons} />}
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation colors={colors} />
     </SafeAreaView>
   );
 };
@@ -91,6 +96,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   mesaInfoContainer: {
     backgroundColor: 'transparent',

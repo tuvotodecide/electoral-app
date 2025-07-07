@@ -7,10 +7,11 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
@@ -74,26 +75,14 @@ const MisAtestiguamientosListScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialIcons
-            name="keyboard-arrow-left"
-            size={moderateScale(36)}
-            color={colors.black || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-        <CText style={styles.headerTitle}>Mis Atestiguamientos</CText>
-        <View style={styles.headerSpacer} />
-        <TouchableOpacity style={styles.bellIcon}>
-          <Ionicons
-            name="notifications-outline"
-            size={moderateScale(36)}
-            color={colors.text || '#2F2F2F'}
-          />
-        </TouchableOpacity>
-      </View>
+      <UniversalHeader
+        colors={colors}
+        onBack={handleBack}
+        title="Mis Atestiguamientos"
+        showNotification={true}
+      />
 
       {/* Question Text */}
       <View style={styles.questionContainer}>
@@ -103,7 +92,9 @@ const MisAtestiguamientosListScreen = () => {
       </View>
 
       {/* Image List */}
-      <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.imageList}
+        showsVerticalScrollIndicator={false}>
         {dummyImages.map(image => (
           <React.Fragment key={image.id}>
             <TouchableOpacity
@@ -145,27 +136,7 @@ const MisAtestiguamientosListScreen = () => {
           </React.Fragment>
         ))}
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="home-outline"
-            size={moderateScale(24)}
-            color={colors.primary || '#459151'}
-          />
-          <CText style={styles.navText}>Inicio</CText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons
-            name="person-outline"
-            size={moderateScale(24)}
-            color={colors.text || '#868686'}
-          />
-          <CText style={styles.navText}>Perfil</CText>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </CSafeAreaView>
   );
 };
 
@@ -173,30 +144,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
-  },
-  backButton: {
-    padding: moderateScale(8),
-  },
-  headerTitle: {
-    fontSize: moderateScale(24),
-    fontWeight: '600',
-    color: '#2F2F2F',
-    marginLeft: moderateScale(8),
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  bellIcon: {
-    padding: moderateScale(8),
   },
   questionContainer: {
     backgroundColor: '#D1ECF1',
@@ -301,24 +248,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#fff',
-  },
-  bottomNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#FFFFFF',
-    paddingVertical: moderateScale(10),
-  },
-  navItem: {
-    alignItems: 'center',
-    padding: moderateScale(8),
-  },
-  navText: {
-    fontSize: moderateScale(12),
-    color: '#868686',
-    marginTop: moderateScale(4),
   },
 });
 
