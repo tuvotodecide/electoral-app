@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Text,
   Modal,
   ActivityIndicator,
 } from 'react-native';
@@ -87,11 +86,11 @@ export default function DetalleMesaConteo({navigation, route}) {
             justifyContent: 'space-between',
           }}>
           <View style={{flex: 1, marginRight: 14}}>
-            <Text style={stylesx.mesaTitle}>{mesa.numero}</Text>
-            <Text style={stylesx.label}>Recinto: {mesa.recinto}</Text>
-            <Text style={stylesx.label}>{mesa.colegio}</Text>
-            <Text style={stylesx.label}>{mesa.provincia}</Text>
-            <Text style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</Text>
+            <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+            <CText style={stylesx.label}>Recinto: {mesa.recinto}</CText>
+            <CText style={stylesx.label}>{mesa.colegio}</CText>
+            <CText style={stylesx.label}>{mesa.provincia}</CText>
+            <CText style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</CText>
           </View>
           <MaterialIcons
             name="how-to-vote"

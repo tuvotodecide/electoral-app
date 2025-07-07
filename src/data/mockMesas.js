@@ -236,7 +236,7 @@ export const mockActasData = {
   },
 };
 
-// Simular llamada a API para obtener actas de una mesa específica
+// Simula la llamada a API para obtener actas de una mesa específica
 export const fetchActasByMesa = async mesaId => {
   return new Promise(resolve => {
     console.log('API Mock: Fetching actas for mesa:', mesaId);
@@ -276,3 +276,44 @@ export const getMockMesasConteo = () =>
     id: mesa.id.toString(),
     direccion: mesa.provincia,
   }));
+
+// Simular llamada a API para obtener mesas de conteo
+export const fetchMesasConteo = async () => {
+  return new Promise(resolve => {
+    console.log('API Mock: Fetching mesas de conteo...');
+    // Simular delay de red
+    setTimeout(() => {
+      const mesasConteo = getMockMesasConteo();
+      console.log(
+        'API Mock: Mesas de conteo fetched successfully:',
+        mesasConteo.length,
+      );
+      resolve({
+        success: true,
+        data: mesasConteo,
+        message: 'Mesas de conteo cargadas exitosamente',
+      });
+    }, 1500); // 1.5 segundos de delay
+  });
+};
+
+// Simular llamada a API para obtener mesas cercanas de conteo
+export const fetchNearbyMesasConteo = async () => {
+  return new Promise(resolve => {
+    console.log('API Mock: Fetching nearby mesas de conteo...');
+    // Simular delay de red
+    setTimeout(() => {
+      // Filtrar solo las primeras 3 mesas como "cercanas"
+      const nearbyMesas = getMockMesasConteo().slice(0, 3);
+      console.log(
+        'API Mock: Nearby mesas de conteo fetched:',
+        nearbyMesas.length,
+      );
+      resolve({
+        success: true,
+        data: nearbyMesas,
+        message: 'Mesas cercanas de conteo encontradas',
+      });
+    }, 2000); // 2 segundos de delay
+  });
+};
