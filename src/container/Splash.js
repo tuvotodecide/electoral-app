@@ -52,9 +52,7 @@ export default function Splash({navigation}) {
 
           const alive = await isSessionValid();
           if (alive) navigation.replace(StackNav.TabNavigation);
-          else if (onBoardingValue) navigation.replace(StackNav.AuthNavigation);
-          else navigation.replace(StackNav.OnBoarding);
-
+          else navigation.replace(StackNav.AuthNavigation); // OnBoarding no está disponible, ir a Auth
         }
       } catch (e) {
         console.log('error ', e);
