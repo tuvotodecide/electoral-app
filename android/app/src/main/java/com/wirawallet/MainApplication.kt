@@ -4,7 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import android.content.Context       
+import android.content.Context
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -42,20 +42,20 @@ class MainApplication : Application(), ReactApplication {
 
      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channelId   = "high_prio"            // ⇠ mismo ID que en Manifest
-      val channelName = "Notificaciones Wira"  // Texto que ve el usuario
+      val channelName = "Notificaciones Tu Voto"  // Texto que ve el usuario
       val channel     = NotificationChannel(
         channelId,
         channelName,
         NotificationManager.IMPORTANCE_HIGH
       ).apply {
         enableVibration(true)
-        description = "Canal de notificaciones importantes de Wira Wallet"
+        description = "Canal de notificaciones importantes de App Electoral"
       }
 
       val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       nm.createNotificationChannel(channel)
     }
-    
+
     SoLoader.init(this, OpenSourceMergedSoMapping)
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
