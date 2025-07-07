@@ -83,8 +83,8 @@ export default function Profile({navigation}) {
 
         navigation.reset({
           index: 0,
-          routes: [{name: 'AuthTest'}], // MODO TEST: Usar AuthTest para desarrollo
-          // routes: [{name: StackNav.AuthNavigation}], // MODO REAL: Descomentar para producción
+          // routes: [{name: 'AuthTest'}], // MODO TEST: Usar AuthTest para desarrollo
+          routes: [{name: StackNav.AuthNavigation}], // MODO REAL: Descomentar para producción
         });
       }, 500);
       return true;

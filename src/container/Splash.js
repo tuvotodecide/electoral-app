@@ -44,17 +44,17 @@ export default function Splash({navigation}) {
           // return;
 
           // Modo Desarrollo Bypass directo a TabNavigation
-          navigation.replace(StackNav.TabNavigation);
-          return;
+          // navigation.replace(StackNav.TabNavigation);
+          // return;
 
           // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
           // Descomenta este bloque y comenta AuthTest para usar el flujo real
-          /*
+
           const alive = await isSessionValid();
           if (alive) navigation.replace(StackNav.TabNavigation);
           else if (onBoardingValue) navigation.replace(StackNav.AuthNavigation);
           else navigation.replace(StackNav.OnBoarding);
-          */
+
         }
       } catch (e) {
         console.log('error ', e);
