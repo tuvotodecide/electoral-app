@@ -29,7 +29,7 @@ const BaseActaReviewScreen = ({
   mesaData,
 }) => {
   const insets = useSafeAreaInsets();
-  
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -41,11 +41,11 @@ const BaseActaReviewScreen = ({
         style={instructionsStyle}
       />
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: moderateScale(100) + insets.bottom } // Espacio para TabNavigation
+          {paddingBottom: moderateScale(100) + insets.bottom}, // Espacio para TabNavigation
         ]}
         showsVerticalScrollIndicator={false}>
         {/* Mesa Info - solo para PhotoReviewScreen */}

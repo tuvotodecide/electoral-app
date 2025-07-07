@@ -92,9 +92,7 @@ const MisAtestiguamientosListScreen = () => {
       </View>
 
       {/* Image List */}
-      <ScrollView
-        style={styles.imageList}
-        showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
         {dummyImages.map(image => (
           <React.Fragment key={image.id}>
             <TouchableOpacity

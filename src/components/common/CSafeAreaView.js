@@ -10,16 +10,14 @@ import {moderateScale} from '../../common/constants';
 export default CSafeAreaView = ({children, addTabPadding = true, ...props}) => {
   const colors = useSelector(state => state.theme.theme);
   const insets = useSafeAreaInsets();
-  
+
   // Calcular padding inferior automáticamente para el TabNavigation
   const bottomPadding = addTabPadding ? moderateScale(100) : 0;
-  
+
   return (
-    <SafeAreaView 
-      {...props} 
-      style={[
-        localStyle(colors, props.style, bottomPadding).root
-      ]}>
+    <SafeAreaView
+      {...props}
+      style={[localStyle(colors, props.style, bottomPadding).root]}>
       {children}
     </SafeAreaView>
   );
