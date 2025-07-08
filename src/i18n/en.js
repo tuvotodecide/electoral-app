@@ -1034,4 +1034,71 @@ export default {
   witnessDetail: 'Detalle del Atestiguamiento',
   attestedResults: 'Resultados atestiguados de {tableName} - {precinctName}',
   registeredVotes: 'Los votos registrados de la mesa',
+
+  // WitnessRecord
+  searchTablePlaceholder: 'Buscar mesa',
+  couldNotLoadActas: 'No se pudieron cargar las actas de esta mesa',
+  errorLoadingActas: 'Error al cargar las actas',
+  pleaseSelectImageFirst: 'Por favor, selecciona una imagen primero.',
+  information: 'Información',
+  dataReportedAsIncorrect: 'Se ha reportado que los datos no son correctos.',
+  table: 'Mesa',
+  whichIsCorrect: '¿Cuál de estas es la correcta?',
+  loadingActas: 'Cargando actas de la mesa...',
+  seeMoreDetails: 'Ver mas detalles',
+  dataNotCorrect: 'Estos datos no son correctos',
+  correctData: 'Datos Correctos',
+  reviewActaData: 'Revise los datos del acta',
+  actaCertification: 'Certificación del Acta',
+  certificationText:
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} es correcta y corresponde a los datos registrados.',
+  certify: 'Certifico',
+  certifyInfoConfirmation:
+    '¿Estás seguro de que deseas\nCertificar la información?',
+  pleaseWait: 'Por favor, espere.....',
+  savingToBlockchain: 'La información se está guardando en la Blockchain',
+
+  // UploadRecord
+  ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',
+  edit: 'Editar',
+  next: 'Siguiente',
+  save: 'Guardar',
+  reviewPhotoPlease: 'Revise la foto por favor',
+  saved: 'Guardado',
+  changesSavedSuccessfully: 'Los cambios han sido guardados correctamente.',
+  acta: 'Acta',
+  infoReadyToLoad: 'Información lista para cargar',
+  i: 'Yo',
+  publishAndCertify: 'Publico y Certifico',
+  actaCorrectConfirmation:
+    'que es la ACTA CORRECTA de la {tableNumber} ubicada en {location}',
+  publishAndCertifyConfirmation:
+    '¿Estás seguro de que deseas publicar y certificar la información?',
+
+  // MyWitnesses
+  loadingWitnesses: 'Cargando atestiguamientos...',
+  seeMore: 'Ver más',
+  understood: 'Entendido',
+
+  // User
+  userName: 'Juan Pérez',
+  userRole: 'Testigo Electoral',
+  userName2: 'Juan Perez Cuellar',
+
+  // Common
+  confirmation: 'Confirmación',
+  voluntaryInitiative: 'Iniciativa voluntaria de:',
+  autoNavigating:
+    'Regresando al inicio automáticamente en {timeLeft} segundo{s}...',
+
+  // Camera
+  cameraNotAvailable: 'No se puede usar la cámara.',
+  cameraErrorTitle: 'Error de Cámara',
+  cameraErrorMessage: 'No se pudo tomar la foto. Inténtalo de nuevo.',
+  requestPermissions: 'Solicitar Permisos',
+  retry: 'Reintentar',
+  next: 'Siguiente',
+
+  // agregados que faltaban en en.js
+  aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
 };

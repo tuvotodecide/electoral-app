@@ -74,7 +74,7 @@ export default function TableDetail({navigation, route}) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title="Información de la mesa"
+        title={String.tableInformation}
         showNotification={false}
       />
 
@@ -87,7 +87,7 @@ export default function TableDetail({navigation, route}) {
             fontWeight: 'bold',
             color: 'black', // Ajusta el margen superior
           }}>
-          Asegúrate que esta es la mesa asignada
+          {String.ensureAssignedTable}
         </CText>
 
         <CText
@@ -97,7 +97,7 @@ export default function TableDetail({navigation, route}) {
             color: colors.grayScale500, // Color gris claro
             fontSize: 15, // Tamaño de fuente más pequeño
           }}>
-          Asegúrate que esta es la mesa asignada
+          {String.ensureAssignedTable}
         </CText>
       </View>
 

@@ -7,6 +7,7 @@ import {useSearchMesaLogic} from '../../../hooks/useSearchMesaLogic';
 import {createSearchMesaStyles} from '../../../styles/searchMesaStyles';
 import {fetchMesas} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
+import String from '../../../i18n/String';
 
 const SearchMesaScreen = () => {
   const [mesas, setMesas] = useState([]);
@@ -16,7 +17,7 @@ const SearchMesaScreen = () => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: 'Aceptar',
+    buttonText: String.accept,
   });
 
   const {
@@ -37,7 +38,7 @@ const SearchMesaScreen = () => {
     loadMesas();
   }, []);
 
-  const showModal = (type, title, message, buttonText = 'Aceptar') => {
+  const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
@@ -60,11 +61,11 @@ const SearchMesaScreen = () => {
         setMesas(response.data);
       } else {
         console.error('WitnessRecord: Failed to load mesas');
-        showModal('error', 'Error', 'No se pudieron cargar las mesas');
+        showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
       console.error('WitnessRecord: Error loading mesas:', error);
-      showModal('error', 'Error', 'Error al cargar las mesas');
+      showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +112,7 @@ const SearchMesaScreen = () => {
             color: '#666',
             textAlign: 'center',
           }}>
-          Cargando mesas...
+          {String.loadingTables}
         </CText>
       </View>
     );
@@ -123,17 +124,17 @@ const SearchMesaScreen = () => {
         // Header props
         colors={colors}
         onBack={handleBack}
-        title="Buscar Mesa"
+        title={String.searchTable}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         // Choose mesa text props
-        chooseMesaText="Elije una mesa por favor:"
+        chooseMesaText={String.chooseTablePlease}
         // Search input props
-        searchPlaceholder="Buscar mesa"
+        searchPlaceholder={String.searchTablePlaceholder}
         searchValue={searchText}
         onSearchChange={setSearchText}
         // Location info props
-        locationText="La siguiente lista se basa en su ubicacion"
+        locationText={String.listBasedOnLocation}
         locationIconColor="#0C5460"
         // Mesa list props
         mesas={mesas}

@@ -17,6 +17,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants'; // Adjust path as needed
 import {fetchActasByMesa} from '../../../data/mockMesas';
+import String from '../../../i18n/String';
 
 const WhichIsCorrectScreen = () => {
   const navigation = useNavigation();
@@ -36,7 +37,7 @@ const WhichIsCorrectScreen = () => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: 'Aceptar',
+    buttonText: String.accept,
   });
 
   // Estados para las actas de la mesa
@@ -68,11 +69,7 @@ const WhichIsCorrectScreen = () => {
         setVoteSummaryResults(response.data.voteSummaryResults);
       } else {
         console.error('WhichIsCorrectScreen: Failed to load actas');
-        showModal(
-          'error',
-          'Error',
-          'No se pudieron cargar las actas de esta mesa',
-        );
+        showModal('error', String.error, String.couldNotLoadActas);
         // Fallback con imagen por defecto
         setActaImages([
           {
@@ -85,7 +82,7 @@ const WhichIsCorrectScreen = () => {
       }
     } catch (error) {
       console.error('WhichIsCorrectScreen: Error loading actas:', error);
-      showModal('error', 'Error', 'Error al cargar las actas');
+      showModal('error', String.error, String.errorLoadingActas);
       // Fallback con imagen por defecto
       setActaImages([
         {
@@ -100,7 +97,7 @@ const WhichIsCorrectScreen = () => {
     }
   };
 
-  const showModal = (type, title, message, buttonText = 'Aceptar') => {
+  const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
@@ -132,19 +129,15 @@ const WhichIsCorrectScreen = () => {
     } else {
       showModal(
         'warning',
-        'Selección Requerida',
-        'Por favor, selecciona una imagen primero.',
+        String.selectionRequired,
+        String.pleaseSelectImageFirst,
       );
     }
   };
 
   const handleDatosNoCorrectos = () => {
     console.log('Estos datos no son correctos pressed');
-    showModal(
-      'info',
-      'Información',
-      'Se ha reportado que los datos no son correctos.',
-    );
+    showModal('info', String.information, String.dataReportedAsIncorrect);
   };
 
   return (
@@ -153,22 +146,20 @@ const WhichIsCorrectScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${mesaData?.numero || 'N/A'}`}
+        title={`${String.table} ${mesaData?.numero || 'N/A'}`}
         showNotification={true}
       />
 
       {/* Question Text */}
       <View style={styles.questionContainer}>
-        <CText style={styles.questionText}>
-          ¿Cuál de estas es la correcta?
-        </CText>
+        <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
       </View>
 
       {/* Loading indicator for actas */}
       {isLoadingActas ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
-          <CText style={styles.loadingText}>Cargando actas de la mesa...</CText>
+          <CText style={styles.loadingText}>{String.loadingActas}</CText>
         </View>
       ) : (
         /* Image List */
@@ -209,7 +200,7 @@ const WhichIsCorrectScreen = () => {
                   style={styles.detailsButton}
                   onPress={handleVerMasDetalles}>
                   <CText style={styles.detailsButtonText}>
-                    Ver mas detalles
+                    {String.seeMoreDetails}
                   </CText>
                 </TouchableOpacity>
               )}
@@ -221,7 +212,7 @@ const WhichIsCorrectScreen = () => {
               style={styles.datosNoCorrectosButton}
               onPress={handleDatosNoCorrectos}>
               <CText style={styles.datosNoCorrectosButtonText}>
-                Estos datos no son correctos
+                {String.dataNotCorrect}
               </CText>
             </TouchableOpacity>
           )}

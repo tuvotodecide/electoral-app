@@ -146,7 +146,7 @@ const MyWitnessesListScreen = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary || '#459151'} />
-          <CText style={styles.loadingText}>Cargando atestiguamientos...</CText>
+          <CText style={styles.loadingText}>{String.loadingWitnesses}</CText>
         </View>
       ) : (
         <ScrollView
@@ -192,7 +192,9 @@ const MyWitnessesListScreen = () => {
                 <TouchableOpacity
                   style={styles.detailsButton}
                   onPress={handleVerMas}>
-                  <CText style={styles.detailsButtonText}>Ver más</CText>
+                  <CText style={styles.detailsButtonText}>
+                    {String.seeMore}
+                  </CText>
                 </TouchableOpacity>
               )}
             </React.Fragment>
@@ -207,7 +209,7 @@ const MyWitnessesListScreen = () => {
         title={modalData.title}
         message={modalData.message}
         type={modalData.type}
-        confirmText="Entendido"
+        confirmText={String.understood}
         onConfirm={() => setModalVisible(false)}
       />
     </CSafeAreaView>

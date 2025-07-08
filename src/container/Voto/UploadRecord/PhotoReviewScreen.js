@@ -95,7 +95,7 @@ const PhotoReviewScreen = () => {
   const actionButtons = !isEditing
     ? [
         {
-          text: 'Editar',
+          text: String.edit,
           onPress: handleEdit,
           style: {
             backgroundColor: '#fff',
@@ -109,7 +109,7 @@ const PhotoReviewScreen = () => {
           },
         },
         {
-          text: 'Siguiente',
+          text: String.next,
           onPress: handleNext,
           style: {
             backgroundColor: colors.primary || '#459151',
@@ -123,7 +123,7 @@ const PhotoReviewScreen = () => {
       ]
     : [
         {
-          text: 'Guardar',
+          text: String.save,
           onPress: handleSave,
           style: {
             backgroundColor: colors.primary || '#459151',
@@ -138,8 +138,8 @@ const PhotoReviewScreen = () => {
     <>
       <BaseActaReviewScreen
         colors={colors}
-        headerTitle={`Mesa ${mesaData?.numero || 'N/A'}`}
-        instructionsText="Revise la foto por favor"
+        headerTitle={`${String.table} ${mesaData?.numero || 'N/A'}`}
+        instructionsText={String.reviewPhotoPlease}
         instructionsStyle={styles.instructionsStyle}
         photoUri={photoUri}
         partyResults={partyResults}
@@ -157,9 +157,9 @@ const PhotoReviewScreen = () => {
         visible={modalVisible}
         onClose={closeModal}
         type="success"
-        title="Guardado"
-        message="Los cambios han sido guardados correctamente."
-        buttonText="Aceptar"
+        title={String.saved}
+        message={String.changesSavedSuccessfully}
+        buttonText={String.accept}
       />
     </>
   );

@@ -5,6 +5,7 @@ import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
 import {moderateScale} from '../../../common/constants';
+import String from '../../../i18n/String';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -17,17 +18,22 @@ const PhotoReviewScreen = () => {
 
   // State for the new party results table
   const [partyResults, setPartyResults] = useState([
-    {id: 'unidad', partido: 'Unidad', presidente: '33', diputado: '29'},
-    {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '3', diputado: '1'},
-    {id: 'pdc', partido: 'PDC', presidente: '17', diputado: '16'},
-    {id: 'morena', partido: 'Morena', presidente: '1', diputado: '0'},
+    {id: 'unidad', partido: String.partyUnit, presidente: '33', diputado: '29'},
+    {
+      id: 'mas-ipsp',
+      partido: String.partyMasIpsp,
+      presidente: '3',
+      diputado: '1',
+    },
+    {id: 'pdc', partido: String.partyPdc, presidente: '17', diputado: '16'},
+    {id: 'morena', partido: String.partyMorena, presidente: '1', diputado: '0'},
   ]);
 
   // New state for the vote summary table (Votos, Blancos, Nulos)
   const [voteSummaryResults, setVoteSummaryResults] = useState([
-    {id: 'validos', label: 'Válidos', value1: '141', value2: '176'},
-    {id: 'blancos', label: 'Blancos', value1: '64', value2: '3'},
-    {id: 'nulos', label: 'Nulos', value1: '6', value2: '9'},
+    {id: 'validos', label: String.validVotes, value1: '141', value2: '176'},
+    {id: 'blancos', label: String.blankVotes, value1: '64', value2: '3'},
+    {id: 'nulos', label: String.nullVotes, value1: '6', value2: '9'},
   ]);
 
   // Handler for editing votes
@@ -38,7 +44,7 @@ const PhotoReviewScreen = () => {
   // Handler for saving changes
   const handleSave = () => {
     setIsEditing(false);
-    Alert.alert('Guardado', 'Los cambios han sido guardados correctamente.');
+    Alert.alert(String.saved, String.changesSavedSuccessfully);
   };
 
   // Handler for navigating to the next screen
@@ -95,7 +101,7 @@ const PhotoReviewScreen = () => {
             fontSize: moderateScale(16),
             fontWeight: '600',
           }}>
-          Editar
+          {String.edit}
         </CText>
       </TouchableOpacity>
 
@@ -117,7 +123,7 @@ const PhotoReviewScreen = () => {
             fontSize: moderateScale(16),
             fontWeight: '600',
           }}>
-          Siguiente
+          {String.next}
         </CText>
       </TouchableOpacity>
     </>
@@ -138,7 +144,7 @@ const PhotoReviewScreen = () => {
           fontSize: moderateScale(16),
           fontWeight: '600',
         }}>
-        Guardar
+        {String.save}
       </CText>
     </TouchableOpacity>
   );
@@ -146,8 +152,8 @@ const PhotoReviewScreen = () => {
   return (
     <BaseActaReviewScreen
       colors={colors}
-      headerTitle="Acta"
-      instructionsText="Revise la foto por favor"
+      headerTitle={String.acta}
+      instructionsText={String.reviewPhotoPlease}
       instructionsStyle={{
         fontSize: moderateScale(18),
         fontWeight: '500',

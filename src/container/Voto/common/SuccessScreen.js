@@ -170,7 +170,7 @@ const SuccessScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title="Confirmación"
+        title={String.confirmation}
         showNotification={false}
       />
 
@@ -194,7 +194,7 @@ const SuccessScreen = () => {
               {/* Aquí puedes agregar logos si es necesario */}
             </View>
             <CText style={styles.initiativeText}>
-              Iniciativa voluntaria de:
+              {String.voluntaryInitiative}
             </CText>
           </>
         )}
@@ -209,8 +209,9 @@ const SuccessScreen = () => {
         {/* Auto navigation indicator */}
         {showAutoNavigation && timeLeft > 0 && (
           <CText style={styles.autoNavigationText}>
-            Regresando al inicio automáticamente en {timeLeft} segundo
-            {timeLeft !== 1 ? 's' : ''}...
+            {String.autoNavigating
+              .replace('{timeLeft}', timeLeft)
+              .replace('{s}', timeLeft !== 1 ? 's' : '')}
           </CText>
         )}
       </View>

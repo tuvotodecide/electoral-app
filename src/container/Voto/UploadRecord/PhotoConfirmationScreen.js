@@ -74,27 +74,33 @@ const PhotoConfirmationScreen = () => {
 
       {/* Information Ready to Load Text */}
       <View style={styles.infoContainer}>
-        <CText style={styles.infoText}>Información lista para cargar</CText>
+        <CText style={styles.infoText}>{String.infoReadyToLoad}</CText>
       </View>
 
       {/* Main Content */}
       <View style={styles.content}>
         <CText style={styles.mainText}>
-          Yo
+          {String.i}
           <CText style={styles.mainTextBold}> Juan Perez Cuellar</CText>
         </CText>
 
         <TouchableOpacity
           style={styles.publishButton}
           onPress={handlePublishAndCertify}>
-          <CText style={styles.publishButtonText}>Publico y Certifico</CText>
+          <CText style={styles.publishButtonText}>
+            {String.publishAndCertify}
+          </CText>
         </TouchableOpacity>
 
         <CText style={styles.confirmationText}>
-          que es la ACTA CORRECTA de la {mesaData?.numero || 'N/A'} ubicada en{' '}
-          {mesaData?.recinto ||
-            mesaData?.ubicacion ||
-            'ubicación no disponible'}
+          {String.actaCorrectConfirmation
+            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace(
+              '{location}',
+              mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                String.locationNotAvailable,
+            )}
         </CText>
       </View>
 
@@ -112,20 +118,21 @@ const PhotoConfirmationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  ¿Estás seguro de que deseas publicar y certificar la
-                  información?
+                  {String.publishAndCertifyConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
-                    <CText style={modalStyles.cancelButtonText}>Cancelar</CText>
+                    <CText style={modalStyles.cancelButtonText}>
+                      {String.cancel}
+                    </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
                     <CText style={modalStyles.confirmButtonText}>
-                      Publicar y Certificar
+                      {String.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -139,10 +146,10 @@ const PhotoConfirmationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  Por favor, espere.....
+                  {String.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  La información se está guardando en la Blockchain
+                  {String.savingToBlockchain}
                 </CText>
               </>
             )}

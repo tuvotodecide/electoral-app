@@ -179,7 +179,7 @@ export default function SearchTable({navigation}) {
               />
               <TextInput
                 style={localStyle.searchInput}
-                placeholder="Código de mesa"
+                placeholder={String.tableCodePlaceholder}
                 placeholderTextColor="#979797"
                 value={searchText}
                 onChangeText={setSearchText}

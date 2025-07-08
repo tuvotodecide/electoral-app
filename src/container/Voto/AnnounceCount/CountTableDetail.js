@@ -89,12 +89,12 @@ export default function CountTableDetail({navigation, route}) {
           <View style={{flex: 1, marginRight: 14}}>
             <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
             <CText style={stylesx.label}>
-              {String.precinct} {mesa.recinto}
+              {String.venue} {mesa.recinto}
             </CText>
             <CText style={stylesx.label}>{mesa.colegio}</CText>
             <CText style={stylesx.label}>{mesa.provincia}</CText>
             <CText style={stylesx.label}>
-              {String.tableCodeLabel} {mesa.codigo}
+              {String.tableCode} {mesa.codigo}
             </CText>
           </View>
           <MaterialIcons

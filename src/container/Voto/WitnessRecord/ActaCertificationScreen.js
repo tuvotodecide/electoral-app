@@ -17,6 +17,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
+import String from '../../../i18n/String';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -88,7 +89,7 @@ const ActaCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${mesaData?.numero || 'N/A'}`}
+        title={`${String.table} ${mesaData?.numero || 'N/A'}`}
         showNotification={true}
       />
 
@@ -96,14 +97,13 @@ const ActaCertificationScreen = () => {
         {/* Certification Message */}
         <View style={styles.certificationContainer}>
           <CText style={styles.certificationTitle}>
-            Certificación del Acta
+            {String.actaCertification}
           </CText>
           <CText style={styles.certificationText}>
-            Yo, <CText style={styles.boldText}>{currentUser.name}</CText>, en mi
-            calidad de <CText style={styles.boldText}>{currentUser.role}</CText>
-            , certifico que la información contenida en el acta de la Mesa{' '}
-            <CText style={styles.boldText}>{mesaData?.numero || 'N/A'}</CText>{' '}
-            es correcta y corresponde a los datos registrados.
+            {String.certificationText
+              .replace('{userName}', currentUser.name)
+              .replace('{userRole}', currentUser.role)
+              .replace('{tableNumber}', mesaData?.numero || 'N/A')}
           </CText>
         </View>
 
@@ -112,7 +112,7 @@ const ActaCertificationScreen = () => {
           <TouchableOpacity
             style={styles.certifyButton}
             onPress={handleCertifico}>
-            <CText style={styles.certifyButtonText}>Certifico</CText>
+            <CText style={styles.certifyButtonText}>{String.certify}</CText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -131,19 +131,21 @@ const ActaCertificationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  ¿Estás seguro de que deseas{'\n'}Certificar la información?
+                  {String.certifyInfoConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
-                    <CText style={modalStyles.cancelButtonText}>Cancelar</CText>
+                    <CText style={modalStyles.cancelButtonText}>
+                      {String.cancel}
+                    </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>
-                      Certificar
+                      {String.certify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -157,10 +159,10 @@ const ActaCertificationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  Por favor, espere.....
+                  {String.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  La información se está guardando en la Blockchain
+                  {String.savingToBlockchain}
                 </CText>
               </>
             )}

@@ -94,7 +94,7 @@ const SearchCountTable = () => {
             color: '#666',
             textAlign: 'center',
           }}>
-          Cargando mesas de conteo...
+          {String.loadingCountTables}
         </CText>
       </View>
     );
@@ -112,7 +112,7 @@ const SearchCountTable = () => {
         // Choose mesa text props
         chooseMesaText={String.chooseTablePlease}
         // Search input props
-        searchPlaceholder={String.tableCodePlaceholder}
+        searchPlaceholder={String.searchTablePlaceholder}
         searchValue={searchText}
         onSearchChange={setSearchText}
         // Location info props
