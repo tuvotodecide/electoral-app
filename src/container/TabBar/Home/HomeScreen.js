@@ -34,17 +34,17 @@ const MiVotoLogo = () => (
 );
 
 export default function HomeScreen({navigation}) {
-  // const userData = useSelector(state => state.wallet.payload);
-  // const vc = userData?.vc;
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
 
-  // const subject = vc?.credentialSubject || {};
-  // const data = {
-  //   name: subject.fullName || '(sin nombre)',
-  //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  // };
-  // const userFullName = data.name || '(sin nombre)';
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+  const userFullName = data.name || '(sin nombre)';
 
-  const userFullName = 'Usuario';
+  // const userFullName = 'Usuario';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
 
