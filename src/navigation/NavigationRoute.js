@@ -16,30 +16,25 @@ import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 // import OnBoarding from '../container/OnBoarding';
 import Splash from '../container/Splash';
-import AuthTest from '../container/AuthTest';
-
-// Pantallas de Test
-import ConnectTest from '../container/ConnectTest';
-import LoginUserTest from '../container/Auth/LoginUserTest';
 
 // Pantallas de Voto
-// import SubirActa from '../container/Voto/SubirActa';
-import BuscarMesa from '../container/Voto/SubirActa/BuscarMesa';
-import DetalleMesa from '../container/Voto/SubirActa/DetalleMesa';
-import CameraScreen from '../container/Voto/SubirActa/CameraScreen';
-import CameraPermissionTest from '../container/Voto/SubirActa/CameraPermissionTest';
-import PhotoReviewScreen from '../container/Voto/SubirActa/PhotoReviewScreen';
-import PhotoConfirmationScreen from '../container/Voto/SubirActa/PhotoConfirmationScreen';
+// import UploadRecord from '../container/Voto/UploadRecord';
+import SearchTable from '../container/Voto/UploadRecord/SearchTable';
+import TableDetail from '../container/Voto/UploadRecord/TableDetail';
+import CameraScreen from '../container/Voto/UploadRecord/CameraScreen';
+import CameraPermissionTest from '../container/Voto/UploadRecord/CameraPermissionTest';
+import PhotoReviewScreen from '../container/Voto/UploadRecord/PhotoReviewScreen';
+import PhotoConfirmationScreen from '../container/Voto/UploadRecord/PhotoConfirmationScreen';
 import SuccessScreen from '../container/Voto/common/SuccessScreen';
-import AtestiguarActa from '../container/Voto/AtestiguarActa/AtestiguarActa';
-import CualEsCorrectaScreen from '../container/Voto/AtestiguarActa/CualEsCorrectaScreen';
-import ActaReviewScreen from '../container/Voto/AtestiguarActa/ActaReviewScreen';
-import ActaCertificationScreen from '../container/Voto/AtestiguarActa/ActaCertificationScreen';
-import AnunciarConteo from '../container/Voto/AnunciarConteo/AnunciarConteo';
-import BuscarMesaConteo from '../container/Voto/AnunciarConteo/BuscarMesaConteo';
-import DetalleMesaConteo from '../container/Voto/AnunciarConteo/DetalleMesaConteo';
-import MisAtestiguamientosListScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosListScreen';
-import MisAtestiguamientosDetailScreen from '../container/Voto/MisAtestiguamientos/MisAtestiguamientosDetailScreen';
+import WitnessRecord from '../container/Voto/WitnessRecord/WitnessRecord';
+import WhichIsCorrectScreen from '../container/Voto/WitnessRecord/WhichIsCorrectScreen';
+import ActaReviewScreen from '../container/Voto/WitnessRecord/ActaReviewScreen';
+import ActaCertificationScreen from '../container/Voto/WitnessRecord/ActaCertificationScreen';
+import AnnounceCount from '../container/Voto/AnnounceCount/AnnounceCount';
+import SearchCountTable from '../container/Voto/AnnounceCount/SearchCountTable';
+import CountTableDetail from '../container/Voto/AnnounceCount/CountTableDetail';
+import MyWitnessesListScreen from '../container/Voto/MyWitnesses/MyWitnessesListScreen';
+import MyWitnessesDetailScreen from '../container/Voto/MyWitnesses/MyWitnessesDetailScreen';
 
 import CryptoScreen from '../container/TabBar/Market/Crypto/CryptoScreen';
 import MarketScreen from '../container/TabBar/Market/MarketScreen';
@@ -157,33 +152,26 @@ import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
   Splash,
-  AuthTest,
   AuthNavigation,
   TabNavigation,
-
-  // Rutas de Test - Solo componentes de pantalla
-  ConnectTest,
-  LoginUserTest,
-  // AuthNavigationTest es un navegador, no va aquí
-
   // Pantallas de Voto
-  // SubirActa,
-  BuscarMesa,
-  DetalleMesa,
+  // UploadRecord,
+  SearchTable,
+  TableDetail,
   CameraScreen,
   CameraPermissionTest,
   PhotoReviewScreen,
   PhotoConfirmationScreen,
   SuccessScreen,
-  AtestiguarActa,
-  CualEsCorrectaScreen,
+  WitnessRecord,
+  WhichIsCorrectScreen,
   ActaReviewScreen,
   ActaCertificationScreen,
-  AnunciarConteo,
-  BuscarMesaConteo,
-  DetalleMesaConteo,
-  MisAtestiguamientosListScreen,
-  MisAtestiguamientosDetailScreen,
+  AnnounceCount,
+  SearchCountTable,
+  CountTableDetail,
+  MyWitnessesListScreen,
+  MyWitnessesDetailScreen,
 
   CryptoScreen,
   NFTsScreen,

@@ -3,8 +3,8 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
 import HomeScreen from '../../container/TabBar/Home/HomeScreen';
-import CameraScreen from '../../container/Voto/SubirActa/CameraScreen';
-import CameraPermissionTest from '../../container/Voto/SubirActa/CameraPermissionTest';
+import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
+import CameraPermissionTest from '../../container/Voto/UploadRecord/CameraPermissionTest';
 
 const HomeStack = createStackNavigator();
 
@@ -20,12 +20,12 @@ export default function HomeStackNavigation() {
 
       {/* Pantallas de Voto anidadas */}
       <HomeStack.Screen
-        name={StackNav.BuscarMesa}
-        component={StackRoute.BuscarMesa}
+        name={StackNav.SearchTable}
+        component={StackRoute.SearchTable}
       />
       <HomeStack.Screen
-        name={StackNav.DetalleMesa}
-        component={StackRoute.DetalleMesa}
+        name={StackNav.TableDetail}
+        component={StackRoute.TableDetail}
       />
       <HomeStack.Screen name="CameraScreen" component={CameraScreen} />
       <HomeStack.Screen
@@ -45,12 +45,12 @@ export default function HomeStackNavigation() {
         component={StackRoute.SuccessScreen}
       />
       <HomeStack.Screen
-        name={StackNav.AtestiguarActa}
-        component={StackRoute.AtestiguarActa}
+        name={StackNav.WitnessRecord}
+        component={StackRoute.WitnessRecord}
       />
       <HomeStack.Screen
-        name={StackNav.CualEsCorrectaScreen}
-        component={StackRoute.CualEsCorrectaScreen}
+        name={StackNav.WhichIsCorrectScreen}
+        component={StackRoute.WhichIsCorrectScreen}
       />
       <HomeStack.Screen
         name={StackNav.ActaReviewScreen}
@@ -61,24 +61,24 @@ export default function HomeStackNavigation() {
         component={StackRoute.ActaCertificationScreen}
       />
       <HomeStack.Screen
-        name={StackNav.AnunciarConteo}
-        component={StackRoute.AnunciarConteo}
+        name={StackNav.AnnounceCount}
+        component={StackRoute.AnnounceCount}
       />
       <HomeStack.Screen
-        name={StackNav.BuscarMesaConteo}
-        component={StackRoute.BuscarMesaConteo}
+        name={StackNav.SearchCountTable}
+        component={StackRoute.SearchCountTable}
       />
       <HomeStack.Screen
-        name={StackNav.DetalleMesaConteo}
-        component={StackRoute.DetalleMesaConteo}
+        name={StackNav.CountTableDetail}
+        component={StackRoute.CountTableDetail}
       />
       <HomeStack.Screen
-        name={StackNav.MisAtestiguamientosListScreen}
-        component={StackRoute.MisAtestiguamientosListScreen}
+        name={StackNav.MyWitnessesListScreen}
+        component={StackRoute.MyWitnessesListScreen}
       />
       <HomeStack.Screen
-        name={StackNav.MisAtestiguamientosDetailScreen}
-        component={StackRoute.MisAtestiguamientosDetailScreen}
+        name={StackNav.MyWitnessesDetailScreen}
+        component={StackRoute.MyWitnessesDetailScreen}
       />
     </HomeStack.Navigator>
   );

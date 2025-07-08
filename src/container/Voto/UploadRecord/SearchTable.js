@@ -19,7 +19,7 @@ import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {fetchMesas, fetchNearbyMesas} from '../../../data/mockMesas';
 
-export default function BuscarMesa({navigation}) {
+export default function SearchTable({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
   const [sortOrder, setSortOrder] = useState(String.ascending);
@@ -53,21 +53,21 @@ export default function BuscarMesa({navigation}) {
   const loadMesas = async () => {
     try {
       setIsLoadingMesas(true);
-      console.log('BuscarMesa: Loading mesas...');
+      console.log('SearchTable: Loading mesas...');
       const response = await fetchMesas();
 
       if (response.success) {
         console.log(
-          'BuscarMesa: Mesas loaded successfully:',
+          'SearchTable: Mesas loaded successfully:',
           response.data.length,
         );
         setMesas(response.data);
       } else {
-        console.error('BuscarMesa: Failed to load mesas');
+        console.error('SearchTable: Failed to load mesas');
         showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('BuscarMesa: Error loading mesas:', error);
+      console.error('SearchTable: Error loading mesas:', error);
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoadingMesas(false);
@@ -90,7 +90,7 @@ export default function BuscarMesa({navigation}) {
   });
 
   const handleSelectMesa = mesa => {
-    navigation.navigate(StackNav.DetalleMesa, {mesa});
+    navigation.navigate(StackNav.TableDetail, {mesa});
   };
 
   const toggleSort = () => {
@@ -102,7 +102,7 @@ export default function BuscarMesa({navigation}) {
   const handleNearbyMesas = async () => {
     try {
       setIsLoadingLocation(true);
-      console.log('BuscarMesa: Loading nearby mesas...');
+      console.log('SearchTable: Loading nearby mesas...');
 
       // Simular obtener ubicación (en producción sería con geolocalización real)
       const mockLocation = {latitude: -16.5, longitude: -68.15}; // La Paz, Bolivia
@@ -113,7 +113,7 @@ export default function BuscarMesa({navigation}) {
       );
 
       if (response.success) {
-        console.log('BuscarMesa: Nearby mesas loaded:', response.data.length);
+        console.log('SearchTable: Nearby mesas loaded:', response.data.length);
         setMesas(response.data);
         showModal(
           'success',
@@ -121,11 +121,11 @@ export default function BuscarMesa({navigation}) {
           String.foundNearbyTables.replace('{count}', response.data.length),
         );
       } else {
-        console.error('BuscarMesa: Failed to load nearby mesas');
+        console.error('SearchTable: Failed to load nearby mesas');
         showModal('error', String.error, String.couldNotLoadNearbyTables);
       }
     } catch (error) {
-      console.error('BuscarMesa: Error loading nearby mesas:', error);
+      console.error('SearchTable: Error loading nearby mesas:', error);
       showModal('error', String.error, String.errorSearchingNearbyTables);
     } finally {
       setIsLoadingLocation(false);

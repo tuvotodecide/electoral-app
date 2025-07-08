@@ -438,7 +438,7 @@ export const mockAtestiguamientosData = [
 ];
 
 // Simular llamada a API para obtener atestiguamientos del usuario
-export const fetchMisAtestiguamientos = async () => {
+export const fetchMyWitnesses = async () => {
   return new Promise(resolve => {
     console.log('API Mock: Fetching mis atestiguamientos...');
     // Simular delay de red

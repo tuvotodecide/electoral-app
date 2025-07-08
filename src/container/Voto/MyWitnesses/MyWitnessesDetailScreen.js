@@ -3,7 +3,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
 
-const MisAtestiguamientosDetailScreen = () => {
+const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
@@ -76,4 +76,4 @@ const MisAtestiguamientosDetailScreen = () => {
   );
 };
 
-export default MisAtestiguamientosDetailScreen;
+export default MyWitnessesDetailScreen;

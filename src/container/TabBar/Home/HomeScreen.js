@@ -11,7 +11,6 @@ const deviceWidth = Dimensions.get('window').width;
 const CARD_MARGIN = 10;
 const CARD_WIDTH = (deviceWidth - 3 * CARD_MARGIN) / 2; // 2 cards + margins
 
-
 const MiVotoLogo = () => (
   <View style={stylesx.logoRow}>
     {/* Bandera */}
@@ -54,29 +53,28 @@ export default function HomeScreen({navigation}) {
       icon: 'camera-outline',
       title: String.uploadActa,
       description: String.uploadActaDescription,
-      onPress: () => navigation.navigate(StackNav.BuscarMesa),
+      onPress: () => navigation.navigate(StackNav.SearchTable),
       iconComponent: Ionicons,
     },
     {
       icon: 'eye-outline',
       title: String.witnessActa,
       description: String.witnessActaDescription,
-      onPress: () => navigation.navigate(StackNav.AtestiguarActa),
+      onPress: () => navigation.navigate(StackNav.WitnessRecord),
       iconComponent: Ionicons,
     },
     {
       icon: 'megaphone-outline',
       title: String.announceCount,
       description: String.announceCountDescription,
-      onPress: () => navigation.navigate(StackNav.AnunciarConteo),
+      onPress: () => navigation.navigate(StackNav.AnnounceCount),
       iconComponent: Ionicons,
     },
     {
       icon: 'bar-chart-outline',
       title: String.myWitnesses,
       description: String.myWitnessesDescription,
-      onPress: () =>
-        navigation.navigate(StackNav.MisAtestiguamientosListScreen),
+      onPress: () => navigation.navigate(StackNav.MyWitnessesListScreen),
       iconComponent: Ionicons,
     },
   ];

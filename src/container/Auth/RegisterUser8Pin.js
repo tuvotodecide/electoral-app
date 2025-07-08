@@ -31,7 +31,7 @@ export default function RegisterUser8({navigation, route}) {
       vc,
       offerUrl,
       useBiometry,
-      dni
+      dni,
     });
   };
 

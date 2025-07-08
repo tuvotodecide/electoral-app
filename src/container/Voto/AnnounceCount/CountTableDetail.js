@@ -24,12 +24,12 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function DetalleMesaConteo({navigation, route}) {
+export default function CountTableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const mesa = route?.params?.mesa || mockMesa;
   const [modalVisible, setModalVisible] = React.useState(false);
 
-  const handleAnunciarConteo = () => {
+  const handleAnnounceCount = () => {
     setModalVisible(true);
   };
 
@@ -105,7 +105,7 @@ export default function DetalleMesaConteo({navigation, route}) {
       <TouchableOpacity
         style={stylesx.takePhotoBtn}
         activeOpacity={0.85}
-        onPress={handleAnunciarConteo}>
+        onPress={handleAnnounceCount}>
         <CText style={stylesx.takePhotoBtnText}>Anunciar Conteo</CText>
       </TouchableOpacity>
 

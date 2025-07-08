@@ -72,7 +72,7 @@ const ActaCertificationScreen = () => {
       } catch (error) {
         console.error('Error navigating to SuccessScreen:', error);
         // Fallback navigation
-        navigation.navigate('AtestiguarActa');
+        navigation.navigate('WitnessRecord');
       }
     }, 2000);
   };

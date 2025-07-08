@@ -22,12 +22,12 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function DetalleMesa({navigation, route}) {
+export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Usar datos reales de la mesa desde la navegación, con mockMesa como fallback
   const mesa = route.params?.mesa || mockMesa;
 
-  console.log('DetalleMesa - Mesa recibida:', mesa);
+  console.log('TableDetail - Mesa recibida:', mesa);
 
   // Si viene una imagen desde CameraScreen, úsala
   const [capturedImage, setCapturedImage] = React.useState(

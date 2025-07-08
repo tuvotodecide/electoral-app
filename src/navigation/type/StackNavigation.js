@@ -2,8 +2,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
-import CameraScreen from '../../container/Voto/SubirActa/CameraScreen';
-import AuthNavigationTest from './AuthNavigationTest';
+import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
 
 const Stack = createStackNavigator();
 
@@ -15,12 +14,6 @@ export default function StackNavigation() {
       }}
       initialRouteName={StackNav.Splash}>
       <Stack.Screen name={StackNav.Splash} component={StackRoute.Splash} />
-      <Stack.Screen name="AuthTest" component={StackRoute.AuthTest} />
-
-      {/* Rutas de Test */}
-      <Stack.Screen name="AuthNavigationTest" component={AuthNavigationTest} />
-      <Stack.Screen name="ConnectTest" component={StackRoute.ConnectTest} />
-      <Stack.Screen name="LoginUserTest" component={StackRoute.LoginUserTest} />
 
       {/* <Stack.Screen
         name={StackNav.OnBoarding}
@@ -36,37 +29,37 @@ export default function StackNavigation() {
       />
 
       {/* Pantallas de Voto */}
-      {/* <Stack.Screen
-        name={StackNav.SubirActa}
-        component={StackRoute.SubirActa}
-      /> */}
+      {/*      <Stack.Screen
+        name={StackNav.UploadRecord}
+        component={StackRoute.UploadRecord}
+      />*/}
       <Stack.Screen
-        name={StackNav.BuscarMesa}
-        component={StackRoute.BuscarMesa}
+        name={StackNav.SearchTable}
+        component={StackRoute.SearchTable}
       />
       <Stack.Screen
-        name={StackNav.DetalleMesa}
-        component={StackRoute.DetalleMesa}
+        name={StackNav.TableDetail}
+        component={StackRoute.TableDetail}
       />
       <Stack.Screen
-        name={StackNav.AtestiguarActa}
-        component={StackRoute.AtestiguarActa}
+        name={StackNav.WitnessRecord}
+        component={StackRoute.WitnessRecord}
       />
       <Stack.Screen
-        name={StackNav.AnunciarConteo}
-        component={StackRoute.AnunciarConteo}
+        name={StackNav.AnnounceCount}
+        component={StackRoute.AnnounceCount}
       />
       <Stack.Screen
-        name={StackNav.BuscarMesaConteo}
-        component={StackRoute.BuscarMesaConteo}
+        name={StackNav.SearchCountTable}
+        component={StackRoute.SearchCountTable}
       />
       <Stack.Screen
-        name={StackNav.DetalleMesaConteo}
-        component={StackRoute.DetalleMesaConteo}
+        name={StackNav.CountTableDetail}
+        component={StackRoute.CountTableDetail}
       />
       <Stack.Screen
-        name={StackNav.MisAtestiguamientosDetailScreen}
-        component={StackRoute.MisAtestiguamientosDetailScreen}
+        name={StackNav.MyWitnessesDetailScreen}
+        component={StackRoute.MyWitnessesDetailScreen}
       />
 
       <Stack.Screen

@@ -18,9 +18,9 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {fetchMisAtestiguamientos} from '../../../data/mockMesas';
+import {fetchMyWitnesses} from '../../../data/mockMesas';
 
-const MisAtestiguamientosListScreen = () => {
+const MyWitnessesListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
@@ -41,13 +41,11 @@ const MisAtestiguamientosListScreen = () => {
   const loadAtestiguamientos = async () => {
     setLoading(true);
     try {
-      console.log(
-        'MisAtestiguamientosListScreen: Fetching atestiguamientos...',
-      );
-      const response = await fetchMisAtestiguamientos();
+      console.log('MyWitnessesListScreen: Fetching atestiguamientos...');
+      const response = await fetchMyWitnesses();
       if (response.success) {
         console.log(
-          'MisAtestiguamientosListScreen: Data loaded successfully:',
+          'MyWitnessesListScreen: Data loaded successfully:',
           response.data,
         );
         setAtestiguamientos(response.data);
@@ -61,7 +59,7 @@ const MisAtestiguamientosListScreen = () => {
       }
     } catch (error) {
       console.log(
-        'MisAtestiguamientosListScreen: Error loading atestiguamientos:',
+        'MyWitnessesListScreen: Error loading atestiguamientos:',
         error,
       );
       setModalData({
@@ -89,8 +87,8 @@ const MisAtestiguamientosListScreen = () => {
         item => item.id.toString() === selectedImageId,
       );
       if (selectedAtestiguamiento) {
-        // Navigate to MisAtestiguamientosDetailScreen
-        navigation.navigate(StackNav.MisAtestiguamientosDetailScreen, {
+        // Navigate to MyWitnessesDetailScreen
+        navigation.navigate(StackNav.MyWitnessesDetailScreen, {
           photoUri: selectedAtestiguamiento.imagen,
           mesaData: selectedAtestiguamiento,
         });
@@ -338,4 +336,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MisAtestiguamientosListScreen;
+export default MyWitnessesListScreen;

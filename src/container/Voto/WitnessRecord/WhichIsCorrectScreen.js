@@ -18,14 +18,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants'; // Adjust path as needed
 import {fetchActasByMesa} from '../../../data/mockMesas';
 
-const CualEsCorrectaScreen = () => {
+const WhichIsCorrectScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {mesaData, photoUri} = route.params || {};
-  console.log('CualEsCorrectaScreen - Received params:', route.params);
-  console.log('CualEsCorrectaScreen - mesaData:', mesaData);
-  console.log('CualEsCorrectaScreen - photoUri:', photoUri);
+  console.log('WhichIsCorrectScreen - Received params:', route.params);
+  console.log('WhichIsCorrectScreen - mesaData:', mesaData);
+  console.log('WhichIsCorrectScreen - photoUri:', photoUri);
 
   // State to keep track of the currently selected image
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -55,19 +55,19 @@ const CualEsCorrectaScreen = () => {
   const loadActasByMesa = async mesaId => {
     try {
       setIsLoadingActas(true);
-      console.log('CualEsCorrectaScreen: Loading actas for mesa:', mesaId);
+      console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
       const response = await fetchActasByMesa(mesaId);
 
       if (response.success) {
         console.log(
-          'CualEsCorrectaScreen: Actas loaded successfully:',
+          'WhichIsCorrectScreen: Actas loaded successfully:',
           response.data,
         );
         setActaImages(response.data.images);
         setPartyResults(response.data.partyResults);
         setVoteSummaryResults(response.data.voteSummaryResults);
       } else {
-        console.error('CualEsCorrectaScreen: Failed to load actas');
+        console.error('WhichIsCorrectScreen: Failed to load actas');
         showModal(
           'error',
           'Error',
@@ -84,7 +84,7 @@ const CualEsCorrectaScreen = () => {
         ]);
       }
     } catch (error) {
-      console.error('CualEsCorrectaScreen: Error loading actas:', error);
+      console.error('WhichIsCorrectScreen: Error loading actas:', error);
       showModal('error', 'Error', 'Error al cargar las actas');
       // Fallback con imagen por defecto
       setActaImages([
@@ -365,4 +365,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CualEsCorrectaScreen;
+export default WhichIsCorrectScreen;

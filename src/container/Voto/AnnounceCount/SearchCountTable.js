@@ -8,7 +8,7 @@ import {createSearchMesaStyles} from '../../../styles/searchMesaStyles';
 import {fetchMesasConteo} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 
-const BuscarMesaConteo = () => {
+const SearchCountTable = () => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -28,7 +28,7 @@ const BuscarMesaConteo = () => {
     handleNotificationPress,
     handleHomePress,
     handleProfilePress,
-  } = useSearchMesaLogic(StackNav.DetalleMesaConteo);
+  } = useSearchMesaLogic(StackNav.CountTableDetail);
 
   const styles = createSearchMesaStyles();
 
@@ -49,17 +49,17 @@ const BuscarMesaConteo = () => {
   const loadMesas = async () => {
     try {
       setIsLoading(true);
-      console.log('BuscarMesaConteo: Loading mesas de conteo...');
+      console.log('SearchCountTable: Loading mesas de conteo...');
       const response = await fetchMesasConteo();
 
       if (response.success) {
         console.log(
-          'BuscarMesaConteo: Mesas de conteo loaded successfully:',
+          'SearchCountTable: Mesas de conteo loaded successfully:',
           response.data.length,
         );
         setMesas(response.data);
       } else {
-        console.error('BuscarMesaConteo: Failed to load mesas de conteo');
+        console.error('SearchCountTable: Failed to load mesas de conteo');
         showModal(
           'error',
           'Error',
@@ -67,7 +67,7 @@ const BuscarMesaConteo = () => {
         );
       }
     } catch (error) {
-      console.error('BuscarMesaConteo: Error loading mesas de conteo:', error);
+      console.error('SearchCountTable: Error loading mesas de conteo:', error);
       showModal('error', 'Error', 'Error al cargar las mesas de conteo');
     } finally {
       setIsLoading(false);
@@ -141,4 +141,4 @@ const BuscarMesaConteo = () => {
   );
 };
 
-export default BuscarMesaConteo;
+export default SearchCountTable;

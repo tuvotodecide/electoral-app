@@ -28,7 +28,7 @@ const SearchMesaScreen = () => {
     handleNotificationPress,
     handleHomePress,
     handleProfilePress,
-  } = useSearchMesaLogic(StackNav.CualEsCorrectaScreen);
+  } = useSearchMesaLogic(StackNav.WhichIsCorrectScreen);
 
   const styles = createSearchMesaStyles();
 
@@ -49,50 +49,47 @@ const SearchMesaScreen = () => {
   const loadMesas = async () => {
     try {
       setIsLoading(true);
-      console.log('AtestiguarActa: Loading mesas...');
+      console.log('WitnessRecord: Loading mesas...');
       const response = await fetchMesas();
 
       if (response.success) {
         console.log(
-          'AtestiguarActa: Mesas loaded successfully:',
+          'WitnessRecord: Mesas loaded successfully:',
           response.data.length,
         );
         setMesas(response.data);
       } else {
-        console.error('AtestiguarActa: Failed to load mesas');
+        console.error('WitnessRecord: Failed to load mesas');
         showModal('error', 'Error', 'No se pudieron cargar las mesas');
       }
     } catch (error) {
-      console.error('AtestiguarActa: Error loading mesas:', error);
+      console.error('WitnessRecord: Error loading mesas:', error);
       showModal('error', 'Error', 'Error al cargar las mesas');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Override handleMesaPress for AtestiguarActa specific behavior
+  // Override handleMesaPress for WitnessRecord specific behavior
   const handleMesaPress = mesa => {
-    console.log('AtestiguarActa - handleMesaPress called with mesa:', mesa);
+    console.log('WitnessRecord - handleMesaPress called with mesa:', mesa);
     console.log(
-      'AtestiguarActa - StackNav.CualEsCorrectaScreen:',
-      StackNav.CualEsCorrectaScreen,
+      'WitnessRecord - StackNav.WhichIsCorrectScreen:',
+      StackNav.WhichIsCorrectScreen,
     );
 
     try {
-      // Usar baseMesaPress del hook pero con los parámetros correctos para AtestiguarActa
+      // Usar baseMesaPress del hook pero con los parámetros correctos para WitnessRecord
       const mesaWithPhoto = {
         mesaData: mesa,
         photoUri:
           'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
       };
-      console.log(
-        'AtestiguarActa - Calling baseMesaPress with:',
-        mesaWithPhoto,
-      );
+      console.log('WitnessRecord - Calling baseMesaPress with:', mesaWithPhoto);
       baseMesaPress(mesaWithPhoto);
-      console.log('AtestiguarActa - baseMesaPress call successful');
+      console.log('WitnessRecord - baseMesaPress call successful');
     } catch (error) {
-      console.error('AtestiguarActa - Navigation error:', error);
+      console.error('WitnessRecord - Navigation error:', error);
     }
   };
 

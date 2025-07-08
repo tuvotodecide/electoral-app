@@ -6,27 +6,27 @@ export const StackNav = {
 
   // Nuevas rutas para Mi Voto
   //Subir Acta
-  // SubirActa: 'SubirActa',
-  BuscarMesa: 'BuscarMesa',
-  DetalleMesa: 'DetalleMesa',
+  // UploadRecord: 'UploadRecord',
+  SearchTable: 'SearchTable',
+  TableDetail: 'TableDetail',
   CameraScreen: 'CameraScreen',
   CameraPermissionTest: 'CameraPermissionTest',
   PhotoReviewScreen: 'PhotoReviewScreen',
   PhotoConfirmationScreen: 'PhotoConfirmationScreen',
   SuccessScreen: 'SuccessScreen',
   // Atestiguar Acta
-  AtestiguarActa: 'AtestiguarActa',
-  CualEsCorrectaScreen: 'CualEsCorrectaScreen',
+  WitnessRecord: 'WitnessRecord',
+  WhichIsCorrectScreen: 'WhichIsCorrectScreen',
   ActaReviewScreen: 'ActaReviewScreen',
   ActaCertificationScreen: 'ActaCertificationScreen',
   // Anunciar Conteo
-  AnunciarConteo: 'AnunciarConteo',
-  BuscarMesaConteo: 'BuscarMesaConteo',
-  DetalleMesaConteo: 'DetalleMesaConteo',
+  AnnounceCount: 'AnnounceCount',
+  SearchCountTable: 'SearchCountTable',
+  CountTableDetail: 'CountTableDetail',
   // Mis Atestiguamientos
-  MisAtestiguamientos: 'MisAtestiguamientos',
-  MisAtestiguamientosListScreen: 'MisAtestiguamientosListScreen',
-  MisAtestiguamientosDetailScreen: 'MisAtestiguamientosDetailScreen',
+  MyWitnesses: 'MyWitnesses',
+  MyWitnessesListScreen: 'MyWitnessesListScreen',
+  MyWitnessesDetailScreen: 'MyWitnessesDetailScreen',
 
   StockScreen: 'StockScreen',
   CryptoScreen: 'CryptoScreen',

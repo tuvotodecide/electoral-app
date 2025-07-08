@@ -2,7 +2,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
-import CameraScreen from '../../container/Voto/SubirActa/CameraScreen';
+import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
 
 const VotoStack = createStackNavigator();
 
@@ -12,27 +12,27 @@ export default function VotoStackNavigation() {
       screenOptions={{
         headerShown: false,
       }}
-      //   initialRouteName={StackNav.SubirActa}>
+      //   initialRouteName={StackNav.UploadRecord}>
       //   <VotoStack.Screen
-      //     name={StackNav.SubirActa}
-      //     component={StackRoute.SubirActa}
+      //     name={StackNav.UploadRecord}
+      //     component={StackRoute.UploadRecord}
       //   />
-      initialRouteName={StackNav.BuscarMesa}>
+      initialRouteName={StackNav.SearchTable}>
       <VotoStack.Screen
-        name={StackNav.BuscarMesa}
-        component={StackRoute.BuscarMesa}
+        name={StackNav.SearchTable}
+        component={StackRoute.SearchTable}
       />
       <VotoStack.Screen
-        name={StackNav.DetalleMesa}
-        component={StackRoute.DetalleMesa}
+        name={StackNav.TableDetail}
+        component={StackRoute.TableDetail}
       />
       <VotoStack.Screen
-        name={StackNav.AtestiguarActa}
-        component={StackRoute.AtestiguarActa}
+        name={StackNav.WitnessRecord}
+        component={StackRoute.WitnessRecord}
       />
       <VotoStack.Screen
-        name={StackNav.CualEsCorrectaScreen}
-        component={StackRoute.CualEsCorrectaScreen}
+        name={StackNav.WhichIsCorrectScreen}
+        component={StackRoute.WhichIsCorrectScreen}
       />
       <VotoStack.Screen
         name={StackNav.ActaReviewScreen}
@@ -43,20 +43,20 @@ export default function VotoStackNavigation() {
         component={StackRoute.ActaCertificationScreen}
       />
       <VotoStack.Screen
-        name={StackNav.AnunciarConteo}
-        component={StackRoute.AnunciarConteo}
+        name={StackNav.AnnounceCount}
+        component={StackRoute.AnnounceCount}
       />
       <VotoStack.Screen
-        name={StackNav.MisAtestiguamientos}
-        component={StackRoute.MisAtestiguamientos}
+        name={StackNav.MyWitnesses}
+        component={StackRoute.MyWitnesses}
       />
       <VotoStack.Screen
-        name={StackNav.MisAtestiguamientosListScreen}
-        component={StackRoute.MisAtestiguamientosListScreen}
+        name={StackNav.MyWitnessesListScreen}
+        component={StackRoute.MyWitnessesListScreen}
       />
       <VotoStack.Screen
-        name={StackNav.MisAtestiguamientosDetailScreen}
-        component={StackRoute.MisAtestiguamientosDetailScreen}
+        name={StackNav.MyWitnessesDetailScreen}
+        component={StackRoute.MyWitnessesDetailScreen}
       />
       <VotoStack.Screen
         name="CameraScreen"
