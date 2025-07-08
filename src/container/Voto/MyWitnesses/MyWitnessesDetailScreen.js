@@ -2,6 +2,7 @@ import React from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import String from '../../../i18n/String';
 
 const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();
@@ -11,17 +12,22 @@ const MyWitnessesDetailScreen = () => {
 
   // Usar los datos específicos del atestiguamiento seleccionado
   const partyResults = mesaData?.partyResults || [
-    {id: 'unidad', partido: 'Unidad', presidente: '33', diputado: '29'},
-    {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '3', diputado: '1'},
-    {id: 'pdc', partido: 'PDC', presidente: '17', diputado: '16'},
-    {id: 'morena', partido: 'Morena', presidente: '1', diputado: '0'},
+    {id: 'unidad', partido: String.partyUnit, presidente: '33', diputado: '29'},
+    {
+      id: 'mas-ipsp',
+      partido: String.partyMasIpsp,
+      presidente: '3',
+      diputado: '1',
+    },
+    {id: 'pdc', partido: String.partyPdc, presidente: '17', diputado: '16'},
+    {id: 'morena', partido: String.partyMorena, presidente: '1', diputado: '0'},
   ];
 
   // Usar los datos específicos del resumen de votos del atestiguamiento
   const voteSummaryResults = mesaData?.voteSummaryResults || [
-    {id: 'validos', label: 'Válidos', value1: '141', value2: '176'},
-    {id: 'blancos', label: 'Blancos', value1: '64', value2: '3'},
-    {id: 'nulos', label: 'Nulos', value1: '6', value2: '9'},
+    {id: 'validos', label: String.validVotes, value1: '141', value2: '176'},
+    {id: 'blancos', label: String.blankVotes, value1: '64', value2: '3'},
+    {id: 'nulos', label: String.nullVotes, value1: '6', value2: '9'},
   ];
 
   const handleBack = () => {
@@ -30,7 +36,7 @@ const MyWitnessesDetailScreen = () => {
 
   const actionButtons = [
     {
-      text: 'Volver',
+      text: String.goBack,
       onPress: handleBack,
       style: {
         backgroundColor: '#fff',
@@ -56,10 +62,12 @@ const MyWitnessesDetailScreen = () => {
   // Crear título dinámico con información de la mesa
   const headerTitle = mesaData
     ? `${mesaData.mesa} - ${mesaData.fecha}`
-    : 'Detalle del Atestiguamiento';
+    : String.witnessDetail;
   const instructionsText = mesaData
-    ? `Resultados atestiguados de ${mesaData.mesa} - ${mesaData.recinto}`
-    : 'Los votos registrados de la mesa';
+    ? String.attestedResults
+        .replace('{tableName}', mesaData.mesa)
+        .replace('{precinctName}', mesaData.recinto)
+    : String.registeredVotes;
 
   return (
     <BaseActaReviewScreen

@@ -14,6 +14,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import {moderateScale} from '../../../common/constants';
+import String from '../../../i18n/String';
 
 // Solo para demo, en tu app vendrá desde navigation
 const mockMesa = {
@@ -63,7 +64,7 @@ export default function CountTableDetail({navigation, route}) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title="Información de la mesa"
+        title={String.tableInformation}
         showNotification={false}
       />
 
@@ -87,10 +88,14 @@ export default function CountTableDetail({navigation, route}) {
           }}>
           <View style={{flex: 1, marginRight: 14}}>
             <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-            <CText style={stylesx.label}>Recinto: {mesa.recinto}</CText>
+            <CText style={stylesx.label}>
+              {String.precinct} {mesa.recinto}
+            </CText>
             <CText style={stylesx.label}>{mesa.colegio}</CText>
             <CText style={stylesx.label}>{mesa.provincia}</CText>
-            <CText style={stylesx.label}>Codigo de Mesa: {mesa.codigo}</CText>
+            <CText style={stylesx.label}>
+              {String.tableCodeLabel} {mesa.codigo}
+            </CText>
           </View>
           <MaterialIcons
             name="how-to-vote"
@@ -106,7 +111,9 @@ export default function CountTableDetail({navigation, route}) {
         style={stylesx.takePhotoBtn}
         activeOpacity={0.85}
         onPress={handleAnnounceCount}>
-        <CText style={stylesx.takePhotoBtnText}>Anunciar Conteo</CText>
+        <CText style={stylesx.takePhotoBtnText}>
+          {String.announceCountButton}
+        </CText>
       </TouchableOpacity>
 
       {/* MODAL DE CONFIRMACIÓN */}
@@ -120,9 +127,12 @@ export default function CountTableDetail({navigation, route}) {
                   color="#4F9858"
                   style={{marginBottom: 20}}
                 />
-                <CText style={stylesx.modalTitle}>Procesando...</CText>
+                <CText style={stylesx.modalTitle}>{String.processing}</CText>
                 <CText style={stylesx.modalSubtitle}>
-                  Estamos anunciando el conteo de la mesa {mesa.numero}
+                  {String.announcingTableCount.replace(
+                    '{tableName}',
+                    mesa.numero,
+                  )}
                 </CText>
               </View>
             ) : success ? (
@@ -133,9 +143,11 @@ export default function CountTableDetail({navigation, route}) {
                   color="#4F9858"
                   style={stylesx.modalIcon}
                 />
-                <CText style={stylesx.modalTitle}>¡Conteo Anunciado!</CText>
+                <CText style={stylesx.modalTitle}>
+                  {String.countAnnounced}
+                </CText>
                 <CText style={stylesx.modalSubtitle}>
-                  El conteo ha sido anunciado exitosamente.
+                  {String.countAnnouncedSuccess}
                 </CText>
               </View>
             ) : (
@@ -147,9 +159,12 @@ export default function CountTableDetail({navigation, route}) {
                     color="#4F9858"
                     style={stylesx.modalIcon}
                   />
-                  <CText style={stylesx.modalTitle}>¿Estás seguro?</CText>
+                  <CText style={stylesx.modalTitle}>{String.areYouSure}</CText>
                   <CText style={stylesx.modalSubtitle}>
-                    ¿Deseas anunciar el conteo de la mesa {mesa.numero}?
+                    {String.wishToAnnounceCount.replace(
+                      '{tableName}',
+                      mesa.numero,
+                    )}
                   </CText>
                 </View>
 
@@ -157,12 +172,16 @@ export default function CountTableDetail({navigation, route}) {
                   <TouchableOpacity
                     style={stylesx.cancelButton}
                     onPress={handleCancelConteo}>
-                    <CText style={stylesx.cancelButtonText}>Cancelar</CText>
+                    <CText style={stylesx.cancelButtonText}>
+                      {String.cancel}
+                    </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={stylesx.confirmButton}
                     onPress={handleConfirmConteo}>
-                    <CText style={stylesx.confirmButtonText}>Confirmar</CText>
+                    <CText style={stylesx.confirmButtonText}>
+                      {String.confirm}
+                    </CText>
                   </TouchableOpacity>
                 </View>
               </>

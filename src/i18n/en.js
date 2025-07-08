@@ -999,17 +999,39 @@ export default {
   biometryNotAvailable: 'Biometría no disponible',
   locationNotAvailable: 'ubicación no disponible',
 
-  // Camera Permission Test buttons
-  checkPermissions: 'Verificar Permisos',
-  requestPermissions: 'Solicitar Permisos',
+  // Announce Count
+  tableInformation: 'Información de la mesa',
+  precinct: 'Recinto:',
+  tableCodeLabel: 'Código de Mesa:',
+  announceCountButton: 'Anunciar Conteo',
+  processing: 'Procesando...',
+  announcingTableCount: 'Estamos anunciando el conteo de la mesa {tableName}',
+  countAnnounced: '¡Conteo Anunciado!',
+  countAnnouncedSuccess: 'El conteo ha sido anunciado exitosamente.',
+  areYouSure: '¿Estás seguro?',
+  wishToAnnounceCount: '¿Deseas anunciar el conteo de la mesa {tableName}?',
 
-  // Additional generic keys
-  venue: 'Recinto:',
-  aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara',
-  cameraPermissionTest: 'Test de Permisos de Cámara',
-  hookHasPermission: 'Hook hasPermission:',
-  permissionStatus: 'Permission Status:',
-  cameraDevice: 'Camera Device:',
-  backCamera: 'Back Camera:',
-  frontCamera: 'Front Camera:',
+  // Search Count Table
+  acceptButton: 'Aceptar',
+  errorTitle: 'Error',
+  couldNotLoadCountTables: 'No se pudieron cargar las mesas de conteo',
+  errorLoadingCountTables: 'Error al cargar las mesas de conteo',
+  loadingCountTables: 'Cargando mesas de conteo...',
+  searchTableForCount: 'Buscar Mesa para Conteo',
+  chooseTablePlease: 'Elije una mesa por favor:',
+  tableCodePlaceholder: 'Código de mesa',
+  listBasedOnLocation: 'La siguiente lista se basa en su ubicación',
+
+  // My Witnesses Detail Screen
+  partyUnit: 'Unidad',
+  partyMasIpsp: 'MAS-IPSP',
+  partyPdc: 'PDC',
+  partyMorena: 'Morena',
+  validVotes: 'Válidos',
+  blankVotes: 'Blancos',
+  nullVotes: 'Nulos',
+  goBack: 'Volver',
+  witnessDetail: 'Detalle del Atestiguamiento',
+  attestedResults: 'Resultados atestiguados de {tableName} - {precinctName}',
+  registeredVotes: 'Los votos registrados de la mesa',
 };

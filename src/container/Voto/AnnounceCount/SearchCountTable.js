@@ -7,6 +7,7 @@ import {useSearchMesaLogic} from '../../../hooks/useSearchMesaLogic';
 import {createSearchMesaStyles} from '../../../styles/searchMesaStyles';
 import {fetchMesasConteo} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
+import String from '../../../i18n/String';
 
 const SearchCountTable = () => {
   const [mesas, setMesas] = useState([]);
@@ -16,7 +17,7 @@ const SearchCountTable = () => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: 'Aceptar',
+    buttonText: String.acceptButton,
   });
 
   const {
@@ -37,7 +38,12 @@ const SearchCountTable = () => {
     loadMesas();
   }, []);
 
-  const showModal = (type, title, message, buttonText = 'Aceptar') => {
+  const showModal = (
+    type,
+    title,
+    message,
+    buttonText = String.acceptButton,
+  ) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
@@ -60,15 +66,11 @@ const SearchCountTable = () => {
         setMesas(response.data);
       } else {
         console.error('SearchCountTable: Failed to load mesas de conteo');
-        showModal(
-          'error',
-          'Error',
-          'No se pudieron cargar las mesas de conteo',
-        );
+        showModal('error', String.errorTitle, String.couldNotLoadCountTables);
       }
     } catch (error) {
       console.error('SearchCountTable: Error loading mesas de conteo:', error);
-      showModal('error', 'Error', 'Error al cargar las mesas de conteo');
+      showModal('error', String.errorTitle, String.errorLoadingCountTables);
     } finally {
       setIsLoading(false);
     }
@@ -104,17 +106,17 @@ const SearchCountTable = () => {
         // Header props
         colors={colors}
         onBack={handleBack}
-        title="Buscar Mesa para Conteo"
+        title={String.searchTableForCount}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         // Choose mesa text props
-        chooseMesaText="Elije una mesa por favor:"
+        chooseMesaText={String.chooseTablePlease}
         // Search input props
-        searchPlaceholder="Código de mesa"
+        searchPlaceholder={String.tableCodePlaceholder}
         searchValue={searchText}
         onSearchChange={setSearchText}
         // Location info props
-        locationText="La siguiente lista se basa en su ubicación"
+        locationText={String.listBasedOnLocation}
         locationIconColor="#0C5460"
         // Mesa list props
         mesas={mesas}
