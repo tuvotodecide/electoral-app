@@ -846,7 +846,7 @@ export default {
   mastercard: 'Mastercard',
   bankTransfer: 'Bank Transfer',
   creditAndDebitCard: 'Credit/Debit Card',
-  confirm: 'Confirm',
+  confirm: 'Confirmar',
   depositID: 'Deposit ID',
   depositAmount: 'Deposit amount',
   depositFee: 'Deposit fee',
@@ -1102,7 +1102,9 @@ export default {
   // Common
   confirmation: 'Confirmation',
   voluntaryInitiative: 'Iniciativa Voluntaria de',
-  autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
+  // autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
+  autoNavigating:
+    'Regresando automáticamente al inicio en {timeLeft} segundo{s}...',
 
   // Camera
   cameraNotAvailable: 'No se puede usar la cámara.',

@@ -15,8 +15,6 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import {moderateScale} from '../../../common/constants';
-import {fontConfig} from 'react-native-paper/lib/typescript/styles/fonts';
 import CameraScreen from './CameraScreen';
 import {StackNav} from '../../../navigation/NavigationKey';
 

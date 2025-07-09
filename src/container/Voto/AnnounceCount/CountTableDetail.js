@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -13,8 +14,20 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import {moderateScale} from '../../../common/constants';
 import String from '../../../i18n/String';
+
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+const isLandscape = screenWidth > screenHeight;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 // Mock data for demo, in your app it will come from navigation
 const mockMesa = {
@@ -68,53 +81,84 @@ export default function CountTableDetail({navigation, route}) {
         showNotification={false}
       />
 
-      {/* DATOS DE LA MESA */}
-      <View
-        style={{
-          ...stylesx.card,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 18,
-          borderWidth: 0,
-          borderColor: 'transparent',
-          shadowOpacity: 0,
-          elevation: 0,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-          }}>
-          <View style={{flex: 1, marginRight: 14}}>
-            <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-            <CText style={stylesx.label}>
-              {String.venue} {mesa.recinto}
-            </CText>
-            <CText style={stylesx.label}>{mesa.colegio}</CText>
-            <CText style={stylesx.label}>{mesa.provincia}</CText>
-            <CText style={stylesx.label}>
-              {String.tableCode} {mesa.codigo}
-            </CText>
-          </View>
-          <MaterialIcons
-            name="how-to-vote"
-            size={moderateScale(70)}
-            color={colors.textColor}
-            style={{marginTop: moderateScale(25)}}
-          />
-        </View>
-      </View>
+      {/* CONTENT */}
+      <View style={stylesx.scrollableContent}>
+        {/* For tablet landscape, use two-column layout */}
+        {isTablet && isLandscape ? (
+          <View style={stylesx.tabletLandscapeContainer}>
+            {/* Left Column: Table Data */}
+            <View style={stylesx.leftColumn}>
+              <View style={stylesx.card}>
+                <View style={stylesx.cardContent}>
+                  <View style={stylesx.cardTextContainer}>
+                    <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                    <CText style={stylesx.label}>
+                      {String.venue} {mesa.recinto}
+                    </CText>
+                    <CText style={stylesx.label}>{mesa.colegio}</CText>
+                    <CText style={stylesx.label}>{mesa.provincia}</CText>
+                    <CText style={stylesx.label}>
+                      {String.tableCode} {mesa.codigo}
+                    </CText>
+                  </View>
+                  <MaterialIcons
+                    name="how-to-vote"
+                    size={getResponsiveSize(50, 60, 70)}
+                    color={colors.textColor}
+                    style={stylesx.cardIcon}
+                  />
+                </View>
+              </View>
+            </View>
 
-      {/* BOTÓN ANUNCIAR CONTEO */}
-      <TouchableOpacity
-        style={stylesx.takePhotoBtn}
-        activeOpacity={0.85}
-        onPress={handleAnnounceCount}>
-        <CText style={stylesx.takePhotoBtnText}>
-          {String.announceCountButton}
-        </CText>
-      </TouchableOpacity>
+            {/* Right Column: Action Button */}
+            <View style={stylesx.rightColumn}>
+              <TouchableOpacity
+                style={stylesx.takePhotoBtn}
+                activeOpacity={0.85}
+                onPress={handleAnnounceCount}>
+                <CText style={stylesx.takePhotoBtnText}>
+                  {String.announceCountButton}
+                </CText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          /* Regular Layout: Phones and Tablet Portrait */
+          <>
+            <View style={stylesx.card}>
+              <View style={stylesx.cardContent}>
+                <View style={stylesx.cardTextContainer}>
+                  <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                  <CText style={stylesx.label}>
+                    {String.venue} {mesa.recinto}
+                  </CText>
+                  <CText style={stylesx.label}>{mesa.colegio}</CText>
+                  <CText style={stylesx.label}>{mesa.provincia}</CText>
+                  <CText style={stylesx.label}>
+                    {String.tableCode} {mesa.codigo}
+                  </CText>
+                </View>
+                <MaterialIcons
+                  name="how-to-vote"
+                  size={getResponsiveSize(50, 60, 70)}
+                  color={colors.textColor}
+                  style={stylesx.cardIcon}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={stylesx.takePhotoBtn}
+              activeOpacity={0.85}
+              onPress={handleAnnounceCount}>
+              <CText style={stylesx.takePhotoBtnText}>
+                {String.announceCountButton}
+              </CText>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
 
       {/* MODAL DE CONFIRMACIÓN */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -125,7 +169,7 @@ export default function CountTableDetail({navigation, route}) {
                 <ActivityIndicator
                   size="large"
                   color="#4F9858"
-                  style={{marginBottom: 20}}
+                  style={{marginBottom: getResponsiveSize(16, 20, 24)}}
                 />
                 <CText style={stylesx.modalTitle}>{String.processing}</CText>
                 <CText style={stylesx.modalSubtitle}>
@@ -139,7 +183,7 @@ export default function CountTableDetail({navigation, route}) {
               <View style={stylesx.modalHeader}>
                 <Ionicons
                   name="checkmark-circle"
-                  size={moderateScale(60)}
+                  size={getResponsiveSize(50, 60, 70)}
                   color="#4F9858"
                   style={stylesx.modalIcon}
                 />
@@ -155,7 +199,7 @@ export default function CountTableDetail({navigation, route}) {
                 <View style={stylesx.modalHeader}>
                   <Ionicons
                     name="checkmark-circle"
-                    size={moderateScale(60)}
+                    size={getResponsiveSize(50, 60, 70)}
                     color="#4F9858"
                     style={stylesx.modalIcon}
                   />
@@ -193,79 +237,111 @@ export default function CountTableDetail({navigation, route}) {
   );
 }
 
-// STYLES
+// RESPONSIVE STYLES
 const stylesx = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 0,
+  },
+  scrollableContent: {
+    flex: 1,
+    paddingBottom: getResponsiveSize(15, 25, 30),
+  },
+  // Tablet Landscape Layout
+  tabletLandscapeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingHorizontal: getResponsiveSize(20, 24, 32),
+    paddingVertical: getResponsiveSize(20, 24, 32),
+  },
+  leftColumn: {
+    flex: 0.65,
+    paddingRight: getResponsiveSize(16, 20, 24),
+  },
+  rightColumn: {
+    flex: 0.35,
+    paddingLeft: getResponsiveSize(16, 20, 24),
+    justifyContent: 'center',
   },
   bigBold: {
-    fontSize: 18,
+    fontSize: getResponsiveSize(16, 18, 22),
     fontWeight: 'bold',
-    marginLeft: 19,
-    marginBottom: 2,
+    marginLeft: getResponsiveSize(16, 19, 24),
+    marginBottom: getResponsiveSize(2, 4, 6),
     color: '#222',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#8B9399',
-    marginLeft: 19,
+    marginLeft: getResponsiveSize(16, 19, 24),
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 23,
-    padding: 16,
+    borderRadius: getResponsiveSize(10, 12, 14),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(18, 23, 28),
+    padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
-    marginBottom: 25,
+    marginBottom: getResponsiveSize(20, 25, 30),
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  cardTextContainer: {
+    flex: 1,
+    marginRight: getResponsiveSize(12, 14, 18),
+  },
+  cardIcon: {
+    marginTop: getResponsiveSize(8, 12, 16),
+    alignSelf: 'flex-start',
+  },
   mesaTitle: {
-    fontSize: 17,
+    fontSize: getResponsiveSize(16, 17, 20),
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: getResponsiveSize(4, 6, 8),
     color: '#111',
   },
   label: {
-    fontSize: 14,
+    fontSize: getResponsiveSize(13, 14, 16),
     color: '#222',
-    marginBottom: 2,
+    marginBottom: getResponsiveSize(2, 3, 4),
   },
   infoAI: {
     backgroundColor: '#DDF4FA',
-    borderRadius: 10,
-    marginHorizontal: 16,
+    borderRadius: getResponsiveSize(8, 10, 12),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 20,
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 14, 18),
+    marginBottom: getResponsiveSize(16, 20, 24),
   },
   iaText: {
-    fontSize: 15,
+    fontSize: getResponsiveSize(13, 15, 17),
     color: '#226678',
     fontWeight: '500',
   },
   takePhotoBtn: {
-    marginHorizontal: 16,
-    marginTop: 8,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(6, 8, 12),
     backgroundColor: '#4F9858',
-    borderRadius: 12,
+    borderRadius: getResponsiveSize(10, 12, 14),
     justifyContent: 'center',
     alignItems: 'center',
-    height: 50,
+    height: getResponsiveSize(48, 50, 56),
   },
   takePhotoBtnText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 17,
+    fontSize: getResponsiveSize(16, 17, 19),
     letterSpacing: 0.2,
   },
   modalOverlay: {
@@ -276,63 +352,64 @@ const stylesx = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    marginHorizontal: 30,
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+    borderRadius: getResponsiveSize(16, 20, 24),
+    marginHorizontal: getResponsiveSize(24, 30, 40),
+    paddingVertical: getResponsiveSize(24, 30, 36),
+    paddingHorizontal: getResponsiveSize(18, 20, 28),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 10,
+    maxWidth: isTablet ? 400 : undefined,
   },
   modalHeader: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: getResponsiveSize(24, 30, 36),
   },
   modalIcon: {
-    marginBottom: 15,
+    marginBottom: getResponsiveSize(12, 15, 18),
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: getResponsiveSize(20, 22, 26),
     fontWeight: 'bold',
     color: '#222',
-    marginBottom: 10,
+    marginBottom: getResponsiveSize(8, 10, 12),
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 16,
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#666',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: getResponsiveSize(20, 22, 26),
   },
   modalButtons: {
     flexDirection: 'row',
     width: '100%',
-    gap: 15,
+    gap: getResponsiveSize(12, 15, 18),
   },
   cancelButton: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    paddingVertical: 15,
+    borderRadius: getResponsiveSize(10, 12, 14),
+    paddingVertical: getResponsiveSize(14, 15, 18),
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#666',
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#4F9858',
-    borderRadius: 12,
-    paddingVertical: 15,
+    borderRadius: getResponsiveSize(10, 12, 14),
+    paddingVertical: getResponsiveSize(14, 15, 18),
     alignItems: 'center',
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
   },

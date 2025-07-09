@@ -30,6 +30,7 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
+const isLandscape = screenWidth > screenHeight;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -38,6 +39,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const getNumColumns = () => {
+  if (isTablet && isLandscape) return 3;
   if (isTablet) return 2;
   return 1;
 };
@@ -196,7 +198,7 @@ export default function SearchTable({navigation}) {
             <View style={localStyle.searchInputContainer}>
               <Ionicons
                 name="search-outline"
-                size={moderateScale(20)}
+                size={getResponsiveSize(18, 20, 24)}
                 color="#979797"
                 style={localStyle.searchIcon}
               />
@@ -217,13 +219,13 @@ export default function SearchTable({navigation}) {
               onPress={toggleSort}>
               <Ionicons
                 name="swap-vertical-outline"
-                size={moderateScale(16)}
+                size={getResponsiveSize(14, 16, 18)}
                 color="#979797"
               />
               <CText style={localStyle.sortText}>{sortOrder}</CText>
               <Ionicons
                 name="chevron-down-outline"
-                size={moderateScale(16)}
+                size={getResponsiveSize(14, 16, 18)}
                 color="#979797"
               />
             </TouchableOpacity>
@@ -235,12 +237,12 @@ export default function SearchTable({navigation}) {
                 <ActivityIndicator
                   size="small"
                   color="#2596be"
-                  style={{marginRight: 5}}
+                  style={{marginRight: getResponsiveSize(4, 5, 6)}}
                 />
               ) : (
                 <Ionicons
                   name="location-outline"
-                  size={moderateScale(16)}
+                  size={getResponsiveSize(14, 16, 18)}
                   color="#0C5460"
                 />
               )}
@@ -377,11 +379,15 @@ const localStyle = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
-    flex: isTablet ? 0.48 : 1, // For tablet two-column layout
+    flex: isTablet ? (isLandscape ? 0.31 : 0.48) : 1, // For tablet columns
   },
   mesaCardTablet: {
     marginHorizontal: getResponsiveSize(4, 8, 12),
-    maxWidth: isTablet ? (screenWidth - 80) / 2 : '100%',
+    maxWidth: isTablet
+      ? isLandscape
+        ? (screenWidth - 120) / 3
+        : (screenWidth - 80) / 2
+      : '100%',
   },
   mesaHeader: {
     flexDirection: 'row',
