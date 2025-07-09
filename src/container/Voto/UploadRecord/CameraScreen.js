@@ -186,14 +186,14 @@ export default function CameraScreen({navigation, route}) {
       }
 
       Alert.alert(
-        String.cameraErrorTitle || 'Camera Error', 
-        String.cameraErrorMessage || 'Unable to take photo. Please try again.', 
+        String.cameraErrorTitle || 'Camera Error',
+        String.cameraErrorMessage || 'Unable to take photo. Please try again.',
         [
           {
             text: String.accept || 'OK',
             onPress: () => {},
           },
-        ]
+        ],
       );
     } finally {
       setLoading(false);
@@ -256,7 +256,9 @@ export default function CameraScreen({navigation, route}) {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <CText style={styles.buttonText}>
-                  {isActive ? (String.takePhoto || 'Take Photo') : (String.preparingCamera || 'Preparing camera...')}
+                  {isActive
+                    ? String.takePhoto || 'Take Photo'
+                    : String.preparingCamera || 'Preparing camera...'}
                 </CText>
               )}
             </TouchableOpacity>
@@ -288,7 +290,9 @@ export default function CameraScreen({navigation, route}) {
 }
 
 // Responsive frame sizing
-const frameSize = Math.floor(windowWidth * (isTablet ? 0.6 : isSmallPhone ? 0.75 : 0.8));
+const frameSize = Math.floor(
+  windowWidth * (isTablet ? 0.6 : isSmallPhone ? 0.75 : 0.8),
+);
 const cornerLength = isTablet ? 45 : isSmallPhone ? 25 : 35;
 const cornerThickness = isTablet ? 8 : isSmallPhone ? 3 : 5;
 
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
     width: frameSize,
     height: frameSize * 1.35, // letter/document ratio
     left: (windowWidth - frameSize) / 2,
-    top: windowHeight * (isTablet ? 0.12 : isSmallPhone ? 0.20 : 0.15),
+    top: windowHeight * (isTablet ? 0.12 : isSmallPhone ? 0.2 : 0.15),
     zIndex: 100,
   },
   corner: {
