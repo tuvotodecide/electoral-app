@@ -139,7 +139,7 @@ export default function CameraScreen({navigation, route}) {
     return (
       <View style={styles.centered}>
         <CText style={styles.errorText}>
-          {String.cameraNotAvailable || 'Camera not available'}
+          {String.cameraNotAvailable}
         </CText>
       </View>
     );
@@ -185,16 +185,12 @@ export default function CameraScreen({navigation, route}) {
         }, 2000);
       }
 
-      Alert.alert(
-        String.cameraErrorTitle || 'Camera Error',
-        String.cameraErrorMessage || 'Unable to take photo. Please try again.',
-        [
-          {
-            text: String.accept || 'OK',
-            onPress: () => {},
-          },
-        ],
-      );
+      Alert.alert(String.cameraErrorTitle, String.cameraErrorMessage, [
+        {
+          text: String.accept,
+          onPress: () => {},
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -256,9 +252,7 @@ export default function CameraScreen({navigation, route}) {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <CText style={styles.buttonText}>
-                  {isActive
-                    ? String.takePhoto || 'Take Photo'
-                    : String.preparingCamera || 'Preparing camera...'}
+                  {isActive ? String.takePhoto : String.preparingCamera}
                 </CText>
               )}
             </TouchableOpacity>

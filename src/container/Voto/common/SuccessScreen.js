@@ -10,7 +10,18 @@ import {moderateScale} from '../../../common/constants';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 
-const {width: screenWidth} = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+const isLandscape = screenWidth > screenHeight;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 const SuccessScreen = () => {
   const navigation = useNavigation();
@@ -174,47 +185,101 @@ const SuccessScreen = () => {
         showNotification={false}
       />
 
-      {/* Main Content */}
-      <View style={styles.content}>
-        {/* Success Icon */}
-        <View style={styles.iconCircleSuccess}>
-          <Ionicons name="checkmark" size={moderateScale(48)} color="#459151" />
-        </View>
-
-        {/* Success Title */}
-        <CText style={styles.successTitle}>{config.title}</CText>
-
-        {/* Success Subtitle */}
-        <CText style={styles.successSubtitle}>{config.subtitle}</CText>
-
-        {/* Logo Container (placeholder for logos if needed) */}
-        {config.showInitiativeText && (
-          <>
-            <View style={styles.logoContainer}>
-              {/* Here you can add logos if needed */}
+      {/* Main Content - Different layouts for tablet landscape vs regular */}
+      {isTablet && isLandscape ? (
+        /* Tablet Landscape Layout */
+        <View style={styles.tabletLandscapeContainer}>
+          {/* Left Side: Icon and Title */}
+          <View style={styles.tabletLeftSide}>
+            <View style={styles.iconCircleSuccess}>
+              <Ionicons
+                name="checkmark"
+                size={getResponsiveSize(40, 48, 60)}
+                color="#459151"
+              />
             </View>
-            <CText style={styles.initiativeText}>
-              {String.voluntaryInitiative}
+            <CText style={styles.successTitle}>{config.title}</CText>
+          </View>
+
+          {/* Right Side: Content and Actions */}
+          <View style={styles.tabletRightSide}>
+            <CText style={styles.successSubtitle}>{config.subtitle}</CText>
+
+            {config.showInitiativeText && (
+              <>
+                <View style={styles.logoContainer}>
+                  {/* Here you can add logos if needed */}
+                </View>
+                <CText style={styles.initiativeText}>
+                  {String.voluntaryInitiative}
+                </CText>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleContinue}>
+              <CText style={styles.continueButtonText}>
+                {config.buttonText}
+              </CText>
+            </TouchableOpacity>
+
+            {showAutoNavigation && timeLeft > 0 && (
+              <CText style={styles.autoNavigationText}>
+                {String.autoNavigating
+                  .replace('{timeLeft}', timeLeft)
+                  .replace('{s}', timeLeft !== 1 ? 's' : '')}
+              </CText>
+            )}
+          </View>
+        </View>
+      ) : (
+        /* Regular Layout: Phones and Tablet Portrait */
+        <View style={styles.content}>
+          {/* Success Icon */}
+          <View style={styles.iconCircleSuccess}>
+            <Ionicons
+              name="checkmark"
+              size={getResponsiveSize(40, 48, 60)}
+              color="#459151"
+            />
+          </View>
+
+          {/* Success Title */}
+          <CText style={styles.successTitle}>{config.title}</CText>
+
+          {/* Success Subtitle */}
+          <CText style={styles.successSubtitle}>{config.subtitle}</CText>
+
+          {/* Logo Container (placeholder for logos if needed) */}
+          {config.showInitiativeText && (
+            <>
+              <View style={styles.logoContainer}>
+                {/* Here you can add logos if needed */}
+              </View>
+              <CText style={styles.initiativeText}>
+                {String.voluntaryInitiative}
+              </CText>
+            </>
+          )}
+
+          {/* Continue Button */}
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}>
+            <CText style={styles.continueButtonText}>{config.buttonText}</CText>
+          </TouchableOpacity>
+
+          {/* Auto navigation indicator */}
+          {showAutoNavigation && timeLeft > 0 && (
+            <CText style={styles.autoNavigationText}>
+              {String.autoNavigating
+                .replace('{timeLeft}', timeLeft)
+                .replace('{s}', timeLeft !== 1 ? 's' : '')}
             </CText>
-          </>
-        )}
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={styles.continueButton}
-          onPress={handleContinue}>
-          <CText style={styles.continueButtonText}>{config.buttonText}</CText>
-        </TouchableOpacity>
-
-        {/* Auto navigation indicator */}
-        {showAutoNavigation && timeLeft > 0 && (
-          <CText style={styles.autoNavigationText}>
-            {String.autoNavigating
-              .replace('{timeLeft}', timeLeft)
-              .replace('{s}', timeLeft !== 1 ? 's' : '')}
-          </CText>
-        )}
-      </View>
+          )}
+        </View>
+      )}
     </CSafeAreaView>
   );
 };
@@ -224,72 +289,125 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  // Regular Layout: Phones and Tablet Portrait
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: moderateScale(32),
+    paddingHorizontal: getResponsiveSize(16, 24, 32),
+  },
+  // Tablet Landscape Layout
+  tabletLandscapeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingHorizontal: getResponsiveSize(20, 30, 40),
+    paddingVertical: getResponsiveSize(20, 30, 40),
+  },
+  tabletLeftSide: {
+    flex: 0.4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: getResponsiveSize(20, 30, 40),
+  },
+  tabletRightSide: {
+    flex: 0.6,
+    justifyContent: 'center',
+    paddingLeft: getResponsiveSize(20, 30, 40),
   },
   iconCircleSuccess: {
     backgroundColor: '#e8f5e9',
-    width: moderateScale(100),
-    height: moderateScale(100),
-    borderRadius: moderateScale(50),
+    width: getResponsiveSize(80, 100, 120),
+    height: getResponsiveSize(80, 100, 120),
+    borderRadius: getResponsiveSize(40, 50, 60),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: moderateScale(24),
+    marginBottom: getResponsiveSize(16, 24, 32),
   },
   successTitle: {
-    fontSize: moderateScale(24),
+    fontSize: getResponsiveSize(20, 24, 28),
     fontWeight: '700',
     color: '#459151',
     textAlign: 'center',
-    marginBottom: moderateScale(16),
-    lineHeight: moderateScale(30),
+    marginBottom: getResponsiveSize(12, 16, 20),
+    lineHeight: getResponsiveSize(26, 30, 34),
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, title can be larger
+        fontSize: getResponsiveSize(24, 28, 32),
+        lineHeight: getResponsiveSize(30, 34, 38),
+      }),
   },
   successSubtitle: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#2F2F2F',
     textAlign: 'center',
-    marginBottom: moderateScale(32),
-    lineHeight: moderateScale(22),
+    marginBottom: getResponsiveSize(24, 32, 40),
+    lineHeight: getResponsiveSize(18, 22, 26),
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, align left instead of center
+        textAlign: 'left',
+      }),
   },
   logoContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: moderateScale(16),
-    marginBottom: moderateScale(16),
-    minHeight: moderateScale(60), // Reserved space for logos
+    gap: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 16, 20),
+    minHeight: getResponsiveSize(40, 60, 80),
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, align left
+        justifyContent: 'flex-start',
+      }),
   },
   initiativeText: {
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#868686',
-    marginBottom: moderateScale(32),
+    marginBottom: getResponsiveSize(24, 32, 40),
+    textAlign: 'center',
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, align left
+        textAlign: 'left',
+      }),
   },
   continueButton: {
     backgroundColor: '#459151',
-    paddingVertical: moderateScale(16),
-    paddingHorizontal: moderateScale(48),
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(16),
+    paddingVertical: getResponsiveSize(12, 16, 20),
+    paddingHorizontal: getResponsiveSize(32, 48, 64),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    marginBottom: getResponsiveSize(12, 16, 20),
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    alignSelf: 'center',
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, align left
+        alignSelf: 'flex-start',
+      }),
   },
   continueButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
+    textAlign: 'center',
   },
   autoNavigationText: {
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#666666',
     textAlign: 'center',
     fontStyle: 'italic',
     fontWeight: '500',
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, align left
+        textAlign: 'left',
+      }),
   },
 });
 

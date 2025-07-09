@@ -13,8 +13,49 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 
-const {width: screenWidth} = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// Responsive helper functions
 const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+const isLandscape = screenWidth > screenHeight;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
+const getCardLayout = () => {
+  if (isTablet) {
+    // Tablets: Different layouts for landscape vs portrait
+    if (isLandscape) {
+      // Landscape: 3 cards per row for better space usage
+      return {
+        cardsPerRow: 3,
+        cardFlex: 0.31,
+        paddingHorizontal: getResponsiveSize(16, 20, 24),
+        marginBottom: getResponsiveSize(8, 12, 16),
+      };
+    } else {
+      // Portrait: 2 cards per row
+      return {
+        cardsPerRow: 2,
+        cardFlex: 0.48,
+        paddingHorizontal: getResponsiveSize(12, 16, 20),
+        marginBottom: getResponsiveSize(8, 10, 12),
+      };
+    }
+  } else {
+    // Phones: Single column
+    return {
+      cardsPerRow: 1,
+      cardFlex: 1,
+      paddingHorizontal: getResponsiveSize(12, 16, 20),
+      marginBottom: getResponsiveSize(6, 8, 10),
+    };
+  }
+};
 
 const BaseSearchTableScreen = ({
   // Header props
@@ -54,9 +95,14 @@ const BaseSearchTableScreen = ({
   const finalOnPress = onTablePress || onMesaPress;
   const finalChooseText = chooseTableText || chooseMesaText;
   const renderSearchAndLocation = () => {
+    const containerStyle = {
+      paddingHorizontal: getResponsiveSize(12, 16, 20),
+      marginVertical: getResponsiveSize(8, 12, 16),
+    };
+
     if (showLocationFirst) {
       return (
-        <>
+        <View style={containerStyle}>
           <LocationInfoBar
             text={locationText}
             iconColor={locationIconColor}
@@ -68,11 +114,11 @@ const BaseSearchTableScreen = ({
             onChangeText={onSearchChange}
             styles={styles}
           />
-        </>
+        </View>
       );
     } else {
       return (
-        <>
+        <View style={containerStyle}>
           <SearchInput
             placeholder={searchPlaceholder}
             value={searchValue}
@@ -84,7 +130,7 @@ const BaseSearchTableScreen = ({
             iconColor={locationIconColor}
             styles={styles}
           />
-        </>
+        </View>
       );
     }
   };
@@ -94,53 +140,24 @@ const BaseSearchTableScreen = ({
       return null;
     }
 
-    if (isTablet) {
-      // Two-column layout for tablets
-      const pairs = [];
-      for (let i = 0; i < finalTables.length; i += 2) {
-        pairs.push(finalTables.slice(i, i + 2));
-      }
+    const layout = getCardLayout();
 
-      return (
-        <ScrollView
-          style={styles.tableList || styles.mesaList}
-          showsVerticalScrollIndicator={false}>
-          {pairs.map((pair, index) => (
-            <View
-              key={index}
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                marginBottom: 8,
-              }}>
-              {pair.map(table => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  onPress={finalOnPress}
-                  styles={{
-                    tableCard: styles.tableCard || styles.mesaCard,
-                    tableCardTitle:
-                      styles.tableCardTitle || styles.mesaCardTitle,
-                    tableCardDetail:
-                      styles.tableCardDetail || styles.mesaCardDetail,
-                  }}
-                />
-              ))}
-              {pair.length === 1 && <View style={{flex: 0.48}} />}
-            </View>
-          ))}
-        </ScrollView>
-      );
-    } else {
+    if (layout.cardsPerRow === 1) {
       // Single column layout for phones
       return (
         <ScrollView
           style={styles.tableList || styles.mesaList}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: getResponsiveSize(20, 30, 40),
+          }}>
           {finalTables.map(table => (
-            <View key={table.id} style={{paddingHorizontal: 16}}>
+            <View
+              key={table.id}
+              style={{
+                paddingHorizontal: layout.paddingHorizontal,
+                marginBottom: layout.marginBottom,
+              }}>
               <TableCard
                 table={table}
                 onPress={finalOnPress}
@@ -151,6 +168,62 @@ const BaseSearchTableScreen = ({
                     styles.tableCardDetail || styles.mesaCardDetail,
                 }}
               />
+            </View>
+          ))}
+        </ScrollView>
+      );
+    } else {
+      // Multi-column layout for tablets
+      const groups = [];
+      for (let i = 0; i < finalTables.length; i += layout.cardsPerRow) {
+        groups.push(finalTables.slice(i, i + layout.cardsPerRow));
+      }
+
+      return (
+        <ScrollView
+          style={styles.tableList || styles.mesaList}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: getResponsiveSize(20, 30, 40),
+          }}>
+          {groups.map((group, index) => (
+            <View
+              key={index}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                paddingHorizontal: layout.paddingHorizontal,
+                marginBottom: layout.marginBottom,
+                gap: getResponsiveSize(8, 12, 16),
+              }}>
+              {group.map(table => (
+                <View
+                  key={table.id}
+                  style={{
+                    flex: layout.cardFlex,
+                  }}>
+                  <TableCard
+                    table={table}
+                    onPress={finalOnPress}
+                    styles={{
+                      tableCard: styles.tableCard || styles.mesaCard,
+                      tableCardTitle:
+                        styles.tableCardTitle || styles.mesaCardTitle,
+                      tableCardDetail:
+                        styles.tableCardDetail || styles.mesaCardDetail,
+                    }}
+                  />
+                </View>
+              ))}
+              {/* Fill empty spaces for incomplete rows */}
+              {Array.from({length: layout.cardsPerRow - group.length}).map(
+                (_, emptyIndex) => (
+                  <View
+                    key={`empty-${emptyIndex}`}
+                    style={{flex: layout.cardFlex}}
+                  />
+                ),
+              )}
             </View>
           ))}
         </ScrollView>
@@ -169,7 +242,13 @@ const BaseSearchTableScreen = ({
         styles={styles}
       />
 
-      <ChooseTableText text={finalChooseText} styles={styles} />
+      <View
+        style={{
+          paddingHorizontal: getResponsiveSize(12, 16, 20),
+          marginVertical: getResponsiveSize(8, 12, 16),
+        }}>
+        <ChooseTableText text={finalChooseText} styles={styles} />
+      </View>
 
       {renderSearchAndLocation()}
 

@@ -50,79 +50,113 @@ const BaseRecordReviewScreen = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Tablet layout: side-by-side photo and tables
+  // Tablet layout: optimized layout based on orientation
   if (isTablet) {
     return (
       <CSafeAreaView style={styles.container}>
         {/* Header */}
         <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
 
-        {/* Instructions */}
-        <InstructionsContainer
-          text={instructionsText}
-          style={instructionsStyle}
-        />
+        {/* Instructions - Compact for tablet */}
+        <View style={styles.tabletInstructionsContainer}>
+          <InstructionsContainer
+            text={instructionsText}
+            style={[instructionsStyle, styles.tabletInstructionsText]}
+          />
 
-        {/* Table Info - only for PhotoReviewScreen */}
-        {showTableInfo && (
-          <View style={styles.tableInfoContainer}>
-            <View style={styles.tableTitle}>
-              <CText style={styles.tableTitleText}>
+          {/* Table Info inline with instructions */}
+          {showTableInfo && (
+            <View style={styles.tabletTableInfoInline}>
+              <CText style={styles.tabletTableTitleText}>
                 Table {tableData?.numero || 'N/A'}
               </CText>
-            </View>
-            <View style={styles.tableSubtitle}>
-              <CText style={styles.tableSubtitleText}>
+              <CText style={styles.tabletTableSubtitleText}>
                 {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
               </CText>
             </View>
-          </View>
-        )}
+          )}
+        </View>
 
-        {/* Tablet Layout: Enhanced vertical layout with better proportions */}
-        <ScrollView
-          style={styles.tabletMainScrollView}
-          contentContainerStyle={[
-            styles.tabletMainScrollContent,
-            {
-              paddingBottom:
-                getTabNavigationHeight(insets) + getResponsiveSize(8, 12, 16),
-            },
-          ]}
-          showsVerticalScrollIndicator={false}>
-          {/* Photo Section - Optimized for tablet */}
-          <View style={styles.tabletPhotoContainer}>
+        {/* Main Content: Horizontal layout for landscape, vertical for portrait */}
+        <View
+          style={
+            isLandscape
+              ? styles.tabletMainContentHorizontal
+              : styles.tabletMainContentVertical
+          }>
+          {/* Photo Section */}
+          <View
+            style={
+              isLandscape
+                ? styles.tabletPhotoSectionHorizontal
+                : styles.tabletPhotoSectionVertical
+            }>
             <PhotoContainer photoUri={photoUri} enableZoom={true} />
           </View>
 
-          {/* Tables Section - Side by side for better space usage */}
-          <View style={styles.tabletTablesContainer}>
-            {/* Left Column - Party Results */}
-            <View style={styles.tabletTableColumn}>
-              <PartyTable
-                partyResults={partyResults}
-                isEditing={isEditing}
-                onUpdate={onPartyUpdate}
-              />
-            </View>
+          {/* Tables and Actions Section */}
+          <View
+            style={
+              isLandscape
+                ? styles.tabletTablesSectionHorizontal
+                : styles.tabletTablesSectionVertical
+            }>
+            <ScrollView
+              style={styles.tabletTablesScrollView}
+              contentContainerStyle={[
+                styles.tabletTablesScrollContent,
+                {
+                  paddingBottom:
+                    getTabNavigationHeight(insets) +
+                    getResponsiveSize(8, 12, 16),
+                },
+              ]}
+              showsVerticalScrollIndicator={false}>
+              {/* Tables Container - Side by side in landscape, stacked in portrait */}
+              <View
+                style={
+                  isLandscape
+                    ? styles.tabletTablesStackedHorizontal
+                    : styles.tabletTablesStackedVertical
+                }>
+                {/* Party Results Table */}
+                <View
+                  style={
+                    isLandscape
+                      ? styles.tabletTableColumnHorizontal
+                      : styles.tabletTableColumnVertical
+                  }>
+                  <PartyTable
+                    partyResults={partyResults}
+                    isEditing={isEditing}
+                    onUpdate={onPartyUpdate}
+                  />
+                </View>
 
-            {/* Right Column - Vote Summary */}
-            <View style={styles.tabletTableColumn}>
-              <VoteSummaryTable
-                voteSummaryResults={voteSummaryResults}
-                isEditing={isEditing}
-                onUpdate={onVoteSummaryUpdate}
-              />
-            </View>
+                {/* Vote Summary Table */}
+                <View
+                  style={
+                    isLandscape
+                      ? styles.tabletTableColumnHorizontal
+                      : styles.tabletTableColumnVertical
+                  }>
+                  <VoteSummaryTable
+                    voteSummaryResults={voteSummaryResults}
+                    isEditing={isEditing}
+                    onUpdate={onVoteSummaryUpdate}
+                  />
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              {actionButtons && (
+                <View style={styles.tabletActionButtonsWrapper}>
+                  <ActionButtons buttons={actionButtons} />
+                </View>
+              )}
+            </ScrollView>
           </View>
-
-          {/* Action Buttons - Full width */}
-          {actionButtons && (
-            <View style={styles.tabletActionButtonsContainer}>
-              <ActionButtons buttons={actionButtons} />
-            </View>
-          )}
-        </ScrollView>
+        </View>
       </CSafeAreaView>
     );
   }
@@ -210,7 +244,104 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  // Tablet layout styles
+
+  // NEW Tablet layout styles - Optimized for both orientations
+  tabletInstructionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(16, 24, 32),
+    paddingVertical: getResponsiveSize(8, 12, 16),
+    backgroundColor: '#F8F9FA',
+    marginHorizontal: getResponsiveSize(12, 16, 20),
+    marginVertical: getResponsiveSize(4, 8, 12),
+    borderRadius: 12,
+  },
+  tabletInstructionsText: {
+    flex: 1,
+    marginRight: getResponsiveSize(12, 16, 20),
+    fontSize: getResponsiveSize(14, 16, 18),
+    lineHeight: getResponsiveSize(18, 22, 26),
+  },
+  tabletTableInfoInline: {
+    alignItems: 'flex-end',
+  },
+  tabletTableTitleText: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    color: '#2F2F2F',
+    textAlign: 'right',
+  },
+  tabletTableSubtitleText: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#868686',
+    textAlign: 'right',
+    marginTop: 2,
+  },
+
+  // Horizontal Layout (Landscape)
+  tabletMainContentHorizontal: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    paddingTop: getResponsiveSize(8, 12, 16),
+  },
+  tabletPhotoSectionHorizontal: {
+    flex: 0.45, // 45% for photo in landscape
+    marginRight: getResponsiveSize(12, 16, 20),
+    minWidth: 320,
+    maxWidth: 500,
+  },
+  tabletTablesSectionHorizontal: {
+    flex: 0.55, // 55% for tables in landscape
+    minWidth: 400,
+  },
+  tabletTablesStackedHorizontal: {
+    flexDirection: 'column', // Stack tables vertically even in landscape
+  },
+  tabletTableColumnHorizontal: {
+    marginBottom: getResponsiveSize(12, 16, 20),
+  },
+
+  // Vertical Layout (Portrait)
+  tabletMainContentVertical: {
+    flex: 1,
+    flexDirection: 'column',
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    paddingTop: getResponsiveSize(8, 12, 16),
+  },
+  tabletPhotoSectionVertical: {
+    flex: 0.4, // 40% for photo in portrait
+    marginBottom: getResponsiveSize(12, 16, 20),
+    minHeight: 250,
+    maxHeight: 400,
+  },
+  tabletTablesSectionVertical: {
+    flex: 0.6, // 60% for tables in portrait
+  },
+  tabletTablesStackedVertical: {
+    flexDirection: 'row', // Side by side tables in portrait
+    justifyContent: 'space-between',
+  },
+  tabletTableColumnVertical: {
+    flex: 0.48, // Each table takes ~48% width in portrait
+    marginBottom: getResponsiveSize(12, 16, 20),
+  },
+
+  // Common tablet styles
+  tabletTablesScrollView: {
+    flex: 1,
+  },
+  tabletTablesScrollContent: {
+    flexGrow: 1,
+    paddingRight: getResponsiveSize(8, 12, 16),
+  },
+  tabletActionButtonsWrapper: {
+    marginTop: getResponsiveSize(8, 12, 16),
+    marginBottom: getResponsiveSize(16, 20, 24),
+  },
+
+  // OLD Tablet layout styles (keeping for fallback)
   tabletMainScrollView: {
     flex: 1,
     paddingHorizontal: getResponsiveSize(12, 20, 24),
@@ -234,6 +365,7 @@ const styles = StyleSheet.create({
   tabletActionButtonsContainer: {
     paddingHorizontal: getResponsiveSize(4, 12, 16),
   },
+
   // Legacy tablet styles (mantener por compatibilidad)
   tabletContentContainer: {
     flex: 1,
@@ -241,20 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingTop: getResponsiveSize(8, 12, 16),
   },
-  tabletPhotoSection: {
-    flex: 0.5, // 50% of width for photo (reducido del 60%)
-    paddingRight: getResponsiveSize(8, 12, 16),
-    minWidth: 300, // Ancho mínimo para la foto
-  },
-  tabletTablesSection: {
-    flex: 0.5, // 50% of width for tables (aumentado del 40%)
-    paddingLeft: getResponsiveSize(8, 12, 16),
-    minWidth: 350, // Ancho mínimo para las tablas
-  },
-  tabletScrollContent: {
-    flexGrow: 1,
-    paddingRight: getResponsiveSize(4, 8, 12), // Padding adicional para scroll
-  },
+
   // Common styles
   tableInfoContainer: {
     backgroundColor: 'transparent',

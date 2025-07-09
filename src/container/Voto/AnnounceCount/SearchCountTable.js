@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View} from 'react-native';
+import {ActivityIndicator, View, Dimensions} from 'react-native';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../../components/common/CustomModal';
 import CText from '../../../components/common/CText';
@@ -8,6 +8,18 @@ import {createSearchTableStyles} from '../../../styles/searchTableStyles';
 import {fetchMesasConteo} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 const SearchCountTable = () => {
   const [mesas, setMesas] = useState([]);
@@ -86,13 +98,17 @@ const SearchCountTable = () => {
           alignItems: 'center',
           backgroundColor: '#FAFAFA',
         }}>
-        <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+        <ActivityIndicator
+          size={isTablet ? 'large' : 'large'}
+          color={colors.primary || '#4F9858'}
+        />
         <CText
           style={{
-            marginTop: 15,
-            fontSize: 16,
+            marginTop: getResponsiveSize(12, 15, 18),
+            fontSize: getResponsiveSize(14, 16, 18),
             color: '#666',
             textAlign: 'center',
+            paddingHorizontal: getResponsiveSize(20, 30, 40),
           }}>
           {String.loadingCountTables}
         </CText>

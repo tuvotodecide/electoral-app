@@ -1,5 +1,24 @@
-import {StyleSheet} from 'react-native';
+import {StyleSheet, Dimensions} from 'react-native';
 import {moderateScale} from '../common/constants';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
+// Use fixed sizes instead of moderateScale for better consistency
+const getFixedSize = size => {
+  if (isSmallPhone) return size * 0.85;
+  if (isTablet) return size * 1.1;
+  return size;
+};
 
 export const createSearchTableStyles = () => {
   return StyleSheet.create({
@@ -10,36 +29,35 @@ export const createSearchTableStyles = () => {
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: moderateScale(16),
-      paddingVertical: moderateScale(12),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
+      paddingVertical: getResponsiveSize(10, 12, 14),
       backgroundColor: '#fff',
       borderBottomWoidth: 0,
       borderBottomColor: 'transparent',
     },
     backButton: {
-      padding: moderateScale(8),
+      padding: getResponsiveSize(6, 8, 10),
     },
     headerTitle: {
-      fontSize: moderateScale(18),
+      fontSize: getResponsiveSize(16, 18, 20),
       fontWeight: '600',
       color: '#2F2F2F',
-      marginLeft: moderateScale(8),
+      marginLeft: getResponsiveSize(6, 8, 10),
     },
     headerSpacer: {
       flex: 1,
     },
     bellIcon: {
-      padding: moderateScale(7),
+      padding: getResponsiveSize(6, 7, 8),
     },
     chooseTableContainer: {
       backgroundColor: '#ffffff',
-      fontSize: moderateScale(14),
-      paddingHorizontal: moderateScale(16),
-      paddingVertical: moderateScale(8),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
+      paddingVertical: getResponsiveSize(6, 8, 10),
     },
     chooseTableText: {
-      fontSize: moderateScale(18),
-      paddingLeft: moderateScale(8),
+      fontSize: getResponsiveSize(16, 18, 20),
+      paddingLeft: getResponsiveSize(6, 8, 10),
       color: '#000000',
       fontWeight: '500',
     },
@@ -47,35 +65,35 @@ export const createSearchTableStyles = () => {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: '#D1ECF1',
-      borderRadius: moderateScale(10),
-      paddingVertical: moderateScale(10),
-      paddingHorizontal: moderateScale(12),
-      marginHorizontal: moderateScale(16),
-      marginBottom: moderateScale(16),
+      borderRadius: getResponsiveSize(8, 10, 12),
+      paddingVertical: getResponsiveSize(8, 10, 12),
+      paddingHorizontal: getResponsiveSize(10, 12, 14),
+      marginHorizontal: getResponsiveSize(14, 16, 20),
+      marginBottom: getResponsiveSize(12, 16, 20),
       borderColor: '#0C5460',
       borderWidth: 1,
     },
     locationIcon: {
-      marginRight: moderateScale(8),
+      marginRight: getResponsiveSize(6, 8, 10),
       color: '#0C5460',
-      fontSize: moderateScale(20),
+      fontSize: getResponsiveSize(18, 20, 22),
     },
     locationInfoText: {
-      fontSize: moderateScale(12),
+      fontSize: getResponsiveSize(11, 12, 14),
       color: '#0C5460',
       fontWeight: '500',
     },
     searchInputContainer: {
       backgroundColor: '#ffffff',
-      paddingHorizontal: moderateScale(16),
-      paddingBottom: moderateScale(12),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
+      paddingBottom: getResponsiveSize(10, 12, 14),
     },
     searchInput: {
-      height: moderateScale(40),
+      height: getResponsiveSize(36, 40, 44),
       backgroundColor: '#fff',
-      borderRadius: moderateScale(8),
-      paddingHorizontal: moderateScale(12),
-      fontSize: moderateScale(14),
+      borderRadius: getResponsiveSize(6, 8, 10),
+      paddingHorizontal: getResponsiveSize(10, 12, 14),
+      fontSize: getResponsiveSize(13, 14, 16),
       color: '#2F2F2F',
       elevation: 1,
       shadowColor: '#000',
@@ -85,14 +103,14 @@ export const createSearchTableStyles = () => {
     },
     tableList: {
       flex: 1,
-      paddingHorizontal: moderateScale(16),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
     },
     tableCard: {
       backgroundColor: '#fff',
-      borderRadius: moderateScale(8),
-      padding: moderateScale(16),
-      paddingLeft: moderateScale(30),
-      marginBottom: moderateScale(12),
+      borderRadius: getResponsiveSize(6, 8, 10),
+      padding: getResponsiveSize(12, 16, 18),
+      paddingLeft: getResponsiveSize(20, 30, 35),
+      marginBottom: getResponsiveSize(8, 12, 14),
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: {width: 0, height: 2},
@@ -100,27 +118,27 @@ export const createSearchTableStyles = () => {
       shadowRadius: 4,
     },
     tableCardTitle: {
-      fontSize: moderateScale(18),
+      fontSize: getResponsiveSize(16, 18, 20),
       fontWeight: '700',
       color: '#2F2F2F',
-      marginBottom: moderateScale(4),
+      marginBottom: getResponsiveSize(3, 4, 5),
     },
     tableCardDetail: {
-      fontSize: moderateScale(14),
+      fontSize: getResponsiveSize(12, 14, 16),
       color: '#868686',
-      marginBottom: moderateScale(2),
+      marginBottom: getResponsiveSize(1, 2, 3),
     },
     // Keep mesa styles for backward compatibility
     mesaList: {
       flex: 1,
-      paddingHorizontal: moderateScale(16),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
     },
     mesaCard: {
       backgroundColor: '#fff',
-      borderRadius: moderateScale(8),
-      padding: moderateScale(16),
-      paddingLeft: moderateScale(30),
-      marginBottom: moderateScale(12),
+      borderRadius: getResponsiveSize(6, 8, 10),
+      padding: getResponsiveSize(12, 16, 18),
+      paddingLeft: getResponsiveSize(20, 30, 35),
+      marginBottom: getResponsiveSize(8, 12, 14),
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: {width: 0, height: 2},
@@ -128,25 +146,24 @@ export const createSearchTableStyles = () => {
       shadowRadius: 4,
     },
     mesaCardTitle: {
-      fontSize: moderateScale(18),
+      fontSize: getResponsiveSize(16, 18, 20),
       fontWeight: '700',
       color: '#2F2F2F',
-      marginBottom: moderateScale(4),
+      marginBottom: getResponsiveSize(3, 4, 5),
     },
     mesaCardDetail: {
-      fontSize: moderateScale(14),
+      fontSize: getResponsiveSize(12, 14, 16),
       color: '#868686',
-      marginBottom: moderateScale(2),
+      marginBottom: getResponsiveSize(1, 2, 3),
     },
     chooseMesaContainer: {
       backgroundColor: '#ffffff',
-      fontSize: moderateScale(14),
-      paddingHorizontal: moderateScale(16),
-      paddingVertical: moderateScale(8),
+      paddingHorizontal: getResponsiveSize(14, 16, 20),
+      paddingVertical: getResponsiveSize(6, 8, 10),
     },
     chooseMesaText: {
-      fontSize: moderateScale(18),
-      paddingLeft: moderateScale(8),
+      fontSize: getResponsiveSize(16, 18, 20),
+      paddingLeft: getResponsiveSize(6, 8, 10),
       color: '#000000',
       fontWeight: '500',
     },

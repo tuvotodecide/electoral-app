@@ -13,6 +13,7 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
+const isLandscape = screenWidth > screenHeight;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -23,9 +24,18 @@ const getResponsiveSize = (small, medium, large) => {
 // Responsive grid calculations
 const getCardLayout = () => {
   if (isTablet) {
-    // Tablets: 4 cards per row for large tablets, 2 for medium tablets
+    // Tablets: Different layouts for landscape vs portrait
     const CARD_MARGIN = getResponsiveSize(12, 16, 20);
-    const CARDS_PER_ROW = screenWidth > 1000 ? 4 : 2;
+    let CARDS_PER_ROW;
+
+    if (isLandscape) {
+      // Landscape: 4 cards per row for large tablets, 3 for medium tablets
+      CARDS_PER_ROW = screenWidth > 1000 ? 4 : 3;
+    } else {
+      // Portrait: 2 cards per row
+      CARDS_PER_ROW = 2;
+    }
+
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
     return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
@@ -69,17 +79,17 @@ const MiVotoLogo = () => (
 );
 
 export default function HomeScreen({navigation}) {
-  // const userData = useSelector(state => state.wallet.payload);
-  // const vc = userData?.vc;
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
 
-  // const subject = vc?.credentialSubject || {};
-  // const data = {
-  //   name: subject.fullName || '(sin nombre)',
-  //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  // };
-  // const userFullName = data.name || '(sin nombre)';
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+  const userFullName = data.name || '(sin nombre)';
 
-  const userFullName = 'Usuario';
+  // const userFullName = 'Usuario';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
 
@@ -116,48 +126,107 @@ export default function HomeScreen({navigation}) {
 
   return (
     <CSafeAreaView style={stylesx.bg}>
-      <View style={stylesx.headerRow}>
-        <MiVotoLogo />
-        <TouchableOpacity onPress={onPressNotification}>
-          <Ionicons
-            name={'notifications-outline'}
-            size={getResponsiveSize(24, 28, 32)}
-            color={'#222'}
-          />
-        </TouchableOpacity>
-      </View>
+      {/* Tablet Landscape Layout */}
+      {isTablet && isLandscape ? (
+        <View style={stylesx.tabletLandscapeContainer}>
+          {/* Left Column: Header and Welcome */}
+          <View style={stylesx.tabletLeftColumn}>
+            <View style={stylesx.headerRow}>
+              <MiVotoLogo />
+              <TouchableOpacity onPress={onPressNotification}>
+                <Ionicons
+                  name={'notifications-outline'}
+                  size={getResponsiveSize(24, 28, 32)}
+                  color={'#222'}
+                />
+              </TouchableOpacity>
+            </View>
 
-      {/* ===== Bienvenida ===== */}
-      <View style={stylesx.welcomeContainer}>
-        <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
-        <CText style={stylesx.nombre}>{userFullName}!</CText>
-      </View>
+            <View style={stylesx.welcomeContainer}>
+              <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+              <CText style={stylesx.nombre}>{userFullName}!</CText>
+            </View>
+          </View>
 
-      {/* ===== Cards de Menú ===== */}
-      <View style={stylesx.gridContainer}>
-        {menuItems.map((item, idx) => (
-          <TouchableOpacity
-            key={item.title}
-            style={[
-              stylesx.card,
-              {
-                width: CARD_WIDTH,
-                marginBottom: getResponsiveSize(10, 15, 20),
-              },
-            ]}
-            activeOpacity={0.87}
-            onPress={item.onPress}>
-            <item.iconComponent
-              name={item.icon}
-              size={getResponsiveSize(30, 36, 42)}
-              color="#41A44D"
-              style={{marginBottom: getResponsiveSize(6, 8, 10)}}
-            />
-            <CText style={stylesx.cardTitle}>{item.title}</CText>
-            <CText style={stylesx.cardDescription}>{item.description}</CText>
-          </TouchableOpacity>
-        ))}
-      </View>
+          {/* Right Column: Menu Cards */}
+          <View style={stylesx.tabletRightColumn}>
+            <View style={stylesx.gridContainer}>
+              {menuItems.map((item, idx) => (
+                <TouchableOpacity
+                  key={item.title}
+                  style={[
+                    stylesx.card,
+                    {
+                      width: CARD_WIDTH,
+                      marginBottom: getResponsiveSize(10, 15, 20),
+                    },
+                  ]}
+                  activeOpacity={0.87}
+                  onPress={item.onPress}>
+                  <item.iconComponent
+                    name={item.icon}
+                    size={getResponsiveSize(30, 36, 42)}
+                    color="#41A44D"
+                    style={{marginBottom: getResponsiveSize(6, 8, 10)}}
+                  />
+                  <CText style={stylesx.cardTitle}>{item.title}</CText>
+                  <CText style={stylesx.cardDescription}>
+                    {item.description}
+                  </CText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      ) : (
+        /* Regular Layout: Phones and Tablet Portrait */
+        <View style={stylesx.regularContainer}>
+          <View style={stylesx.headerRow}>
+            <MiVotoLogo />
+            <TouchableOpacity onPress={onPressNotification}>
+              <Ionicons
+                name={'notifications-outline'}
+                size={getResponsiveSize(24, 28, 32)}
+                color={'#222'}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* ===== Bienvenida ===== */}
+          <View style={stylesx.welcomeContainer}>
+            <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+            <CText style={stylesx.nombre}>{userFullName}!</CText>
+          </View>
+
+          {/* ===== Cards de Menú ===== */}
+          <View style={stylesx.gridContainer}>
+            {menuItems.map((item, idx) => (
+              <TouchableOpacity
+                key={item.title}
+                style={[
+                  stylesx.card,
+                  {
+                    width: CARD_WIDTH,
+                    marginBottom: getResponsiveSize(10, 15, 20),
+                  },
+                ]}
+                activeOpacity={0.87}
+                onPress={item.onPress}>
+                <item.iconComponent
+                  name={item.icon}
+                  size={getResponsiveSize(30, 36, 42)}
+                  color="#41A44D"
+                  style={{marginBottom: getResponsiveSize(6, 8, 10)}}
+                />
+                <CText style={stylesx.cardTitle}>{item.title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {item.description}
+                </CText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
     </CSafeAreaView>
   );
 }
@@ -167,6 +236,23 @@ const stylesx = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
     paddingHorizontal: 0,
+  },
+  // Tablet Landscape Layout Styles
+  tabletLandscapeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  tabletLeftColumn: {
+    flex: 0.4, // 40% width for header and welcome
+    paddingRight: getResponsiveSize(16, 20, 24),
+  },
+  tabletRightColumn: {
+    flex: 0.6, // 60% width for menu cards
+    paddingLeft: getResponsiveSize(8, 12, 16),
+  },
+  // Regular Layout Container
+  regularContainer: {
+    flex: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -226,6 +312,12 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(10, 13, 16),
     marginLeft: getResponsiveSize(18, 21, 24),
     marginBottom: getResponsiveSize(12, 16, 20),
+    ...(isTablet &&
+      isLandscape && {
+        // In tablet landscape, center vertically and give more space
+        marginTop: getResponsiveSize(40, 50, 60),
+        marginBottom: getResponsiveSize(20, 25, 30),
+      }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -233,6 +325,11 @@ const stylesx = StyleSheet.create({
     fontWeight: '700',
     marginBottom: -2,
     letterSpacing: -0.5,
+    ...(isTablet &&
+      isLandscape && {
+        // Larger text in landscape
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -240,6 +337,11 @@ const stylesx = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 0,
     letterSpacing: -0.5,
+    ...(isTablet &&
+      isLandscape && {
+        // Larger text in landscape
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   gridContainer: {
     flexDirection: 'row',
@@ -259,6 +361,12 @@ const stylesx = StyleSheet.create({
           ? getResponsiveSize(8, 12, 16)
           : getResponsiveSize(12, 16, 20),
     }),
+    ...(isTablet &&
+      isLandscape && {
+        // In landscape, start from top and use all available space
+        marginTop: getResponsiveSize(20, 25, 30),
+        paddingHorizontal: getResponsiveSize(12, 16, 20),
+      }),
   },
   card: {
     // Width is set dynamically in the component
