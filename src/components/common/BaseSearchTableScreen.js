@@ -1,5 +1,5 @@
 import React from 'react';
-import {ScrollView} from 'react-native';
+import {ScrollView, View, Dimensions} from 'react-native';
 import CSafeAreaView from './CSafeAreaView';
 import {
   SearchTableHeader,
@@ -7,7 +7,14 @@ import {
   LocationInfoBar,
   SearchInput,
   TableCard,
+  // Legacy support
+  SearchMesaHeader,
+  ChooseMesaText,
+  MesaCard,
 } from './SearchTableComponents';
+
+const {width: screenWidth} = Dimensions.get('window');
+const isTablet = screenWidth >= 768;
 
 const BaseSearchTableScreen = ({
   // Header props
@@ -19,6 +26,7 @@ const BaseSearchTableScreen = ({
 
   // Choose table text props
   chooseTableText,
+  chooseMesaText, // Legacy support
 
   // Search input props
   searchPlaceholder,
@@ -31,7 +39,9 @@ const BaseSearchTableScreen = ({
 
   // Table list props
   tables,
+  mesas, // Legacy support
   onTablePress,
+  onMesaPress, // Legacy support
 
   // Layout props
   showLocationFirst = false, // Control order of location bar and search input
@@ -39,6 +49,10 @@ const BaseSearchTableScreen = ({
   // Styles
   styles,
 }) => {
+  // Support legacy props
+  const finalTables = tables || mesas || [];
+  const finalOnPress = onTablePress || onMesaPress;
+  const finalChooseText = chooseTableText || chooseMesaText;
   const renderSearchAndLocation = () => {
     if (showLocationFirst) {
       return (
@@ -75,6 +89,75 @@ const BaseSearchTableScreen = ({
     }
   };
 
+  const renderTablesList = () => {
+    if (!finalTables || finalTables.length === 0) {
+      return null;
+    }
+
+    if (isTablet) {
+      // Two-column layout for tablets
+      const pairs = [];
+      for (let i = 0; i < finalTables.length; i += 2) {
+        pairs.push(finalTables.slice(i, i + 2));
+      }
+
+      return (
+        <ScrollView
+          style={styles.tableList || styles.mesaList}
+          showsVerticalScrollIndicator={false}>
+          {pairs.map((pair, index) => (
+            <View
+              key={index}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                marginBottom: 8,
+              }}>
+              {pair.map(table => (
+                <TableCard
+                  key={table.id}
+                  table={table}
+                  onPress={finalOnPress}
+                  styles={{
+                    tableCard: styles.tableCard || styles.mesaCard,
+                    tableCardTitle:
+                      styles.tableCardTitle || styles.mesaCardTitle,
+                    tableCardDetail:
+                      styles.tableCardDetail || styles.mesaCardDetail,
+                  }}
+                />
+              ))}
+              {pair.length === 1 && <View style={{flex: 0.48}} />}
+            </View>
+          ))}
+        </ScrollView>
+      );
+    } else {
+      // Single column layout for phones
+      return (
+        <ScrollView
+          style={styles.tableList || styles.mesaList}
+          showsVerticalScrollIndicator={false}>
+          {finalTables.map(table => (
+            <View key={table.id} style={{paddingHorizontal: 16}}>
+              <TableCard
+                table={table}
+                onPress={finalOnPress}
+                styles={{
+                  tableCard: styles.tableCard || styles.mesaCard,
+                  tableCardTitle: styles.tableCardTitle || styles.mesaCardTitle,
+                  tableCardDetail:
+                    styles.tableCardDetail || styles.mesaCardDetail,
+                }}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      );
+    }
+  };
+
   return (
     <CSafeAreaView style={styles.container}>
       <SearchTableHeader
@@ -86,22 +169,15 @@ const BaseSearchTableScreen = ({
         styles={styles}
       />
 
-      <ChooseTableText text={chooseTableText} styles={styles} />
+      <ChooseTableText text={finalChooseText} styles={styles} />
 
       {renderSearchAndLocation()}
 
-      <ScrollView style={styles.tableList} showsVerticalScrollIndicator={false}>
-        {tables.map(table => (
-          <TableCard
-            key={table.id}
-            table={table}
-            onPress={onTablePress}
-            styles={styles}
-          />
-        ))}
-      </ScrollView>
+      {renderTablesList()}
     </CSafeAreaView>
   );
 };
 
+// Legacy export for backward compatibility
+export const BaseSearchMesaScreen = BaseSearchTableScreen;
 export default BaseSearchTableScreen;

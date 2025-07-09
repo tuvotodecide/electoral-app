@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -14,11 +15,21 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {fetchMyWitnesses} from '../../../data/mockMesas';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 350;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 const MyWitnessesListScreen = () => {
   const navigation = useNavigation();
@@ -152,53 +163,144 @@ const MyWitnessesListScreen = () => {
         <ScrollView
           style={styles.imageList}
           showsVerticalScrollIndicator={false}>
-          {atestiguamientos.map(atestiguamiento => (
-            <React.Fragment key={atestiguamiento.id}>
-              <TouchableOpacity
-                style={[
-                  styles.imageCard,
-                  selectedImageId === atestiguamiento.id.toString() &&
-                    styles.imageCardSelected,
-                ]}
-                onPress={() => handleImagePress(atestiguamiento.id.toString())}>
-                <View style={styles.imageHeader}>
-                  <CText style={styles.mesaText}>{atestiguamiento.mesa}</CText>
-                  <CText style={styles.fechaText}>
-                    {atestiguamiento.fecha} - {atestiguamiento.hora}
-                  </CText>
-                </View>
-                <Image
-                  source={{uri: atestiguamiento.imagen}}
-                  style={styles.imageDisplay}
-                  resizeMode="contain"
-                />
-                {selectedImageId === atestiguamiento.id.toString() && (
-                  <>
-                    {/* Corner borders - black color */}
-                    <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                    <View
-                      style={[styles.cornerBorder, styles.topRightCorner]}
+          {isTablet
+            ? // Two-column layout for tablets
+              (() => {
+                const pairs = [];
+                for (let i = 0; i < atestiguamientos.length; i += 2) {
+                  pairs.push(atestiguamientos.slice(i, i + 2));
+                }
+                return pairs.map((pair, pairIndex) => (
+                  <View key={pairIndex} style={styles.tabletRow}>
+                    {pair.map(atestiguamiento => (
+                      <View
+                        key={atestiguamiento.id}
+                        style={styles.tabletColumn}>
+                        <TouchableOpacity
+                          style={[
+                            styles.imageCard,
+                            selectedImageId === atestiguamiento.id.toString() &&
+                              styles.imageCardSelected,
+                          ]}
+                          onPress={() =>
+                            handleImagePress(atestiguamiento.id.toString())
+                          }>
+                          <View style={styles.imageHeader}>
+                            <CText style={styles.mesaText}>
+                              {atestiguamiento.mesa}
+                            </CText>
+                            <CText style={styles.fechaText}>
+                              {atestiguamiento.fecha} - {atestiguamiento.hora}
+                            </CText>
+                          </View>
+                          <Image
+                            source={{uri: atestiguamiento.imagen}}
+                            style={styles.imageDisplay}
+                            resizeMode="contain"
+                          />
+                          {selectedImageId ===
+                            atestiguamiento.id.toString() && (
+                            <>
+                              {/* Corner borders - black color */}
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.topLeftCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.topRightCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.bottomLeftCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.bottomRightCorner,
+                                ]}
+                              />
+                            </>
+                          )}
+                        </TouchableOpacity>
+                        {selectedImageId === atestiguamiento.id.toString() && (
+                          <TouchableOpacity
+                            style={styles.detailsButton}
+                            onPress={handleVerMas}>
+                            <CText style={styles.detailsButtonText}>
+                              {String.seeMore}
+                            </CText>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                    {pair.length === 1 && <View style={styles.tabletColumn} />}
+                  </View>
+                ));
+              })()
+            : // Single column layout for phones
+              atestiguamientos.map(atestiguamiento => (
+                <React.Fragment key={atestiguamiento.id}>
+                  <TouchableOpacity
+                    style={[
+                      styles.imageCard,
+                      selectedImageId === atestiguamiento.id.toString() &&
+                        styles.imageCardSelected,
+                    ]}
+                    onPress={() =>
+                      handleImagePress(atestiguamiento.id.toString())
+                    }>
+                    <View style={styles.imageHeader}>
+                      <CText style={styles.mesaText}>
+                        {atestiguamiento.mesa}
+                      </CText>
+                      <CText style={styles.fechaText}>
+                        {atestiguamiento.fecha} - {atestiguamiento.hora}
+                      </CText>
+                    </View>
+                    <Image
+                      source={{uri: atestiguamiento.imagen}}
+                      style={styles.imageDisplay}
+                      resizeMode="contain"
                     />
-                    <View
-                      style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                    />
-                    <View
-                      style={[styles.cornerBorder, styles.bottomRightCorner]}
-                    />
-                  </>
-                )}
-              </TouchableOpacity>
-              {selectedImageId === atestiguamiento.id.toString() && (
-                <TouchableOpacity
-                  style={styles.detailsButton}
-                  onPress={handleVerMas}>
-                  <CText style={styles.detailsButtonText}>
-                    {String.seeMore}
-                  </CText>
-                </TouchableOpacity>
-              )}
-            </React.Fragment>
-          ))}
+                    {selectedImageId === atestiguamiento.id.toString() && (
+                      <>
+                        {/* Corner borders - black color */}
+                        <View
+                          style={[styles.cornerBorder, styles.topLeftCorner]}
+                        />
+                        <View
+                          style={[styles.cornerBorder, styles.topRightCorner]}
+                        />
+                        <View
+                          style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                        />
+                        <View
+                          style={[
+                            styles.cornerBorder,
+                            styles.bottomRightCorner,
+                          ]}
+                        />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {selectedImageId === atestiguamiento.id.toString() && (
+                    <TouchableOpacity
+                      style={styles.detailsButton}
+                      onPress={handleVerMas}>
+                      <CText style={styles.detailsButtonText}>
+                        {String.seeMore}
+                      </CText>
+                    </TouchableOpacity>
+                  )}
+                </React.Fragment>
+              ))}
         </ScrollView>
       )}
 
@@ -225,39 +327,49 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: moderateScale(50),
+    paddingVertical: getResponsiveSize(40, 50, 60),
   },
   loadingText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#868686',
-    marginTop: moderateScale(10),
+    marginTop: getResponsiveSize(8, 10, 12),
   },
   questionContainer: {
     backgroundColor: '#D1ECF1',
     borderColor: '#0C5460',
     borderWidth: 1,
-    borderRadius: moderateScale(10),
-    paddingVertical: moderateScale(10),
-    paddingHorizontal: moderateScale(12),
-    marginHorizontal: moderateScale(16),
-    marginTop: moderateScale(16),
-    marginBottom: moderateScale(16),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    paddingVertical: getResponsiveSize(8, 10, 14),
+    paddingHorizontal: getResponsiveSize(10, 12, 16),
+    marginHorizontal: getResponsiveSize(12, 16, 24),
+    marginTop: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 16, 20),
     alignItems: 'center',
   },
   questionText: {
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#0C5460',
     fontWeight: '500',
+    textAlign: 'center',
   },
   imageList: {
     flex: 1,
-    paddingHorizontal: moderateScale(16),
+    paddingHorizontal: getResponsiveSize(12, 16, 24),
+  },
+  // Tablet-specific styles
+  tabletRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveSize(8, 12, 16),
+  },
+  tabletColumn: {
+    flex: 0.48,
   },
   imageCard: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(8),
-    marginBottom: moderateScale(12),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    padding: getResponsiveSize(6, 8, 12),
+    marginBottom: getResponsiveSize(8, 12, 16),
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -273,66 +385,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: moderateScale(8),
-    paddingHorizontal: moderateScale(4),
+    marginBottom: getResponsiveSize(6, 8, 10),
+    paddingHorizontal: getResponsiveSize(2, 4, 6),
   },
   mesaText: {
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     fontWeight: '600',
     color: '#2F2F2F',
   },
   fechaText: {
-    fontSize: moderateScale(12),
+    fontSize: getResponsiveSize(10, 12, 14),
     color: '#868686',
   },
   imageDisplay: {
     width: '100%',
-    height: moderateScale(150),
-    borderRadius: moderateScale(4),
+    height: getResponsiveSize(120, 150, 200),
+    borderRadius: getResponsiveSize(3, 4, 6),
   },
   // Styles for the corner borders
   cornerBorder: {
     position: 'absolute',
-    width: moderateScale(20),
-    height: moderateScale(20),
+    width: getResponsiveSize(16, 20, 24),
+    height: getResponsiveSize(16, 20, 24),
     borderColor: '#2F2F2F',
     borderWidth: 2,
   },
   topLeftCorner: {
-    top: moderateScale(8),
-    left: moderateScale(8),
+    top: getResponsiveSize(6, 8, 12),
+    left: getResponsiveSize(6, 8, 12),
     borderRightWidth: 0,
     borderBottomWidth: 0,
   },
   topRightCorner: {
-    top: moderateScale(8),
-    right: moderateScale(8),
+    top: getResponsiveSize(6, 8, 12),
+    right: getResponsiveSize(6, 8, 12),
     borderLeftWidth: 0,
     borderBottomWidth: 0,
   },
   bottomLeftCorner: {
-    bottom: moderateScale(8),
-    left: moderateScale(8),
+    bottom: getResponsiveSize(6, 8, 12),
+    left: getResponsiveSize(6, 8, 12),
     borderRightWidth: 0,
     borderTopWidth: 0,
   },
   bottomRightCorner: {
-    bottom: moderateScale(8),
-    right: moderateScale(8),
+    bottom: getResponsiveSize(6, 8, 12),
+    right: getResponsiveSize(6, 8, 12),
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
   detailsButton: {
     backgroundColor: '#459151',
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(10, 12, 16),
+    borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
-    marginTop: moderateScale(-8),
-    marginBottom: moderateScale(12),
-    marginHorizontal: moderateScale(16),
+    marginTop: getResponsiveSize(-6, -8, -10),
+    marginBottom: getResponsiveSize(8, 12, 16),
+    marginHorizontal: isTablet ? 0 : getResponsiveSize(12, 16, 20),
   },
   detailsButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
   },

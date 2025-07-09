@@ -1,5 +1,12 @@
 import React from 'react';
-import {View, StyleSheet, TouchableOpacity, Image, Modal} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Modal,
+  Dimensions,
+} from 'react-native';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -13,7 +20,11 @@ import {fontConfig} from 'react-native-paper/lib/typescript/styles/fonts';
 import CameraScreen from './CameraScreen';
 import {StackNav} from '../../../navigation/NavigationKey';
 
-// Solo para demo, en tu app vendrá desde navigation
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 350;
+
+// Only for demo, in your app it will come from navigation
 const mockMesa = {
   numero: 'Mesa 1234',
   codigo: '2352',
@@ -24,12 +35,12 @@ const mockMesa = {
 
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  // Usar datos reales de la mesa desde la navegación, con mockMesa como fallback
+  // Use real table data from navigation, with mockMesa as fallback
   const mesa = route.params?.mesa || mockMesa;
 
   console.log('TableDetail - Mesa recibida:', mesa);
 
-  // Si viene una imagen desde CameraScreen, úsala
+  // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(
     route.params?.capturedImage || null,
   );
@@ -74,140 +85,115 @@ export default function TableDetail({navigation, route}) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title={String.tableInformation}
+        title={String.tableInformation || 'Table Information'}
         showNotification={false}
       />
 
-      {/* INSTRUCCIÓN */}
-      <View style={{marginTop: 50, marginBottom: 0}}>
-        <CText
-          style={{
-            ...stylesx.bigBold,
-            fontSize: 20,
-            fontWeight: 'bold',
-            color: 'black', // Ajusta el margen superior
-          }}>
-          {String.ensureAssignedTable}
-        </CText>
+      {/* SCROLLABLE CONTENT */}
+      <View style={stylesx.scrollableContent}>
+        {/* INSTRUCCIÓN */}
+        <View style={stylesx.instructionContainer}>
+          <CText style={[stylesx.bigBold, {color: 'black'}]}>
+            {String.ensureAssignedTable || 'Ensure this is your assigned table'}
+          </CText>
 
-        <CText
-          style={{
-            ...stylesx.subtitle,
-            marginTop: 10,
-            color: colors.grayScale500, // Color gris claro
-            fontSize: 15, // Tamaño de fuente más pequeño
-          }}>
-          {String.ensureAssignedTable}
-        </CText>
-      </View>
-
-      {/* DATOS DE LA MESA */}
-
-      <View
-        style={{
-          ...stylesx.card,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 18,
-          borderWidth: 0,
-          borderColor: 'transparent',
-          shadowOpacity: 0,
-          elevation: 0,
-        }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-          }}>
-          <View style={{flex: 1, marginRight: 14}}>
-            <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-            <CText style={stylesx.label}>
-              {String.venue} {mesa.recinto}
-            </CText>
-            <CText style={stylesx.label}>{mesa.colegio}</CText>
-            <CText style={stylesx.label}>{mesa.provincia}</CText>
-            <CText style={stylesx.label}>
-              {String.tableCode} {mesa.codigo}
-            </CText>
-          </View>
-          <MaterialIcons
-            name="how-to-vote"
-            size={moderateScale(70)}
-            color={colors.textColor}
-            style={{marginTop: moderateScale(25)}}
-          />
+          <CText
+            style={[
+              stylesx.subtitle,
+              {color: colors.grayScale500 || '#8B9399'},
+            ]}>
+            {String.verifyTableInformation}
+          </CText>
         </View>
-      </View>
 
-      {/* INDICACIÓN IA */}
-      <View style={stylesx.infoAI}>
-        <Ionicons
-          name="sparkles"
-          size={moderateScale(19)}
-          color={'#226678'}
-          style={{marginRight: 7}}
-        />
-        <CText style={stylesx.iaText}>{String.aiWillSelectClearestPhoto}</CText>
-      </View>
+        {/* DATOS DE LA MESA */}
+        <View style={stylesx.card}>
+          <View style={stylesx.cardContent}>
+            <View style={stylesx.cardTextContainer}>
+              <CText style={stylesx.mesaTitle}>
+                {mesa.numero || 'Table Information'}
+              </CText>
+              <CText style={stylesx.label}>
+                {String.venue || 'Venue'}: {mesa.recinto || 'Not specified'}
+              </CText>
+              <CText style={stylesx.label}>
+                {mesa.colegio || 'School information'}
+              </CText>
+              <CText style={stylesx.label}>
+                {mesa.provincia || 'Province information'}
+              </CText>
+              <CText style={stylesx.label}>
+                {String.tableCode || 'Table Code'}:{' '}
+                {mesa.codigo || 'Not specified'}
+              </CText>
+            </View>
+            <MaterialIcons
+              name="how-to-vote"
+              size={isTablet ? 80 : isSmallPhone ? 50 : 60}
+              color={colors.textColor || '#222'}
+              style={stylesx.cardIcon}
+            />
+          </View>
+        </View>
 
-      {/* BOTÓN TOMAR FOTO */}
-      <TouchableOpacity
-        style={stylesx.takePhotoBtn}
-        activeOpacity={0.85}
-        onPress={handleTakePhoto}>
-        <CText style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
-      </TouchableOpacity>
+        {/* INDICACIÓN IA */}
+        <View style={stylesx.infoAI}>
+          <Ionicons
+            name="sparkles"
+            size={isTablet ? 22 : isSmallPhone ? 16 : 19}
+            color={'#226678'}
+            style={stylesx.aiIcon}
+          />
+          <CText style={stylesx.iaText}>
+            {String.aiWillSelectClearestPhoto ||
+              'AI will select the clearest photo'}
+          </CText>
+        </View>
+
+        {/* BOTÓN TOMAR FOTO */}
+        <TouchableOpacity
+          style={stylesx.takePhotoBtn}
+          activeOpacity={0.85}
+          onPress={handleTakePhoto}>
+          <CText style={stylesx.takePhotoBtnText}>
+            {String.takePhoto || 'Take Photo'}
+          </CText>
+        </TouchableOpacity>
+      </View>
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}
       <Modal visible={modalVisible} animationType="slide" transparent={false}>
-        <View style={{flex: 1, backgroundColor: '#fff'}}>
-          <View
-            style={{
-              padding: 20,
-              alignItems: 'center',
-              borderBottomWidth: 1,
-              borderBottomColor: '#E5E5E5',
-            }}>
-            <CText type={'B18'} color={colors.textColor}>
-              {String.preview}
+        <View style={stylesx.modalContainer}>
+          <View style={stylesx.modalHeader}>
+            <CText type={'B18'} color={colors.textColor || '#222'}>
+              {String.preview || 'Preview'}
             </CText>
           </View>
           {capturedImage && (
-            <View style={{flex: 1, padding: 20}}>
+            <View style={stylesx.imageContainer}>
               <Image
                 source={{uri: capturedImage.uri}}
-                style={{flex: 1, width: '100%'}}
+                style={stylesx.previewImage}
                 resizeMode="contain"
               />
             </View>
           )}
-          <View
-            style={{flexDirection: 'row', padding: 20, gap: moderateScale(15)}}>
+          <View style={stylesx.modalButtons}>
             <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: '#F5F5F5',
-                borderRadius: 8,
-                alignItems: 'center',
-                padding: 15,
-              }}
+              style={stylesx.retakeButton}
               onPress={handleRetakePhoto}>
-              <CText type={'B14'} color={colors.grayScale600}>
-                {String.retakePhoto}
+              <CText type={'B14'} color={colors.grayScale600 || '#666'}>
+                {String.retakePhoto || 'Retake Photo'}
               </CText>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: colors.primary,
-                borderRadius: 8,
-                alignItems: 'center',
-                padding: 15,
-              }}
+              style={[
+                stylesx.confirmButton,
+                {backgroundColor: colors.primary || '#4F9858'},
+              ]}
               onPress={handleConfirmPhoto}>
-              <CText type={'B14'} color={colors.white}>
-                {String.confirmAndSend}
+              <CText type={'B14'} color={colors.white || '#fff'}>
+                {String.confirmAndSend || 'Confirm and Send'}
               </CText>
             </TouchableOpacity>
           </View>
@@ -217,79 +203,146 @@ export default function TableDetail({navigation, route}) {
   );
 }
 
-// ESTILOS
+// ESTILOS RESPONSIVOS
 const stylesx = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // Fondo blanco
-    paddingHorizontal: 0,
+    backgroundColor: '#fff',
+  },
+  scrollableContent: {
+    flex: 1,
+    paddingBottom: isSmallPhone ? 20 : 30, // Extra padding for small devices
+  },
+  instructionContainer: {
+    marginTop: isTablet ? 40 : isSmallPhone ? 15 : 25,
+    marginBottom: 0,
+    paddingHorizontal: isTablet ? 32 : isSmallPhone ? 12 : 16,
   },
   bigBold: {
-    fontSize: 18,
+    fontSize: isTablet ? 24 : isSmallPhone ? 16 : 20,
     fontWeight: 'bold',
-    marginLeft: 19,
-    marginBottom: 2,
+    marginBottom: isSmallPhone ? 4 : 8,
     color: '#222',
+    lineHeight: isTablet ? 30 : isSmallPhone ? 22 : 26,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : isSmallPhone ? 12 : 15,
     color: '#8B9399',
-    marginLeft: 19,
+    marginTop: isSmallPhone ? 4 : 10,
+    lineHeight: isTablet ? 24 : isSmallPhone ? 16 : 20,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 23,
-    padding: 16,
+    borderRadius: isSmallPhone ? 8 : 12,
+    marginHorizontal: isTablet ? 32 : isSmallPhone ? 12 : 16,
+    marginTop: isTablet ? 30 : isSmallPhone ? 12 : 20,
+    padding: isTablet ? 24 : isSmallPhone ? 10 : 16,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
-    marginBottom: 25,
+    marginBottom: isTablet ? 30 : isSmallPhone ? 10 : 20,
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  cardTextContainer: {
+    flex: 1,
+    marginRight: isTablet ? 20 : isSmallPhone ? 8 : 14,
+  },
+  cardIcon: {
+    marginTop: isTablet ? 0 : isSmallPhone ? 5 : 15,
+    alignSelf: 'flex-start',
+  },
   mesaTitle: {
-    fontSize: 17,
+    fontSize: isTablet ? 20 : isSmallPhone ? 14 : 17,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: isSmallPhone ? 4 : 6,
     color: '#111',
+    lineHeight: isTablet ? 26 : isSmallPhone ? 18 : 22,
   },
   label: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : isSmallPhone ? 11 : 14,
     color: '#222',
-    marginBottom: 2,
+    marginBottom: isSmallPhone ? 2 : 3,
+    lineHeight: isTablet ? 22 : isSmallPhone ? 15 : 18,
   },
   infoAI: {
     backgroundColor: '#DDF4FA',
-    borderRadius: 10,
-    marginHorizontal: 16,
+    borderRadius: isSmallPhone ? 6 : 10,
+    marginHorizontal: isTablet ? 32 : isSmallPhone ? 12 : 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 20,
+    paddingVertical: isTablet ? 16 : isSmallPhone ? 6 : 10,
+    paddingHorizontal: isTablet ? 20 : isSmallPhone ? 8 : 14,
+    marginBottom: isTablet ? 30 : isSmallPhone ? 10 : 15,
+  },
+  aiIcon: {
+    marginRight: isTablet ? 10 : isSmallPhone ? 5 : 7,
   },
   iaText: {
-    fontSize: 15,
+    fontSize: isTablet ? 17 : isSmallPhone ? 11 : 14,
     color: '#226678',
     fontWeight: '500',
+    flex: 1,
+    lineHeight: isTablet ? 24 : isSmallPhone ? 15 : 20,
   },
   takePhotoBtn: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    backgroundColor: '#4F9858', // Verde exacto
-    borderRadius: 12,
+    marginHorizontal: isTablet ? 32 : isSmallPhone ? 12 : 16,
+    marginTop: isSmallPhone ? 2 : 6,
+    backgroundColor: '#4F9858',
+    borderRadius: isSmallPhone ? 8 : 12,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 50,
+    height: isTablet ? 60 : isSmallPhone ? 40 : 50,
+    marginBottom: isSmallPhone ? 10 : 0,
   },
   takePhotoBtnText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 17,
+    fontSize: isTablet ? 19 : isSmallPhone ? 14 : 17,
     letterSpacing: 0.2,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    padding: isTablet ? 30 : isSmallPhone ? 15 : 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  imageContainer: {
+    flex: 1,
+    padding: isTablet ? 30 : isSmallPhone ? 15 : 20,
+  },
+  previewImage: {
+    flex: 1,
+    width: '100%',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    padding: isTablet ? 30 : isSmallPhone ? 15 : 20,
+    gap: isTablet ? 20 : isSmallPhone ? 8 : 12,
+  },
+  retakeButton: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    borderRadius: isSmallPhone ? 6 : 8,
+    alignItems: 'center',
+    padding: isTablet ? 20 : isSmallPhone ? 10 : 15,
+  },
+  confirmButton: {
+    flex: 1,
+    borderRadius: isSmallPhone ? 6 : 8,
+    alignItems: 'center',
+    padding: isTablet ? 20 : isSmallPhone ? 10 : 15,
   },
 });

@@ -1,7 +1,19 @@
 import React from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375; // Increased from 350
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 // Action Buttons Component
 export const ActionButtons = ({buttons, style}) => (
@@ -23,17 +35,17 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: moderateScale(32),
-    gap: moderateScale(12),
+    marginBottom: getResponsiveSize(16, 32, 40),
+    gap: getResponsiveSize(8, 12, 16),
   },
   actionButton: {
     flex: 1,
-    paddingVertical: moderateScale(14),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(10, 14, 18),
+    borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
   },
   actionButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
   },
 });

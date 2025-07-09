@@ -1,15 +1,44 @@
 import {StyleSheet, TouchableOpacity, View, Dimensions} from 'react-native';
 import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {useSelector} from 'react-redux';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 
-const deviceWidth = Dimensions.get('window').width;
-const CARD_MARGIN = 10;
-const CARD_WIDTH = (deviceWidth - 3 * CARD_MARGIN) / 2; // 2 cards + margins
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
+// Responsive grid calculations
+const getCardLayout = () => {
+  if (isTablet) {
+    // Tablets: 4 cards per row for large tablets, 2 for medium tablets
+    const CARD_MARGIN = getResponsiveSize(12, 16, 20);
+    const CARDS_PER_ROW = screenWidth > 1000 ? 4 : 2;
+    const CARD_WIDTH =
+      (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+  } else {
+    // Phones: 2 cards per row
+    const CARD_MARGIN = getResponsiveSize(8, 10, 12);
+    const CARDS_PER_ROW = 2;
+    const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+  }
+};
+
+const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
 
 const MiVotoLogo = () => (
   <View style={stylesx.logoRow}>
@@ -19,14 +48,20 @@ const MiVotoLogo = () => (
         style={[stylesx.flagStripe, {backgroundColor: '#E72F2F', top: 0}]}
       />
       <View
-        style={[stylesx.flagStripe, {backgroundColor: '#FFD800', top: 7}]}
+        style={[
+          stylesx.flagStripe,
+          {backgroundColor: '#FFD800', top: getResponsiveSize(6, 7, 8)},
+        ]}
       />
       <View
-        style={[stylesx.flagStripe, {backgroundColor: '#4FC144', top: 14}]}
+        style={[
+          stylesx.flagStripe,
+          {backgroundColor: '#4FC144', top: getResponsiveSize(12, 14, 16)},
+        ]}
       />
       <View style={stylesx.flagCheckOutline} />
     </View>
-    <View style={{marginLeft: 8}}>
+    <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
       <CText style={stylesx.logoTitle}>Tu voto decide</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
@@ -84,7 +119,11 @@ export default function HomeScreen({navigation}) {
       <View style={stylesx.headerRow}>
         <MiVotoLogo />
         <TouchableOpacity onPress={onPressNotification}>
-          <Ionicons name={'notifications-outline'} size={28} color={'#222'} />
+          <Ionicons
+            name={'notifications-outline'}
+            size={getResponsiveSize(24, 28, 32)}
+            color={'#222'}
+          />
         </TouchableOpacity>
       </View>
 
@@ -99,14 +138,20 @@ export default function HomeScreen({navigation}) {
         {menuItems.map((item, idx) => (
           <TouchableOpacity
             key={item.title}
-            style={stylesx.card}
+            style={[
+              stylesx.card,
+              {
+                width: CARD_WIDTH,
+                marginBottom: getResponsiveSize(10, 15, 20),
+              },
+            ]}
             activeOpacity={0.87}
             onPress={item.onPress}>
             <item.iconComponent
               name={item.icon}
-              size={36}
+              size={getResponsiveSize(30, 36, 42)}
               color="#41A44D"
-              style={{marginBottom: 8}}
+              style={{marginBottom: getResponsiveSize(6, 8, 10)}}
             />
             <CText style={stylesx.cardTitle}>{item.title}</CText>
             <CText style={stylesx.cardDescription}>{item.description}</CText>
@@ -127,70 +172,70 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 4,
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    paddingTop: getResponsiveSize(12, 16, 20),
+    paddingBottom: getResponsiveSize(2, 4, 6),
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   flagBox: {
-    width: 38,
-    height: 38,
-    marginRight: 2,
+    width: getResponsiveSize(32, 38, 44),
+    height: getResponsiveSize(32, 38, 44),
+    marginRight: getResponsiveSize(1, 2, 3),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   flagStripe: {
     position: 'absolute',
-    left: 11,
-    width: 19,
-    height: 5.3,
+    left: getResponsiveSize(9, 11, 13),
+    width: getResponsiveSize(16, 19, 22),
+    height: getResponsiveSize(4, 5.3, 6),
     borderRadius: 2,
     zIndex: 2,
   },
   flagCheckOutline: {
     position: 'absolute',
-    left: 2,
-    top: 5,
-    width: 28,
-    height: 28,
-    borderWidth: 3.3,
+    left: getResponsiveSize(1, 2, 3),
+    top: getResponsiveSize(4, 5, 6),
+    width: getResponsiveSize(24, 28, 32),
+    height: getResponsiveSize(24, 28, 32),
+    borderWidth: getResponsiveSize(2.8, 3.3, 3.8),
     borderColor: '#292D32',
-    borderRadius: 6,
+    borderRadius: getResponsiveSize(5, 6, 7),
     zIndex: 1,
     backgroundColor: 'transparent',
-    borderBottomLeftRadius: 8,
+    borderBottomLeftRadius: getResponsiveSize(7, 8, 9),
   },
   logoTitle: {
-    fontSize: 26,
+    fontSize: getResponsiveSize(22, 26, 30),
     fontWeight: 'bold',
     color: '#222',
     letterSpacing: -1,
   },
   logoSubtitle: {
-    fontSize: 14,
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#8B9399',
     fontWeight: '400',
     marginTop: -2,
     marginLeft: 2,
   },
   welcomeContainer: {
-    marginTop: 13,
-    marginLeft: 21,
-    marginBottom: 16,
+    marginTop: getResponsiveSize(10, 13, 16),
+    marginLeft: getResponsiveSize(18, 21, 24),
+    marginBottom: getResponsiveSize(12, 16, 20),
   },
   bienvenido: {
-    fontSize: 22,
+    fontSize: getResponsiveSize(18, 22, 26),
     color: '#41A44D',
     fontWeight: '700',
     marginBottom: -2,
     letterSpacing: -0.5,
   },
   nombre: {
-    fontSize: 22,
+    fontSize: getResponsiveSize(18, 22, 26),
     color: '#232323',
     fontWeight: '700',
     marginBottom: 0,
@@ -199,31 +244,47 @@ const stylesx = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    marginTop: 10,
+    justifyContent:
+      CARDS_PER_ROW === 4
+        ? 'space-around'
+        : isTablet
+        ? 'flex-start'
+        : 'space-between',
+    paddingHorizontal: getResponsiveSize(8, 12, 16),
+    marginTop: getResponsiveSize(6, 10, 14),
+    ...(isTablet && {
+      // For tablets, add gap between cards
+      gap:
+        CARDS_PER_ROW === 4
+          ? getResponsiveSize(8, 12, 16)
+          : getResponsiveSize(12, 16, 20),
+    }),
   },
   card: {
-    width: CARD_WIDTH,
-    minHeight: 116,
+    // Width is set dynamically in the component
+    minHeight: getResponsiveSize(100, 116, 140),
     backgroundColor: '#FFF',
-    borderRadius: 17,
-    borderWidth: 1.3,
+    borderRadius: getResponsiveSize(14, 17, 20),
+    borderWidth: getResponsiveSize(1.1, 1.3, 1.5),
     borderColor: '#E0E0E0',
     alignItems: 'flex-start',
-    padding: 18,
-    marginBottom: 15,
+    padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowOpacity: 0,
+    ...(isTablet &&
+      CARDS_PER_ROW === 2 && {
+        // For 2-column tablet layout, add margin
+        marginRight: getResponsiveSize(8, 12, 16),
+      }),
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     color: '#232323',
-    marginBottom: 2,
+    marginBottom: getResponsiveSize(1, 2, 3),
   },
   cardDescription: {
-    fontSize: 14,
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#282828',
     fontWeight: '400',
     marginTop: 1,
@@ -238,8 +299,8 @@ const stylesx = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 80,
-    borderRadius: 12,
-    marginTop: 10,
+    height: getResponsiveSize(70, 80, 90),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    marginTop: getResponsiveSize(8, 10, 12),
   },
 });

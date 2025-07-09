@@ -1101,7 +1101,7 @@ export default {
 
   // Common
   confirmation: 'Confirmation',
-  voluntaryInitiative: 'Voluntary initiative by:',
+  voluntaryInitiative: 'Iniciativa Voluntaria de',
   autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
 
   // Camera
@@ -1114,4 +1114,5 @@ export default {
 
   // agregados que faltaban en en.js
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
+  verifyTableInformation: 'Verificar Información de la Mesa',
 };

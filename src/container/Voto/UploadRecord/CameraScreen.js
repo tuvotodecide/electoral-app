@@ -19,8 +19,9 @@ import CText from '../../../components/common/CText';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
-const windowWidth = Dimensions.get('window').width;
-const windowHeight = Dimensions.get('window').height;
+const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
+const isTablet = windowWidth >= 768;
+const isSmallPhone = windowWidth < 350;
 
 export default function CameraScreen({navigation, route}) {
   const camera = useRef(null);
@@ -34,7 +35,7 @@ export default function CameraScreen({navigation, route}) {
   const [isFocused, setIsFocused] = useState(true);
   const [cameraKey, setCameraKey] = useState(0); // Para forzar re-render
 
-  // Función para reiniciar completamente la cámara
+  // Function to completely reset the camera
   const resetCamera = () => {
     console.log('Resetting camera...');
     setIsActive(false);
@@ -72,7 +73,7 @@ export default function CameraScreen({navigation, route}) {
     return () => subscription?.remove();
   }, [photo, isFocused]);
 
-  // Manejo de permisos y activación inicial
+  // Permission handling and initial activation
   useEffect(() => {
     let timeoutId;
     const initCamera = async () => {
@@ -86,7 +87,7 @@ export default function CameraScreen({navigation, route}) {
 
       if (device && hasPermission && !photo && isFocused) {
         console.log('Initializing camera...');
-        // Delay más largo para asegurar que la cámara esté completamente libre
+        // Longer delay to ensure camera is completely free
         timeoutId = setTimeout(() => {
           setIsActive(true);
         }, 2000);
@@ -137,8 +138,8 @@ export default function CameraScreen({navigation, route}) {
   if (!device || !hasPermission) {
     return (
       <View style={styles.centered}>
-        <CText style={{color: '#fff', fontSize: 16}}>
-          {String.cameraNotAvailable}
+        <CText style={styles.errorText}>
+          {String.cameraNotAvailable || 'Camera not available'}
         </CText>
       </View>
     );
@@ -163,11 +164,11 @@ export default function CameraScreen({navigation, route}) {
 
       console.log('Photo taken successfully:', result);
       setPhoto(result);
-      setIsActive(false); // Desactivar inmediatamente después de tomar la foto
+      setIsActive(false); // Deactivate immediately after taking photo
     } catch (err) {
       console.error('Camera error:', err);
 
-      // Manejo específico para el error de "camera already in use"
+      // Specific handling for "camera already in use" error
       if (
         err.code === 'device/camera-already-in-use' ||
         err.message?.includes('already in use')
@@ -184,12 +185,16 @@ export default function CameraScreen({navigation, route}) {
         }, 2000);
       }
 
-      Alert.alert(String.cameraErrorTitle, String.cameraErrorMessage, [
-        {
-          text: String.accept,
-          onPress: () => {},
-        },
-      ]);
+      Alert.alert(
+        String.cameraErrorTitle || 'Camera Error', 
+        String.cameraErrorMessage || 'Unable to take photo. Please try again.', 
+        [
+          {
+            text: String.accept || 'OK',
+            onPress: () => {},
+          },
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -251,7 +256,7 @@ export default function CameraScreen({navigation, route}) {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <CText style={styles.buttonText}>
-                  {isActive ? String.takePhoto : 'Preparando cámara...'}
+                  {isActive ? (String.takePhoto || 'Take Photo') : (String.preparingCamera || 'Preparing camera...')}
                 </CText>
               )}
             </TouchableOpacity>
@@ -271,9 +276,9 @@ export default function CameraScreen({navigation, route}) {
           <RenderFrame color={'#4F9858'} />
           <View style={styles.bottomContainer}>
             <TouchableOpacity
-              style={[styles.captureButton, {backgroundColor: '#4F9858'}]}
+              style={[styles.captureButton, styles.nextButton]}
               onPress={handleNext}>
-              <CText style={styles.buttonText}>{String.next}</CText>
+              <CText style={styles.buttonText}>{String.next || 'Next'}</CText>
             </TouchableOpacity>
           </View>
         </View>
@@ -282,9 +287,10 @@ export default function CameraScreen({navigation, route}) {
   );
 }
 
-const frameSize = Math.floor(Dimensions.get('window').width * 0.8); // 80% ancho pantalla
-const cornerLength = 38;
-const cornerThickness = 6;
+// Responsive frame sizing
+const frameSize = Math.floor(windowWidth * (isTablet ? 0.6 : isSmallPhone ? 0.75 : 0.8));
+const cornerLength = isTablet ? 45 : isSmallPhone ? 25 : 35;
+const cornerThickness = isTablet ? 8 : isSmallPhone ? 3 : 5;
 
 const styles = StyleSheet.create({
   centered: {
@@ -293,12 +299,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
+  errorText: {
+    color: '#fff',
+    fontSize: isTablet ? 20 : isSmallPhone ? 14 : 16,
+    textAlign: 'center',
+    paddingHorizontal: isTablet ? 40 : 20,
+  },
   overlayContainer: {
     position: 'absolute',
     width: frameSize,
-    height: frameSize * 1.35, // relación carta/documento
-    left: (Dimensions.get('window').width - frameSize) / 2,
-    top: Dimensions.get('window').height * 0.15,
+    height: frameSize * 1.35, // letter/document ratio
+    left: (windowWidth - frameSize) / 2,
+    top: windowHeight * (isTablet ? 0.12 : isSmallPhone ? 0.20 : 0.15),
     zIndex: 100,
   },
   corner: {
@@ -312,49 +324,57 @@ const styles = StyleSheet.create({
     top: 0,
     borderLeftWidth: cornerThickness,
     borderTopWidth: cornerThickness,
-    borderRadius: 6,
+    borderRadius: isTablet ? 8 : isSmallPhone ? 3 : 5,
   },
   topRight: {
     right: 0,
     top: 0,
     borderRightWidth: cornerThickness,
     borderTopWidth: cornerThickness,
-    borderRadius: 6,
+    borderRadius: isTablet ? 8 : isSmallPhone ? 3 : 5,
   },
   bottomLeft: {
     left: 0,
     bottom: 0,
     borderLeftWidth: cornerThickness,
     borderBottomWidth: cornerThickness,
-    borderRadius: 6,
+    borderRadius: isTablet ? 8 : isSmallPhone ? 3 : 5,
   },
   bottomRight: {
     right: 0,
     bottom: 0,
     borderRightWidth: cornerThickness,
     borderBottomWidth: cornerThickness,
-    borderRadius: 6,
+    borderRadius: isTablet ? 8 : isSmallPhone ? 3 : 5,
   },
-  // Botón y fondo
   bottomContainer: {
     position: 'absolute',
-    bottom: 56,
+    bottom: isTablet ? 80 : isSmallPhone ? 30 : 50,
     width: '100%',
     alignItems: 'center',
     zIndex: 200,
+    paddingHorizontal: isTablet ? 40 : isSmallPhone ? 15 : 20,
   },
   captureButton: {
-    width: 260,
-    paddingVertical: 18,
-    borderRadius: 14,
+    width: isTablet ? 320 : isSmallPhone ? 160 : 220,
+    paddingVertical: isTablet ? 22 : isSmallPhone ? 12 : 16,
+    borderRadius: isTablet ? 18 : isSmallPhone ? 8 : 12,
     backgroundColor: '#4F9858',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  nextButton: {
+    backgroundColor: '#4F9858',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 19,
+    fontSize: isTablet ? 22 : isSmallPhone ? 14 : 18,
     fontWeight: '600',
+    textAlign: 'center',
   },
 });

@@ -1,7 +1,19 @@
 import React from 'react';
-import {View, StyleSheet, TextInput} from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375; // Increased from 350
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 // Party Table Row Component
 export const PartyTableRow = ({party, isEditing, onUpdate}) => (
@@ -56,8 +68,8 @@ export const PartyTable = ({partyResults, isEditing = false, onUpdate}) => (
 const styles = StyleSheet.create({
   partyTableContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(16),
+    borderRadius: getResponsiveSize(4, 8, 10),
+    marginBottom: getResponsiveSize(6, 16, 20),
     elevation: 2,
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -67,21 +79,21 @@ const styles = StyleSheet.create({
   partyTableHeader: {
     flexDirection: 'row',
     backgroundColor: '#E0F2F7',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    borderTopLeftRadius: moderateScale(8),
-    borderTopRightRadius: moderateScale(8),
+    paddingHorizontal: getResponsiveSize(6, 16, 20),
+    paddingVertical: getResponsiveSize(4, 12, 16),
+    borderTopLeftRadius: getResponsiveSize(4, 8, 10),
+    borderTopRightRadius: getResponsiveSize(4, 8, 10),
   },
   partyTableHeaderLeft: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'left',
   },
   partyTableHeaderCenter: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
@@ -89,14 +101,14 @@ const styles = StyleSheet.create({
   partyTableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
+    paddingHorizontal: getResponsiveSize(6, 16, 20),
+    paddingVertical: getResponsiveSize(4, 12, 16),
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   partyNameText: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
     color: '#2F2F2F',
   },
@@ -106,22 +118,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   partyVoteText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
     width: '100%',
   },
   partyVoteInput: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
     color: '#2F2F2F',
     borderWidth: 1,
     borderColor: '#459151',
-    borderRadius: moderateScale(4),
-    padding: moderateScale(8),
+    borderRadius: getResponsiveSize(3, 4, 6),
+    padding: getResponsiveSize(4, 8, 12),
     textAlign: 'center',
-    minWidth: moderateScale(50),
+    minWidth: getResponsiveSize(40, 50, 60),
     width: '100%',
   },
 });

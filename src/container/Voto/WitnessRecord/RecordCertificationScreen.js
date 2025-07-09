@@ -278,14 +278,14 @@ const styles = StyleSheet.create({
   },
   partyTableHeaderLeft: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'left',
   },
   partyTableHeaderCenter: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   partyNameText: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
     color: '#2F2F2F',
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   partyVoteText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     paddingTop: moderateScale(12),
   },
   voteSummaryTableTitle: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '700',
     color: '#2F2F2F',
     marginBottom: moderateScale(8),
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   voteSummaryLabel: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
     color: '#2F2F2F',
   },
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   voteSummaryValue: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',

@@ -9,38 +9,37 @@ import {
 } from 'react-native';
 import CText from './CText';
 
-export default function NearbyMesasList({
+export default function NearbyTablesList({
   visible,
   loading,
-  mesas,
+  tables,
   onSelect,
   onClose,
   colors,
 }) {
   const [search, setSearch] = useState('');
-  const [filtered, setFiltered] = useState(mesas);
+  const [filtered, setFiltered] = useState(tables);
 
   useEffect(() => {
     setFiltered(
-      mesas.filter(
-        m =>
-          m.numero.toLowerCase().includes(search.toLowerCase()) ||
-          m.codigo.includes(search) ||
-          m.colegio.toLowerCase().includes(search.toLowerCase()),
+      tables.filter(
+        table =>
+          table.numero.toLowerCase().includes(search.toLowerCase()) ||
+          table.codigo.includes(search) ||
+          table.colegio.toLowerCase().includes(search.toLowerCase()),
       ),
     );
-  }, [search, mesas]);
+  }, [search, tables]);
 
   if (!visible) {
     return null;
   }
   return (
     <View style={[styles.container, {backgroundColor: colors.backgroundColor}]}>
-      
       <View style={styles.searchBox}>
         <TextInput
           style={[styles.input, {color: colors.textColor}]}
-          placeholder="Buscar mesa"
+          placeholder="Search table"
           placeholderTextColor={colors.grayScale500}
           value={search}
           onChangeText={setSearch}
@@ -58,20 +57,20 @@ export default function NearbyMesasList({
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (
             <TouchableOpacity
-              style={styles.mesaItem}
+              style={styles.tableItem}
               onPress={() => onSelect(item)}>
               <CText type="B16" color={colors.textColor}>
                 {item.numero} - {item.colegio}
               </CText>
               <CText type="R12" color={colors.grayScale500}>
-                Código: {item.codigo}
+                Code: {item.codigo}
               </CText>
             </TouchableOpacity>
           )}
         />
       ) : (
         <CText type="R14" color={colors.grayScale500} style={styles.noResult}>
-          No se encontraron mesas cercanas.
+          No nearby tables found.
         </CText>
       )}
     </View>
@@ -116,7 +115,7 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 20,
   },
-  mesaItem: {
+  tableItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',

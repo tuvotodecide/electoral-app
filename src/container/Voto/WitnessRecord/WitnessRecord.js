@@ -9,7 +9,7 @@ import {fetchMesas} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
-const SearchMesaScreen = () => {
+const WitnessRecordScreen = () => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,9 +33,9 @@ const SearchMesaScreen = () => {
 
   const styles = createSearchTableStyles();
 
-  // Cargar mesas al montar el componente
+  // Load tables when component mounts
   useEffect(() => {
-    loadMesas();
+    loadTables();
   }, []);
 
   const showModal = (type, title, message, buttonText = String.accept) => {
@@ -47,24 +47,24 @@ const SearchMesaScreen = () => {
     setModalVisible(false);
   };
 
-  const loadMesas = async () => {
+  const loadTables = async () => {
     try {
       setIsLoading(true);
-      console.log('WitnessRecord: Loading mesas...');
+      console.log('WitnessRecord: Loading tables...');
       const response = await fetchMesas();
 
       if (response.success) {
         console.log(
-          'WitnessRecord: Mesas loaded successfully:',
+          'WitnessRecord: Tables loaded successfully:',
           response.data.length,
         );
         setMesas(response.data);
       } else {
-        console.error('WitnessRecord: Failed to load mesas');
+        console.error('WitnessRecord: Failed to load tables');
         showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('WitnessRecord: Error loading mesas:', error);
+      console.error('WitnessRecord: Error loading tables:', error);
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoading(false);
@@ -97,7 +97,7 @@ const SearchMesaScreen = () => {
     }
   };
 
-  // Mostrar indicador de carga mientras se cargan las mesas
+  // Show loading indicator while tables are being loaded
   if (isLoading) {
     return (
       <View
@@ -164,4 +164,4 @@ const SearchMesaScreen = () => {
   );
 };
 
-export default SearchMesaScreen;
+export default WitnessRecordScreen;

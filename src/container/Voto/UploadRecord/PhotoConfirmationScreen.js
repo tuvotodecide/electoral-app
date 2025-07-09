@@ -18,7 +18,23 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
 
-const {width: screenWidth} = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 350;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
+const getResponsiveModalWidth = () => {
+  if (isTablet) return screenWidth * 0.6; // Tablets: 60% width
+  if (isSmallPhone) return screenWidth * 0.9; // Small phones: 90% width
+  return screenWidth * 0.85; // Regular phones: 85% width
+};
 
 const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
@@ -118,7 +134,11 @@ const PhotoConfirmationScreen = () => {
             {step === 0 && (
               <>
                 <View style={modalStyles.iconCircleWarning}>
-                  <Ionicons name="alert-outline" size={48} color="#da2a2a" />
+                  <Ionicons
+                    name="alert-outline"
+                    size={getResponsiveSize(36, 48, 60)}
+                    color="#da2a2a"
+                  />
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
@@ -170,84 +190,96 @@ const modalStyles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(16, 20, 32),
   },
   modalContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(16),
-    padding: moderateScale(24),
-    marginHorizontal: moderateScale(32),
+    borderRadius: getResponsiveSize(12, 16, 20),
+    padding: getResponsiveSize(16, 24, 32),
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    width: screenWidth * 0.85,
+    width: getResponsiveModalWidth(),
+    maxWidth: isTablet ? 500 : screenWidth * 0.95,
   },
   iconCircleWarning: {
     backgroundColor: '#fdf4f4',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: getResponsiveSize(60, 80, 100),
+    height: getResponsiveSize(60, 80, 100),
+    borderRadius: getResponsiveSize(30, 40, 50),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: moderateScale(16),
+    marginBottom: getResponsiveSize(12, 16, 20),
   },
   spacer: {
-    height: moderateScale(10),
+    height: getResponsiveSize(8, 10, 12),
   },
   confirmTitle: {
-    fontSize: moderateScale(18),
+    fontSize: getResponsiveSize(16, 18, 22),
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
-    marginBottom: moderateScale(24),
-    lineHeight: moderateScale(24),
+    marginBottom: getResponsiveSize(16, 24, 32),
+    lineHeight: getResponsiveSize(20, 24, 28),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
   },
   buttonContainer: {
-    flexDirection: 'row',
-    gap: moderateScale(12),
+    flexDirection: isTablet ? 'row' : isSmallPhone ? 'column' : 'row',
+    gap: getResponsiveSize(8, 12, 16),
     width: '100%',
   },
   cancelButton: {
-    flex: 1,
+    flex: isSmallPhone ? 0 : 1,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(10, 12, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
+    minHeight: getResponsiveSize(40, 48, 56),
+    justifyContent: 'center',
   },
   cancelButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#2F2F2F',
   },
   confirmButton: {
-    flex: 1,
+    flex: isSmallPhone ? 0 : 1,
     backgroundColor: '#459151',
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(10, 12, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
+    minHeight: getResponsiveSize(40, 48, 56),
+    justifyContent: 'center',
   },
   confirmButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
   },
   loading: {
-    marginBottom: moderateScale(16),
+    marginBottom: getResponsiveSize(12, 16, 20),
+    transform: [{scale: getResponsiveSize(0.8, 1, 1.2)}],
   },
   loadingTitle: {
-    fontSize: moderateScale(20),
+    fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: '700',
     color: '#193b5e',
-    marginBottom: moderateScale(8),
+    marginBottom: getResponsiveSize(6, 8, 12),
+    textAlign: 'center',
   },
   loadingSubtext: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#2F2F2F',
     textAlign: 'center',
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    lineHeight: getResponsiveSize(18, 20, 24),
   },
 });
 
@@ -258,14 +290,14 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: moderateScale(16),
-    paddingBottom: moderateScale(12),
-    marginTop: moderateScale(0),
+    paddingHorizontal: getResponsiveSize(12, 16, 24),
+    paddingBottom: getResponsiveSize(8, 12, 16),
+    marginTop: 0,
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
   },
   infoText: {
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     color: '#868686',
     fontWeight: '500',
   },
@@ -273,44 +305,60 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: moderateScale(32), // Increased horizontal padding for content
+    paddingHorizontal: getResponsiveSize(16, 32, 64), // More responsive padding
+    paddingVertical: getResponsiveSize(16, 24, 32),
+    minHeight: isTablet ? 400 : 'auto', // Ensure proper height on tablets
   },
   mainText: {
-    fontSize: moderateScale(18),
+    fontSize: getResponsiveSize(16, 18, 24),
     fontWeight: 'bold',
     color: '#2F2F2F',
     textAlign: 'center',
-    marginBottom: moderateScale(10),
+    marginBottom: getResponsiveSize(8, 10, 16),
+    lineHeight: getResponsiveSize(20, 24, 32),
+    maxWidth: isTablet ? 600 : '100%', // Limit width on tablets
+  },
+  mainTextBold: {
+    fontWeight: 'bold',
   },
   subText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 20),
     fontWeight: 'normal',
     color: '#2F2F2F',
     textAlign: 'center',
-    marginBottom: moderateScale(20),
+    marginBottom: getResponsiveSize(16, 20, 24),
+    lineHeight: getResponsiveSize(18, 20, 26),
+    maxWidth: isTablet ? 600 : '100%',
   },
   publishButton: {
     backgroundColor: '#4CAF50', // Green color
-    paddingVertical: moderateScale(14),
-    paddingHorizontal: moderateScale(24),
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(20),
+    paddingVertical: getResponsiveSize(12, 14, 18),
+    paddingHorizontal: getResponsiveSize(20, 24, 32),
+    borderRadius: getResponsiveSize(6, 8, 12),
+    marginBottom: getResponsiveSize(16, 20, 28),
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    minWidth: getResponsiveSize(200, 250, 300), // Minimum button width
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: getResponsiveSize(44, 48, 56), // Minimum touch target
   },
   publishButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
+    textAlign: 'center',
   },
   confirmationText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#2F2F2F',
     textAlign: 'center',
-    lineHeight: moderateScale(24),
+    lineHeight: getResponsiveSize(18, 24, 28),
+    maxWidth: isTablet ? 500 : '100%', // Limit width on tablets
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
   },
 });
 
