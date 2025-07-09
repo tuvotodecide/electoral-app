@@ -174,8 +174,7 @@ export default function PlaceBid({route}) {
           </TouchableOpacity>
         </View>
         <CText type={'B16'} style={styles.mt20}>
-          {' '}
-          {String.historyOfBid}
+ç          {String.historyOfBid}
         </CText>
       </View>
     );

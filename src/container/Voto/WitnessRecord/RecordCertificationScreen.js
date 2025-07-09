@@ -21,11 +21,11 @@ import String from '../../../i18n/String';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
-const ActaCertificationScreen = () => {
+const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {mesaData} = route.params || {};
+  const {tableData} = route.params || {};
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
@@ -40,23 +40,23 @@ const ActaCertificationScreen = () => {
     navigation.goBack();
   };
 
-  const handleCertifico = () => {
-    console.log('ActaCertificationScreen - handleCertifico called');
+  const handleCertify = () => {
+    console.log('RecordCertificationScreen - handleCertify called');
     setStep(0);
     setShowConfirmModal(true);
   };
 
   const confirmCertification = () => {
-    console.log('ActaCertificationScreen - confirmCertification called');
+    console.log('RecordCertificationScreen - confirmCertification called');
     setStep(1);
     // Simulate loading time
     setTimeout(() => {
-      console.log('ActaCertificationScreen - navigating to SuccessScreen');
+      console.log('RecordCertificationScreen - navigating to SuccessScreen');
       console.log('StackNav.SuccessScreen value:', StackNav.SuccessScreen);
       console.log('Navigation object:', navigation);
       console.log('Params to send:', {
         successType: 'certify',
-        mesaData: mesaData,
+        tableData: tableData,
         autoNavigateDelay: 5000,
         showAutoNavigation: true,
       });
@@ -66,8 +66,8 @@ const ActaCertificationScreen = () => {
       try {
         navigation.navigate(StackNav.SuccessScreen, {
           successType: 'certify',
-          mesaData: mesaData,
-          autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
+          tableData: tableData,
+          autoNavigateDelay: 3000, // 3 seconds before auto-navigation
           showAutoNavigation: true,
         });
       } catch (error) {
@@ -89,7 +89,7 @@ const ActaCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${mesaData?.numero || 'N/A'}`}
+        title={`${String.table || 'Mesa'} ${tableData?.numero || 'N/A'}`}
         showNotification={true}
       />
 
@@ -97,13 +97,13 @@ const ActaCertificationScreen = () => {
         {/* Certification Message */}
         <View style={styles.certificationContainer}>
           <CText style={styles.certificationTitle}>
-            {String.actaCertification}
+            {String.actaCertification || 'Certificación del Acta'}
           </CText>
           <CText style={styles.certificationText}>
-            {String.certificationText
-              .replace('{userName}', currentUser.name)
-              .replace('{userRole}', currentUser.role)
-              .replace('{tableNumber}', mesaData?.numero || 'N/A')}
+            {(String.certificationText || '')
+              .replace('{userName}', currentUser.name || '')
+              .replace('{userRole}', currentUser.role || '')
+              .replace('{tableNumber}', tableData?.numero || 'N/A')}
           </CText>
         </View>
 
@@ -111,8 +111,10 @@ const ActaCertificationScreen = () => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.certifyButton}
-            onPress={handleCertifico}>
-            <CText style={styles.certifyButtonText}>{String.certify}</CText>
+            onPress={handleCertify}>
+            <CText style={styles.certifyButtonText}>
+              {String.certify || 'Certifico'}
+            </CText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -131,21 +133,22 @@ const ActaCertificationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  {String.certifyInfoConfirmation}
+                  {String.certifyInfoConfirmation ||
+                    '¿Estás seguro de que deseas certificar la información?'}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
-                      {String.cancel}
+                      {String.cancel || 'Cancelar'}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>
-                      {String.certify}
+                      {String.certify || 'Certifico'}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -159,10 +162,11 @@ const ActaCertificationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  {String.pleaseWait}
+                  {String.pleaseWait || 'Por favor, espere...'}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain}
+                  {String.savingToBlockchain ||
+                    'La información se está guardando en la Blockchain'}
                 </CText>
               </>
             )}
@@ -529,4 +533,4 @@ export const modalStyles = StyleSheet.create({
   },
 });
 
-export default ActaCertificationScreen;
+export default RecordCertificationScreen;

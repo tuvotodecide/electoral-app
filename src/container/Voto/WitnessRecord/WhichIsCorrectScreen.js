@@ -23,9 +23,9 @@ const WhichIsCorrectScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {mesaData, photoUri} = route.params || {};
+  const {tableData, photoUri} = route.params || {};
   console.log('WhichIsCorrectScreen - Received params:', route.params);
-  console.log('WhichIsCorrectScreen - mesaData:', mesaData);
+  console.log('WhichIsCorrectScreen - tableData:', tableData);
   console.log('WhichIsCorrectScreen - photoUri:', photoUri);
 
   // State to keep track of the currently selected image
@@ -48,10 +48,10 @@ const WhichIsCorrectScreen = () => {
 
   // Cargar actas de la mesa al montar el componente
   useEffect(() => {
-    if (mesaData?.id) {
-      loadActasByMesa(mesaData.id);
+    if (tableData?.id) {
+      loadActasByMesa(tableData.id);
     }
-  }, [mesaData]);
+  }, [tableData]);
 
   const loadActasByMesa = async mesaId => {
     try {
@@ -118,10 +118,10 @@ const WhichIsCorrectScreen = () => {
     if (selectedImageId) {
       const selectedImage = actaImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
-        // Navigate to ActaReviewScreen, passing the specific photoUri, mesaData, and results
-        navigation.navigate('ActaReviewScreen', {
+        // Navigate to RecordReviewScreen, passing the specific photoUri, tableData, and results
+        navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
-          mesaData: mesaData,
+          mesaData: tableData,
           partyResults: partyResults,
           voteSummaryResults: voteSummaryResults,
         });
@@ -146,7 +146,7 @@ const WhichIsCorrectScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${mesaData?.numero || 'N/A'}`}
+        title={`${String.table} ${tableData?.numero || 'N/A'}`}
         showNotification={true}
       />
 

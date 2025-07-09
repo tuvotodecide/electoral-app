@@ -2,14 +2,14 @@ import React from 'react';
 import {ScrollView} from 'react-native';
 import CSafeAreaView from './CSafeAreaView';
 import {
-  SearchMesaHeader,
-  ChooseMesaText,
+  SearchTableHeader,
+  ChooseTableText,
   LocationInfoBar,
   SearchInput,
-  MesaCard,
-} from './SearchMesaComponents';
+  TableCard,
+} from './SearchTableComponents';
 
-const BaseSearchMesaScreen = ({
+const BaseSearchTableScreen = ({
   // Header props
   colors,
   onBack,
@@ -17,8 +17,8 @@ const BaseSearchMesaScreen = ({
   showNotification = true,
   onNotificationPress,
 
-  // Choose mesa text props
-  chooseMesaText,
+  // Choose table text props
+  chooseTableText,
 
   // Search input props
   searchPlaceholder,
@@ -29,9 +29,9 @@ const BaseSearchMesaScreen = ({
   locationText,
   locationIconColor,
 
-  // Mesa list props
-  mesas,
-  onMesaPress,
+  // Table list props
+  tables,
+  onTablePress,
 
   // Layout props
   showLocationFirst = false, // Control order of location bar and search input
@@ -77,7 +77,7 @@ const BaseSearchMesaScreen = ({
 
   return (
     <CSafeAreaView style={styles.container}>
-      <SearchMesaHeader
+      <SearchTableHeader
         colors={colors}
         onBack={onBack}
         title={title}
@@ -86,16 +86,16 @@ const BaseSearchMesaScreen = ({
         styles={styles}
       />
 
-      <ChooseMesaText text={chooseMesaText} styles={styles} />
+      <ChooseTableText text={chooseTableText} styles={styles} />
 
       {renderSearchAndLocation()}
 
-      <ScrollView style={styles.mesaList} showsVerticalScrollIndicator={false}>
-        {mesas.map(mesa => (
-          <MesaCard
-            key={mesa.id}
-            mesa={mesa}
-            onPress={onMesaPress}
+      <ScrollView style={styles.tableList} showsVerticalScrollIndicator={false}>
+        {tables.map(table => (
+          <TableCard
+            key={table.id}
+            table={table}
+            onPress={onTablePress}
             styles={styles}
           />
         ))}
@@ -104,4 +104,4 @@ const BaseSearchMesaScreen = ({
   );
 };
 
-export default BaseSearchMesaScreen;
+export default BaseSearchTableScreen;

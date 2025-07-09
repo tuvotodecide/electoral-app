@@ -17,36 +17,36 @@ const SuccessScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
 
-  // Estado para el contador de tiempo
+  // State for time countdown
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Parámetros que definen el tipo de éxito y el comportamiento
+  // Parameters that define success type and behavior
   const {
-    successType = 'publish', // 'publish' o 'certify'
-    mesaData,
-    autoNavigateDelay = 3000, // Tiempo antes de navegar automáticamente
+    successType = 'publish', // 'publish' or 'certify'
+    mesaData: tableData, // Note: Property names within tableData remain in Spanish (numero, recinto, ubicacion) for compatibility
+    autoNavigateDelay = 3000, // Time before automatically navigating
     showAutoNavigation = true,
   } = route.params || {};
 
   console.log('SuccessScreen - Received params:', {
     successType,
-    mesaData,
+    tableData,
     autoNavigateDelay,
     showAutoNavigation,
   });
 
-  // Configuración basada en el tipo de éxito
+  // Configuration based on success type
   const getSuccessConfig = () => {
     switch (successType) {
       case 'publish':
         return {
           title: String.documentPublishedSuccessTitle,
           subtitle: String.documentPublishedSuccessSubtitle
-            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace('{tableNumber}', tableData?.numero || 'N/A')
             .replace(
               '{location}',
-              mesaData?.recinto ||
-                mesaData?.ubicacion ||
+              tableData?.recinto ||
+                tableData?.ubicacion ||
                 String.locationNotAvailable,
             ),
           buttonText: String.backToHome,
@@ -56,11 +56,11 @@ const SuccessScreen = () => {
         return {
           title: String.documentCertifiedSuccessTitle,
           subtitle: String.documentCertifiedSuccessSubtitle
-            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace('{tableNumber}', tableData?.numero || 'N/A')
             .replace(
               '{location}',
-              mesaData?.recinto ||
-                mesaData?.ubicacion ||
+              tableData?.recinto ||
+                tableData?.ubicacion ||
                 String.locationNotAvailable,
             ),
           buttonText: String.backToHome,
@@ -80,21 +80,21 @@ const SuccessScreen = () => {
 
   const handleBack = () => {
     console.log('SuccessScreen - handleBack called');
-    // Probar múltiples métodos de navegación
+    // Try multiple navigation methods
     try {
-      // Método 1: PopToTop (más directo)
+      // Method 1: PopToTop (most direct)
       navigation.popToTop();
     } catch (error) {
       console.error('PopToTop failed, trying reset:', error);
       try {
-        // Método 2: Reset stack completo
+        // Method 2: Reset complete stack
         navigation.reset({
           index: 0,
           routes: [{name: StackNav.TabNavigation}],
         });
       } catch (error2) {
         console.error('Reset failed, trying navigate:', error2);
-        // Método 3: Navigate simple
+        // Method 3: Simple navigate
         navigation.navigate(StackNav.TabNavigation);
       }
     }
@@ -102,44 +102,44 @@ const SuccessScreen = () => {
 
   const handleContinue = () => {
     console.log('SuccessScreen - handleContinue called');
-    // Probar múltiples métodos de navegación
+    // Try multiple navigation methods
     try {
-      // Método 1: PopToTop (más directo)
+      // Method 1: PopToTop (most direct)
       navigation.popToTop();
     } catch (error) {
       console.error('PopToTop failed, trying reset:', error);
       try {
-        // Método 2: Reset stack completo
+        // Method 2: Reset complete stack
         navigation.reset({
           index: 0,
           routes: [{name: StackNav.TabNavigation}],
         });
       } catch (error2) {
         console.error('Reset failed, trying navigate:', error2);
-        // Método 3: Navigate simple
+        // Method 3: Simple navigate
         navigation.navigate(StackNav.TabNavigation);
       }
     }
   };
 
-  // Navegación automática opcional con contador
+  // Optional automatic navigation with counter
   useEffect(() => {
     console.log('SuccessScreen - useEffect started with:', {
       showAutoNavigation,
       autoNavigateDelay,
     });
     if (showAutoNavigation && autoNavigateDelay > 0) {
-      // Inicializar el contador
+      // Initialize the counter
       const initialTime = Math.ceil(autoNavigateDelay / 1000);
       console.log('SuccessScreen - Setting initial time:', initialTime);
       setTimeLeft(initialTime);
 
-      // Contador que se actualiza cada segundo
+      // Counter that updates every second
       const countdown = setInterval(() => {
         setTimeLeft(prev => {
           const newTime = prev - 1;
           console.log('SuccessScreen - Countdown:', newTime);
-          // Solo actualizamos el contador sin efectos secundarios
+          // Only update the counter without side effects
           return newTime > 0 ? newTime : 0;
         });
       }, 1000);
@@ -150,12 +150,12 @@ const SuccessScreen = () => {
     }
   }, [showAutoNavigation, autoNavigateDelay]);
 
-  // Efecto separado para manejar la navegación cuando el contador llega a cero
+  // Separate effect to handle navigation when the counter reaches zero
   useEffect(() => {
-    // Si el contador ha llegado a 0 y está habilitada la navegación automática
+    // If the counter has reached 0 and automatic navigation is enabled
     if (timeLeft === 0 && showAutoNavigation && autoNavigateDelay > 0) {
       console.log('SuccessScreen - Time up, navigating to home');
-      // Usamos un setTimeout para asegurar que no ejecutamos la navegación durante el render
+      // Use a setTimeout to ensure we don't execute navigation during render
       const navigateTimer = setTimeout(() => {
         handleContinue();
       }, 100);
@@ -191,7 +191,7 @@ const SuccessScreen = () => {
         {config.showInitiativeText && (
           <>
             <View style={styles.logoContainer}>
-              {/* Aquí puedes agregar logos si es necesario */}
+              {/* Here you can add logos if needed */}
             </View>
             <CText style={styles.initiativeText}>
               {String.voluntaryInitiative}
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: moderateScale(16),
     marginBottom: moderateScale(16),
-    minHeight: moderateScale(60), // Espacio reservado para logos
+    minHeight: moderateScale(60), // Reserved space for logos
   },
   initiativeText: {
     fontSize: moderateScale(14),

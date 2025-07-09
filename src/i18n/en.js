@@ -289,7 +289,7 @@ export default {
   destination: 'Destino',
   hasTransaction: 'Hash de la transacción',
   hashLinkCopied: 'Enlace de hash copiado',
-  backToHome: 'Volver al menú principal',
+  backToHome: 'Ir a Inicio',
   ownTo: 'Pertenece a:',
   cameraNotAllowed: 'La aplicación no tiene permisos para acceder a la cámara',
   cameraNotFount: 'No se encontró la cámara trasera',
@@ -972,15 +972,29 @@ export default {
   null: 'Nulos',
 
   // Success Screen
-  documentPublishedSuccessTitle: '¡Acta Publicada y Certificada Exitosamente!',
+  // documentPublishedSuccessTitle: 'Record Published and Certified Successfully!',
+  // documentPublishedSuccessSubtitle:
+  //   'The record for table {tableNumber} at {location} has been published on the blockchain and certified by witnesses.',
+  // documentCertifiedSuccessTitle: 'Record Certified Successfully!',
+  // documentCertifiedSuccessSubtitle:
+  //   'You have correctly certified the record for table {tableNumber} at {location}.',
+
+  // operationSuccessTitle: 'Operation Successful!',
+  // operationSuccessSubtitle: 'The operation has been completed successfully',
+  // backToHome: 'Ir a Inicio',
+  // viewDetails: 'Ver detalles',
+
+  documentPublishedSuccessTitle:
+    '¡Registro Publicado y Certificado Exitosamente!',
   documentPublishedSuccessSubtitle:
-    'El acta de la mesa {tableNumber} de {location} ha sido publicada en la blockchain y certificada por testigos.',
-  documentCertifiedSuccessTitle: '¡Acta Certificada Exitosamente!',
+    'El registro de la mesa {tableNumber} en {location} ha sido publicado en la blockchain y certificado por los testigos.',
+  documentCertifiedSuccessTitle: '¡Registro Certificado Exitosamente!',
   documentCertifiedSuccessSubtitle:
-    'Has certificado correctamente el acta de la mesa {tableNumber} de {location}.',
+    'Has certificado correctamente el registro de la mesa {tableNumber} en {location}.',
+
   operationSuccessTitle: '¡Operación Exitosa!',
-  operationSuccessSubtitle: 'La operación se ha completado correctamente',
-  backToHome: 'Volver al inicio',
+  operationSuccessSubtitle: 'La operación se ha completado exitosamente.',
+  backToHome: 'Ir a Inicio',
   viewDetails: 'Ver detalles',
 
   // Detalle Mesa Screen
@@ -997,7 +1011,7 @@ export default {
   available: 'Disponible',
   notAvailable: 'No disponible',
   biometryNotAvailable: 'Biometría no disponible',
-  locationNotAvailable: 'ubicación no disponible',
+  locationNotAvailable: 'location not available',
 
   // Announce Count
   tableInformation: 'Información de la mesa',
@@ -1086,10 +1100,9 @@ export default {
   userName2: 'Juan Perez Cuellar',
 
   // Common
-  confirmation: 'Confirmación',
-  voluntaryInitiative: 'Iniciativa voluntaria de:',
-  autoNavigating:
-    'Regresando al inicio automáticamente en {timeLeft} segundo{s}...',
+  confirmation: 'Confirmation',
+  voluntaryInitiative: 'Voluntary initiative by:',
+  autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
 
   // Camera
   cameraNotAvailable: 'No se puede usar la cámara.',

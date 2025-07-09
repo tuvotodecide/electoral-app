@@ -17,8 +17,8 @@ export const StackNav = {
   // Atestiguar Acta
   WitnessRecord: 'WitnessRecord',
   WhichIsCorrectScreen: 'WhichIsCorrectScreen',
-  ActaReviewScreen: 'ActaReviewScreen',
-  ActaCertificationScreen: 'ActaCertificationScreen',
+  RecordReviewScreen: 'RecordReviewScreen',
+  RecordCertificationScreen: 'RecordCertificationScreen',
   // Anunciar Conteo
   AnnounceCount: 'AnnounceCount',
   SearchCountTable: 'SearchCountTable',

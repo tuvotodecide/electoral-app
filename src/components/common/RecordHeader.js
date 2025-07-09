@@ -1,7 +1,7 @@
 import React from 'react';
 import UniversalHeader from './UniversalHeader';
 
-export const ActaHeader = ({onBack, title, colors}) => (
+export const RecordHeader = ({onBack, title, colors}) => (
   <UniversalHeader
     colors={colors}
     onBack={onBack}
@@ -13,4 +13,4 @@ export const ActaHeader = ({onBack, title, colors}) => (
   />
 );
 
-export default ActaHeader;
+export default RecordHeader;

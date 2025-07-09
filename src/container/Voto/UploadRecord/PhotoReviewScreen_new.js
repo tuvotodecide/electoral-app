@@ -3,7 +3,7 @@ import {Alert, TouchableOpacity} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
-import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import {moderateScale} from '../../../common/constants';
 import String from '../../../i18n/String';
 
@@ -150,7 +150,7 @@ const PhotoReviewScreen = () => {
   );
 
   return (
-    <BaseActaReviewScreen
+    <BaseRecordReviewScreen
       colors={colors}
       headerTitle={String.acta}
       instructionsText={String.reviewPhotoPlease}

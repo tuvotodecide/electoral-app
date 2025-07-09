@@ -16,7 +16,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import {moderateScale} from '../../../common/constants';
 import String from '../../../i18n/String';
 
-// Solo para demo, en tu app vendrá desde navigation
+// Mock data for demo, in your app it will come from navigation
 const mockMesa = {
   numero: 'Mesa 1234',
   codigo: '2352',
@@ -37,15 +37,15 @@ export default function CountTableDetail({navigation, route}) {
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
 
-  const handleConfirmConteo = () => {
+  const handleConfirmCount = () => {
     setLoading(true);
 
-    // Simular tiempo de carga
+    // Simulate loading time
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
 
-      // Esperar unos segundos y luego cerrar el modal y navegar al home
+      // Wait a few seconds then close modal and navigate to home
       setTimeout(() => {
         setModalVisible(false);
         setSuccess(false);
@@ -54,7 +54,7 @@ export default function CountTableDetail({navigation, route}) {
     }, 1500);
   };
 
-  const handleCancelConteo = () => {
+  const handleCancelCount = () => {
     setModalVisible(false);
   };
 
@@ -171,14 +171,14 @@ export default function CountTableDetail({navigation, route}) {
                 <View style={stylesx.modalButtons}>
                   <TouchableOpacity
                     style={stylesx.cancelButton}
-                    onPress={handleCancelConteo}>
+                    onPress={handleCancelCount}>
                     <CText style={stylesx.cancelButtonText}>
                       {String.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={stylesx.confirmButton}
-                    onPress={handleConfirmConteo}>
+                    onPress={handleConfirmCount}>
                     <CText style={stylesx.confirmButtonText}>
                       {String.confirm}
                     </CText>
@@ -193,7 +193,7 @@ export default function CountTableDetail({navigation, route}) {
   );
 }
 
-// ESTILOS
+// STYLES
 const stylesx = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,5 +1,5 @@
-// Re-export all Acta Review Components for easy importing
-export {ActaHeader} from './ActaHeader';
+// Re-export all Record Review Components for easy importing
+export {RecordHeader} from './RecordHeader';
 export {InstructionsContainer} from './InstructionsContainer';
 export {PhotoContainer} from './PhotoContainer';
 export {PartyTable, PartyTableRow} from './PartyTable';
@@ -7,7 +7,7 @@ export {VoteSummaryTable, VoteSummaryRow} from './VoteSummaryTable';
 export {ActionButtons} from './ActionButtons';
 
 // Default exports for backward compatibility
-export {default as ActaHeaderComponent} from './ActaHeader';
+export {default as RecordHeaderComponent} from './RecordHeader';
 export {default as InstructionsContainerComponent} from './InstructionsContainer';
 export {default as PhotoContainerComponent} from './PhotoContainer';
 export {default as PartyTableComponent} from './PartyTable';

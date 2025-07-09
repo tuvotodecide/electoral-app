@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {StyleSheet} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
 import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
@@ -12,7 +12,7 @@ const PhotoReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, mesaData} = route.params || {};
+  const {photoUri, tableData} = route.params || {};
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -56,7 +56,7 @@ const PhotoReviewScreen = () => {
       'PhotoReviewScreen - Navigating to PhotoConfirmationScreen with:',
       {
         photoUri,
-        mesaData,
+        tableData,
         partyResults,
         voteSummaryResults,
       },
@@ -64,7 +64,7 @@ const PhotoReviewScreen = () => {
 
     navigation.navigate(StackNav.PhotoConfirmationScreen, {
       photoUri,
-      mesaData,
+      tableData,
       partyResults,
       voteSummaryResults,
     });
@@ -136,9 +136,9 @@ const PhotoReviewScreen = () => {
 
   return (
     <>
-      <BaseActaReviewScreen
+      <BaseRecordReviewScreen
         colors={colors}
-        headerTitle={`${String.table} ${mesaData?.numero || 'N/A'}`}
+        headerTitle={`${String.table} ${tableData?.numero || 'N/A'}`}
         instructionsText={String.reviewPhotoPlease}
         instructionsStyle={styles.instructionsStyle}
         photoUri={photoUri}
@@ -149,8 +149,8 @@ const PhotoReviewScreen = () => {
         onVoteSummaryUpdate={updateVoteSummaryResult}
         actionButtons={actionButtons}
         onBack={handleBack}
-        showMesaInfo={true}
-        mesaData={mesaData}
+        showTableInfo={true}
+        tableData={tableData}
       />
 
       <CustomModal

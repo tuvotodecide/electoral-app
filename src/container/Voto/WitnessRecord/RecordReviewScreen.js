@@ -1,21 +1,21 @@
 import React from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
 
-const ActaReviewScreen = () => {
+const RecordReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {
     photoUri,
-    mesaData,
+    tableData,
     partyResults: routePartyResults,
     voteSummaryResults: routeVoteSummaryResults,
   } = route.params || {};
 
-  console.log('ActaReviewScreen - Received params:', route.params);
+  console.log('RecordReviewScreen - Received params:', route.params);
 
   // Use dynamic data if available, otherwise fallback to static data
   const partyResults = routePartyResults || [
@@ -41,10 +41,10 @@ const ActaReviewScreen = () => {
     navigation.goBack();
   };
 
-  const handleDatosCorrectos = () => {
-    navigation.navigate('ActaCertificationScreen', {
+  const handleCorrectData = () => {
+    navigation.navigate('RecordCertificationScreen', {
       photoUri,
-      mesaData,
+      tableData,
       partyResults,
       voteSummaryResults,
     });
@@ -65,7 +65,7 @@ const ActaReviewScreen = () => {
     },
     {
       text: String.correctData,
-      onPress: handleDatosCorrectos,
+      onPress: handleCorrectData,
       style: {
         backgroundColor: '#459151',
       },
@@ -76,9 +76,9 @@ const ActaReviewScreen = () => {
   ];
 
   return (
-    <BaseActaReviewScreen
+    <BaseRecordReviewScreen
       colors={colors}
-      headerTitle={`${String.table} ${mesaData?.numero || 'N/A'}`}
+      headerTitle={`${String.table} ${tableData?.numero || 'N/A'}`}
       instructionsText={String.reviewActaData}
       photoUri={photoUri}
       partyResults={partyResults}
@@ -89,4 +89,4 @@ const ActaReviewScreen = () => {
   );
 };
 
-export default ActaReviewScreen;
+export default RecordReviewScreen;

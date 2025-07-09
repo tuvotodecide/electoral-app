@@ -1,7 +1,7 @@
 import React from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import BaseActaReviewScreen from '../../../components/common/BaseActaReviewScreen';
+import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
 
 const MyWitnessesDetailScreen = () => {
@@ -70,7 +70,7 @@ const MyWitnessesDetailScreen = () => {
     : String.registeredVotes;
 
   return (
-    <BaseActaReviewScreen
+    <BaseRecordReviewScreen
       colors={colors}
       headerTitle={headerTitle}
       instructionsText={instructionsText}

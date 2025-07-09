@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from 'react';
 import {ActivityIndicator, View} from 'react-native';
-import BaseSearchMesaScreen from '../../../components/common/BaseSearchMesaScreen';
+import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../../components/common/CustomModal';
 import CText from '../../../components/common/CText';
-import {useSearchMesaLogic} from '../../../hooks/useSearchMesaLogic';
-import {createSearchMesaStyles} from '../../../styles/searchMesaStyles';
+import {useSearchTableLogic} from '../../../hooks/useSearchTableLogic';
+import {createSearchTableStyles} from '../../../styles/searchTableStyles';
 import {fetchMesasConteo} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
@@ -25,17 +25,17 @@ const SearchCountTable = () => {
     searchText,
     setSearchText,
     handleBack,
-    handleMesaPress,
+    handleTablePress,
     handleNotificationPress,
     handleHomePress,
     handleProfilePress,
-  } = useSearchMesaLogic(StackNav.CountTableDetail);
+  } = useSearchTableLogic(StackNav.CountTableDetail);
 
-  const styles = createSearchMesaStyles();
+  const styles = createSearchTableStyles();
 
-  // Cargar mesas al montar el componente
+  // Load tables when component mounts
   useEffect(() => {
-    loadMesas();
+    loadTables();
   }, []);
 
   const showModal = (
@@ -52,31 +52,31 @@ const SearchCountTable = () => {
     setModalVisible(false);
   };
 
-  const loadMesas = async () => {
+  const loadTables = async () => {
     try {
       setIsLoading(true);
-      console.log('SearchCountTable: Loading mesas de conteo...');
+      console.log('SearchCountTable: Loading count tables...');
       const response = await fetchMesasConteo();
 
       if (response.success) {
         console.log(
-          'SearchCountTable: Mesas de conteo loaded successfully:',
+          'SearchCountTable: Count tables loaded successfully:',
           response.data.length,
         );
         setMesas(response.data);
       } else {
-        console.error('SearchCountTable: Failed to load mesas de conteo');
+        console.error('SearchCountTable: Failed to load count tables');
         showModal('error', String.errorTitle, String.couldNotLoadCountTables);
       }
     } catch (error) {
-      console.error('SearchCountTable: Error loading mesas de conteo:', error);
+      console.error('SearchCountTable: Error loading count tables:', error);
       showModal('error', String.errorTitle, String.errorLoadingCountTables);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mostrar indicador de carga mientras se cargan las mesas
+  // Show loading indicator while tables are loading
   if (isLoading) {
     return (
       <View
@@ -102,15 +102,15 @@ const SearchCountTable = () => {
 
   return (
     <>
-      <BaseSearchMesaScreen
+      <BaseSearchTableScreen
         // Header props
         colors={colors}
         onBack={handleBack}
         title={String.searchTableForCount}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
-        // Choose mesa text props
-        chooseMesaText={String.chooseTablePlease}
+        // Choose table text props
+        chooseTableText={String.chooseTablePlease}
         // Search input props
         searchPlaceholder={String.searchTablePlaceholder}
         searchValue={searchText}
@@ -118,14 +118,14 @@ const SearchCountTable = () => {
         // Location info props
         locationText={String.listBasedOnLocation}
         locationIconColor="#0C5460"
-        // Mesa list props
-        mesas={mesas}
-        onMesaPress={handleMesaPress}
+        // Table list props
+        tables={mesas}
+        onTablePress={handleTablePress}
         // Navigation props
         onHomePress={handleHomePress}
         onProfilePress={handleProfilePress}
         // Layout props
-        showLocationFirst={true} // Location bar aparece antes del search input
+        showLocationFirst={true} // Location bar appears before search input
         // Styles
         styles={styles}
       />

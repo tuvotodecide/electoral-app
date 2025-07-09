@@ -28,8 +28,8 @@ import PhotoConfirmationScreen from '../container/Voto/UploadRecord/PhotoConfirm
 import SuccessScreen from '../container/Voto/common/SuccessScreen';
 import WitnessRecord from '../container/Voto/WitnessRecord/WitnessRecord';
 import WhichIsCorrectScreen from '../container/Voto/WitnessRecord/WhichIsCorrectScreen';
-import ActaReviewScreen from '../container/Voto/WitnessRecord/ActaReviewScreen';
-import ActaCertificationScreen from '../container/Voto/WitnessRecord/ActaCertificationScreen';
+import RecordReviewScreen from '../container/Voto/WitnessRecord/RecordReviewScreen';
+import RecordCertificationScreen from '../container/Voto/WitnessRecord/RecordCertificationScreen';
 import AnnounceCount from '../container/Voto/AnnounceCount/AnnounceCount';
 import SearchCountTable from '../container/Voto/AnnounceCount/SearchCountTable';
 import CountTableDetail from '../container/Voto/AnnounceCount/CountTableDetail';
@@ -165,8 +165,8 @@ export const StackRoute = {
   SuccessScreen,
   WitnessRecord,
   WhichIsCorrectScreen,
-  ActaReviewScreen,
-  ActaCertificationScreen,
+  RecordReviewScreen,
+  RecordCertificationScreen,
   AnnounceCount,
   SearchCountTable,
   CountTableDetail,

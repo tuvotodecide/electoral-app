@@ -16,6 +16,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons fo
 import {moderateScale} from '../../../common/constants'; // Assuming this path is correct for your project
 import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import String from '../../../i18n/String';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -23,8 +24,11 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const {mesaData, photoUri} = route.params || {}; // Destructure mesaData and photoUri from route params
-  console.log('PhotoConfirmationScreen - Received data:', {mesaData, photoUri});
+  const {tableData, photoUri} = route.params || {}; // Destructure tableData and photoUri from route params
+  console.log('PhotoConfirmationScreen - Received data:', {
+    tableData,
+    photoUri,
+  });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
@@ -47,7 +51,7 @@ const PhotoConfirmationScreen = () => {
       // Navigate to success screen instead of showing success modal
       navigation.navigate(StackNav.SuccessScreen, {
         successType: 'publish',
-        mesaData: mesaData,
+        mesaData: tableData,
         autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
         showAutoNavigation: true,
       });
@@ -65,7 +69,7 @@ const PhotoConfirmationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${mesaData?.numero || 'N/A'}`}
+        title={`Mesa ${tableData?.numero || 'N/A'}`}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -94,11 +98,11 @@ const PhotoConfirmationScreen = () => {
 
         <CText style={styles.confirmationText}>
           {String.actaCorrectConfirmation
-            .replace('{tableNumber}', mesaData?.numero || 'N/A')
+            .replace('{tableNumber}', tableData?.numero || 'N/A')
             .replace(
               '{location}',
-              mesaData?.recinto ||
-                mesaData?.ubicacion ||
+              tableData?.recinto ||
+                tableData?.ubicacion ||
                 String.locationNotAvailable,
             )}
         </CText>

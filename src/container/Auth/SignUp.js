@@ -170,18 +170,14 @@ export default function SignUp({navigation}) {
               />
             </TouchableOpacity>
             <CText type={'r14'} color={colors.colorText} style={{width: '95%'}}>
-              {' '}
               {String.agreementText}
               <CText type={'r14'} color={colors.primary}>
-                {' '}
                 {String.userAgreement}
               </CText>
               <CText type={'r14'} color={colors.colorText}>
-                {' '}
                 {String.and}
-              </CText>{' '}
+              </CText>
               <CText type={'r14'} color={colors.primary}>
-                {' '}
                 {String.privacyPolicy}
               </CText>
             </CText>

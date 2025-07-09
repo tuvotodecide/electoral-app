@@ -5,15 +5,15 @@ import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
 import {
-  ActaHeader,
+  RecordHeader,
   InstructionsContainer,
   PhotoContainer,
   PartyTable,
   VoteSummaryTable,
   ActionButtons,
-} from './ActaReviewComponents';
+} from './RecordReviewComponents';
 
-const BaseActaReviewScreen = ({
+const BaseRecordReviewScreen = ({
   colors,
   headerTitle,
   instructionsText,
@@ -26,15 +26,15 @@ const BaseActaReviewScreen = ({
   onVoteSummaryUpdate,
   actionButtons,
   onBack,
-  showMesaInfo = false,
-  mesaData,
+  showTableInfo = false,
+  tableData,
 }) => {
   const insets = useSafeAreaInsets();
 
   return (
     <CSafeAreaView style={styles.container}>
       {/* Header */}
-      <ActaHeader onBack={onBack} title={headerTitle} colors={colors} />
+      <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
 
       {/* Instructions */}
       <InstructionsContainer
@@ -42,33 +42,33 @@ const BaseActaReviewScreen = ({
         style={instructionsStyle}
       />
 
-      {/* Mesa Info - solo para PhotoReviewScreen */}
-      {showMesaInfo && (
-        <View style={styles.mesaInfoContainer}>
-          <View style={styles.mesaTitle}>
-            <CText style={styles.mesaTitleText}>
-              Mesa {mesaData?.numero || 'N/A'}
+      {/* Table Info - only for PhotoReviewScreen */}
+      {showTableInfo && (
+        <View style={styles.tableInfoContainer}>
+          <View style={styles.tableTitle}>
+            <CText style={styles.tableTitleText}>
+              Table {tableData?.numero || 'N/A'}
             </CText>
           </View>
-          <View style={styles.mesaSubtitle}>
-            <CText style={styles.mesaSubtitleText}>
-              {mesaData?.recinto || mesaData?.escuela || 'Recinto N/A'}
+          <View style={styles.tableSubtitle}>
+            <CText style={styles.tableSubtitleText}>
+              {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
             </CText>
           </View>
         </View>
       )}
 
-      {/* Photo - Estática (no se mueve con el scroll) */}
+      {/* Photo - Static (doesn't move with scroll) */}
       <View style={styles.photoSection}>
         <PhotoContainer photoUri={photoUri} enableZoom={true} />
       </View>
 
-      {/* Contenido scrolleable debajo de la foto */}
+      {/* Scrollable content below photo */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={[
           styles.scrollContent,
-          {paddingBottom: moderateScale(100) + insets.bottom}, // Espacio para TabNavigation
+          {paddingBottom: moderateScale(100) + insets.bottom}, // Space for TabNavigation
         ]}
         showsVerticalScrollIndicator={false}>
         {/* Party Results Table */}
@@ -99,17 +99,17 @@ const styles = StyleSheet.create({
   },
   photoSection: {
     paddingHorizontal: 16,
-    // La imagen se mantiene estática aquí
+    // Image stays static here
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    marginTop: moderateScale(8), // Pequeño espacio entre foto y contenido
+    marginTop: moderateScale(8), // Small space between photo and content
   },
   scrollContent: {
     flexGrow: 1,
   },
-  mesaInfoContainer: {
+  tableInfoContainer: {
     backgroundColor: 'transparent',
     borderRadius: 0,
     padding: 0,
@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: moderateScale(8),
   },
-  mesaTitleText: {
+  tableTitleText: {
     fontSize: 20,
     fontWeight: '700',
     color: '#2F2F2F',
     marginBottom: 4,
   },
-  mesaSubtitleText: {
+  tableSubtitleText: {
     fontSize: 14,
     color: '#868686',
   },
@@ -139,4 +139,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BaseActaReviewScreen;
+export default BaseRecordReviewScreen;

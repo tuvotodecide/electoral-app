@@ -84,7 +84,7 @@ export default function AddGuardians({navigation}) {
       <CHeader title={String.addGuardian} rightIcon={<RightIcon />} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
-          {String.addGuardianSubtitle}{' '}
+          {String.addGuardianSubtitle}
           <CText type="B16" style={{fontWeight: 'bold'}}>
             {String.addGuardianSubtitleSpan}
           </CText>

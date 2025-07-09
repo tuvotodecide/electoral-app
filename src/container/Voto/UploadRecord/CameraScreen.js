@@ -197,12 +197,12 @@ export default function CameraScreen({navigation, route}) {
 
   // Ir a siguiente pantalla
   const handleNext = () => {
-    const mesaInfo = route.params?.mesaData || {};
+    const mesaInfo = route.params?.tableData || {};
     console.log('CameraScreen - Navigating with mesa data:', mesaInfo);
 
     navigation.navigate(StackNav.PhotoReviewScreen, {
       photoUri: `file://${photo.path}`,
-      mesaData: mesaInfo,
+      tableData: mesaInfo,
     });
   };
 

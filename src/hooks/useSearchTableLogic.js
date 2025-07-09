@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 
-export const useSearchMesaLogic = navigationTarget => {
+export const useSearchTableLogic = navigationTarget => {
   const navigation = useNavigation();
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
@@ -11,25 +11,27 @@ export const useSearchMesaLogic = navigationTarget => {
     navigation.goBack();
   };
 
-  const handleMesaPress = mesaOrParams => {
-    // Si es un objeto con mesaData y photoUri, pasarlo directamente
-    // Si no, asumir que es una mesa simple y envolverla
-    const params = mesaOrParams.mesaData ? mesaOrParams : {mesa: mesaOrParams};
+  const handleTablePress = tableOrParams => {
+    // If it's an object with tableData and photoUri, pass it directly
+    // If not, assume it's a simple table and wrap it
+    const params = tableOrParams.tableData
+      ? tableOrParams
+      : {table: tableOrParams};
     navigation.navigate(navigationTarget, params);
   };
 
   const handleNotificationPress = () => {
-    // Implementar lógica de notificaciones si es necesario
+    // Implement notification logic if needed
     console.log('Notification pressed');
   };
 
   const handleHomePress = () => {
-    // Implementar navegación a inicio
+    // Implement home navigation
     console.log('Home pressed');
   };
 
   const handleProfilePress = () => {
-    // Implementar navegación a perfil
+    // Implement profile navigation
     console.log('Profile pressed');
   };
 
@@ -38,7 +40,7 @@ export const useSearchMesaLogic = navigationTarget => {
     searchText,
     setSearchText,
     handleBack,
-    handleMesaPress,
+    handleTablePress,
     handleNotificationPress,
     handleHomePress,
     handleProfilePress,

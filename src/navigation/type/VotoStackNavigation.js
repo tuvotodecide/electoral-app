@@ -35,12 +35,12 @@ export default function VotoStackNavigation() {
         component={StackRoute.WhichIsCorrectScreen}
       />
       <VotoStack.Screen
-        name={StackNav.ActaReviewScreen}
-        component={StackRoute.ActaReviewScreen}
+        name={StackNav.RecordReviewScreen}
+        component={StackRoute.RecordReviewScreen}
       />
       <VotoStack.Screen
-        name={StackNav.ActaCertificationScreen}
-        component={StackRoute.ActaCertificationScreen}
+        name={StackNav.RecordCertificationScreen}
+        component={StackRoute.RecordCertificationScreen}
       />
       <VotoStack.Screen
         name={StackNav.AnnounceCount}

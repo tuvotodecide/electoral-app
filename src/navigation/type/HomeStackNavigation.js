@@ -53,12 +53,12 @@ export default function HomeStackNavigation() {
         component={StackRoute.WhichIsCorrectScreen}
       />
       <HomeStack.Screen
-        name={StackNav.ActaReviewScreen}
-        component={StackRoute.ActaReviewScreen}
+        name={StackNav.RecordReviewScreen}
+        component={StackRoute.RecordReviewScreen}
       />
       <HomeStack.Screen
-        name={StackNav.ActaCertificationScreen}
-        component={StackRoute.ActaCertificationScreen}
+        name={StackNav.RecordCertificationScreen}
+        component={StackRoute.RecordCertificationScreen}
       />
       <HomeStack.Screen
         name={StackNav.AnnounceCount}

@@ -192,8 +192,7 @@ export default function CollectionFilter(props) {
             onBlur={onBlurMinValue}
           />
           <CText color={colors.grayScale500} style={styles.m10}>
-            {' '}
-            {String.to}
+ç            {String.to}
           </CText>
           <CInput
             placeholder={String.max}
