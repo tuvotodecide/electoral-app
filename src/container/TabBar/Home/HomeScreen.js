@@ -1,5 +1,14 @@
-import {StyleSheet, TouchableOpacity, View, Dimensions} from 'react-native';
-import React from 'react';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Dimensions,
+  Modal,
+} from 'react-native';
+import React, {useState} from 'react';
+import {useDispatch} from 'react-redux';
+import {clearAuth} from '../../../redux/slices/authSlice';
+import {clearWallet} from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useSelector} from 'react-redux';
 
@@ -79,6 +88,14 @@ const MiVotoLogo = () => (
 );
 
 export default function HomeScreen({navigation}) {
+  const dispatch = useDispatch();
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const handleLogout = () => {
+    setLogoutModalVisible(false);
+    dispatch(clearAuth());
+    dispatch(clearWallet());
+    navigation.replace('Login'); // Cambia esto por la ruta de tu login si es diferente
+  };
   const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
 
@@ -92,6 +109,7 @@ export default function HomeScreen({navigation}) {
   // const userFullName = 'Usuario';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
+  const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [
     {
@@ -126,6 +144,61 @@ export default function HomeScreen({navigation}) {
 
   return (
     <CSafeAreaView style={stylesx.bg}>
+      {/* Modal de cerrar sesión */}
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <View
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 16,
+              padding: 28,
+              alignItems: 'center',
+              width: '80%',
+            }}>
+            <CText style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+              {String.areYouSureWantToLogout ||
+                '¿Seguro que quieres cerrar sesión?'}
+            </CText>
+            <View style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#f5f5f5',
+                  paddingVertical: 10,
+                  paddingHorizontal: 22,
+                  borderRadius: 8,
+                  marginRight: 8,
+                }}
+                onPress={() => setLogoutModalVisible(false)}>
+                <CText style={{color: '#222', fontWeight: '600'}}>
+                  {String.cancel || 'Cancelar'}
+                </CText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#E72F2F',
+                  paddingVertical: 10,
+                  paddingHorizontal: 22,
+                  borderRadius: 8,
+                }}
+                onPress={handleLogout}>
+                <CText style={{color: '#fff', fontWeight: '600'}}>
+                  {String.logOut || 'Cerrar sesión'}
+                </CText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* Tablet Landscape Layout */}
       {isTablet && isLandscape ? (
         <View style={stylesx.tabletLandscapeContainer}>
@@ -133,13 +206,25 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.tabletLeftColumn}>
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
-              <TouchableOpacity onPress={onPressNotification}>
-                <Ionicons
-                  name={'notifications-outline'}
-                  size={getResponsiveSize(24, 28, 32)}
-                  color={'#222'}
-                />
-              </TouchableOpacity>
+              <View
+                style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+                <TouchableOpacity onPress={onPressNotification}>
+                  <Ionicons
+                    name={'notifications-outline'}
+                    size={getResponsiveSize(24, 28, 32)}
+                    color={'#222'}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onPressLogout}
+                  style={{marginLeft: 8}}>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={getResponsiveSize(24, 28, 32)}
+                    color="#E72F2F"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={stylesx.welcomeContainer}>
@@ -183,13 +268,22 @@ export default function HomeScreen({navigation}) {
         <View style={stylesx.regularContainer}>
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
-            <TouchableOpacity onPress={onPressNotification}>
-              <Ionicons
-                name={'notifications-outline'}
-                size={getResponsiveSize(24, 28, 32)}
-                color={'#222'}
-              />
-            </TouchableOpacity>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+              <TouchableOpacity onPress={onPressNotification}>
+                <Ionicons
+                  name={'notifications-outline'}
+                  size={getResponsiveSize(24, 28, 32)}
+                  color={'#222'}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onPressLogout} style={{marginLeft: 8}}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={getResponsiveSize(24, 28, 32)}
+                  color="#E72F2F"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* ===== Bienvenida ===== */}

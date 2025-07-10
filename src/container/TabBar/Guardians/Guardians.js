@@ -33,7 +33,7 @@ export default function Guardians({navigation}) {
     useGuardianPatchQuery();
 
   console.log(selectedGuardian);
-  
+
   const guardians = useMemo(() => data.map(edge => edge.node), [data]);
 
   const statusColorKey = {
@@ -72,8 +72,6 @@ export default function Guardians({navigation}) {
     });
   };
   const saveGuardian = newNick => {
-
-    
     patchGuardianId(
       {id: selectedGuardian.id, nickname: newNick},
       {
@@ -158,7 +156,7 @@ export default function Guardians({navigation}) {
   return (
     <CSafeAreaView>
       <CHeader title={String.guardiansTitle} rightIcon={<RightIcon />} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
+      <View style={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansSubtitle}
         </CText>
@@ -168,7 +166,7 @@ export default function Guardians({navigation}) {
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
         />
-      </KeyBoardAvoidWrapper>
+      </View>
       <View style={localStyle.bottomTextContainer}>
         <CButton
           title={` ${String.addGuardian}`}
