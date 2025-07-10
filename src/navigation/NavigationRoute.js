@@ -16,6 +16,11 @@ import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 // import OnBoarding from '../container/OnBoarding';
 import Splash from '../container/Splash';
+import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
+import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
+import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
+import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
+import RecoveryFinalize from '../container/TabBar/Recovery/RecoveryFinalize';
 
 // Pantallas de Voto
 // import UploadRecord from '../container/Voto/UploadRecord';
@@ -156,6 +161,11 @@ export const StackRoute = {
   TabNavigation,
   // Pantallas de Voto
   // UploadRecord,
+  FindMyUser,
+  MyGuardiansStatus,
+  RecoveryUser1Pin,
+  RecoveryUser2Pin,
+  RecoveryFinalize,
   SearchTable,
   TableDetail,
   CameraScreen,

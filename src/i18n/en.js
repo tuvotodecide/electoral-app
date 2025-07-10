@@ -180,11 +180,18 @@ export default {
 
   //Inicio
   connectTitle: 'Aplicación Electoral',
+  connectBtnForgot: 'Olvidé mi cuenta',
   connectItem1: 'Cobros y pagos con USDT',
   connectItem2: 'Protegida con blockchain',
   connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
+
+  recoveryWallet: 'Recuperar cuenta',
+  recoverymethod: 'Selecciona método para recuperar cuenta',
+  recoverymethodGuardians: 'Recuperar con guardianes',
+  recoverymethodQR: 'Recuperar con QR',
+
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto',
   onBoardingTitleText1: 'Tu identidad digital. Tu billetera. Tu control.',
@@ -1142,4 +1149,10 @@ export default {
   retakePhoto: 'Tomar foto de nuevo',
 
   confirmAndSend: 'Confirmar y enviar',
+
+  personaNotFound: 'Persona no encontrada',
+  noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
+  personaNotFound: 'Persona no encontrada',
+  noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
+  removed: 'Removido',
 };
