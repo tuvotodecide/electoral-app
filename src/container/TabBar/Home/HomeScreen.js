@@ -214,7 +214,10 @@ const stylesx = StyleSheet.create({
     padding: 18,
     marginBottom: 15,
     elevation: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
+    shadowRadius: 0,
   },
   cardTitle: {
     fontSize: 18,

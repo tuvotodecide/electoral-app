@@ -33,8 +33,17 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Esta aplicación necesita acceso a la cámara para tomar fotos de las actas electorales.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Esta aplicación necesita acceder a tus fotos para seleccionar o guardar imágenes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Se necesita permiso para guardar fotos en tu galería.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceso a tu ubicación para geolocalizar recintos/mesas.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>La app usa Face ID para autenticarte de forma segura.</string>
+	<key>KeychainSharing</key>
 	<string></string>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>BootSplash</string>
 	<key>UIRequiredDeviceCapabilities</key>

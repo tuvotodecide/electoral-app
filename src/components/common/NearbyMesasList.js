@@ -89,9 +89,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
   },
   headerRow: {
     flexDirection: 'row',

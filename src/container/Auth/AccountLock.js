@@ -131,13 +131,10 @@ const localStyle = StyleSheet.create({
     height: height * 0.6,
     borderRadius: height,
     zIndex: 0,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
     elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.26,
+    shadowRadius: 3.5,
   },
 });
