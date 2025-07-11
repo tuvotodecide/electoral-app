@@ -1,4 +1,16 @@
 export default {
+  sendInvitation: ' Enviar invitación',
+  sendInvitation: ' Enviar invitación',
+  finishingRecovery: 'Finalizando recuperación',
+  return: 'Regresar',
+  guardiansDescriptionStatus: 'Acá verás el estado de aprobación de tu cuenta',
+  guardiansTitleStatus: 'Estado',
+  connectBtnForgot: 'Olvidé mi cuenta',
+  messagetorecovery:
+    'Para recuperar tu cuenta, debes seleccionar un método de recuperación.',
+  recoveryAccountWithGuardians: 'Recuperar cuenta con guardianes',
+  confirmDataCorrect: 'Confirma que los datos son correctos',
+
   //Register user
   //page 1
   titleReg:
@@ -1155,4 +1167,23 @@ export default {
   personaNotFound: 'Persona no encontrada',
   noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
   removed: 'Removido',
+  sendRecovery: 'Solicitar recuperación',
+
+  connectTitle: 'Aplicación Electoral',
+  connectItem1: 'Protege tus datos',
+  connectItem2: 'Vota de forma segura',
+  connectItem3: 'Resultados en tiempo real',
+  connectBtnInfo: 'Más información',
+  connectBtnRegister: 'Registrar cuenta',
+  connectBtnLogin: 'Tengo una cuenta',
+
+  guardiansTitle: 'Mis Guardianes',
+  guardiansSubtitle: 'Gestiona las personas que velan por tu seguridad',
+  active: 'Aceptado',
+  pending: 'Pendiente',
+  rejected: 'Rechazado',
+  removed: 'Removido',
+  whatIsGuardians: '¿Qué son los Guardianes?',
+  addGuardian: 'Añadir guardián',
+  alertguardiansrequired: 'Necesitas al menos un guardián activo',
 };

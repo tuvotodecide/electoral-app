@@ -633,6 +633,17 @@ export default function LoginUser({navigation}) {
 const {width, height} = Dimensions.get('window');
 
 const localStyle = StyleSheet.create({
+  bottomButtons: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    paddingHorizontal: moderateScale(20),
+    paddingBottom: moderateScale(16),
+    backgroundColor: 'transparent',
+    zIndex: 10,
+  },
   headerTextStyle: {
     ...styles.mt10,
     ...styles.mb10,
@@ -687,7 +698,7 @@ const localStyle = StyleSheet.create({
     zIndex: 0,
     elevation: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.26,
     shadowRadius: 3.5,
   },

@@ -161,11 +161,7 @@ export const StackRoute = {
   TabNavigation,
   // Pantallas de Voto
   // UploadRecord,
-  FindMyUser,
-  MyGuardiansStatus,
-  RecoveryUser1Pin,
-  RecoveryUser2Pin,
-  RecoveryFinalize,
+
   SearchTable,
   TableDetail,
   CameraScreen,
@@ -307,6 +303,11 @@ export const AuthRoute = {
   UploadPhotoId,
   SelfieWithIdCard,
   VerifySuccess,
+  FindMyUser,
+  MyGuardiansStatus,
+  RecoveryUser1Pin,
+  RecoveryUser2Pin,
+  RecoveryFinalize,
 };
 
 export const TabRoute = {

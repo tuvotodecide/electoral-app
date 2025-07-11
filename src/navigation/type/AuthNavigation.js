@@ -63,6 +63,18 @@ export default function AuthNavigation() {
         name={AuthNav.RegisterUser11}
         component={AuthRoute.RegisterUser11}
       />
+      <Stack.Screen
+        name={AuthNav.FindMyUser}
+        component={AuthRoute.FindMyUser}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUser1Pin}
+        component={AuthRoute.RecoveryUser1Pin}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUser2Pin}
+        component={AuthRoute.RecoveryUser2Pin}
+      />
 
       <Stack.Screen name={AuthNav.LoginUser} component={AuthRoute.LoginUser} />
 

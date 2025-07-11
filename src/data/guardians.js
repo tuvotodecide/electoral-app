@@ -9,11 +9,6 @@ export const useGuardiansInviteQuery = () => {
       return data;
     },
 
-    onError: error => {
-      if (axios.isAxiosError(error)) {
-        console.log(error);
-      }
-    },
     onSettled: () => {
       queryClient.invalidateQueries(
         `${API_ENDPOINTS.GUARDIANS}${API_ENDPOINTS.INVITE}`,
@@ -21,6 +16,43 @@ export const useGuardiansInviteQuery = () => {
     },
   });
 };
+export const useGuardiansRecoveryRequestQuery = () => {
+  const queryClient = useQueryClient();
+  return useMutation(guardianClient.postRecoveryRequest, {
+    onSuccess: data => {
+      return data;
+    },
+
+    onError: error => {
+      if (axios.isAxiosError(error)) {
+        console.log(error);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(
+        `${API_ENDPOINTS.GUARDIANS}${API_ENDPOINTS.RECOVERY}`,
+      );
+    },
+  });
+};
+export const useCheckHasGuardiansQuery = () => {
+  const queryClient = useQueryClient();
+  return useMutation(guardianClient.postHasGuardians, {
+    onSuccess: data => {
+      return data;
+    },
+
+    onError: error => {
+      if (axios.isAxiosError(error)) {
+        console.log(error);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(`${API_ENDPOINTS.HASGUARDIANS}`);
+    },
+  });
+};
+
 export const useGuardianDeleteQuery = () => {
   const queryClient = useQueryClient();
   return useMutation(guardianClient.deleteGuardian, {
@@ -34,9 +66,7 @@ export const useGuardianDeleteQuery = () => {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries(
-        `${API_ENDPOINTS.MYGUARDIANSALL}`,
-      );
+      queryClient.invalidateQueries(['myGuardiansAll']);
     },
   });
 };
@@ -53,9 +83,41 @@ export const useGuardianPatchQuery = () => {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries(
-        `${API_ENDPOINTS.MYGUARDIANSALL}`,
-      );
+      queryClient.invalidateQueries(['myGuardiansAll']);
+    },
+  });
+};
+export const useGuardianInvitationActionQuery = () => {
+  const queryClient = useQueryClient();
+  return useMutation(guardianClient.patchActionGuardian, {
+    onSuccess: data => {
+      return data;
+    },
+
+    onError: error => {
+      if (axios.isAxiosError(error)) {
+        console.log(error);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries([`${API_ENDPOINTS.MYGUARDIANSALL}`]);
+    },
+  });
+};
+export const useRecoveryActionQuery = () => {
+  const queryClient = useQueryClient();
+  return useMutation(guardianClient.patchRecoveryGuardian, {
+    onSuccess: data => {
+      return data;
+    },
+
+    onError: error => {
+      if (axios.isAxiosError(error)) {
+        console.log(error);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['guardiansRecovery']);
     },
   });
 };
@@ -71,30 +133,134 @@ export const useMyGuardiansListQuery = options => {
   );
 
   return {
-    data : data?.edges,
+    data: data?.edges,
     error,
     isLoading,
   };
 };
+export function useHasGuardiansQuery(carnet, enabled) {
+  const {data, isLoading, refetch} = useQuery(
+    ['guardians', 'has', carnet],
+    () => guardianClient.getHasGuardians({carnet}),
+    {
+      enabled,
+      select: res => res.has,
+    },
+  );
+  return {has: data ?? false, loading: isLoading, refetch};
+}
+
+export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
+  const {data, isLoading} = useQuery(
+    ['recovery-detail', deviceId],
+    () => guardianClient.getRecoveryGuardiansDetail({deviceId}),
+    {
+      enabled: !!deviceId && enabled,
+      refetchInterval: 5000,
+      refetchIntervalInBackground: true,
+    },
+  );
+  return {data: data, loading: isLoading};
+}
+export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
+  const {data, isLoading} = useQuery(
+    ['recovery-detail', deviceId],
+    () => guardianClient.getRecoveryStatus({deviceId}),
+    {
+      enabled: !!deviceId && enabled,
+      refetchInterval: 5000,
+      refetchIntervalInBackground: true,
+    },
+  );
+  return {data: data, loading: isLoading};
+}
+export function useGuardiansPayloadQuery(deviceId, enabled = false) {
+  const {data, isLoading} = useQuery(
+    ['recovery-payload', deviceId],
+    () => guardianClient.getRecoveryPayload({deviceId}),
+    {
+      enabled: !!deviceId && enabled,
+    },
+  );
+  return {data: data, loading: isLoading};
+}
+
 export const useMyGuardiansAllListQuery = options => {
   const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.MYGUARDIANSALL, options],
-    ({queryKey}) =>
-      guardianClient.getMyGuardiansAll(Object.assign({}, queryKey[1])),
+    ['myGuardiansAll'],
+    () => guardianClient.getMyGuardiansAll(),
     {
       keepPreviousData: true,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
     },
   );
 
   return {
-    data : data?.edges,
+    data: data?.edges,
     error,
     isLoading,
   };
 };
+export const useMyGuardianInvitationsListQuery = options => {
+  const {data, error, isLoading} = useQuery(
+    ['myGuardiansAll'],
+    () => guardianClient.getGuardiansInvitationsList(),
+    {
+      keepPreviousData: true,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  return {
+    data: data?.edges,
+    error,
+    isLoading,
+  };
+};
+export const useMyGuardianRecoveryListQuery = options => {
+  const {data, error, isLoading} = useQuery(
+    ['guardiansRecovery'],
+    () => guardianClient.getGuardiansRecoveryList(),
+    {
+      keepPreviousData: true,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  return {
+    data: data?.edges,
+    error,
+    isLoading,
+  };
+};
+export const useGuardianAcceptedListQuery = options => {
+  const {data, error, isLoading} = useQuery(
+    ['my-guardians'],
+    () => guardianClient.getGuardiansAcceptedList(),
+    {
+      keepPreviousData: true,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  return {
+    data: data?.edges,
+    error,
+    isLoading,
+  };
+};
+
 export const useMyGuardiansInvitationsListQuery = options => {
   const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.MYGUARDIANSALL, options],
+    [`${API_ENDPOINTS.MYGUARDIANSALL}${API_ENDPOINTS.INVITATION}`, options],
     ({queryKey}) =>
       guardianClient.getMyGuardiansAll(Object.assign({}, queryKey[1])),
     {
@@ -103,14 +269,14 @@ export const useMyGuardiansInvitationsListQuery = options => {
   );
 
   return {
-    data : data?.edges,
+    data: data?.edges,
     error,
     isLoading,
   };
 };
 export const useMyGuardiansAdminListQuery = options => {
   const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.MYGUARDIANSALL, options],
+    [API_ENDPOINTS.MYGUARDIANS, options],
     ({queryKey}) =>
       guardianClient.getMyGuardiansAll(Object.assign({}, queryKey[1])),
     {
@@ -119,12 +285,11 @@ export const useMyGuardiansAdminListQuery = options => {
   );
 
   return {
-    data : data?.edges,
+    data: data?.edges,
     error,
     isLoading,
   };
 };
-
 
 // export const useKycRegisterQuery = () => {
 //   const queryClient = useQueryClient();

@@ -4,6 +4,7 @@ import {useSelector} from 'react-redux';
 
 // custom import
 import CSafeAreaView from '../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import {deviceWidth, moderateScale} from '../common/constants';
 import {styles} from '../themes';
 import images from '../assets/images';
@@ -31,7 +32,8 @@ export default function Connect({navigation}) {
   };
 
   return (
-    <CSafeAreaView style={localStyle.Container}>
+    // <CSafeAreaView style={localStyle.Container}>
+    <CSafeAreaViewAuth style={localStyle.container}>
       <View style={localStyle.imageContainer}>
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
@@ -98,7 +100,7 @@ export default function Connect({navigation}) {
           />
         </View>
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

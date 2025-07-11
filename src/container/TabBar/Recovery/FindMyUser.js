@@ -101,13 +101,10 @@ export default function FindMyUser({navigation}) {
 
           setCandidate(null);
           setNick('');
-          navigation.replace(
-            StackNav.AuthNavigation, 
-            {
-              screen: AuthNav.MyGuardiansStatus, 
-              params: {dni: carnet.trim()},
-            },
-          );
+          navigation.replace(StackNav.AuthNavigation, {
+            screen: AuthNav.MyGuardiansStatus,
+            params: {dni: carnet.trim()},
+          });
         },
       },
     );
@@ -290,9 +287,15 @@ const localStyle = StyleSheet.create({
     alignItems: 'center',
   },
   bottomTextContainer: {
-    ...styles.ph20,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    paddingHorizontal: moderateScale(20),
+    paddingBottom: moderateScale(16),
+    backgroundColor: 'transparent',
     gap: 5,
-    marginTop: moderateScale(16),
   },
   btnStyle: {
     width: '100%',
