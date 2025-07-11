@@ -38,7 +38,7 @@ const MyWitnessesListScreen = () => {
   const {mesaData} = route.params || {};
 
   // Estados para la carga de datos
-  const [atestiguamientos, setAtestiguamientos] = useState([]);
+  const [witnessRecords, setWitnessRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({});
@@ -46,20 +46,20 @@ const MyWitnessesListScreen = () => {
 
   // Cargar atestiguamientos al montar el componente
   useEffect(() => {
-    loadAtestiguamientos();
+    loadWitnessRecords();
   }, []);
 
-  const loadAtestiguamientos = async () => {
+  const loadWitnessRecords = async () => {
     setLoading(true);
     try {
-      console.log('MyWitnessesListScreen: Fetching atestiguamientos...');
+      console.log('MyWitnessesListScreen: Fetching witness records...');
       const response = await fetchMyWitnesses();
       if (response.success) {
         console.log(
           'MyWitnessesListScreen: Data loaded successfully:',
           response.data,
         );
-        setAtestiguamientos(response.data);
+        setWitnessRecords(response.data);
       } else {
         setModalData({
           title: String.error,
@@ -70,7 +70,7 @@ const MyWitnessesListScreen = () => {
       }
     } catch (error) {
       console.log(
-        'MyWitnessesListScreen: Error loading atestiguamientos:',
+        'MyWitnessesListScreen: Error loading witness records:',
         error,
       );
       setModalData({
@@ -94,14 +94,14 @@ const MyWitnessesListScreen = () => {
 
   const handleVerMas = () => {
     if (selectedImageId) {
-      const selectedAtestiguamiento = atestiguamientos.find(
+      const selectedWitnessRecord = witnessRecords.find(
         item => item.id.toString() === selectedImageId,
       );
-      if (selectedAtestiguamiento) {
+      if (selectedWitnessRecord) {
         // Navigate to MyWitnessesDetailScreen
         navigation.navigate(StackNav.MyWitnessesDetailScreen, {
-          photoUri: selectedAtestiguamiento.imagen,
-          mesaData: selectedAtestiguamiento,
+          photoUri: selectedWitnessRecord.imagen,
+          mesaData: selectedWitnessRecord,
         });
       }
     } else {
@@ -167,39 +167,36 @@ const MyWitnessesListScreen = () => {
             ? // Two-column layout for tablets
               (() => {
                 const pairs = [];
-                for (let i = 0; i < atestiguamientos.length; i += 2) {
-                  pairs.push(atestiguamientos.slice(i, i + 2));
+                for (let i = 0; i < witnessRecords.length; i += 2) {
+                  pairs.push(witnessRecords.slice(i, i + 2));
                 }
                 return pairs.map((pair, pairIndex) => (
                   <View key={pairIndex} style={styles.tabletRow}>
-                    {pair.map(atestiguamiento => (
-                      <View
-                        key={atestiguamiento.id}
-                        style={styles.tabletColumn}>
+                    {pair.map(witnessRecord => (
+                      <View key={witnessRecord.id} style={styles.tabletColumn}>
                         <TouchableOpacity
                           style={[
                             styles.imageCard,
-                            selectedImageId === atestiguamiento.id.toString() &&
+                            selectedImageId === witnessRecord.id.toString() &&
                               styles.imageCardSelected,
                           ]}
                           onPress={() =>
-                            handleImagePress(atestiguamiento.id.toString())
+                            handleImagePress(witnessRecord.id.toString())
                           }>
                           <View style={styles.imageHeader}>
                             <CText style={styles.mesaText}>
-                              {atestiguamiento.mesa}
+                              {witnessRecord.mesa}
                             </CText>
                             <CText style={styles.fechaText}>
-                              {atestiguamiento.fecha} - {atestiguamiento.hora}
+                              {witnessRecord.fecha} - {witnessRecord.hora}
                             </CText>
                           </View>
                           <Image
-                            source={{uri: atestiguamiento.imagen}}
+                            source={{uri: witnessRecord.imagen}}
                             style={styles.imageDisplay}
                             resizeMode="contain"
                           />
-                          {selectedImageId ===
-                            atestiguamiento.id.toString() && (
+                          {selectedImageId === witnessRecord.id.toString() && (
                             <>
                               {/* Corner borders - black color */}
                               <View
@@ -229,7 +226,7 @@ const MyWitnessesListScreen = () => {
                             </>
                           )}
                         </TouchableOpacity>
-                        {selectedImageId === atestiguamiento.id.toString() && (
+                        {selectedImageId === witnessRecord.id.toString() && (
                           <TouchableOpacity
                             style={styles.detailsButton}
                             onPress={handleVerMas}>
@@ -245,31 +242,31 @@ const MyWitnessesListScreen = () => {
                 ));
               })()
             : // Single column layout for phones
-              atestiguamientos.map(atestiguamiento => (
-                <React.Fragment key={atestiguamiento.id}>
+              witnessRecords.map(witnessRecord => (
+                <React.Fragment key={witnessRecord.id}>
                   <TouchableOpacity
                     style={[
                       styles.imageCard,
-                      selectedImageId === atestiguamiento.id.toString() &&
+                      selectedImageId === witnessRecord.id.toString() &&
                         styles.imageCardSelected,
                     ]}
                     onPress={() =>
-                      handleImagePress(atestiguamiento.id.toString())
+                      handleImagePress(witnessRecord.id.toString())
                     }>
                     <View style={styles.imageHeader}>
                       <CText style={styles.mesaText}>
-                        {atestiguamiento.mesa}
+                        {witnessRecord.mesa}
                       </CText>
                       <CText style={styles.fechaText}>
-                        {atestiguamiento.fecha} - {atestiguamiento.hora}
+                        {witnessRecord.fecha} - {witnessRecord.hora}
                       </CText>
                     </View>
                     <Image
-                      source={{uri: atestiguamiento.imagen}}
+                      source={{uri: witnessRecord.imagen}}
                       style={styles.imageDisplay}
                       resizeMode="contain"
                     />
-                    {selectedImageId === atestiguamiento.id.toString() && (
+                    {selectedImageId === witnessRecord.id.toString() && (
                       <>
                         {/* Corner borders - black color */}
                         <View
@@ -290,7 +287,7 @@ const MyWitnessesListScreen = () => {
                       </>
                     )}
                   </TouchableOpacity>
-                  {selectedImageId === atestiguamiento.id.toString() && (
+                  {selectedImageId === witnessRecord.id.toString() && (
                     <TouchableOpacity
                       style={styles.detailsButton}
                       onPress={handleVerMas}>

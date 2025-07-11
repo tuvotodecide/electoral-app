@@ -3,8 +3,8 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
 import HomeScreen from '../../container/TabBar/Home/HomeScreen';
-import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
-import CameraPermissionTest from '../../container/Voto/UploadRecord/CameraPermissionTest';
+import CameraScreen from '../../container/Vote/UploadRecord/CameraScreen';
+import CameraPermissionTest from '../../container/Vote/UploadRecord/CameraPermissionTest';
 
 const HomeStack = createStackNavigator();
 
