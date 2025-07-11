@@ -4,6 +4,13 @@ export const StackNav = {
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
 
+  // Recovery
+  // FindMyUser: 'FindMyUser',
+  MyGuardiansStatus: 'MyGuardiansStatus',
+  RecoveryUser1Pin: 'RecoveryUser1Pin',
+  RecoveryUser2Pin: 'RecoveryUser2Pin',
+  RecoveryFinalize: 'RecoveryFinalize',
+
   // Nuevas rutas para Mi Voto
   //Subir Acta
   // UploadRecord: 'UploadRecord',
@@ -167,6 +174,12 @@ export const AuthNav = {
   AccountLock: 'AccountLock',
   SelectRecuperation: 'SelectRecuperation',
   ConditionsRegister: 'ConditionsRegister',
+
+  FindMyUser: 'FindMyUser',
+  MyGuardiansStatus: 'MyGuardiansStatus',
+  RecoveryUser1Pin: 'RecoveryUser1Pin',
+  RecoveryUser2Pin: 'RecoveryUser2Pin',
+  RecoveryFinalize: 'RecoveryFinalize',
 };
 
 export const TabNav = {

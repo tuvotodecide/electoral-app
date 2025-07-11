@@ -2,7 +2,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
-import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
+import CameraScreen from '../../container/Vote/UploadRecord/CameraScreen';
 
 const Stack = createStackNavigator();
 

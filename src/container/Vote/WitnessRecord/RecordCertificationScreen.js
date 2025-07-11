@@ -19,7 +19,18 @@ import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = SCREEN_WIDTH >= 768;
+const isSmallPhone = SCREEN_WIDTH < 375;
+const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 const RecordCertificationScreen = () => {
   const navigation = useNavigation();
@@ -94,29 +105,61 @@ const RecordCertificationScreen = () => {
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Certification Message */}
-        <View style={styles.certificationContainer}>
-          <CText style={styles.certificationTitle}>
-            {String.actaCertification || 'Certificación del Acta'}
-          </CText>
-          <CText style={styles.certificationText}>
-            {(String.certificationText || '')
-              .replace('{userName}', currentUser.name || '')
-              .replace('{userRole}', currentUser.role || '')
-              .replace('{tableNumber}', tableData?.numero || 'N/A')}
-          </CText>
-        </View>
+        {/* For tablet landscape, use a more optimized layout */}
+        {isTablet && isLandscape ? (
+          <View style={styles.tabletLandscapeContainer}>
+            {/* Left side: Certification message */}
+            <View style={styles.leftColumn}>
+              <View style={styles.certificationContainer}>
+                <CText style={styles.certificationTitle}>
+                  {String.actaCertification}
+                </CText>
+                <CText style={styles.certificationText}>
+                  {(String.certificationText || '')
+                    .replace('{userName}', currentUser.name || '')
+                    .replace('{userRole}', currentUser.role || '')
+                    .replace('{tableNumber}', tableData?.numero)}
+                </CText>
+              </View>
+            </View>
 
-        {/* Certification Button */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.certifyButton}
-            onPress={handleCertify}>
-            <CText style={styles.certifyButtonText}>
-              {String.certify || 'Certifico'}
-            </CText>
-          </TouchableOpacity>
-        </View>
+            {/* Right side: Action button */}
+            <View style={styles.rightColumn}>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.certifyButton}
+                  onPress={handleCertify}>
+                  <CText style={styles.certifyButtonText}>
+                    {String.certify}
+                  </CText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : (
+          /* Regular Layout: Phones and Tablet Portrait */
+          <>
+            <View style={styles.certificationContainer}>
+              <CText style={styles.certificationTitle}>
+                {String.actaCertification}
+              </CText>
+              <CText style={styles.certificationText}>
+                {(String.certificationText || '')
+                  .replace('{userName}', currentUser.name || '')
+                  .replace('{userRole}', currentUser.role || '')
+                  .replace('{tableNumber}', tableData?.numero)}
+              </CText>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.certifyButton}
+                onPress={handleCertify}>
+                <CText style={styles.certifyButtonText}>{String.certify}</CText>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <Modal
@@ -129,26 +172,29 @@ const RecordCertificationScreen = () => {
             {step === 0 && (
               <>
                 <View style={modalStyles.iconCircleWarning}>
-                  <Ionicons name="alert-outline" size={48} color="#da2a2a" />
+                  <Ionicons
+                    name="alert-outline"
+                    size={getResponsiveSize(40, 48, 56)}
+                    color="#da2a2a"
+                  />
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  {String.certifyInfoConfirmation ||
-                    '¿Estás seguro de que deseas certificar la información?'}
+                  {String.certifyInfoConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
-                      {String.cancel || 'Cancelar'}
+                      {String.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>
-                      {String.certify || 'Certifico'}
+                      {String.certify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -157,16 +203,15 @@ const RecordCertificationScreen = () => {
             {step === 1 && (
               <>
                 <ActivityIndicator
-                  size="large"
+                  size={isTablet ? 'large' : 'large'}
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  {String.pleaseWait || 'Por favor, espere...'}
+                  {String.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain ||
-                    'La información se está guardando en la Blockchain'}
+                  {String.savingToBlockchain}
                 </CText>
               </>
             )}
@@ -184,26 +229,41 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: moderateScale(16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+  },
+  // Tablet Landscape Layout
+  tabletLandscapeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: getResponsiveSize(20, 24, 32),
+  },
+  leftColumn: {
+    flex: 0.65,
+    paddingRight: getResponsiveSize(16, 20, 24),
+  },
+  rightColumn: {
+    flex: 0.35,
+    paddingLeft: getResponsiveSize(16, 20, 24),
+    justifyContent: 'center',
   },
   certificationContainer: {
     backgroundColor: '#E8F5E8',
-    borderRadius: moderateScale(12),
-    padding: moderateScale(16),
-    marginBottom: moderateScale(16),
-    marginTop: moderateScale(8),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    padding: getResponsiveSize(16, 18, 22),
+    marginBottom: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(8, 12, 16),
   },
   certificationTitle: {
-    fontSize: moderateScale(20),
+    fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: '700',
     color: '#2F2F2F',
-    marginBottom: moderateScale(12),
+    marginBottom: getResponsiveSize(10, 12, 16),
     textAlign: 'center',
   },
   certificationText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#2F2F2F',
-    lineHeight: moderateScale(24),
+    lineHeight: getResponsiveSize(20, 24, 28),
     textAlign: 'justify',
   },
   boldText: {
@@ -212,9 +272,9 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(8),
-    marginBottom: moderateScale(16),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    padding: getResponsiveSize(6, 8, 10),
+    marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -224,44 +284,44 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: '100%',
-    height: moderateScale(200),
-    borderRadius: moderateScale(4),
+    height: getResponsiveSize(160, 200, 240),
+    borderRadius: getResponsiveSize(3, 4, 5),
   },
   cornerBorder: {
     position: 'absolute',
-    width: moderateScale(20),
-    height: moderateScale(20),
+    width: getResponsiveSize(16, 20, 24),
+    height: getResponsiveSize(16, 20, 24),
     borderColor: '#2F2F2F',
     borderWidth: 2,
   },
   topLeftCorner: {
-    top: moderateScale(8),
-    left: moderateScale(8),
+    top: getResponsiveSize(6, 8, 10),
+    left: getResponsiveSize(6, 8, 10),
     borderRightWidth: 0,
     borderBottomWidth: 0,
   },
   topRightCorner: {
-    top: moderateScale(8),
-    right: moderateScale(8),
+    top: getResponsiveSize(6, 8, 10),
+    right: getResponsiveSize(6, 8, 10),
     borderLeftWidth: 0,
     borderBottomWidth: 0,
   },
   bottomLeftCorner: {
-    bottom: moderateScale(8),
-    left: moderateScale(8),
+    bottom: getResponsiveSize(6, 8, 10),
+    left: getResponsiveSize(6, 8, 10),
     borderRightWidth: 0,
     borderTopWidth: 0,
   },
   bottomRightCorner: {
-    bottom: moderateScale(8),
-    right: moderateScale(8),
+    bottom: getResponsiveSize(6, 8, 10),
+    right: getResponsiveSize(6, 8, 10),
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
   partyTableContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(16),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -271,21 +331,21 @@ const styles = StyleSheet.create({
   partyTableHeader: {
     flexDirection: 'row',
     backgroundColor: '#E0F2F7',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    borderTopLeftRadius: moderateScale(8),
-    borderTopRightRadius: moderateScale(8),
+    paddingHorizontal: getResponsiveSize(14, 16, 18),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    borderTopLeftRadius: getResponsiveSize(6, 8, 10),
+    borderTopRightRadius: getResponsiveSize(6, 8, 10),
   },
   partyTableHeaderLeft: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'left',
   },
   partyTableHeaderCenter: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: getResponsiveSize(12, 14, 16),
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
@@ -293,14 +353,14 @@ const styles = StyleSheet.create({
   partyTableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
+    paddingHorizontal: getResponsiveSize(14, 16, 18),
+    paddingVertical: getResponsiveSize(10, 12, 14),
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   partyNameText: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '500',
     color: '#2F2F2F',
   },
@@ -310,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   partyVoteText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
@@ -318,33 +378,33 @@ const styles = StyleSheet.create({
   },
   voteSummaryTableContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(24),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    marginBottom: getResponsiveSize(20, 24, 28),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    paddingTop: moderateScale(12),
+    paddingTop: getResponsiveSize(10, 12, 14),
   },
   voteSummaryTableTitle: {
-    fontSize: moderateScale(18),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     color: '#2F2F2F',
-    marginBottom: moderateScale(8),
-    paddingHorizontal: moderateScale(16),
+    marginBottom: getResponsiveSize(6, 8, 10),
+    paddingHorizontal: getResponsiveSize(14, 16, 18),
   },
   voteSummaryTableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
+    paddingHorizontal: getResponsiveSize(14, 16, 18),
+    paddingVertical: getResponsiveSize(10, 12, 14),
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   voteSummaryLabel: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '500',
     color: '#2F2F2F',
   },
@@ -354,27 +414,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   voteSummaryValue: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#2F2F2F',
     textAlign: 'center',
     width: '100%',
   },
   actionButtons: {
-    marginBottom: moderateScale(32),
+    marginBottom: getResponsiveSize(24, 32, 40),
   },
   certifyButton: {
     backgroundColor: '#459151',
-    paddingVertical: moderateScale(16),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(14, 16, 20),
+    borderRadius: getResponsiveSize(8, 10, 12),
     alignItems: 'center',
   },
   certifyButtonText: {
-    fontSize: moderateScale(18),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     color: '#fff',
   },
-  // Modal styles
+  // These modal styles are deprecated - using modalStyles export instead
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -383,9 +443,9 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(16),
-    padding: moderateScale(24),
-    marginHorizontal: moderateScale(32),
+    borderRadius: getResponsiveSize(16, 20, 24),
+    padding: getResponsiveSize(24, 28, 32),
+    marginHorizontal: getResponsiveSize(32, 40, 48),
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
@@ -394,49 +454,49 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   modalHeader: {
-    marginBottom: moderateScale(16),
+    marginBottom: getResponsiveSize(16, 20, 24),
   },
   modalTitle: {
-    fontSize: moderateScale(20),
+    fontSize: getResponsiveSize(20, 22, 26),
     fontWeight: '700',
     color: '#2F2F2F',
-    marginBottom: moderateScale(12),
+    marginBottom: getResponsiveSize(12, 16, 20),
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(16, 18, 20),
     color: '#2F2F2F',
     textAlign: 'center',
-    lineHeight: moderateScale(22),
-    marginBottom: moderateScale(24),
+    lineHeight: getResponsiveSize(22, 26, 30),
+    marginBottom: getResponsiveSize(24, 28, 32),
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: moderateScale(12),
+    gap: getResponsiveSize(12, 16, 20),
   },
   cancelButton: {
     flex: 1,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    borderRadius: getResponsiveSize(8, 10, 12),
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '600',
     color: '#2F2F2F',
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#459151',
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    borderRadius: getResponsiveSize(8, 10, 12),
     alignItems: 'center',
   },
   confirmButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '600',
     color: '#fff',
   },
@@ -449,11 +509,15 @@ export const modalStyles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: SCREEN_WIDTH > 400 ? 340 : SCREEN_WIDTH - 40,
+    width: getResponsiveSize(
+      SCREEN_WIDTH - 40,
+      SCREEN_WIDTH > 400 ? 340 : SCREEN_WIDTH - 40,
+      SCREEN_WIDTH > 600 ? 400 : SCREEN_WIDTH - 80,
+    ),
     backgroundColor: '#fff',
-    borderRadius: 22,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    borderRadius: getResponsiveSize(18, 22, 26),
+    paddingVertical: getResponsiveSize(24, 32, 40),
+    paddingHorizontal: getResponsiveSize(20, 24, 30),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 10},
@@ -462,74 +526,74 @@ export const modalStyles = StyleSheet.create({
     elevation: 10,
   },
   iconCircleWarning: {
-    width: 60,
-    height: 60,
-    borderRadius: 32,
+    width: getResponsiveSize(50, 60, 70),
+    height: getResponsiveSize(50, 60, 70),
+    borderRadius: getResponsiveSize(25, 30, 35),
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#da2a2a',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: getResponsiveSize(6, 8, 10),
   },
   confirmTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveSize(16, 18, 20),
     color: '#2F2F2F',
     textAlign: 'center',
     fontWeight: '600',
     marginBottom: 0,
   },
   spacer: {
-    marginBottom: 20,
+    marginBottom: getResponsiveSize(16, 20, 24),
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 24,
+    gap: getResponsiveSize(12, 16, 20),
+    marginTop: getResponsiveSize(20, 24, 28),
   },
   loading: {
-    marginBottom: 18,
+    marginBottom: getResponsiveSize(14, 18, 22),
   },
   cancelButton: {
     flex: 1,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#CBCBCB',
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 9,
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(8, 10, 12),
+    borderRadius: getResponsiveSize(7, 9, 11),
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 15,
+    fontSize: getResponsiveSize(13, 15, 17),
     color: '#2F2F2F',
     fontWeight: '600',
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#459151',
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 9,
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(8, 10, 12),
+    borderRadius: getResponsiveSize(7, 9, 11),
     alignItems: 'center',
   },
   confirmButtonText: {
-    fontSize: 15,
+    fontSize: getResponsiveSize(13, 15, 17),
     color: '#fff',
     fontWeight: '600',
   },
   loadingTitle: {
-    fontSize: 17,
+    fontSize: getResponsiveSize(15, 17, 19),
     color: '#2F2F2F',
-    marginBottom: 6,
+    marginBottom: getResponsiveSize(4, 6, 8),
     textAlign: 'center',
     fontWeight: '600',
   },
   loadingSubtext: {
-    fontSize: 15,
+    fontSize: getResponsiveSize(13, 15, 17),
     color: '#868686',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: getResponsiveSize(2, 4, 6),
   },
 });
 

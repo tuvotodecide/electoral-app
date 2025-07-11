@@ -1,43 +1,84 @@
 import React from 'react';
-import {View, TouchableOpacity, StyleSheet} from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
 
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 350;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
 const UniversalHeader = ({
   colors,
   onBack,
-  title = 'Título',
+  title = 'Title',
   showNotification = true,
   onNotificationPress,
   customStyles = {},
 }) => (
-  <View style={[styles.header, customStyles.header]}>
+  <View
+    style={[
+      styles.header,
+      customStyles.header,
+      {
+        paddingHorizontal: getResponsiveSize(12, 16, 24),
+        paddingVertical: getResponsiveSize(8, 12, 16),
+        minHeight: getResponsiveSize(56, 64, 72),
+      },
+    ]}>
     <TouchableOpacity
       onPress={onBack}
-      style={[styles.backButton, customStyles.backButton]}>
+      style={[
+        styles.backButton,
+        customStyles.backButton,
+        {
+          padding: getResponsiveSize(6, 8, 12),
+        },
+      ]}>
       <MaterialIcons
         name="keyboard-arrow-left"
-        size={moderateScale(36)}
+        size={getResponsiveSize(32, 36, 44)}
         color={colors?.black || '#2F2F2F'}
       />
     </TouchableOpacity>
-    <CText style={[styles.headerTitle, customStyles.headerTitle]}>
+    <CText
+      style={[
+        styles.headerTitle,
+        customStyles.headerTitle,
+        {
+          fontSize: getResponsiveSize(16, 20, 26),
+          marginLeft: getResponsiveSize(4, 8, 12),
+          flex: 1,
+        },
+      ]}>
       {title}
     </CText>
-    <View style={styles.headerSpacer} />
-    {/* {showNotification && (
+    {showNotification && (
       <TouchableOpacity
-        style={[styles.bellIcon, customStyles.bellIcon]}
+        style={[
+          styles.bellIcon,
+          customStyles.bellIcon,
+          {
+            padding: getResponsiveSize(6, 8, 12),
+          },
+        ]}
         onPress={onNotificationPress}>
         <Ionicons
           name="notifications-outline"
-          size={moderateScale(34)}
+          size={getResponsiveSize(28, 32, 40)}
           color={colors?.text || '#2F2F2F'}
         />
       </TouchableOpacity>
-    )} */}
+    )}
   </View>
 );
 
@@ -45,26 +86,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
     backgroundColor: '#fff',
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   backButton: {
-    padding: moderateScale(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: moderateScale(20),
     fontWeight: '600',
     color: '#2F2F2F',
-    marginLeft: moderateScale(8),
-  },
-  headerSpacer: {
-    flex: 1,
+    textAlign: isTablet ? 'center' : 'left',
   },
   bellIcon: {
-    padding: moderateScale(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

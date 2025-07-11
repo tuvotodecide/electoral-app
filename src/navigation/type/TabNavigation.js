@@ -1,6 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {AppState, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+  AppState,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
@@ -12,6 +18,18 @@ import Icono from '../../components/common/Icono';
 import {clearSession, isSessionValid, startSession} from '../../utils/Session';
 import {clearWallet} from '../../redux/action/walletAction';
 import {clearAuth} from '../../redux/slices/authSlice';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 function useKeepAlive() {
   const dispatch = useDispatch();
@@ -67,7 +85,7 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
         {
           backgroundColor: '#fff',
           shadowColor: '#000',
-          height: 72 + insets.bottom,
+          height: getResponsiveSize(66, 72, 78) + insets.bottom,
           paddingBottom: insets.bottom,
         },
       ]}>
@@ -101,8 +119,8 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
             <Icono
               name={iconName}
               color="#222" // SIEMPRE NEGRO, NO cambia por selección
-              size={33}
-              style={{marginBottom: 1}}
+              size={getResponsiveSize(28, 33, 38)}
+              style={{marginBottom: getResponsiveSize(0, 1, 2)}}
             />
             <CText style={stylesx.tabLabel} numberOfLines={1}>
               {label}
@@ -157,8 +175,8 @@ const stylesx = StyleSheet.create({
     justifyContent: 'space-around',
 
     backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: getResponsiveSize(24, 28, 32),
+    borderTopRightRadius: getResponsiveSize(24, 28, 32),
     borderTopWidth: 0,
 
     shadowOffset: {width: 0, height: -3},
@@ -171,13 +189,13 @@ const stylesx = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: getResponsiveSize(4, 6, 8),
   },
   tabLabel: {
-    fontSize: 16,
+    fontSize: getResponsiveSize(14, 16, 18),
     color: '#222',
     fontWeight: '400',
-    marginTop: 2,
+    marginTop: getResponsiveSize(1, 2, 3),
     letterSpacing: 0.1,
   },
 });

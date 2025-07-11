@@ -180,11 +180,18 @@ export default {
 
   //Inicio
   connectTitle: 'Aplicación Electoral',
+  connectBtnForgot: 'Olvidé mi cuenta',
   connectItem1: 'Cobros y pagos con USDT',
   connectItem2: 'Protegida con blockchain',
   connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
+
+  recoveryWallet: 'Recuperar cuenta',
+  recoverymethod: 'Selecciona método para recuperar cuenta',
+  recoverymethodGuardians: 'Recuperar con guardianes',
+  recoverymethodQR: 'Recuperar con QR',
+
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto',
   onBoardingTitleText1: 'Tu identidad digital. Tu billetera. Tu control.',
@@ -846,7 +853,7 @@ export default {
   mastercard: 'Mastercard',
   bankTransfer: 'Bank Transfer',
   creditAndDebitCard: 'Credit/Debit Card',
-  confirm: 'Confirm',
+  confirm: 'Confirmar',
   depositID: 'Deposit ID',
   depositAmount: 'Deposit amount',
   depositFee: 'Deposit fee',
@@ -1011,7 +1018,7 @@ export default {
   available: 'Disponible',
   notAvailable: 'No disponible',
   biometryNotAvailable: 'Biometría no disponible',
-  locationNotAvailable: 'location not available',
+  locationNotAvailable: 'Ubicación no disponible',
 
   // Announce Count
   tableInformation: 'Información de la mesa',
@@ -1101,8 +1108,10 @@ export default {
 
   // Common
   confirmation: 'Confirmation',
-  voluntaryInitiative: 'Voluntary initiative by:',
-  autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
+  voluntaryInitiative: 'Iniciativa Voluntaria de',
+  // autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
+  autoNavigating:
+    'Regresando automáticamente al inicio en {timeLeft} segundo{s}...',
 
   // Camera
   cameraNotAvailable: 'No se puede usar la cámara.',
@@ -1114,4 +1123,36 @@ export default {
 
   // agregados que faltaban en en.js
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
+  verifyTableInformation: 'Verificar Información de la Mesa',
+
+  // Cámara
+  preparingCamera: 'Preparando cámara',
+  cameraInUse: 'La cámara ya está en uso',
+
+  // Detalles de la mesa
+  venue: 'Recinto', // o 'Lugar'
+  notSpecified: 'No especificado',
+  tableInformation: 'Información de la mesa',
+  schoolInformation: 'Información del recinto', // o 'Información de la escuela'
+  provinceInformation: 'Información de la provincia',
+
+  // Fallbacks genéricos (cuando no hay datos)
+  tableNA: 'Mesa no disponible', // o 'Mesa N/D'
+  precinctNA: 'Recinto no disponible', // o 'Recinto N/D'
+
+  // Vista previa y confirmación
+  photoPreview: 'Vista previa de la foto',
+  tableInformation: 'Información de la mesa',
+
+  preview: 'Vista previa',
+
+  retakePhoto: 'Tomar foto de nuevo',
+
+  confirmAndSend: 'Confirmar y enviar',
+
+  personaNotFound: 'Persona no encontrada',
+  noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
+  personaNotFound: 'Persona no encontrada',
+  noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
+  removed: 'Removido',
 };

@@ -1,48 +1,64 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {getHeight, moderateScale} from '../../../common/constants';
+import {getHeight, moderateScale, PENDINGRECOVERY} from '../../../common/constants';
 import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
+
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
-import GuardianActionModal from '../../../components/modal/GuardianActionModal';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
-import {
-  useGuardianDeleteQuery,
-  useGuardianPatchQuery,
-  useMyGuardiansAllListQuery,
-} from '../../../data/guardians';
+import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 
-export default function Guardians({navigation}) {
+import {useGuardiansRecoveryDetailQuery} from '../../../data/guardians';
+import {ActivityIndicator} from 'react-native-paper';
+import {getDeviceId} from '../../../utils/device-id';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CButton from '../../../components/common/CButton';
+
+const statusColorKey = {
+  ACCEPTED: 'activeColor',
+  PENDING: 'pendingColor',
+  REJECTED: 'rejectedColor',
+  REMOVED: 'rejectedColor',
+};
+
+const baseColors = {
+  success: '#4caf50',
+  error: '#f44336',
+  warning: '#ff9800',
+  info: '#2196f3',
+};
+
+export default function MyGuardiansStatus({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
-  const {mutate: deleteGuardianId, isLoading: loading} =
-    useGuardianDeleteQuery();
-  const {mutate: patchGuardianId, isLoading: loadingpatch} =
-    useGuardianPatchQuery();
+  const dni = route.params?.dni;
+  const deviceId = useRef();
 
-  console.log(selectedGuardian);
+  const [ready, setReady] = useState(false);
 
-  const guardians = useMemo(() => data.map(edge => edge.node), [data]);
+  const {data: detail, isLoading} = useGuardiansRecoveryDetailQuery(
+    deviceId.current,
+    ready,
+  );
 
-  const statusColorKey = {
-    ACCEPTED: 'activeColor',
-    PENDING: 'pendingColor',
-    REJECTED: 'rejectedColor',
-    REMOVED: 'rejectedColor',
-  };
-  // Etiquetas según status
+  const guardians = useMemo(() => {
+    if (!detail) return [];
+    return [
+      ...detail.pending.map(g => ({...g, status: 'PENDING'})),
+      ...detail.approved.map(g => ({...g, status: 'ACCEPTED'})),
+      ...detail.rejected.map(g => ({...g, status: 'REJECTED'})),
+    ];
+  }, [detail]);
+
+  useEffect(() => {
+    console.log(detail);
+  }, [detail]);
+
   const statusLabel = {
     ACCEPTED: String.active,
     PENDING: String.pending,
@@ -50,56 +66,63 @@ export default function Guardians({navigation}) {
     REMOVED: String.removed ?? 'Removido',
   };
 
-  const onPressAddGuardian = () => {
-    navigation.navigate(StackNav.AddGuardians);
-  };
+  useEffect(() => {
+    if (!detail?.ok) return;
 
-  const openModal = item => {
-    setSelectedGuardian(item);
-    setModalVisible(true);
-  };
+    if (detail.status === 'APPROVED') {
+      AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+      navigation.replace(AuthNav.RecoveryUser1Pin, {
+        dni,
+        reqId: detail.id,
+      });
+    }
+  }, [detail]);
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedGuardian(null);
-  };
-
-  const deleteGuardian = () => {
-    deleteGuardianId(selectedGuardian.id, {
-      onSuccess: () => {
-        closeModal();
-      },
+  useEffect(() => {
+    getDeviceId().then(id => {
+      deviceId.current = id;
+      setReady(true);
     });
-  };
-  const saveGuardian = newNick => {
-    patchGuardianId(
-      {id: selectedGuardian.id, nickname: newNick},
-      {
-        onSuccess: () => {
-          closeModal();
-        },
-      },
-    );
-  };
-  const RightIcon = () => {
+  }, []);
+
+  if (isLoading || !ready) {
     return (
-      <TouchableOpacity>
-        {colors.dark ? <Short_White /> : <Short_Black />}
-      </TouchableOpacity>
+      <View style={localStyle.loaderContainer}>
+        <ActivityIndicator size="large" color={colors.primaryColor} />
+      </View>
     );
+  }
+
+  const onPressReturn = () => {
+
+    navigation.navigate(StackNav.AuthNavigation, {
+      screen: AuthNav.Connect,
+    });
   };
 
   const renderGuardianOption = ({item}) => {
-    const parts = (item.fullName || '').split(' ');
-    const firstSegment = parts[0] || '';
-    const secondSegment = parts[1] || '';
-
-    const abbreviated = secondSegment.slice(0, 2).toUpperCase();
-    const displayName = secondSegment
-      ? `${firstSegment} ${abbreviated}`
-      : firstSegment;
-
     const colorKey = statusColorKey[item.status] || 'pendingColor';
+    let actionIcon = null;
+    if (item.status === 'PENDING') {
+      actionIcon = <ActivityIndicator size="small" color={colors[colorKey]} />;
+    } else if (item.status === 'ACCEPTED') {
+      actionIcon = (
+        <Icono
+          name="check-all"
+          size={moderateScale(24)}
+          color={colors[colorKey]}
+        />
+      );
+    } else if (item.status === 'REJECTED') {
+      actionIcon = (
+        <Icono
+          name="window-close"
+          size={moderateScale(24)}
+          color={colors[colorKey]}
+        />
+      );
+    }
+
     return (
       <TouchableOpacity
         style={[
@@ -112,8 +135,7 @@ export default function Guardians({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -128,7 +150,7 @@ export default function Guardians({navigation}) {
           </View>
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+              <CText type="B16"> {item.nickname ?? '(sin apodo)'}</CText>
 
               <View
                 style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>
@@ -137,52 +159,36 @@ export default function Guardians({navigation}) {
                 </CText>
               </View>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
-              {item.nickname ?? '(sin apodo)'}
-            </CText>
           </View>
         </View>
-        <TouchableOpacity onPress={() => openModal(item)}>
-          <Icono
-            name="dots-vertical"
-            size={moderateScale(30)}
-            style={styles.mr10}
-          />
-        </TouchableOpacity>
+        <View style={styles.ml10}>{actionIcon}</View>
       </TouchableOpacity>
     );
   };
 
   return (
     <CSafeAreaView>
-      <CHeader title={String.guardiansTitle} rightIcon={<RightIcon />} />
-      <View style={styles.ph20}>
+      <CHeader title={String.guardiansTitleStatus} />
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
-          {String.guardiansSubtitle}
+          {String.guardiansDescriptionStatus}
         </CText>
+
         <FlatList
           data={guardians}
-          keyExtractor={item => item.id}
+          keyExtractor={g => g.guardianId}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
         />
-      </View>
+      </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CButton
-          title={` ${String.addGuardian}`}
-          onPress={onPressAddGuardian}
+          title={String.return}
+          onPress={onPressReturn}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
-          frontIcon={<Icono size={20} name="account-plus" color={'#fff'} />}
         />
       </View>
-      <GuardianActionModal
-        visible={modalVisible}
-        guardian={selectedGuardian}
-        onClose={closeModal}
-        onDelete={deleteGuardian}
-        onSave={saveGuardian}
-      />
     </CSafeAreaView>
   );
 }
@@ -248,6 +254,10 @@ const localStyle = StyleSheet.create({
     ...styles.ph20,
     gap: 5,
   },
+  btnStyle: {
+    marginBottom: moderateScale(1),
+    borderWidth: moderateScale(1),
+  },
   optionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -273,5 +283,31 @@ const localStyle = StyleSheet.create({
     borderRadius: moderateScale(10),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  infoCard: {
+    width: '100%',
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
+    marginTop: moderateScale(20),
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoIconContainer: {
+    marginBottom: moderateScale(12),
+  },
+  infoTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoText: {
+    fontSize: moderateScale(18),
+    fontWeight: '800',
+  },
+  rightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: moderateScale(10),
   },
 });

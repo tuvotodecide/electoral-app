@@ -1,7 +1,19 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {View, StyleSheet, Dimensions} from 'react-native';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
+
+const {width: screenWidth} = Dimensions.get('window');
+
+// Responsive helper functions
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375; // Increased from 350
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 
 export const InstructionsContainer = ({text, style}) => (
   <View style={[styles.instructionsContainer, style]}>
@@ -12,11 +24,11 @@ export const InstructionsContainer = ({text, style}) => (
 const styles = StyleSheet.create({
   instructionsContainer: {
     backgroundColor: '#fff',
-    paddingHorizontal: moderateScale(16),
-    paddingBottom: moderateScale(12),
+    paddingHorizontal: getResponsiveSize(8, 16, 20),
+    paddingBottom: getResponsiveSize(6, 12, 16),
   },
   instructionsText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     color: '#2F2F2F',
     fontWeight: '500',
     textAlign: 'center',

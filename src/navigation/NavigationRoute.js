@@ -16,25 +16,30 @@ import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 // import OnBoarding from '../container/OnBoarding';
 import Splash from '../container/Splash';
+import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
+import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
+import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
+import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
+import RecoveryFinalize from '../container/TabBar/Recovery/RecoveryFinalize';
 
 // Pantallas de Voto
-// import UploadRecord from '../container/Voto/UploadRecord';
-import SearchTable from '../container/Voto/UploadRecord/SearchTable';
-import TableDetail from '../container/Voto/UploadRecord/TableDetail';
-import CameraScreen from '../container/Voto/UploadRecord/CameraScreen';
-import CameraPermissionTest from '../container/Voto/UploadRecord/CameraPermissionTest';
-import PhotoReviewScreen from '../container/Voto/UploadRecord/PhotoReviewScreen';
-import PhotoConfirmationScreen from '../container/Voto/UploadRecord/PhotoConfirmationScreen';
-import SuccessScreen from '../container/Voto/common/SuccessScreen';
-import WitnessRecord from '../container/Voto/WitnessRecord/WitnessRecord';
-import WhichIsCorrectScreen from '../container/Voto/WitnessRecord/WhichIsCorrectScreen';
-import RecordReviewScreen from '../container/Voto/WitnessRecord/RecordReviewScreen';
-import RecordCertificationScreen from '../container/Voto/WitnessRecord/RecordCertificationScreen';
-import AnnounceCount from '../container/Voto/AnnounceCount/AnnounceCount';
-import SearchCountTable from '../container/Voto/AnnounceCount/SearchCountTable';
-import CountTableDetail from '../container/Voto/AnnounceCount/CountTableDetail';
-import MyWitnessesListScreen from '../container/Voto/MyWitnesses/MyWitnessesListScreen';
-import MyWitnessesDetailScreen from '../container/Voto/MyWitnesses/MyWitnessesDetailScreen';
+// import UploadRecord from '../container/Vote/UploadRecord';
+import SearchTable from '../container/Vote/UploadRecord/SearchTable';
+import TableDetail from '../container/Vote/UploadRecord/TableDetail';
+import CameraScreen from '../container/Vote/UploadRecord/CameraScreen';
+import CameraPermissionTest from '../container/Vote/UploadRecord/CameraPermissionTest';
+import PhotoReviewScreen from '../container/Vote/UploadRecord/PhotoReviewScreen';
+import PhotoConfirmationScreen from '../container/Vote/UploadRecord/PhotoConfirmationScreen';
+import SuccessScreen from '../container/Vote/common/SuccessScreen';
+import WitnessRecord from '../container/Vote/WitnessRecord/WitnessRecord';
+import WhichIsCorrectScreen from '../container/Vote/WitnessRecord/WhichIsCorrectScreen';
+import RecordReviewScreen from '../container/Vote/WitnessRecord/RecordReviewScreen';
+import RecordCertificationScreen from '../container/Vote/WitnessRecord/RecordCertificationScreen';
+import AnnounceCount from '../container/Vote/AnnounceCount/AnnounceCount';
+import SearchCountTable from '../container/Vote/AnnounceCount/SearchCountTable';
+import CountTableDetail from '../container/Vote/AnnounceCount/CountTableDetail';
+import MyWitnessesListScreen from '../container/Vote/MyWitnesses/MyWitnessesListScreen';
+import MyWitnessesDetailScreen from '../container/Vote/MyWitnesses/MyWitnessesDetailScreen';
 
 import CryptoScreen from '../container/TabBar/Market/Crypto/CryptoScreen';
 import MarketScreen from '../container/TabBar/Market/MarketScreen';
@@ -156,6 +161,11 @@ export const StackRoute = {
   TabNavigation,
   // Pantallas de Voto
   // UploadRecord,
+  FindMyUser,
+  MyGuardiansStatus,
+  RecoveryUser1Pin,
+  RecoveryUser2Pin,
+  RecoveryFinalize,
   SearchTable,
   TableDetail,
   CameraScreen,

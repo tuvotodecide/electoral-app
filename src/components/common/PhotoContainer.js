@@ -16,14 +16,24 @@ import {moderateScale} from '../../common/constants';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
+// Responsive helper functions
+const isTablet = SCREEN_WIDTH >= 768;
+const isSmallPhone = SCREEN_WIDTH < 375; // Increased from 350
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
+
 // Constantes calculadas fuera de los worklets
-const PHOTO_HEIGHT = moderateScale(200);
-const CONTAINER_PADDING = moderateScale(8);
-const CORNER_SIZE = moderateScale(20);
+const PHOTO_HEIGHT = getResponsiveSize(120, 200, 250);
+const CONTAINER_PADDING = getResponsiveSize(2, 8, 12);
+const CORNER_SIZE = getResponsiveSize(12, 20, 25);
 const CORNER_BORDER_WIDTH = 2;
-const BORDER_RADIUS = moderateScale(4);
-const CONTAINER_BORDER_RADIUS = moderateScale(8);
-const MARGIN_BOTTOM = moderateScale(16);
+const BORDER_RADIUS = getResponsiveSize(2, 4, 6);
+const CONTAINER_BORDER_RADIUS = getResponsiveSize(4, 8, 10);
+const MARGIN_BOTTOM = getResponsiveSize(4, 16, 20);
 
 export const PhotoContainer = ({photoUri, enableZoom = false}) => {
   if (enableZoom) {

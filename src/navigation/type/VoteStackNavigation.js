@@ -2,72 +2,72 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {StackNav} from '../NavigationKey';
 import {StackRoute} from '../NavigationRoute';
-import CameraScreen from '../../container/Voto/UploadRecord/CameraScreen';
+import CameraScreen from '../../container/Vote/UploadRecord/CameraScreen';
 
-const VotoStack = createStackNavigator();
+const VoteStack = createStackNavigator();
 
-export default function VotoStackNavigation() {
+export default function VoteStackNavigation() {
   return (
-    <VotoStack.Navigator
+    <VoteStack.Navigator
       screenOptions={{
         headerShown: false,
       }}
       //   initialRouteName={StackNav.UploadRecord}>
-      //   <VotoStack.Screen
+      //   <VoteStack.Screen
       //     name={StackNav.UploadRecord}
       //     component={StackRoute.UploadRecord}
       //   />
       initialRouteName={StackNav.SearchTable}>
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.TableDetail}
         component={StackRoute.TableDetail}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.WitnessRecord}
         component={StackRoute.WitnessRecord}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.WhichIsCorrectScreen}
         component={StackRoute.WhichIsCorrectScreen}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.RecordReviewScreen}
         component={StackRoute.RecordReviewScreen}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.RecordCertificationScreen}
         component={StackRoute.RecordCertificationScreen}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.AnnounceCount}
         component={StackRoute.AnnounceCount}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.MyWitnesses}
         component={StackRoute.MyWitnesses}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.MyWitnessesListScreen}
         component={StackRoute.MyWitnessesListScreen}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name={StackNav.MyWitnessesDetailScreen}
         component={StackRoute.MyWitnessesDetailScreen}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name="CameraScreen"
         component={CameraScreen}
         options={{headerShown: false}}
       />
-      <VotoStack.Screen
+      <VoteStack.Screen
         name="PhotoReviewScreen"
         component={StackRoute.PhotoReviewScreen}
         options={{headerShown: false}}
       />
-    </VotoStack.Navigator>
+    </VoteStack.Navigator>
   );
 }
