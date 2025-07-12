@@ -10,30 +10,62 @@ const PhotoReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, mesaData} = route.params || {};
+  const {photoUri, mesaData, aiAnalysis, mappedData} = route.params || {};
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
 
-  // State for the new party results table
-  const [partyResults, setPartyResults] = useState([
-    {id: 'unidad', partido: String.partyUnit, presidente: '33', diputado: '29'},
-    {
-      id: 'mas-ipsp',
-      partido: String.partyMasIpsp,
-      presidente: '3',
-      diputado: '1',
-    },
-    {id: 'pdc', partido: String.partyPdc, presidente: '17', diputado: '16'},
-    {id: 'morena', partido: String.partyMorena, presidente: '1', diputado: '0'},
-  ]);
+  // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
+  const getInitialPartyResults = () => {
+    if (mappedData?.partyResults) {
+      return mappedData.partyResults;
+    }
 
-  // New state for the vote summary table (Votos, Blancos, Nulos)
-  const [voteSummaryResults, setVoteSummaryResults] = useState([
-    {id: 'validos', label: String.validVotes, value1: '141', value2: '176'},
-    {id: 'blancos', label: String.blankVotes, value1: '64', value2: '3'},
-    {id: 'nulos', label: String.nullVotes, value1: '6', value2: '9'},
-  ]);
+    return [
+      {id: 'cc', partido: 'C.C.', presidente: '0', diputado: '0'},
+      {id: 'fpv', partido: 'FPV', presidente: '0', diputado: '0'},
+      {id: 'mts', partido: 'MTS', presidente: '0', diputado: '0'},
+      {id: 'ucs', partido: 'UCS', presidente: '0', diputado: '0'},
+      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '0', diputado: '0'},
+      {id: '21f', partido: '21F', presidente: '0', diputado: '0'},
+      {id: 'pdc', partido: 'PDC', presidente: '0', diputado: '0'},
+      {id: 'mnr', partido: 'MNR', presidente: '0', diputado: '0'},
+      {id: 'pan-bol', partido: 'PAN-BOL', presidente: '0', diputado: '0'},
+    ];
+  };
+
+  const getInitialVoteSummary = () => {
+    if (mappedData?.voteSummaryResults) {
+      return mappedData.voteSummaryResults;
+    }
+
+    return [
+      {id: 'validos', label: String.validVotes, value1: '0', value2: '0'},
+      {id: 'blancos', label: String.blankVotes, value1: '0', value2: '0'},
+      {id: 'nulos', label: String.nullVotes, value1: '0', value2: '0'},
+    ];
+  };
+
+  // State for the party results table
+  const [partyResults, setPartyResults] = useState(getInitialPartyResults());
+
+  // State for the vote summary table (Votos, Blancos, Nulos)
+  const [voteSummaryResults, setVoteSummaryResults] = useState(
+    getInitialVoteSummary(),
+  );
+
+  // Mostrar información de la mesa analizadas
+  const getMesaInfo = () => {
+    if (aiAnalysis) {
+      return {
+        number: aiAnalysis.table_number,
+        code: aiAnalysis.table_code,
+        time: aiAnalysis.time,
+        ...mesaData,
+      };
+    }
+    return mesaData;
+  };
 
   // Handler for editing votes
   const handleEdit = () => {
@@ -48,11 +80,14 @@ const PhotoReviewScreen = () => {
 
   // Handler for navigating to the next screen
   const handleNext = () => {
+    const mesaInfo = getMesaInfo();
+
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri,
-      mesaData,
+      mesaData: mesaInfo,
       partyResults,
       voteSummaryResults,
+      aiAnalysis,
     });
   };
 
@@ -120,7 +155,11 @@ const PhotoReviewScreen = () => {
     <BaseRecordReviewScreen
       colors={colors}
       headerTitle={String.acta}
-      instructionsText={String.reviewPhotoPlease}
+      instructionsText={
+        aiAnalysis
+          ? 'Acta analizada automáticamente. Revise y edite los datos si es necesario.'
+          : String.reviewPhotoPlease
+      }
       instructionsStyle={{
         fontSize: moderateScale(18),
         fontWeight: '500',
@@ -135,7 +174,7 @@ const PhotoReviewScreen = () => {
       actionButtons={actionButtons}
       onBack={handleBack}
       showMesaInfo={true}
-      mesaData={mesaData}
+      mesaData={getMesaInfo()}
     />
   );
 };

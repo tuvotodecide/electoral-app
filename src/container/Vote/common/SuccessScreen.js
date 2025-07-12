@@ -1,5 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+} from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -7,12 +13,11 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
-import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import nftImage from '../../../assets/images/nft-medal.png';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
-
-// Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
@@ -27,157 +32,29 @@ const SuccessScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-
-  // State for time countdown
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  // Parameters that define success type and behavior
-  const {
-    successType = 'publish', // 'publish' or 'certify'
-    mesaData: tableData, // Note: Property names within tableData remain in Spanish (numero, recinto, ubicacion) for compatibility
-    autoNavigateDelay = 3000, // Time before automatically navigating
-    showAutoNavigation = true,
-  } = route.params || {};
-
-  console.log('SuccessScreen - Received params:', {
-    successType,
-    tableData,
-    autoNavigateDelay,
-    showAutoNavigation,
-  });
-
-  // Configuration based on success type
-  const getSuccessConfig = () => {
-    switch (successType) {
-      case 'publish':
-        return {
-          title: String.documentPublishedSuccessTitle,
-          subtitle: String.documentPublishedSuccessSubtitle
-            .replace('{tableNumber}', tableData?.numero || 'N/A')
-            .replace(
-              '{location}',
-              tableData?.recinto ||
-                tableData?.ubicacion ||
-                String.locationNotAvailable,
-            ),
-          buttonText: String.backToHome,
-          showInitiativeText: true,
-        };
-      case 'certify':
-        return {
-          title: String.documentCertifiedSuccessTitle,
-          subtitle: String.documentCertifiedSuccessSubtitle
-            .replace('{tableNumber}', tableData?.numero || 'N/A')
-            .replace(
-              '{location}',
-              tableData?.recinto ||
-                tableData?.ubicacion ||
-                String.locationNotAvailable,
-            ),
-          buttonText: String.backToHome,
-          showInitiativeText: false,
-        };
-      default:
-        return {
-          title: String.operationSuccessTitle,
-          subtitle: String.operationSuccessSubtitle,
-          buttonText: String.backToHome,
-          showInitiativeText: false,
-        };
-    }
-  };
-
-  const config = getSuccessConfig();
+  const [showNFTCertificate, setShowNFTCertificate] = useState(false);
 
   const handleBack = () => {
-    console.log('SuccessScreen - handleBack called');
-    // Try multiple navigation methods
     try {
-      // Method 1: PopToTop (most direct)
       navigation.popToTop();
-    } catch (error) {
-      console.error('PopToTop failed, trying reset:', error);
-      try {
-        // Method 2: Reset complete stack
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.TabNavigation}],
-        });
-      } catch (error2) {
-        console.error('Reset failed, trying navigate:', error2);
-        // Method 3: Simple navigate
-        navigation.navigate(StackNav.TabNavigation);
-      }
+    } catch {
+      navigation.navigate(StackNav.TabNavigation);
     }
   };
 
   const handleContinue = () => {
-    console.log('SuccessScreen - handleContinue called');
-    // Try multiple navigation methods
     try {
-      // Method 1: PopToTop (most direct)
       navigation.popToTop();
-    } catch (error) {
-      console.error('PopToTop failed, trying reset:', error);
-      try {
-        // Method 2: Reset complete stack
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.TabNavigation}],
-        });
-      } catch (error2) {
-        console.error('Reset failed, trying navigate:', error2);
-        // Method 3: Simple navigate
-        navigation.navigate(StackNav.TabNavigation);
-      }
+    } catch {
+      navigation.navigate(StackNav.TabNavigation);
     }
   };
 
-  // Optional automatic navigation with counter
-  useEffect(() => {
-    console.log('SuccessScreen - useEffect started with:', {
-      showAutoNavigation,
-      autoNavigateDelay,
-    });
-    if (showAutoNavigation && autoNavigateDelay > 0) {
-      // Initialize the counter
-      const initialTime = Math.ceil(autoNavigateDelay / 1000);
-      console.log('SuccessScreen - Setting initial time:', initialTime);
-      setTimeLeft(initialTime);
-
-      // Counter that updates every second
-      const countdown = setInterval(() => {
-        setTimeLeft(prev => {
-          const newTime = prev - 1;
-          console.log('SuccessScreen - Countdown:', newTime);
-          // Only update the counter without side effects
-          return newTime > 0 ? newTime : 0;
-        });
-      }, 1000);
-
-      return () => {
-        clearInterval(countdown);
-      };
-    }
-  }, [showAutoNavigation, autoNavigateDelay]);
-
-  // Separate effect to handle navigation when the counter reaches zero
-  useEffect(() => {
-    // If the counter has reached 0 and automatic navigation is enabled
-    if (timeLeft === 0 && showAutoNavigation && autoNavigateDelay > 0) {
-      console.log('SuccessScreen - Time up, navigating to home');
-      // Use a setTimeout to ensure we don't execute navigation during render
-      const navigateTimer = setTimeout(() => {
-        handleContinue();
-      }, 100);
-
-      return () => clearTimeout(navigateTimer);
-    }
-  }, [timeLeft, showAutoNavigation, autoNavigateDelay]);
+  // Simulando nombre (puedes traerlo de tus datos)
+  const nombre = 'Juan Pérez Cuéllar';
 
   return (
     <CSafeAreaView style={styles.container}>
-      {/* Header */}
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
@@ -185,99 +62,57 @@ const SuccessScreen = () => {
         showNotification={false}
       />
 
-      {/* Main Content - Different layouts for tablet landscape vs regular */}
-      {isTablet && isLandscape ? (
-        /* Tablet Landscape Layout */
-        <View style={styles.tabletLandscapeContainer}>
-          {/* Left Side: Icon and Title */}
-          <View style={styles.tabletLeftSide}>
-            <View style={styles.iconCircleSuccess}>
-              <Ionicons
-                name="checkmark"
-                size={getResponsiveSize(40, 48, 60)}
-                color="#459151"
-              />
-            </View>
-            <CText style={styles.successTitle}>{config.title}</CText>
-          </View>
+      <View style={styles.mainContent}>
+        {/* Título principal */}
+        <CText style={styles.bigTitle}>¡Certificado NFT{'\n'}obtenido!</CText>
 
-          {/* Right Side: Content and Actions */}
-          <View style={styles.tabletRightSide}>
-            <CText style={styles.successSubtitle}>{config.subtitle}</CText>
+        {/* Botón Ver mi NFT */}
+        <TouchableOpacity
+          style={styles.nftButton}
+          onPress={() => setShowNFTCertificate(true)}>
+          <CText style={styles.nftButtonText}>Ver mi NFT</CText>
+        </TouchableOpacity>
 
-            {config.showInitiativeText && (
-              <>
-                <View style={styles.logoContainer}>
-                  {/* Here you can add logos if needed */}
-                </View>
-                <CText style={styles.initiativeText}>
-                  {String.voluntaryInitiative}
-                </CText>
-              </>
-            )}
+        {/* Botón de continuar (el que ya existía) */}
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={handleContinue}>
+          <CText style={styles.continueButtonText}>{String.backToHome}</CText>
+        </TouchableOpacity>
+      </View>
 
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleContinue}>
-              <CText style={styles.continueButtonText}>
-                {config.buttonText}
-              </CText>
-            </TouchableOpacity>
-
-            {showAutoNavigation && timeLeft > 0 && (
-              <CText style={styles.autoNavigationText}>
-                {String.autoNavigating
-                  .replace('{timeLeft}', timeLeft)
-                  .replace('{s}', timeLeft !== 1 ? 's' : '')}
-              </CText>
-            )}
-          </View>
-        </View>
-      ) : (
-        /* Regular Layout: Phones and Tablet Portrait */
-        <View style={styles.content}>
-          {/* Success Icon */}
-          <View style={styles.iconCircleSuccess}>
-            <Ionicons
-              name="checkmark"
-              size={getResponsiveSize(40, 48, 60)}
-              color="#459151"
-            />
-          </View>
-
-          {/* Success Title */}
-          <CText style={styles.successTitle}>{config.title}</CText>
-
-          {/* Success Subtitle */}
-          <CText style={styles.successSubtitle}>{config.subtitle}</CText>
-
-          {/* Logo Container (placeholder for logos if needed) */}
-          {config.showInitiativeText && (
-            <>
-              <View style={styles.logoContainer}>
-                {/* Here you can add logos if needed */}
+      {/* Vista tipo modal del certificado NFT */}
+      {showNFTCertificate && (
+        <View style={styles.nftModalOverlay}>
+          <View style={styles.nftCertificate}>
+            {/* Borde decorativo */}
+            <View style={styles.certificateBorder}>
+              {/* Medallón NFT (usa un ícono o imagen, aquí placeholder) */}
+              <View style={styles.medalContainer}>
+                {/* Aquí puedes poner una imagen real */}
+                <Image
+                  source={nftImage}
+                  style={styles.medalImage}
+                  resizeMode="contain"
+                />
+                {/* Si no tienes imagen, descomenta el ícono */}
+                {/* <Ionicons name="medal" size={60} color="#CBA233" /> */}
+                <CText style={styles.nftMedalText}>NFT</CText>
               </View>
-              <CText style={styles.initiativeText}>
-                {String.voluntaryInitiative}
-              </CText>
-            </>
-          )}
-
-          {/* Continue Button */}
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}>
-            <CText style={styles.continueButtonText}>{config.buttonText}</CText>
-          </TouchableOpacity>
-
-          {/* Auto navigation indicator */}
-          {showAutoNavigation && timeLeft > 0 && (
-            <CText style={styles.autoNavigationText}>
-              {String.autoNavigating
-                .replace('{timeLeft}', timeLeft)
-                .replace('{s}', timeLeft !== 1 ? 's' : '')}
-            </CText>
-          )}
+              {/* Datos del certificado */}
+              <CText style={styles.nftName}>{nombre}</CText>
+              <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
+              <CText style={styles.nftCertTitle}>PARTICIPACIÓN ELECTORAL</CText>
+              <CText style={styles.nftCertDetail}>ELECCIONES GENERALES</CText>
+              <CText style={styles.nftCertDetail}>BOLIVIA 2025</CText>
+            </View>
+            {/* Cerrar */}
+            <TouchableOpacity
+              onPress={() => setShowNFTCertificate(false)}
+              style={styles.closeModalBtn}>
+              <CText style={styles.closeModalText}>Cerrar</CText>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </CSafeAreaView>
@@ -287,127 +122,145 @@ const SuccessScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
   },
-  // Regular Layout: Phones and Tablet Portrait
-  content: {
+  mainContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: getResponsiveSize(16, 24, 32),
   },
-  // Tablet Landscape Layout
-  tabletLandscapeContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingHorizontal: getResponsiveSize(20, 30, 40),
-    paddingVertical: getResponsiveSize(20, 30, 40),
+  bigTitle: {
+    fontSize: getResponsiveSize(26, 32, 38),
+    fontWeight: '800',
+    color: '#17694A',
+    textAlign: 'center',
+    marginBottom: 30,
+    marginTop: 10,
+    lineHeight: 38,
   },
-  tabletLeftSide: {
-    flex: 0.4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingRight: getResponsiveSize(20, 30, 40),
+  nftButton: {
+    backgroundColor: '#17694A',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 36,
+    marginBottom: 22,
+    width: '85%',
+    alignSelf: 'center',
   },
-  tabletRightSide: {
-    flex: 0.6,
-    justifyContent: 'center',
-    paddingLeft: getResponsiveSize(20, 30, 40),
-  },
-  iconCircleSuccess: {
-    backgroundColor: '#e8f5e9',
-    width: getResponsiveSize(80, 100, 120),
-    height: getResponsiveSize(80, 100, 120),
-    borderRadius: getResponsiveSize(40, 50, 60),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: getResponsiveSize(16, 24, 32),
-  },
-  successTitle: {
-    fontSize: getResponsiveSize(20, 24, 28),
+  nftButtonText: {
+    color: '#fff',
     fontWeight: '700',
-    color: '#459151',
+    fontSize: 22,
     textAlign: 'center',
-    marginBottom: getResponsiveSize(12, 16, 20),
-    lineHeight: getResponsiveSize(26, 30, 34),
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, title can be larger
-        fontSize: getResponsiveSize(24, 28, 32),
-        lineHeight: getResponsiveSize(30, 34, 38),
-      }),
-  },
-  successSubtitle: {
-    fontSize: getResponsiveSize(14, 16, 18),
-    color: '#2F2F2F',
-    textAlign: 'center',
-    marginBottom: getResponsiveSize(24, 32, 40),
-    lineHeight: getResponsiveSize(18, 22, 26),
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, align left instead of center
-        textAlign: 'left',
-      }),
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(12, 16, 20),
-    minHeight: getResponsiveSize(40, 60, 80),
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, align left
-        justifyContent: 'flex-start',
-      }),
-  },
-  initiativeText: {
-    fontSize: getResponsiveSize(12, 14, 16),
-    color: '#868686',
-    marginBottom: getResponsiveSize(24, 32, 40),
-    textAlign: 'center',
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, align left
-        textAlign: 'left',
-      }),
   },
   continueButton: {
-    backgroundColor: '#459151',
-    paddingVertical: getResponsiveSize(12, 16, 20),
-    paddingHorizontal: getResponsiveSize(32, 48, 64),
-    borderRadius: getResponsiveSize(6, 8, 10),
-    marginBottom: getResponsiveSize(12, 16, 20),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    backgroundColor: '#a5bdb4',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    marginBottom: 10,
+    width: '85%',
     alignSelf: 'center',
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, align left
-        alignSelf: 'flex-start',
-      }),
   },
   continueButtonText: {
-    fontSize: getResponsiveSize(14, 16, 18),
-    fontWeight: '600',
-    color: '#fff',
+    color: '#2a2a2a',
+    fontWeight: '700',
+    fontSize: 18,
     textAlign: 'center',
   },
-  autoNavigationText: {
-    fontSize: getResponsiveSize(12, 14, 16),
-    color: '#666666',
+
+  // Certificado NFT (tipo modal)
+  nftModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  nftCertificate: {
+    backgroundColor: '#f8fff8',
+    borderRadius: 22,
+    padding: 28,
+    width: '88%',
+    alignItems: 'center',
+    elevation: 8,
+  },
+  certificateBorder: {
+    borderWidth: 2.5,
+    borderColor: '#a5deb5',
+    borderRadius: 18,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: '#edffe8',
+    borderStyle: 'dashed',
+  },
+  medalContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    width: 96,
+    height: 96,
+    justifyContent: 'center',
+    borderRadius: 50,
+    backgroundColor: '#ffe9b8',
+    borderWidth: 4,
+    borderColor: '#fff7e0',
+    marginTop: -38,
+  },
+  medalImage: {
+    width: 62,
+    height: 62,
+    position: 'absolute',
+    left: 17,
+    top: 17,
+  },
+  nftMedalText: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
     textAlign: 'center',
-    fontStyle: 'italic',
-    fontWeight: '500',
-    ...(isTablet &&
-      isLandscape && {
-        // In tablet landscape, align left
-        textAlign: 'left',
-      }),
+    fontWeight: '800',
+    fontSize: 30,
+    color: '#CBA233',
+    letterSpacing: 3,
+  },
+  nftName: {
+    fontWeight: '700',
+    fontSize: 22,
+    marginVertical: 6,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertTitle: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertDetail: {
+    fontWeight: '400',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  closeModalBtn: {
+    marginTop: 8,
+    backgroundColor: '#17694A',
+    paddingHorizontal: 22,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  closeModalText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
 

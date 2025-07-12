@@ -18,6 +18,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 
 const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -31,6 +32,7 @@ export default function CameraScreen({navigation, route}) {
   const {hasPermission, requestPermission} = useCameraPermission();
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
   const [cameraKey, setCameraKey] = useState(0); // Para forzar re-render
@@ -97,7 +99,9 @@ export default function CameraScreen({navigation, route}) {
     initCamera();
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setIsActive(false);
     };
   }, [hasPermission, device, photo, isFocused, cameraKey]);
@@ -138,9 +142,7 @@ export default function CameraScreen({navigation, route}) {
   if (!device || !hasPermission) {
     return (
       <View style={styles.centered}>
-        <CText style={styles.errorText}>
-          {String.cameraNotAvailable}
-        </CText>
+        <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
       </View>
     );
   }
@@ -196,15 +198,109 @@ export default function CameraScreen({navigation, route}) {
     }
   };
 
-  // Ir a siguiente pantalla
-  const handleNext = () => {
-    const mesaInfo = route.params?.tableData || {};
-    console.log('CameraScreen - Navigating with mesa data:', mesaInfo);
+  // Analizar acta electoral y navegar a siguiente pantalla
+  const handleNext = async () => {
+    if (!photo) {
+      return;
+    }
 
-    navigation.navigate(StackNav.PhotoReviewScreen, {
-      photoUri: `file://${photo.path}`,
-      tableData: mesaInfo,
-    });
+    setAnalyzing(true);
+    const mesaInfo = route.params?.tableData || {};
+
+    try {
+      console.log('🔍 Analizando acta electoral...');
+
+      // Analizar la imagen con Gemini AI
+      const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
+        photo.path,
+      );
+
+      if (!analysisResult.success) {
+        Alert.alert(
+          'Error de Análisis',
+          analysisResult.error || 'No se pudo analizar la imagen',
+          [{text: 'OK'}],
+        );
+        setAnalyzing(false);
+        return;
+      }
+
+      const aiData = analysisResult.data;
+
+      // Verificar si es una acta electoral válida
+      if (!aiData.if_electoral_act) {
+        Alert.alert(
+          'Imagen No Válida',
+          'La imagen no corresponde a un acta electoral válida. Por favor, tome otra fotografía del acta.',
+          [
+            {
+              text: 'Tomar Nueva Foto',
+              onPress: () => {
+                setPhoto(null);
+                setIsActive(true);
+                setAnalyzing(false);
+              },
+            },
+          ],
+        );
+        return;
+      }
+
+      // Verificar si la imagen no está clara
+      if (aiData.image_not_clear) {
+        Alert.alert(
+          'Imagen No Clara',
+          'La imagen está borrosa o no se puede leer claramente. Por favor, tome otra fotografía más nítida.',
+          [
+            {
+              text: 'Tomar Nueva Foto',
+              onPress: () => {
+                setPhoto(null);
+                setIsActive(true);
+                setAnalyzing(false);
+              },
+            },
+          ],
+        );
+        return;
+      }
+
+      // Mapear datos de la IA al formato de la app
+      const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
+
+      console.log('✅ Análisis completado, navegando a PhotoReviewScreen');
+
+      // Navegar a la pantalla de revisión con los datos analizados
+      navigation.navigate(StackNav.PhotoReviewScreen, {
+        photoUri: `file://${photo.path}`,
+        tableData: mesaInfo,
+        aiAnalysis: aiData,
+        mappedData: mappedData,
+      });
+    } catch (error) {
+      console.error('❌ Error en análisis:', error);
+      Alert.alert(
+        'Error',
+        'Ocurrió un error al analizar la imagen. ¿Desea continuar sin análisis automático?',
+        [
+          {
+            text: 'Reintentar',
+            onPress: () => handleNext(),
+          },
+          {
+            text: 'Continuar Sin Análisis',
+            onPress: () => {
+              navigation.navigate(StackNav.PhotoReviewScreen, {
+                photoUri: `file://${photo.path}`,
+                tableData: mesaInfo,
+              });
+            },
+          },
+        ],
+      );
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   // Marco de overlay reutilizable
@@ -273,8 +369,20 @@ export default function CameraScreen({navigation, route}) {
           <View style={styles.bottomContainer}>
             <TouchableOpacity
               style={[styles.captureButton, styles.nextButton]}
-              onPress={handleNext}>
-              <CText style={styles.buttonText}>{String.next || 'Next'}</CText>
+              onPress={handleNext}
+              disabled={analyzing}>
+              {analyzing ? (
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <ActivityIndicator
+                    color="#fff"
+                    size="small"
+                    style={{marginRight: 8}}
+                  />
+                  <CText style={styles.buttonText}>Analizando Acta...</CText>
+                </View>
+              ) : (
+                <CText style={styles.buttonText}>{String.next || 'Next'}</CText>
+              )}
             </TouchableOpacity>
           </View>
         </View>
