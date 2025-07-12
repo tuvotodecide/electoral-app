@@ -44,13 +44,13 @@ export default function Splash({navigation}) {
           // return;
 
           // Modo Desarrollo Bypass directo a TabNavigation
-          navigation.replace(StackNav.TabNavigation);
-          return;
+          // navigation.replace(StackNav.TabNavigation);
+          // return;
 
           // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
-          //const alive = await isSessionValid();
-          //if (alive) navigation.replace(StackNav.TabNavigation);
-          //else navigation.replace(StackNavp.AuthNavigation); // OnBoarding no está disponible, ir a Auth
+          const alive = await isSessionValid();
+          if (alive) navigation.replace(StackNav.TabNavigation);
+          else navigation.replace(StackNavp.AuthNavigation); // OnBoarding no está disponible, ir a Auth
         }
       } catch (e) {
         console.log('error ', e);
