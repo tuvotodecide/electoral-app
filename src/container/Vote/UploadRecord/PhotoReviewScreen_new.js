@@ -78,41 +78,43 @@ const PhotoReviewScreen = () => {
   };
 
   // Action buttons for PhotoReviewScreen
-  const actionButtons = !isEditing ? [
-    {
-      text: String.edit,
-      onPress: handleEdit,
-      style: {
-        backgroundColor: '#fff',
-        borderColor: colors.primary,
-        borderWidth: moderateScale(1),
-      },
-      textStyle: {
-        color: colors.primary,
-      },
-    },
-    {
-      text: String.next,
-      onPress: handleNext,
-      style: {
-        backgroundColor: colors.primary,
-      },
-      textStyle: {
-        color: '#fff',
-      },
-    },
-  ] : [
-    {
-      text: String.save,
-      onPress: handleSave,
-      style: {
-        backgroundColor: colors.primary,
-      },
-      textStyle: {
-        color: '#fff',
-      },
-    },
-  ];
+  const actionButtons = !isEditing
+    ? [
+        {
+          text: String.edit,
+          onPress: handleEdit,
+          style: {
+            backgroundColor: '#fff',
+            borderColor: colors.primary,
+            borderWidth: moderateScale(1),
+          },
+          textStyle: {
+            color: colors.primary,
+          },
+        },
+        {
+          text: String.next,
+          onPress: handleNext,
+          style: {
+            backgroundColor: colors.primary,
+          },
+          textStyle: {
+            color: '#fff',
+          },
+        },
+      ]
+    : [
+        {
+          text: String.save,
+          onPress: handleSave,
+          style: {
+            backgroundColor: colors.primary,
+          },
+          textStyle: {
+            color: '#fff',
+          },
+        },
+      ];
 
   return (
     <BaseRecordReviewScreen
