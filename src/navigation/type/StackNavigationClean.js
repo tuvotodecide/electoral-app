@@ -123,7 +123,7 @@ export default function StackNavigation() {
 
       {/* Pantallas de cámara para votación */}
       <Stack.Screen
-        name={StackNav.CameraScreen}
+        name="CameraScreen"
         component={CameraScreen}
         options={{headerShown: false}}
       />

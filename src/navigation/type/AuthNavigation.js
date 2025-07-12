@@ -75,6 +75,14 @@ export default function AuthNavigation() {
         name={AuthNav.RecoveryUser2Pin}
         component={AuthRoute.RecoveryUser2Pin}
       />
+      <Stack.Screen
+        name={AuthNav.MyGuardiansStatus}
+        component={AuthRoute.MyGuardiansStatus}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryFinalize}
+        component={AuthRoute.RecoveryFinalize}
+      />
 
       <Stack.Screen name={AuthNav.LoginUser} component={AuthRoute.LoginUser} />
 

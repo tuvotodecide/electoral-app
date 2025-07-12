@@ -1,8 +1,7 @@
 import React, {useState} from 'react';
-import {Alert, TouchableOpacity} from 'react-native';
+import {Alert} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import {moderateScale} from '../../../common/constants';
 import String from '../../../i18n/String';
@@ -79,75 +78,41 @@ const PhotoReviewScreen = () => {
   };
 
   // Action buttons for PhotoReviewScreen
-  const actionButtons = !isEditing ? (
-    <>
-      {/* Edit Button */}
-      <TouchableOpacity
-        style={{
-          backgroundColor: '#fff',
-          borderColor: colors.primary,
-          borderWidth: moderateScale(1),
-          paddingVertical: moderateScale(12),
-          paddingHorizontal: moderateScale(24),
-          borderRadius: moderateScale(8),
-          flex: 1,
-          marginRight: moderateScale(8),
-          alignItems: 'center',
-        }}
-        onPress={handleEdit}>
-        <CText
-          style={{
-            color: colors.primary,
-            fontSize: moderateScale(16),
-            fontWeight: '600',
-          }}>
-          {String.edit}
-        </CText>
-      </TouchableOpacity>
-
-      {/* Next Button */}
-      <TouchableOpacity
-        style={{
-          backgroundColor: colors.primary,
-          paddingVertical: moderateScale(12),
-          paddingHorizontal: moderateScale(24),
-          borderRadius: moderateScale(8),
-          flex: 1,
-          marginLeft: moderateScale(8),
-          alignItems: 'center',
-        }}
-        onPress={handleNext}>
-        <CText
-          style={{
-            color: '#fff',
-            fontSize: moderateScale(16),
-            fontWeight: '600',
-          }}>
-          {String.next}
-        </CText>
-      </TouchableOpacity>
-    </>
-  ) : (
-    // Save Button when editing
-    <TouchableOpacity
-      style={{
+  const actionButtons = !isEditing ? [
+    {
+      text: String.edit,
+      onPress: handleEdit,
+      style: {
+        backgroundColor: '#fff',
+        borderColor: colors.primary,
+        borderWidth: moderateScale(1),
+      },
+      textStyle: {
+        color: colors.primary,
+      },
+    },
+    {
+      text: String.next,
+      onPress: handleNext,
+      style: {
         backgroundColor: colors.primary,
-        paddingVertical: moderateScale(12),
-        paddingHorizontal: moderateScale(24),
-        borderRadius: moderateScale(8),
-        alignItems: 'center',
-      }}
-      onPress={handleSave}>
-      <CText
-        style={{
-          color: '#fff',
-          fontSize: moderateScale(16),
-          fontWeight: '600',
-        }}>
-        {String.save}
-      </CText>
-    </TouchableOpacity>
-  );
+      },
+      textStyle: {
+        color: '#fff',
+      },
+    },
+  ] : [
+    {
+      text: String.save,
+      onPress: handleSave,
+      style: {
+        backgroundColor: colors.primary,
+      },
+      textStyle: {
+        color: '#fff',
+      },
+    },
+  ];
 
   return (
     <BaseRecordReviewScreen

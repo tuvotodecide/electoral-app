@@ -26,7 +26,7 @@ import SearchTable from '../container/Vote/UploadRecord/SearchTable';
 import TableDetail from '../container/Vote/UploadRecord/TableDetail';
 import CameraScreen from '../container/Vote/UploadRecord/CameraScreen';
 import CameraPermissionTest from '../container/Vote/UploadRecord/CameraPermissionTest';
-import PhotoReviewScreen from '../container/Vote/UploadRecord/PhotoReviewScreen_new';
+import PhotoReviewScreen from '../container/Vote/UploadRecord/PhotoReviewScreen';
 import PhotoConfirmationScreen from '../container/Vote/UploadRecord/PhotoConfirmationScreen';
 import SuccessScreen from '../container/Vote/common/SuccessScreen';
 import WitnessRecord from '../container/Vote/WitnessRecord/WitnessRecord';
