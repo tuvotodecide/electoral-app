@@ -4,7 +4,7 @@ import { Image } from "react-native";
 
 export const PAYMASTER_ADDRESS = "0x051C4407243b512bb78E4809093C5F539942ccfd";
 //export const TOKEN_PAYMASTER_ADDRESS = "0x63f8cDcf7F4C8dbE64801D32412Cc474E4d19Ff4"; //"0x05876fd44C60b7fb4b24C973b38ED1607936DAf7";
-export const FACTORY_ADDRESS = "0x5Cb82e667a4346346E71EcAa2a31Aaa94e6Ee0d1";
+export const FACTORY_ADDRESS = '0xbD6961ff71F2BC6f0141Dfc51488658b04e5193f'; //'0x73cA1414A44e947CFCCF9B43029485B0DE327F58'; //'0x84a24A9FdCc605df689A49b025C3E79ff1958a64'; //'0x8741844d7bF5541b43d146e977505A72707b1D2B'; //'0xaA0BAC888161B874418361c4346A2407f2Ea71BE'; //"0x559500e6B01A40D20F871c13e3706cB806880030"; //"0x5Cb82e667a4346346E71EcAa2a31Aaa94e6Ee0d1";
 
 export const availableNetworks = {
 	'eth-sepolia': {
@@ -22,7 +22,7 @@ export const availableNetworks = {
     explorer: 'https://sepolia-optimism.etherscan.io',
     wormholeBridge: '0x99737Ec4B815d816c49A385943baf0380e75c0Ac',
     wormholeChainId: 10005,
-    tokenPaymaster: '0x4Ea8B3aCF1019a8Cd1B726E67Eac9e2c43161376',
+    tokenPaymaster: '0xf00E8cC403585603066D46c43EDD873D036b367c', //'0x22fe92bDD7f8d1aC72a2EF10a2fFF49CD9f6BEAd', //'0x4Ea8B3aCF1019a8Cd1B726E67Eac9e2c43161376',
     crossChainReveiver: null,
   },
   'base-sepolia': {

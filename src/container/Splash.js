@@ -26,31 +26,27 @@ export default function Splash({navigation}) {
       try {
         let asyncData = await initialStorageValueGet();
         let {themeColor, onBoardingValue} = asyncData;
-        if (asyncData) {
-          if (themeColor) {
+        if (!!asyncData) {
+          if (!!themeColor) {
             if (themeColor === 'light') {
               dispatch(changeThemeAction(colors.light));
             } else {
               dispatch(changeThemeAction(colors.dark));
             }
-          } else {
-            // Si no hay tema guardado, usar light por defecto
-            dispatch(changeThemeAction(colors.light));
           }
-          // ========== MODO DE DESARROLLO - USANDO AuthTest ==========
-          // AuthTest simula todo el flujo de auth pero con usuario automático
-          // console.log('Splash: Usando AuthTest para desarrollo');
-          // navigation.replace('AuthTest'); // Navegar a AuthTest
-          // return;
+          const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
-          // Modo Desarrollo Bypass directo a TabNavigation
-          navigation.replace(StackNav.TabNavigation);
-          return;
+          if (pending === 'true') {
+            console.log(pending);
+            navigation.navigate(StackNav.AuthNavigation, {
+              screen: AuthNav.MyGuardiansStatus,
+            });
+            return;
+          }
+          const alive = await isSessionValid();
 
-          // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
-          // const alive = await isSessionValid();
-          // if (alive) navigation.replace(StackNav.TabNavigation);
-          // else navigation.replace(StackNavp.AuthNavigation); // OnBoarding no está disponible, ir a Auth
+          if (alive) navigation.replace(StackNav.TabNavigation);
+          else navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
         console.log('error ', e);

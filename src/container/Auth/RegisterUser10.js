@@ -24,15 +24,10 @@ import InfoModal from '../../components/modal/InfoModal';
 import {saveDraft, clearDraft} from '../../utils/RegisterDraft';
 import {createSeedBundle, saveSecrets, signWithKey} from '../../utils/Cifrate';
 import {
-  approveGasToPaymaster,
-  depositToEntryPoint,
-  fundSmartAccount,
   predictWalletAddress,
   registerStreamAndGuardian,
 } from '../../utils/walletRegister';
-import {BACKEND, CHAIN, GAS_KEY} from '@env';
-import {createPublicClient, http} from 'viem';
-import {walletConfig} from '../../utils/constants';
+import {CHAIN} from '@env';
 import {useKycRegisterQuery} from '../../data/kyc';
 import {Wallet} from 'ethers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -59,31 +54,16 @@ export default function RegisterUser10({navigation, route}) {
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, []);
 
-  async function waitTx({chainKey, hash, setStage, label}) {
-    setStage(label);
-    const client = createPublicClient({
-      chain: walletConfig[chainKey].chain,
-      transport: http(),
-    });
-
-    const rcpt = await client.waitForTransactionReceipt({
-      hash,
-      confirmations: 1,
-      pollingInterval: 3_000,
-    });
-
-    if (rcpt.status !== 'success') {
-      throw new Error('La transacción fue revertida');
-    }
-    return rcpt;
-  }
-
   useEffect(() => {
+    initRegister();
+  }, [initRegister]);
+
+  const initRegister = () => {
     const yieldUI = () => new Promise(r => setTimeout(r, 50));
 
     const task = InteractionManager.runAfterInteractions(async () => {
       try {
-        setStage('predict');
+        setStage('init');
         await yieldUI();
         const bundle = await createSeedBundle(pin);
 
@@ -92,33 +72,9 @@ export default function RegisterUser10({navigation, route}) {
         }
         const privKey = '0x' + bundle.seedHex;
         const walletData = await predictWalletAddress(CHAIN, privKey);
-        await saveDraft({step: 'fund', privKey, walletData, pin, dni, vc});
-        const fundHash = await fundSmartAccount(
-          CHAIN,
-          walletData.address,
-          GAS_KEY,
-          '0.006',
-        );
-        await waitTx({
-          chainKey: CHAIN,
-          hash: fundHash,
-          setStage,
-          label: 'fund',
-        });
 
-        const depHash = await depositToEntryPoint(
-          CHAIN,
-          GAS_KEY,
-          walletData.address,
-          '0.006',
-        );
-        await waitTx({
-          chainKey: CHAIN,
-          hash: depHash,
-          setStage,
-          label: 'deposit',
-        });
-        await saveDraft({step: 'deposit', privKey, walletData, pin, dni, vc});
+        //await saveDraft({step: 'fund', privKey, walletData, pin, dni, vc});
+        //await saveDraft({step: 'deposit', privKey, walletData, pin, dni, vc});
         setStage('store');
         const sig = await signWithKey(privKey, vc.id);
         const authSig = {
@@ -139,6 +95,8 @@ export default function RegisterUser10({navigation, route}) {
           authSig,
           accountAddress: walletData.address,
           guardianAddress: predictedGuardian,
+          salt: walletData.salt.toString(),
+          privKey,
         });
         if (jwt) await AsyncStorage.setItem(JWT_KEY, jwt);
         await saveDraft({
@@ -156,9 +114,8 @@ export default function RegisterUser10({navigation, route}) {
           walletData.salt,
           privKey,
           dni,
-          streamId,
+          streamId
         );
-        console.log(guardianAddress);
 
         dispatch(
           setAddresses({
@@ -166,8 +123,6 @@ export default function RegisterUser10({navigation, route}) {
             guardian: guardianAddress,
           }),
         );
-
-        await approveGasToPaymaster(walletData.address, privKey);
 
         setStage('save');
 
@@ -221,7 +176,7 @@ export default function RegisterUser10({navigation, route}) {
       }
     });
     return () => task?.cancel();
-  }, []);
+  }
 
   const stageMessage = {
     init: String.creatingWallet,
