@@ -4,6 +4,7 @@ import {
   View,
   Dimensions,
   Modal,
+  Linking,
 } from 'react-native';
 import React, {useState} from 'react';
 import {useDispatch} from 'react-redux';
@@ -33,23 +34,17 @@ const getResponsiveSize = (small, medium, large) => {
 // Responsive grid calculations
 const getCardLayout = () => {
   if (isTablet) {
-    // Tablets: Different layouts for landscape vs portrait
     const CARD_MARGIN = getResponsiveSize(12, 16, 20);
     let CARDS_PER_ROW;
-
     if (isLandscape) {
-      // Landscape: 4 cards per row for large tablets, 3 for medium tablets
       CARDS_PER_ROW = screenWidth > 1000 ? 4 : 3;
     } else {
-      // Portrait: 2 cards per row
       CARDS_PER_ROW = 2;
     }
-
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
     return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
   } else {
-    // Phones: 2 cards per row
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
@@ -81,32 +76,60 @@ const MiVotoLogo = () => (
       <View style={stylesx.flagCheckOutline} />
     </View>
     <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
-      <CText style={stylesx.logoTitle}>Tu voto decide</CText>
+      <CText style={stylesx.logoTitle}>Mi Voto</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
+  </View>
+);
+
+// === Banner Blockchain Consultora ===
+const BlockchainConsultoraBanner = () => (
+  <View style={stylesx.bannerBC}>
+    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+      {/* <View style={stylesx.bcLogoCircle}>
+        <CText style={stylesx.bcLogoText}>bc</CText>
+      </View> */}
+      <View style={{marginLeft: 10, flex: 1}}>
+        <CText style={stylesx.bannerTitle}>
+          {String.needBlockchainApp}
+        </CText>
+        <CText style={stylesx.bannerSubtitle}>
+          {String.blockchainConsultBanner}
+        </CText>
+      </View>
+    </View>
+    <TouchableOpacity
+      onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
+      style={stylesx.bannerButton}
+      activeOpacity={0.8}
+    >
+      <CText style={stylesx.bannerButtonText}>
+        {String.learnMore}
+      </CText>
+    </TouchableOpacity>
   </View>
 );
 
 export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
   const handleLogout = () => {
     setLogoutModalVisible(false);
     dispatch(clearAuth());
     dispatch(clearWallet());
-    navigation.replace('Login'); // Cambia esto por la ruta de tu login si es diferente
+    navigation.replace('Login');
   };
+
   // const userData = useSelector(state => state.wallet.payload);
   // const vc = userData?.vc;
-
   // const subject = vc?.credentialSubject || {};
   // const data = {
   //   name: subject.fullName || '(sin nombre)',
   //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   // };
   // const userFullName = data.name || '(sin nombre)';
-
-  const userFullName = 'Usuario';
+  const userFullName = 'Juan Pérez Cuéllar';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -199,6 +222,7 @@ export default function HomeScreen({navigation}) {
           </View>
         </View>
       </Modal>
+
       {/* Tablet Landscape Layout */}
       {isTablet && isLandscape ? (
         <View style={stylesx.tabletLandscapeContainer}>
@@ -206,8 +230,7 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.tabletLeftColumn}>
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
-              <View
-                style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
                 <TouchableOpacity onPress={onPressNotification}>
                   <Ionicons
                     name={'notifications-outline'}
@@ -215,9 +238,7 @@ export default function HomeScreen({navigation}) {
                     color={'#222'}
                   />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={onPressLogout}
-                  style={{marginLeft: 8}}>
+                <TouchableOpacity onPress={onPressLogout} style={{marginLeft: 8}}>
                   <Ionicons
                     name="log-out-outline"
                     size={getResponsiveSize(24, 28, 32)}
@@ -231,6 +252,9 @@ export default function HomeScreen({navigation}) {
               <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
               <CText style={stylesx.nombre}>{userFullName}!</CText>
             </View>
+
+            {/* Banner Blockchain Consultora */}
+            <BlockchainConsultoraBanner />
           </View>
 
           {/* Right Column: Menu Cards */}
@@ -292,6 +316,9 @@ export default function HomeScreen({navigation}) {
             <CText style={stylesx.nombre}>{userFullName}!</CText>
           </View>
 
+          {/* Banner Blockchain Consultora */}
+          <BlockchainConsultoraBanner />
+
           {/* ===== Cards de Menú ===== */}
           <View style={stylesx.gridContainer}>
             {menuItems.map((item, idx) => (
@@ -337,14 +364,13 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
   },
   tabletLeftColumn: {
-    flex: 0.4, // 40% width for header and welcome
+    flex: 0.4,
     paddingRight: getResponsiveSize(16, 20, 24),
   },
   tabletRightColumn: {
-    flex: 0.6, // 60% width for menu cards
+    flex: 0.6,
     paddingLeft: getResponsiveSize(8, 12, 16),
   },
-  // Regular Layout Container
   regularContainer: {
     flex: 1,
   },
@@ -408,7 +434,6 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-        // In tablet landscape, center vertically and give more space
         marginTop: getResponsiveSize(40, 50, 60),
         marginBottom: getResponsiveSize(20, 25, 30),
       }),
@@ -421,7 +446,6 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        // Larger text in landscape
         fontSize: getResponsiveSize(24, 28, 32),
       }),
   },
@@ -433,9 +457,66 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        // Larger text in landscape
         fontSize: getResponsiveSize(24, 28, 32),
       }),
+  },
+  // Banner Blockchain Consultora
+  bannerBC: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: getResponsiveSize(12, 20, 24),
+    marginBottom: getResponsiveSize(16, 18, 22),
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 1,
+  },
+  bcLogoCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#41A44D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 2,
+  },
+  bcLogoText: {
+    color: '#41A44D',
+    fontWeight: 'bold',
+    fontSize: 24,
+    letterSpacing: -1,
+    fontFamily: undefined,
+  },
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#232323',
+  },
+  bannerSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#232323',
+    marginTop: 2,
+    opacity: 0.87,
+  },
+  bannerButton: {
+    backgroundColor: '#4CA950',
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 18,
+    marginLeft: 14,
+    alignSelf: 'center',
+  },
+  bannerButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -449,7 +530,6 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
-      // For tablets, add gap between cards
       gap:
         CARDS_PER_ROW === 4
           ? getResponsiveSize(8, 12, 16)
@@ -457,13 +537,11 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-        // In landscape, start from top and use all available space
         marginTop: getResponsiveSize(20, 25, 30),
         paddingHorizontal: getResponsiveSize(12, 16, 20),
       }),
   },
   card: {
-    // Width is set dynamically in the component
     minHeight: getResponsiveSize(100, 116, 140),
     backgroundColor: '#FFF',
     borderRadius: getResponsiveSize(14, 17, 20),
@@ -473,11 +551,10 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-        // For 2-column tablet layout, add margin
         marginRight: getResponsiveSize(8, 12, 16),
       }),
   },
@@ -494,17 +571,5 @@ const stylesx = StyleSheet.create({
     marginTop: 1,
     marginBottom: -3,
     opacity: 0.78,
-  },
-  bannerContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  bannerImage: {
-    width: '100%',
-    height: getResponsiveSize(70, 80, 90),
-    borderRadius: getResponsiveSize(10, 12, 14),
-    marginTop: getResponsiveSize(8, 10, 12),
   },
 });

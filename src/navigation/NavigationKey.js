@@ -1,5 +1,6 @@
 export const StackNav = {
   Splash: 'Splash',
+  OnBoarding: 'OnBoarding',
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
 
@@ -57,6 +58,7 @@ export const TabNav = {
 
 export const AuthNav = {
   Connect: 'Connect',
+  OnBoarding: 'OnBoarding',
   Login: 'Login',
   LoginUser: 'LoginUser',
   SignUp: 'SignUp',

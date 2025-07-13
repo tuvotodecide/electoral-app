@@ -11,6 +11,10 @@ export default function AuthNavigation() {
       screenOptions={{headerShown: false}}
       initialRouteName={AuthNav.Connect}>
       <Stack.Screen name={AuthNav.Connect} component={AuthRoute.Connect} />
+      <Stack.Screen
+        name={AuthNav.OnBoarding}
+        component={AuthRoute.OnBoarding}
+      />
       <Stack.Screen name={AuthNav.Login} component={AuthRoute.Login} />
       <Stack.Screen name={AuthNav.SignUp} component={AuthRoute.SignUp} />
       <Stack.Screen

@@ -14,6 +14,7 @@ import UploadDocument from '../container/Auth/UploadDocument';
 import UploadPhotoId from '../container/Auth/UploadPhotoId';
 import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
+import OnBoarding from '../container/OnBoarding';
 import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
@@ -128,6 +129,7 @@ export const StackRoute = {
 
 export const AuthRoute = {
   Connect,
+  OnBoarding,
   Login,
   SignUp,
   RegisterUser1,

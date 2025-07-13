@@ -21,8 +21,12 @@ const isSmallPhone = screenWidth < 375; // Increased from 350 to catch more smal
 const isLandscape = screenWidth > screenHeight;
 
 const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
+  if (isSmallPhone) {
+    return small;
+  }
+  if (isTablet) {
+    return large;
+  }
   return medium;
 };
 
@@ -91,7 +95,11 @@ const BaseRecordReviewScreen = ({
                 ? styles.tabletPhotoSectionHorizontal
                 : styles.tabletPhotoSectionVertical
             }>
-            <PhotoContainer photoUri={photoUri} enableZoom={true} />
+            <PhotoContainer
+              photoUri={photoUri}
+              enableZoom={true}
+              useAspectRatio={true}
+            />
           </View>
 
           {/* Tables and Actions Section */}
@@ -191,7 +199,11 @@ const BaseRecordReviewScreen = ({
 
       {/* Photo - Static (doesn't move with scroll) */}
       <View style={styles.photoSection}>
-        <PhotoContainer photoUri={photoUri} enableZoom={true} />
+        <PhotoContainer
+          photoUri={photoUri}
+          enableZoom={true}
+          useAspectRatio={true}
+        />
       </View>
 
       {/* Scrollable content below photo */}

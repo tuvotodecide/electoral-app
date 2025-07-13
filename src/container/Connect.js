@@ -50,7 +50,7 @@ export default function Connect({navigation}) {
           {String.connectTitle}
         </CText>
 
-        {/* <CIconText
+        <CIconText
           icon={<Icon name="shield-lock" size={24} color={colors.white} />}
           text={String.connectItem1}
           color={colors.white}
@@ -68,17 +68,17 @@ export default function Connect({navigation}) {
           }
           text={String.connectItem3}
           color={colors.white}
-        /> */}
+        />
 
         <View style={localStyle.bottomButtons}>
-          {/* <CButton
+          <CButton
             onPress={onPressInfo}
             title={String.connectBtnInfo + ' '}
             type={'B16'}
             icon={<Icon name="arrow-right" size={25} color={colors.white} />}
             containerStyle={localStyle.btnStyle}
             sinMargen
-          /> */}
+          />
 
           <CButton
             onPress={onPressRegister1}

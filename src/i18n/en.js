@@ -14,7 +14,7 @@ export default {
   //Register user
   //page 1
   titleReg:
-    'Para crear tu billetera y proteger tu cuenta, necesitamos verificar tu identidad.',
+    'Para continuar, debes proporcionar tu carnet de identidad y acceso a tu cámara.',
   connectItem1Reg: 'Tu carnet de identidad',
   connectItem2Reg: 'Acceso a tu cámara',
   termsPrefix: 'He leído y acepto los ',
@@ -206,20 +206,21 @@ export default {
 
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto',
-  onBoardingTitleText1: 'Tu identidad digital. Tu billetera. Tu control.',
-  onBoardingTitleText2: 'Envía y recibe tokens fácilmente',
-  onBoardingTitleText3: 'Recupera tu cuenta con ayuda',
-  onBoardingTitleText4: 'Compra tokens fácil, sin bancos',
-  onBoardingTitleText5: 'Tu dinero, tu control. ¡Crea tu billetera ahora!',
+  onBoardingTitleText1: 'Obtén tu identidad digital soberana',
+  onBoardingTitleText2: 'Actas electorales inalterables con NFTs',
+  onBoardingTitleText3: 'Validación abierta, con firma electrónica',
+  onBoardingTitleText4:
+    'Transparencia con Blockchain e Inteligencia Artificial',
+  onBoardingTitleText5: 'Regístrate y contribuye ya!',
   onBoardingDescriptionText1:
-    'Crea tu billetera, protege tu identidad y recupera el acceso fácilmente cuando lo necesites.',
+    'Al registrarte obtienes un sistema de identidad digital, que protege tus datos con contratos inteligentes.',
   onBoardingDescriptionText2:
-    'Escanea un QR o ingresa una dirección sin preocuparte por red ni tarifas.',
+    'Al sacar fotos de las actas el momento del conteo de votos, los firmas electrónicamente y los conviertes en NFTs.',
   onBoardingDescriptionText3:
-    'Selecciona contactos de confianza como guardianes. Si pierdes el acceso, ellos te ayudan a volver.',
+    'Cualquier persona que descargue la app podrá verificar, validar y firmar las actas subidas.',
   onBoardingDescriptionText4:
-    'Usa el mercado P2P para comprar o vender directamente en Bolivia.',
-  onBoardingDescriptionText5: ' ',
+    'El código de los contratos inteligentes y las transacciones en blockchain son públicos y procesado con IA',
+  onBoardingDescriptionText5: '',
   getStarted: 'Siguiente',
   browseAssets: 'Explorar activos',
 
@@ -1168,12 +1169,16 @@ export default {
   noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
   removed: 'Removido',
   sendRecovery: 'Solicitar recuperación',
+  learnMore: 'Más info',
+  blockchainConsultBanner:
+    'Blockchain Consultora desarrollo esta aplicación, contáctelos',
+  needBlockchainApp: '¿Necesitas una aplicación en Blockchain?',
 
   connectTitle: 'Aplicación Electoral',
-  connectItem1: 'Protege tus datos',
-  connectItem2: 'Vota de forma segura',
-  connectItem3: 'Resultados en tiempo real',
-  connectBtnInfo: 'Más información',
+  connectItem1: 'Obten tu identidad digital soberana',
+  connectItem2: 'Convierte actas electorales en NFTs',
+  connectItem3: 'Valida con tu firma electrónica',
+  // connectBtnInfo: 'Más información',
   connectBtnRegister: 'Registrar cuenta',
   connectBtnLogin: 'Tengo una cuenta',
 
