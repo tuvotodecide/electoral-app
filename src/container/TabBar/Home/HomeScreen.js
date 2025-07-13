@@ -90,9 +90,7 @@ const BlockchainConsultoraBanner = () => (
         <CText style={stylesx.bcLogoText}>bc</CText>
       </View> */}
       <View style={{marginLeft: 10, flex: 1}}>
-        <CText style={stylesx.bannerTitle}>
-          {String.needBlockchainApp}
-        </CText>
+        <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
         <CText style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
         </CText>
@@ -101,11 +99,8 @@ const BlockchainConsultoraBanner = () => (
     <TouchableOpacity
       onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
       style={stylesx.bannerButton}
-      activeOpacity={0.8}
-    >
-      <CText style={stylesx.bannerButtonText}>
-        {String.learnMore}
-      </CText>
+      activeOpacity={0.8}>
+      <CText style={stylesx.bannerButtonText}>{String.learnMore}</CText>
     </TouchableOpacity>
   </View>
 );
@@ -121,15 +116,15 @@ export default function HomeScreen({navigation}) {
     navigation.replace('Login');
   };
 
-  // const userData = useSelector(state => state.wallet.payload);
-  // const vc = userData?.vc;
-  // const subject = vc?.credentialSubject || {};
-  // const data = {
-  //   name: subject.fullName || '(sin nombre)',
-  //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  // };
-  // const userFullName = data.name || '(sin nombre)';
-  const userFullName = 'Juan Pérez Cuéllar';
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+  const userFullName = data.name || '(sin nombre)';
+  // const userFullName = 'Juan Pérez Cuéllar';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -230,7 +225,8 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.tabletLeftColumn}>
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
-              <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+              <View
+                style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
                 <TouchableOpacity onPress={onPressNotification}>
                   <Ionicons
                     name={'notifications-outline'}
@@ -238,7 +234,9 @@ export default function HomeScreen({navigation}) {
                     color={'#222'}
                   />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={onPressLogout} style={{marginLeft: 8}}>
+                <TouchableOpacity
+                  onPress={onPressLogout}
+                  style={{marginLeft: 8}}>
                   <Ionicons
                     name="log-out-outline"
                     size={getResponsiveSize(24, 28, 32)}
