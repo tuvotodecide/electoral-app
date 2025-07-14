@@ -11,12 +11,13 @@ import {useDispatch} from 'react-redux';
 import {clearAuth} from '../../../redux/slices/authSlice';
 import {clearWallet} from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {useSelector} from 'react-redux';
+
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
+import { useSelector } from 'react-redux';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 

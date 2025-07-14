@@ -33,7 +33,7 @@ export async function registerNotifications() {
 
 async function display(remoteMessage) {
   await notifee.displayNotification({
-    title: remoteMessage.notification?.title ?? 'Tu Voto',
+    title: remoteMessage.notification?.title ?? 'Tu Voto decide',
     body: remoteMessage.notification?.body ?? 'Mensaje nuevo',
     android: {
       channelId: 'high_prio',

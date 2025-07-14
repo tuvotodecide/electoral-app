@@ -60,3 +60,6 @@ export const TTL_MIN = 10;
 export const DRAFT = '@wIRA/DRAFT';
 export const DEVICE_TOKEN = 'DEVICE_TOKEN';
 export const JWT_KEY = '@wIRA/JWT';
+export const PENDING_DID = 'PENDING_DID';
+export const DEVICE_ID_KEY = 'DEVICE_ID';
+export const PENDINGRECOVERY = 'pendingRecovery';

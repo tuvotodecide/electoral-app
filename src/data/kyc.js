@@ -1,6 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from 'react-query';
 import {API_ENDPOINTS} from './client/api-endpoints';
 import {kycClient} from './client/kyc';
+import axios from 'axios';
 
 export const useKycFindQuery = () => {
   const queryClient = useQueryClient();
@@ -12,7 +13,7 @@ export const useKycFindQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
+       
       }
     },
     onSettled: () => {
@@ -32,7 +33,7 @@ export const useKycFindPublicQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
+     
       }
     },
     onSettled: () => {

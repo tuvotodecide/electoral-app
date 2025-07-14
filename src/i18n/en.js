@@ -1191,4 +1191,18 @@ export default {
   whatIsGuardians: '¿Qué son los Guardianes?',
   addGuardian: 'Añadir guardián',
   alertguardiansrequired: 'Necesitas al menos un guardián activo',
+  predictSmart:
+    'Prediciendo smart-account… Esto demorará aproximadamente 2 minutos',
+  RecoverywithQR: 'Recuperación con QR',
+  recoveryQrSubtitle:
+    'Para continuar con la recuperación de su cuenta suba la imagen QR que descargó de su cuenta',
+  debtHelp:
+    'La creación de la billetera tiene un pequeño costo que sera cobrado en su primera transacción',
+  sendInvitation: ' Enviar invitación',
+  finishingRecovery: 'Finalizando recuperación',
+  return: 'Regresar',
+   messagetorecovery:
+    'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes 72 horas desde su cuenta.',
+  messengePrivacity:
+    'Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.',
 };

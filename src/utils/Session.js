@@ -1,14 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY, SESSION, TTL_MIN} from '../common/constants';
+import { JWT_KEY, SESSION, TTL_MIN } from '../common/constants';
 
 const EXPIRES_KEY = `${JWT_KEY}_EXPIRES`;
 
 export async function startSession(jwt, ttl = TTL_MIN) {
-  const exp = Date.now() + ttl * 60_000;
-  await AsyncStorage.multiSet([
-    [JWT_KEY, jwt],
-    [EXPIRES_KEY, exp.toString()],
-  ]);
+  if (jwt) {
+    const exp = Date.now() + ttl * 60_000;
+    await AsyncStorage.multiSet([
+      [JWT_KEY, jwt],
+      [EXPIRES_KEY, exp.toString()],
+    ]);
+  } else {
+    // Si no hay token, eliminamos cualquier sesión previa
+    await clearSession();
+  }
 }
 
 export async function clearSession() {
@@ -20,7 +25,7 @@ export async function isSessionValid() {
     JWT_KEY,
     EXPIRES_KEY,
   ]);
-  return !!jwt && Number(exp) > Date.now();
+  return Boolean(jwt) && Number(exp) > Date.now();
 }
 
 export async function getJwt() {

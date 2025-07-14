@@ -69,8 +69,8 @@ export const AuthNav = {
   RegisterUser5: 'RegisterUser5',
   RegisterUser6: 'RegisterUser6',
   RegisterUser7: 'RegisterUser7',
-  RegisterUser8: 'RegisterUser8Pin',
-  RegisterUser9: 'RegisterUser9Pin',
+  RegisterUser8: 'RegisterUser8',
+  RegisterUser9: 'RegisterUser9',
   RegisterUser10: 'RegisterUser10',
   RegisterUser11: 'RegisterUser11',
   AccountLock: 'AccountLock',
@@ -90,8 +90,12 @@ export const AuthNav = {
   SelfieWithIdCard: 'SelfieWithIdCard',
   VerifySuccess: 'VerifySuccess',
   FindMyUser: 'FindMyUser',
+  RecoveryUserQrpin: 'RecoveryUserQrpin',
+  RecoveryUserQrpin2: 'RecoveryUserQrpin2',
+  RecoveryQr: 'RecoveryQr',
   RecoveryUser1Pin: 'RecoveryUser1Pin',
   RecoveryUser2Pin: 'RecoveryUser2Pin',
   MyGuardiansStatus: 'MyGuardiansStatus',
-  RecoveryFinalize: 'RecoveryFinalize',
 };
+console.log('🔑 AuthNav keys:', Object.keys(AuthNav));
+console.log('🔑 AuthNav values:', AuthNav);

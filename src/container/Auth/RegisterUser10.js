@@ -5,7 +5,7 @@ import {
   View,
   InteractionManager,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Keychain from 'react-native-keychain';
 
 // custom import
@@ -21,18 +21,14 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 
-import {saveDraft, clearDraft} from '../../utils/RegisterDraft';
+import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
 import {createSeedBundle, saveSecrets, signWithKey} from '../../utils/Cifrate';
+
 import {
-  approveGasToPaymaster,
-  depositToEntryPoint,
-  fundSmartAccount,
   predictWalletAddress,
   registerStreamAndGuardian,
 } from '../../utils/walletRegister';
-import {BACKEND, CHAIN, GAS_KEY} from '@env';
-import {createPublicClient, http} from 'viem';
-import {walletConfig} from '../../utils/constants';
+import {CHAIN} from '@env';
 import {useKycRegisterQuery} from '../../data/kyc';
 import {Wallet} from 'ethers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -42,6 +38,7 @@ import {getBioFlag} from '../../utils/BioFlag';
 
 export default function RegisterUser10({navigation, route}) {
   const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
+
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
@@ -49,7 +46,7 @@ export default function RegisterUser10({navigation, route}) {
   const [stage, setStage] = useState('init');
   const dispatch = useDispatch();
   const {mutateAsync: registerStore} = useKycRegisterQuery();
-
+  const startedRef = useRef(false);
   // useEffect(() => {
   //   const timeout = setTimeout(() => {
   //     navigation.navigate(AuthNav.RegisterUser6);
@@ -59,32 +56,47 @@ export default function RegisterUser10({navigation, route}) {
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, []);
 
-  async function waitTx({chainKey, hash, setStage, label}) {
-    setStage(label);
-    const client = createPublicClient({
-      chain: walletConfig[chainKey].chain,
-      transport: http(),
-    });
-
-    const rcpt = await client.waitForTransactionReceipt({
-      hash,
-      confirmations: 1,
-      pollingInterval: 3_000,
-    });
-
-    if (rcpt.status !== 'success') {
-      throw new Error('La transacción fue revertida');
-    }
-    return rcpt;
-  }
-
   useEffect(() => {
-    const yieldUI = () => new Promise(r => setTimeout(r, 50));
+    (async () => {
+      // Si ya vengo usando un draft, simplemente continúo
+      if (route.params?.fromDraft) {
+        initRegister();
+        return;
+      }
+
+      const draft = await getDraft();
+
+      if (draft) {
+        // Me reemplazo a mí mismo con los datos y la marca
+        navigation.replace(AuthNav.RegisterUser10, {
+          ...draft,
+          fromDraft: true,
+        });
+        return;
+      }
+
+      initRegister();
+    })();
+  }, []);
+
+  const initRegister = useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
 
     const task = InteractionManager.runAfterInteractions(async () => {
       try {
+        const yieldUI = () => new Promise(r => setTimeout(r, 50));
         setStage('predict');
         await yieldUI();
+
+        await saveDraft({
+          step: 'predict',
+          pin,
+          dni,
+          vc,
+          originalPin: pin,
+          useBiometry,
+        });
         const bundle = await createSeedBundle(pin);
 
         if (!bundle.seedHex || bundle.seedHex.length !== 64) {
@@ -92,34 +104,9 @@ export default function RegisterUser10({navigation, route}) {
         }
         const privKey = '0x' + bundle.seedHex;
         const walletData = await predictWalletAddress(CHAIN, privKey);
-        await saveDraft({step: 'fund', privKey, walletData, pin, dni, vc});
-        const fundHash = await fundSmartAccount(
-          CHAIN,
-          walletData.address,
-          GAS_KEY,
-          '0.006',
-        );
-        await waitTx({
-          chainKey: CHAIN,
-          hash: fundHash,
-          setStage,
-          label: 'fund',
-        });
 
-        const depHash = await depositToEntryPoint(
-          CHAIN,
-          GAS_KEY,
-          walletData.address,
-          '0.006',
-        );
-        await waitTx({
-          chainKey: CHAIN,
-          hash: depHash,
-          setStage,
-          label: 'deposit',
-        });
-        await saveDraft({step: 'deposit', privKey, walletData, pin, dni, vc});
         setStage('store');
+        await yieldUI();
         const sig = await signWithKey(privKey, vc.id);
         const authSig = {
           sig,
@@ -139,6 +126,8 @@ export default function RegisterUser10({navigation, route}) {
           authSig,
           accountAddress: walletData.address,
           guardianAddress: predictedGuardian,
+          salt: walletData.salt.toString(),
+          privKey,
         });
         if (jwt) await AsyncStorage.setItem(JWT_KEY, jwt);
         await saveDraft({
@@ -151,6 +140,7 @@ export default function RegisterUser10({navigation, route}) {
           streamId,
         });
         setStage('guardian');
+        await yieldUI();
         const {guardianAddress} = await registerStreamAndGuardian(
           CHAIN,
           walletData.salt,
@@ -158,7 +148,6 @@ export default function RegisterUser10({navigation, route}) {
           dni,
           streamId,
         );
-        console.log(guardianAddress);
 
         dispatch(
           setAddresses({
@@ -167,35 +156,47 @@ export default function RegisterUser10({navigation, route}) {
           }),
         );
 
-        await approveGasToPaymaster(walletData.address, privKey);
-
         setStage('save');
+        await yieldUI();
 
         await saveSecrets(
-          pin.trim(),
+          pin,
           {
             streamId,
             dni,
             salt: walletData.salt.toString(),
             privKey,
             account: walletData.address,
+            guardian: guardianAddress,
             did: vc.credentialSubject.id,
           },
           useBiometry,
         );
 
+        // await saveIdentity(
+        //   {
+        //     streamId,
+        //     dni,
+        //     salt: walletData.salt.toString(),
+        //     privKey,
+        //     account: walletData.address,
+        //     did: vc.credentialSubject.id,
+        //   },
+        //   pin.trim(),
+        //   useBiometry,
+        // );
+        const storedPayload = {
+          streamId,
+          dni,
+          salt: walletData.salt.toString(),
+          privKey,
+          account: walletData.address,
+          guardian: guardianAddress,
+        };
         if (await getBioFlag()) {
           await Keychain.setGenericPassword(
             'bundle',
-            JSON.stringify({
-              streamId,
-              dni,
-              salt: walletData.salt.toString(),
-              privKey,
-              account: walletData.address,
-              guardian: guardianAddress,
-              jwt,
-            }),
+            JSON.stringify({stored: storedPayload, jwt}),
             {
               service: 'walletBundle',
               accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
@@ -203,10 +204,9 @@ export default function RegisterUser10({navigation, route}) {
             },
           );
         }
-
+        await clearDraft();
         setStage('done');
         setLoading(false);
-        await clearDraft();
         navigation.replace(AuthNav.RegisterUser11, {
           offerUrl,
           account: walletData.address,
@@ -221,7 +221,7 @@ export default function RegisterUser10({navigation, route}) {
       }
     });
     return () => task?.cancel();
-  }, []);
+  }, [pin, dni, vc, useBiometry, registerStore, navigation]);
 
   const stageMessage = {
     init: String.creatingWallet,
@@ -235,7 +235,7 @@ export default function RegisterUser10({navigation, route}) {
   }[stage];
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView style={localStyle.root}>
       <StepIndicator step={10} />
       <View style={localStyle.center}>
         <View style={localStyle.mainContainer}>
@@ -286,6 +286,9 @@ export default function RegisterUser10({navigation, route}) {
 }
 
 const localStyle = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   center: {
     flex: 1,
     justifyContent: 'center',

@@ -7,6 +7,8 @@ import {
   View,
   Dimensions,
 } from 'react-native';
+
+import {moderateScale} from '../../common/constants';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
@@ -33,7 +35,8 @@ const getResponsiveSize = (small, medium, large) => {
 
 function useKeepAlive() {
   const dispatch = useDispatch();
-  useEffect(() => {}, []);
+  const {account, guardian} = useSelector(state => state.address);
+  const wallet = useSelector(s => s.wallet.payload);
   useEffect(() => {
     const renew = () => startSession();
     const sub = AppState.addEventListener('change', s => {

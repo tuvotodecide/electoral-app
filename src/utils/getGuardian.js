@@ -2,8 +2,8 @@ import {
   createPublicClient,
   http,
 } from 'viem';
-import { walletConfig }          from './constants';
 import factoryAbi                from '../abi/SimpleAccountFactory.json';
+import { availableNetworks, FACTORY_ADDRESS } from '../api/params';
 
 
 export async function getPredictedGuardian(
@@ -12,14 +12,14 @@ export async function getPredictedGuardian(
   salt
 ){
   const client = createPublicClient({
-    chain: walletConfig[chainKey].chain,
+    chain: availableNetworks[chainKey].chain,
     transport: http(),
   });
 
   try {
     
     const guardian = await client.readContract({
-      address: walletConfig[chainKey].factory,
+      address: FACTORY_ADDRESS,
       abi: factoryAbi,
       functionName: 'getGuardianAddress',      
       args: [account,salt],
