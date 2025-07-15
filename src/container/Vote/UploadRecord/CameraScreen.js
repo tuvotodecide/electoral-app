@@ -46,7 +46,6 @@ const getBestCameraFormat = device => {
       return resolutionB - resolutionA;
     })[0];
 
-  console.log('Selected camera format:', bestFormat);
   return bestFormat;
 };
 
@@ -112,11 +111,9 @@ export default function CameraScreen({navigation, route}) {
 
   // Configurar StatusBar para mantener orientación consistente
   useEffect(() => {
-    console.log('Setting up camera screen orientation');
     StatusBar.setHidden(false);
 
     return () => {
-      console.log('Restoring status bar');
       StatusBar.setHidden(false);
     };
   }, []);
@@ -128,7 +125,6 @@ export default function CameraScreen({navigation, route}) {
       const newOrientation =
         window.width > window.height ? 'landscape' : 'portrait';
       setOrientation(newOrientation);
-      console.log('Orientation changed to:', newOrientation);
     });
 
     return () => subscription?.remove();
@@ -218,7 +214,6 @@ export default function CameraScreen({navigation, route}) {
 
   // Function to completely reset the camera
   const resetCamera = () => {
-    console.log('Resetting camera...');
     setIsActive(false);
     camera.current = null;
 
@@ -227,7 +222,6 @@ export default function CameraScreen({navigation, route}) {
 
     setTimeout(() => {
       if (!photo) {
-        console.log('Reactivating camera...');
         setIsActive(true);
       }
     }, 1500);
@@ -237,10 +231,8 @@ export default function CameraScreen({navigation, route}) {
   useEffect(() => {
     const handleAppStateChange = nextAppState => {
       if (nextAppState === 'background' || nextAppState === 'inactive') {
-        console.log('App going to background, deactivating camera');
         setIsActive(false);
       } else if (nextAppState === 'active' && !photo && isFocused) {
-        console.log('App back to foreground, reactivating camera');
         setTimeout(() => {
           setIsActive(true);
         }, 1000);
@@ -261,13 +253,11 @@ export default function CameraScreen({navigation, route}) {
       if (!hasPermission) {
         const granted = await requestPermission();
         if (!granted) {
-          console.log('Camera permission denied');
           return;
         }
       }
 
       if (device && hasPermission && !photo && isFocused) {
-        console.log('Initializing camera...');
         // Longer delay to ensure camera is completely free
         timeoutId = setTimeout(() => {
           setIsActive(true);
@@ -288,7 +278,6 @@ export default function CameraScreen({navigation, route}) {
   // Focus listener para reactivar cuando se regresa a la pantalla
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log('Screen focused');
       setIsFocused(true);
       if (!photo) {
         setTimeout(() => {
@@ -298,7 +287,6 @@ export default function CameraScreen({navigation, route}) {
     });
 
     const unsubscribeBlur = navigation.addListener('blur', () => {
-      console.log('Screen blurred');
       setIsFocused(false);
       setIsActive(false);
     });
@@ -312,7 +300,6 @@ export default function CameraScreen({navigation, route}) {
   // Cleanup al desmontar - MUY IMPORTANTE
   useEffect(() => {
     return () => {
-      console.log('Component unmounting, cleaning up camera');
       setIsActive(false);
       camera.current = null;
     };
@@ -329,15 +316,12 @@ export default function CameraScreen({navigation, route}) {
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
     if (!camera.current || loading || !isActive) {
-      console.log('Cannot take photo: camera not ready');
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('Taking photo...');
-
       const result = await camera.current.takePhoto({
         qualityPrioritization: 'balanced',
         flash: 'off',
@@ -346,7 +330,6 @@ export default function CameraScreen({navigation, route}) {
         enableShutterSound: false,
       });
 
-      console.log('Photo taken successfully:', result);
       setPhoto(result);
       setIsActive(false); // Deactivate immediately after taking photo
     } catch (err) {
@@ -357,7 +340,6 @@ export default function CameraScreen({navigation, route}) {
         err.code === 'device/camera-already-in-use' ||
         err.message?.includes('already in use')
       ) {
-        console.log('Camera in use error, attempting reset...');
         resetCamera();
       } else {
         // Otros errores
@@ -390,8 +372,6 @@ export default function CameraScreen({navigation, route}) {
     const mesaInfo = route.params?.tableData || {};
 
     try {
-      console.log('🔍 Analizando acta electoral...');
-
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
         photo.path,
@@ -452,8 +432,6 @@ export default function CameraScreen({navigation, route}) {
       // Mapear datos de la IA al formato de la app
       const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
 
-      console.log('✅ Análisis completado, navegando a PhotoReviewScreen');
-
       // Navegar a la pantalla de revisión con los datos analizados
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
@@ -507,7 +485,6 @@ export default function CameraScreen({navigation, route}) {
               onError={error => {
                 console.error('Camera onError:', error);
                 if (error.code === 'device/camera-already-in-use') {
-                  console.log('Camera already in use, resetting...');
                   resetCamera();
                 }
               }}

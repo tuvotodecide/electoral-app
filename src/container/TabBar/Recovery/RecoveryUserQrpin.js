@@ -1,26 +1,26 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin.js
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, View} from 'react-native';
+import {InteractionManager, StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
-import CSafeAreaView   from '../../../components/common/CSafeAreaView';
-import CHeader         from '../../../components/common/CHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText           from '../../../components/common/CText';
-import CButton         from '../../../components/common/CButton';
-import StepIndicator   from '../../../components/authComponents/StepIndicator';
+import CText from '../../../components/common/CText';
+import CButton from '../../../components/common/CButton';
+import StepIndicator from '../../../components/authComponents/StepIndicator';
 
-import {styles}        from '../../../themes';
-import typography      from '../../../themes/typography';
+import {styles} from '../../../themes';
+import typography from '../../../themes/typography';
 import {moderateScale} from '../../../common/constants';
-import {AuthNav}       from '../../../navigation/NavigationKey';
+import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
-import String          from '../../../i18n/String';
+import String from '../../../i18n/String';
 
 export default function RecoveryUserQrPin({navigation, route}) {
   // ───── params de navegación
-  const {payload, reqId} = route.params;         // ← ahora recibes payload
+  const {payload, reqId} = route.params; // ← ahora recibes payload
   const colors = useSelector(state => state.theme.theme);
 
   // ───── estado & refs
@@ -31,21 +31,21 @@ export default function RecoveryUserQrPin({navigation, route}) {
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUserQrpin2, {
       originalPin: otp,
-      payload,                // ← lo pasas a la siguiente
+      payload, // ← lo pasas a la siguiente
       reqId,
     });
   };
 
   // ───── enfocar al montar
   useEffect(() => {
-    const t = setTimeout(() => otpRef.current?.focusField(0), 300);
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <CSafeAreaView>
-      <StepIndicator step={8}/>
-      <CHeader/>
+      <StepIndicator step={8} />
+      <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={local.mainContainer}>
           <View>
@@ -63,7 +63,7 @@ export default function RecoveryUserQrPin({navigation, route}) {
               ref={otpRef}
               pinCount={4}
               keyboardType="number-pad"
-              autoFocusOnLoad
+              autoFocusOnLoad={false}
               secureTextEntry
               code={otp}
               onCodeChanged={setOtp}
@@ -93,10 +93,10 @@ export default function RecoveryUserQrPin({navigation, route}) {
 
 /* ───────── estilos ───────── */
 const local = StyleSheet.create({
-  headerText: { ...styles.mt10 },
-  mainContainer:{ ...styles.ph20, ...styles.justifyBetween, ...styles.flex },
-  otpBox:{ ...styles.selfCenter, height:'20%', ...styles.mt30 },
-  otpInput:{
+  headerText: {...styles.mt10},
+  mainContainer: {...styles.ph20, ...styles.justifyBetween, ...styles.flex},
+  otpBox: {...styles.selfCenter, height: '20%', ...styles.mt30},
+  otpInput: {
     width: moderateScale(50),
     height: moderateScale(50),
     borderWidth: moderateScale(1),
@@ -104,8 +104,8 @@ const local = StyleSheet.create({
     ...typography.fontWeights.Bold,
     ...typography.fontSizes.f26,
     ...styles.mh5,
-    textAlign:'center',
-    color:'#000',               // bullets visibles en cualquier tema claro
-    backgroundColor:'#FFF',     // contraste; ajusta si usas tema oscuro
+    textAlign: 'center',
+    color: '#000', // bullets visibles en cualquier tema claro
+    backgroundColor: '#FFF', // contraste; ajusta si usas tema oscuro
   },
 });

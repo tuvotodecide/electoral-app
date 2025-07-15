@@ -93,9 +93,9 @@ export const AuthNav = {
   RecoveryUserQrpin: 'RecoveryUserQrpin',
   RecoveryUserQrpin2: 'RecoveryUserQrpin2',
   RecoveryQr: 'RecoveryQr',
+  RecoveryFinalize: 'RecoveryFinalize',
   RecoveryUser1Pin: 'RecoveryUser1Pin',
   RecoveryUser2Pin: 'RecoveryUser2Pin',
   MyGuardiansStatus: 'MyGuardiansStatus',
 };
-console.log('🔑 AuthNav keys:', Object.keys(AuthNav));
-console.log('🔑 AuthNav values:', AuthNav);
+

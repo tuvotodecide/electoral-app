@@ -101,7 +101,7 @@ export default function LoginUser({navigation}) {
     // }
 
     const {streamId, privKey} = stored.payloadQr;
-    console.log(stored);
+
 
     // const {streamId, privKey} = payload;
 

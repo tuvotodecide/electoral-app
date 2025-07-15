@@ -109,7 +109,6 @@ export async function checkPin(pin) {
   const {PIN_HASH} = JSON.parse(flags);
   return SHA256(pin.trim()).toString() === PIN_HASH;
 }
-
 export async function decryptRecoveryPayload(encryptedHex, pin) {
   const bytes = buf(encryptedHex);
   const salt = bytes.slice(0, 16);

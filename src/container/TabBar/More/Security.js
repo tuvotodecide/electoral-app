@@ -77,7 +77,7 @@ export default function Security({navigation}) {
           },
         );
       }
-      console.log('[Security] biometría desactivada');
+
     }
 
     

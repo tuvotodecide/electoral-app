@@ -1,6 +1,6 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin2.js
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, View, Alert} from 'react-native';
+import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
@@ -28,7 +28,6 @@ import {startSession} from '../../../utils/Session';
 export default function RecoveryUserQrPin2({navigation, route}) {
   const {originalPin, payload} = route.params;
   const colors = useSelector(state => state.theme.theme);
-  console.log(payload);
 
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
@@ -36,7 +35,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const otpRef = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => otpRef.current?.focusField(0), 300);
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
     return () => clearTimeout(t);
   }, []);
 
@@ -55,8 +54,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
     } catch (err) {
-      console.log(err);
-      
+
       Alert.alert('Error', err.message);
     }
   };
@@ -96,7 +94,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
               }}
               secureTextEntry
               keyboardType="number-pad"
-              autoFocusOnLoad
+              autoFocusOnLoad={false}
               style={local.otpBox}
               codeInputFieldStyle={[
                 local.otpInput,

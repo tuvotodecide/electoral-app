@@ -35,9 +35,6 @@ export default function AddGuardians({navigation}) {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
-  const onPressNext = () => {
-    console.log('hola');
-  };
   const onPressSearch = () => {
     setMsg('');
     findPublicDni(

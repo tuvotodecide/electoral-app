@@ -28,6 +28,7 @@ export async function isSessionValid() {
   return Boolean(jwt) && Number(exp) > Date.now();
 }
 
+
 export async function getJwt() {
   return AsyncStorage.getItem(JWT_KEY);
 }

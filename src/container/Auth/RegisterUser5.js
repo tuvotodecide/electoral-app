@@ -85,7 +85,7 @@ export default function RegisterUser5({navigation, route}) {
           dni,
         });
       } catch (err) {
-        console.log(err);
+ 
 
         setErrorMessage('Error de verificación. Intenta de nuevo.');
         setErrorModalVisible(true);

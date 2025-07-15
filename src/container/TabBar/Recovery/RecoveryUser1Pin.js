@@ -1,4 +1,4 @@
-import {StyleSheet, View} from 'react-native';
+import {InteractionManager, StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -26,10 +26,11 @@ export default function RecoveryUser1Pin({navigation, route}) {
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
 
+
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUser2Pin, {
       originalPin: otp,
-      reqId
+      reqId,
     });
   };
 
@@ -69,7 +70,8 @@ export default function RecoveryUser1Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
+               ref={otpRef}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

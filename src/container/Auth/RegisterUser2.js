@@ -37,16 +37,14 @@ export default function RegisterUser2({navigation}) {
 
   const closeModal = () => setModalVisible(false);
 
-   const handleCheckAndNext = useCallback(
+  const handleCheckAndNext = useCallback(
     debounce(() => {
       if (idNumber.trim() === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));
-
         navigation.reset({
           index: 0,
           routes: [{name: StackNav.TabNavigation}],
         });
-
         return;
       }
       if (!isFormValid()) return;
@@ -54,27 +52,36 @@ export default function RegisterUser2({navigation}) {
       findDni(
         {identifier: idNumber.trim()},
         {
-          onMutate: () => setSubmitting(true),
-          onSuccess: data => {
-            navigation.navigate(AuthNav.RegisterUser3, {
-              dni: idNumber.trim(),
-              frontImage,
-              backImage,
-            });
+          onMutate: () => {
+            setSubmitting(true);
+            setModalVisible(false);
           },
-          onError: error => {
+          onSuccess: response => {
+            setSubmitting(false);
+            // Aquí revisamos el ok
+            if (response.ok) {
+              // abrimos el modal de "DNI ya existe"
+              setModalVisible(true);
+            } else {
+              navigation.navigate(AuthNav.RegisterUser3, {
+                dni: idNumber.trim(),
+                frontImage,
+                backImage,
+              });
+            }
+          },
+          onError: err => {
+            setSubmitting(false);
             const msg =
-              error?.response?.data?.message ||
-              error.message ||
-              String.unknowerror;
+              err?.response?.data?.message || err.message || String.unknowerror;
             Alert.alert(String.errorCi, msg);
           },
-          onSettled: () => setSubmitting(false),
         },
       );
     }, 500),
     [idNumber, frontImage, backImage],
   );
+
   return (
     <CSafeAreaView>
       <StepIndicator step={2} />

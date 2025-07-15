@@ -31,6 +31,8 @@ export default function Splash({navigation}) {
     const asyncProcess = async () => {
       try {
         let asyncData = await initialStorageValueGet();
+      
+        
         let {themeColor, onBoardingValue} = asyncData;
         const draft = await getDraft();
         if (draft) {
@@ -54,7 +56,6 @@ export default function Splash({navigation}) {
           const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
           if (pending === 'true') {
-            console.log(pending);
             navigation.navigate(StackNav.AuthNavigation, {
               screen: AuthNav.MyGuardiansStatus,
             });
@@ -66,10 +67,12 @@ export default function Splash({navigation}) {
           // else navigation.replace(StackNav.AuthNavigation);
 
           const alive = await isSessionValid();
+
+          
           if (alive) navigation.replace(StackNav.TabNavigation);
           else
             navigation.replace(StackNav.AuthNavigation, {
-              screen: AuthNav.LoginUser, 
+              screen: AuthNav.Connect, 
             });
         }
       } catch (e) {

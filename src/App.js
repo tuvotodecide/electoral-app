@@ -61,11 +61,10 @@ const App = () => {
   //   fetchToken();
   // }, []);
 
-
-
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.flex}>
+        
         <StatusBar
           barStyle={colors?.dark === 'dark' ? 'light-content' : 'dark-content'}
         />

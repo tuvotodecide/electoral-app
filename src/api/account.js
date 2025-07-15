@@ -113,7 +113,7 @@ export async function send(privateKey, address, chain, targetAddress, token, dec
   });
 
 	const receipt = await bundlerClient.waitForUserOperationReceipt({ hash });
-  console.log("Transaction receipt:", receipt);
+  
 	if(!receipt.success) {
 		throw Error('Transaction failed, try again later');
 	}

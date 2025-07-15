@@ -1,4 +1,4 @@
-import {StyleSheet, View} from 'react-native';
+import {InteractionManager, StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -27,10 +27,11 @@ export default function RegisterUser9({navigation, route}) {
 
   const otpRef = useRef(null);
 
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 300);
+    }, 350);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -84,7 +85,7 @@ export default function RegisterUser9({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

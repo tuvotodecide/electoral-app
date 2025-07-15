@@ -18,7 +18,7 @@ import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
-import RecoveryQR from '../container/TabBar/Recovery/RecoveryQR';
+import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
 import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
@@ -162,7 +162,7 @@ export const AuthRoute = {
   SelfieWithIdCard,
   VerifySuccess,
   FindMyUser,
-  RecoveryQR,
+  RecoveryQr,
   RecoveryUserQrpin,
   RecoveryUserQrpin2,
   MyGuardiansStatus,
