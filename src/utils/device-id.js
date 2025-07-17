@@ -23,7 +23,6 @@ function bytesToUuid(buf) {
 export async function getDeviceId() {
   try {
     let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
-    console.log('[device-id] loaded from storage:', id);
 
     if (!id) {
       // Genera 16 bytes aleatorios y pásalos a UUID v4
@@ -33,12 +32,12 @@ export async function getDeviceId() {
       buf[8] = (buf[8] & 0x3f) | 0x80; // variante RFC4122
 
       id = bytesToUuid(buf);
-      console.log('[device-id] generated new UUID:', id);
+ 
 
       await AsyncStorage.setItem(DEVICE_ID_KEY, id);
 
       const verify = await AsyncStorage.getItem(DEVICE_ID_KEY);
-      console.log('[device-id] after save:', verify);
+
     }
 
     return id;

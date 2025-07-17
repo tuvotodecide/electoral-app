@@ -39,7 +39,7 @@ export default function OnBoarding({navigation}) {
         routes: [
           {
             name: StackNav.AuthNavigation,
-            params: {screen: AuthNav.RegisterUser1},
+            params: {screen: AuthNav.Connect},
           },
         ],
       });
@@ -52,7 +52,7 @@ export default function OnBoarding({navigation}) {
 
   const onPressSkip = () => {
     navigation.navigate(StackNav.AuthNavigation, {
-      screen: AuthNav.RegisterUser1,
+      screen: AuthNav.Connect,
     });
   };
 

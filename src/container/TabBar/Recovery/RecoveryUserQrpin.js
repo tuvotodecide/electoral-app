@@ -1,45 +1,45 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+// src/container/Auth/Recovery/RecoveryUserQrPin.js
 import React, {useEffect, useRef, useState} from 'react';
+import {InteractionManager, StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
-// custom import
-
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
+
 import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
+import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-export default function RecoveryUser1Pin({navigation, route}) {
-  const {reqId} = route.params;
+export default function RecoveryUserQrPin({navigation, route}) {
+  // ───── params de navegación
+  const {payload, reqId} = route.params; // ← ahora recibes payload
   const colors = useSelector(state => state.theme.theme);
-  const [otp, setOtp] = useState('');
 
-  const onOtpChange = text => setOtp(text);
+  // ───── estado & refs
+  const [otp, setOtp] = useState('');
   const otpRef = useRef(null);
 
-
+  // ───── handlers
   const onPressContinue = () => {
-    navigation.navigate(AuthNav.RecoveryUser2Pin, {
+    navigation.navigate(AuthNav.RecoveryUserQrpin2, {
       originalPin: otp,
+      payload, // ← lo pasas a la siguiente
       reqId,
     });
   };
 
+  // ───── enfocar al montar
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      otpRef.current?.focusField(0);
-    }, 300);
-
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -47,33 +47,29 @@ export default function RecoveryUser1Pin({navigation, route}) {
       <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
+        <View style={local.mainContainer}>
           <View>
-            <CText
-              type={'B24'}
-              style={localStyle.headerTextStyle}
-              align={'center'}>
+            <CText type="B24" align="center" style={local.headerText}>
               {String.pinAccessTitle}
             </CText>
             <CText
-              type={'R14'}
-              color={getSecondaryTextColor(colors)}
-              align={'center'}>
+              type="R14"
+              align="center"
+              color={getSecondaryTextColor(colors)}>
               {String.pinAccessDescription}
             </CText>
+
             <OTPInputView
+              ref={otpRef}
               pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={onOtpChange}
-              secureTextEntry={true}
-              editable
-              keyboardAppearance={'dark'}
-              placeholderTextColor={colors.textColor}
+              keyboardType="number-pad"
               autoFocusOnLoad={false}
-               ref={otpRef}
+              secureTextEntry
+              code={otp}
+              onCodeChanged={setOtp}
+              style={local.otpBox}
               codeInputFieldStyle={[
-                localStyle.underlineStyleBase,
+                local.otpInput,
                 {
                   backgroundColor: colors.inputBackground,
                   color: colors.textColor,
@@ -83,35 +79,24 @@ export default function RecoveryUser1Pin({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
-            <CButton
-              disabled={otp.length !== 4}
-              title={String.btnContinue}
-              type={'B16'}
-              onPress={onPressContinue}
-            />
-          </View>
+
+          <CButton
+            title={String.btnContinue}
+            disabled={otp.length !== 4}
+            onPress={onPressContinue}
+          />
         </View>
       </KeyBoardAvoidWrapper>
     </CSafeAreaView>
   );
 }
 
-const localStyle = StyleSheet.create({
-  headerTextStyle: {
-    ...styles.mt10,
-  },
-  mainContainer: {
-    ...styles.ph20,
-    ...styles.justifyBetween,
-    ...styles.flex,
-  },
-  otpInputViewStyle: {
-    ...styles.selfCenter,
-    height: '20%',
-    ...styles.mt30,
-  },
-  underlineStyleBase: {
+/* ───────── estilos ───────── */
+const local = StyleSheet.create({
+  headerText: {...styles.mt10},
+  mainContainer: {...styles.ph20, ...styles.justifyBetween, ...styles.flex},
+  otpBox: {...styles.selfCenter, height: '20%', ...styles.mt30},
+  otpInput: {
     width: moderateScale(50),
     height: moderateScale(50),
     borderWidth: moderateScale(1),
@@ -119,13 +104,8 @@ const localStyle = StyleSheet.create({
     ...typography.fontWeights.Bold,
     ...typography.fontSizes.f26,
     ...styles.mh5,
-  },
-
-  resendButton: {
-    ...styles.mb20,
-    ...styles.mt0,
-  },
-  diffPhoneNumberText: {
-    ...styles.mt15,
+    textAlign: 'center',
+    color: '#000', // bullets visibles en cualquier tema claro
+    backgroundColor: '#FFF', // contraste; ajusta si usas tema oscuro
   },
 });

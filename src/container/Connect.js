@@ -17,6 +17,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+    const wallet = useSelector(s => s.wallet.payload);
+    const account = useSelector(state => state.account);
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);

@@ -87,11 +87,11 @@ export default function RegisterUser6({navigation,route}) {
           title={String.labelBirthDate}
           text={fmtDate(dateOfBirth)}
         />
-        <CEtiqueta
+        {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
            title={String.labelDocumentExpiration}
           text={fmtDate(documentExpirationDate)}
-        />
+        /> */}
         {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
           title={String.labelNationality}

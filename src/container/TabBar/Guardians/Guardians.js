@@ -32,7 +32,6 @@ export default function Guardians({navigation}) {
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
 
-  console.log(selectedGuardian);
 
   const guardians = useMemo(() => data.map(edge => edge.node), [data]);
 

@@ -1630,6 +1630,7 @@ export const ProfileDataV2 = [
       //   value: String.earnRewardsValue,
       //   route: StackNav.Reward,
       // },
+
     ],
   },
 ];

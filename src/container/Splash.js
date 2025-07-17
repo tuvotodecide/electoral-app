@@ -8,16 +8,22 @@ import CSafeAreaView from '../components/common/CSafeAreaView';
 import {styles} from '../themes';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
-import {StackNav} from '../navigation/NavigationKey';
+import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {moderateScale} from '../common/constants';
+import {moderateScale, PENDINGRECOVERY} from '../common/constants';
 import {isSessionValid} from '../utils/Session';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {getDraft} from '../utils/RegisterDraft';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
+  const wallet = useSelector(s => s.wallet.payload);
+  const account = useSelector(state => state.account);
+  const userData = useSelector(state => state.wallet.payload);
 
   const dispatch = useDispatch();
 
@@ -25,9 +31,19 @@ export default function Splash({navigation}) {
     const asyncProcess = async () => {
       try {
         let asyncData = await initialStorageValueGet();
+      
+        
         let {themeColor, onBoardingValue} = asyncData;
-        if (asyncData) {
-          if (themeColor) {
+        const draft = await getDraft();
+        if (draft) {
+          navigation.replace(StackNav.AuthNavigation, {
+            screen: AuthNav.RegisterUser10,
+            params: draft,
+          });
+          return;
+        }
+        if (!!asyncData) {
+          if (!!themeColor) {
             if (themeColor === 'light') {
               dispatch(changeThemeAction(colors.light));
             } else {
@@ -37,20 +53,27 @@ export default function Splash({navigation}) {
             // Si no hay tema guardado, usar light por defecto
             dispatch(changeThemeAction(colors.light));
           }
-          // ========== MODO DE DESARROLLO - USANDO AuthTest ==========
-          // AuthTest simula todo el flujo de auth pero con usuario automático
-          // console.log('Splash: Usando AuthTest para desarrollo');
-          // navigation.replace('AuthTest'); // Navegar a AuthTest
-          // return;
+          const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
-          // Modo Desarrollo Bypass directo a TabNavigation
-          navigation.replace(StackNav.TabNavigation);
-          return;
-
-          // ========== CÓDIGO ORIGINAL (COMENTADO) ==========
+          if (pending === 'true') {
+            navigation.navigate(StackNav.AuthNavigation, {
+              screen: AuthNav.MyGuardiansStatus,
+            });
+            return;
+          }
           // const alive = await isSessionValid();
+
           // if (alive) navigation.replace(StackNav.TabNavigation);
-          // else navigation.replace(StackNavp.AuthNavigation); // OnBoarding no está disponible, ir a Auth
+          // else navigation.replace(StackNav.AuthNavigation);
+
+          const alive = await isSessionValid();
+
+          
+          if (alive) navigation.replace(StackNav.TabNavigation);
+          else
+            navigation.replace(StackNav.AuthNavigation, {
+              screen: AuthNav.Connect, 
+            });
         }
       } catch (e) {
         console.log('error ', e);

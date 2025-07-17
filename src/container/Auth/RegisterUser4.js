@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {launchCamera} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
-
+import {check, RESULTS, openSettings} from 'react-native-permissions';
 // Custom imports
 import CSafeAreaView from '../../components/common/CSafeAreaView';
 import CHeader from '../../components/common/CHeader';
@@ -55,19 +55,26 @@ export default function RegisterUser4({navigation, route}) {
   }, []);
 
   const requestCameraPermission = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Permiso de cámara',
-          message: 'La app necesita acceder a la cámara para tomar fotos.',
-          buttonPositive: 'Aceptar',
-          buttonNegative: 'Cancelar',
-        },
+    if (Platform.OS !== 'android') return true;
+
+    const status = await check(PermissionsAndroid.PERMISSIONS.CAMERA);
+    if (status === RESULTS.GRANTED) return true;
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      {title: 'Permiso de cámara', message: 'Necesitamos acceso a la cámara.'},
+    );
+
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) return true;
+
+    if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      Alert.alert(
+        'Cámara deshabilitada',
+        'Habilita la cámara en Ajustes del sistema',
+        [{text: 'Abrir ajustes', onPress: () => openSettings()}, {text: 'OK'}],
       );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
-    return true;
+    return false;
   };
 
   const onPressNext = () => {

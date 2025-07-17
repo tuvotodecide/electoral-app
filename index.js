@@ -2,7 +2,7 @@
  * @format
  */
 if (__DEV__) {
-  require("./ReactotronConfig");
+  require('./ReactotronConfig');
 }
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
@@ -20,20 +20,22 @@ import {AppRegistry} from 'react-native';
 import App from './src/App';
 import {name as appName} from './app.json';
 import {Provider} from 'react-redux';
-import store from './src/redux/store';
-import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PersistGate } from 'redux-persist/integration/react';
+import store, { persistor } from './src/redux/store';
+import {PaperProvider} from 'react-native-paper';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 const RNRoot = () => {
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <PaperProvider>
-          <App />
-        </PaperProvider>
-      </SafeAreaProvider>
+      <PersistGate loading={null} persistor={persistor}>
+        <SafeAreaProvider>
+          <PaperProvider>
+            <App />
+          </PaperProvider>
+        </SafeAreaProvider>
+      </PersistGate>
     </Provider>
   );
 };
-console.log('✅ register about to run');
 AppRegistry.registerComponent(appName, () => RNRoot);

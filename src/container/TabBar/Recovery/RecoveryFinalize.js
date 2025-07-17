@@ -16,8 +16,11 @@ import {ActivityIndicator} from 'react-native-paper';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {saveSecrets} from '../../../utils/Cifrate';
-import { StyleSheet } from 'react-native';
-import { styles } from '../../../themes';
+import {StyleSheet, View} from 'react-native';
+import {styles} from '../../../themes';
+import messaging          from '@react-native-firebase/messaging';
+
+import { registerDeviceToken } from '../../../utils/registerDeviceToken';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, reqId} = route.params;
@@ -33,7 +36,6 @@ export default function RecoveryFinalize({route, navigation}) {
       if (!data.ok) {
         return;
       }
-      console.log('y');
 
       await Keychain.setGenericPassword(
         'bundle',
@@ -44,7 +46,8 @@ export default function RecoveryFinalize({route, navigation}) {
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       dispatch(setSecrets(data.payload));
       await startSession(data.token);
-      console.log('fdsak');
+      await registerDeviceToken(); 
+      messaging().onTokenRefresh(registerDeviceToken);
 
       navigation.navigate(AuthNav.LoginUser);
     })();

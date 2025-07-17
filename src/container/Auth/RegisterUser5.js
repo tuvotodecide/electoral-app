@@ -85,13 +85,9 @@ export default function RegisterUser5({navigation, route}) {
           dni,
         });
       } catch (err) {
-        console.log(err);
+ 
 
-        setErrorMessage(
-          err.response?.data?.message ||
-            err.message ||
-            'Error de verificación. Intenta de nuevo.',
-        );
+        setErrorMessage('Error de verificación. Intenta de nuevo.');
         setErrorModalVisible(true);
       } finally {
         setLoading(false);
@@ -137,10 +133,14 @@ export default function RegisterUser5({navigation, route}) {
         buttonText="Reintentar"
         onClose={() => {
           setErrorModalVisible(false);
-          navigation.navigate(AuthNav.RegisterUser2, {
-            dni,
-            frontImage,
-            backImage,
+          navigation.reset({
+            index: 1,
+            routes: [
+              {
+                name: AuthNav.RegisterUser2,
+                params: {dni, frontImage, backImage},
+              },
+            ],
           });
         }}
       />

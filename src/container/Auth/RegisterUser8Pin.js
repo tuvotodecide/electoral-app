@@ -1,4 +1,4 @@
-import {StyleSheet, View} from 'react-native';
+import {InteractionManager, StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -24,7 +24,6 @@ export default function RegisterUser8({navigation, route}) {
 
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
-
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RegisterUser9, {
       originalPin: otp,
@@ -38,7 +37,7 @@ export default function RegisterUser8({navigation, route}) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 300);
+    }, 350);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -71,7 +70,8 @@ export default function RegisterUser8({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
+              ref={otpRef}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

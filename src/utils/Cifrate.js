@@ -2,24 +2,26 @@ import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {SHA256} from 'crypto-js';
 
-import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
+import {keccak_256 as keccak256} from '@noble/hashes/sha3';
 
-import { argon2id } from '@noble/hashes/argon2';
-import { Wallet } from 'ethers';
+import {argon2id} from '@noble/hashes/argon2';
+import {Wallet} from 'ethers';
 import {
   bytesToHex as hex,
   hexToBytes as buf,
   utf8ToBytes,
 } from '@noble/hashes/utils';
 
-import { randomBytes } from 'react-native-quick-crypto';
-import { aesGcmEncrypt, aesGcmDecrypt } from './aesGcm';
+import {randomBytes} from 'react-native-quick-crypto';
+import {aesGcmEncrypt, aesGcmDecrypt} from './aesGcm';
+import {setBioFlag} from './BioFlag';
+import {Platform} from 'react-native';
 
 const KEYCHAIN_ID = 'finline.wallet.vc';
 const FLAGS_KEY = 'FINLINE_FLAGS';
 
 export async function createSeedBundle(pin) {
-  const seed = randomBytes(32);     
+  const seed = randomBytes(32);
   const salt = randomBytes(16);
 
   const key = argon2id(utf8ToBytes(pin), salt, {
@@ -32,9 +34,9 @@ export async function createSeedBundle(pin) {
   const cipher = await aesGcmEncrypt(seed, key);
 
   return {
-    seedHex:   hex(seed),        // <- 32 bytes, sirve como llave
-    cipherHex: hex(cipher),      // <- 60 bytes, para guardar seguro
-    saltHex:   hex(salt),
+    seedHex: hex(seed), // <- 32 bytes, sirve como llave
+    cipherHex: hex(cipher), // <- 60 bytes, para guardar seguro
+    saltHex: hex(salt),
   };
 }
 
@@ -58,15 +60,19 @@ export async function unlockSeed(pin, bundle) {
 }
 
 export async function saveSecrets(pin, payloadQr, useBiometry) {
+  const accessControl = !useBiometry
+    ? undefined
+    : Platform.OS === 'ios'
+    ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
+    : Keychain.ACCESS_CONTROL.BIOMETRY_ANY;
+
   await Keychain.setGenericPassword(
-    KEYCHAIN_ID, 
-    JSON.stringify(payloadQr), 
+    'finline.wallet.vc',
+    JSON.stringify(payloadQr),
     {
-      service: KEYCHAIN_ID,
+      service: 'finline.wallet.vc',
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-      accessControl: useBiometry
-        ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
-        : undefined,
+      accessControl,
       authenticationPrompt: {
         title: 'Autentícate',
         subtitle: 'Desbloquea tu billetera',
@@ -74,6 +80,7 @@ export async function saveSecrets(pin, payloadQr, useBiometry) {
       },
     },
   );
+  await setBioFlag(!!useBiometry);
 
   await AsyncStorage.setItem(
     FLAGS_KEY,
@@ -101,4 +108,18 @@ export async function checkPin(pin) {
   if (!flags) return false;
   const {PIN_HASH} = JSON.parse(flags);
   return SHA256(pin.trim()).toString() === PIN_HASH;
+}
+export async function decryptRecoveryPayload(encryptedHex, pin) {
+  const bytes = buf(encryptedHex);
+  const salt = bytes.slice(0, 16);
+  const cipher = bytes.slice(16);
+  const key = argon2id(utf8ToBytes(pin), salt, {
+    t: 2,
+    m: 16 * 1024,
+    p: 1,
+    dkLen: 32,
+  });
+
+  const plainBytes = await aesGcmDecrypt(cipher, key);
+  return JSON.parse(plainBytes.toString());
 }

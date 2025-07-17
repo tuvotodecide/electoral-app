@@ -88,4 +88,7 @@ export const AuthNav = {
   SelfieWithIdCard: 'SelfieWithIdCard',
   VerifySuccess: 'VerifySuccess',
   FindMyUser: 'FindMyUser',
+  RecoveryUserQrpin: 'RecoveryUserQrpin',
+  RecoveryUserQrpin2: 'RecoveryUserQrpin2',
+  RecoveryQr: 'RecoveryQr',
 };

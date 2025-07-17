@@ -33,7 +33,7 @@ export async function registerNotifications() {
 
 async function display(remoteMessage) {
   await notifee.displayNotification({
-    title: remoteMessage.notification?.title ?? 'Tu Voto',
+    title: remoteMessage.notification?.title ?? 'Tu Voto decide',
     body: remoteMessage.notification?.body ?? 'Mensaje nuevo',
     android: {
       channelId: 'high_prio',
@@ -45,7 +45,6 @@ async function display(remoteMessage) {
   });
 }
 export function handleNotificationPress(notification) {
-  console.log('[Notif-press] data →', notification.data);
   const d = notification.data || {};
   const target =
     d.type === 'INVITE'
@@ -54,8 +53,7 @@ export function handleNotificationPress(notification) {
       ? {name: d.screen || 'TransactionDetails', params: {txId: d.txId}}
       : {name: 'Home'};
   const {isAuthenticated} = store.getState().auth;
-  console.log(isAuthenticated);
-
+  
   if (isAuthenticated) {
     navigate(target.name, target.params);
   } else {

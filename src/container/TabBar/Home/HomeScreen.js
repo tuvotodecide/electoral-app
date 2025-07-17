@@ -11,12 +11,18 @@ import {useDispatch} from 'react-redux';
 import {clearAuth} from '../../../redux/slices/authSlice';
 import {clearWallet} from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {useSelector} from 'react-redux';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
+import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
+import {useSelector} from 'react-redux';
+import {store} from '../../../redux/store';
+import {clearSession} from '../../../utils/Session';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {JWT_KEY} from '../../../common/constants';
+import axios from 'axios';
+import {CommonActions} from '@react-navigation/native';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -107,15 +113,32 @@ const BlockchainConsultoraBanner = () => (
 
 export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
+  const wallet = useSelector(s => s.wallet.payload);
+  const account = useSelector(state => state.account);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  const handleLogout = () => {
-    setLogoutModalVisible(false);
-    dispatch(clearAuth());
-    dispatch(clearWallet());
-    navigation.replace('Login');
-  };
+  const handleLogout = async () => {
+    try {
+      // 1) Quitar el JWT
+      await AsyncStorage.removeItem(JWT_KEY);
 
+      // 2) Borrar la cabecera de Authorization si la estás usando
+      delete axios.defaults.headers.common['Authorization'];
+
+      // 3) Limpiar sesión (expires) y redux
+      await clearSession(); // borra EXPIRES_KEY también
+      dispatch(clearWallet()); // limpia payload de la wallet
+      dispatch(clearAuth()); // setea isAuthenticated = false
+
+ 
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.AuthNavigation}],
+      });
+    } catch (err) {
+      console.error('Logout error', err);
+    }
+  };
   const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
   const subject = vc?.credentialSubject || {};

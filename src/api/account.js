@@ -7,7 +7,20 @@ import { MAIN_NETWORK } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
 import { checkTokenAvailibility } from "./wormhole";
 
-export async function getAccount(privateKey, address, chain) {
+export function getReadAccountContract(chain, address) {
+	const client = createPublicClient({
+    chain: availableNetworks[chain].chain,
+    transport: http(),
+  });
+
+	return getContract({
+    address,
+    abi: walletAbi,
+    client: {public: client}
+  });
+}
+
+export async function getAccount(privateKey, address, chain, includeBundler = false) {
 	const owner = privateKeyToAccount(privateKey);
 
 	const publicClient = createPublicClient({
@@ -23,7 +36,15 @@ export async function getAccount(privateKey, address, chain) {
 		entryPoint: {address: entryPoint07Address, version: '0.7'},
 	});
 
-	return account;
+	let bundlerClient;
+	if(includeBundler) {
+		bundlerClient = createBundlerClient({
+			client: publicClient,
+			transport: http(availableNetworks[chain].bundler),
+		});
+	}
+
+	return {account, publicClient, bundlerClient};
 }
 
 export async function getWalletBalances(address) {
@@ -48,13 +69,31 @@ export async function getWalletBalances(address) {
 	}
 }
 
-export async function send(privateKey, address, chain, targetAddress, token, decimals, amount) {
-	const account = await getAccount(privateKey, address, chain);
+export async function getWalletCreateTotalDebt(address) {
+	const promises = [];
+	for(const chain of availableNetworkNames) {
+		promises.push(getWalletCreateDebt(chain, address));
+	}
 
-	const client = createPublicClient({
-    chain: availableNetworks[chain].chain,
-    transport: http(),
-  });
+	const responses = (await Promise.all(promises)).map((value, index) => ({
+		debt: value,
+		chain: availableNetworkNames[index],
+	}));
+	return responses;
+}
+
+export async function getWalletCreateDebt(chain, address) {
+	const wallet = getReadAccountContract(chain, address);
+	try {
+		const debt = await wallet.read.createDebt();
+		return debt;
+	} catch (error) {
+		return BigInt('0');
+	}
+}
+
+export async function send(privateKey, address, chain, targetAddress, token, decimals, amount) {
+	const {account, publicClient: client} = await getAccount(privateKey, address, chain);
 
 	const bundlerClient = createBundlerClient({
     client,
@@ -70,10 +109,11 @@ export async function send(privateKey, address, chain, targetAddress, token, dec
     }],
     paymaster: availableNetworks[chain].tokenPaymaster,
 		...gasParams,
+		verificationGasLimit: BigInt(90000),
   });
 
 	const receipt = await bundlerClient.waitForUserOperationReceipt({ hash });
-  console.log("Transaction receipt:", receipt);
+  
 	if(!receipt.success) {
 		throw Error('Transaction failed, try again later');
 	}
@@ -85,18 +125,7 @@ export async function send(privateKey, address, chain, targetAddress, token, dec
 
 export async function sendCrossChain(privateKey, address, chain, targetChain, targetAddress, token, decimals, amount) {
 	await checkTokenAvailibility(chain, targetChain, token);
-
-	const account = await getAccount(privateKey, address, chain);
-
-	const client = createPublicClient({
-    chain: availableNetworks[chain].chain,
-    transport: http(),
-  });
-
-	const bundlerClient = createBundlerClient({
-    client,
-    transport: http(availableNetworks[chain].bundler),
-  });
+	const {account, publicClient: client, bundlerClient} = await getAccount(privateKey, address, chain, true);
 
 	const functionCall = encodeFunctionData({
 		abi: [

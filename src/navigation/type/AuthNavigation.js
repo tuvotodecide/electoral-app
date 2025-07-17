@@ -6,6 +6,7 @@ import {AuthRoute} from '../NavigationRoute';
 const Stack = createNativeStackNavigator();
 
 export default function AuthNavigation() {
+  
   return (
     <Stack.Navigator
       screenOptions={{headerShown: false}}
@@ -70,6 +71,18 @@ export default function AuthNavigation() {
       <Stack.Screen
         name={AuthNav.FindMyUser}
         component={AuthRoute.FindMyUser}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryQr}
+        component={AuthRoute.RecoveryQr}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUserQrpin2}
+        component={AuthRoute.RecoveryUserQrpin2}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUserQrpin}
+        component={AuthRoute.RecoveryUserQrpin}
       />
       <Stack.Screen
         name={AuthNav.RecoveryUser1Pin}
@@ -153,4 +166,5 @@ export default function AuthNavigation() {
       />
     </Stack.Navigator>
   );
+  
 }
