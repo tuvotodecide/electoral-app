@@ -17,6 +17,7 @@ import {moderateScale} from '../../../common/constants'; // Assuming this path i
 import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
+import pinataService from '../../../utils/pinataService';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -25,14 +26,22 @@ const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
 
 const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
+  if (isSmallPhone) {
+    return small;
+  }
+  if (isTablet) {
+    return large;
+  }
   return medium;
 };
 
 const getResponsiveModalWidth = () => {
-  if (isTablet) return screenWidth * 0.6; // Tablets: 60% width
-  if (isSmallPhone) return screenWidth * 0.9; // Small phones: 90% width
+  if (isTablet) {
+    return screenWidth * 0.6; // Tablets: 60% width
+  }
+  if (isSmallPhone) {
+    return screenWidth * 0.9; // Small phones: 90% width
+  }
   return screenWidth * 0.85; // Regular phones: 85% width
 };
 
@@ -40,17 +49,82 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const {tableData, photoUri} = route.params || {}; // Destructure tableData and photoUri from route params
+  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
+    route.params || {}; // Destructure all needed data
   console.log('PhotoConfirmationScreen - Received data:', {
     tableData,
     photoUri,
+    partyResults,
+    voteSummaryResults,
+    aiAnalysis,
   });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
+  const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
+  const [ipfsData, setIpfsData] = useState(null);
 
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  // Función para subir a IPFS
+  const uploadToIPFS = async () => {
+    if (!photoUri) {
+      console.log('No photo to upload');
+      return null;
+    }
+
+    setUploadingToIPFS(true);
+
+    try {
+      console.log('🚀 Iniciando subida a IPFS...');
+
+      // Preparar datos adicionales
+      const additionalData = {
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.tableCode || tableData?.codigo || 'N/A',
+        location: tableData?.location || 'Bolivia',
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        userId: 'current-user-id', // Obtener del estado global
+        userName: 'Usuario Actual', // Obtener del estado global
+        role: 'witness',
+      };
+
+      // Preparar datos electorales
+      const electoralData = {
+        partyResults: partyResults || [],
+        voteSummaryResults: voteSummaryResults || [],
+      };
+
+      // Convertir URI a path
+      const imagePath = photoUri.replace('file://', '');
+
+      // Subir imagen y crear metadata completa
+      const result = await pinataService.uploadElectoralActComplete(
+        imagePath,
+        aiAnalysis || {},
+        electoralData,
+        additionalData,
+      );
+
+      if (result.success) {
+        console.log('✅ Subida a IPFS exitosa:', result.data);
+        setIpfsData(result.data);
+        return result.data;
+      } else {
+        console.error('❌ Error en subida a IPFS:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado en subida a IPFS:', error);
+      throw error;
+    } finally {
+      setUploadingToIPFS(false);
+    }
   };
 
   const handlePublishAndCertify = () => {
@@ -58,20 +132,41 @@ const PhotoConfirmationScreen = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmPublishAndCertify = () => {
+  const confirmPublishAndCertify = async () => {
     setStep(1);
-    // Simulate loading time
-    setTimeout(() => {
-      setShowConfirmModal(false);
-      setStep(0);
-      // Navigate to success screen instead of showing success modal
-      navigation.navigate(StackNav.SuccessScreen, {
-        successType: 'publish',
-        mesaData: tableData,
-        autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
-        showAutoNavigation: true,
-      });
-    }, 2000);
+
+    try {
+      // Subir a IPFS
+      const ipfsResult = await uploadToIPFS();
+
+      // Simular loading time adicional
+      setTimeout(() => {
+        setShowConfirmModal(false);
+        setStep(0);
+        // Navigate to success screen con datos de IPFS
+        navigation.navigate(StackNav.SuccessScreen, {
+          successType: 'publish',
+          mesaData: tableData,
+          ipfsData: ipfsResult,
+          autoNavigateDelay: 5000, // 5 segundos para mostrar los CIDs
+          showAutoNavigation: true,
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error en confirmPublishAndCertify:', error);
+      // Continuar sin IPFS en caso de error
+      setTimeout(() => {
+        setShowConfirmModal(false);
+        setStep(0);
+        navigation.navigate(StackNav.SuccessScreen, {
+          successType: 'publish',
+          mesaData: tableData,
+          autoNavigateDelay: 3000,
+          showAutoNavigation: true,
+          error: 'Error al subir a IPFS, pero el proceso continuó',
+        });
+      }, 1000);
+    }
   };
 
   const closeModal = () => {
@@ -173,8 +268,15 @@ const PhotoConfirmationScreen = () => {
                   {String.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain}
+                  {uploadingToIPFS
+                    ? 'Subiendo a IPFS...'
+                    : String.savingToBlockchain}
                 </CText>
+                {uploadingToIPFS && (
+                  <CText style={modalStyles.ipfsSubtext}>
+                    📤 Creando registro permanente en IPFS
+                  </CText>
+                )}
               </>
             )}
           </View>
@@ -280,6 +382,14 @@ const modalStyles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: getResponsiveSize(8, 16, 24),
     lineHeight: getResponsiveSize(18, 20, 24),
+  },
+  ipfsSubtext: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: getResponsiveSize(8, 10, 12),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    lineHeight: getResponsiveSize(16, 18, 20),
   },
 });
 
