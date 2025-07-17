@@ -19,7 +19,8 @@ import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
-import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
+//import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
+import RecoveryQR from '../container/TabBar/Recovery/RecoveryQR';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
 import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
@@ -166,7 +167,7 @@ export const AuthRoute = {
   FindMyUser,
   RecoveryUserQrpin,
   RecoveryUserQrpin2,
-  RecoveryQr,
+  RecoveryQR,
   MyGuardiansStatus,
   RecoveryUser1Pin,
   RecoveryUser2Pin,

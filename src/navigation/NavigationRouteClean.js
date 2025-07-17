@@ -18,6 +18,7 @@ import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
+//import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';

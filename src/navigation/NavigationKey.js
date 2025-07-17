@@ -92,7 +92,7 @@ export const AuthNav = {
   FindMyUser: 'FindMyUser',
   RecoveryUserQrpin: 'RecoveryUserQrpin',
   RecoveryUserQrpin2: 'RecoveryUserQrpin2',
-  RecoveryQr: 'RecoveryQr',
+  RecoveryQR: 'RecoveryQR',
   RecoveryFinalize: 'RecoveryFinalize',
   RecoveryUser1Pin: 'RecoveryUser1Pin',
   RecoveryUser2Pin: 'RecoveryUser2Pin',
