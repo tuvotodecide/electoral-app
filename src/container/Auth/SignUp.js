@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -104,7 +104,7 @@ export default function SignUp({navigation}) {
     );
   });
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper
         containerStyle={[
@@ -224,7 +224,7 @@ export default function SignUp({navigation}) {
           </CText>
         </TouchableOpacity>
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

@@ -3,7 +3,7 @@ import React, {useCallback, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {moderateScale} from '../../common/constants';
@@ -83,7 +83,7 @@ export default function RegisterUser2({navigation}) {
   );
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={2} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -143,7 +143,7 @@ export default function RegisterUser2({navigation}) {
         />
       </View>
       <DniExistsModal visible={isModalVisible} onClose={closeModal} />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

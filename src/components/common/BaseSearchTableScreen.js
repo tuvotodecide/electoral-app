@@ -151,9 +151,9 @@ const BaseSearchTableScreen = ({
           contentContainerStyle={{
             paddingBottom: getResponsiveSize(20, 30, 40),
           }}>
-          {finalTables.map(table => (
+          {finalTables.map((table, index) => (
             <View
-              key={table.id}
+              key={table.id || table._id || table.codigo || table.code || index}
               style={{
                 paddingHorizontal: layout.paddingHorizontal,
                 marginBottom: layout.marginBottom,
@@ -196,9 +196,15 @@ const BaseSearchTableScreen = ({
                 marginBottom: layout.marginBottom,
                 gap: getResponsiveSize(8, 12, 16),
               }}>
-              {group.map(table => (
+              {group.map((table, tableIndex) => (
                 <View
-                  key={table.id}
+                  key={
+                    table.id ||
+                    table._id ||
+                    table.codigo ||
+                    table.code ||
+                    tableIndex
+                  }
                   style={{
                     flex: layout.cardFlex,
                   }}>

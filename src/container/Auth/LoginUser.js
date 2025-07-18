@@ -10,7 +10,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import Keychain from 'react-native-keychain';
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -101,7 +101,6 @@ export default function LoginUser({navigation}) {
     // }
 
     const {streamId, privKey} = stored.payloadQr;
-
 
     // const {streamId, privKey} = payload;
 
@@ -248,7 +247,7 @@ export default function LoginUser({navigation}) {
   }
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <View
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
@@ -317,7 +316,7 @@ export default function LoginUser({navigation}) {
         buttonText={String.understand}
         onClose={() => setModal({visible: false, msg: ''})}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

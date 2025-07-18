@@ -26,6 +26,10 @@ export default function StackNavigation() {
 
       {/* Pantallas de Voto */}
       <Stack.Screen
+        name={StackNav.ElectoralLocations}
+        component={StackRoute.ElectoralLocations}
+      />
+      <Stack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />

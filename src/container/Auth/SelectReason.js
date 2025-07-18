@@ -2,7 +2,7 @@ import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import CHeader from '../../components/common/CHeader';
 import {styles} from '../../themes';
@@ -62,7 +62,7 @@ export default function SelectReason({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <StepIndicator step={4} />
       <ScrollView
@@ -115,7 +115,7 @@ export default function SelectReason({navigation}) {
           onPress={onPressContinue}
         />
       </ScrollView>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

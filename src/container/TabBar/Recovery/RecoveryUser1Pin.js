@@ -10,7 +10,7 @@ import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrappe
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
@@ -25,7 +25,6 @@ export default function RecoveryUser1Pin({navigation, route}) {
 
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
-
 
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUser2Pin, {
@@ -43,7 +42,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -71,7 +70,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
               autoFocusOnLoad={false}
-               ref={otpRef}
+              ref={otpRef}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {
@@ -93,7 +92,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

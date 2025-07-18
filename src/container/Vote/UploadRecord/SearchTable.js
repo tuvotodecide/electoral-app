@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react';
+import axios from 'axios';
 import {
   View,
   StyleSheet,
@@ -44,7 +45,7 @@ const getNumColumns = () => {
   return 1;
 };
 
-export default function SearchTable({navigation}) {
+export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
   const [sortOrder, setSortOrder] = useState(String.ascending);
@@ -62,9 +63,54 @@ export default function SearchTable({navigation}) {
   });
 
   // Cargar mesas al montar el componente
+
   useEffect(() => {
-    loadMesas();
-  }, []);
+    if (route?.params?.locationId) {
+      loadMesasFromApi(route.params.locationId);
+    } else {
+      loadMesas();
+    }
+  }, [route?.params?.locationId]);
+
+  const loadMesasFromApi = async locationId => {
+    try {
+      setIsLoadingMesas(true);
+      const response = await axios.get(
+        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
+      );
+      console.log('SearchTable - API Response:', response.data);
+
+      if (response.data && response.data.tables) {
+        console.log('SearchTable - Tables found:', response.data.tables.length);
+        console.log(
+          'SearchTable - First table structure:',
+          response.data.tables[0],
+        );
+        setMesas(response.data.tables);
+      } else if (
+        response.data &&
+        response.data.data &&
+        response.data.data.tables
+      ) {
+        console.log(
+          'SearchTable - Tables found in data.data:',
+          response.data.data.tables.length,
+        );
+        console.log(
+          'SearchTable - First table structure:',
+          response.data.data.tables[0],
+        );
+        setMesas(response.data.data.tables);
+      } else {
+        showModal('info', String.info, String.couldNotLoadTables);
+      }
+    } catch (error) {
+      console.error('SearchTable: Error loading mesas from API:', error);
+      showModal('error', String.error, String.errorLoadingTables);
+    } finally {
+      setIsLoadingMesas(false);
+    }
+  };
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
@@ -99,18 +145,45 @@ export default function SearchTable({navigation}) {
     }
   };
 
-  const filteredMesas = mesas.filter(
-    mesa =>
-      mesa.numero.toLowerCase().includes(searchText.toLowerCase()) ||
-      mesa.codigo.includes(searchText) ||
-      mesa.colegio.toLowerCase().includes(searchText.toLowerCase()),
-  );
+  const filteredMesas = mesas.filter(mesa => {
+    if (!mesa) return false;
+
+    const searchLower = searchText.toLowerCase();
+
+    // Buscar en número/tableNumber
+    const tableNumber = mesa.numero || mesa.tableNumber || mesa.number || '';
+    if (tableNumber.toString().toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Buscar en código
+    const codigo = mesa.codigo || mesa.code || '';
+    if (codigo.toString().includes(searchText)) {
+      return true;
+    }
+
+    // Buscar en colegio/escuela/location
+    const location =
+      mesa.colegio || mesa.escuela || mesa.location?.name || mesa.school || '';
+    if (location.toString().toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    return false;
+  });
 
   const sortedMesas = [...filteredMesas].sort((a, b) => {
+    const getTableNumber = mesa => {
+      return mesa.numero || mesa.tableNumber || mesa.number || '';
+    };
+
+    const aNumber = getTableNumber(a).toString();
+    const bNumber = getTableNumber(b).toString();
+
     if (sortOrder === String.ascending) {
-      return a.numero.localeCompare(b.numero);
+      return aNumber.localeCompare(bNumber);
     } else {
-      return b.numero.localeCompare(a.numero);
+      return bNumber.localeCompare(aNumber);
     }
   });
 
@@ -157,24 +230,37 @@ export default function SearchTable({navigation}) {
     }
   };
 
-  const renderMesaItem = ({item}) => (
-    <TouchableOpacity
-      style={[localStyle.mesaCard, isTablet && localStyle.mesaCardTablet]}
-      onPress={() => handleSelectMesa(item)}>
-      <View style={localStyle.mesaHeader}>
-        <CText style={localStyle.mesaTitle} color={colors.textColor}>
-          {item.numero}
+  const renderMesaItem = ({item}) => {
+    const tableNumber = item.numero || item.tableNumber || item.number || 'N/A';
+    const codigo = item.codigo || item.code || 'N/A';
+    const colegio =
+      item.colegio ||
+      item.escuela ||
+      item.location?.name ||
+      item.school ||
+      'N/A';
+    const provincia =
+      item.provincia || item.province || item.location?.province || 'N/A';
+
+    return (
+      <TouchableOpacity
+        style={[localStyle.mesaCard, isTablet && localStyle.mesaCardTablet]}
+        onPress={() => handleSelectMesa(item)}>
+        <View style={localStyle.mesaHeader}>
+          <CText style={localStyle.mesaTitle} color={colors.textColor}>
+            {tableNumber}
+          </CText>
+          <CText style={localStyle.codigoMesaText}>
+            {String.tableCode} {codigo}
+          </CText>
+        </View>
+        <CText style={localStyle.colegioText} color={colors.textColor}>
+          {colegio}
         </CText>
-        <CText style={localStyle.codigoMesaText}>
-          {String.tableCode} {item.codigo}
-        </CText>
-      </View>
-      <CText style={localStyle.colegioText} color={colors.textColor}>
-        {item.colegio}
-      </CText>
-      <CText style={localStyle.provinciaText}>{item.provincia}</CText>
-    </TouchableOpacity>
-  );
+        <CText style={localStyle.provinciaText}>{provincia}</CText>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <CSafeAreaView style={localStyle.container}>
@@ -256,7 +342,15 @@ export default function SearchTable({navigation}) {
           <FlatList
             data={sortedMesas}
             renderItem={renderMesaItem}
-            keyExtractor={item => item.id.toString()}
+            keyExtractor={(item, index) => {
+              return (
+                item.id?.toString() ||
+                item._id?.toString() ||
+                item.codigo?.toString() ||
+                item.code?.toString() ||
+                index.toString()
+              );
+            }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={localStyle.listContainer}
             numColumns={getNumColumns()}

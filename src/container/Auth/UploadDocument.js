@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
@@ -95,7 +95,7 @@ export default function UploadDocument({navigation}) {
     );
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <StepIndicator step={6} />
       <View style={localStyle.mainContainer}>
@@ -131,7 +131,7 @@ export default function UploadDocument({navigation}) {
           type={'B16'}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

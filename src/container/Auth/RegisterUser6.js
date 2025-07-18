@@ -2,7 +2,7 @@ import {StyleSheet, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -19,13 +19,13 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 
-export default function RegisterUser6({navigation,route}) {
+export default function RegisterUser6({navigation, route}) {
   const {vc, offerUrl, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
   const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser7, { vc, offerUrl, dni });
+    navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
   };
   const onPressRememberMe = () => {
     setCheck(!check);
@@ -49,7 +49,7 @@ export default function RegisterUser6({navigation,route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={6} />
       <CHeader onPressBack={() => navigation.navigate(AuthNav.RegisterUser4)} />
       <KeyBoardAvoidWrapper
@@ -120,7 +120,7 @@ export default function RegisterUser6({navigation,route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

@@ -75,11 +75,10 @@ export const SearchInput = ({
 
 // Table Card Component
 export const TableCard = ({table, onPress, styles}) => (
-  <TouchableOpacity
-    key={table.id}
-    style={styles.tableCard}
-    onPress={() => onPress(table)}>
-    <CText style={styles.tableCardTitle}>{table.numero}</CText>
+  <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
+    <CText style={styles.tableCardTitle}>
+      {table.numero || table.tableNumber || table.number || 'N/A'}
+    </CText>
     {/* <CText style={styles.tableCardDetail}>Precinct: {table.recinto}</CText>
     <CText style={styles.tableCardDetail}>Address: {table.direccion}</CText>
     <CText style={styles.tableCardDetail}>Table Code: {table.codigo}</CText> */}

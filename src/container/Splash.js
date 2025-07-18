@@ -53,27 +53,29 @@ export default function Splash({navigation}) {
             // Si no hay tema guardado, usar light por defecto
             dispatch(changeThemeAction(colors.light));
           }
-          const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
+          // const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
-          if (pending === 'true') {
-            navigation.navigate(StackNav.AuthNavigation, {
-              screen: AuthNav.MyGuardiansStatus,
-            });
-            return;
-          }
+          // if (pending === 'true') {
+          //   navigation.navigate(StackNav.AuthNavigation, {
+          //     screen: AuthNav.MyGuardiansStatus,
+          //   });
+          //   return;
+          // }
           // const alive = await isSessionValid();
 
           // if (alive) navigation.replace(StackNav.TabNavigation);
           // else navigation.replace(StackNav.AuthNavigation);
+          navigation.replace(StackNav.TabNavigation);
+          return;
 
-          const alive = await isSessionValid();
+          // const alive = await isSessionValid();
 
           
-          if (alive) navigation.replace(StackNav.TabNavigation);
-          else
-            navigation.replace(StackNav.AuthNavigation, {
-              screen: AuthNav.Connect, 
-            });
+          // if (alive) navigation.replace(StackNav.TabNavigation);
+          // else
+          //   navigation.replace(StackNav.AuthNavigation, {
+          //     screen: AuthNav.Connect, 
+          //   });
         }
       } catch (e) {
         console.log('error ', e);

@@ -130,7 +130,6 @@ export default function HomeScreen({navigation}) {
       dispatch(clearWallet()); // limpia payload de la wallet
       dispatch(clearAuth()); // setea isAuthenticated = false
 
- 
       navigation.reset({
         index: 0,
         routes: [{name: StackNav.AuthNavigation}],
@@ -139,15 +138,15 @@ export default function HomeScreen({navigation}) {
       console.error('Logout error', err);
     }
   };
-  const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  };
-  const userFullName = data.name || '(sin nombre)';
-  // const userFullName = 'Juan Pérez Cuéllar';
+  // const userData = useSelector(state => state.wallet.payload);
+  // const vc = userData?.vc;
+  // const subject = vc?.credentialSubject || {};
+  // const data = {
+  //   name: subject.fullName || '(sin nombre)',
+  //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  // };
+  // const userFullName = data.name || '(sin nombre)';
+  const userFullName = 'Juan Pérez Cuéllar';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -157,21 +156,30 @@ export default function HomeScreen({navigation}) {
       icon: 'camera-outline',
       title: String.uploadActa,
       description: String.uploadActaDescription,
-      onPress: () => navigation.navigate(StackNav.SearchTable),
+      onPress: () =>
+        navigation.navigate(StackNav.ElectoralLocations, {
+          targetScreen: 'SearchTable',
+        }),
       iconComponent: Ionicons,
     },
     {
       icon: 'eye-outline',
       title: String.witnessActa,
       description: String.witnessActaDescription,
-      onPress: () => navigation.navigate(StackNav.WitnessRecord),
+      onPress: () =>
+        navigation.navigate(StackNav.ElectoralLocations, {
+          targetScreen: 'WitnessRecord',
+        }),
       iconComponent: Ionicons,
     },
     {
       icon: 'megaphone-outline',
       title: String.announceCount,
       description: String.announceCountDescription,
-      onPress: () => navigation.navigate(StackNav.AnnounceCount),
+      onPress: () =>
+        navigation.navigate(StackNav.ElectoralLocations, {
+          targetScreen: 'AnnounceCount',
+        }),
       iconComponent: Ionicons,
     },
     {

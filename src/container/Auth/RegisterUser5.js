@@ -2,7 +2,7 @@ import {ActivityIndicator, Image, StyleSheet, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
@@ -85,8 +85,6 @@ export default function RegisterUser5({navigation, route}) {
           dni,
         });
       } catch (err) {
- 
-
         setErrorMessage('Error de verificación. Intenta de nuevo.');
         setErrorModalVisible(true);
       } finally {
@@ -96,7 +94,7 @@ export default function RegisterUser5({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={5} />
       <View style={localStyle.center}>
         <View style={localStyle.mainContainer}>
@@ -144,7 +142,7 @@ export default function RegisterUser5({navigation, route}) {
           });
         }}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

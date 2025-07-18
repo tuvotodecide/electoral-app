@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -27,7 +27,6 @@ export default function RegisterUser9({navigation, route}) {
 
   const otpRef = useRef(null);
 
-
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
@@ -42,7 +41,7 @@ export default function RegisterUser9({navigation, route}) {
         vc,
         offerUrl,
         useBiometry,
-        dni
+        dni,
       });
     } else {
       setShowError(true);
@@ -51,7 +50,7 @@ export default function RegisterUser9({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={9} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -114,7 +113,7 @@ export default function RegisterUser9({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

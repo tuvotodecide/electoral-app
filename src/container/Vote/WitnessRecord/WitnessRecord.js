@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react';
+import axios from 'axios';
 import {ActivityIndicator, View, Dimensions} from 'react-native';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../../components/common/CustomModal';
@@ -21,7 +22,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const WitnessRecordScreen = () => {
+const WitnessRecordScreen = ({navigation, route}) => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -46,9 +47,39 @@ const WitnessRecordScreen = () => {
   const styles = createSearchTableStyles();
 
   // Load tables when component mounts
+
   useEffect(() => {
-    loadTables();
-  }, []);
+    if (route?.params?.locationId) {
+      loadTablesFromApi(route.params.locationId);
+    } else {
+      loadTables();
+    }
+  }, [route?.params?.locationId]);
+
+  const loadTablesFromApi = async locationId => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(
+        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
+      );
+      if (response.data && response.data.tables) {
+        setMesas(response.data.tables);
+      } else if (
+        response.data &&
+        response.data.data &&
+        response.data.data.tables
+      ) {
+        setMesas(response.data.data.tables);
+      } else {
+        showModal('info', String.info, String.couldNotLoadTables);
+      }
+    } catch (error) {
+      console.error('WitnessRecord: Error loading tables from API:', error);
+      showModal('error', String.error, String.errorLoadingTables);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});

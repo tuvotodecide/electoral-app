@@ -43,9 +43,37 @@ const mockMesa = {
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
-  const mesa = route.params?.mesa || mockMesa;
+  const rawMesa = route.params?.mesa || mockMesa;
 
-  console.log('TableDetail - Mesa recibida:', mesa);
+  console.log('TableDetail - Mesa recibida:', rawMesa);
+
+  // Normalize mesa data structure
+  const mesa = {
+    numero: rawMesa.numero || rawMesa.tableNumber || rawMesa.number || 'N/A',
+    codigo: rawMesa.codigo || rawMesa.code || 'N/A',
+    colegio:
+      rawMesa.colegio ||
+      rawMesa.escuela ||
+      rawMesa.location?.name ||
+      rawMesa.school ||
+      'N/A',
+    provincia:
+      rawMesa.provincia ||
+      rawMesa.province ||
+      rawMesa.location?.province ||
+      'N/A',
+    recinto:
+      rawMesa.recinto ||
+      rawMesa.venue ||
+      rawMesa.location?.venue ||
+      rawMesa.colegio ||
+      rawMesa.escuela ||
+      rawMesa.location?.name ||
+      rawMesa.school ||
+      'N/A',
+  };
+
+  console.log('TableDetail - Mesa normalizada:', mesa);
 
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(

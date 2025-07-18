@@ -9,7 +9,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Keychain from 'react-native-keychain';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import {getHeight, JWT_KEY, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
@@ -235,7 +235,7 @@ export default function RegisterUser10({navigation, route}) {
   }[stage];
 
   return (
-    <CSafeAreaView style={localStyle.root}>
+    <CSafeAreaViewAuth style={localStyle.root}>
       <StepIndicator step={10} />
       <View style={localStyle.center}>
         <View style={localStyle.mainContainer}>
@@ -281,7 +281,7 @@ export default function RegisterUser10({navigation, route}) {
           });
         }}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

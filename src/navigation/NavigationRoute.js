@@ -1,3 +1,5 @@
+//import ElectoralLocations from '../container/Vote/Common/ElectoralLocations';
+import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
 import CreateNewPassword from '../container/Auth/CreateNewPassword';
 import CreatePin from '../container/Auth/CreatePin';
 import FaceIdScreen from '../container/Auth/FaceIdScreen';
@@ -90,6 +92,7 @@ import GuardiansAdmin from '../container/TabBar/Guardians/GuardiansAdmin';
 import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
+  ElectoralLocations,
   Splash,
   AuthNavigation,
   TabNavigation,

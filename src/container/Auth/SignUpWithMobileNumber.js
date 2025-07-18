@@ -9,11 +9,11 @@ import CountryPicker, {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../themes';
-import { getHeight, moderateScale} from '../../common/constants';
+import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import CInput from '../../components/common/CInput';
@@ -81,7 +81,7 @@ export default function SignUpWithMobileNumber({route, navigation}) {
     navigation.navigate(AuthNav.OTPCode, {title: title});
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
@@ -151,7 +151,7 @@ export default function SignUpWithMobileNumber({route, navigation}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

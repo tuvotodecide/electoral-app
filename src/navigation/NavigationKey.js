@@ -1,4 +1,5 @@
 export const StackNav = {
+  ElectoralLocations: 'ElectoralLocations',
   Splash: 'Splash',
   OnBoarding: 'OnBoarding',
   AuthNavigation: 'AuthNavigation',
@@ -11,6 +12,7 @@ export const StackNav = {
   RecoveryFinalize: 'RecoveryFinalize',
 
   // Nuevas rutas para Mi Voto
+
   SearchTable: 'SearchTable',
   TableDetail: 'TableDetail',
   CameraScreen: 'CameraScreen',
@@ -98,4 +100,3 @@ export const AuthNav = {
   RecoveryUser2Pin: 'RecoveryUser2Pin',
   MyGuardiansStatus: 'MyGuardiansStatus',
 };
-

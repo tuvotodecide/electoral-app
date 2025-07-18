@@ -1205,4 +1205,24 @@ export default {
     'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes 72 horas desde su cuenta.',
   messengePrivacity:
     'Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.',
+  
+  // Electoral Locations
+  electoralLocations: 'Recintos Electorales',
+  gettingLocation: 'Obteniendo ubicación...',
+  loadingNearbyLocations: 'Cargando recintos cercanos...',
+  showingNearbyLocations: 'Mostrando recintos cercanos a ti',
+  noLocationsFound: 'No se encontraron recintos',
+  noLocationsFoundSubtitle: 'No hay recintos electorales cerca de tu ubicación',
+  noNearbyLocations: 'No hay recintos cercanos disponibles',
+  errorFetchingLocations: 'Error al cargar los recintos electorales',
+  locationPermissionTitle: 'Permiso de ubicación',
+  locationPermissionMessage: 'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+  locationPermissionDenied: 'Permiso de ubicación denegado',
+  locationError: 'Error al obtener la ubicación',
+  locationPermissionError: 'Error al solicitar permisos de ubicación',
+  askMeLater: 'Preguntar después',
+  ok: 'OK',
+  tables: 'mesas',
+  code: 'Código',
+  info: 'Información',
 };

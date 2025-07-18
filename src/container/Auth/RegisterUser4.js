@@ -11,7 +11,7 @@ import {launchCamera} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
 import {check, RESULTS, openSettings} from 'react-native-permissions';
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {moderateScale} from '../../common/constants';
@@ -91,7 +91,7 @@ export default function RegisterUser4({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={4} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -125,7 +125,7 @@ export default function RegisterUser4({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

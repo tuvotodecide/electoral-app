@@ -4,7 +4,7 @@ import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../../components/common/CText';
@@ -54,7 +54,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
     } catch (err) {
-
       Alert.alert('Error', err.message);
     }
   };
@@ -68,7 +67,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={9} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -121,7 +120,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 
