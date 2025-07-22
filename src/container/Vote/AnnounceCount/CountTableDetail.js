@@ -40,7 +40,32 @@ const mockMesa = {
 
 export default function CountTableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  const mesa = route?.params?.mesa || mockMesa;
+  // Try to get mesa from either 'mesa' or 'table' parameter
+  const mesaData = route?.params?.mesa || route?.params?.table;
+  const originalTable = route?.params?.originalTable;
+  const locationData = route?.params?.locationData;
+  
+  console.log('CountTableDetail: Received mesa data:', mesaData);
+  console.log('CountTableDetail: Original table data:', originalTable);
+  console.log('CountTableDetail: Location data:', locationData);
+  console.log('CountTableDetail: All route params:', route?.params);
+
+  // Use the processed mesa data if available, otherwise fallback to mock
+  const mesa = mesaData || mockMesa;
+
+  // Ensure all required fields are present with fallbacks
+  const processedMesa = {
+    numero: mesa.numero || mesa.tableNumber || mesa.number || mesa.name || mesa.id || 'Mesa N/A',
+    codigo: mesa.codigo || mesa.tableCode || mesa.code || mesa.id || 'N/A',
+    recinto: mesa.recinto || mesa.venue || mesa.precinctName || mesa.colegio || 'Recinto N/A',
+    colegio: mesa.colegio || mesa.venue || mesa.precinctName || mesa.recinto || 'Colegio N/A',
+    provincia: mesa.provincia || mesa.direccion || mesa.address || 'Provincia N/A',
+    zona: mesa.zona || mesa.zone || 'Zona N/A',
+    distrito: mesa.distrito || mesa.district || 'Distrito N/A',
+  };
+
+  console.log('CountTableDetail: Processed mesa data for display:', processedMesa);
+
   const [modalVisible, setModalVisible] = React.useState(false);
 
   const handleAnnounceCount = () => {
@@ -91,15 +116,25 @@ export default function CountTableDetail({navigation, route}) {
               <View style={stylesx.card}>
                 <View style={stylesx.cardContent}>
                   <View style={stylesx.cardTextContainer}>
-                    <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                    <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
                     <CText style={stylesx.label}>
-                      {String.venue} {mesa.recinto}
+                      {String.venue} {processedMesa.recinto}
                     </CText>
-                    <CText style={stylesx.label}>{mesa.colegio}</CText>
-                    <CText style={stylesx.label}>{mesa.provincia}</CText>
+                    <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                    <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                     <CText style={stylesx.label}>
-                      {String.tableCode} {mesa.codigo}
+                      {String.tableCode} {processedMesa.codigo}
                     </CText>
+                    {processedMesa.zona !== 'Zona N/A' && (
+                      <CText style={stylesx.label}>
+                        Zona: {processedMesa.zona}
+                      </CText>
+                    )}
+                    {processedMesa.distrito !== 'Distrito N/A' && (
+                      <CText style={stylesx.label}>
+                        Distrito: {processedMesa.distrito}
+                      </CText>
+                    )}
                   </View>
                   <MaterialIcons
                     name="how-to-vote"
@@ -129,15 +164,25 @@ export default function CountTableDetail({navigation, route}) {
             <View style={stylesx.card}>
               <View style={stylesx.cardContent}>
                 <View style={stylesx.cardTextContainer}>
-                  <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                  <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
                   <CText style={stylesx.label}>
-                    {String.venue} {mesa.recinto}
+                    {String.venue} {processedMesa.recinto}
                   </CText>
-                  <CText style={stylesx.label}>{mesa.colegio}</CText>
-                  <CText style={stylesx.label}>{mesa.provincia}</CText>
+                  <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                  <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                   <CText style={stylesx.label}>
-                    {String.tableCode} {mesa.codigo}
+                    {String.tableCode} {processedMesa.codigo}
                   </CText>
+                  {processedMesa.zona !== 'Zona N/A' && (
+                    <CText style={stylesx.label}>
+                      Zona: {processedMesa.zona}
+                    </CText>
+                  )}
+                  {processedMesa.distrito !== 'Distrito N/A' && (
+                    <CText style={stylesx.label}>
+                      Distrito: {processedMesa.distrito}
+                    </CText>
+                  )}
                 </View>
                 <MaterialIcons
                   name="how-to-vote"
@@ -175,7 +220,7 @@ export default function CountTableDetail({navigation, route}) {
                 <CText style={stylesx.modalSubtitle}>
                   {String.announcingTableCount.replace(
                     '{tableName}',
-                    mesa.numero,
+                    processedMesa.numero,
                   )}
                 </CText>
               </View>
@@ -207,7 +252,7 @@ export default function CountTableDetail({navigation, route}) {
                   <CText style={stylesx.modalSubtitle}>
                     {String.wishToAnnounceCount.replace(
                       '{tableName}',
-                      mesa.numero,
+                      processedMesa.numero,
                     )}
                   </CText>
                 </View>

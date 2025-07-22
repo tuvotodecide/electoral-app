@@ -46,23 +46,49 @@ export default function TableDetail({navigation, route}) {
   const rawMesa = route.params?.mesa || mockMesa;
 
   console.log('TableDetail - Mesa recibida:', rawMesa);
+  console.log('TableDetail - Zone data debug:', {
+    zone: rawMesa.zone,
+    zona: rawMesa.zona,
+    electoralZone: rawMesa.electoralZone,
+    district: rawMesa.district,
+    locationZone: rawMesa.location?.zone,
+    locationDistrict: rawMesa.location?.district,
+    allKeys: Object.keys(rawMesa),
+  });
 
   // Normalize mesa data structure
   const mesa = {
-    numero: rawMesa.numero || rawMesa.tableNumber || rawMesa.number || 'N/A',
-    codigo: rawMesa.codigo || rawMesa.code || 'N/A',
+    numero:
+      rawMesa.tableNumber ||
+      rawMesa.numero ||
+      rawMesa.number ||
+      rawMesa.id ||
+      rawMesa.tableId ||
+      'FALLBACK-NUMERO',
+    tableNumber:
+      rawMesa.tableNumber ||
+      rawMesa.numero ||
+      rawMesa.number ||
+      rawMesa.id ||
+      rawMesa.tableId ||
+      'FALLBACK-TABLENUMBER',
+    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || '2352',
     colegio:
+      rawMesa.name ||
+      rawMesa.recinto ||
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
       rawMesa.school ||
       'N/A',
     provincia:
+      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
       rawMesa.provincia ||
       rawMesa.province ||
       rawMesa.location?.province ||
       'N/A',
     recinto:
+      rawMesa.name ||
       rawMesa.recinto ||
       rawMesa.venue ||
       rawMesa.location?.venue ||
@@ -71,9 +97,24 @@ export default function TableDetail({navigation, route}) {
       rawMesa.location?.name ||
       rawMesa.school ||
       'N/A',
+    direccion:
+      rawMesa.address ||
+      rawMesa.direccion ||
+      rawMesa.location?.address ||
+      'N/A',
+    zone:
+      rawMesa.zone ||
+      rawMesa.district ||
+      rawMesa.zona ||
+      rawMesa.electoralZone ||
+      rawMesa.location?.zone ||
+      rawMesa.location?.district ||
+      'Zona no especificada',
   };
 
   console.log('TableDetail - Mesa normalizada:', mesa);
+  console.log('TableDetail - Mesa numero específico:', mesa.numero);
+  console.log('TableDetail - Mesa tableNumber específico:', mesa.tableNumber);
 
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(
@@ -85,12 +126,46 @@ export default function TableDetail({navigation, route}) {
 
   // Navega a la cámara interna
   const handleTakePhoto = () => {
-    navigation.navigate(StackNav.CameraScreen, {
-      mesaData: {
-        ...mesa,
-        ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      },
+    console.log('TableDetail - handleTakePhoto: mesa data:', mesa);
+    console.log('TableDetail - handleTakePhoto: normalized tableData:', {
+      ...mesa,
+      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
     });
+    console.log('TableDetail - handleTakePhoto: mesa.numero:', mesa.numero);
+    console.log(
+      'TableDetail - handleTakePhoto: mesa.tableNumber:',
+      mesa.tableNumber,
+    );
+
+    const finalTableData = {
+      ...mesa,
+      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
+      // Ensure multiple ways to access mesa number
+      tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
+      numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
+      number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
+    };
+
+    console.log(
+      'TableDetail - handleTakePhoto: finalTableData:',
+      finalTableData,
+    );
+
+    try {
+      navigation.navigate(StackNav.CameraScreen, {
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        mesa: finalTableData,
+      });
+    } catch (error) {
+      console.error('TableDetail - Error navigating to CameraScreen:', error);
+      // Fallback navigation
+      navigation.navigate('CameraScreen', {
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        mesa: finalTableData,
+      });
+    }
   };
 
   const handleConfirmPhoto = () => {
@@ -105,12 +180,21 @@ export default function TableDetail({navigation, route}) {
   const handleRetakePhoto = () => {
     setModalVisible(false);
     setCapturedImage(null);
+
+    const finalTableData = {
+      ...mesa,
+      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
+      // Ensure multiple ways to access mesa number
+      tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
+      numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
+      number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
+    };
+
     // Navegar de vuelta a la cámara para tomar otra foto
     navigation.navigate(StackNav.CameraScreen, {
-      mesaData: {
-        ...mesa,
-        ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      },
+      tableData: finalTableData,
+      mesaData: finalTableData,
+      mesa: finalTableData,
     });
   };
 
@@ -144,24 +228,25 @@ export default function TableDetail({navigation, route}) {
                 </CText>
               </View>
 
-              <View style={stylesx.card}>
-                <View style={stylesx.cardContent}>
-                  <View style={stylesx.cardTextContainer}>
-                    <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-                    <CText style={stylesx.label}>
-                      {String.venue}: {mesa.recinto}
+              <View style={stylesx.tableCard}>
+                <View style={stylesx.tableCardHeader}>
+                  <View style={stylesx.tableCardContent}>
+                    <CText style={stylesx.tableCardTitle}>
+                      Mesa {mesa.numero}
                     </CText>
-                    <CText style={stylesx.label}>{mesa.colegio}</CText>
-                    <CText style={stylesx.label}>{mesa.provincia}</CText>
-                    <CText style={stylesx.label}>
-                      {String.tableCode}: {mesa.codigo}
+                    <CText style={stylesx.tableCardDetail}>
+                      Recinto: {mesa.recinto}
+                    </CText>
+                    <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
+                    <CText style={stylesx.tableCardDetail}>
+                      Código de Mesa: {mesa.codigo}
                     </CText>
                   </View>
                   <MaterialIcons
                     name="how-to-vote"
-                    size={getResponsiveSize(50, 60, 70)}
-                    color={colors.textColor || '#222'}
-                    style={stylesx.cardIcon}
+                    size={getResponsiveSize(40, 48, 56)}
+                    color="#000"
+                    style={stylesx.downloadIcon}
                   />
                 </View>
               </View>
@@ -207,24 +292,25 @@ export default function TableDetail({navigation, route}) {
               </CText>
             </View>
 
-            <View style={stylesx.card}>
-              <View style={stylesx.cardContent}>
-                <View style={stylesx.cardTextContainer}>
-                  <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
-                  <CText style={stylesx.label}>
-                    {String.venue}: {mesa.recinto}
+            <View style={stylesx.tableCard}>
+              <View style={stylesx.tableCardHeader}>
+                <View style={stylesx.tableCardContent}>
+                  <CText style={stylesx.tableCardTitle}>
+                    Mesa {mesa.numero}
                   </CText>
-                  <CText style={stylesx.label}>{mesa.colegio}</CText>
-                  <CText style={stylesx.label}>{mesa.provincia}</CText>
-                  <CText style={stylesx.label}>
-                    {String.tableCode}: {mesa.codigo}
+                  <CText style={stylesx.tableCardDetail}>
+                    Recinto: {mesa.recinto}
+                  </CText>
+                  <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
+                  <CText style={stylesx.tableCardDetail}>
+                    Código de Mesa: {mesa.codigo}
                   </CText>
                 </View>
                 <MaterialIcons
                   name="how-to-vote"
-                  size={getResponsiveSize(50, 60, 70)}
-                  color={colors.textColor || '#222'}
-                  style={stylesx.cardIcon}
+                  size={getResponsiveSize(40, 48, 56)}
+                  color="#000"
+                  style={stylesx.downloadIcon}
                 />
               </View>
             </View>
@@ -366,11 +452,10 @@ const stylesx = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   mesaTitle: {
-    fontSize: getResponsiveSize(16, 17, 20),
+    fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: 'bold',
+    color: '#222',
     marginBottom: getResponsiveSize(4, 6, 8),
-    color: '#111',
-    lineHeight: getResponsiveSize(20, 22, 26),
   },
   label: {
     fontSize: getResponsiveSize(13, 14, 16),
@@ -450,5 +535,48 @@ const stylesx = StyleSheet.create({
     borderRadius: getResponsiveSize(8, 10, 12),
     alignItems: 'center',
     padding: getResponsiveSize(14, 16, 20),
+  },
+  // Table card styles - identical to SearchTableComponents
+  tableCard: {
+    backgroundColor: '#fff',
+    borderRadius: getResponsiveSize(6, 8, 10),
+    padding: getResponsiveSize(12, 16, 18),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(18, 20, 25),
+    marginBottom: getResponsiveSize(8, 12, 14),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  tableCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  tableCardContent: {
+    flex: 1,
+    paddingRight: getResponsiveSize(12, 16, 20),
+  },
+  tableCardTitle: {
+    fontSize: getResponsiveSize(18, 20, 24),
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  tableCardDetail: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#868686',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  tableCardZone: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  downloadIcon: {
+    alignSelf: 'center',
   },
 });

@@ -1136,7 +1136,7 @@ export default {
 
   // agregados que faltaban en en.js
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
-  verifyTableInformation: 'Verificar Información de la Mesa',
+  verifyTableInformation: 'Asegúrate que esta es la mesa asignada',
 
   // Cámara
   preparingCamera: 'Preparando cámara',

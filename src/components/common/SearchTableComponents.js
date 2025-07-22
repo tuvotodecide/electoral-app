@@ -74,19 +74,57 @@ export const SearchInput = ({
 );
 
 // Table Card Component
-export const TableCard = ({table, onPress, styles}) => (
-  <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
-    <CText style={styles.tableCardTitle}>
-      {table.numero || table.tableNumber || table.number || 'N/A'}
-    </CText>
-    {/* <CText style={styles.tableCardDetail}>Precinct: {table.recinto}</CText>
-    <CText style={styles.tableCardDetail}>Address: {table.direccion}</CText>
-    <CText style={styles.tableCardDetail}>Table Code: {table.codigo}</CText> */}
-    <CText style={styles.tableCardDetail}> {table.recinto}</CText>
-    <CText style={styles.tableCardDetail}> {table.direccion}</CText>
-    <CText style={styles.tableCardDetail}> {table.codigo}</CText>
-  </TouchableOpacity>
-);
+export const TableCard = ({table, onPress, styles, locationData}) => {
+  // Debug: log complete table structure to analyze available fields
+  console.log(
+    'TableCard: Complete table object:',
+    JSON.stringify(table, null, 2),
+  );
+  console.log('TableCard: Available keys:', Object.keys(table));
+  console.log('TableCard: Location data:', locationData);
+
+  // Extract table information with API structure
+  const tableNumber =
+    table.tableNumber ||
+    table.numero ||
+    table.number ||
+    table.name ||
+    table.id ||
+    'N/A';
+
+  // Use location data from parent response for recinto and direccion
+  const recinto =
+    locationData?.name ||
+    table.recinto ||
+    table.venue ||
+    table.precinctName ||
+    'N/A';
+  const direccion =
+    locationData?.address ||
+    table.direccion ||
+    table.address ||
+    table.provincia ||
+    'N/A';
+  const codigo =
+    table.tableCode || table.codigo || table.code || table.id || 'N/A';
+
+  // Debug: log extracted values to verify mapping
+  console.log('TableCard: Extracted values:', {
+    tableNumber,
+    recinto,
+    direccion,
+    codigo,
+  });
+
+  return (
+    <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
+      <CText style={styles.tableCardTitle}>Mesa {tableNumber}</CText>
+      <CText style={styles.tableCardDetail}>Recinto: {recinto}</CText>
+      <CText style={styles.tableCardDetail}>Dirección: {direccion}</CText>
+      <CText style={styles.tableCardDetail}>Código de Mesa: {codigo}</CText>
+    </TouchableOpacity>
+  );
+};
 
 // Export UniversalHeader for use in other components
 export {default as UniversalHeader} from './UniversalHeader';

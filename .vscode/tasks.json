@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run React Native App",
+      "type": "shell",
+      "command": "npx react-native run-android",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

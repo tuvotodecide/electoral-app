@@ -372,6 +372,17 @@ export default function CameraScreen({navigation, route}) {
     setAnalyzing(true);
     const mesaInfo = route.params?.tableData || {};
 
+    console.log(
+      'CameraScreen - handleNext: received route.params:',
+      route.params,
+    );
+    console.log('CameraScreen - handleNext: mesaInfo:', mesaInfo);
+    console.log(
+      'CameraScreen - handleNext: mesaInfo tableNumber:',
+      mesaInfo.tableNumber,
+    );
+    console.log('CameraScreen - handleNext: mesaInfo numero:', mesaInfo.numero);
+
     try {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(

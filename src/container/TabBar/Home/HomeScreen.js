@@ -5,8 +5,10 @@ import {
   Dimensions,
   Modal,
   Linking,
+  ScrollView,
+  FlatList,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {useDispatch} from 'react-redux';
 import {clearAuth} from '../../../redux/slices/authSlice';
 import {clearWallet} from '../../../redux/action/walletAction';
@@ -59,6 +61,33 @@ const getCardLayout = () => {
 };
 
 const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
+
+// Gas Indicator Component
+const GasIndicator = ({gasPrice}) => (
+  <View style={stylesx.gasContainer}>
+    <CText style={stylesx.gasLabel}>Gas (USDT):</CText>
+    <CText style={stylesx.gasPrice}>{gasPrice}</CText>
+  </View>
+);
+
+// Carousel Item Component
+const CarouselItem = ({item}) => (
+  <View style={[stylesx.carouselItem, {backgroundColor: item.backgroundColor}]}>
+    <View style={stylesx.carouselContent}>
+      <View style={stylesx.carouselTextContainer}>
+        <CText style={stylesx.carouselTitle}>{item.title}</CText>
+        <CText style={stylesx.carouselSubtitle}>{item.subtitle}</CText>
+      </View>
+      <TouchableOpacity
+        style={stylesx.carouselButton}
+        onPress={item.onPress}
+        activeOpacity={0.8}>
+        <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
+        <Ionicons name="chevron-forward" size={16} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
 
 const MiVotoLogo = () => (
   <View style={stylesx.logoRow}>
@@ -116,6 +145,61 @@ export default function HomeScreen({navigation}) {
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const [gasPrice, setGasPrice] = useState('10.32'); // Mock gas price in USDT
+  const carouselRef = useRef(null);
+
+  // Datos del carrusel
+  const carouselData = [
+    {
+      id: 1,
+      title: '¿Necesita un app blockchain?',
+      subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
+      buttonText: 'Más Info',
+      backgroundColor: '#e8f5e8',
+      onPress: () => Linking.openURL('https://blockchainconsultora.com/es'),
+    },
+    {
+      id: 2,
+      title: 'Participa en el proceso electoral',
+      subtitle: 'Tu voto cuenta, sé parte del cambio democrático',
+      buttonText: 'Conocer más',
+      backgroundColor: '#e8f0ff',
+      onPress: () => console.log('Electoral info pressed'),
+    },
+    {
+      id: 3,
+      title: 'Transparencia y confianza',
+      subtitle: 'Tecnología blockchain para procesos electorales seguros',
+      buttonText: 'Descubrir',
+      backgroundColor: '#fff5e8',
+      onPress: () => console.log('Blockchain info pressed'),
+    },
+    {
+      id: 4,
+      title: 'Seguridad garantizada',
+      subtitle: 'Protegemos la integridad de cada voto con tecnología avanzada',
+      buttonText: 'Ver más',
+      backgroundColor: '#f0f8ff',
+      onPress: () => console.log('Security info pressed'),
+    },
+  ];
+
+  // Auto-scroll del carrusel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (carouselRef.current) {
+        const nextIndex = (currentCarouselIndex + 1) % carouselData.length;
+        carouselRef.current.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+        setCurrentCarouselIndex(nextIndex);
+      }
+    }, 5000); // Cambia cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [currentCarouselIndex, carouselData.length]);
 
   const handleLogout = async () => {
     try {
@@ -256,8 +340,7 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.tabletLeftColumn}>
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
-              <View
-                style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+              <View style={stylesx.headerIcons}>
                 <TouchableOpacity onPress={onPressNotification}>
                   <Ionicons
                     name={'notifications-outline'}
@@ -265,9 +348,7 @@ export default function HomeScreen({navigation}) {
                     color={'#222'}
                   />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={onPressLogout}
-                  style={{marginLeft: 8}}>
+                <TouchableOpacity onPress={onPressLogout}>
                   <Ionicons
                     name="log-out-outline"
                     size={getResponsiveSize(24, 28, 32)}
@@ -278,12 +359,46 @@ export default function HomeScreen({navigation}) {
             </View>
 
             <View style={stylesx.welcomeContainer}>
-              <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
-              <CText style={stylesx.nombre}>{userFullName}!</CText>
+              <View style={stylesx.welcomeHeader}>
+                <View style={stylesx.welcomeTextContainer}>
+                  <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                  <CText style={stylesx.nombre}>{userFullName}!</CText>
+                </View>
+                <GasIndicator gasPrice={gasPrice} />
+              </View>
             </View>
 
-            {/* Banner Blockchain Consultora */}
-            <BlockchainConsultoraBanner />
+            {/* Carrusel deslizable */}
+            <View style={stylesx.carouselContainer}>
+              <FlatList
+                ref={carouselRef}
+                data={carouselData}
+                renderItem={({item}) => <CarouselItem item={item} />}
+                keyExtractor={item => item.id.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={event => {
+                  const index = Math.round(
+                    event.nativeEvent.contentOffset.x / screenWidth,
+                  );
+                  setCurrentCarouselIndex(index);
+                }}
+              />
+              {/* Indicadores de página */}
+              <View style={stylesx.pageIndicators}>
+                {carouselData.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      stylesx.pageIndicator,
+                      index === currentCarouselIndex &&
+                        stylesx.activePageIndicator,
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
 
           {/* Right Column: Menu Cards */}
@@ -321,7 +436,7 @@ export default function HomeScreen({navigation}) {
         <View style={stylesx.regularContainer}>
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+            <View style={stylesx.headerIcons}>
               <TouchableOpacity onPress={onPressNotification}>
                 <Ionicons
                   name={'notifications-outline'}
@@ -329,7 +444,7 @@ export default function HomeScreen({navigation}) {
                   color={'#222'}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onPressLogout} style={{marginLeft: 8}}>
+              <TouchableOpacity onPress={onPressLogout}>
                 <Ionicons
                   name="log-out-outline"
                   size={getResponsiveSize(24, 28, 32)}
@@ -341,12 +456,46 @@ export default function HomeScreen({navigation}) {
 
           {/* ===== Bienvenida ===== */}
           <View style={stylesx.welcomeContainer}>
-            <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
-            <CText style={stylesx.nombre}>{userFullName}!</CText>
+            <View style={stylesx.welcomeHeader}>
+              <View style={stylesx.welcomeTextContainer}>
+                <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                <CText style={stylesx.nombre}>{userFullName}!</CText>
+              </View>
+              <GasIndicator gasPrice={gasPrice} />
+            </View>
           </View>
 
-          {/* Banner Blockchain Consultora */}
-          <BlockchainConsultoraBanner />
+          {/* Carrusel deslizable */}
+          <View style={stylesx.carouselContainer}>
+            <FlatList
+              ref={carouselRef}
+              data={carouselData}
+              renderItem={({item}) => <CarouselItem item={item} />}
+              keyExtractor={item => item.id.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={event => {
+                const index = Math.round(
+                  event.nativeEvent.contentOffset.x / screenWidth,
+                );
+                setCurrentCarouselIndex(index);
+              }}
+            />
+            {/* Indicadores de página */}
+            <View style={stylesx.pageIndicators}>
+              {carouselData.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    stylesx.pageIndicator,
+                    index === currentCarouselIndex &&
+                      stylesx.activePageIndicator,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
 
           {/* ===== Cards de Menú ===== */}
           <View style={stylesx.gridContainer}>
@@ -600,5 +749,112 @@ const stylesx = StyleSheet.create({
     marginTop: 1,
     marginBottom: -3,
     opacity: 0.78,
+  },
+  // Gas Indicator Styles
+  gasContainer: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: getResponsiveSize(10, 12, 14),
+    paddingVertical: getResponsiveSize(6, 8, 10),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    alignItems: 'center',
+    minWidth: getResponsiveSize(80, 90, 100),
+  },
+  gasLabel: {
+    fontSize: getResponsiveSize(10, 11, 12),
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  gasPrice: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4CAF50',
+    fontWeight: '700',
+  },
+  // Welcome Section Styles
+  welcomeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    paddingRight: getResponsiveSize(16, 20, 24),
+  },
+  welcomeTextContainer: {
+    flex: 1,
+    marginRight: getResponsiveSize(20, 24, 28),
+  },
+  // Header Styles
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveSize(8, 12, 16),
+  },
+  // Carousel Styles
+  carouselContainer: {
+    marginVertical: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(50, 24, 28),
+  },
+  carouselItem: {
+    width: screenWidth - getResponsiveSize(32, 40, 48),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    borderRadius: getResponsiveSize(12, 16, 20),
+    padding: getResponsiveSize(12, 16, 20),
+    minHeight: getResponsiveSize(130, 60, 70),
+  },
+  carouselContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  carouselTextContainer: {
+    flex: 1,
+  },
+  carouselTitle: {
+    fontSize: getResponsiveSize(16, 18, 22),
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: getResponsiveSize(6, 8, 10),
+  },
+  carouselSubtitle: {
+    fontSize: getResponsiveSize(13, 14, 16),
+    color: '#666',
+    lineHeight: getResponsiveSize(18, 20, 22),
+    marginBottom: getResponsiveSize(8, 12, 16),
+  },
+  carouselButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    paddingVertical: getResponsiveSize(8, 10, 12),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveSize(4, 6, 8),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  carouselButtonText: {
+    fontSize: getResponsiveSize(13, 14, 16),
+    fontWeight: '600',
+    color: '#fff',
+  },
+  pageIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: getResponsiveSize(12, 16, 20),
+    gap: getResponsiveSize(6, 8, 10),
+  },
+  pageIndicator: {
+    width: getResponsiveSize(6, 8, 10),
+    height: getResponsiveSize(6, 8, 10),
+    borderRadius: getResponsiveSize(3, 4, 5),
+    backgroundColor: '#d1d5db',
+  },
+  activePageIndicator: {
+    backgroundColor: '#4CAF50',
+    width: getResponsiveSize(16, 20, 24),
   },
 });

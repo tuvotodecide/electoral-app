@@ -61,16 +61,54 @@ const WhichIsCorrectScreen = () => {
 
   // Cargar actas de la mesa al montar el componente
   useEffect(() => {
-    if (tableData?.id) {
-      loadActasByMesa(tableData.id);
+    console.log(
+      'WhichIsCorrectScreen - useEffect triggered with tableData:',
+      tableData,
+    );
+
+    // Try to get ID from multiple possible fields
+    const mesaId =
+      tableData?.id ||
+      tableData?.numero ||
+      tableData?.tableNumber ||
+      tableData?.number;
+    console.log('WhichIsCorrectScreen - Extracted mesaId:', mesaId);
+
+    if (mesaId) {
+      loadActasByMesa(mesaId);
+    } else {
+      console.warn(
+        'WhichIsCorrectScreen - No valid mesa ID found, using fallback',
+      );
+      // Fallback: load default data if no ID is found
+      setActaImages([
+        {
+          id: '1',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+        },
+      ]);
+      setIsLoadingActas(false);
     }
-  }, [tableData]);
+  }, [tableData, photoUri]);
 
   const loadActasByMesa = async mesaId => {
     try {
       setIsLoadingActas(true);
       console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
-      const response = await fetchActasByMesa(mesaId);
+
+      // For string IDs (like "Mesa 1"), try to extract numeric ID
+      let numericId = mesaId;
+      if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
+        const match = mesaId.match(/\d+/);
+        if (match) {
+          numericId = parseInt(match[0], 10);
+        }
+      }
+
+      console.log('WhichIsCorrectScreen: Using numeric ID:', numericId);
+      const response = await fetchActasByMesa(numericId);
 
       if (response.success) {
         console.log(
@@ -92,6 +130,23 @@ const WhichIsCorrectScreen = () => {
               'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
           },
         ]);
+        // Set default party results for fallback
+        setPartyResults([
+          {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
+          {
+            id: 'mas-ipsp',
+            partido: 'MAS-IPSP',
+            presidente: '12',
+            diputado: '8',
+          },
+          {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
+          {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
+        ]);
+        setVoteSummaryResults([
+          {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
+          {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
+          {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
+        ]);
       }
     } catch (error) {
       console.error('WhichIsCorrectScreen: Error loading actas:', error);
@@ -104,6 +159,18 @@ const WhichIsCorrectScreen = () => {
             photoUri ||
             'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
         },
+      ]);
+      // Set default party results for fallback
+      setPartyResults([
+        {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
+        {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
+        {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
+        {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
+      ]);
+      setVoteSummaryResults([
+        {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
+        {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
+        {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
       ]);
     } finally {
       setIsLoadingActas(false);
@@ -131,10 +198,24 @@ const WhichIsCorrectScreen = () => {
     if (selectedImageId) {
       const selectedImage = actaImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
+        console.log(
+          'WhichIsCorrectScreen - handleVerMasDetalles: Passing tableData:',
+          tableData,
+        );
+        console.log(
+          'WhichIsCorrectScreen - tableData keys:',
+          Object.keys(tableData || {}),
+        );
+        console.log('WhichIsCorrectScreen - tableNumber fields:', {
+          tableNumber: tableData?.tableNumber,
+          numero: tableData?.numero,
+          number: tableData?.number,
+        });
+
         // Navigate to RecordReviewScreen, passing the specific photoUri, tableData, and results
         navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
-          mesaData: tableData,
+          tableData: tableData,
           partyResults: partyResults,
           voteSummaryResults: voteSummaryResults,
         });
@@ -159,7 +240,12 @@ const WhichIsCorrectScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${tableData?.numero || 'N/A'}`}
+        title={`${String.table} ${
+          tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          'N/A'
+        }`}
         showNotification={true}
       />
 

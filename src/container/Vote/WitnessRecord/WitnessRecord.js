@@ -25,6 +25,7 @@ const getResponsiveSize = (small, medium, large) => {
 const WitnessRecordScreen = ({navigation, route}) => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationData, setLocationData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     type: 'info',
@@ -38,7 +39,6 @@ const WitnessRecordScreen = ({navigation, route}) => {
     searchText,
     setSearchText,
     handleBack,
-    handleTablePress: baseTablePress,
     handleNotificationPress,
     handleHomePress,
     handleProfilePress,
@@ -59,18 +59,69 @@ const WitnessRecordScreen = ({navigation, route}) => {
   const loadTablesFromApi = async locationId => {
     try {
       setIsLoading(true);
+      console.log(
+        'WitnessRecord: Loading tables from API for location:',
+        locationId,
+      );
       const response = await axios.get(
         `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
       );
+      console.log('WitnessRecord: API Response structure:', response.data);
+
       if (response.data && response.data.tables) {
+        console.log(
+          'WitnessRecord: Tables found:',
+          response.data.tables.length,
+        );
+        console.log(
+          'WitnessRecord: First table structure:',
+          response.data.tables[0],
+        );
+        console.log(
+          'WitnessRecord: Complete first table JSON:',
+          JSON.stringify(response.data.tables[0], null, 2),
+        );
+        console.log('WitnessRecord: Location data (name, address):', {
+          name: response.data.name,
+          address: response.data.address,
+        });
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.name,
+          address: response.data.address,
+          code: response.data.code,
+        });
+
         setMesas(response.data.tables);
       } else if (
         response.data &&
         response.data.data &&
         response.data.data.tables
       ) {
+        console.log(
+          'WitnessRecord: Tables found in data.data:',
+          response.data.data.tables.length,
+        );
+        console.log(
+          'WitnessRecord: First table in data.data:',
+          response.data.data.tables[0],
+        );
+        console.log(
+          'WitnessRecord: Complete first table JSON in data.data:',
+          JSON.stringify(response.data.data.tables[0], null, 2),
+        );
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.data.name,
+          address: response.data.data.address,
+          code: response.data.data.code,
+        });
+
         setMesas(response.data.data.tables);
       } else {
+        console.log('WitnessRecord: No tables found in response');
         showModal('info', String.info, String.couldNotLoadTables);
       }
     } catch (error) {
@@ -122,19 +173,39 @@ const WitnessRecordScreen = ({navigation, route}) => {
       StackNav.WhichIsCorrectScreen,
     );
 
+    // Process the table data to include location information
+    const processedMesa = {
+      // Table identification
+      numero: mesa.tableNumber || mesa.numero || mesa.number || mesa.name || mesa.id || 'N/A',
+      codigo: mesa.tableCode || mesa.codigo || mesa.code || mesa.id || 'N/A',
+      
+      // Location information from locationData or mesa itself
+      recinto: locationData?.name || mesa.recinto || mesa.venue || mesa.precinctName || 'N/A',
+      colegio: locationData?.name || mesa.colegio || mesa.venue || mesa.precinctName || 'N/A',
+      provincia: locationData?.address || mesa.direccion || mesa.address || mesa.provincia || 'N/A',
+      
+      // Additional location details if available
+      zona: locationData?.zone || mesa.zona || mesa.zone || 'N/A',
+      distrito: locationData?.district || mesa.distrito || mesa.district || 'N/A',
+      
+      // Original table data for reference
+      originalTableData: mesa,
+      locationData: locationData,
+    };
+
+    console.log('WitnessRecord - Processed mesa data:', processedMesa);
+
     try {
-      // Use baseTablePress from hook but with correct parameters for WitnessRecord
-      const mesaWithPhoto = {
-        tableData: mesa,
+      // Navigate directly to WhichIsCorrectScreen with proper parameters
+      navigation.navigate(StackNav.WhichIsCorrectScreen, {
+        tableData: processedMesa,
+        mesa: processedMesa,
+        originalTable: mesa,
+        locationData: locationData,
         photoUri:
           'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-      };
-      console.log(
-        'WitnessRecord - Calling baseTablePress with:',
-        mesaWithPhoto,
-      );
-      baseTablePress(mesaWithPhoto);
-      console.log('WitnessRecord - baseTablePress call successful');
+      });
+      console.log('WitnessRecord - Navigation call successful');
     } catch (error) {
       console.error('WitnessRecord - Navigation error:', error);
     }
@@ -186,6 +257,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
         // Location info props
         locationText={String.listBasedOnLocation}
         locationIconColor="#0C5460"
+        locationData={locationData}
         // Table list props
         tables={mesas}
         onTablePress={handleTablePress}

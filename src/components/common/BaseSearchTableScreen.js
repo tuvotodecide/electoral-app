@@ -77,6 +77,7 @@ const BaseSearchTableScreen = ({
   // Location info props
   locationText,
   locationIconColor,
+  locationData, // Added to pass electoral location data
 
   // Table list props
   tables,
@@ -161,6 +162,7 @@ const BaseSearchTableScreen = ({
               <TableCard
                 table={table}
                 onPress={finalOnPress}
+                locationData={locationData}
                 styles={{
                   tableCard: styles.tableCard || styles.mesaCard,
                   tableCardTitle: styles.tableCardTitle || styles.mesaCardTitle,
@@ -211,6 +213,7 @@ const BaseSearchTableScreen = ({
                   <TableCard
                     table={table}
                     onPress={finalOnPress}
+                    locationData={locationData}
                     styles={{
                       tableCard: styles.tableCard || styles.mesaCard,
                       tableCardTitle:

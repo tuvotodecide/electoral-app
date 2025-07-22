@@ -52,6 +52,7 @@ export default function SearchTable({navigation, route}) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isLoadingMesas, setIsLoadingMesas] = useState(true);
   const [mesas, setMesas] = useState([]);
+  const [locationData, setLocationData] = useState(null);
 
   // Estados para el modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -75,10 +76,14 @@ export default function SearchTable({navigation, route}) {
   const loadMesasFromApi = async locationId => {
     try {
       setIsLoadingMesas(true);
+      console.log(
+        'SearchTable: Loading tables from API for location:',
+        locationId,
+      );
       const response = await axios.get(
         `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
       );
-      console.log('SearchTable - API Response:', response.data);
+      console.log('SearchTable - API Response structure:', response.data);
 
       if (response.data && response.data.tables) {
         console.log('SearchTable - Tables found:', response.data.tables.length);
@@ -86,6 +91,24 @@ export default function SearchTable({navigation, route}) {
           'SearchTable - First table structure:',
           response.data.tables[0],
         );
+        console.log(
+          'SearchTable - Complete first table JSON:',
+          JSON.stringify(response.data.tables[0], null, 2),
+        );
+        console.log('SearchTable - Location data (name, address):', {
+          name: response.data.name,
+          address: response.data.address,
+        });
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.name,
+          address: response.data.address,
+          code: response.data.code,
+          zone: response.data.zone,
+          district: response.data.district,
+        });
+
         setMesas(response.data.tables);
       } else if (
         response.data &&
@@ -97,11 +120,26 @@ export default function SearchTable({navigation, route}) {
           response.data.data.tables.length,
         );
         console.log(
-          'SearchTable - First table structure:',
+          'SearchTable - First table in data.data structure:',
           response.data.data.tables[0],
         );
+        console.log(
+          'SearchTable - Complete first table JSON in data.data:',
+          JSON.stringify(response.data.data.tables[0], null, 2),
+        );
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.data.name,
+          address: response.data.data.address,
+          code: response.data.data.code,
+          zone: response.data.data.zone,
+          district: response.data.data.district,
+        });
+
         setMesas(response.data.data.tables);
       } else {
+        console.log('SearchTable: No tables found in response');
         showModal('info', String.info, String.couldNotLoadTables);
       }
     } catch (error) {
@@ -125,12 +163,17 @@ export default function SearchTable({navigation, route}) {
     try {
       setIsLoadingMesas(true);
       console.log('SearchTable: Loading mesas...');
-      const response = await fetchMesas();
+
+      // Obtener locationId si existe en route.params
+      const locationId = route?.params?.locationId;
+      const response = await fetchMesas(locationId);
 
       if (response.success) {
         console.log(
           'SearchTable: Mesas loaded successfully:',
           response.data.length,
+          'for location:',
+          locationId || 'all',
         );
         setMesas(response.data);
       } else {
@@ -188,7 +231,33 @@ export default function SearchTable({navigation, route}) {
   });
 
   const handleSelectMesa = mesa => {
-    navigation.navigate(StackNav.TableDetail, {mesa});
+    // Enrich mesa data with location information
+    const enrichedMesa = {
+      ...mesa,
+      // Add location data for proper display
+      recinto: locationData?.name || mesa.recinto || 'N/A',
+      direccion: locationData?.address || mesa.direccion || 'N/A',
+      codigo: mesa.tableCode || mesa.codigo || mesa.code || 'N/A',
+      // Ensure tableNumber is present
+      tableNumber: mesa.tableNumber || mesa.numero || mesa.number || 'N/A',
+      // Keep original fields for backwards compatibility
+      numero: mesa.tableNumber || mesa.numero || mesa.number || 'N/A',
+      // Add zone from location data
+      zone: locationData?.zone || mesa.zone || 'N/A',
+      // Add other location-specific data
+      name: locationData?.name || mesa.name || 'N/A',
+      address: locationData?.address || mesa.address || 'N/A',
+      district: locationData?.district || mesa.district || 'N/A',
+    };
+
+    console.log('SearchTable - handleSelectMesa - Original mesa:', mesa);
+    console.log(
+      'SearchTable - handleSelectMesa - Enriched mesa:',
+      enrichedMesa,
+    );
+    console.log('SearchTable - handleSelectMesa - LocationData:', locationData);
+
+    navigation.navigate(StackNav.TableDetail, {mesa: enrichedMesa});
   };
 
   const toggleSort = () => {
@@ -231,16 +300,31 @@ export default function SearchTable({navigation, route}) {
   };
 
   const renderMesaItem = ({item}) => {
-    const tableNumber = item.numero || item.tableNumber || item.number || 'N/A';
-    const codigo = item.codigo || item.code || 'N/A';
+    const tableNumber = item.tableNumber || item.numero || item.number || 'N/A';
+    const codigo = item.tableCode || item.codigo || item.code || 'N/A';
+
+    // Use location data from API response
     const colegio =
+      locationData?.name ||
       item.colegio ||
       item.escuela ||
       item.location?.name ||
       item.school ||
       'N/A';
     const provincia =
-      item.provincia || item.province || item.location?.province || 'N/A';
+      locationData?.address ||
+      item.provincia ||
+      item.province ||
+      item.location?.province ||
+      'N/A';
+
+    console.log('SearchTable - renderMesaItem with locationData:', {
+      tableNumber,
+      codigo,
+      colegio,
+      provincia,
+      locationData,
+    });
 
     return (
       <TouchableOpacity
@@ -248,7 +332,7 @@ export default function SearchTable({navigation, route}) {
         onPress={() => handleSelectMesa(item)}>
         <View style={localStyle.mesaHeader}>
           <CText style={localStyle.mesaTitle} color={colors.textColor}>
-            {tableNumber}
+            Mesa {tableNumber}
           </CText>
           <CText style={localStyle.codigoMesaText}>
             {String.tableCode} {codigo}
@@ -488,19 +572,21 @@ const localStyle = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: getResponsiveSize(3, 4, 6),
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
   },
   mesaTitle: {
     fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: 'bold',
     color: '#222',
-    flex: 1,
+    flexShrink: 0,
+    minWidth: getResponsiveSize(80, 100, 120),
   },
   codigoMesaText: {
     color: '#979797',
     fontSize: getResponsiveSize(12, 14, 16),
     fontWeight: '400',
     flexShrink: 1,
+    textAlign: 'right',
   },
   colegioText: {
     marginTop: getResponsiveSize(5, 7, 9),
