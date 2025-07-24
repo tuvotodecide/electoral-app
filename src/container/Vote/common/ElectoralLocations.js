@@ -157,31 +157,19 @@ const ElectoralLocations = ({navigation, route}) => {
   };
 
   const handleLocationPress = location => {
-    // Navigate to appropriate screen based on targetScreen
-    switch (targetScreen) {
-      case 'SearchTable':
-        navigation.navigate(StackNav.SearchTable, {
-          locationId: location._id,
-          locationData: location,
-        });
-        break;
-      case 'WitnessRecord':
-        navigation.navigate(StackNav.WitnessRecord, {
-          locationId: location._id,
-          locationData: location,
-        });
-        break;
-      case 'AnnounceCount':
-        navigation.navigate(StackNav.SearchCountTable, {
-          locationId: location._id,
-          locationData: location,
-        });
-        break;
-      default:
-        navigation.navigate(StackNav.SearchTable, {
-          locationId: location._id,
-          locationData: location,
-        });
+    // Special handling for AnnounceCount - it should go to its own screen
+    if (targetScreen === 'AnnounceCount') {
+      navigation.navigate(StackNav.SearchCountTable, {
+        locationId: location._id,
+        locationData: location,
+      });
+    } else {
+      // Use unified table screen for upload and witness flows
+      navigation.navigate(StackNav.UnifiedTableScreen, {
+        locationId: location._id,
+        locationData: location,
+        targetScreen: targetScreen, // Pass the target screen for reference
+      });
     }
   };
 

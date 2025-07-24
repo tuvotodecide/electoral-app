@@ -30,6 +30,14 @@ export default function StackNavigation() {
         component={StackRoute.ElectoralLocations}
       />
       <Stack.Screen
+        name={StackNav.UnifiedTableScreen}
+        component={StackRoute.UnifiedTableScreen}
+      />
+      <Stack.Screen
+        name={StackNav.ActaDetailScreen}
+        component={StackRoute.ActaDetailScreen}
+      />
+      <Stack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
@@ -40,6 +48,18 @@ export default function StackNavigation() {
       <Stack.Screen
         name={StackNav.WitnessRecord}
         component={StackRoute.WitnessRecord}
+      />
+      <Stack.Screen
+        name={StackNav.WhichIsCorrectScreen}
+        component={StackRoute.WhichIsCorrectScreen}
+      />
+      <Stack.Screen
+        name={StackNav.RecordReviewScreen}
+        component={StackRoute.RecordReviewScreen}
+      />
+      <Stack.Screen
+        name={StackNav.RecordCertificationScreen}
+        component={StackRoute.RecordCertificationScreen}
       />
       <Stack.Screen
         name={StackNav.AnnounceCount}

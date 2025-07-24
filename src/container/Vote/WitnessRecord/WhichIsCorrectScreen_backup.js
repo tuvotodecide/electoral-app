@@ -10,13 +10,13 @@ import {
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import CText from '../../../components/common/CText';
+import CText from '../../../components/common/CText'; // Adjust path as needed
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants';
+import {moderateScale} from '../../../common/constants'; // Adjust path as needed
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
@@ -39,11 +39,16 @@ const WhichIsCorrectScreen = () => {
   const colors = useSelector(state => state.theme.theme);
   const {tableData, photoUri, isFromUnifiedFlow} = route.params || {};
   console.log('WhichIsCorrectScreen - Received params:', route.params);
+  console.log('WhichIsCorrectScreen - tableData:', tableData);
+  console.log('WhichIsCorrectScreen - photoUri:', photoUri);
+  console.log('WhichIsCorrectScreen - isFromUnifiedFlow:', isFromUnifiedFlow);
 
-  // State management
+  // State to keep track of the currently selected image
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [confirmedCorrectActa, setConfirmedCorrectActa] = useState(null);
   const [showConfirmationView, setShowConfirmationView] = useState(false);
+
+  // Estados para el modal
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     type: 'info',
@@ -51,26 +56,41 @@ const WhichIsCorrectScreen = () => {
     message: '',
     buttonText: String.accept,
   });
+
+  // Estados para las actas de la mesa
   const [isLoadingActas, setIsLoadingActas] = useState(true);
   const [actaImages, setActaImages] = useState([]);
   const [partyResults, setPartyResults] = useState([]);
   const [voteSummaryResults, setVoteSummaryResults] = useState([]);
 
-  // Load actas when component mounts
+  // Cargar actas de la mesa al montar el componente
   useEffect(() => {
-    console.log('WhichIsCorrectScreen - useEffect triggered with tableData:', tableData);
+    console.log(
+      'WhichIsCorrectScreen - useEffect triggered with tableData:',
+      tableData,
+    );
 
-    const mesaId = tableData?.id || tableData?.numero || tableData?.tableNumber || tableData?.number;
+    // Try to get ID from multiple possible fields
+    const mesaId =
+      tableData?.id ||
+      tableData?.numero ||
+      tableData?.tableNumber ||
+      tableData?.number;
     console.log('WhichIsCorrectScreen - Extracted mesaId:', mesaId);
 
     if (mesaId) {
       loadActasByMesa(mesaId);
     } else {
-      console.warn('WhichIsCorrectScreen - No valid mesa ID found, using fallback');
+      console.warn(
+        'WhichIsCorrectScreen - No valid mesa ID found, using fallback',
+      );
+      // Fallback: load default data if no ID is found
       setActaImages([
         {
           id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
         },
       ]);
       setIsLoadingActas(false);
@@ -82,6 +102,7 @@ const WhichIsCorrectScreen = () => {
       setIsLoadingActas(true);
       console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
 
+      // For string IDs (like "Mesa 1"), try to extract numeric ID
       let numericId = mesaId;
       if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
         const match = mesaId.match(/\d+/);
@@ -94,23 +115,34 @@ const WhichIsCorrectScreen = () => {
       const response = await fetchActasByMesa(numericId);
 
       if (response.success) {
-        console.log('WhichIsCorrectScreen: Actas loaded successfully:', response.data);
+        console.log(
+          'WhichIsCorrectScreen: Actas loaded successfully:',
+          response.data,
+        );
         setActaImages(response.data.images);
         setPartyResults(response.data.partyResults);
         setVoteSummaryResults(response.data.voteSummaryResults);
       } else {
         console.error('WhichIsCorrectScreen: Failed to load actas');
         showModal('error', String.error, String.couldNotLoadActas);
-        // Fallback data
+        // Fallback con imagen por defecto
         setActaImages([
           {
             id: '1',
-            uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+            uri:
+              photoUri ||
+              'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
           },
         ]);
+        // Set default party results for fallback
         setPartyResults([
           {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-          {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
+          {
+            id: 'mas-ipsp',
+            partido: 'MAS-IPSP',
+            presidente: '12',
+            diputado: '8',
+          },
           {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
           {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
         ]);
@@ -123,13 +155,16 @@ const WhichIsCorrectScreen = () => {
     } catch (error) {
       console.error('WhichIsCorrectScreen: Error loading actas:', error);
       showModal('error', String.error, String.errorLoadingActas);
-      // Fallback data
+      // Fallback con imagen por defecto
       setActaImages([
         {
           id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
         },
       ]);
+      // Set default party results for fallback
       setPartyResults([
         {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
         {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
@@ -167,6 +202,12 @@ const WhichIsCorrectScreen = () => {
     if (selectedImageId) {
       const selectedImage = actaImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
+        console.log(
+          'WhichIsCorrectScreen - handleVerMasDetalles: Passing tableData:',
+          tableData,
+        );
+
+        // Navigate to ActaDetailScreen for detailed view
         navigation.navigate('ActaDetailScreen', {
           selectedActa: selectedImage,
           tableData: tableData,
@@ -179,11 +220,15 @@ const WhichIsCorrectScreen = () => {
         });
       }
     } else {
-      showModal('warning', String.selectionRequired, String.pleaseSelectImageFirst);
+      showModal(
+        'warning',
+        String.selectionRequired,
+        String.pleaseSelectImageFirst,
+      );
     }
   };
 
-  const handleCorrectActaSelected = actaId => {
+  const handleCorrectActaSelected = (actaId) => {
     console.log('WhichIsCorrectScreen - Correct acta selected:', actaId);
     setConfirmedCorrectActa(actaId);
     setShowConfirmationView(true);
@@ -191,6 +236,7 @@ const WhichIsCorrectScreen = () => {
 
   const handleUploadNewActa = () => {
     console.log('WhichIsCorrectScreen - Upload new acta requested');
+    // Navigate to upload flow
     navigation.navigate(StackNav.TableDetail, {
       tableData: tableData,
       isFromUnifiedFlow: true,
@@ -202,6 +248,7 @@ const WhichIsCorrectScreen = () => {
     if (confirmedCorrectActa) {
       const selectedImage = actaImages.find(img => img.id === confirmedCorrectActa);
       if (selectedImage) {
+        // Navigate to RecordReviewScreen with the confirmed correct acta
         navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
           tableData: tableData,
@@ -226,6 +273,7 @@ const WhichIsCorrectScreen = () => {
 
   return (
     <CSafeAreaView style={styles.container}>
+      {/* Header */}
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
@@ -245,31 +293,29 @@ const WhichIsCorrectScreen = () => {
             <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
           </View>
 
-          <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.imageList}
+            showsVerticalScrollIndicator={false}>
             {actaImages.map(image => (
               <View key={image.id} style={styles.confirmationImageContainer}>
-                <View
-                  style={[
-                    styles.imageCard,
-                    image.id === confirmedCorrectActa && styles.imageCardCorrect,
-                    image.id !== confirmedCorrectActa && styles.imageCardIncorrect,
-                  ]}>
+                <View style={[
+                  styles.imageCard,
+                  image.id === confirmedCorrectActa && styles.imageCardCorrect,
+                  image.id !== confirmedCorrectActa && styles.imageCardIncorrect,
+                ]}>
                   <Image
                     source={{uri: image.uri}}
                     style={styles.imageDisplay}
                     resizeMode="contain"
                   />
-
+                  
                   {/* Correct/Incorrect Icon */}
-                  <View
-                    style={[
-                      styles.statusIcon,
-                      image.id === confirmedCorrectActa
-                        ? styles.correctIcon
-                        : styles.incorrectIcon,
-                    ]}>
+                  <View style={[
+                    styles.statusIcon,
+                    image.id === confirmedCorrectActa ? styles.correctIcon : styles.incorrectIcon
+                  ]}>
                     <MaterialIcons
-                      name={image.id === confirmedCorrectActa ? 'check-circle' : 'cancel'}
+                      name={image.id === confirmedCorrectActa ? "check-circle" : "cancel"}
                       size={24}
                       color="#FFFFFF"
                     />
@@ -285,7 +331,9 @@ const WhichIsCorrectScreen = () => {
               style={[styles.continueButton, {backgroundColor: colors.primary || '#4F9858'}]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
-              <CText style={styles.continueButtonText}>{String.continueButton}</CText>
+              <CText style={styles.continueButtonText}>
+                {String.continueButton}
+              </CText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -301,17 +349,22 @@ const WhichIsCorrectScreen = () => {
       ) : (
         // Original selection view
         <>
+          {/* Question Text */}
           <View style={styles.questionContainer}>
             <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
           </View>
 
+          {/* Loading indicator for actas */}
           {isLoadingActas ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
               <CText style={styles.loadingText}>{String.loadingActas}</CText>
             </View>
           ) : (
-            <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+            /* Image List */
+            <ScrollView
+              style={styles.imageList}
+              showsVerticalScrollIndicator={false}>
               {isTablet
                 ? // Two-column layout for tablets
                   (() => {
@@ -326,7 +379,8 @@ const WhichIsCorrectScreen = () => {
                             <TouchableOpacity
                               style={[
                                 styles.imageCard,
-                                selectedImageId === image.id && styles.imageCardSelected,
+                                selectedImageId === image.id &&
+                                  styles.imageCardSelected,
                               ]}
                               onPress={() => handleImagePress(image.id)}>
                               <Image
@@ -336,10 +390,31 @@ const WhichIsCorrectScreen = () => {
                               />
                               {selectedImageId === image.id && (
                                 <>
-                                  <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                                  {/* Corner borders - black color */}
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topRightCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomRightCorner,
+                                    ]}
+                                  />
                                 </>
                               )}
                             </TouchableOpacity>
@@ -374,10 +449,22 @@ const WhichIsCorrectScreen = () => {
                         />
                         {selectedImageId === image.id && (
                           <>
-                            <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                            {/* Corner borders - black color */}
+                            <View
+                              style={[styles.cornerBorder, styles.topLeftCorner]}
+                            />
+                            <View
+                              style={[styles.cornerBorder, styles.topRightCorner]}
+                            />
+                            <View
+                              style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomRightCorner,
+                              ]}
+                            />
                           </>
                         )}
                       </TouchableOpacity>
@@ -395,12 +482,161 @@ const WhichIsCorrectScreen = () => {
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.datosNoCorrectosButton} onPress={handleDatosNoCorrectos}>
-            <CText style={styles.datosNoCorrectosButtonText}>{String.dataNotCorrect}</CText>
+          {/* Data is not correct button */}
+          <TouchableOpacity
+            style={styles.datosNoCorrectosButton}
+            onPress={handleDatosNoCorrectos}>
+            <CText style={styles.datosNoCorrectosButtonText}>
+              {String.dataNotCorrect}
+            </CText>
           </TouchableOpacity>
         </>
       )}
 
+      {/* Custom Modal */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={closeModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        buttonText={modalConfig.buttonText}
+      />
+    </CSafeAreaView>
+  );
+      ) : (
+        /* Image List */
+        <ScrollView
+          style={styles.imageList}
+          showsVerticalScrollIndicator={false}>
+          {isTablet
+            ? // Two-column layout for tablets
+              (() => {
+                const pairs = [];
+                for (let i = 0; i < actaImages.length; i += 2) {
+                  pairs.push(actaImages.slice(i, i + 2));
+                }
+                return pairs.map((pair, pairIndex) => (
+                  <View key={pairIndex} style={styles.tabletRow}>
+                    {pair.map(image => (
+                      <View key={image.id} style={styles.tabletColumn}>
+                        <TouchableOpacity
+                          style={[
+                            styles.imageCard,
+                            selectedImageId === image.id &&
+                              styles.imageCardSelected,
+                          ]}
+                          onPress={() => handleImagePress(image.id)}>
+                          <Image
+                            source={{uri: image.uri}}
+                            style={styles.imageDisplay}
+                            resizeMode="contain"
+                          />
+                          {selectedImageId === image.id && (
+                            <>
+                              {/* Corner borders - black color */}
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.topLeftCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.topRightCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.bottomLeftCorner,
+                                ]}
+                              />
+                              <View
+                                style={[
+                                  styles.cornerBorder,
+                                  styles.bottomRightCorner,
+                                ]}
+                              />
+                            </>
+                          )}
+                        </TouchableOpacity>
+                        {selectedImageId === image.id && (
+                          <TouchableOpacity
+                            style={styles.detailsButton}
+                            onPress={handleVerMasDetalles}>
+                            <CText style={styles.detailsButtonText}>
+                              {String.seeMoreDetails}
+                            </CText>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                    {pair.length === 1 && <View style={styles.tabletColumn} />}
+                  </View>
+                ));
+              })()
+            : // Single column layout for phones
+              actaImages.map(image => (
+                <React.Fragment key={image.id}>
+                  <TouchableOpacity
+                    style={[
+                      styles.imageCard,
+                      selectedImageId === image.id && styles.imageCardSelected,
+                    ]}
+                    onPress={() => handleImagePress(image.id)}>
+                    <Image
+                      source={{uri: image.uri}}
+                      style={styles.imageDisplay}
+                      resizeMode="contain"
+                    />
+                    {selectedImageId === image.id && (
+                      <>
+                        {/* Corner borders - black color */}
+                        <View
+                          style={[styles.cornerBorder, styles.topLeftCorner]}
+                        />
+                        <View
+                          style={[styles.cornerBorder, styles.topRightCorner]}
+                        />
+                        <View
+                          style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                        />
+                        <View
+                          style={[
+                            styles.cornerBorder,
+                            styles.bottomRightCorner,
+                          ]}
+                        />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {selectedImageId === image.id && (
+                    <TouchableOpacity
+                      style={styles.detailsButton}
+                      onPress={handleVerMasDetalles}>
+                      <CText style={styles.detailsButtonText}>
+                        {String.seeMoreDetails}
+                      </CText>
+                    </TouchableOpacity>
+                  )}
+                </React.Fragment>
+              ))}
+          {/* "Estos datos no son correctos" button remains at the bottom of the ScrollView */}
+          {selectedImageId && (
+            <TouchableOpacity
+              style={styles.datosNoCorrectosButton}
+              onPress={handleDatosNoCorrectos}>
+              <CText style={styles.datosNoCorrectosButtonText}>
+                {String.dataNotCorrect}
+              </CText>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Custom Modal */}
       <CustomModal
         visible={modalVisible}
         onClose={closeModal}
@@ -416,31 +652,13 @@ const WhichIsCorrectScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  questionContainer: {
-    padding: getResponsiveSize(12, 16, 20),
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: getResponsiveSize(8, 12, 16),
-    marginTop: getResponsiveSize(8, 12, 16),
-    borderRadius: getResponsiveSize(6, 8, 10),
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  questionText: {
-    fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#2F2F2F',
+    backgroundColor: '#ffffff', // White background
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: getResponsiveSize(20, 30, 40),
+    paddingVertical: getResponsiveSize(40, 50, 60),
   },
   loadingText: {
     marginTop: getResponsiveSize(12, 15, 18),
@@ -448,10 +666,29 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  questionContainer: {
+    backgroundColor: '#D1ECF1', // Light blue background
+    borderColor: '#0C5460',
+    borderWidth: 1,
+    borderRadius: getResponsiveSize(8, 10, 12),
+    paddingVertical: getResponsiveSize(8, 10, 14),
+    paddingHorizontal: getResponsiveSize(10, 12, 16),
+    marginHorizontal: getResponsiveSize(12, 16, 24),
+    marginTop: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 16, 20),
+    alignItems: 'center',
+  },
+  questionText: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#0C5460', // Green text color
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   imageList: {
     flex: 1,
-    padding: getResponsiveSize(8, 12, 16),
+    paddingHorizontal: getResponsiveSize(12, 16, 24),
   },
+  // Tablet-specific styles
   tabletRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -470,31 +707,24 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    position: 'relative',
+    position: 'relative', // Needed for absolute positioning of corner borders
   },
   imageCardSelected: {
     borderWidth: 2,
-    borderColor: '#4CAF50',
-  },
-  imageCardCorrect: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-  },
-  imageCardIncorrect: {
-    borderWidth: 2,
-    borderColor: '#F44336',
+    borderColor: '#4CAF50', // Green border when selected
   },
   imageDisplay: {
     width: '100%',
     height: getResponsiveSize(120, 150, 200),
     borderRadius: getResponsiveSize(3, 4, 6),
   },
+  // Styles for the corner borders
   cornerBorder: {
     position: 'absolute',
-    width: getResponsiveSize(16, 20, 24),
-    height: getResponsiveSize(16, 20, 24),
-    borderColor: '#2F2F2F',
-    borderWidth: 2,
+    width: getResponsiveSize(16, 20, 24), // Length of the corner lines
+    height: getResponsiveSize(16, 20, 24), // Length of the corner lines
+    borderColor: '#2F2F2F', // Black color for corner lines
+    borderWidth: 2, // Thickness of the corner lines
   },
   topLeftCorner: {
     top: getResponsiveSize(6, 8, 12),
@@ -520,55 +750,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
-  statusIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  correctIcon: {
-    backgroundColor: '#4CAF50',
-  },
-  incorrectIcon: {
-    backgroundColor: '#F44336',
-  },
-  confirmationImageContainer: {
-    marginBottom: 16,
-  },
-  confirmationButtonsContainer: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  continueButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  changeOpinionButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  changeOpinionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
   detailsButton: {
-    backgroundColor: '#459151',
+    backgroundColor: '#459151', // Green button
     paddingVertical: getResponsiveSize(10, 12, 16),
     borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
@@ -582,20 +765,20 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   datosNoCorrectosButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // White background
     paddingVertical: getResponsiveSize(12, 14, 18),
     borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
     marginTop: getResponsiveSize(12, 16, 20),
     marginBottom: getResponsiveSize(20, 24, 32),
     marginHorizontal: getResponsiveSize(12, 16, 20),
-    borderWidth: 1,
-    borderColor: '#D32F2F',
+    borderWidth: 1, // Add border
+    borderColor: '#D32F2F', // Red border color
   },
   datosNoCorrectosButtonText: {
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
-    color: '#D32F2F',
+    color: '#D32F2F', // Red text color
   },
 });
 
