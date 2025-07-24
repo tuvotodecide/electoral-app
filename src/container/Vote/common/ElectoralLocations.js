@@ -58,7 +58,7 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
+        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=50`,
       );
 
       if (response.data && response.data.data) {

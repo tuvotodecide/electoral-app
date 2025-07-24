@@ -10,14 +10,29 @@ import {DEVICE_TOKEN} from './common/constants';
 import {setAsyncStorageData} from './utils/AsyncStorage';
 import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
+import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
 import axios from 'axios';
 const queryClient = new QueryClient();
+
 const App = () => {
   const colors = useSelector(state => state.theme.theme);
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
   const userData = useSelector(state => state.wallet.payload);
   const [ready, setReady] = useState(false);
+
+  // Configurar Firebase y usuario automáticamente
+  const { isInitialized, initializationError } = useFirebaseUserSetup();
+
+  // Mostrar estado de inicialización en logs
+  useEffect(() => {
+    if (isInitialized) {
+      console.log('🎉 Firebase User Setup completado exitosamente');
+    }
+    if (initializationError) {
+      console.error('⚠️ Error en Firebase User Setup:', initializationError);
+    }
+  }, [isInitialized, initializationError]);
 
   async function requestNotificationPermission() {
     if (Platform.OS === 'android' && Platform.Version >= 33) {
