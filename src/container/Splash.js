@@ -1,25 +1,25 @@
-// import { StyleSheet, View, Image } from 'react-native';
-// import React, { useEffect } from 'react';
+// import {StyleSheet, View, Image} from 'react-native';
+// import React, {useEffect} from 'react';
 // import BootSplash from 'react-native-bootsplash';
-// import { useDispatch, useSelector } from 'react-redux';
+// import {useDispatch, useSelector} from 'react-redux';
 
 // // custom import
 // import CSafeAreaView from '../components/common/CSafeAreaView';
-// import { styles } from '../themes';
+// import {styles} from '../themes';
 // import CText from '../components/common/CText';
 // import String from '../i18n/String';
-// import { AuthNav, StackNav } from '../navigation/NavigationKey';
-// import { initialStorageValueGet } from '../utils/AsyncStorage';
-// import { changeThemeAction } from '../redux/action/themeAction';
-// import { colors } from '../themes/colors';
+// import {AuthNav, StackNav} from '../navigation/NavigationKey';
+// import {initialStorageValueGet} from '../utils/AsyncStorage';
+// import {changeThemeAction} from '../redux/action/themeAction';
+// import {colors} from '../themes/colors';
 // import images from '../assets/images';
-// import { moderateScale, PENDINGRECOVERY } from '../common/constants';
-// import { isSessionValid } from '../utils/Session';
+// import {moderateScale, PENDINGRECOVERY} from '../common/constants';
+// import {isSessionValid} from '../utils/Session';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// import { getDraft } from '../utils/RegisterDraft';
+// import {getDraft} from '../utils/RegisterDraft';
 
-// export default function Splash({ navigation }) {
+// export default function Splash({navigation}) {
 //   const color = useSelector(state => state.theme.theme);
 //   const wallet = useSelector(s => s.wallet.payload);
 //   const account = useSelector(state => state.account);
@@ -31,9 +31,9 @@
 //     const asyncProcess = async () => {
 //       try {
 //         let asyncData = await initialStorageValueGet();
-
-
-//         let { themeColor, onBoardingValue } = asyncData;
+      
+        
+//         let {themeColor, onBoardingValue} = asyncData;
 //         const draft = await getDraft();
 //         if (draft) {
 //           navigation.replace(StackNav.AuthNavigation, {
@@ -53,31 +53,9 @@
 //             // Si no hay tema guardado, usar light por defecto
 //             dispatch(changeThemeAction(colors.light));
 //           }
-//           const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
-
-//           if (pending === 'true') {
-//             navigation.navigate(StackNav.AuthNavigation, {
-//               screen: AuthNav.MyGuardiansStatus,
-//             });
-//             return;
-//           }
-//           // const alive = await isSessionValid();
-
-//           // if (alive) navigation.replace(StackNav.TabNavigation);
-//           // else navigation.replace(StackNav.AuthNavigation);
-
-//           // bypass line 70 - 71
+         
 //           navigation.replace(StackNav.TabNavigation);
 //           return;
-
-//           const alive = await isSessionValid();
-
-
-//           if (alive) navigation.replace(StackNav.TabNavigation);
-//           else
-//             navigation.replace(StackNav.AuthNavigation, {
-//               screen: AuthNav.Connect,
-//             });
 //         }
 //       } catch (e) {
 //         console.log('error ', e);
@@ -88,7 +66,7 @@
 //       await asyncProcess();
 //     };
 //     init().finally(async () => {
-//       await BootSplash.hide({ fade: true });
+//       await BootSplash.hide({fade: true});
 //     });
 //   }, [dispatch, navigation]);
 
@@ -126,6 +104,8 @@
 //   },
 // });
 
+//Descomentar lo de arriba para no pasar por el login 
+//Descomentar lo de abajo para pasar por el login
 
 
 import {StyleSheet, View, Image} from 'react-native';
