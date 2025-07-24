@@ -62,13 +62,13 @@ const getCardLayout = () => {
 
 const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
 
-// Gas Indicator Component
-const GasIndicator = ({gasPrice}) => (
-  <View style={stylesx.gasContainer}>
-    <CText style={stylesx.gasLabel}>Gas (USDT):</CText>
-    <CText style={stylesx.gasPrice}>{gasPrice}</CText>
-  </View>
-);
+// // Gas Indicator Component
+// const GasIndicator = ({gasPrice}) => (
+//   <View style={stylesx.gasContainer}>
+//     <CText style={stylesx.gasLabel}>Gas (USDT):</CText>
+//     <CText style={stylesx.gasPrice}>{gasPrice}</CText>
+//   </View>
+// );
 
 // Carousel Item Component
 const CarouselItem = ({item}) => (
@@ -146,7 +146,7 @@ export default function HomeScreen({navigation}) {
   const account = useSelector(state => state.account);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
-  const [gasPrice, setGasPrice] = useState('10.32'); // Mock gas price in USDT
+  // const [gasPrice, setGasPrice] = useState('10.32'); // Mock gas price in USDT
   const carouselRef = useRef(null);
 
   // Datos del carrusel
@@ -358,7 +358,7 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
 
-            <View style={stylesx.welcomeContainer}>
+            {/* <View style={stylesx.welcomeContainer}>
               <View style={stylesx.welcomeHeader}>
                 <View style={stylesx.welcomeTextContainer}>
                   <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
@@ -366,7 +366,7 @@ export default function HomeScreen({navigation}) {
                 </View>
                 <GasIndicator gasPrice={gasPrice} />
               </View>
-            </View>
+            </View> */}
 
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
@@ -453,8 +453,7 @@ export default function HomeScreen({navigation}) {
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* ===== Bienvenida ===== */}
+          {/* ===== Bienvenida =====
           <View style={stylesx.welcomeContainer}>
             <View style={stylesx.welcomeHeader}>
               <View style={stylesx.welcomeTextContainer}>
@@ -463,8 +462,7 @@ export default function HomeScreen({navigation}) {
               </View>
               <GasIndicator gasPrice={gasPrice} />
             </View>
-          </View>
-
+          </View> */}
           {/* Carrusel deslizable */}
           <View style={stylesx.carouselContainer}>
             <FlatList
@@ -496,7 +494,6 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
-
           {/* ===== Cards de Menú ===== */}
           <View style={stylesx.gridContainer}>
             {menuItems.map((item, idx) => (

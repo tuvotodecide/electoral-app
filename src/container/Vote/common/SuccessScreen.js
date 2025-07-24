@@ -64,13 +64,15 @@ const SuccessScreen = () => {
 
       <View style={styles.mainContent}>
         {/* Título principal */}
-        <CText style={styles.bigTitle}>¡Certificado NFT{'\n'}obtenido!</CText>
+        <CText style={styles.bigTitle}>{String.nftCertificate}{'\n'}{String.obtain}</CText>
 
         {/* Botón Ver mi NFT */}
         <TouchableOpacity
           style={styles.nftButton}
           onPress={() => setShowNFTCertificate(true)}>
-          <CText style={styles.nftButtonText}>Ver mi NFT</CText>
+          <CText style={styles.nftButtonText}>{
+            String.viewMyNFT
+          }</CText>
         </TouchableOpacity>
 
         {/* Botón de continuar (el que ya existía) */}
@@ -99,7 +101,7 @@ const SuccessScreen = () => {
                 {/* <Ionicons name="medal" size={60} color="#CBA233" /> */}
                 <CText style={styles.nftMedalText}>NFT</CText>
               </View>
-              {/* Datos del certificado */}
+              {/* Datos del certificado  esto sera modificado */}
               <CText style={styles.nftName}>{nombre}</CText>
               <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
               <CText style={styles.nftCertTitle}>PARTICIPACIÓN ELECTORAL</CText>

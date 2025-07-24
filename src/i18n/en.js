@@ -103,7 +103,7 @@ export default {
 
   //page 10
   welcomeTitle: '¡Bienvenido a Tu Voto!',
-  verifiedIdentity: 'Identidad verificada. Ya puedes usar tu billetera.',
+  verifiedIdentity: 'Identidad verificada. Ya puedes usar tu cuenta.',
   activosTitle: 'Activos',
   activosDesc: 'Compra, guarda y vende criptomonedas libremente',
   transfiereTitle: 'Transfiere',
@@ -111,9 +111,9 @@ export default {
   historialTitle: 'Historial',
   historialDesc: 'Revisa todas tus transacciones',
   seguridadTitle: 'Seguridad',
-  seguridadDesc: 'Eres dueño de tu clave y tu billetera',
-  goToWalletButton: 'Ir a mi billetera',
-  creatingWallet: 'Creando billetera',
+  seguridadDesc: 'Eres dueño de tu clave y tu cuenta',
+  goToWalletButton: 'Ir a mi cuenta',
+  creatingWallet: 'Creando cuenta…',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',
@@ -1120,7 +1120,7 @@ export default {
   userName2: 'Juan Perez Cuellar',
 
   // Common
-  confirmation: 'Confirmation',
+  confirmation: 'Confirmación',
   voluntaryInitiative: 'Iniciativa Voluntaria de',
   // autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
   autoNavigating:
@@ -1201,11 +1201,11 @@ export default {
   sendInvitation: ' Enviar invitación',
   finishingRecovery: 'Finalizando recuperación',
   return: 'Regresar',
-   messagetorecovery:
+  messagetorecovery:
     'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes 72 horas desde su cuenta.',
   messengePrivacity:
     'Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.',
-  
+
   // Electoral Locations
   electoralLocations: 'Recintos Electorales',
   gettingLocation: 'Obteniendo ubicación...',
@@ -1216,7 +1216,8 @@ export default {
   noNearbyLocations: 'No hay recintos cercanos disponibles',
   errorFetchingLocations: 'Error al cargar los recintos electorales',
   locationPermissionTitle: 'Permiso de ubicación',
-  locationPermissionMessage: 'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+  locationPermissionMessage:
+    'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
   locationPermissionDenied: 'Permiso de ubicación denegado',
   locationError: 'Error al obtener la ubicación',
   locationPermissionError: 'Error al solicitar permisos de ubicación',
@@ -1225,4 +1226,7 @@ export default {
   tables: 'mesas',
   code: 'Código',
   info: 'Información',
+  nftCertificate: 'Certificado NFT',
+  obtain: 'obtenido!',
+  viewMyNFT: 'Ver mi NFT',
 };
