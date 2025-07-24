@@ -48,6 +48,10 @@ import CountTableDetail from '../container/Vote/AnnounceCount/CountTableDetail';
 import MyWitnessesListScreen from '../container/Vote/MyWitnesses/MyWitnessesListScreen';
 import MyWitnessesDetailScreen from '../container/Vote/MyWitnesses/MyWitnessesDetailScreen';
 
+// Nuevas pantallas
+import UnifiedParticipationScreen from '../container/Vote/common/UnifiedParticipationScreen';
+import OracleParticipation from '../container/TabBar/Profile/OracleParticipation';
+
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
 import AuthNavigation from './type/AuthNavigation';
@@ -118,6 +122,10 @@ export const StackRoute = {
   CountTableDetail,
   MyWitnessesListScreen,
   MyWitnessesDetailScreen,
+
+  // Nuevas pantallas
+  UnifiedParticipationScreen,
+  OracleParticipation,
 
   // Profile y configuración
   PersonalDetails,

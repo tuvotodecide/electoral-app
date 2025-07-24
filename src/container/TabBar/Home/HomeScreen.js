@@ -8,25 +8,24 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
-import React, {useState, useRef, useEffect} from 'react';
-import {useDispatch} from 'react-redux';
-import {clearAuth} from '../../../redux/slices/authSlice';
-import {clearWallet} from '../../../redux/action/walletAction';
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { clearAuth } from '../../../redux/slices/authSlice';
+import { clearWallet } from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import {useSelector} from 'react-redux';
-import {store} from '../../../redux/store';
-import {clearSession} from '../../../utils/Session';
+import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
+import { useSelector } from 'react-redux';
+import { store } from '../../../redux/store';
+import { clearSession } from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY} from '../../../common/constants';
+import { JWT_KEY } from '../../../common/constants';
 import axios from 'axios';
-import {CommonActions} from '@react-navigation/native';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -51,28 +50,20 @@ const getCardLayout = () => {
     }
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   } else {
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   }
 };
 
-const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
-
-// // Gas Indicator Component
-// const GasIndicator = ({gasPrice}) => (
-//   <View style={stylesx.gasContainer}>
-//     <CText style={stylesx.gasLabel}>Gas (USDT):</CText>
-//     <CText style={stylesx.gasPrice}>{gasPrice}</CText>
-//   </View>
-// );
+const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
 
 // Carousel Item Component
-const CarouselItem = ({item}) => (
-  <View style={[stylesx.carouselItem, {backgroundColor: item.backgroundColor}]}>
+const CarouselItem = ({ item }) => (
+  <View style={[stylesx.carouselItem, { backgroundColor: item.backgroundColor }]}>
     <View style={stylesx.carouselContent}>
       <View style={stylesx.carouselTextContainer}>
         <CText style={stylesx.carouselTitle}>{item.title}</CText>
@@ -94,23 +85,23 @@ const MiVotoLogo = () => (
     {/* Bandera */}
     <View style={stylesx.flagBox}>
       <View
-        style={[stylesx.flagStripe, {backgroundColor: '#E72F2F', top: 0}]}
+        style={[stylesx.flagStripe, { backgroundColor: '#E72F2F', top: 0 }]}
       />
       <View
         style={[
           stylesx.flagStripe,
-          {backgroundColor: '#FFD800', top: getResponsiveSize(6, 7, 8)},
+          { backgroundColor: '#FFD800', top: getResponsiveSize(6, 7, 8) },
         ]}
       />
       <View
         style={[
           stylesx.flagStripe,
-          {backgroundColor: '#4FC144', top: getResponsiveSize(12, 14, 16)},
+          { backgroundColor: '#4FC144', top: getResponsiveSize(12, 14, 16) },
         ]}
       />
       <View style={stylesx.flagCheckOutline} />
     </View>
-    <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+    <View style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
       <CText style={stylesx.logoTitle}>Mi Voto</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
@@ -120,11 +111,8 @@ const MiVotoLogo = () => (
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View style={stylesx.bannerBC}>
-    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-      {/* <View style={stylesx.bcLogoCircle}>
-        <CText style={stylesx.bcLogoText}>bc</CText>
-      </View> */}
-      <View style={{marginLeft: 10, flex: 1}}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={{ marginLeft: 10, flex: 1 }}>
         <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
         <CText style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
@@ -140,13 +128,12 @@ const BlockchainConsultoraBanner = () => (
   </View>
 );
 
-export default function HomeScreen({navigation}) {
+export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
-  // const [gasPrice, setGasPrice] = useState('10.32'); // Mock gas price in USDT
   const carouselRef = useRef(null);
 
   // Datos del carrusel
@@ -203,56 +190,41 @@ export default function HomeScreen({navigation}) {
 
   const handleLogout = async () => {
     try {
-      // 1) Quitar el JWT
       await AsyncStorage.removeItem(JWT_KEY);
-
-      // 2) Borrar la cabecera de Authorization si la estás usando
       delete axios.defaults.headers.common['Authorization'];
-
-      // 3) Limpiar sesión (expires) y redux
-      await clearSession(); // borra EXPIRES_KEY también
-      dispatch(clearWallet()); // limpia payload de la wallet
-      dispatch(clearAuth()); // setea isAuthenticated = false
+      await clearSession();
+      dispatch(clearWallet());
+      dispatch(clearAuth());
 
       navigation.reset({
         index: 0,
-        routes: [{name: StackNav.AuthNavigation}],
+        routes: [{ name: StackNav.AuthNavigation }],
       });
     } catch (err) {
       console.error('Logout error', err);
     }
   };
-  // const userData = useSelector(state => state.wallet.payload);
-  // const vc = userData?.vc;
-  // const subject = vc?.credentialSubject || {};
-  // const data = {
-  //   name: subject.fullName || '(sin nombre)',
-  //   hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  // };
-  // const userFullName = data.name || '(sin nombre)';
-  const userFullName = 'Juan Pérez Cuéllar';
+
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+  const userFullName = data.name || '(sin nombre)';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [
     {
-      icon: 'camera-outline',
-      title: String.uploadActa,
-      description: String.uploadActaDescription,
+      icon: 'people-outline',
+      title: String.participate,
+      description: String.participateDescription,
       onPress: () =>
         navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'SearchTable',
-        }),
-      iconComponent: Ionicons,
-    },
-    {
-      icon: 'eye-outline',
-      title: String.witnessActa,
-      description: String.witnessActaDescription,
-      onPress: () =>
-        navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'WitnessRecord',
+          targetScreen: 'UnifiedParticipation',
         }),
       iconComponent: Ionicons,
     },
@@ -298,11 +270,11 @@ export default function HomeScreen({navigation}) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+            <CText style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+            <View style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
               <TouchableOpacity
                 style={{
                   backgroundColor: '#f5f5f5',
@@ -312,7 +284,7 @@ export default function HomeScreen({navigation}) {
                   marginRight: 8,
                 }}
                 onPress={() => setLogoutModalVisible(false)}>
-                <CText style={{color: '#222', fontWeight: '600'}}>
+                <CText style={{ color: '#222', fontWeight: '600' }}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
@@ -324,7 +296,7 @@ export default function HomeScreen({navigation}) {
                   borderRadius: 8,
                 }}
                 onPress={handleLogout}>
-                <CText style={{color: '#fff', fontWeight: '600'}}>
+                <CText style={{ color: '#fff', fontWeight: '600' }}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -358,22 +330,21 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
 
-            {/* <View style={stylesx.welcomeContainer}>
+            <View style={stylesx.welcomeContainer}>
               <View style={stylesx.welcomeHeader}>
                 <View style={stylesx.welcomeTextContainer}>
                   <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
-                <GasIndicator gasPrice={gasPrice} />
               </View>
-            </View> */}
+            </View>
 
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
               <FlatList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({item}) => <CarouselItem item={item} />}
+                renderItem={({ item }) => <CarouselItem item={item} />}
                 keyExtractor={item => item.id.toString()}
                 horizontal
                 pagingEnabled
@@ -385,7 +356,6 @@ export default function HomeScreen({navigation}) {
                   setCurrentCarouselIndex(index);
                 }}
               />
-              {/* Indicadores de página */}
               <View style={stylesx.pageIndicators}>
                 {carouselData.map((_, index) => (
                   <View
@@ -393,7 +363,7 @@ export default function HomeScreen({navigation}) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                        stylesx.activePageIndicator,
+                      stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -403,31 +373,60 @@ export default function HomeScreen({navigation}) {
 
           {/* Right Column: Menu Cards */}
           <View style={stylesx.tabletRightColumn}>
-            <View style={stylesx.gridContainer}>
-              {menuItems.map((item, idx) => (
+            {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
+            <View style={stylesx.gridParent}>
+              {/* Participar (arriba, ocupa dos columnas) */}
+              <TouchableOpacity
+                style={[stylesx.gridDiv1, stylesx.card]}
+                activeOpacity={0.87}
+                onPress={menuItems[0].onPress}>
+                {React.createElement(menuItems[0].iconComponent, {
+                  name: menuItems[0].icon,
+                  size: getResponsiveSize(30, 36, 42),
+                  color: "#41A44D",
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) }
+                })}
+                
+                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {menuItems[0].description}
+                </CText>
+              </TouchableOpacity>
+
+              <View style={stylesx.gridRow2}>
+                {/* Anunciar conteo */}
                 <TouchableOpacity
-                  key={item.title}
-                  style={[
-                    stylesx.card,
-                    {
-                      width: CARD_WIDTH,
-                      marginBottom: getResponsiveSize(10, 15, 20),
-                    },
-                  ]}
+                  style={[stylesx.gridDiv2, stylesx.card]}
                   activeOpacity={0.87}
-                  onPress={item.onPress}>
-                  <item.iconComponent
-                    name={item.icon}
-                    size={getResponsiveSize(30, 36, 42)}
-                    color="#41A44D"
-                    style={{marginBottom: getResponsiveSize(6, 8, 10)}}
-                  />
-                  <CText style={stylesx.cardTitle}>{item.title}</CText>
+                  onPress={menuItems[1].onPress}>
+                  {React.createElement(menuItems[1].iconComponent, {
+                    name: menuItems[1].icon,
+                    size: getResponsiveSize(30, 36, 42),
+                    color: "#41A44D",
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) }
+                  })}
+                  <CText style={stylesx.cardTitle}>{menuItems[1].title}</CText>
                   <CText style={stylesx.cardDescription}>
-                    {item.description}
+                    {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
-              ))}
+                {/* Mis atestiguamientos */}
+                <TouchableOpacity
+                  style={[stylesx.gridDiv3, stylesx.card]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[2].onPress}>
+                  {React.createElement(menuItems[2].iconComponent, {
+                    name: menuItems[2].icon,
+                    size: getResponsiveSize(30, 36, 42),
+                    color: "#41A44D",
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) }
+                  })}
+                  <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                  <CText style={stylesx.cardDescription}>
+                    {menuItems[2].description}
+                  </CText>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -453,22 +452,21 @@ export default function HomeScreen({navigation}) {
               </TouchableOpacity>
             </View>
           </View>
-          {/* ===== Bienvenida =====
+          {/* ===== Bienvenida ===== */}
           <View style={stylesx.welcomeContainer}>
             <View style={stylesx.welcomeHeader}>
               <View style={stylesx.welcomeTextContainer}>
                 <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
-              <GasIndicator gasPrice={gasPrice} />
             </View>
-          </View> */}
+          </View>
           {/* Carrusel deslizable */}
           <View style={stylesx.carouselContainer}>
             <FlatList
               ref={carouselRef}
               data={carouselData}
-              renderItem={({item}) => <CarouselItem item={item} />}
+              renderItem={({ item }) => <CarouselItem item={item} />}
               keyExtractor={item => item.id.toString()}
               horizontal
               pagingEnabled
@@ -480,7 +478,6 @@ export default function HomeScreen({navigation}) {
                 setCurrentCarouselIndex(index);
               }}
             />
-            {/* Indicadores de página */}
             <View style={stylesx.pageIndicators}>
               {carouselData.map((_, index) => (
                 <View
@@ -488,38 +485,64 @@ export default function HomeScreen({navigation}) {
                   style={[
                     stylesx.pageIndicator,
                     index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                    stylesx.activePageIndicator,
                   ]}
                 />
               ))}
             </View>
           </View>
-          {/* ===== Cards de Menú ===== */}
-          <View style={stylesx.gridContainer}>
-            {menuItems.map((item, idx) => (
+          {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
+          <View style={stylesx.gridParent}>
+            {/* Participar (arriba, ocupa dos columnas) */}
+            <TouchableOpacity
+              style={[stylesx.gridDiv1, stylesx.card]}
+              activeOpacity={0.87}
+              onPress={menuItems[0].onPress}>
+              {React.createElement(menuItems[0].iconComponent, {
+                name: menuItems[0].icon,
+                size: getResponsiveSize(30, 36, 42),
+                color: "#41A44D",
+                style: { marginBottom: getResponsiveSize(6, 8, 10) }
+              })}
+              <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+              <CText style={stylesx.cardDescription}>
+                {menuItems[0].description}
+              </CText>
+            </TouchableOpacity>
+            <View style={stylesx.gridRow2}>
+              {/* Anunciar conteo */}
               <TouchableOpacity
-                key={item.title}
-                style={[
-                  stylesx.card,
-                  {
-                    width: CARD_WIDTH,
-                    marginBottom: getResponsiveSize(10, 15, 20),
-                  },
-                ]}
+                style={[stylesx.gridDiv2, stylesx.card]}
                 activeOpacity={0.87}
-                onPress={item.onPress}>
-                <item.iconComponent
-                  name={item.icon}
-                  size={getResponsiveSize(30, 36, 42)}
-                  color="#41A44D"
-                  style={{marginBottom: getResponsiveSize(6, 8, 10)}}
-                />
-                <CText style={stylesx.cardTitle}>{item.title}</CText>
+                onPress={menuItems[1].onPress}>
+                {React.createElement(menuItems[1].iconComponent, {
+                  name: menuItems[1].icon,
+                  size: getResponsiveSize(30, 36, 42),
+                  color: "#41A44D",
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) }
+                })}
+                <CText style={stylesx.cardTitle}>{menuItems[1].title}</CText>
                 <CText style={stylesx.cardDescription}>
-                  {item.description}
+                  {menuItems[1].description}
                 </CText>
               </TouchableOpacity>
-            ))}
+              {/* Mis atestiguamientos */}
+              <TouchableOpacity
+                style={[stylesx.gridDiv3, stylesx.card]}
+                activeOpacity={0.87}
+                onPress={menuItems[2].onPress}>
+                {React.createElement(menuItems[2].iconComponent, {
+                  name: menuItems[2].icon,
+                  size: getResponsiveSize(30, 36, 42),
+                  color: "#41A44D",
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) }
+                })}
+                <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {menuItems[2].description}
+                </CText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -527,7 +550,32 @@ export default function HomeScreen({navigation}) {
   );
 }
 
+
 const stylesx = StyleSheet.create({
+  gridParent: {
+    width: '100%',
+    marginTop: getResponsiveSize(10, 13, 16),
+    paddingRight: getResponsiveSize(16, 20, 24),
+    paddingLeft: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(10, 13, 16),
+  },
+  gridDiv1: {
+    flexDirection: 'column',
+    width: '100%',
+    marginBottom: getResponsiveSize(10, 13, 16),
+  },
+  gridRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  gridDiv2: {
+    flex: 1,
+    marginRight: getResponsiveSize(6, 10, 14),
+  },
+  gridDiv3: {
+    flex: 1,
+    // No marginRight aquí, así queda a la derecha
+  },
   bg: {
     flex: 1,
     backgroundColor: '#FAFAFA',
@@ -609,9 +657,9 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(40, 50, 60),
-        marginBottom: getResponsiveSize(20, 25, 30),
-      }),
+      marginTop: getResponsiveSize(40, 50, 60),
+      marginBottom: getResponsiveSize(20, 25, 30),
+    }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -621,8 +669,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -632,8 +680,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -647,7 +695,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   bcLogoCircle: {
@@ -700,8 +748,8 @@ const stylesx = StyleSheet.create({
       CARDS_PER_ROW === 4
         ? 'space-around'
         : isTablet
-        ? 'flex-start'
-        : 'space-between',
+          ? 'flex-start'
+          : 'space-between',
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -712,9 +760,9 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(20, 25, 30),
-        paddingHorizontal: getResponsiveSize(12, 16, 20),
-      }),
+      marginTop: getResponsiveSize(20, 25, 30),
+      paddingHorizontal: getResponsiveSize(12, 16, 20),
+    }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
@@ -726,12 +774,12 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-        marginRight: getResponsiveSize(8, 12, 16),
-      }),
+      marginRight: getResponsiveSize(8, 12, 16),
+    }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
@@ -828,7 +876,7 @@ const stylesx = StyleSheet.create({
     gap: getResponsiveSize(4, 6, 8),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },

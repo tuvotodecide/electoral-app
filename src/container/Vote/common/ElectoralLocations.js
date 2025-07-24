@@ -42,6 +42,7 @@ const ElectoralLocations = ({navigation, route}) => {
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [locationRetries, setLocationRetries] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     type: 'info',
@@ -74,9 +75,14 @@ const ElectoralLocations = ({navigation, route}) => {
     }
   }, []);
 
-  const getCurrentLocation = useCallback(async () => {
+  const getCurrentLocation = useCallback(async (retryCount = 0) => {
     try {
       setLoadingLocation(true);
+      
+      // Show retry message if this is a retry attempt
+      if (retryCount > 0) {
+        console.log(`Retry attempt ${retryCount} for location`);
+      }
 
       // Request location permission on Android
       if (Platform.OS === 'android') {
@@ -112,22 +118,53 @@ const ElectoralLocations = ({navigation, route}) => {
           const {latitude, longitude} = position.coords;
           console.log('Location obtained:', latitude, longitude);
           setUserLocation({latitude, longitude});
+          setLocationRetries(0); // Reset retry count on success
           fetchNearbyLocations(latitude, longitude);
         },
         error => {
           console.error('Location error:', error);
+          let errorMessage = String.locationError || 'Error al obtener la ubicación';
+          let shouldRetry = false;
+          
+          // Handle specific location errors
+          switch (error.code) {
+            case 1: // PERMISSION_DENIED
+              errorMessage = String.locationPermissionDenied || 'Permiso de ubicación denegado';
+              break;
+            case 2: // POSITION_UNAVAILABLE
+              errorMessage = String.locationUnavailable || 'Ubicación no disponible. Verifica que el GPS esté activado';
+              shouldRetry = retryCount < 2; // Retry up to 2 times for position unavailable
+              break;
+            case 3: // TIMEOUT
+              errorMessage = String.locationTimeout || 'Tiempo de espera agotado. Intenta nuevamente en un lugar con mejor señal GPS';
+              shouldRetry = retryCount < 1; // Retry once for timeout
+              break;
+            default:
+              errorMessage = String.locationError || 'Error al obtener la ubicación';
+          }
+          
+          // Attempt retry for certain errors
+          if (shouldRetry) {
+            console.log(`Retrying location request in 3 seconds (attempt ${retryCount + 1})`);
+            setTimeout(() => {
+              setLocationRetries(retryCount + 1);
+              getCurrentLocation(retryCount + 1);
+            }, 3000);
+            return;
+          }
+          
           showModal(
             'error',
             String.error || 'Error',
-            String.locationError || 'Error al obtener la ubicación',
+            errorMessage,
           );
           setLoadingLocation(false);
           setLoading(false);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
+          enableHighAccuracy: false, // Changed to false for better compatibility
+          timeout: 30000, // Increased to 30 seconds
+          maximumAge: 300000, // Increased to 5 minutes (300000ms)
         },
       );
     } catch (error) {
@@ -156,10 +193,21 @@ const ElectoralLocations = ({navigation, route}) => {
     setModalVisible(false);
   };
 
+  const handleRetryLocation = () => {
+    setLocationRetries(0);
+    getCurrentLocation();
+  };
+
   const handleLocationPress = location => {
     // Special handling for AnnounceCount - it should go to its own screen
     if (targetScreen === 'AnnounceCount') {
       navigation.navigate(StackNav.SearchCountTable, {
+        locationId: location._id,
+        locationData: location,
+      });
+    } else if (targetScreen === 'UnifiedParticipation') {
+      // Navigate to unified participation screen
+      navigation.navigate(StackNav.UnifiedParticipationScreen, {
         locationId: location._id,
         locationData: location,
       });
@@ -226,7 +274,7 @@ const ElectoralLocations = ({navigation, route}) => {
       <CText style={styles.emptySubtitle}>
         {String.noLocationsFoundSubtitle}
       </CText>
-      <TouchableOpacity style={styles.retryButton} onPress={getCurrentLocation}>
+      <TouchableOpacity style={styles.retryButton} onPress={handleRetryLocation}>
         <CText style={styles.retryButtonText}>{String.retry}</CText>
       </TouchableOpacity>
     </View>
@@ -244,7 +292,10 @@ const ElectoralLocations = ({navigation, route}) => {
         <View style={styles.loadingLocationContainer}>
           <ActivityIndicator size="small" color="#4F9858" />
           <CText style={styles.loadingLocationText}>
-            {String.gettingLocation}
+            {locationRetries > 0 
+              ? `${String.retryingLocation || 'Reintentando obtener ubicación'} (${locationRetries}/2)`
+              : String.gettingLocation
+            }
           </CText>
         </View>
       )}

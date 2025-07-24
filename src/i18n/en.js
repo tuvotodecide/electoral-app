@@ -1114,11 +1114,6 @@ export default {
   seeMore: 'Ver más',
   understood: 'Entendido',
 
-  // User
-  userName: 'Juan Pérez',
-  userRole: 'Testigo Electoral',
-  userName2: 'Juan Perez Cuellar',
-
   // Common
   confirmation: 'Confirmación',
   voluntaryInitiative: 'Iniciativa Voluntaria de',
@@ -1134,7 +1129,6 @@ export default {
   retry: 'Reintentar',
   next: 'Siguiente',
 
-  // agregados que faltaban en en.js
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
   verifyTableInformation: 'Asegúrate que esta es la mesa asignada',
 
@@ -1245,4 +1239,29 @@ export default {
   locationPermissionError: 'Error al solicitar permisos de ubicación',
   askMeLater: 'Preguntar después',
   continueButton: 'Continuar',
+
+  // Profile Screen
+  reputationSummary: 'Resumen de reputación',
+  oracleParticipation: 'Participación en oráculos',
+  coincidences: 'coincidencias',
+  trust: 'Confianza',
+  nftsObtained: 'NFTs obtenidos',
+  uploadActaNFT: 'Subir Acta 2025',
+  uploadActaNFTDesc: 'Participó subiendo actas - Elecciones generales Bolivia 2025',
+  witnessNFT: 'Atestiguamiento',
+  witnessNFTDesc: 'Participó atestiguando actas - Elecciones generales Bolivia 2025',
+  selectFeaturedBadge: 'Seleccionar insignia destacada',
+
+  // Home Screen
+  participate: 'Participar',
+  participateDescription: 'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
+
+  // Oracle Participation
+  oracleParticipationTitle: 'Participación en oráculos',
+  lastParticipations: 'Últimas participaciones:',
+  participations: 'participaciones',
+  elections2025: 'Elecciones 2025',
+  coincides: 'Coincide',
+  noCoincides: 'No coincide',
+  shareProfile: 'Compartir perfil',
 };

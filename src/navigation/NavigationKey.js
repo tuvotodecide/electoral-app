@@ -36,6 +36,10 @@ export const StackNav = {
   MyWitnessesListScreen: 'MyWitnessesListScreen',
   MyWitnessesDetailScreen: 'MyWitnessesDetailScreen',
 
+  // Nuevas pantallas
+  UnifiedParticipationScreen: 'UnifiedParticipationScreen',
+  OracleParticipation: 'OracleParticipation',
+
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
   RecuperationQR: 'RecuperationQR',

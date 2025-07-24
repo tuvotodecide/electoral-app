@@ -88,6 +88,15 @@ const PhotoConfirmationScreen = () => {
   const [ipfsData, setIpfsData] = useState(null);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
 
+  // Obtener nombre real del usuario desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+  };
+  const userFullName = data.name || '(sin nombre)';
+
   const handleBack = () => {
     navigation.goBack();
   };
@@ -231,7 +240,7 @@ const PhotoConfirmationScreen = () => {
       <View style={styles.content}>
         <CText style={styles.mainText}>
           {String.i}
-          <CText style={styles.mainTextBold}> Juan Perez Cuellar</CText>
+          <CText style={styles.mainTextBold}> {userFullName}</CText>
         </CText>
 
         <TouchableOpacity
@@ -350,7 +359,7 @@ const PhotoConfirmationScreen = () => {
                 <CText style={nftModalStyles.nftMedalText}>NFT</CText>
               </View>
               {/* Datos del certificado */}
-              <CText style={nftModalStyles.nftName}>Usuario Actual</CText>
+              <CText style={nftModalStyles.nftName}>{userFullName}</CText>
               <CText style={nftModalStyles.nftCertTitle}>CERTIFICADO DE</CText>
               <CText style={nftModalStyles.nftCertTitle}>
                 PARTICIPACIÓN ELECTORAL

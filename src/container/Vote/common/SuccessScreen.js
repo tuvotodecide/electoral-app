@@ -50,8 +50,14 @@ const SuccessScreen = () => {
     }
   };
 
-  // Simulando nombre (puedes traerlo de tus datos)
-  const nombre = 'Juan Pérez Cuéllar';
+  // Obtener nombre real del usuario desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+  };
+  const nombre = data.name || '(sin nombre)';
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -91,7 +97,6 @@ const SuccessScreen = () => {
             <View style={styles.certificateBorder}>
               {/* Medallón NFT (usa un ícono o imagen, aquí placeholder) */}
               <View style={styles.medalContainer}>
-                {/* Aquí puedes poner una imagen real */}
                 <Image
                   source={nftImage}
                   style={styles.medalImage}

@@ -166,6 +166,16 @@ export default function StackNavigation() {
         component={StackRoute.SuccessScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.UnifiedParticipationScreen}
+        component={StackRoute.UnifiedParticipationScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.OracleParticipation}
+        component={StackRoute.OracleParticipation}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

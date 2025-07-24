@@ -56,9 +56,15 @@ const RecordCertificationScreen = () => {
   const [step, setStep] = useState(0);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
 
-  // Simulated user data - in real app this would come from authentication
+  // Obtener nombre real del usuario desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+  };
   const currentUser = {
-    name: 'Juan Pérez',
+    name: data.name || '(sin nombre)',
     role: 'Testigo Electoral',
   };
 

@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -7,44 +8,75 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Icons from 'react-native-vector-icons/Entypo';
+import Feather from 'react-native-vector-icons/Feather';
+import Entypo from 'react-native-vector-icons/Entypo';
 
-// custom import
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {THEME, getHeight, moderateScale} from '../../../common/constants';
-import {styles} from '../../../themes';
-import {useDispatch, useSelector} from 'react-redux';
+import { THEME, getHeight, moderateScale } from '../../../common/constants';
+import { styles } from '../../../themes';
+import { useDispatch, useSelector } from 'react-redux';
 import CHeader from '../../../components/common/CHeader';
-import {EditIcon} from '../../../assets/svg';
 import images from '../../../assets/images';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
-import {ProfileData, ProfileDataV2} from '../../../api/constant';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {colors} from '../../../themes/colors';
-import {changeThemeAction} from '../../../redux/action/themeAction';
-import {setAsyncStorageData} from '../../../utils/AsyncStorage';
+import { ProfileDataV2 } from '../../../api/constant';
+import { StackNav } from '../../../navigation/NavigationKey';
+import { colors } from '../../../themes/colors';
+import { changeThemeAction } from '../../../redux/action/themeAction';
+import { setAsyncStorageData } from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
+import String from '../../../i18n/String';
 
-export default function Profile({navigation}) {
+export default function Profile({ navigation }) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const dispatch = useDispatch();
 
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+  };
+
+  // Datos de reputación y NFTs
+  const reputation = {
+    coincidencias: 17,
+    confianza: 94,
+  };
+
+  const nfts = [
+    {
+      title: String.uploadActaNFT,
+      desc: String.uploadActaNFTDesc,
+      icon: <Entypo name="archive" size={30} color="#EA7C4B" />,
+      bg: '#FDEAE5',
+      border: '#F5C9BE',
+    },
+    {
+      title: String.witnessNFT,
+      desc: String.witnessNFTDesc,
+      icon: <Feather name="award" size={30} color="#4075BA" />,
+      bg: '#EEF6FE',
+      border: '#B3D1F5',
+    },
+  ];
+
+  // Sección adicional (ProfileDataV2)
   const onPressItem = item => {
     if (!!item.route) {
-      navigation.navigate(item.route, {item: item});
+      navigation.navigate(item.route, { item: item });
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }
   };
-  const RenderSectionHeader = ({section: {section}}) => {
+
+  const RenderSectionHeader = ({ section: { section } }) => {
     return (
       <CText type={'B16'} style={styles.mv10}>
         {section}
@@ -61,6 +93,7 @@ export default function Profile({navigation}) {
     setAsyncStorageData(THEME, 'dark');
     dispatch(changeThemeAction(colors.dark));
   };
+
   const toggleSwitch = val => {
     if (val) {
       onPressDarkTheme();
@@ -69,22 +102,18 @@ export default function Profile({navigation}) {
     }
     setIsEnabled(previousState => !previousState);
   };
+
   const onPressCancelBtn = () => {
     setIsModalVisible(false);
   };
+
   const onPressLOut = async () => {
     try {
       setIsModalVisible(false);
       setTimeout(() => {
-        // CONFIGURACIÓN PARA DESARROLLO:
-        // - AuthTest: Mantiene el flujo de test activo
-        // - StackNav.AuthNavigation: Flujo real de autenticación
-        // Cambiar entre estos según necesites
-
         navigation.reset({
           index: 0,
-          // routes: [{name: 'AuthTest'}], // MODO TEST: Usar AuthTest para desarrollo
-          routes: [{name: StackNav.AuthNavigation}], // MODO REAL: Descomentar para producción
+          routes: [{ name: StackNav.AuthNavigation }],
         });
       }, 500);
       return true;
@@ -93,19 +122,10 @@ export default function Profile({navigation}) {
     }
   };
 
-  const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
-  };
-
-  const RenderItem = ({item, index}) => {
+  const RenderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
-        disabled={item === String.darkMode}
+        disabled={item === 'darkMode'}s
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
         onPress={() => onPressItem(item)}
@@ -114,7 +134,8 @@ export default function Profile({navigation}) {
           {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
-        ]}>
+        ]}
+      >
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -125,9 +146,10 @@ export default function Profile({navigation}) {
                     ? color.primary
                     : color.inputBackground,
               },
-            ]}>
+            ]}
+          >
             {item.icon ? (
-              <Icons
+              <Entypo
                 name={item.icon}
                 size={moderateScale(20)}
                 color={color.dark ? color.grayScale500 : color.grayScale400}
@@ -168,11 +190,13 @@ export default function Profile({navigation}) {
   return (
     <CSafeAreaView>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        {/* Header perfil */}
         <LinearGradient
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 2.1}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 2.1 }}
           style={localStyle.activityHeader}
-          colors={[color.gradient1, color.gradient2, color.grayScale200]}>
+          colors={['#4A5568', '#2D3748', '#1A202C']}
+        >
           <CHeader color={color.white} />
           <Image
             source={images.PersonCircleImage}
@@ -185,6 +209,65 @@ export default function Profile({navigation}) {
             <CHash text={data.hash} textColor={'#fff'} />
           </View>
         </LinearGradient>
+
+        {/* Resumen de reputación */}
+        <View style={localStyle.boxSection}>
+          <CText type="B14" style={localStyle.sectionTitle}>
+            {String.reputationSummary}
+          </CText>
+          <TouchableOpacity 
+            style={localStyle.reputationBox}
+            onPress={() => navigation.navigate(StackNav.OracleParticipation)}
+          >
+            <View style={localStyle.reputationIcon}>
+              <Feather name="eye" size={28} color="#5B4D9A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CText type="B16" style={{ marginBottom: 2 }}>
+                {String.oracleParticipation}
+              </CText>
+              <CText type="R13" color="#636363">
+                <Feather name="heart" size={13} color="#E2435A" />{' '}
+                {reputation.coincidencias} {String.coincidences} – {String.trust} {reputation.confianza}%
+              </CText>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* NFTs obtenidos */}
+        <View style={localStyle.boxSection}>
+          <CText type="B14" style={localStyle.sectionTitle}>
+            {String.nftsObtained}
+          </CText>
+          <View>
+            {nfts.map((nft, i) => (
+              <View
+                key={nft.title}
+                style={[
+                  localStyle.nftBox,
+                  {
+                    backgroundColor: nft.bg,
+                    borderColor: nft.border,
+                  },
+                ]}
+              >
+                <View style={localStyle.nftIconBox}>
+                  {nft.icon}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <CText type="B15" style={{ marginBottom: 1 }}>
+                    {nft.title}
+                  </CText>
+                  <CText type="R12" color="#636363">
+                    {nft.desc}
+                  </CText>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Sección de datos adicionales */}
         <View style={localStyle.mainContainer}>
           <SectionList
             sections={ProfileDataV2}
@@ -196,6 +279,16 @@ export default function Profile({navigation}) {
             scrollEnabled={false}
           />
         </View>
+
+        {/* Botón de seleccionar insignia */}
+        <View style={{ marginVertical: 20, alignItems: 'center' }}>
+          <TouchableOpacity style={localStyle.mainBtn}>
+            <CText type="B16" color="#222">
+              {String.selectFeaturedBadge}
+            </CText>
+          </TouchableOpacity>
+        </View>
+
         <LogOutModal
           visible={isModalVisible}
           onPressCancel={onPressCancelBtn}
@@ -223,22 +316,57 @@ const localStyle = StyleSheet.create({
   userNameAndEmailContainer: {
     ...styles.mt20,
   },
-  invitationContainer: {
-    height: moderateScale(88),
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(12),
-    ...styles.rowSpaceBetween,
-    ...styles.mt20,
+  boxSection: {
+    paddingHorizontal: 20,
+    marginTop: 18,
   },
-  invitationText: {
-    width: '55%',
-    ...styles.ml20,
-    lineHeight: moderateScale(25),
+  sectionTitle: {
+    marginBottom: 4,
+    color: '#222',
   },
-  giftImage: {
-    height: moderateScale(87),
-    width: moderateScale(104),
-    borderBottomRightRadius: moderateScale(12),
+  reputationBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F4FD',
+    borderRadius: 13,
+    padding: 14,
+    marginBottom: 4,
+  },
+  reputationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E4D6FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  nftBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 13,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  nftIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  mainBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 9,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#222',
   },
   renderItemContainer: {
     height: moderateScale(72),
