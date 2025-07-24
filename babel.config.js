@@ -8,12 +8,15 @@ module.exports = {
         path: '.env',
       },
     ],
-    'react-native-reanimated/plugin',
     ['@babel/plugin-transform-export-namespace-from', { allowNamespaces: true }],
+    'react-native-reanimated/plugin', // SIEMPRE el último
   ],
   env: {
     production: {
-      plugins: ['react-native-paper/babel'],
-    }
-  }
+      plugins: [
+        'react-native-paper/babel',
+        'react-native-reanimated/plugin', // SIEMPRE el último
+      ],
+    },
+  },
 };
