@@ -1,4 +1,4 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -10,7 +10,7 @@ import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrappe
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
-import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
@@ -29,7 +29,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUser2Pin, {
       originalPin: otp,
-      reqId,
+      reqId
     });
   };
 
@@ -42,7 +42,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaView>
       <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -69,8 +69,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
-              ref={otpRef}
+              autoFocusOnLoad={true}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {
@@ -92,7 +91,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaViewAuth>
+    </CSafeAreaView>
   );
 }
 

@@ -2,7 +2,7 @@ import {PermissionsAndroid, Platform, StatusBar, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import messaging from '@react-native-firebase/messaging';
 import {BACKEND} from '@env';
 import {QueryClient, QueryClientProvider} from 'react-query';
@@ -12,6 +12,7 @@ import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
 import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
 import axios from 'axios';
+import { migrateIfNeeded } from './utils/migrateBundle';
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -20,9 +21,19 @@ const App = () => {
   const account = useSelector(state => state.account);
   const userData = useSelector(state => state.wallet.payload);
   const [ready, setReady] = useState(false);
-
+  const auth = useSelector(s => s.auth);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.pendingNav) {
+      navigate(auth.pendingNav.name, auth.pendingNav.params);
+      dispatch(setPendingNav(null));
+    }
+  }, [auth.isAuthenticated, auth.pendingNav]);
+  useEffect(() => {
+    migrateIfNeeded();
+  }, []);
   // Configurar Firebase y usuario automáticamente
-  const { isInitialized, initializationError } = useFirebaseUserSetup();
+  const {isInitialized, initializationError} = useFirebaseUserSetup();
 
   // Mostrar estado de inicialización en logs
   useEffect(() => {
@@ -79,7 +90,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.flex}>
-        
         <StatusBar
           barStyle={colors?.dark === 'dark' ? 'light-content' : 'dark-content'}
         />

@@ -13,14 +13,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {PENDINGRECOVERY} from '../../../common/constants';
 import {useEffect} from 'react';
 import {ActivityIndicator} from 'react-native-paper';
-import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {saveSecrets} from '../../../utils/Cifrate';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-import messaging from '@react-native-firebase/messaging';
+import messaging          from '@react-native-firebase/messaging';
 
-import {registerDeviceToken} from '../../../utils/registerDeviceToken';
+import { registerDeviceToken } from '../../../utils/registerDeviceToken';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, reqId} = route.params;
@@ -46,7 +46,7 @@ export default function RecoveryFinalize({route, navigation}) {
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       dispatch(setSecrets(data.payload));
       await startSession(data.token);
-      await registerDeviceToken();
+      await registerDeviceToken(); 
       messaging().onTokenRefresh(registerDeviceToken);
 
       navigation.navigate(AuthNav.LoginUser);
@@ -54,12 +54,12 @@ export default function RecoveryFinalize({route, navigation}) {
   }, []);
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaView>
       <View style={localStyle.mainContainer}>
         <ActivityIndicator size="large" />
         <CText type="B16">{String.finishingRecovery}</CText>
       </View>
-    </CSafeAreaViewAuth>
+    </CSafeAreaView>
   );
 }
 const localStyle = StyleSheet.create({

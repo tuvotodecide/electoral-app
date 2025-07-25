@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
-import Keychain from 'react-native-keychain';
+import * as Keychain from 'react-native-keychain';
 // Custom imports
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
@@ -19,6 +19,7 @@ import {JWT_KEY, moderateScale} from '../../common/constants';
 import typography from '../../themes/typography';
 import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
+import RNFS from 'react-native-fs';
 
 import String from '../../i18n/String';
 import {checkPin, getSecrets} from '../../utils/Cifrate';
@@ -38,17 +39,20 @@ import {
 } from '../../redux/slices/authSlice';
 import store from '../../redux/store';
 import {navigate} from '../../navigation/RootNavigation';
+import {SHA256} from 'crypto-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import {getBioFlag} from '../../utils/BioFlag';
 import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
 import {registerDeviceToken} from '../../utils/registerDeviceToken';
+import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
 
 export default function LoginUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
+  const [skipBiometricsOnce, setSkipBiometricsOnce] = useState(false);
   const dispatch = useDispatch();
   const bioUnlocked = useRef(false);
   const [loading, setLoading] = useState(false);
@@ -58,7 +62,7 @@ export default function LoginUser({navigation}) {
 
   const toastError = msg => setModal({visible: true, msg});
 
-  async function unlock(payload, jwt) {
+  async function unlock(payload, jwt,pin) {
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -73,14 +77,33 @@ export default function LoginUser({navigation}) {
     await startSession(jwt);
     await registerDeviceToken();
     messaging().onTokenRefresh(registerDeviceToken);
-    const pending = store.getState().auth.pendingNav;
 
-    if (pending) {
-      navigate(pending.name, pending.params);
-      dispatch(setPendingNav(null));
-    } else {
-      navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
+    try {
+      await writeBundleAtomic(JSON.stringify({...payload, jwt}));
+      console.log('[SSI] ✔ Bundle actualizado tras login');
+    } catch (e) {
+      console.error('[SSI] ❌ Error writeFile login:', e);
     }
+
+    const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
+    if (!exists ) {
+      await AsyncStorage.setItem(
+        'FINLINE_FLAGS',
+        JSON.stringify({
+          PIN_HASH: SHA256(pin.trim()).toString(),
+          BIO_ENABLED: await getBioFlag(),
+          HAS_WALLET: true,
+        }),
+      );
+    }
+    const pending = store.getState().auth.pendingNav;
+    if (!pending) {
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.TabNavigation}],
+      });
+    }
+
   }
 
   const onPressLoginUser1 = () => {
@@ -88,21 +111,14 @@ export default function LoginUser({navigation}) {
   };
 
   async function verifyPin(code) {
+    await ensureBundle();
     if (!(await checkPin(code))) return false;
     const stored = await getSecrets();
+    console.log(stored);
+    
     if (!stored) return false;
 
-    // let payload;
-    // try {
-    //   payload = await login(code.trim()); // verifica PIN y lee bundle
-    // } catch {
-    //   PIN incorrecto
-    //   return false;
-    // }
-
     const {streamId, privKey} = stored.payloadQr;
-
-    // const {streamId, privKey} = payload;
 
     const load = await axios.post(
       `${BACKEND}kyc/load`,
@@ -124,8 +140,7 @@ export default function LoginUser({navigation}) {
 
     const {vc, jwt} = dec.data;
 
-    await unlock({...stored.payloadQr, vc}, jwt);
-    // await unlock({...payload, vc}, jwt);
+    await unlock({...stored.payloadQr, vc}, jwt,code);
     return true;
   }
 
@@ -137,8 +152,9 @@ export default function LoginUser({navigation}) {
         visible: true,
         msg:
           'Has agotado tus 5 intentos.\n' +
-          'Recupera tu cuenta con tus guardianes.',
+          'Espera 15 minutos o recupera tu cuenta con tus guardianes.',
       });
+      navigation.replace(AuthNav.AccountLock);
       return;
     }
 
@@ -198,7 +214,10 @@ export default function LoginUser({navigation}) {
           : 'Escanea tu huella dactilar',
       );
 
-      if (!ok) return;
+      if (!ok) {
+        setSkipBiometricsOnce(true);
+        return;
+      }
       setLoading(true);
 
       bioUnlocked.current = true;
@@ -209,6 +228,7 @@ export default function LoginUser({navigation}) {
         });
 
         if (!creds) {
+          await ensureBundle();
           setLoading(false);
           return;
         }
@@ -252,7 +272,7 @@ export default function LoginUser({navigation}) {
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader color={colors.white} />
+      <CHeader color={colors.white} isHideBack />
       <View style={localStyle.imageContainer}>
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>

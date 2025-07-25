@@ -5,6 +5,8 @@ import {JWT_KEY}          from '../common/constants';
 import {checkPin, getSecrets, saveSecrets} from './Cifrate';
 import {resetAttempts}    from './PinAttempts';
 import {getBioFlag}       from './BioFlag';
+import { getJwt } from './Session';
+import { writeBundleAtomic } from './ensureBundle';
 
 
 export async function changePin(oldPin , newPin ) {
@@ -16,9 +18,10 @@ export async function changePin(oldPin , newPin ) {
   if (!stored) throw new Error('No se encontraron datos cifrados');
 
   await saveSecrets(newPin.trim(), stored.payloadQr, await getBioFlag());
+  const jwt = await getJwt();
+  await writeBundleAtomic(JSON.stringify({...stored.payloadQr, jwt}));
 
   if (await getBioFlag()) {
-    const jwt = await AsyncStorage.getItem(JWT_KEY);
     await Keychain.setGenericPassword(
       'bundle',
       JSON.stringify({stored, jwt}),

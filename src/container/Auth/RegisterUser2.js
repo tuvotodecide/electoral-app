@@ -58,9 +58,9 @@ export default function RegisterUser2({navigation}) {
           },
           onSuccess: response => {
             setSubmitting(false);
-            // Aquí revisamos el ok
+
             if (response.ok) {
-              // abrimos el modal de "DNI ya existe"
+         
               setModalVisible(true);
             } else {
               navigation.navigate(AuthNav.RegisterUser3, {
@@ -76,9 +76,11 @@ export default function RegisterUser2({navigation}) {
               err?.response?.data?.message || err.message || String.unknowerror;
             Alert.alert(String.errorCi, msg);
           },
+          onSettled: () => setSubmitting(false),
         },
       );
     }, 500),
+    
     [idNumber, frontImage, backImage],
   );
 

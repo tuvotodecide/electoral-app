@@ -76,6 +76,7 @@ export default function RegisterUser4({navigation, route}) {
     }
     return false;
   };
+  
 
   const onPressNext = () => {
     if (!selfie) {

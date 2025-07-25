@@ -16,6 +16,8 @@ import {randomBytes} from 'react-native-quick-crypto';
 import {aesGcmEncrypt, aesGcmDecrypt} from './aesGcm';
 import {setBioFlag} from './BioFlag';
 import {Platform} from 'react-native';
+import {getJwt} from './Session';
+import {readBundleFile, writeBundleAtomic} from './ensureBundle';
 
 const KEYCHAIN_ID = 'finline.wallet.vc';
 const FLAGS_KEY = 'FINLINE_FLAGS';
@@ -25,8 +27,8 @@ export async function createSeedBundle(pin) {
   const salt = randomBytes(16);
 
   const key = argon2id(utf8ToBytes(pin), salt, {
-    t: 2,
-    m: 16 * 1024,
+    t: 1,
+    m: 2 * 1024,
     p: 1,
     dkLen: 32,
   });
@@ -34,8 +36,8 @@ export async function createSeedBundle(pin) {
   const cipher = await aesGcmEncrypt(seed, key);
 
   return {
-    seedHex: hex(seed), // <- 32 bytes, sirve como llave
-    cipherHex: hex(cipher), // <- 60 bytes, para guardar seguro
+    seedHex: hex(seed), 
+    cipherHex: hex(cipher), 
     saltHex: hex(salt),
   };
 }
@@ -51,8 +53,8 @@ export function hashIdentifier(dni, salt = '') {
 
 export async function unlockSeed(pin, bundle) {
   const key = argon2id(utf8ToBytes(pin), buf(bundle.saltHex), {
-    t: 2,
-    m: 4 * 1024,
+    t: 1,
+    m: 2 * 1024,
     p: 1,
     dkLen: 32,
   });
@@ -90,22 +92,57 @@ export async function saveSecrets(pin, payloadQr, useBiometry) {
       HAS_WALLET: true,
     }),
   );
+  const jwt = await getJwt();
+  await writeBundleAtomic(JSON.stringify({...payloadQr, jwt}));
 }
 
-export async function getSecrets() {
+export async function getSecrets(allowNoFlags = false) {
   const res = await Keychain.getGenericPassword({
     service: KEYCHAIN_ID,
     authenticationPrompt: 'Identifícate para abrir tu billetera',
   });
-  const flags = await AsyncStorage.getItem(FLAGS_KEY);
+  console.log(res);
 
-  if (!res || !flags) return null;
-  return {payloadQr: JSON.parse(res.password), flags: JSON.parse(flags)};
+  const flags = await AsyncStorage.getItem(FLAGS_KEY);
+  console.log(flags);
+
+  if (!res) {
+    const bundle = await readBundleFile();
+
+    if (!bundle) return null; // tampoco hay bundle
+    return {payloadQr: bundle, flags: flags ? JSON.parse(flags) : null};
+  } // si no está en Keychain → null
+  if (!flags && !allowNoFlags) return null; // ⇠ solo corta cuando NO se permite
+
+  return {
+    payloadQr: JSON.parse(res.password),
+    flags: flags ? JSON.parse(flags) : null,
+  };
 }
-
 export async function checkPin(pin) {
-  const flags = await AsyncStorage.getItem(FLAGS_KEY);
-  if (!flags) return false;
+  let flags = await AsyncStorage.getItem(FLAGS_KEY);
+  if (!flags) {
+    // console.log('aca');
+
+    // const stored = await getSecrets(true); // lee el bundle
+    // if (!stored) return false;
+    // console.log(stored);
+    // try {
+    //   await unlockSeed(pin, stored.payloadQr);
+    //   flags = JSON.stringify({
+    //     PIN_HASH: SHA256(pin.trim()).toString(),
+    //     BIO_ENABLED: await getBioFlag(),
+    //     HAS_WALLET: true,
+    //   });
+    //   console.log(flags);
+    //   await AsyncStorage.setItem(FLAGS_KEY, flags);
+    //   const jwt = await getJwt();
+    //   await writeBundleAtomic(JSON.stringify({...stored.payloadQr, jwt}));
+    // } catch {
+    //   return false;
+    // } // PIN incorrecto
+    return true;
+  }
   const {PIN_HASH} = JSON.parse(flags);
   return SHA256(pin.trim()).toString() === PIN_HASH;
 }

@@ -43,7 +43,7 @@ export default function PersonalDetails({navigation, route}) {
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <View style={{alignItems: 'center', width: '100%'}}>
           <Icono name="account" size={150} color={colors.primary} />
-          <CHash text={data.hash} />
+         <CHash text={data.hash} title={userData?.account}/>
         </View>
 
         <CEtiqueta

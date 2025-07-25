@@ -5,7 +5,11 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {getHeight, moderateScale, PENDINGRECOVERY} from '../../../common/constants';
+import {
+  getHeight,
+  moderateScale,
+  PENDINGRECOVERY,
+} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import Icono from '../../../components/common/Icono';
 
@@ -41,10 +45,11 @@ export default function MyGuardiansStatus({navigation, route}) {
 
   const [ready, setReady] = useState(false);
 
-  const {data: detail, isLoading} = useGuardiansRecoveryDetailQuery(
-    deviceId.current,
-    ready,
-  );
+  const {
+    data: detail,
+    isLoading,
+    remove,
+  } = useGuardiansRecoveryDetailQuery(deviceId.current, ready);
 
   const guardians = useMemo(() => {
     if (!detail) return [];
@@ -70,11 +75,15 @@ export default function MyGuardiansStatus({navigation, route}) {
     if (!detail?.ok) return;
 
     if (detail.status === 'APPROVED') {
-      AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+
       navigation.replace(AuthNav.RecoveryUser1Pin, {
         dni,
         reqId: detail.id,
       });
+    } else if (detail.status === 'REJECTED') {
+      remove();
+      AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+      navigation.replace(AuthNav.SelectRecuperation);
     }
   }, [detail]);
 
@@ -94,7 +103,6 @@ export default function MyGuardiansStatus({navigation, route}) {
   }
 
   const onPressReturn = () => {
-
     navigation.navigate(StackNav.AuthNavigation, {
       screen: AuthNav.Connect,
     });

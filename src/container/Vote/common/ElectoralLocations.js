@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import {useSelector} from 'react-redux';
-import Geolocation from '@react-native-community/geolocation';
+// import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -113,60 +113,29 @@ const ElectoralLocations = ({navigation, route}) => {
       }
 
       // Get current position
-      Geolocation.getCurrentPosition(
-        position => {
-          const {latitude, longitude} = position.coords;
-          console.log('Location obtained:', latitude, longitude);
-          setUserLocation({latitude, longitude});
-          setLocationRetries(0); // Reset retry count on success
-          fetchNearbyLocations(latitude, longitude);
-        },
-        error => {
-          console.error('Location error:', error);
-          let errorMessage = String.locationError || 'Error al obtener la ubicación';
-          let shouldRetry = false;
-          
-          // Handle specific location errors
-          switch (error.code) {
-            case 1: // PERMISSION_DENIED
-              errorMessage = String.locationPermissionDenied || 'Permiso de ubicación denegado';
-              break;
-            case 2: // POSITION_UNAVAILABLE
-              errorMessage = String.locationUnavailable || 'Ubicación no disponible. Verifica que el GPS esté activado';
-              shouldRetry = retryCount < 2; // Retry up to 2 times for position unavailable
-              break;
-            case 3: // TIMEOUT
-              errorMessage = String.locationTimeout || 'Tiempo de espera agotado. Intenta nuevamente en un lugar con mejor señal GPS';
-              shouldRetry = retryCount < 1; // Retry once for timeout
-              break;
-            default:
-              errorMessage = String.locationError || 'Error al obtener la ubicación';
-          }
-          
-          // Attempt retry for certain errors
-          if (shouldRetry) {
-            console.log(`Retrying location request in 3 seconds (attempt ${retryCount + 1})`);
-            setTimeout(() => {
-              setLocationRetries(retryCount + 1);
-              getCurrentLocation(retryCount + 1);
-            }, 3000);
-            return;
-          }
-          
-          showModal(
-            'error',
-            String.error || 'Error',
-            errorMessage,
-          );
-          setLoadingLocation(false);
-          setLoading(false);
-        },
-        {
-          enableHighAccuracy: false, // Changed to false for better compatibility
-          timeout: 30000, // Increased to 30 seconds
-          maximumAge: 300000, // Increased to 5 minutes (300000ms)
-        },
-      );
+      // Geolocation.getCurrentPosition(
+      //   position => {
+      //     const {latitude, longitude} = position.coords;
+      //     console.log('Location obtained:', latitude, longitude);
+      //     setUserLocation({latitude, longitude});
+      //     fetchNearbyLocations(latitude, longitude);
+      //   },
+      //   error => {
+      //     console.error('Location error:', error);
+      //     showModal(
+      //       'error',
+      //       String.error || 'Error',
+      //       String.locationError || 'Error al obtener la ubicación',
+      //     );
+      //     setLoadingLocation(false);
+      //     setLoading(false);
+      //   },
+      //   {
+      //     enableHighAccuracy: true,
+      //     timeout: 15000,
+      //     maximumAge: 10000,
+      //   },
+      // );
     } catch (error) {
       console.error('Permission error:', error);
       showModal(

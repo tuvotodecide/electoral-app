@@ -24,7 +24,7 @@ import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 
-/* ───────── helper para descomprimir ───────── */
+
 const decompress = b64 =>
   JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
 
@@ -33,7 +33,7 @@ export default function RecoveryQr({navigation}) {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  /* ─────────── 1) pedir permiso + abrir galería ─────────── */
+  
   const pickImage = async () => {
     if (Platform.OS === 'android') {
       const perm =
@@ -55,16 +55,16 @@ export default function RecoveryQr({navigation}) {
     setLoading(true);
 
     try {
-      /* ─────────── 2) detectar QR con rn-qr-generator ─────────── */
+      
       const {values} = await RNQRGenerator.detect({uri});
       if (!values.length) {
         throw new Error('No pude leer un QR válido');
       }
 
-      /* ─────────── 3) descomprimir texto base64 ─────────── */
+      
       const data = decompress(values[0]);
 
-      /* ─────────── 4) validar campos mínimos ─────────── */
+      
       const required = [
         'streamId',
         'dni',
@@ -90,12 +90,12 @@ export default function RecoveryQr({navigation}) {
     }
   };
 
-  /* ─────────── 5) continuar si todo OK ─────────── */
+  
   const goSetPin = () => {
     navigation.navigate(AuthNav.RecoveryUserQrpin, {payload});
   };
 
-  /* ─────────── UI ─────────── */
+  
   return (
     <CSafeAreaViewAuth>
       <CHeader />
@@ -134,7 +134,7 @@ export default function RecoveryQr({navigation}) {
   );
 }
 
-/* ───────── estilos ───────── */
+
 const local = StyleSheet.create({
   main: {...styles.ph20, gap: moderateScale(8)},
   footer: {...styles.ph20, marginBottom: moderateScale(20)},

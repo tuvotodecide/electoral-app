@@ -92,6 +92,7 @@ export default function RegisterUser6({navigation, route}) {
            title={String.labelDocumentExpiration}
           text={fmtDate(documentExpirationDate)}
         /> */}
+        
         {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
           title={String.labelNationality}

@@ -206,7 +206,7 @@ export default function Profile({ navigation }) {
             <CText type={'B20'} color={color.white} align={'center'}>
               {data.name}
             </CText>
-            <CHash text={data.hash} textColor={'#fff'} />
+            <CHash text={data.hash} title={userData?.account}  textColor={'#fff'} />
           </View>
         </LinearGradient>
 

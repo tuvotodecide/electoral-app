@@ -12,7 +12,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import axios from 'axios';
-import Geolocation from '@react-native-community/geolocation';
+// import Geolocation from '@react-native-community/geolocation';
 import CSafeAreaView from '../../components/common/CSafeAreaView';
 import UniversalHeader from '../../components/common/UniversalHeader';
 import CText from '../../components/common/CText';
@@ -84,19 +84,19 @@ const ElectoralLocationsScreen = () => {
   };
 
   const getCurrentLocation = () => {
-    Geolocation.getCurrentPosition(
-      position => {
-        console.log('Current position:', position);
-        setUserLocation(position.coords);
-        loadNearbyLocations(position.coords);
-      },
-      error => {
-        console.error('Location error:', error);
-        showModal('error', String.error, String.locationError);
-        loadAllLocations();
-      },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-    );
+    // Geolocation.getCurrentPosition(
+    //   position => {
+    //     console.log('Current position:', position);
+    //     setUserLocation(position.coords);
+    //     loadNearbyLocations(position.coords);
+    //   },
+    //   error => {
+    //     console.error('Location error:', error);
+    //     showModal('error', String.error, String.locationError);
+    //     loadAllLocations();
+    //   },
+    //   {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+    // );
   };
 
   const loadNearbyLocations = async (coords) => {

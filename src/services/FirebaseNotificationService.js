@@ -1,6 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
-import Geolocation from '@react-native-community/geolocation';
+// import Geolocation from '@react-native-community/geolocation';
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -169,36 +169,36 @@ export class FirebaseNotificationService {
             return;
           }
           
-          Geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
-              });
-            },
-            (error) => reject(error),
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 10000,
-            }
-          );
+          // Geolocation.getCurrentPosition(
+          //   (position) => {
+          //     resolve({
+          //       latitude: position.coords.latitude,
+          //       longitude: position.coords.longitude
+          //     });
+          //   },
+          //   (error) => reject(error),
+          //   {
+          //     enableHighAccuracy: true,
+          //     timeout: 15000,
+          //     maximumAge: 10000,
+          //   }
+          // );
         });
       } else {
-        Geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-          },
-          (error) => reject(error),
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 10000,
-          }
-        );
+        // Geolocation.getCurrentPosition(
+        //   (position) => {
+        //     resolve({
+        //       latitude: position.coords.latitude,
+        //       longitude: position.coords.longitude
+        //     });
+        //   },
+        //   (error) => reject(error),
+        //   {
+        //     enableHighAccuracy: true,
+        //     timeout: 15000,
+        //     maximumAge: 10000,
+        //   }
+        // );
       }
     });
   }
@@ -215,45 +215,45 @@ export class FirebaseNotificationService {
       }
 
       return new Promise((resolve, reject) => {
-        Geolocation.getCurrentPosition(
-          async (position) => {
-            try {
-              const { latitude, longitude } = position.coords;
-              const fcmToken = await this.getFCMToken();
+        // Geolocation.getCurrentPosition(
+        //   async (position) => {
+        //     try {
+        //       const { latitude, longitude } = position.coords;
+        //       const fcmToken = await this.getFCMToken();
 
-              // Calcular geohash para consultas eficientes
-              const geohash = this.calculateGeohash(latitude, longitude);
+        //       // Calcular geohash para consultas eficientes
+        //       const geohash = this.calculateGeohash(latitude, longitude);
 
-              // Guardar en Realtime Database
-              const userRef = database().ref(`usuarios/${userId}`);
-              await userRef.set({
-                ubicacion: {
-                  latitude: latitude,
-                  longitude: longitude
-                },
-                geohash: geohash,
-                fcmToken: fcmToken,
-                ultimaActualizacion: database.ServerValue.TIMESTAMP,
-                activo: true
-              });
+        //       // Guardar en Realtime Database
+        //       const userRef = database().ref(`usuarios/${userId}`);
+        //       await userRef.set({
+        //         ubicacion: {
+        //           latitude: latitude,
+        //           longitude: longitude
+        //         },
+        //         geohash: geohash,
+        //         fcmToken: fcmToken,
+        //         ultimaActualizacion: database.ServerValue.TIMESTAMP,
+        //         activo: true
+        //       });
 
-              console.log('Usuario actualizado en Realtime Database:', userId);
-              resolve({ latitude, longitude });
-            } catch (error) {
-              console.error('Error actualizando usuario:', error);
-              reject(error);
-            }
-          },
-          (error) => {
-            console.error('Error obteniendo ubicación:', error);
-            reject(error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 10000,
-          }
-        );
+        //       console.log('Usuario actualizado en Realtime Database:', userId);
+        //       resolve({ latitude, longitude });
+        //     } catch (error) {
+        //       console.error('Error actualizando usuario:', error);
+        //       reject(error);
+        //     }
+        //   },
+        //   (error) => {
+        //     console.error('Error obteniendo ubicación:', error);
+        //     reject(error);
+        //   },
+        //   {
+        //     enableHighAccuracy: true,
+        //     timeout: 15000,
+        //     maximumAge: 10000,
+        //   }
+        // );
       });
     } catch (error) {
       console.error('Error actualizando ubicación:', error);

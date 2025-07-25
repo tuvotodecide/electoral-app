@@ -6,7 +6,7 @@ import {
   InteractionManager,
 } from 'react-native';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import Keychain from 'react-native-keychain';
+import * as Keychain from 'react-native-keychain';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
@@ -35,6 +35,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
 import {getBioFlag} from '../../utils/BioFlag';
+import { writeBundleAtomic } from '../../utils/ensureBundle';
 
 export default function RegisterUser10({navigation, route}) {
   const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
@@ -47,18 +48,11 @@ export default function RegisterUser10({navigation, route}) {
   const dispatch = useDispatch();
   const {mutateAsync: registerStore} = useKycRegisterQuery();
   const startedRef = useRef(false);
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     navigation.navigate(AuthNav.RegisterUser6);
-  //   }, 5000);
 
-  //   return () => clearTimeout(timeout);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
 
   useEffect(() => {
     (async () => {
-      // Si ya vengo usando un draft, simplemente continúo
+      
       if (route.params?.fromDraft) {
         initRegister();
         return;
@@ -67,7 +61,7 @@ export default function RegisterUser10({navigation, route}) {
       const draft = await getDraft();
 
       if (draft) {
-        // Me reemplazo a mí mismo con los datos y la marca
+       
         navigation.replace(AuthNav.RegisterUser10, {
           ...draft,
           fromDraft: true,
@@ -173,18 +167,6 @@ export default function RegisterUser10({navigation, route}) {
           useBiometry,
         );
 
-        // await saveIdentity(
-        //   {
-        //     streamId,
-        //     dni,
-        //     salt: walletData.salt.toString(),
-        //     privKey,
-        //     account: walletData.address,
-        //     did: vc.credentialSubject.id,
-        //   },
-        //   pin.trim(),
-        //   useBiometry,
-        // );
         const storedPayload = {
           streamId,
           dni,
@@ -193,6 +175,20 @@ export default function RegisterUser10({navigation, route}) {
           account: walletData.address,
           guardian: guardianAddress,
         };
+          try {
+          await writeBundleAtomic(
+            JSON.stringify({
+              streamId,
+              salt: walletData.salt.toString(),
+              privKey,
+              account: walletData.address,
+              guardian: guardianAddress,
+              jwt,
+            }),
+          );
+        } catch (e) {
+        
+        }
         if (await getBioFlag()) {
           await Keychain.setGenericPassword(
             'bundle',

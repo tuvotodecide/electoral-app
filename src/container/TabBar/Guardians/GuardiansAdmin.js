@@ -26,19 +26,16 @@ import {
   useMyGuardiansAllListQuery,
   useRecoveryActionQuery,
 } from '../../../data/guardians';
+import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
 
 export default function GuardiansAdmin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {
-    data: invData = [],
-    isLoading,
-  } = useMyGuardianInvitationsListQuery();
-  const {
-    data: recData = [],
-    isLoading: loadingrecData,
-  } = useMyGuardianRecoveryListQuery();
+  const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
+
+  const {data: recData = [], isLoading: loadingrecData} =
+    useMyGuardianRecoveryListQuery();
   const {data: accData = [], isLoading: loadingdataAccepted} =
     useGuardianAcceptedListQuery();
 
@@ -69,7 +66,10 @@ export default function GuardiansAdmin({navigation}) {
     () => recData.map(e => e.node).filter(r => r.status === 'PENDING'),
     [recData],
   );
-  const accepted = useMemo(() => accData.map(e => e.node), [accData]);
+  const accepted = useMemo(
+    () => invData.map(e => e.node).filter(i => i.status === 'ACCEPTED'),
+    [invData],
+  );
 
   const handleAccept = id => {};
   const handleReject = id => {};
@@ -112,7 +112,6 @@ export default function GuardiansAdmin({navigation}) {
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
 
-    const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
       <TouchableOpacity
         style={[
@@ -125,8 +124,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -142,8 +140,6 @@ export default function GuardiansAdmin({navigation}) {
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
               <CText type="B16">{item.governmentIdentifier}</CText>
-
-              
             </View>
             <CText type="R12" color={colors.grayScale500}>
               {displayName ?? '(sin apodo)'}
@@ -182,8 +178,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -252,8 +247,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[

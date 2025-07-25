@@ -1,10 +1,10 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 // Custom imports
-import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../../components/common/CText';
@@ -19,7 +19,7 @@ import CAlert from '../../../components/common/CAlert';
 import String from '../../../i18n/String';
 
 export default function RecoveryUser2Pin({navigation, route}) {
-  const {originalPin, reqId} = route.params;
+  const {originalPin,reqId} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
@@ -30,7 +30,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 350);
+    }, 300);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -38,7 +38,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
     if (otp === originalPin) {
       navigation.navigate(AuthNav.RecoveryFinalize, {
         originalPin: otp,
-        reqId,
+        reqId
       });
     } else {
       setShowError(true);
@@ -47,7 +47,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaView>
       <StepIndicator step={9} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -81,7 +81,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
+              autoFocusOnLoad={true}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {
@@ -110,7 +110,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaViewAuth>
+    </CSafeAreaView>
   );
 }
 

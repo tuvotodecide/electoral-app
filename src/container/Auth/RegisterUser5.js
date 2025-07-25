@@ -141,6 +141,7 @@ export default function RegisterUser5({navigation, route}) {
             ],
           });
         }}
+        
       />
     </CSafeAreaViewAuth>
   );
