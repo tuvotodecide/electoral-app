@@ -5,7 +5,6 @@ import { createBundlerClient, entryPoint07Address } from "viem/account-abstracti
 import { toSimpleSmartAccount } from "permissionless/accounts";
 import { MAIN_NETWORK } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
-import { checkTokenAvailibility } from "./wormhole";
 
 export function getReadAccountContract(chain, address) {
 	const client = createPublicClient({

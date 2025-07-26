@@ -12,9 +12,10 @@ import { toSimpleSmartAccount } from 'permissionless/accounts';
 
 import guardianAbi from '../abi/Guardians.json';
 import factoryAbi from '../abi/SimpleAccountFactory.json';
-import { availableNetworks, FACTORY_ADDRESS, gasParams } from './params';
+import { availableNetworks, FACTORY_ADDRESS, gasParams, PAYMASTER_ADDRESS } from './params';
 import { buildApproveIfNeeded } from '../utils/allowance';
 import { getAccount } from './account';
+import { signUserOpAsService } from '../utils/walletRegister';
 
 /* ---------- Enhanced error handling ---------------------------------- */
 function fmt(err) {
@@ -37,6 +38,11 @@ function fmt(err) {
 
 /* ---------- Enhanced send function with retry logic ----------------- */
 async function send(chain, acc, calls, customGasLimits = {}) {
+  const publicClient = createPublicClient({
+    chain: availableNetworks[chain].chain,
+    transport: http(),
+  });
+
   const bundler = createBundlerClient({
     client: acc.client ?? acc.publicClient,
     transport: http(availableNetworks[chain].bundler),
@@ -45,7 +51,8 @@ async function send(chain, acc, calls, customGasLimits = {}) {
   // Merge custom gas limits with defaults
   const finalGasParams = {
     ...gasParams,
-    ...customGasLimits
+    verificationGasLimit: BigInt(50000),
+    //...customGasLimits
   };
 
   console.log('Sending UserOp with gas params:', finalGasParams);
@@ -53,10 +60,24 @@ async function send(chain, acc, calls, customGasLimits = {}) {
   console.log('Paymaster:', availableNetworks[chain].tokenPaymaster);
 
   try {
-    const hash = await bundler.sendUserOperation({
+    const userOp = await bundler.prepareUserOperation({
       account: acc,
       calls,
-      paymaster: availableNetworks[chain].tokenPaymaster,
+      ...finalGasParams,
+    });
+
+    const { factory, factoryData } = await acc.getFactoryArgs();
+    const initCode = factory && factoryData ? concat([factory, factoryData]) : undefined;
+    // Get the paymaster data (signature from the verifying signer)
+    const packedUserOp = await signUserOpAsService(userOp, initCode, publicClient);
+
+    // Remove signature for sendUserOperation
+    const {signature, ...noSignedUserOp} = userOp;
+
+    const hash = await bundler.sendUserOperation({
+      ...noSignedUserOp,
+      paymaster: PAYMASTER_ADDRESS,
+      paymasterData: packedUserOp.paymasterAndData,
       ...finalGasParams,
     });
 
@@ -100,7 +121,7 @@ async function estimateGasForInvitation(chain, account, guardianCt, guardianHash
     const gasEstimate = await bundler.estimateUserOperationGas({
       account,
       calls,
-      paymaster: availableNetworks[chain].tokenPaymaster,
+      paymaster: PAYMASTER_ADDRESS,
       ...gasParams,
     });
 

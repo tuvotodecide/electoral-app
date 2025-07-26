@@ -1,4 +1,4 @@
-import { baseSepolia, optimismSepolia, sepolia } from "viem/chains";
+import { arbitrumSepolia, baseSepolia, optimismSepolia, sepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
 
@@ -33,6 +33,11 @@ export const availableNetworks = {
     wormholeChainId: 10004,
     tokenPaymaster: null,
     crossChainReveiver: '0x74934a887162BB8B2ffe2acB9D73afC241620Ed2', //'0xC92eFfEc6732410b147Dea6e5562Ce59F0AAeAeC',
+  },
+  'arbitrum-sepolia': {
+    chain: arbitrumSepolia,
+    bundler: 'https://arb-sepolia.g.alchemy.com/v2/1HZ0spY7inRe8hCdLeLCqvUh6itMQA18',
+    paymaster: '0x051C4407243b512bb78E4809093C5F539942ccfd',
   }
 };
 
