@@ -60,6 +60,8 @@ import PrivacyPolicies from '../container/TabBar/Profile/PrivacyPolicies';
 import ChangePinVerify from '../container/TabBar/Profile/ChangePinVerify';
 import ChangePinNew from '../container/TabBar/Profile/ChangePinNew';
 import ChangePinNewConfirm from '../container/TabBar/Profile/ChangePinNewConfirm';
+import More from '../container/TabBar/Profile/More';
+import Security from '../container/TabBar/Profile/Security';
 import TermsAndCondition from '../container/TabBar/Profile/TermsAndCondition';
 import RecuperationQR from '../container/TabBar/Profile/RecuperationQR';
 
@@ -130,6 +132,8 @@ export const StackRoute = {
   TermsAndCondition,
   Notification,
   NotificationDetails,
+  More,
+  Security
 };
 
 export const AuthRoute = {

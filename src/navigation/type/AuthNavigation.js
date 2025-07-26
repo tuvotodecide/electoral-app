@@ -73,8 +73,8 @@ export default function AuthNavigation() {
         component={AuthRoute.FindMyUser}
       />
       <Stack.Screen
-        name={AuthNav.RecoveryQR}
-        component={AuthRoute.RecoveryQR}
+        name={AuthNav.RecoveryQr}
+        component={AuthRoute.RecoveryQr}
       />
       <Stack.Screen
         name={AuthNav.RecoveryUserQrpin2}

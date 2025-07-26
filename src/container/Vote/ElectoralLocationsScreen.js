@@ -225,7 +225,7 @@ const ElectoralLocationsScreen = () => {
       <UniversalHeader
         title={String.electoralLocations}
         onBack={handleBack}
-        colors={colors}
+        // colors={colors}
       />
 
       {userLocation && (

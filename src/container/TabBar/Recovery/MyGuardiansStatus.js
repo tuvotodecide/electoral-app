@@ -23,6 +23,10 @@ import {ActivityIndicator} from 'react-native-paper';
 import {getDeviceId} from '../../../utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
+import {CHAIN} from '@env';
+import { readOnChainApprovals } from '../../../api/guardianOnChain';
+const PENDING_REQHASH = 'PENDING_REQHASH';
+const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -93,6 +97,28 @@ export default function MyGuardiansStatus({navigation, route}) {
       setReady(true);
     });
   }, []);
+
+  useEffect(() => {
+  let t;
+  (async function poll() {
+    const reqHash   = await AsyncStorage.getItem(PENDING_REQHASH);
+    const guardianCt= await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
+    if (!reqHash || !guardianCt) return;
+
+    try {
+      const { required, current } = await readOnChainApprovals(CHAIN, guardianCt, reqHash);
+      if (current >= required) {
+        navigation.replace(AuthNav.RecoveryUser1Pin, {
+          dni: navigation?.dni,
+          reqId: detail?.id, // opcional
+        });
+        return;
+      }
+    } catch (_) {}
+    t = setTimeout(poll, 5000);
+  })();
+  return () => clearTimeout(t);
+}, [navigation?.dni, detail?.id]);
 
   if (isLoading || !ready) {
     return (

@@ -92,6 +92,7 @@ export default {
   pinAccessTitle: 'Crea tu PIN de acceso',
   pinAccessDescription:
     'Este PIN protegerá tu acceso a Tu Voto. Lo necesitarás cada vez que inicies sesión en la aplicación.',
+      pinChange:'Introduce tu pin actual para confirmar y cambiar tu cuenta',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
@@ -131,6 +132,36 @@ export default {
   qrBackup: 'Respaldo con QR',
   qrBackupValue: 'Guarda tu código de recuperación',
   guardians: 'Guardianes',
+  pinChangeAccessTitle: 'Cambia tu PIN de acceso',
+  myProtected: 'Mis Protegidos',
+  qrimagelabel: 'Suba la imagen QR',
+  myProtectedInfo: 'Personas de las cuales soy guardián',
+  myInvitations: 'Mis invitaciones',
+  myRecovery: 'Solicitudes de recuperación',
+  protectedValue: 'Administra solicitudes y recuperaciones',
+  moresub: 'Revisa más opciones',
+  onBoardingGuardiansTitleText1: '¿Qué son los guardianes?',
+  onBoardingGuardiansTitleText2: '¿Quién puede ser un guardián?',
+  onBoardingGuardiansTitleText3: '¿Cuántos guardianes se necesitan?',
+  onBoardingGuardiansTitleText4: '¿Cómo funciona la recuperación?',
+  onBoardingGuardiansDescriptionText1:
+    'Son personas o dispositivos que ayudan a confirmar tu identidad cuando necesitas recuperar tu cuenta. Funcionan como respaldo de seguridad ',
+  onBoardingGuardiansDescriptionText2:
+    'Puede ser un familiar, un amigo o incluso otro dispositivo de confianza que tengas registrado. Solo se debe elegir opciones seguras.',
+  onBoardingGuardiansDescriptionText3:
+    'Se requieren al menos 2 guardianes activos para autorizar una recuperación. Tener más aumenta la seguridad',
+  onBoardingGuardiansDescriptionText4:
+    'Al solicitar la recuperación, se notifica a tus guardianes. Ellos deben aprobar la solicitud para que puedas acceder nuevamente a tu cuenta.',
+  totalBalance: 'Saldo total',
+  balanceByCoin: 'Saldo por moneda',
+  commomPayments: 'Pagos frecuentes',
+  help: 'Ayuda',
+  me: 'Yo',
+  configGuardian: 'Configuración de guardianes',
+  configGuardianSubtitle1:
+    'Número mínimo de aprobaciones requeridas para recuperar cuenta:',
+  configGuardianSubtitle2:
+    'Número mínimo de aprobaciones requeridas para transacciones grandes:',
   guardiansValue: 'Administra tus guardianes',
   transactionHistory: 'Historial de transacciones',
   transactionHistoryValue: 'Movimientos recientes',
@@ -779,7 +810,7 @@ export default {
     'I earned $5 in assets by finishing 1 lesson about 4 investments',
   useReferralCodeAndEarnCommission: 'Use referral code and earn commission',
   instagram: 'Instagram',
-  more: 'More',
+  more: 'Más opciones',
   notifications: 'Notifications',
   emailVerified: 'Email verified',
   yourEmailHasBeenVerified: 'Your email has been verified!',
@@ -964,6 +995,7 @@ export default {
   ascending: 'Ascendente',
   descending: 'Descendente',
   accept: 'Aceptar',
+  reject: 'Rechazar',
   error: 'Error',
   success: 'Éxito',
   couldNotLoadTables: 'No se pudieron cargar las mesas',
@@ -1247,14 +1279,17 @@ export default {
   trust: 'Confianza',
   nftsObtained: 'NFTs obtenidos',
   uploadActaNFT: 'Subir Acta 2025',
-  uploadActaNFTDesc: 'Participó subiendo actas - Elecciones generales Bolivia 2025',
+  uploadActaNFTDesc:
+    'Participó subiendo actas - Elecciones generales Bolivia 2025',
   witnessNFT: 'Atestiguamiento',
-  witnessNFTDesc: 'Participó atestiguando actas - Elecciones generales Bolivia 2025',
+  witnessNFTDesc:
+    'Participó atestiguando actas - Elecciones generales Bolivia 2025',
   selectFeaturedBadge: 'Seleccionar insignia destacada',
 
   // Home Screen
   participate: 'Participar',
-  participateDescription: 'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
+  participateDescription:
+    'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
 
   // Oracle Participation
   oracleParticipationTitle: 'Participación en oráculos',

@@ -1,3 +1,9 @@
 <resources>
     <color name="bootsplash_background">#ffffff</color>
+    <color name="colorPrimary">#2790b0</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#2790b0</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="notification_color">#2790b0</color>
 </resources>

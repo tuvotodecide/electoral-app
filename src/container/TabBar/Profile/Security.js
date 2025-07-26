@@ -21,6 +21,7 @@ import {getBioFlag, setBioFlag, BIO_KEY} from '../../../utils/BioFlag';
 import * as Keychain from 'react-native-keychain';
 import {getSecrets} from '../../../utils/Cifrate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getJwt } from '../../../utils/Session';
 
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -40,15 +41,18 @@ export default function Security({navigation}) {
       }
 
       
-      const secrets = await getSecrets();      // { payloadQr, flags }
-      const jwt     = await AsyncStorage.getItem(JWT_KEY);
+      const secrets = await getSecrets();      
+      console.log(secrets);
+      
+      const jwt     = getJwt()
+      console.log(jwt);
       if (!secrets || !jwt) {
         Alert.alert('Sin datos', 'Crea tu cuenta/PIN antes de activar la biometría');
         return;
       }
 
       
-      const storedPayload = secrets.payloadQr; // lo que tenías guardado con PIN
+      const storedPayload = secrets.payloadQr; 
       await Keychain.setGenericPassword(
         'walletBundle',
         JSON.stringify({ stored: storedPayload, jwt }),
@@ -77,7 +81,6 @@ export default function Security({navigation}) {
           },
         );
       }
-
     }
 
     

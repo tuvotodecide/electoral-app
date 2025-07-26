@@ -1,6 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
-// import Geolocation from '@react-native-community/geolocation';
+import functions from '@react-native-firebase/functions';
+import Geolocation from '@react-native-community/geolocation';
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -319,13 +320,12 @@ export class FirebaseNotificationService {
   // Anunciar conteo a usuarios cercanos
   async announceCountToNearbyUsers(userId, mesaData, locationData) {
     try {
-      console.log('Iniciando anuncio de conteo para usuarios cercanos...');
+      console.log('🚀 Iniciando anuncio de conteo para usuarios cercanos...');
       
       // Obtener ubicación actual del usuario que anuncia
-      const currentLocation = await this.updateUserLocation(userId);
+      const currentLocation = await this.getCurrentLocation();
       
       // Llamar a Cloud Function para procesar y enviar notificaciones
-      const functions = require('@react-native-firebase/functions').default;
       const announceCount = functions().httpsCallable('announceCountToNearby');
       
       const result = await announceCount({
@@ -335,21 +335,21 @@ export class FirebaseNotificationService {
           longitude: currentLocation.longitude
         },
         mesaData: {
-          numero: mesaData.numero,
-          codigo: mesaData.codigo,
+          numero: mesaData.numero || mesaData.nombre,
+          codigo: mesaData.codigo || mesaData.id,
           recinto: mesaData.recinto || locationData?.name,
           colegio: mesaData.colegio || locationData?.name,
-          provincia: mesaData.provincia || locationData?.address,
+          provincia: mesaData.provincia || locationData?.address || 'La Paz',
           zona: mesaData.zona || locationData?.zone,
           distrito: mesaData.distrito || locationData?.district
         },
         radio: 300 // 300 metros
       });
 
-      console.log('Resultado del anuncio:', result.data);
+      console.log('✅ Resultado del anuncio:', result.data);
       return result.data;
     } catch (error) {
-      console.error('Error anunciando conteo:', error);
+      console.error('❌ Error anunciando conteo:', error);
       throw error;
     }
   }

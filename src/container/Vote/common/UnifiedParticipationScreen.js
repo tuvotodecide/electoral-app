@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -29,6 +29,19 @@ const getResponsiveSize = (small, medium, large) => {
 const UnifiedParticipationScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const { locationId, locationData } = route.params || {};
+
+  // Automáticamente navegar a subir acta (temporalmente)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.replace(StackNav.UnifiedTableScreen, {
+        locationId,
+        locationData,
+        targetScreen: 'SearchTable',
+      });
+    }, 100); // Pequeño delay para evitar warning de navegación
+
+    return () => clearTimeout(timer);
+  }, [navigation, locationId, locationData]);
 
   const handleBack = () => {
     navigation.goBack();
@@ -61,35 +74,11 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
       <View style={styles.content}>
         <View style={styles.headerContainer}>
           <CText style={styles.title}>
-            ¿Cómo deseas participar?
+            Redirigiendo a subir acta...
           </CText>
           <CText style={styles.subtitle}>
-            Selecciona el tipo de participación en el proceso electoral
+            Por favor espera un momento
           </CText>
-        </View>
-
-        <View style={styles.optionsContainer}>
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={handleUploadActa}
-            activeOpacity={0.8}>
-            <View style={styles.optionIcon}>
-              <Ionicons name="camera-outline" size={getResponsiveSize(32, 36, 40)} color="#4CAF50" />
-            </View>
-            <CText style={styles.optionTitle}>{String.uploadActa}</CText>
-            <CText style={styles.optionDescription}>{String.uploadActaDescription}</CText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={handleWitnessActa}
-            activeOpacity={0.8}>
-            <View style={styles.optionIcon}>
-              <Ionicons name="eye-outline" size={getResponsiveSize(32, 36, 40)} color="#2196F3" />
-            </View>
-            <CText style={styles.optionTitle}>{String.witnessActa}</CText>
-            <CText style={styles.optionDescription}>{String.witnessActaDescription}</CText>
-          </TouchableOpacity>
         </View>
       </View>
     </CSafeAreaView>

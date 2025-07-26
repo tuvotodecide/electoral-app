@@ -56,13 +56,13 @@ export default function ChangePinVerify({navigation, route}) {
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
-              {String.pinAccessTitle}
+              {String.pinChangeAccessTitle}
             </CText>
             <CText
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
-              {String.pinAccessDescription}
+              {String.pinChange}
             </CText>
             <OTPInputView
               pinCount={4}

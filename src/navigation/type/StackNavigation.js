@@ -133,6 +133,14 @@ export default function StackNavigation() {
         component={StackRoute.ChangePinNewConfirm}
       />
       <Stack.Screen
+        name={StackNav.More}
+        component={StackRoute.More}
+      />
+      <Stack.Screen
+        name={StackNav.Security}
+        component={StackRoute.Security}
+      />
+      <Stack.Screen
         name={StackNav.TermsAndCondition}
         component={StackRoute.TermsAndCondition}
       />

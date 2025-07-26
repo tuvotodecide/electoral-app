@@ -7,6 +7,8 @@ import {
   Linking,
   ScrollView,
   FlatList,
+  Image,
+  ImageBackground,
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
@@ -63,18 +65,28 @@ const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
 
 // Carousel Item Component
 const CarouselItem = ({ item }) => (
-  <View style={[stylesx.carouselItem, { backgroundColor: item.backgroundColor }]}>
+  <View style={stylesx.carouselItem}>
     <View style={stylesx.carouselContent}>
-      <View style={stylesx.carouselTextContainer}>
-        <CText style={stylesx.carouselTitle}>{item.title}</CText>
-        <CText style={stylesx.carouselSubtitle}>{item.subtitle}</CText>
+      <View style={stylesx.carouselMainContent}>
+        {/* Imagen específica para cada elemento del carrusel */}
+        <Image 
+          source={item.image}
+          style={stylesx.bcLogoImage}
+          resizeMode="contain"
+        />
+        
+        <View style={stylesx.carouselTextContainer}>
+          <CText style={stylesx.carouselTitle}>{item.title}</CText>
+          <CText style={stylesx.carouselSubtitle}>{item.subtitle}</CText>
+        </View>
       </View>
+      
+      {/* Botón en la esquina inferior derecha */}
       <TouchableOpacity
         style={stylesx.carouselButton}
         onPress={item.onPress}
         activeOpacity={0.8}>
         <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
-        <Ionicons name="chevron-forward" size={16} color="#fff" />
       </TouchableOpacity>
     </View>
   </View>
@@ -144,32 +156,36 @@ export default function HomeScreen({ navigation }) {
       subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
       buttonText: 'Más Info',
       backgroundColor: '#e8f5e8',
+      image: require('../../../assets/images/block-con.png'),
       onPress: () => Linking.openURL('https://blockchainconsultora.com/es'),
     },
     {
       id: 2,
-      title: 'Participa en el proceso electoral',
-      subtitle: 'Tu voto cuenta, sé parte del cambio democrático',
+      title: 'Asoblockchain',
+      subtitle: 'Impulsamos el Futuro con Blockchain',
       buttonText: 'Conocer más',
       backgroundColor: '#e8f0ff',
-      onPress: () => console.log('Electoral info pressed'),
+      image: require('../../../assets/images/block-aso.png'),
+      onPress: () => Linking.openURL('https://asoblockchainbolivia.org/'),
     },
-    {
-      id: 3,
-      title: 'Transparencia y confianza',
-      subtitle: 'Tecnología blockchain para procesos electorales seguros',
-      buttonText: 'Descubrir',
-      backgroundColor: '#fff5e8',
-      onPress: () => console.log('Blockchain info pressed'),
-    },
-    {
-      id: 4,
-      title: 'Seguridad garantizada',
-      subtitle: 'Protegemos la integridad de cada voto con tecnología avanzada',
-      buttonText: 'Ver más',
-      backgroundColor: '#f0f8ff',
-      onPress: () => console.log('Security info pressed'),
-    },
+    // {
+    //   id: 3,
+    //   title: 'Transparencia y confianza',
+    //   subtitle: 'Tecnología blockchain para procesos electorales seguros',
+    //   buttonText: 'Descubrir',
+    //   backgroundColor: '#fff5e8',
+    //   image: require('../../../assets/images/block-con.png'),
+    //   onPress: () => console.log('Blockchain info pressed'),
+    // },
+    // {
+    //   id: 4,
+    //   title: 'Seguridad garantizada',
+    //   subtitle: 'Protegemos la integridad de cada voto con tecnología avanzada',
+    //   buttonText: 'Ver más',
+    //   backgroundColor: '#f0f8ff',
+    //   image: require('../../../assets/images/block-con.png'),
+    //   onPress: () => console.log('Security info pressed'),
+    // },
   ];
 
   // Auto-scroll del carrusel
@@ -709,6 +725,11 @@ const stylesx = StyleSheet.create({
     alignItems: 'center',
     marginRight: 2,
   },
+  bcLogoImage: {
+    width: getResponsiveSize(40, 45, 50),
+    height: getResponsiveSize(40, 45, 50),
+    marginRight: getResponsiveSize(12, 16, 20),
+  },
   bcLogoText: {
     color: '#41A44D',
     fontWeight: 'bold',
@@ -843,8 +864,29 @@ const stylesx = StyleSheet.create({
     width: screenWidth - getResponsiveSize(32, 40, 48),
     marginHorizontal: getResponsiveSize(16, 20, 24),
     borderRadius: getResponsiveSize(12, 16, 20),
-    padding: getResponsiveSize(12, 16, 20),
-    minHeight: getResponsiveSize(130, 60, 70),
+    minHeight: getResponsiveSize(130, 160, 170),
+    backgroundColor: '#E8F5E9', // Fondo verde claro como en la imagen
+    padding: getResponsiveSize(16, 20, 24),
+    position: 'relative', // Para permitir posicionamiento absoluto del botón
+  },
+  carouselContent: {
+    flex: 1,
+  },
+  carouselMainContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flex: 1,
+  },
+  carouselTextContainer: {
+    flex: 1,
+    marginLeft: getResponsiveSize(12, 16, 20),
+    marginRight: getResponsiveSize(8, 12, 16),
+  },
+  carouselArrow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: getResponsiveSize(28, 32, 36),
+    height: getResponsiveSize(28, 32, 36),
   },
   carouselContent: {
     flex: 1,
@@ -856,24 +898,24 @@ const stylesx = StyleSheet.create({
   carouselTitle: {
     fontSize: getResponsiveSize(16, 18, 22),
     fontWeight: '700',
-    color: '#333',
+    color: '#232323', // Texto oscuro como en la imagen
     marginBottom: getResponsiveSize(6, 8, 10),
   },
   carouselSubtitle: {
     fontSize: getResponsiveSize(13, 14, 16),
-    color: '#666',
+    color: '#232323', // Texto oscuro como en la imagen
     lineHeight: getResponsiveSize(18, 20, 22),
     marginBottom: getResponsiveSize(8, 12, 16),
+    opacity: 0.87,
   },
   carouselButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    backgroundColor: '#4CA950', // Verde como en la imagen
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingVertical: getResponsiveSize(8, 10, 12),
-    borderRadius: getResponsiveSize(6, 8, 10),
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveSize(4, 6, 8),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    position: 'absolute',
+    bottom: getResponsiveSize(16, 20, 24),
+    right: getResponsiveSize(16, 20, 24),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -881,8 +923,8 @@ const stylesx = StyleSheet.create({
     shadowRadius: 4,
   },
   carouselButtonText: {
-    fontSize: getResponsiveSize(13, 14, 16),
-    fontWeight: '600',
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
     color: '#fff',
   },
   pageIndicators: {

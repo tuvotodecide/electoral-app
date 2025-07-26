@@ -19,6 +19,7 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
+import UniversalHeader from '../../../components/common/UniversalHeader';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -58,7 +59,7 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=50`,
+        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
       );
 
       if (response.data && response.data.data) {
@@ -251,10 +252,14 @@ const ElectoralLocations = ({navigation, route}) => {
 
   return (
     <CSafeAreaView style={styles.container}>
-      <CHeader
+      {/* <CHeader
         title={String.electoralLocations}
         onBack={() => navigation.goBack()}
-        color={colors.white}
+        // color={colors.white}
+      /> */}
+      <UniversalHeader
+        title={String.electoralLocations}
+        onBack={() => navigation.goBack()}
       />
 
       {loadingLocation && (

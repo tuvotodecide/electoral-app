@@ -25,6 +25,7 @@ import {
   useGuardiansRecoveryRequestQuery,
   useHasGuardiansQuery,
 } from '../../../data/guardians';
+import {CHAIN} from '@env';
 import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
@@ -32,12 +33,16 @@ import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClo
 import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {calcReqHash, openRecoveryOnChain} from '../../../api/guardianOnChain';
+import { getSecrets } from '../../../utils/Cifrate';
 
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
+  const PENDING_REQHASH = 'PENDING_REQHASH';
+  const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -73,12 +78,17 @@ export default function FindMyUser({navigation}) {
     findPublicDni(
       {identifier: carnet.trim()},
       {
-        onSuccess:async data => {
+        onSuccess: async data => {
           if (!data.ok) {
             setErrorMsg('Persona no encontrada');
             return;
           }
-          setCandidate({did: data.did, fullName: data.fullName});
+          setCandidate({
+            did: data.did,
+            fullName: data.fullName,
+            accountAddress: data.accountAddress,
+            guardianAddress: data.guardianAddress,
+          });
           await AsyncStorage.setItem('PENDING_DID', data.did);
           checkHas();
         },
@@ -90,25 +100,41 @@ export default function FindMyUser({navigation}) {
       return;
     }
     const deviceId = await getDeviceId();
+    const reqHash = calcReqHash(candidate.accountAddress, deviceId);
+
+    try {
+      const {payloadQr} = await getSecrets();
+      await openRecoveryOnChain(
+        CHAIN,
+        payloadQr.privKey,
+        payloadQr.account,
+        candidate.guardianAddress,
+        reqHash,
+      );
+    } catch (e) {
+     
+    }
 
     sendRequest(
       {dni: carnet.trim(), deviceId},
       {
         onSuccess: async data => {
           await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
+          await AsyncStorage.setItem(PENDING_REQHASH, reqHash);
+          await AsyncStorage.setItem(
+            PENDING_OWNER_GUARDIAN_CT,
+            candidate.guardianAddress,
+          );
 
           setModalMessage(`${String.messagetorecovery}`);
           setModalVisible(true);
 
           setCandidate(null);
           setNick('');
-          navigation.replace(
-            StackNav.AuthNavigation, 
-            {
-              screen: AuthNav.MyGuardiansStatus, 
-              params: {dni: carnet.trim()},
-            },
-          );
+          navigation.replace(StackNav.AuthNavigation, {
+            screen: AuthNav.MyGuardiansStatus,
+            params: {dni: carnet.trim()},
+          });
         },
       },
     );

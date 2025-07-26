@@ -11,6 +11,7 @@ import {setAsyncStorageData} from './utils/AsyncStorage';
 import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
 import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
+import {initializeFirebase} from './config/firebase';
 import axios from 'axios';
 import { migrateIfNeeded } from './utils/migrateBundle';
 const queryClient = new QueryClient();
@@ -61,6 +62,15 @@ const App = () => {
   useEffect(() => {
     registerNotifications();
     requestNotificationPermission();
+    
+    // Inicializar Firebase
+    initializeFirebase().then(success => {
+      if (success) {
+        console.log('🎉 Firebase inicializado correctamente');
+      } else {
+        console.error('⚠️ Error inicializando Firebase');
+      }
+    });
   }, []);
 
   useEffect(() => {

@@ -16,16 +16,13 @@ export default function PrivacyPolicies() {
       <CHeader title={String.privacyPolicy} />
 
       <View style={localStyle.webViewContainer}>
-        <WebView
-          source={{uri: PRIVACY_URL}}
-          style={{flex: 1}}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          originWhitelist={[PRIVACY_URL]}
-          onShouldStartLoadWithRequest={request => {
-            return request.url === PRIVACY_URL;
-          }}
+         <WebView
+          source={{ uri: PRIVACY_URL }}
+          style={{ flex: 1 }}
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
+       
         />
       </View>
     </CSafeAreaView>

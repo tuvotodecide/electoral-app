@@ -85,7 +85,7 @@ export default function RegisterUser5({navigation, route}) {
           dni,
         });
       } catch (err) {
-        setErrorMessage('Error de verificación. Intenta de nuevo.');
+        setErrorMessage('Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.');
         setErrorModalVisible(true);
       } finally {
         setLoading(false);

@@ -6,7 +6,6 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -19,7 +18,6 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import nftImage from '../../../assets/images/nft-medal.png';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -86,7 +84,6 @@ const PhotoConfirmationScreen = () => {
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
   const [ipfsData, setIpfsData] = useState(null);
-  const [showNFTCertificate, setShowNFTCertificate] = useState(false);
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -173,16 +170,16 @@ const PhotoConfirmationScreen = () => {
       setTimeout(() => {
         setShowConfirmModal(false);
         setStep(0);
-        // Show NFT modal directly instead of navigating to SuccessScreen
-        setShowNFTCertificate(true);
+        // Navegar directamente a SuccessScreen en lugar de mostrar modal
+        navigation.navigate('SuccessScreen');
       }, 2000);
     } catch (error) {
       console.error('Error en confirmPublishAndCertify:', error);
-      // Show NFT modal even in case of error
+      // Navegar a SuccessScreen incluso en caso de error
       setTimeout(() => {
         setShowConfirmModal(false);
         setStep(0);
-        setShowNFTCertificate(true);
+        navigation.navigate('SuccessScreen');
       }, 1000);
     }
   };
@@ -190,16 +187,6 @@ const PhotoConfirmationScreen = () => {
   const closeModal = () => {
     setShowConfirmModal(false);
     setStep(0);
-  };
-
-  const closeNFTModal = () => {
-    setShowNFTCertificate(false);
-    // Navigate back to home after closing NFT modal
-    try {
-      navigation.popToTop();
-    } catch {
-      navigation.navigate('TabNavigation');
-    }
   };
 
   return (
@@ -342,42 +329,6 @@ const PhotoConfirmationScreen = () => {
           </View>
         </View>
       </Modal>
-
-      {/* Modal NFT Certificate */}
-      {showNFTCertificate && (
-        <View style={nftModalStyles.nftModalOverlay}>
-          <View style={nftModalStyles.nftCertificate}>
-            {/* Borde decorativo */}
-            <View style={nftModalStyles.certificateBorder}>
-              {/* Medallón NFT */}
-              <View style={nftModalStyles.medalContainer}>
-                <Image
-                  source={nftImage}
-                  style={nftModalStyles.medalImage}
-                  resizeMode="contain"
-                />
-                <CText style={nftModalStyles.nftMedalText}>NFT</CText>
-              </View>
-              {/* Datos del certificado */}
-              <CText style={nftModalStyles.nftName}>{userFullName}</CText>
-              <CText style={nftModalStyles.nftCertTitle}>CERTIFICADO DE</CText>
-              <CText style={nftModalStyles.nftCertTitle}>
-                PARTICIPACIÓN ELECTORAL
-              </CText>
-              <CText style={nftModalStyles.nftCertDetail}>
-                ELECCIONES GENERALES
-              </CText>
-              <CText style={nftModalStyles.nftCertDetail}>BOLIVIA 2025</CText>
-            </View>
-            {/* Cerrar */}
-            <TouchableOpacity
-              onPress={closeNFTModal}
-              style={nftModalStyles.closeModalBtn}>
-              <CText style={nftModalStyles.closeModalText}>Cerrar</CText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </CSafeAreaView>
   );
 };

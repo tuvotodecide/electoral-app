@@ -24,7 +24,7 @@ import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
 //import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
-import RecoveryQR from '../container/TabBar/Recovery/RecoveryQR';
+import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
 import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
@@ -68,6 +68,8 @@ import PrivacyPolicies from '../container/TabBar/Profile/PrivacyPolicies';
 import ChangePinVerify from '../container/TabBar/Profile/ChangePinVerify';
 import ChangePinNew from '../container/TabBar/Profile/ChangePinNew';
 import ChangePinNewConfirm from '../container/TabBar/Profile/ChangePinNewConfirm';
+import More from '../container/TabBar/Profile/More';
+import Security from '../container/TabBar/Profile/Security';
 import TermsAndCondition from '../container/TabBar/Profile/TermsAndCondition';
 import RecuperationQR from '../container/TabBar/Profile/RecuperationQR';
 
@@ -141,6 +143,9 @@ export const StackRoute = {
   ChangePinVerify,
   ChangePinNew,
   ChangePinNewConfirm,
+  More,
+  Security,
+
   TermsAndCondition,
   Notification,
   NotificationDetails,
@@ -182,7 +187,7 @@ export const AuthRoute = {
   FindMyUser,
   RecoveryUserQrpin,
   RecoveryUserQrpin2,
-  RecoveryQR,
+  RecoveryQr,
   MyGuardiansStatus,
   RecoveryUser1Pin,
   RecoveryUser2Pin,

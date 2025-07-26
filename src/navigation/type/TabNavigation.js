@@ -51,7 +51,9 @@ function useKeepAlive() {
           routes: [{name: StackNav.AuthNavigation}],
         });
       }
-    }, 360_000); // Cambiado de 30 segundos a 60 segundos
+      // es 15 minutos,
+      // así que lo pongo en 9 minutos
+    }, 900_000); // 900_000 ms = 15 minutos
     return () => {
       sub.remove();
       clearInterval(id);

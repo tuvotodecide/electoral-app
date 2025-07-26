@@ -21,9 +21,12 @@ import {
   useGuardianPatchQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
+import { CHAIN } from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
 import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
+import { getSecrets } from '../../../utils/Cifrate';
+import { guardianHashFrom, removeGuardianOnChain } from '../../../api/guardianOnChain';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -91,12 +94,27 @@ export default function Guardians({navigation}) {
     setSelectedGuardian(null);
   };
 
-  const deleteGuardian = () => {
-    deleteGuardianId(selectedGuardian.id, {
-      onSuccess: () => {
-        closeModal();
-      },
-    });
+  const deleteGuardian = async () => {
+    try {
+      const {payloadQr} = await getSecrets();
+      const ownerPrivKey = payloadQr.privKey;
+      const ownerAccount = payloadQr.account;
+      const ownerGuardianCt = payloadQr.guardian; // ya lo guardas en secrets
+      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress); // o del item
+
+      await removeGuardianOnChain(
+        CHAIN,
+        ownerPrivKey,
+        ownerAccount,
+        ownerGuardianCt,
+        guardianHash,
+      );
+
+      // espejo backend (lista/UX)
+      deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
+    } catch (e) {
+      // alert/toast
+    }
   };
   const saveGuardian = newNick => {
     patchGuardianId(

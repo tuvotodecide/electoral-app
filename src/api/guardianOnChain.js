@@ -5,22 +5,43 @@ import {
   http,
   keccak256,
   encodePacked,
+  toBytes,
+  concat,
 } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { createBundlerClient, entryPoint07Address } from 'viem/account-abstraction';
-import { toSimpleSmartAccount } from 'permissionless/accounts';
+import {privateKeyToAccount} from 'viem/accounts';
+import {
+  createBundlerClient,
+  entryPoint07Address,
+} from 'viem/account-abstraction';
+import {toSimpleSmartAccount} from 'permissionless/accounts';
 
 import guardianAbi from '../abi/Guardians.json';
 import factoryAbi from '../abi/SimpleAccountFactory.json';
-import { availableNetworks, FACTORY_ADDRESS, gasParams, PAYMASTER_ADDRESS } from './params';
-import { buildApproveIfNeeded } from '../utils/allowance';
-import { getAccount } from './account';
-import { signUserOpAsService } from '../utils/walletRegister';
+import {
+  availableNetworks,
+  FACTORY_ADDRESS,
+  gasParams,
+  PAYMASTER_ADDRESS,
+} from './params';
+import {buildApproveIfNeeded} from '../utils/allowance';
+import {getAccount} from './account';
+import {signUserOpAsService} from '../utils/walletRegister';
+
+export const guardianHashFrom = eoa =>
+  keccak256(encodePacked(['address'], [eoa]));
+
+// Request hash determinista (dueño + deviceId)
+export function calcReqHash(ownerAccount, deviceId) {
+  const deviceHash = keccak256(encodePacked(['bytes'], [toBytes(deviceId)]));
+  return keccak256(
+    encodePacked(['address', 'bytes32'], [ownerAccount, deviceHash]),
+  );
+}
 
 /* ---------- Enhanced error handling ---------------------------------- */
 function fmt(err) {
   console.error('Full error object:', err);
-  
+
   // Extract specific AA error codes
   if (err?.details?.includes('AA33')) {
     return 'Insufficient gas for paymaster validation. Try increasing gas limits.';
@@ -31,13 +52,18 @@ function fmt(err) {
   if (err?.details?.includes('AA23')) {
     return 'Paymaster validation reverted. Check token balance or approval.';
   }
-  
-  return err?.shortMessage || err?.cause?.shortMessage ||
-         err?.details || err?.message || 'Bundler error';
+
+  return (
+    err?.shortMessage ||
+    err?.cause?.shortMessage ||
+    err?.details ||
+    err?.message ||
+    'Bundler error'
+  );
 }
 
 /* ---------- Enhanced send function with retry logic ----------------- */
-async function send(chain, acc, calls, customGasLimits = {}) {
+async function send(chain, acc, calls) {
   const publicClient = createPublicClient({
     chain: availableNetworks[chain].chain,
     transport: http(),
@@ -66,10 +92,15 @@ async function send(chain, acc, calls, customGasLimits = {}) {
       ...finalGasParams,
     });
 
-    const { factory, factoryData } = await acc.getFactoryArgs();
-    const initCode = factory && factoryData ? concat([factory, factoryData]) : undefined;
+    const {factory, factoryData} = await acc.getFactoryArgs();
+    const initCode =
+      factory && factoryData ? concat([factory, factoryData]) : undefined;
     // Get the paymaster data (signature from the verifying signer)
-    const packedUserOp = await signUserOpAsService(userOp, initCode, publicClient);
+    const packedUserOp = await signUserOpAsService(
+      userOp,
+      initCode,
+      publicClient,
+    );
 
     // Remove signature for sendUserOperation
     const {signature, ...noSignedUserOp} = userOp;
@@ -82,12 +113,12 @@ async function send(chain, acc, calls, customGasLimits = {}) {
     });
 
     console.log('UserOp hash:', hash);
-    const receipt = await bundler.waitForUserOperationReceipt({ hash });
-    
+    const receipt = await bundler.waitForUserOperationReceipt({hash});
+
     if (!receipt.success) {
       throw new Error(receipt.returnReason || 'UserOp reverted');
     }
-    
+
     return receipt;
   } catch (error) {
     console.error('Send error:', error);
@@ -96,7 +127,12 @@ async function send(chain, acc, calls, customGasLimits = {}) {
 }
 
 /* ---------- Enhanced gas estimation ---------------------------------- */
-async function estimateGasForInvitation(chain, account, guardianCt, guardianHash) {
+async function estimateGasForInvitation(
+  chain,
+  account,
+  guardianCt,
+  guardianHash,
+) {
   try {
     const bundler = createBundlerClient({
       client: account.client ?? account.publicClient,
@@ -133,37 +169,45 @@ async function estimateGasForInvitation(chain, account, guardianCt, guardianHash
   }
 }
 
-/* ---------- helpers -------------------------------------------------- */
-export const guardianHashFrom = eoa =>
-  keccak256(encodePacked(['address'], [eoa]));
-
 /* ---------- 1) Enhanced invite guardian function -------------------- */
 export async function inviteGuardianOnChain(
-  chain,        
-  ownerPrivKey, 
+  chain,
+  ownerPrivKey,
   ownerAccount,
-  guardianCt,   
-  guardianHash, 
+  guardianCt,
+  guardianHash,
 ) {
   try {
-    const { account } = await getAccount(ownerPrivKey, ownerAccount, chain); 
+    const {account} = await getAccount(ownerPrivKey, ownerAccount, chain);
     console.log('Account created:', account.address);
-    
-    
-    const gasEstimate = await estimateGasForInvitation(chain, account, guardianCt, guardianHash);
+
+    const gasEstimate = await estimateGasForInvitation(
+      chain,
+      account,
+      guardianCt,
+      guardianHash,
+    );
     console.log('gas:', gasEstimate);
-    
+
     // Use estimated gas if available, otherwise use increased defaults
-    const customGasLimits = gasEstimate ? {
-      callGasLimit: BigInt(Math.ceil(Number(gasEstimate.callGasLimit) * 1.2)), // 20% buffer
-      verificationGasLimit: BigInt(Math.ceil(Number(gasEstimate.verificationGasLimit) * 1.2)),
-      preVerificationGas: BigInt(Math.ceil(Number(gasEstimate.preVerificationGas) * 1.2)),
-    } : {
-      callGasLimit: BigInt(5500000), // Even higher for complex operations
-      verificationGasLimit: BigInt(5500000),
-      preVerificationGas: BigInt(20000000),
-      paymasterVerificationGasLimit: BigInt(30000000), // Significantly increased
-    };
+    const customGasLimits = gasEstimate
+      ? {
+          callGasLimit: BigInt(
+            Math.ceil(Number(gasEstimate.callGasLimit) * 1.2),
+          ), // 20% buffer
+          verificationGasLimit: BigInt(
+            Math.ceil(Number(gasEstimate.verificationGasLimit) * 1.2),
+          ),
+          preVerificationGas: BigInt(
+            Math.ceil(Number(gasEstimate.preVerificationGas) * 1.2),
+          ),
+        }
+      : {
+          callGasLimit: BigInt(5500000), // Even higher for complex operations
+          verificationGasLimit: BigInt(5500000),
+          preVerificationGas: BigInt(20000000),
+          paymasterVerificationGasLimit: BigInt(30000000), // Significantly increased
+        };
 
     const approve = await buildApproveIfNeeded(chain, account);
     console.log('Approval needed:', !!approve);
@@ -188,98 +232,109 @@ export async function inviteGuardianOnChain(
   }
 }
 
-/* ---------- 2) Enhanced accept guardian function -------------------- */
 export async function acceptGuardianOnChain(
   chain,
-  guardianPrivKey,
-  guardianCt,
-  guardianHash,
+  guardianPrivKey, // clave local del guardián
+  guardianEoa, // address del guardián (getSecrets)
+  ownerGuardianCt, // contrato de guardianes del DUEÑO que lo invitó
 ) {
-  try {
-    const publicClient = createPublicClient({
-      chain: availableNetworks[chain].chain,
-      transport: http(),
-    });
-    
-    const account = await toSimpleSmartAccount({
-      client: publicClient,
-      factoryAddress: FACTORY_ADDRESS,
-      owner: privateKeyToAccount(guardianPrivKey),
-      entryPoint: { address: entryPoint07Address, version: '0.7' },
-    });
-
-    const approve = await buildApproveIfNeeded(chain, account);
-    const calls = [
-      ...(approve ? [approve] : []),
-      {
-        to: guardianCt,
-        data: encodeFunctionData({
-          abi: guardianAbi,
-          functionName: 'accept',
-          args: [guardianHash],
-        }),
-        value: 0n,
-      },
-    ];
-
-    const customGasLimits = {
-      callGasLimit: BigInt(2500000),
-      verificationGasLimit: BigInt(1200000),
-      preVerificationGas: BigInt(1800000),
-      paymasterVerificationGasLimit: BigInt(2500000),
-    };
-
-    return await send(chain, account, calls, customGasLimits);
-  } catch (error) {
-    console.error('acceptGuardianOnChain error:', error);
-    throw error;
-  }
+  const {account} = await getAccount(guardianPrivKey, guardianEoa, chain);
+  const calls = [
+    {
+      to: ownerGuardianCt,
+      data: encodeFunctionData({
+        abi: guardianAbi,
+        functionName: 'acceptInvitation', // TODO: ajusta al ABI (p. ej. 'acceptInvite')
+        args: [], // Si tu ABI pide hash del guardián: [guardianHashFrom(guardianEoa)]
+      }),
+      value: 0n,
+    },
+  ];
+  return await send(chain, account, calls);
 }
 
-/* ---------- 3) Enhanced approve recovery function ------------------- */
+
+export async function removeGuardianOnChain(
+  chain,
+  ownerPrivKey,
+  ownerAccount,
+  ownerGuardianCt,
+  guardianHash // = guardianHashFrom(guardianEOA)
+) {
+  const { account } = await getAccount(ownerPrivKey, ownerAccount, chain);
+  const calls = [{
+    to: ownerGuardianCt,
+    data: encodeFunctionData({
+      abi: guardianAbi,
+      functionName: 'removeGuardian', // TODO: ajusta al ABI ('revokeGuardian', etc.)
+      args: [guardianHash],
+    }),
+    value: 0n,
+  }];
+  return await send(chain, account, calls);
+}
+
+export async function openRecoveryOnChain(
+  chain,
+  ownerPrivKey,
+  ownerAccount,
+  ownerGuardianCt,
+  reqHash
+) {
+  const { account } = await getAccount(ownerPrivKey, ownerAccount, chain);
+  const calls = [{
+    to: ownerGuardianCt,
+    data: encodeFunctionData({
+      abi: guardianAbi,
+      functionName: 'openRecovery', // TODO: ajusta al ABI. Si NO existe, no llames.
+      args: [reqHash],
+    }),
+    value: 0n,
+  }];
+  return await send(chain, account, calls);
+}
+
 export async function approveRecoveryOnChain(
   chain,
-  guardianPrivKey,
-  guardianCt,
-  newOwner,
+  guardianPrivKey,   // clave local del GUARDIÁN
+  guardianEoa,       // address del guardián
+  ownerGuardianCt,   // contrato guardian del DUEÑO
+  reqHash            // calcReqHash(ownerAccount, deviceId)
 ) {
-  try {
-    const publicClient = createPublicClient({
-      chain: availableNetworks[chain].chain,
-      transport: http(),
-    });
-    
-    const account = await toSimpleSmartAccount({
-      client: publicClient,
-      factoryAddress: FACTORY_ADDRESS,
-      owner: privateKeyToAccount(guardianPrivKey),
-      entryPoint: { address: entryPoint07Address, version: '0.7' },
-    });
+  const { account } = await getAccount(guardianPrivKey, guardianEoa, chain);
+  const calls = [{
+    to: ownerGuardianCt,
+    data: encodeFunctionData({
+      abi: guardianAbi,
+      functionName: 'approveRecovery',  // TODO: ajusta al ABI
+      args: [reqHash],
+    }),
+    value: 0n,
+  }];
+  return await send(chain, account, calls);
+}
 
-    const approve = await buildApproveIfNeeded(chain, account);
-    const calls = [
-      ...(approve ? [approve] : []),
-      {
-        to: guardianCt,
-        data: encodeFunctionData({
-          abi: guardianAbi,
-          functionName: 'approveRecovery',
-          args: [newOwner],
-        }),
-        value: 0n,
-      },
-    ];
 
-    const customGasLimits = {
-      callGasLimit: BigInt(3000000),
-      verificationGasLimit: BigInt(1500000),
-      preVerificationGas: BigInt(2000000),
-      paymasterVerificationGasLimit: BigInt(3000000),
-    };
+export async function readOnChainApprovals(chain, ownerGuardianCt, reqHash) {
+  const publicClient = createPublicClient({
+    chain: availableNetworks[chain].chain,
+    transport: http(),
+  });
+  const ct = getContract({
+    address: ownerGuardianCt,
+    abi: guardianAbi,
+    client: publicClient,
+  });
 
-    return await send(chain, account, calls, customGasLimits);
-  } catch (error) {
-    console.error('approveRecoveryOnChain error:', error);
-    throw error;
-  }
+  // TODO: ajusta nombres de getters al ABI
+  const required = await ct.read.requiredApprovals();         // uint256
+  const approved = await ct.read.approvalsOf([reqHash]);      // uint256 ó bool[]
+  const current =
+    typeof approved === 'bigint'
+      ? Number(approved)
+      : Array.isArray(approved)
+        ? approved.filter(Boolean).length
+        : 0;
+
+  return { required: Number(required), current };
 }
