@@ -17,7 +17,6 @@ import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
-import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
@@ -37,7 +36,17 @@ const WhichIsCorrectScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {tableData, photoUri, isFromUnifiedFlow} = route.params || {};
+  const {
+    tableData, 
+    photoUri, 
+    isFromUnifiedFlow, 
+    actaImages: preloadedActaImages,
+    existingRecords,
+    mesaInfo,
+    totalRecords,
+    isFromAPI
+  } = route.params || {};
+  
   console.log('WhichIsCorrectScreen - Received params:', route.params);
 
   // State management
@@ -56,95 +65,123 @@ const WhichIsCorrectScreen = () => {
   const [partyResults, setPartyResults] = useState([]);
   const [voteSummaryResults, setVoteSummaryResults] = useState([]);
 
+  // Component for handling IPFS images
+  const IPFSImage = ({ image, style, resizeMode = "contain", onError, onLoad }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    const handleImageError = (error) => {
+      console.error('=== IMAGE LOAD ERROR ===');
+      console.error('URL:', image.uri);
+      console.error('Error details:', error.nativeEvent);
+      console.error('Error code:', error.nativeEvent?.error);
+      console.error('======================');
+      
+      setHasError(true);
+      setIsLoading(false);
+      if (onError) onError(error);
+    };
+
+    const handleImageLoad = () => {
+      console.log('✅ Image loaded successfully:', image.uri);
+      setIsLoading(false);
+      setHasError(false);
+      if (onLoad) onLoad();
+    };
+
+    const handleLoadStart = () => {
+      console.log('🔄 Starting to load image:', image.uri);
+      setIsLoading(true);
+      setHasError(false);
+    };
+
+    if (hasError) {
+      return (
+        <View style={[style, styles.imageError]}>
+          <MaterialIcons name="broken-image" size={40} color="#999" />
+          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
+          <CText style={styles.imageErrorSubtext}>
+            URL: {image.uri?.substring(0, 50)}...
+          </CText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={style}>
+        <Image
+          source={{
+            uri: image.uri,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
+              'Accept': 'image/*',
+            }
+          }}
+          style={[style, isLoading && styles.imageLoading]}
+          resizeMode={resizeMode}
+          onLoadStart={handleLoadStart}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+        {isLoading && (
+          <View style={[style, styles.imageLoadingOverlay]}>
+            <ActivityIndicator size="small" color={colors.primary || '#4F9858'} />
+            <CText style={styles.loadingIndicatorText}>
+              Cargando imagen...
+            </CText>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   // Load actas when component mounts
   useEffect(() => {
     console.log('WhichIsCorrectScreen - useEffect triggered with tableData:', tableData);
+    console.log('WhichIsCorrectScreen - isFromAPI:', isFromAPI);
+    console.log('WhichIsCorrectScreen - preloadedActaImages:', preloadedActaImages);
+    console.log('WhichIsCorrectScreen - existingRecords:', existingRecords);
 
-    const mesaId = tableData?.id || tableData?.numero || tableData?.tableNumber || tableData?.number;
-    console.log('WhichIsCorrectScreen - Extracted mesaId:', mesaId);
+    // If we have preloaded acta images from API, use them directly
+    if (isFromAPI && preloadedActaImages && preloadedActaImages.length > 0) {
+      console.log('WhichIsCorrectScreen - Using preloaded acta images from API');
+      console.log('WhichIsCorrectScreen - Number of images:', preloadedActaImages.length);
+      preloadedActaImages.forEach((img, index) => {
+        console.log(`WhichIsCorrectScreen - Image ${index + 1}:`, img.uri);
+        console.log(`WhichIsCorrectScreen - Image ${index + 1} ID:`, img.id);
+      });
+      setActaImages(preloadedActaImages);
+      
+      // Set party results and vote summary from the first record if available
+      if (existingRecords && existingRecords.length > 0) {
+        setPartyResults(existingRecords[0].partyResults || []);
+        setVoteSummaryResults(existingRecords[0].voteSummaryResults || []);
+      }
+      
+      setIsLoadingActas(false);
+      return;
+    }
 
-    if (mesaId) {
-      loadActasByMesa(mesaId);
-    } else {
-      console.warn('WhichIsCorrectScreen - No valid mesa ID found, using fallback');
+    // If we don't have API data and have a photoUri, create a single acta image
+    if (photoUri) {
+      console.log('WhichIsCorrectScreen - Using provided photoUri');
       setActaImages([
         {
           id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          uri: photoUri,
         },
       ]);
       setIsLoadingActas(false);
+      return;
     }
-  }, [tableData, photoUri]);
 
-  const loadActasByMesa = async mesaId => {
-    try {
-      setIsLoadingActas(true);
-      console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
-
-      let numericId = mesaId;
-      if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
-        const match = mesaId.match(/\d+/);
-        if (match) {
-          numericId = parseInt(match[0], 10);
-        }
-      }
-
-      console.log('WhichIsCorrectScreen: Using numeric ID:', numericId);
-      const response = await fetchActasByMesa(numericId);
-
-      if (response.success) {
-        console.log('WhichIsCorrectScreen: Actas loaded successfully:', response.data);
-        setActaImages(response.data.images);
-        setPartyResults(response.data.partyResults);
-        setVoteSummaryResults(response.data.voteSummaryResults);
-      } else {
-        console.error('WhichIsCorrectScreen: Failed to load actas');
-        showModal('error', String.error, String.couldNotLoadActas);
-        // Fallback data
-        setActaImages([
-          {
-            id: '1',
-            uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-          },
-        ]);
-        setPartyResults([
-          {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-          {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
-          {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
-          {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
-        ]);
-        setVoteSummaryResults([
-          {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
-          {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
-          {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
-        ]);
-      }
-    } catch (error) {
-      console.error('WhichIsCorrectScreen: Error loading actas:', error);
-      showModal('error', String.error, String.errorLoadingActas);
-      // Fallback data
-      setActaImages([
-        {
-          id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-        },
-      ]);
-      setPartyResults([
-        {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-        {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
-        {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
-        {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
-      ]);
-      setVoteSummaryResults([
-        {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
-        {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
-        {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
-      ]);
-    } finally {
-      setIsLoadingActas(false);
-    }
-  };
+    // If we reach here, we don't have sufficient data
+    console.warn('WhichIsCorrectScreen - No valid data provided');
+    setActaImages([]);
+    setPartyResults([]);
+    setVoteSummaryResults([]);
+    setIsLoadingActas(false);
+  }, [tableData, photoUri, isFromAPI, preloadedActaImages, existingRecords]);
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
@@ -185,6 +222,9 @@ const WhichIsCorrectScreen = () => {
 
   const handleCorrectActaSelected = actaId => {
     console.log('WhichIsCorrectScreen - Correct acta selected:', actaId);
+    console.log('WhichIsCorrectScreen - Available acta IDs:', actaImages.map(img => img.id));
+    // Clear any previous selection and set the new one
+    setSelectedImageId(null);
     setConfirmedCorrectActa(actaId);
     setShowConfirmationView(true);
   };
@@ -221,7 +261,21 @@ const WhichIsCorrectScreen = () => {
 
   const handleDatosNoCorrectos = () => {
     console.log('Estos datos no son correctos pressed');
-    showModal('info', String.information, String.dataReportedAsIncorrect);
+    
+    if (isFromAPI) {
+      // If we came from API, go to camera to add new acta
+      console.log('WhichIsCorrectScreen - Redirecting to camera to add new acta');
+      navigation.navigate(StackNav.CameraScreen, {
+        tableData: tableData,
+        mesa: tableData,
+        mesaData: tableData,
+        existingActas: actaImages,
+        isAddingToExisting: actaImages.length > 0
+      });
+    } else {
+      // For legacy cases without API data, show info modal
+      showModal('info', String.information, String.dataReportedAsIncorrect);
+    }
   };
 
   return (
@@ -246,37 +300,39 @@ const WhichIsCorrectScreen = () => {
           </View>
 
           <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
-            {actaImages.map(image => (
-              <View key={image.id} style={styles.confirmationImageContainer}>
-                <View
-                  style={[
-                    styles.imageCard,
-                    image.id === confirmedCorrectActa && styles.imageCardCorrect,
-                    image.id !== confirmedCorrectActa && styles.imageCardIncorrect,
-                  ]}>
-                  <Image
-                    source={{uri: image.uri}}
-                    style={styles.imageDisplay}
-                    resizeMode="contain"
-                  />
-
-                  {/* Correct/Incorrect Icon */}
+            {actaImages.map(image => {
+              const isCorrect = image.id === confirmedCorrectActa;
+              console.log(`WhichIsCorrectScreen - CONFIRMATION VIEW - Image ${image.id}: isCorrect=${isCorrect}, confirmedCorrectActa=${confirmedCorrectActa}`);
+              
+              return (
+                <View key={`confirmation-${image.id}`} style={styles.confirmationImageContainer}>
                   <View
                     style={[
-                      styles.statusIcon,
-                      image.id === confirmedCorrectActa
-                        ? styles.correctIcon
-                        : styles.incorrectIcon,
+                      styles.imageCard,
+                      isCorrect ? styles.imageCardCorrect : styles.imageCardIncorrect,
                     ]}>
-                    <MaterialIcons
-                      name={image.id === confirmedCorrectActa ? 'check-circle' : 'cancel'}
-                      size={24}
-                      color="#FFFFFF"
+                    <IPFSImage
+                      image={image}
+                      style={styles.imageDisplay}
+                      resizeMode="contain"
                     />
+
+                    {/* Status Icon - Check for correct, X for incorrect */}
+                    <View
+                      style={[
+                        styles.statusIcon,
+                        isCorrect ? styles.correctIcon : styles.incorrectIcon,
+                      ]}>
+                      <MaterialIcons
+                        name={isCorrect ? 'check-circle' : 'cancel'}
+                        size={24}
+                        color="#FFFFFF"
+                      />
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </ScrollView>
 
           {/* Confirmation Buttons */}
@@ -303,12 +359,28 @@ const WhichIsCorrectScreen = () => {
         <>
           <View style={styles.questionContainer}>
             <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
+            {isFromAPI && actaImages.length > 0 && (
+              <View style={styles.apiInfoContainer}>
+                <CText style={styles.apiInfoText}>
+                  Se encontraron {actaImages.length} acta{actaImages.length > 1 ? 's' : ''} atestiguada{actaImages.length > 1 ? 's' : ''} para esta mesa
+                </CText>
+              </View>
+            )}
           </View>
 
           {isLoadingActas ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
               <CText style={styles.loadingText}>{String.loadingActas}</CText>
+            </View>
+          ) : actaImages.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <CText style={styles.noImagesText}>
+                No se encontraron imágenes para mostrar
+              </CText>
+              <CText style={styles.debugText}>
+                Debug: isFromAPI={String(isFromAPI)}, preloadedLength={preloadedActaImages?.length || 0}
+              </CText>
             </View>
           ) : (
             <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
@@ -329,8 +401,8 @@ const WhichIsCorrectScreen = () => {
                                 selectedImageId === image.id && styles.imageCardSelected,
                               ]}
                               onPress={() => handleImagePress(image.id)}>
-                              <Image
-                                source={{uri: image.uri}}
+                              <IPFSImage
+                                image={image}
                                 style={styles.imageDisplay}
                                 resizeMode="contain"
                               />
@@ -367,8 +439,8 @@ const WhichIsCorrectScreen = () => {
                           selectedImageId === image.id && styles.imageCardSelected,
                         ]}
                         onPress={() => handleImagePress(image.id)}>
-                        <Image
-                          source={{uri: image.uri}}
+                        <IPFSImage
+                          image={image}
                           style={styles.imageDisplay}
                           resizeMode="contain"
                         />
@@ -395,8 +467,21 @@ const WhichIsCorrectScreen = () => {
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.datosNoCorrectosButton} onPress={handleDatosNoCorrectos}>
-            <CText style={styles.datosNoCorrectosButtonText}>{String.dataNotCorrect}</CText>
+          <TouchableOpacity 
+            style={[
+              styles.datosNoCorrectosButton,
+              isFromAPI && styles.addNewActaButton
+            ]} 
+            onPress={handleDatosNoCorrectos}>
+            <CText 
+              style={[
+                styles.datosNoCorrectosButtonText,
+                isFromAPI && styles.addNewActaButtonText
+              ]}>
+              {isFromAPI 
+                ? "Agregar Nueva Acta" 
+                : String.dataNotCorrect}
+            </CText>
           </TouchableOpacity>
         </>
       )}
@@ -436,6 +521,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2F2F2F',
   },
+  apiInfoContainer: {
+    marginTop: getResponsiveSize(8, 10, 12),
+    paddingTop: getResponsiveSize(8, 10, 12),
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  apiInfoText: {
+    fontSize: getResponsiveSize(13, 14, 15),
+    textAlign: 'center',
+    color: '#4F9858',
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -447,6 +545,18 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(14, 16, 18),
     color: '#666',
     textAlign: 'center',
+  },
+  noImagesText: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  debugText: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#666',
+    textAlign: 'center',
+    fontFamily: 'monospace',
   },
   imageList: {
     flex: 1,
@@ -596,6 +706,51 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#D32F2F',
+  },
+  addNewActaButton: {
+    borderColor: '#4F9858',
+    backgroundColor: '#F8F9FA',
+  },
+  addNewActaButtonText: {
+    color: '#4F9858',
+  },
+  imageError: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: getResponsiveSize(3, 4, 6),
+  },
+  imageErrorText: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#999',
+    marginTop: getResponsiveSize(4, 6, 8),
+    textAlign: 'center',
+  },
+  imageErrorSubtext: {
+    fontSize: getResponsiveSize(10, 12, 14),
+    color: '#ccc',
+    marginTop: getResponsiveSize(2, 4, 6),
+    textAlign: 'center',
+  },
+  loadingIndicatorText: {
+    fontSize: getResponsiveSize(10, 12, 14),
+    color: '#666',
+    marginTop: getResponsiveSize(4, 6, 8),
+    textAlign: 'center',
+  },
+  imageLoading: {
+    opacity: 0.5,
+  },
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: getResponsiveSize(3, 4, 6),
   },
 });
 

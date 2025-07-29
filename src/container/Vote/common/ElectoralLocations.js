@@ -58,8 +58,11 @@ const ElectoralLocations = ({navigation, route}) => {
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
+      // const response = await axios.get(
+      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
+      // );
       const response = await axios.get(
-        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
+        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
       );
 
       if (response.data && response.data.data) {

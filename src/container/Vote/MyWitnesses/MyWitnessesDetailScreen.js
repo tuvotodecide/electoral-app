@@ -8,27 +8,21 @@ const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, mesaData} = route.params || {};
+  const {
+    photoUri, 
+    mesaData, 
+    partyResults: apiPartyResults, 
+    voteSummaryResults: apiVoteSummaryResults,
+    attestationData
+  } = route.params || {};
 
-  // Usar los datos específicos del atestiguamiento seleccionado
-  const partyResults = mesaData?.partyResults || [
-    {id: 'unidad', partido: String.partyUnit, presidente: '33', diputado: '29'},
-    {
-      id: 'mas-ipsp',
-      partido: String.partyMasIpsp,
-      presidente: '3',
-      diputado: '1',
-    },
-    {id: 'pdc', partido: String.partyPdc, presidente: '17', diputado: '16'},
-    {id: 'morena', partido: String.partyMorena, presidente: '1', diputado: '0'},
-  ];
+  console.log('MyWitnessesDetailScreen - Received params:', route.params);
+  console.log('MyWitnessesDetailScreen - API Party Results:', apiPartyResults);
+  console.log('MyWitnessesDetailScreen - API Vote Summary Results:', apiVoteSummaryResults);
 
-  // Usar los datos específicos del resumen de votos del atestiguamiento
-  const voteSummaryResults = mesaData?.voteSummaryResults || [
-    {id: 'validos', label: String.validVotes, value1: '141', value2: '176'},
-    {id: 'blancos', label: String.blankVotes, value1: '64', value2: '3'},
-    {id: 'nulos', label: String.nullVotes, value1: '6', value2: '9'},
-  ];
+  // Usar los datos reales del API que vienen desde MyWitnessesListScreen
+  const partyResults = apiPartyResults || [];
+  const voteSummaryResults = apiVoteSummaryResults || [];
 
   const handleBack = () => {
     navigation.goBack();
@@ -59,14 +53,18 @@ const MyWitnessesDetailScreen = () => {
     borderRadius: 8,
   };
 
-  // Crear título dinámico con información de la mesa
-  const headerTitle = mesaData
-    ? `${mesaData.mesa} - ${mesaData.fecha}`
+  // Crear título dinámico con información de la mesa usando datos reales
+  const headerTitle = attestationData
+    ? `Mesa ${attestationData.tableNumber} - ${attestationData.fecha}`
+    : mesaData
+    ? `${mesaData.mesa || `Mesa ${mesaData.tableNumber}`} - ${mesaData.fecha}`
     : String.witnessDetail;
-  const instructionsText = mesaData
-    ? String.attestedResults
-        .replace('{tableName}', mesaData.mesa)
-        .replace('{precinctName}', mesaData.recinto)
+
+  // Crear instrucciones usando datos reales
+  const instructionsText = attestationData
+    ? `Resultados atestiguados para Mesa ${attestationData.tableNumber}`
+    : mesaData
+    ? `Resultados atestiguados para ${mesaData.mesa || `Mesa ${mesaData.tableNumber}`}`
     : String.registeredVotes;
 
   return (

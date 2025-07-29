@@ -1,6 +1,12 @@
 import React from 'react';
-import {ScrollView, View, Dimensions} from 'react-native';
+import {ScrollView, View, Dimensions, ActivityIndicator} from 'react-native';
+import axios from 'axios';
+import {useNavigation} from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
+import CustomModal from './CustomModal';
+import CText from './CText';
+import {StackNav} from '../../navigation/NavigationKey';
+import String from '../../i18n/String';
 import {
   SearchTableHeader,
   ChooseTableText,
@@ -88,13 +94,170 @@ const BaseSearchTableScreen = ({
   // Layout props
   showLocationFirst = false, // Control order of location bar and search input
 
+  // Auto-verification props
+  enableAutoVerification = true, // Enable automatic API verification
+  apiEndpoint = "http://192.168.1.16:3000/api/v1/mesa", // Base API endpoint
+
   // Styles
   styles,
 }) => {
+  const navigation = useNavigation();
+  const [isVerifying, setIsVerifying] = React.useState(false);
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalConfig, setModalConfig] = React.useState({
+    type: 'info',
+    title: '',
+    message: '',
+    buttonText: String.accept,
+  });
+
   // Support legacy props
   const finalTables = tables || mesas || [];
   const finalOnPress = onTablePress || onMesaPress;
   const finalChooseText = chooseTableText || chooseMesaText;
+
+  const showModal = (type, title, message, buttonText = String.accept) => {
+    setModalConfig({type, title, message, buttonText});
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleTablePress = async (mesa) => {
+    if (!enableAutoVerification) {
+      // Use original handler if auto-verification is disabled
+      if (finalOnPress) {
+        finalOnPress(mesa);
+      }
+      return;
+    }
+
+    // Enrich mesa data with location information
+    const enrichedMesa = {
+      ...mesa,
+      // Add location data for proper display
+      recinto: locationData?.name || mesa.recinto || 'N/A',
+      direccion: locationData?.address || mesa.direccion || 'N/A',
+      codigo: mesa.tableCode || mesa.codigo || mesa.code || 'N/A',
+      // Ensure tableNumber is present
+      tableNumber: mesa.tableNumber || mesa.numero || mesa.number || 'N/A',
+      // Keep original fields for backwards compatibility
+      numero: mesa.tableNumber || mesa.numero || mesa.number || 'N/A',
+      // Add zone from location data
+      zone: locationData?.zone || mesa.zone || 'N/A',
+      // Add other location-specific data
+      name: locationData?.name || mesa.name || 'N/A',
+      address: locationData?.address || mesa.address || 'N/A',
+      district: locationData?.district || mesa.district || 'N/A',
+    };
+
+    // Get table code for API call
+    const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
+    
+    if (!tableCode) {
+      console.error('BaseSearchTableScreen - No table code found for mesa:', mesa);
+      showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
+      return;
+    }
+
+    try {
+      // Show loading
+      setIsVerifying(true);
+      
+      console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
+      
+      // Check if mesa has existing attestations
+      const response = await axios.get(`${apiEndpoint}/${tableCode}/results`);
+      
+      console.log('BaseSearchTableScreen - Mesa results response:', response.data);
+      
+      if (response.data && response.data.registros && response.data.registros.length > 0) {
+        // Mesa has existing attestations - go directly to WhichIsCorrectScreen
+        console.log('BaseSearchTableScreen - Mesa has existing attestations:', response.data.registros.length);
+        
+        // Convert API data to format expected by WhichIsCorrectScreen
+        const actaImages = response.data.registros.map((record, index) => {
+          console.log(`BaseSearchTableScreen - Mapping record ${index}:`, {
+            recordId: record.recordId,
+            actaImage: record.actaImage,
+            hasImage: !!record.actaImage
+          });
+          
+          return {
+            id: record.recordId || `record-${index}`,
+            uri: record.actaImage, // Use the image URL directly from API
+            recordId: record.recordId,
+            tableCode: record.tableCode,
+            tableNumber: record.tableNumber,
+            partyResults: record.partyResults,
+            voteSummaryResults: record.voteSummaryResults,
+          };
+        });
+
+        console.log('BaseSearchTableScreen - Final actaImages array:', actaImages);
+
+        navigation.navigate(StackNav.WhichIsCorrectScreen, {
+          tableData: enrichedMesa,
+          actaImages: actaImages,
+          existingRecords: response.data.registros,
+          mesaInfo: response.data.mesa,
+          totalRecords: response.data.totalRecords,
+          isFromAPI: true
+        });
+      } else {
+        // No attestations found, go to table detail first to show mesa information
+        console.log('BaseSearchTableScreen - No attestations found, redirecting to table detail');
+        
+        navigation.navigate(StackNav.TableDetail, {
+          tableData: enrichedMesa,
+          mesa: enrichedMesa,
+          mesaData: enrichedMesa,
+          isFromUnifiedFlow: true
+        });
+      }
+      
+    } catch (error) {
+      console.log('BaseSearchTableScreen - Mesa check completed, determining next step:', error.message || error);
+      
+      // Check if it's a 404 or mesa not found error
+      if (error.response && error.response.status === 404) {
+        console.log('BaseSearchTableScreen - Mesa not found, redirecting to table detail');
+        
+        // Mesa not found, go to table detail first to show mesa information
+        navigation.navigate(StackNav.TableDetail, {
+          tableData: enrichedMesa,
+          mesa: enrichedMesa,
+          mesaData: enrichedMesa,
+          isFromUnifiedFlow: true
+        });
+      } else if (error.response && error.response.data && error.response.data.message) {
+        // Handle specific error messages from API
+        const errorData = error.response.data;
+        
+        if (errorData.message.includes('no encontrada')) {
+          console.log('BaseSearchTableScreen - Mesa not found in API, redirecting to table detail');
+          
+          // Mesa not found, go to table detail first to show mesa information
+          navigation.navigate(StackNav.TableDetail, {
+            tableData: enrichedMesa,
+            mesa: enrichedMesa,
+            mesaData: enrichedMesa,
+            isFromUnifiedFlow: true
+          });
+        } else {
+          // Other API error
+          showModal('error', String.error, errorData.message || 'Error al verificar la mesa');
+        }
+      } else {
+        // Network or other error
+        showModal('error', String.error, 'Error de conexión al verificar la mesa');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
+  };
   const renderSearchAndLocation = () => {
     const containerStyle = {
       paddingHorizontal: getResponsiveSize(12, 16, 20),
@@ -161,7 +324,7 @@ const BaseSearchTableScreen = ({
               }}>
               <TableCard
                 table={table}
-                onPress={finalOnPress}
+                onPress={handleTablePress}
                 locationData={locationData}
                 styles={{
                   tableCard: styles.tableCard || styles.mesaCard,
@@ -212,7 +375,7 @@ const BaseSearchTableScreen = ({
                   }}>
                   <TableCard
                     table={table}
-                    onPress={finalOnPress}
+                    onPress={handleTablePress}
                     locationData={locationData}
                     styles={{
                       tableCard: styles.tableCard || styles.mesaCard,
@@ -262,6 +425,49 @@ const BaseSearchTableScreen = ({
       {renderSearchAndLocation()}
 
       {renderTablesList()}
+
+      {/* Loading overlay when verifying mesa */}
+      {isVerifying && (
+        <View style={styles.loadingOverlay || {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 20,
+            alignItems: 'center',
+            minWidth: 150,
+          }}>
+            <ActivityIndicator size="large" color={colors?.primary || '#4F9858'} />
+            <CText style={{
+              marginTop: 12,
+              fontSize: 14,
+              color: '#666',
+              textAlign: 'center',
+            }}>
+              Verificando mesa...
+            </CText>
+          </View>
+        </View>
+      )}
+
+      {/* Custom Modal */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={closeModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        buttonText={modalConfig.buttonText}
+      />
     </CSafeAreaView>
   );
 };

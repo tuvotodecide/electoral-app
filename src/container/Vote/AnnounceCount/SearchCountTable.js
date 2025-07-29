@@ -117,8 +117,11 @@ const SearchCountTable = ({navigation, route}) => {
         'SearchCountTable: Loading tables from API for location:',
         locationId,
       );
+      // const response = await axios.get(
+      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
+      // );
       const response = await axios.get(
-        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
+        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
       console.log('SearchCountTable - API Response structure:', response.data);
 

@@ -1,17 +1,15 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Image,
+  ActivityIndicator,
+  StyleSheet,
   Dimensions,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import UniversalHeader from '../../../components/common/UniversalHeader';
+import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
 
@@ -43,15 +41,75 @@ const ActaDetailScreen = () => {
   } = route.params || {};
 
   console.log('ActaDetailScreen - Received params:', route.params);
+  console.log('ActaDetailScreen - selectedActa.uri:', selectedActa?.uri);
+
+  // Component for handling IPFS images
+  const IPFSImageComponent = () => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    const handleImageError = (error) => {
+      console.error('ActaDetailScreen - Image load error:', selectedActa?.uri, error.nativeEvent);
+      setHasError(true);
+      setIsLoading(false);
+    };
+
+    const handleImageLoad = () => {
+      console.log('ActaDetailScreen - Image loaded successfully:', selectedActa?.uri);
+      setIsLoading(false);
+      setHasError(false);
+    };
+
+    const handleLoadStart = () => {
+      console.log('ActaDetailScreen - Loading image:', selectedActa?.uri);
+      setIsLoading(true);
+      setHasError(false);
+    };
+
+    if (hasError) {
+      return (
+        <View style={styles.imageError}>
+          <MaterialIcons name="broken-image" size={60} color="#999" />
+          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
+          <CText style={styles.imageErrorSubtext}>
+            Verifica tu conexión a internet
+          </CText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.imageContainer}>
+        <Image
+          source={{uri: selectedActa?.uri}}
+          style={[styles.actaImage, isLoading && styles.imageLoading]}
+          resizeMode="contain"
+          onLoadStart={handleLoadStart}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+        {isLoading && (
+          <View style={styles.imageLoadingOverlay}>
+            <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+            <CText style={styles.loadingIndicatorText}>
+              Cargando imagen...
+            </CText>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const handleBack = () => {
     navigation.goBack();
   };
 
   const handleThisIsCorrect = () => {
-    console.log('ActaDetailScreen - This is correct pressed for acta:', selectedActa.id);
+    console.log('ActaDetailScreen - This is correct pressed for acta:', selectedActa?.id);
+    console.log('ActaDetailScreen - selectedActa object:', selectedActa);
+    console.log('ActaDetailScreen - Calling onCorrectActaSelected with ID:', selectedActa?.id);
     if (onCorrectActaSelected) {
-      onCorrectActaSelected(selectedActa.id);
+      onCorrectActaSelected(selectedActa?.id);
     }
     navigation.goBack();
   };
@@ -68,343 +126,128 @@ const ActaDetailScreen = () => {
     navigation.goBack();
   };
 
-  const renderPartyResult = (party, index) => (
-    <View key={party.id || index} style={styles.partyRow}>
-      <CText style={[styles.partyName, {color: colors.text}]}>
-        {party.partido}
-      </CText>
-      <View style={styles.votesContainer}>
-        <View style={styles.voteColumn}>
-          <CText style={[styles.voteNumber, {color: colors.primary}]}>
-            {party.presidente}
-          </CText>
-        </View>
-        <View style={styles.voteColumn}>
-          <CText style={[styles.voteNumber, {color: colors.primary}]}>
-            {party.diputado}
-          </CText>
-        </View>
-      </View>
-    </View>
-  );
+  // Action buttons for BaseRecordReviewScreen
+  const actionButtons = [
+    {
+      text: String.correctData,
+      onPress: handleThisIsCorrect,
+      style: {
+        backgroundColor: colors.primary || '#4F9858',
+      },
+      textStyle: {
+        color: '#FFFFFF',
+      },
+      icon: 'check-circle',
+    },
+    {
+      text: 'Subir foto de acta correcta',
+      onPress: handleUploadCorrectActa,
+      style: {
+        backgroundColor: colors.secondary || '#2196F3',
+      },
+      textStyle: {
+        color: '#FFFFFF',
+      },
+      icon: 'camera-alt',
+    },
+  ];
 
-  const renderVoteSummary = (summary, index) => (
-    <View key={summary.id || index} style={styles.summaryRow}>
-      <CText style={[styles.summaryLabel, {color: colors.text}]}>
-        {summary.label}
-      </CText>
-      <View style={styles.summaryValues}>
-        <CText style={[styles.summaryValue, {color: colors.primary}]}>
-          {summary.value1}
-        </CText>
-        <CText style={[styles.summaryValue, {color: colors.primary}]}>
-          {summary.value2}
-        </CText>
-      </View>
-    </View>
-  );
+  // Add change button only if there are multiple actas
+  if (allActas && allActas.length > 1) {
+    actionButtons.push({
+      text: 'Cambiar',
+      onPress: handleChange,
+      style: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: colors.textSecondary || '#666',
+      },
+      textStyle: {
+        color: colors.textSecondary || '#666',
+      },
+      icon: 'swap-horiz',
+    });
+  }
+
+  // Header title
+  const headerTitle = `${String.table} ${
+    tableData?.tableNumber ||
+    tableData?.numero ||
+    tableData?.number ||
+    'N/A'
+  }`;
+
+  // Instructions text
+  const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;
+
+  // Custom photo component that uses our IPFS handler
+  const PhotoComponent = () => <IPFSImageComponent />;
 
   return (
-    <CSafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-      <UniversalHeader
-        colors={colors}
-        onBack={handleBack}
-        title={`${String.table} ${
-          tableData?.tableNumber ||
-          tableData?.numero ||
-          tableData?.number ||
-          'N/A'
-        }`}
-        showNotification={true}
-      />
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Acta Image */}
-        <View style={[styles.imageContainer, {backgroundColor: colors.cardBackground || '#FFFFFF'}]}>
-          <Image
-            source={{uri: selectedActa.uri}}
-            style={styles.actaImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Table Information */}
-        <View style={[styles.infoCard, {backgroundColor: colors.cardBackground || '#FFFFFF'}]}>
-          <CText style={[styles.sectionTitle, {color: colors.text}]}>
-            {String.tableInformation}
-          </CText>
-          <View style={styles.infoRow}>
-            <CText style={[styles.infoLabel, {color: colors.textSecondary}]}>
-              {String.table}:
-            </CText>
-            <CText style={[styles.infoValue, {color: colors.text}]}>
-              {tableData?.numero || 'N/A'}
-            </CText>
-          </View>
-          <View style={styles.infoRow}>
-            <CText style={[styles.infoLabel, {color: colors.textSecondary}]}>
-              {String.precinct}:
-            </CText>
-            <CText style={[styles.infoValue, {color: colors.text}]}>
-              {tableData?.recinto || 'N/A'}
-            </CText>
-          </View>
-        </View>
-
-        {/* Party Results */}
-        {partyResults && partyResults.length > 0 && (
-          <View style={[styles.resultsCard, {backgroundColor: colors.cardBackground || '#FFFFFF'}]}>
-            <CText style={[styles.sectionTitle, {color: colors.text}]}>
-              {String.registeredVotes}
-            </CText>
-            <View style={styles.tableHeader}>
-              <CText style={[styles.headerText, {color: colors.text}]}>Partido</CText>
-              <View style={styles.votesHeader}>
-                <CText style={[styles.headerText, {color: colors.text}]}>Pres.</CText>
-                <CText style={[styles.headerText, {color: colors.text}]}>Dip.</CText>
-              </View>
-            </View>
-            {partyResults.map(renderPartyResult)}
-          </View>
-        )}
-
-        {/* Vote Summary */}
-        {voteSummaryResults && voteSummaryResults.length > 0 && (
-          <View style={[styles.resultsCard, {backgroundColor: colors.cardBackground || '#FFFFFF'}]}>
-            <View style={styles.tableHeader}>
-              <CText style={[styles.headerText, {color: colors.text}]}>Resumen</CText>
-              <View style={styles.votesHeader}>
-                <CText style={[styles.headerText, {color: colors.text}]}>Pres.</CText>
-                <CText style={[styles.headerText, {color: colors.text}]}>Dip.</CText>
-              </View>
-            </View>
-            {voteSummaryResults.map(renderVoteSummary)}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Action Buttons */}
-      <View style={[styles.buttonContainer, {backgroundColor: colors.background}]}>
-        <TouchableOpacity
-          style={[styles.correctButton, {backgroundColor: colors.primary || '#4F9858'}]}
-          onPress={handleThisIsCorrect}
-          activeOpacity={0.8}>
-          <MaterialIcons name="check-circle" size={20} color="#FFFFFF" />
-          <CText style={styles.correctButtonText}>
-            {String.correctData}
-          </CText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.uploadButton, {backgroundColor: colors.secondary || '#2196F3'}]}
-          onPress={handleUploadCorrectActa}
-          activeOpacity={0.8}>
-          <MaterialIcons name="camera-alt" size={20} color="#FFFFFF" />
-          <CText style={styles.uploadButtonText}>
-            Subir foto de acta correcta
-          </CText>
-        </TouchableOpacity>
-
-        {/* Show Change button only if there are multiple actas */}
-        {allActas && allActas.length > 1 && (
-          <TouchableOpacity
-            style={[styles.changeButton, {borderColor: colors.textSecondary}]}
-            onPress={handleChange}
-            activeOpacity={0.8}>
-            <MaterialIcons name="swap-horiz" size={20} color={colors.textSecondary} />
-            <CText style={[styles.changeButtonText, {color: colors.textSecondary}]}>
-              Cambiar
-            </CText>
-          </TouchableOpacity>
-        )}
-      </View>
-    </CSafeAreaView>
+    <BaseRecordReviewScreen
+      colors={colors}
+      headerTitle={headerTitle}
+      instructionsText={instructionsText}
+      photoUri={selectedActa?.uri} // This will be overridden by our custom component
+      PhotoComponent={PhotoComponent} // Pass our custom photo component
+      partyResults={partyResults || []}
+      voteSummaryResults={voteSummaryResults || []}
+      actionButtons={actionButtons}
+      onBack={handleBack}
+      showTableInfo={true}
+      tableData={tableData}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
   imageContainer: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    position: 'relative',
   },
   actaImage: {
     width: '100%',
     height: getResponsiveSize(200, 250, 300),
     borderRadius: 8,
   },
-  infoCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  resultsCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  imageError: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    height: getResponsiveSize(200, 250, 300),
+    borderRadius: 8,
   },
-  infoLabel: {
-    fontSize: 14,
+  imageErrorText: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#999',
+    marginTop: getResponsiveSize(8, 10, 12),
+    textAlign: 'center',
     fontWeight: '500',
   },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  votesHeader: {
-    flexDirection: 'row',
-    width: 80,
-    justifyContent: 'space-between',
-  },
-  partyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  partyName: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  votesContainer: {
-    flexDirection: 'row',
-    width: 80,
-    justifyContent: 'space-between',
-  },
-  voteColumn: {
-    alignItems: 'center',
-    width: 35,
-  },
-  voteNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  summaryValues: {
-    flexDirection: 'row',
-    width: 80,
-    justifyContent: 'space-between',
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    width: 35,
+  imageErrorSubtext: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#ccc',
+    marginTop: getResponsiveSize(4, 6, 8),
     textAlign: 'center',
   },
-  buttonContainer: {
-    padding: 16,
-    paddingBottom: 32,
+  imageLoading: {
+    opacity: 0.5,
   },
-  correctButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  correctButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  uploadButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
-  uploadButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  changeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: 'transparent',
-  },
-  changeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+  loadingIndicatorText: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#666',
+    marginTop: getResponsiveSize(8, 10, 12),
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

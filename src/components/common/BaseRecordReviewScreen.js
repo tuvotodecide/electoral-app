@@ -418,11 +418,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#868686',
   },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: getResponsiveSize(12, 32, 40),
-  },
 });
 
 export default BaseRecordReviewScreen;

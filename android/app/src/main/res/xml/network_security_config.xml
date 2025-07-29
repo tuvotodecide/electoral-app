@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">192.168.1.16</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    
+    <!-- Allow all HTTPS traffic for IPFS -->
+    <domain-config>
+        <domain includeSubdomains="true">ipfs.io</domain>
+        <domain includeSubdomains="true">cloudflare-ipfs.com</domain>
+        <domain includeSubdomains="true">dweb.link</domain>
+        <domain includeSubdomains="true">gateway.pinata.cloud</domain>
+        <domain includeSubdomains="true">infura-ipfs.io</domain>
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Base configuration for all other domains -->
+    <base-config>
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

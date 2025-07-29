@@ -5,6 +5,12 @@ import {StyleSheet} from 'react-native';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
+import {
+  fetchMesas,
+  fetchNearbyMesas,
+  getMockMesas,
+  mapMesasToLegacyFormat,
+} from '../../../data/mockMesas';
 
 export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -15,18 +21,21 @@ export default function SearchTable({navigation, route}) {
 
   // Cargar mesas al montar el componente
   useEffect(() => {
-    loadMesasFromApi(route?.params?.locationId);
+    if (route?.params?.locationId) {
+      loadMesasFromApi(route.params.locationId);
+    } else {
+      loadMesas();
+    }
   }, [route?.params?.locationId]);
 
-  const loadMesasFromApi = async (locationId) => {
+  const loadMesasFromApi = async locationId => {
     try {
       setIsLoadingMesas(true);
       console.log(
         'SearchTable: Loading tables from API for location:',
-        locationId || 'default location',
+        locationId,
       );
       
-      // Always use the same endpoint for now, could be made dynamic based on locationId
       const response = await axios.get(
         `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
@@ -71,6 +80,35 @@ export default function SearchTable({navigation, route}) {
       }
     } catch (error) {
       console.error('SearchTable: Error loading mesas from API:', error);
+      setMesas([]);
+    } finally {
+      setIsLoadingMesas(false);
+    }
+  };
+
+  const loadMesas = async () => {
+    try {
+      setIsLoadingMesas(true);
+      console.log('SearchTable: Loading mesas...');
+
+      // Obtener locationId si existe en route.params
+      const locationId = route?.params?.locationId;
+      const response = await fetchMesas(locationId);
+
+      if (response.success) {
+        console.log(
+          'SearchTable: Mesas loaded successfully:',
+          response.data.length,
+          'for location:',
+          locationId || 'all',
+        );
+        setMesas(response.data);
+      } else {
+        console.error('SearchTable: Failed to load mesas');
+        setMesas([]);
+      }
+    } catch (error) {
+      console.error('SearchTable: Error loading mesas:', error);
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);
