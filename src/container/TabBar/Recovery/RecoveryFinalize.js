@@ -21,6 +21,7 @@ import {styles} from '../../../themes';
 import messaging from '@react-native-firebase/messaging';
 import {CHAIN} from '@env';
 const PENDING_REQHASH = 'PENDING_REQHASH';
+const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
 const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 
 import {registerDeviceToken} from '../../../utils/registerDeviceToken';
@@ -31,14 +32,14 @@ export default function RecoveryFinalize({route, navigation}) {
   useEffect(() => {
     (async () => {
       const deviceId = await getDeviceId();
-      
-      const reqHash = await AsyncStorage.getItem(PENDING_REQHASH);
+
+      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
       const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
-      if (!reqHash || !guardianCt) return;
-      const {required, current} = await readOnChainApprovals(
+      if (!ownerAccount || !guardianCt) return;
+      const {required, current, executed, expired} = await readOnChainApprovals(
         CHAIN,
         guardianCt,
-        reqHash,
+        ownerAccount,
       );
       if (current < required) {
         // aún no alcanzó el umbral → volver a status
@@ -64,7 +65,7 @@ export default function RecoveryFinalize({route, navigation}) {
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       dispatch(setSecrets(data.payload));
       await startSession(data.token);
-      await registerDeviceToken(); 
+      await registerDeviceToken();
       messaging().onTokenRefresh(registerDeviceToken);
 
       navigation.navigate(AuthNav.LoginUser);

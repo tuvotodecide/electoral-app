@@ -15,7 +15,6 @@ export async function registerDeviceToken() {
   await setAsyncStorageData(DEVICE_TOKEN, token);
 
   const jwt = await getJwt()
-  console.log(jwt);
   
   const did = await AsyncStorage.getItem(PENDING_DID);
   if (!jwt && !did) return;          

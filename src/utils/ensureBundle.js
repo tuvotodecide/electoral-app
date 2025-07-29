@@ -7,7 +7,7 @@ const PATH =
   Platform.OS === 'android'
     ? `${RNFS.DocumentDirectoryPath}/bundle_secure.json`
     : null;
-console.log(PATH);
+
 
 export async function ensureBundle() {
   if (!PATH) return false;
@@ -18,12 +18,10 @@ export async function ensureBundle() {
       if (st.size > 0) return true;
     }
   } catch (e) {
-    console.log(e);
     
   }
 
   try {
-    console.log('aca');
     
     return await IdentityBridge.requestBundle();
   } catch (e) {

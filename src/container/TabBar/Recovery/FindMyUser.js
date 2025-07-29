@@ -33,15 +33,13 @@ import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClo
 import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {calcReqHash, openRecoveryOnChain} from '../../../api/guardianOnChain';
-import { getSecrets } from '../../../utils/Cifrate';
 
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
-  const PENDING_REQHASH = 'PENDING_REQHASH';
+  const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
   const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
@@ -100,27 +98,12 @@ export default function FindMyUser({navigation}) {
       return;
     }
     const deviceId = await getDeviceId();
-    const reqHash = calcReqHash(candidate.accountAddress, deviceId);
-
-    try {
-      const {payloadQr} = await getSecrets();
-      await openRecoveryOnChain(
-        CHAIN,
-        payloadQr.privKey,
-        payloadQr.account,
-        candidate.guardianAddress,
-        reqHash,
-      );
-    } catch (e) {
-     
-    }
-
     sendRequest(
       {dni: carnet.trim(), deviceId},
       {
         onSuccess: async data => {
           await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
-          await AsyncStorage.setItem(PENDING_REQHASH, reqHash);
+          await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
           await AsyncStorage.setItem(
             PENDING_OWNER_GUARDIAN_CT,
             candidate.guardianAddress,

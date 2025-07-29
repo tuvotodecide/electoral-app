@@ -35,7 +35,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
 import {getBioFlag} from '../../utils/BioFlag';
-import { writeBundleAtomic } from '../../utils/ensureBundle';
+import {writeBundleAtomic} from '../../utils/ensureBundle';
+import {startSession} from '../../utils/Session';
 
 export default function RegisterUser10({navigation, route}) {
   const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
@@ -45,14 +46,22 @@ export default function RegisterUser10({navigation, route}) {
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [stage, setStage] = useState('init');
+  const watchdogRef = useRef(null);
   const dispatch = useDispatch();
   const {mutateAsync: registerStore} = useKycRegisterQuery();
   const startedRef = useRef(false);
 
+  useEffect(() => {
+    clearTimeout(watchdogRef.current);
+    if (stage === 'done') return; 
+    watchdogRef.current = setTimeout(() => {
+      setStage(s => (s !== 'done' ? 'stillWorking' : s));
+    }, 30000);
+    return () => clearTimeout(watchdogRef.current);
+  }, [stage]);
 
   useEffect(() => {
     (async () => {
-      
       if (route.params?.fromDraft) {
         initRegister();
         return;
@@ -61,7 +70,6 @@ export default function RegisterUser10({navigation, route}) {
       const draft = await getDraft();
 
       if (draft) {
-       
         navigation.replace(AuthNav.RegisterUser10, {
           ...draft,
           fromDraft: true,
@@ -78,6 +86,8 @@ export default function RegisterUser10({navigation, route}) {
     startedRef.current = true;
 
     const task = InteractionManager.runAfterInteractions(async () => {
+      await new Promise(r => setTimeout(r, 16)); // ~1 frame
+      await new Promise(r => setTimeout(r, 16));
       try {
         const yieldUI = () => new Promise(r => setTimeout(r, 50));
         setStage('predict');
@@ -123,7 +133,7 @@ export default function RegisterUser10({navigation, route}) {
           salt: walletData.salt.toString(),
           privKey,
         });
-        if (jwt) await AsyncStorage.setItem(JWT_KEY, jwt);
+         if (typeof jwt == 'string' && jwt.length) await startSession(jwt);
         await saveDraft({
           step: 'store',
           privKey,
@@ -175,7 +185,7 @@ export default function RegisterUser10({navigation, route}) {
           account: walletData.address,
           guardian: guardianAddress,
         };
-          try {
+        try {
           await writeBundleAtomic(
             JSON.stringify({
               streamId,
@@ -186,9 +196,7 @@ export default function RegisterUser10({navigation, route}) {
               jwt,
             }),
           );
-        } catch (e) {
-        
-        }
+        } catch (e) {}
         if (await getBioFlag()) {
           await Keychain.setGenericPassword(
             'bundle',
@@ -228,6 +236,7 @@ export default function RegisterUser10({navigation, route}) {
     guardian: 'Creando guardian…',
     save: String.saveData,
     done: String.doneRegister,
+    stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',
   }[stage];
 
   return (
@@ -263,7 +272,7 @@ export default function RegisterUser10({navigation, route}) {
       </View>
       <InfoModal
         visible={errorModalVisible}
-        title="Verificación fallida"
+        title="Registro fallido"
         message={errorMessage}
         buttonText="Reintentar"
         onClose={() => {

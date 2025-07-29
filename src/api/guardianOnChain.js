@@ -30,7 +30,6 @@ import {signUserOpAsService} from '../utils/walletRegister';
 export const guardianHashFrom = eoa =>
   keccak256(encodePacked(['address'], [eoa]));
 
-// Request hash determinista (dueño + deviceId)
 export function calcReqHash(ownerAccount, deviceId) {
   const deviceHash = keccak256(encodePacked(['bytes'], [toBytes(deviceId)]));
   return keccak256(
@@ -42,7 +41,6 @@ export function calcReqHash(ownerAccount, deviceId) {
 function fmt(err) {
   console.error('Full error object:', err);
 
-  // Extract specific AA error codes
   if (err?.details?.includes('AA33')) {
     return 'Insufficient gas for paymaster validation. Try increasing gas limits.';
   }
@@ -74,11 +72,9 @@ async function send(chain, acc, calls) {
     transport: http(availableNetworks[chain].bundler),
   });
 
-  // Merge custom gas limits with defaults
   const finalGasParams = {
     ...gasParams,
     verificationGasLimit: BigInt(50000),
-    //...customGasLimits
   };
 
   console.log('Sending UserOp with gas params:', finalGasParams);
@@ -95,14 +91,13 @@ async function send(chain, acc, calls) {
     const {factory, factoryData} = await acc.getFactoryArgs();
     const initCode =
       factory && factoryData ? concat([factory, factoryData]) : undefined;
-    // Get the paymaster data (signature from the verifying signer)
+
     const packedUserOp = await signUserOpAsService(
       userOp,
       initCode,
       publicClient,
     );
 
-    // Remove signature for sendUserOperation
     const {signature, ...noSignedUserOp} = userOp;
 
     const hash = await bundler.sendUserOperation({
@@ -153,7 +148,6 @@ async function estimateGasForInvitation(
       },
     ];
 
-    // Estimate gas for the operation
     const gasEstimate = await bundler.estimateUserOperationGas({
       account,
       calls,
@@ -189,12 +183,11 @@ export async function inviteGuardianOnChain(
     );
     console.log('gas:', gasEstimate);
 
-    // Use estimated gas if available, otherwise use increased defaults
     const customGasLimits = gasEstimate
       ? {
           callGasLimit: BigInt(
             Math.ceil(Number(gasEstimate.callGasLimit) * 1.2),
-          ), // 20% buffer
+          ),
           verificationGasLimit: BigInt(
             Math.ceil(Number(gasEstimate.verificationGasLimit) * 1.2),
           ),
@@ -203,10 +196,10 @@ export async function inviteGuardianOnChain(
           ),
         }
       : {
-          callGasLimit: BigInt(5500000), // Even higher for complex operations
+          callGasLimit: BigInt(5500000),
           verificationGasLimit: BigInt(5500000),
           preVerificationGas: BigInt(20000000),
-          paymasterVerificationGasLimit: BigInt(30000000), // Significantly increased
+          paymasterVerificationGasLimit: BigInt(30000000),
         };
 
     const approve = await buildApproveIfNeeded(chain, account);
@@ -234,60 +227,43 @@ export async function inviteGuardianOnChain(
 
 export async function acceptGuardianOnChain(
   chain,
-  guardianPrivKey, // clave local del guardián
-  guardianEoa, // address del guardián (getSecrets)
-  ownerGuardianCt, // contrato de guardianes del DUEÑO que lo invitó
+  guardianPrivKey,
+  guardianEoa,
+  ownerGuardianCt,
 ) {
   const {account} = await getAccount(guardianPrivKey, guardianEoa, chain);
+  // Tu ABI: accept(bytes32 guardianHash)
+  const guardianHash = guardianHashFrom(guardianEoa);
+
   const calls = [
     {
       to: ownerGuardianCt,
       data: encodeFunctionData({
         abi: guardianAbi,
-        functionName: 'acceptInvitation', // TODO: ajusta al ABI (p. ej. 'acceptInvite')
-        args: [], // Si tu ABI pide hash del guardián: [guardianHashFrom(guardianEoa)]
+        functionName: 'accept',
+        args: [guardianHash],
       }),
       value: 0n,
     },
   ];
+
   return await send(chain, account, calls);
 }
-
 
 export async function removeGuardianOnChain(
   chain,
   ownerPrivKey,
   ownerAccount,
   ownerGuardianCt,
-  guardianHash // = guardianHashFrom(guardianEOA)
+  guardianHash
 ) {
   const { account } = await getAccount(ownerPrivKey, ownerAccount, chain);
   const calls = [{
     to: ownerGuardianCt,
     data: encodeFunctionData({
       abi: guardianAbi,
-      functionName: 'removeGuardian', // TODO: ajusta al ABI ('revokeGuardian', etc.)
+      functionName: 'remove',
       args: [guardianHash],
-    }),
-    value: 0n,
-  }];
-  return await send(chain, account, calls);
-}
-
-export async function openRecoveryOnChain(
-  chain,
-  ownerPrivKey,
-  ownerAccount,
-  ownerGuardianCt,
-  reqHash
-) {
-  const { account } = await getAccount(ownerPrivKey, ownerAccount, chain);
-  const calls = [{
-    to: ownerGuardianCt,
-    data: encodeFunctionData({
-      abi: guardianAbi,
-      functionName: 'openRecovery', // TODO: ajusta al ABI. Si NO existe, no llames.
-      args: [reqHash],
     }),
     value: 0n,
   }];
@@ -296,45 +272,48 @@ export async function openRecoveryOnChain(
 
 export async function approveRecoveryOnChain(
   chain,
-  guardianPrivKey,   // clave local del GUARDIÁN
-  guardianEoa,       // address del guardián
-  ownerGuardianCt,   // contrato guardian del DUEÑO
-  reqHash            // calcReqHash(ownerAccount, deviceId)
+  guardianPrivKey,
+  guardianEoa,
+  ownerGuardianCt,
+  newOwnerAddress // <- IMPORTANTE: address del dueño a recuperar (no reqHash)
 ) {
   const { account } = await getAccount(guardianPrivKey, guardianEoa, chain);
+
   const calls = [{
     to: ownerGuardianCt,
     data: encodeFunctionData({
       abi: guardianAbi,
-      functionName: 'approveRecovery',  // TODO: ajusta al ABI
-      args: [reqHash],
+      functionName: 'approveRecovery',
+      args: [newOwnerAddress],
     }),
     value: 0n,
   }];
+
   return await send(chain, account, calls);
 }
-
-
-export async function readOnChainApprovals(chain, ownerGuardianCt, reqHash) {
+export async function readOnChainApprovals(chain, ownerGuardianCt, ownerAccount) {
   const publicClient = createPublicClient({
     chain: availableNetworks[chain].chain,
     transport: http(),
   });
+
   const ct = getContract({
     address: ownerGuardianCt,
     abi: guardianAbi,
     client: publicClient,
   });
 
-  // TODO: ajusta nombres de getters al ABI
-  const required = await ct.read.requiredApprovals();         // uint256
-  const approved = await ct.read.approvalsOf([reqHash]);      // uint256 ó bool[]
-  const current =
-    typeof approved === 'bigint'
-      ? Number(approved)
-      : Array.isArray(approved)
-        ? approved.filter(Boolean).length
-        : 0;
+  // requiredApprovals() -> uint8
+  const requiredBn = await ct.read.requiredApprovals();
+  // getRecoveryStatus(address newOwner) -> (uint8 approvals, bool executed, uint256 deadline, bool expired)
+  const [approvals, executed, deadline, expired] =
+    await ct.read.getRecoveryStatus([ownerAccount]);
 
-  return { required: Number(required), current };
+  return {
+    required: Number(requiredBn),
+    current: Number(approvals),
+    executed,
+    expired,
+    deadline, // BigInt (timestamp)
+  };
 }

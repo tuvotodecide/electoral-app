@@ -24,10 +24,9 @@ import {getDeviceId} from '../../../utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import {CHAIN} from '@env';
-import { readOnChainApprovals } from '../../../api/guardianOnChain';
-const PENDING_REQHASH = 'PENDING_REQHASH';
+import {readOnChainApprovals} from '../../../api/guardianOnChain';
+const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
 const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
-
 const statusColorKey = {
   ACCEPTED: 'activeColor',
   PENDING: 'pendingColor',
@@ -79,7 +78,6 @@ export default function MyGuardiansStatus({navigation, route}) {
     if (!detail?.ok) return;
 
     if (detail.status === 'APPROVED') {
-
       navigation.replace(AuthNav.RecoveryUser1Pin, {
         dni,
         reqId: detail.id,
@@ -99,26 +97,28 @@ export default function MyGuardiansStatus({navigation, route}) {
   }, []);
 
   useEffect(() => {
-  let t;
-  (async function poll() {
-    const reqHash   = await AsyncStorage.getItem(PENDING_REQHASH);
-    const guardianCt= await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
-    if (!reqHash || !guardianCt) return;
+    let t;
+    (async function poll() {
+      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
+      const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
+      if (!ownerAccount || !guardianCt) return;
 
-    try {
-      const { required, current } = await readOnChainApprovals(CHAIN, guardianCt, reqHash);
-      if (current >= required) {
-        navigation.replace(AuthNav.RecoveryUser1Pin, {
-          dni: navigation?.dni,
-          reqId: detail?.id, // opcional
-        });
-        return;
-      }
-    } catch (_) {}
-    t = setTimeout(poll, 5000);
-  })();
-  return () => clearTimeout(t);
-}, [navigation?.dni, detail?.id]);
+      try {
+        const {required, current, executed, expired} =
+          await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
+        if (current >= required) {
+         navigation.replace(AuthNav.RecoveryUser1Pin, {
+
+          dni,
+           reqId: detail?.id, // opcional
+         });
+          return;
+        }
+      } catch (_) {}
+      t = setTimeout(poll, 5000);
+    })();
+    return () => clearTimeout(t);
+  }, [dni, detail?.id]);
 
   if (isLoading || !ready) {
     return (

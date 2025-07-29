@@ -29,9 +29,12 @@ import {
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {getSecrets} from '../../../utils/Cifrate';
-import { acceptGuardianOnChain, approveRecoveryOnChain, calcReqHash } from '../../../api/guardianOnChain';
-import { CHAIN } from '@env';
-import { getDeviceId } from '../../../utils/device-id';
+import {
+  acceptGuardianOnChain,
+  approveRecoveryOnChain,
+} from '../../../api/guardianOnChain';
+import {CHAIN} from '@env';
+import {getDeviceId} from '../../../utils/device-id';
 
 export default function GuardiansAdmin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -58,8 +61,7 @@ export default function GuardiansAdmin({navigation}) {
       findPublicDni(
         {identifier: dni},
         {
-          onSuccess: d =>
-            d?.ok ? res(d) : rej(new Error('Error buscando')),
+          onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error buscando'))),
           onError: rej,
         },
       ),
@@ -69,7 +71,7 @@ export default function GuardiansAdmin({navigation}) {
     await acceptGuardianOnChain(
       CHAIN,
       payloadQr.privKey,
-      payloadQr.account, 
+      payloadQr.account,
       ownerGuardianCt,
     );
 
@@ -79,42 +81,37 @@ export default function GuardiansAdmin({navigation}) {
     mutateInvitation({id, action: 'reject'});
   };
 
-const handleApproveRecovery = async (id) => {
-  try {
-    const rec = recData.map(e => e.node).find(r => r.id === id);
-    if (!rec) return;
+  const handleApproveRecovery = async id => {
+    try {
+      const rec = recData.map(e => e.node).find(r => r.id === id);
+      if (!rec) return;
 
-    // 1) resolver dueño (owner) para el contrato guardian
-    const dni = rec.governmentIdentifier;
-    const fp = await new Promise((res, rej) =>
-      findPublicDni({identifier: dni}, {
-        onSuccess: d => d?.ok ? res(d) : rej(new Error('Error buscando usuario')),
-        onError: rej,
-      })
-    );
-    const ownerAccount    = fp.accountAddress;
-    const ownerGuardianCt = fp.guardianAddress;
+      const dni = rec.governmentIdentifier;
+      const fp = await new Promise((res, rej) =>
+        findPublicDni(
+          {identifier: dni},
+          {
+            onSuccess: d =>
+              d?.ok ? res(d) : rej(new Error('Error buscando usuario')),
+            onError: rej,
+          },
+        ),
+      );
+      const ownerAccount = fp.accountAddress;
+      const ownerGuardianCt = fp.guardianAddress;
 
-    // 2) obtener deviceId de la solicitud (ideal que venga en rec; si no, obténlo del detail)
-    const deviceId = rec.deviceId ?? (await getDeviceId()); // mejor si viene del backend para el caso real
-    const reqHash = calcReqHash(ownerAccount, deviceId);
+      const {payloadQr} = await getSecrets();
+      await approveRecoveryOnChain(
+        CHAIN,
+        payloadQr.privKey,
+        payloadQr.account,
+        ownerGuardianCt,
+        ownerAccount,
+      );
 
-    // 3) firmar on-chain como guardián
-    const { payloadQr } = await getSecrets();
-    await approveRecoveryOnChain(
-      CHAIN,
-      payloadQr.privKey,
-      payloadQr.account,
-      ownerGuardianCt,
-      reqHash
-    );
-
-    // 4) espejo backend para UX/notifs
-    mutateRecovery({id, action: 'approve'});
-  } catch (e) {
-    // alert/toast
-  }
-};
+      mutateRecovery({id, action: 'approve'});
+    } catch (e) {}
+  };
   const handleRejectRecovery = id => {
     mutateRecovery({id, action: 'reject'});
   };
@@ -151,7 +148,7 @@ const handleApproveRecovery = async (id) => {
     REJECTED: 'rejectedColor',
     REMOVED: 'rejectedColor',
   };
-  // Etiquetas según status
+
   const statusLabel = {
     ACCEPTED: String.active,
     PENDING: String.pending,

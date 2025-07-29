@@ -28,7 +28,7 @@ export async function createSeedBundle(pin) {
 
   const key = argon2id(utf8ToBytes(pin), salt, {
     t: 1,
-    m: 2 * 1024,
+    m: 1024,
     p: 1,
     dkLen: 32,
   });
