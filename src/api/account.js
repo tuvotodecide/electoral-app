@@ -3,7 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { availableNetworkNames, availableNetworks, FACTORY_ADDRESS, gasParams } from "./params";
 import { createBundlerClient, entryPoint07Address } from "viem/account-abstraction";
 import { toSimpleSmartAccount } from "permissionless/accounts";
-import { MAIN_NETWORK } from '@env';
+import { CHAIN } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
 
 export function getReadAccountContract(chain, address) {
@@ -156,7 +156,7 @@ function getSendTokenCall3(to) {
 
 export async function isWallet(address) {
 	const client = createPublicClient({
-    chain: availableNetworks[MAIN_NETWORK].chain,
+    chain: availableNetworks[CHAIN].chain,
     transport: http(),
   });
 
