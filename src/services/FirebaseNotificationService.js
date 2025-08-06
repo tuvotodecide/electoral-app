@@ -1,7 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
 import functions from '@react-native-firebase/functions';
-import Geolocation from '@react-native-community/geolocation';
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
