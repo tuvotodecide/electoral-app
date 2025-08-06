@@ -17,6 +17,7 @@ import {moderateScale} from '../../../common/constants'; // Assuming this path i
 import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
+import pinataService from '../../../utils/pinataService';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -25,14 +26,22 @@ const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
 
 const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
+  if (isSmallPhone) {
+    return small;
+  }
+  if (isTablet) {
+    return large;
+  }
   return medium;
 };
 
 const getResponsiveModalWidth = () => {
-  if (isTablet) return screenWidth * 0.6; // Tablets: 60% width
-  if (isSmallPhone) return screenWidth * 0.9; // Small phones: 90% width
+  if (isTablet) {
+    return screenWidth * 0.6; // Tablets: 60% width
+  }
+  if (isSmallPhone) {
+    return screenWidth * 0.9; // Small phones: 90% width
+  }
   return screenWidth * 0.85; // Regular phones: 85% width
 };
 
@@ -40,17 +49,112 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const {tableData, photoUri} = route.params || {}; // Destructure tableData and photoUri from route params
+  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
+    route.params || {}; // Destructure all needed data
+
+  // Also try to get data from alternative parameter names
+  const mesaData = route.params?.mesaData;
+  const mesa = route.params?.mesa;
+
   console.log('PhotoConfirmationScreen - Received data:', {
     tableData,
     photoUri,
+    partyResults,
+    voteSummaryResults,
+    aiAnalysis,
   });
+  console.log('PhotoConfirmationScreen - Alternative data sources:', {
+    mesaData,
+    mesa,
+    allRouteParams: route.params,
+  });
+  console.log('PhotoConfirmationScreen - tableData debug:', {
+    tableData,
+    tableNumber: tableData?.tableNumber,
+    numero: tableData?.numero,
+    number: tableData?.number,
+    allKeys: tableData ? Object.keys(tableData) : 'no tableData',
+  });
+  console.log(
+    'PhotoConfirmationScreen - tableData is empty?',
+    !tableData || Object.keys(tableData || {}).length === 0,
+  );
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
+  const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
+  const [ipfsData, setIpfsData] = useState(null);
+
+  // Obtener nombre real del usuario desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+  };
+  const userFullName = data.name || '(sin nombre)';
 
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  // Función para subir a IPFS
+  const uploadToIPFS = async () => {
+    if (!photoUri) {
+      console.log('No photo to upload');
+      return null;
+    }
+
+    setUploadingToIPFS(true);
+
+    try {
+      console.log('🚀 Iniciando subida a IPFS...');
+
+      // Preparar datos adicionales
+      const additionalData = {
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.tableCode || tableData?.codigo || 'N/A',
+        location: tableData?.location || 'Bolivia',
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        userId: 'current-user-id', // Obtener del estado global
+        userName: 'Usuario Actual', // Obtener del estado global
+        role: 'witness',
+      };
+
+      // Preparar datos electorales
+      const electoralData = {
+        partyResults: partyResults || [],
+        voteSummaryResults: voteSummaryResults || [],
+      };
+
+      // Convertir URI a path
+      const imagePath = photoUri.replace('file://', '');
+
+      // Subir imagen y crear metadata completa
+      const result = await pinataService.uploadElectoralActComplete(
+        imagePath,
+        aiAnalysis || {},
+        electoralData,
+        additionalData,
+      );
+
+      if (result.success) {
+        console.log('✅ Subida a IPFS exitosa:', result.data);
+        setIpfsData(result.data);
+        return result.data;
+      } else {
+        console.error('❌ Error en subida a IPFS:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado en subida a IPFS:', error);
+      throw error;
+    } finally {
+      setUploadingToIPFS(false);
+    }
   };
 
   const handlePublishAndCertify = () => {
@@ -58,20 +162,26 @@ const PhotoConfirmationScreen = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmPublishAndCertify = () => {
+  const confirmPublishAndCertify = async () => {
     setStep(1);
-    // Simulate loading time
-    setTimeout(() => {
-      setShowConfirmModal(false);
-      setStep(0);
-      // Navigate to success screen instead of showing success modal
-      navigation.navigate(StackNav.SuccessScreen, {
-        successType: 'publish',
-        mesaData: tableData,
-        autoNavigateDelay: 3000, // 3 segundos antes de auto-navegar
-        showAutoNavigation: true,
-      });
-    }, 2000);
+
+    try {
+      // Simular procesamiento
+      setTimeout(() => {
+        setShowConfirmModal(false);
+        setStep(0);
+        // Navegar directamente a SuccessScreen en lugar de mostrar modal
+        navigation.navigate('SuccessScreen');
+      }, 2000);
+    } catch (error) {
+      console.error('Error en confirmPublishAndCertify:', error);
+      // Navegar a SuccessScreen incluso en caso de error
+      setTimeout(() => {
+        setShowConfirmModal(false);
+        setStep(0);
+        navigation.navigate('SuccessScreen');
+      }, 1000);
+    }
   };
 
   const closeModal = () => {
@@ -85,7 +195,23 @@ const PhotoConfirmationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${tableData?.numero || 'N/A'}`}
+        title={`Mesa ${
+          tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          tableData?.id ||
+          tableData?.tableId ||
+          mesaData?.tableNumber ||
+          mesaData?.numero ||
+          mesaData?.number ||
+          mesa?.tableNumber ||
+          mesa?.numero ||
+          mesa?.number ||
+          (typeof tableData?.numero === 'string'
+            ? tableData.numero.replace('Mesa ', '')
+            : '') ||
+          'DEBUG-EMPTY' // Changed to make it clear data is missing
+        }`}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -101,7 +227,7 @@ const PhotoConfirmationScreen = () => {
       <View style={styles.content}>
         <CText style={styles.mainText}>
           {String.i}
-          <CText style={styles.mainTextBold}> Juan Perez Cuellar</CText>
+          <CText style={styles.mainTextBold}> {userFullName}</CText>
         </CText>
 
         <TouchableOpacity
@@ -114,11 +240,34 @@ const PhotoConfirmationScreen = () => {
 
         <CText style={styles.confirmationText}>
           {String.actaCorrectConfirmation
-            .replace('{tableNumber}', tableData?.numero || 'N/A')
+            .replace(
+              '{tableNumber}',
+              tableData?.tableNumber ||
+                tableData?.numero ||
+                tableData?.number ||
+                tableData?.id ||
+                tableData?.tableId ||
+                mesaData?.tableNumber ||
+                mesaData?.numero ||
+                mesaData?.number ||
+                mesa?.tableNumber ||
+                mesa?.numero ||
+                mesa?.number ||
+                (typeof tableData?.numero === 'string'
+                  ? tableData.numero.replace('Mesa ', '')
+                  : '') ||
+                'DEBUG-EMPTY', // Changed to make it clear data is missing
+            )
             .replace(
               '{location}',
               tableData?.recinto ||
                 tableData?.ubicacion ||
+                tableData?.location ||
+                tableData?.venue ||
+                mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                mesa?.recinto ||
+                mesa?.ubicacion ||
                 String.locationNotAvailable,
             )}
         </CText>
@@ -281,6 +430,14 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(8, 16, 24),
     lineHeight: getResponsiveSize(18, 20, 24),
   },
+  ipfsSubtext: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: getResponsiveSize(8, 10, 12),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    lineHeight: getResponsiveSize(16, 18, 20),
+  },
 });
 
 const styles = StyleSheet.create({
@@ -359,6 +516,101 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveSize(18, 24, 28),
     maxWidth: isTablet ? 500 : '100%', // Limit width on tablets
     paddingHorizontal: getResponsiveSize(8, 16, 24),
+  },
+});
+
+// NFT Modal Styles
+const nftModalStyles = StyleSheet.create({
+  nftModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  nftCertificate: {
+    backgroundColor: '#f8fff8',
+    borderRadius: 22,
+    padding: 28,
+    width: '88%',
+    alignItems: 'center',
+    elevation: 8,
+  },
+  certificateBorder: {
+    borderWidth: 2.5,
+    borderColor: '#a5deb5',
+    borderRadius: 18,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: '#edffe8',
+    borderStyle: 'dashed',
+  },
+  medalContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    width: 96,
+    height: 96,
+    justifyContent: 'center',
+    borderRadius: 50,
+    backgroundColor: '#ffe9b8',
+    borderWidth: 4,
+    borderColor: '#fff7e0',
+    marginTop: -38,
+  },
+  medalImage: {
+    width: 62,
+    height: 62,
+    position: 'absolute',
+    left: 17,
+    top: 17,
+  },
+  nftMedalText: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 30,
+    color: '#CBA233',
+    letterSpacing: 3,
+  },
+  nftName: {
+    fontWeight: '700',
+    fontSize: 22,
+    marginVertical: 6,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertTitle: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertDetail: {
+    fontWeight: '400',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  closeModalBtn: {
+    marginTop: 8,
+    backgroundColor: '#17694A',
+    paddingHorizontal: 22,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  closeModalText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
 

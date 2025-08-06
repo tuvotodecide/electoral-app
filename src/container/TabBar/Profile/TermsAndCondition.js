@@ -18,12 +18,11 @@ export default function TermsAndCondition() {
         <WebView
           source={{uri: TERMS_URL}}
           style={{flex: 1}}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          originWhitelist={[TERMS_URL]}
-          onShouldStartLoadWithRequest={request => {
-            return request.url === TERMS_URL;
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
+          onShouldStartLoadWithRequest={() => {
+            return true;
           }}
         />
       </View>

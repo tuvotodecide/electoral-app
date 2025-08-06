@@ -6,11 +6,16 @@ import {AuthRoute} from '../NavigationRoute';
 const Stack = createNativeStackNavigator();
 
 export default function AuthNavigation() {
+  
   return (
     <Stack.Navigator
       screenOptions={{headerShown: false}}
       initialRouteName={AuthNav.Connect}>
       <Stack.Screen name={AuthNav.Connect} component={AuthRoute.Connect} />
+      <Stack.Screen
+        name={AuthNav.OnBoarding}
+        component={AuthRoute.OnBoarding}
+      />
       <Stack.Screen name={AuthNav.Login} component={AuthRoute.Login} />
       <Stack.Screen name={AuthNav.SignUp} component={AuthRoute.SignUp} />
       <Stack.Screen
@@ -68,12 +73,32 @@ export default function AuthNavigation() {
         component={AuthRoute.FindMyUser}
       />
       <Stack.Screen
+        name={AuthNav.RecoveryQr}
+        component={AuthRoute.RecoveryQr}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUserQrpin2}
+        component={AuthRoute.RecoveryUserQrpin2}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryUserQrpin}
+        component={AuthRoute.RecoveryUserQrpin}
+      />
+      <Stack.Screen
         name={AuthNav.RecoveryUser1Pin}
         component={AuthRoute.RecoveryUser1Pin}
       />
       <Stack.Screen
         name={AuthNav.RecoveryUser2Pin}
         component={AuthRoute.RecoveryUser2Pin}
+      />
+      <Stack.Screen
+        name={AuthNav.MyGuardiansStatus}
+        component={AuthRoute.MyGuardiansStatus}
+      />
+      <Stack.Screen
+        name={AuthNav.RecoveryFinalize}
+        component={AuthRoute.RecoveryFinalize}
       />
 
       <Stack.Screen name={AuthNav.LoginUser} component={AuthRoute.LoginUser} />
@@ -141,4 +166,5 @@ export default function AuthNavigation() {
       />
     </Stack.Navigator>
   );
+  
 }

@@ -20,6 +20,10 @@ export default function HomeStackNavigation() {
 
       {/* Pantallas de Voto anidadas */}
       <HomeStack.Screen
+        name={StackNav.ElectoralLocations}
+        component={StackRoute.ElectoralLocations}
+      />
+      <HomeStack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />

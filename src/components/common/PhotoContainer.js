@@ -14,20 +14,33 @@ import Animated, {
 } from 'react-native-reanimated';
 import {moderateScale} from '../../common/constants';
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = SCREEN_WIDTH >= 768;
 const isSmallPhone = SCREEN_WIDTH < 375; // Increased from 350
 
 const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
+  if (isSmallPhone) {
+    return small;
+  }
+  if (isTablet) {
+    return large;
+  }
   return medium;
 };
 
+// Función para calcular la altura dinámica de la foto basada en la pantalla
+const getDynamicPhotoHeight = () => {
+  // Altura máxima disponible (50% de la pantalla para dejar espacio para otros elementos)
+  const maxHeight = SCREEN_HEIGHT * 0.5;
+  // Altura mínima para asegurar visibilidad
+  const minHeight = getResponsiveSize(200, 250, 300);
+  return Math.min(maxHeight, Math.max(minHeight, SCREEN_HEIGHT * 0.35));
+};
+
 // Constantes calculadas fuera de los worklets
-const PHOTO_HEIGHT = getResponsiveSize(120, 200, 250);
+const PHOTO_HEIGHT = getDynamicPhotoHeight();
 const CONTAINER_PADDING = getResponsiveSize(2, 8, 12);
 const CORNER_SIZE = getResponsiveSize(12, 20, 25);
 const CORNER_BORDER_WIDTH = 2;
@@ -35,16 +48,30 @@ const BORDER_RADIUS = getResponsiveSize(2, 4, 6);
 const CONTAINER_BORDER_RADIUS = getResponsiveSize(4, 8, 10);
 const MARGIN_BOTTOM = getResponsiveSize(4, 16, 20);
 
-export const PhotoContainer = ({photoUri, enableZoom = false}) => {
+export const PhotoContainer = ({
+  photoUri,
+  enableZoom = false,
+  useAspectRatio = false,
+}) => {
   if (enableZoom) {
-    return <ZoomablePhotoContainer photoUri={photoUri} />;
+    return (
+      <ZoomablePhotoContainer
+        photoUri={photoUri}
+        useAspectRatio={useAspectRatio}
+      />
+    );
   }
 
   return (
-    <View style={styles.photoContainer}>
+    <View
+      style={
+        useAspectRatio
+          ? styles.photoContainerAspectRatio
+          : styles.photoContainer
+      }>
       <Image
         source={{uri: photoUri}}
-        style={styles.photo}
+        style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
       />
       <View style={[styles.cornerBorder, styles.topLeftCorner]} />
@@ -55,7 +82,7 @@ export const PhotoContainer = ({photoUri, enableZoom = false}) => {
   );
 };
 
-const ZoomablePhotoContainer = ({photoUri}) => {
+const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -173,7 +200,12 @@ const ZoomablePhotoContainer = ({photoUri}) => {
   });
 
   return (
-    <View style={styles.photoContainer}>
+    <View
+      style={
+        useAspectRatio
+          ? styles.photoContainerAspectRatio
+          : styles.photoContainer
+      }>
       <TapGestureHandler numberOfTaps={2} onGestureEvent={doubleTapHandler}>
         <Animated.View>
           <PanGestureHandler
@@ -187,10 +219,18 @@ const ZoomablePhotoContainer = ({photoUri}) => {
                 ref={pinchRef}
                 onGestureEvent={pinchHandler}
                 simultaneousHandlers={[panRef]}>
-                <Animated.View style={[styles.photoWrapper, animatedStyle]}>
+                <Animated.View
+                  style={[
+                    useAspectRatio
+                      ? styles.photoWrapperAspectRatio
+                      : styles.photoWrapper,
+                    animatedStyle,
+                  ]}>
                   <Image
                     source={{uri: photoUri}}
-                    style={styles.photo}
+                    style={
+                      useAspectRatio ? styles.photoAspectRatio : styles.photo
+                    }
                     resizeMode="contain"
                   />
                 </Animated.View>
@@ -227,9 +267,33 @@ const styles = StyleSheet.create({
     width: '100%',
     height: PHOTO_HEIGHT,
   },
+  photoWrapperAspectRatio: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+  },
   photo: {
     width: '100%',
     height: PHOTO_HEIGHT,
+    borderRadius: BORDER_RADIUS,
+  },
+  photoContainerAspectRatio: {
+    backgroundColor: '#fff',
+    borderRadius: CONTAINER_BORDER_RADIUS,
+    padding: CONTAINER_PADDING,
+    marginBottom: MARGIN_BOTTOM,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    position: 'relative',
+    overflow: 'hidden',
+    width: '100%',
+    minHeight: 200, // Altura mínima para evitar contenedores muy pequeños
+  },
+  photoAspectRatio: {
+    width: '100%',
+    aspectRatio: 4 / 3, // Proporción estándar para imágenes de documentos
     borderRadius: BORDER_RADIUS,
   },
   cornerBorder: {

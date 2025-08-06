@@ -1,9 +1,9 @@
 import {StyleSheet, View, TextInput, Alert} from 'react-native';
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {moderateScale} from '../../common/constants';
@@ -19,6 +19,7 @@ import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import {startSession} from '../../utils/Session';
+import debounce from 'lodash.debounce';
 
 export default function RegisterUser2({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -28,7 +29,7 @@ export default function RegisterUser2({navigation}) {
   const [isModalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const {mutate: findDni} = useKycFindQuery();
+  const {mutate: findDni, isLoading} = useKycFindQuery();
   const dispatch = useDispatch();
   const isFormValid = () => {
     return idNumber.trim() !== '' && frontImage && backImage;
@@ -36,48 +37,55 @@ export default function RegisterUser2({navigation}) {
 
   const closeModal = () => setModalVisible(false);
 
-  const handleCheckAndNext = () => {
-    if (idNumber.trim() === REVIEW_DNI) {
-      dispatch(setSecrets(DEMO_SECRETS));
-      startSession();
+  const handleCheckAndNext = useCallback(
+    debounce(() => {
+      if (idNumber.trim() === REVIEW_DNI) {
+        dispatch(setSecrets(DEMO_SECRETS));
+        navigation.reset({
+          index: 0,
+          routes: [{name: StackNav.TabNavigation}],
+        });
+        return;
+      }
+      if (!isFormValid()) return;
 
-      navigation.reset({
-        index: 0,
-        routes: [{name: StackNav.TabNavigation}],
-      });
-      return;
-    }
-    if (!isFormValid()) return;
+      findDni(
+        {identifier: idNumber.trim()},
+        {
+          onMutate: () => {
+            setSubmitting(true);
+            setModalVisible(false);
+          },
+          onSuccess: response => {
+            setSubmitting(false);
 
-    findDni(
-      {identifier: idNumber.trim()},
-      {
-        onMutate: () => setSubmitting(true),
-        onSuccess: data => {
-          if (data.ok) {
-            setModalVisible(true);
-          } else {
-            navigation.navigate(AuthNav.RegisterUser3, {
-              dni: idNumber.trim(),
-              frontImage,
-              backImage,
-            });
-          }
+            if (response.ok) {
+         
+              setModalVisible(true);
+            } else {
+              navigation.navigate(AuthNav.RegisterUser3, {
+                dni: idNumber.trim(),
+                frontImage,
+                backImage,
+              });
+            }
+          },
+          onError: err => {
+            setSubmitting(false);
+            const msg =
+              err?.response?.data?.message || err.message || String.unknowerror;
+            Alert.alert(String.errorCi, msg);
+          },
+          onSettled: () => setSubmitting(false),
         },
-        onError: error => {
-          const msg =
-            error?.response?.data?.message ||
-            error.message ||
-            String.unknowerror;
-          Alert.alert(String.errorCi, msg);
-        },
-        onSettled: () => setSubmitting(false),
-      },
-    );
-  };
+      );
+    }, 500),
+    
+    [idNumber, frontImage, backImage],
+  );
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={2} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -129,15 +137,15 @@ export default function RegisterUser2({navigation}) {
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CButton
-          disabled={!isFormValid() || submitting}
-          title={submitting ? String.checking : String.continueButton}
+          disabled={!isFormValid() || isLoading || submitting}
+          title={isLoading ? String.checking : String.continueButton}
           onPress={handleCheckAndNext}
           type="B16"
           containerStyle={localStyle.btnStyle}
         />
       </View>
       <DniExistsModal visible={isModalVisible} onClose={closeModal} />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

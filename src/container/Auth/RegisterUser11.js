@@ -2,7 +2,7 @@ import {StyleSheet, View} from 'react-native';
 import React from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -27,7 +27,7 @@ export default function RegisterUser11({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={11} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -109,7 +109,7 @@ export default function RegisterUser11({navigation}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

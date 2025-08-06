@@ -17,6 +17,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+    const wallet = useSelector(s => s.wallet.payload);
+    const account = useSelector(state => state.account);
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
@@ -50,7 +52,7 @@ export default function Connect({navigation}) {
           {String.connectTitle}
         </CText>
 
-        {/* <CIconText
+        <CIconText
           icon={<Icon name="shield-lock" size={24} color={colors.white} />}
           text={String.connectItem1}
           color={colors.white}
@@ -68,17 +70,17 @@ export default function Connect({navigation}) {
           }
           text={String.connectItem3}
           color={colors.white}
-        /> */}
+        />
 
         <View style={localStyle.bottomButtons}>
-          {/* <CButton
+          <CButton
             onPress={onPressInfo}
             title={String.connectBtnInfo + ' '}
             type={'B16'}
             icon={<Icon name="arrow-right" size={25} color={colors.white} />}
             containerStyle={localStyle.btnStyle}
             sinMargen
-          /> */}
+          />
 
           <CButton
             onPress={onPressRegister1}
@@ -98,7 +100,7 @@ export default function Connect({navigation}) {
             color={colors.white}
             bgColor={commonColor.gradient2}
           />
-        </View>
+        </View> 
       </View>
     </CSafeAreaViewAuth>
   );

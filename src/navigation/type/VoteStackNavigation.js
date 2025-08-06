@@ -17,7 +17,11 @@ export default function VoteStackNavigation() {
       //     name={StackNav.UploadRecord}
       //     component={StackRoute.UploadRecord}
       //   />
-      initialRouteName={StackNav.SearchTable}>
+      initialRouteName={StackNav.ElectoralLocations}>
+      <VoteStack.Screen
+        name={StackNav.ElectoralLocations}
+        component={StackRoute.ElectoralLocations}
+      />
       <VoteStack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}

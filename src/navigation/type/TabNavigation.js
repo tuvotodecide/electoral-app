@@ -7,6 +7,8 @@ import {
   View,
   Dimensions,
 } from 'react-native';
+
+import {moderateScale} from '../../common/constants';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
@@ -31,9 +33,11 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+import {useNavigation} from '@react-navigation/native';
+import {StackNav} from '../NavigationKey';
+
 function useKeepAlive() {
-  const dispatch = useDispatch();
-  useEffect(() => {}, []);
+  const navigation = useNavigation();
   useEffect(() => {
     const renew = () => startSession();
     const sub = AppState.addEventListener('change', s => {
@@ -41,16 +45,20 @@ function useKeepAlive() {
     });
     const id = setInterval(async () => {
       if (!(await isSessionValid())) {
-        dispatch(clearWallet());
-        dispatch(clearAuth());
-        await clearSession();
+        // Solo navegar al login, no borrar el estado automáticamente
+        navigation.reset({
+          index: 0,
+          routes: [{name: StackNav.AuthNavigation}],
+        });
       }
-    }, 30_000);
+      // es 15 minutos,
+      // así que lo pongo en 9 minutos
+    }, 900_000); // 900_000 ms = 15 minutos
     return () => {
       sub.remove();
       clearInterval(id);
     };
-  }, []);
+  }, [navigation]);
 }
 
 function CustomTabBar({state, descriptors, navigation, colors}) {

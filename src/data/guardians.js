@@ -1,6 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from 'react-query';
 import {API_ENDPOINTS} from './client/api-endpoints';
 import {guardianClient} from './client/guardians';
+import axios from 'axios';
 
 export const useGuardiansInviteQuery = () => {
   const queryClient = useQueryClient();
@@ -25,7 +26,6 @@ export const useGuardiansRecoveryRequestQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
@@ -44,7 +44,6 @@ export const useCheckHasGuardiansQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
@@ -62,7 +61,6 @@ export const useGuardianDeleteQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
@@ -79,7 +77,6 @@ export const useGuardianPatchQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
@@ -96,11 +93,10 @@ export const useGuardianInvitationActionQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries([`${API_ENDPOINTS.MYGUARDIANSALL}`]);
+      queryClient.invalidateQueries(['myGuardiansAll']);
     },
   });
 };
@@ -113,7 +109,6 @@ export const useRecoveryActionQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
       }
     },
     onSettled: () => {
@@ -151,7 +146,7 @@ export function useHasGuardiansQuery(carnet, enabled) {
 }
 
 export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
-  const {data, isLoading} = useQuery(
+  const {data, isLoading, remove} = useQuery(
     ['recovery-detail', deviceId],
     () => guardianClient.getRecoveryGuardiansDetail({deviceId}),
     {
@@ -160,7 +155,7 @@ export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
       refetchIntervalInBackground: true,
     },
   );
-  return {data: data, loading: isLoading};
+  return {data: data, loading: isLoading, remove};
 }
 export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
   const {data, isLoading} = useQuery(
@@ -291,23 +286,3 @@ export const useMyGuardiansAdminListQuery = options => {
   };
 };
 
-// export const useKycRegisterQuery = () => {
-//   const queryClient = useQueryClient();
-
-//   return useMutation(guardianClient.postStore, {
-//     onSuccess: data => {
-//       return data;
-//     },
-
-//     onError: error => {
-//       if (axios.isAxiosError(error)) {
-//         console.log(error);
-//       }
-//     },
-//     onSettled: () => {
-//       queryClient.invalidateQueries(
-//         `${API_ENDPOINTS.KYC}${API_ENDPOINTS.STORE}`,
-//       );
-//     },
-//   });
-// };

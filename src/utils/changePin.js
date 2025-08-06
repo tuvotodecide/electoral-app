@@ -1,24 +1,33 @@
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {SHA256} from 'crypto-js';
 import * as Keychain from 'react-native-keychain';
 import {JWT_KEY}          from '../common/constants';
-import {checkPin, getSecrets, saveSecrets} from './Cifrate';
+import {checkPin, createBundleFromPrivKey, getSecrets, saveSecrets} from './Cifrate';
 import {resetAttempts}    from './PinAttempts';
 import {getBioFlag}       from './BioFlag';
+import { getJwt } from './Session';
+import { writeBundleAtomic } from './ensureBundle';
 
 
 export async function changePin(oldPin , newPin ) {
-  if (!(await checkPin(oldPin))) {
-    throw new Error('PIN actual incorrecto');
-  }
+  const ok = await checkPin(oldPin);
+  if (!ok) throw new Error('PIN actual incorrecto');
 
   const stored = await getSecrets();
   if (!stored) throw new Error('No se encontraron datos cifrados');
 
-  await saveSecrets(newPin.trim(), stored.payloadQr, await getBioFlag());
+  const payload = stored.payloadQr;
+
+  const bundle  = await createBundleFromPrivKey(newPin.trim(), payload.privKey);
+  const pinHash = SHA256(newPin.trim()).toString();
+
+  // 4) guarda secretos base (sin biometría)
+  await saveSecrets(newPin.trim(), payload, await getBioFlag(), bundle, pinHash);
+  const jwt = await getJwt();
+  await writeBundleAtomic(JSON.stringify({ ...bundle, ...payload, jwt }));
 
   if (await getBioFlag()) {
-    const jwt = await AsyncStorage.getItem(JWT_KEY);
     await Keychain.setGenericPassword(
       'bundle',
       JSON.stringify({stored, jwt}),

@@ -1,7 +1,6 @@
 import {
   FlatList,
   Image,
-  ImageBackground,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -10,16 +9,11 @@ import React, {useCallback, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import {
-  deviceHeight,
-  deviceWidth,
-  getHeight,
-  moderateScale,
-} from '../common/constants';
+import {deviceWidth, getHeight, moderateScale} from '../common/constants';
 import {styles} from '../themes';
 import CText from '../components/common/CText';
 import {OnBoardingData} from '../api/constant';
-import CSafeAreaView from '../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import CButton from '../components/common/CButton';
 import String from '../i18n/String';
 import {setOnBoarding} from '../utils/AsyncStorage';
@@ -42,7 +36,12 @@ export default function OnBoarding({navigation}) {
       await setOnBoarding(true);
       navigation.reset({
         index: 0,
-        routes: [{name: StackNav.AuthNavigation}],
+        routes: [
+          {
+            name: StackNav.AuthNavigation,
+            params: {screen: AuthNav.Connect},
+          },
+        ],
       });
     } else {
       slideRef.current._listRef._scrollRef.scrollTo({
@@ -52,16 +51,22 @@ export default function OnBoarding({navigation}) {
   };
 
   const onPressSkip = () => {
-    navigation.navigate(StackNav.AuthNavigation, {screen: AuthNav.Connect});
+    navigation.navigate(StackNav.AuthNavigation, {
+      screen: AuthNav.Connect,
+    });
   };
 
   const RenderItemData = useCallback(
     ({item, index}) => {
       return (
         <View style={localStyle.container}>
-          <ImageBackground
-            source={colors.dark ? item.darkImage : item.lightImage}
-            style={localStyle.imageStyle}></ImageBackground>
+          <View style={localStyle.imageContainer}>
+            <Image
+              source={colors.dark ? item.darkImage : item.lightImage}
+              style={localStyle.imageStyle}
+              resizeMode="contain"
+            />
+          </View>
           <View style={localStyle.boardingTextContainer}>
             <CText type={'B24'} style={localStyle.boardingTitleText}>
               {item.title}
@@ -77,11 +82,11 @@ export default function OnBoarding({navigation}) {
         </View>
       );
     },
-    [OnBoardingData],
+    [colors.dark, colors.grayScale500],
   );
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <View style={localStyle.skipWrapper}>
         <TouchableOpacity
           style={[
@@ -110,6 +115,7 @@ export default function OnBoarding({navigation}) {
       <View style={localStyle.bottomIndicatorContainer}>
         {OnBoardingData.map((_, index) => (
           <View
+            key={index}
             style={[
               localStyle.bottomIndicatorStyle,
               {
@@ -134,14 +140,32 @@ export default function OnBoarding({navigation}) {
         containerStyle={localStyle.btnStyle}
         onPress={onPressGetStarted}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 
 const localStyle = StyleSheet.create({
-  imageStyle: {
+  container: {
     width: deviceWidth,
-    height: deviceHeight - getHeight(390),
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: moderateScale(20),
+  },
+  imageContainer: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(40),
+    paddingTop: moderateScale(60),
+    paddingBottom: moderateScale(20),
+  },
+  imageStyle: {
+    width: '100%',
+    height: '100%',
+    maxWidth: moderateScale(300),
+    maxHeight: moderateScale(400),
   },
   skipContainer: {
     ...styles.selfEnd,
@@ -156,18 +180,21 @@ const localStyle = StyleSheet.create({
     right: moderateScale(20),
     zIndex: 99,
   },
-  container: {
-    width: deviceWidth,
-  },
   boardingTextContainer: {
     width: '90%',
-    ...styles.ph20,
+    alignItems: 'center',
+    paddingHorizontal: moderateScale(20),
+    paddingBottom: moderateScale(40),
   },
   boardingTitleText: {
-    ...styles.mt10,
+    textAlign: 'center',
+    marginBottom: moderateScale(12),
+    lineHeight: moderateScale(32),
   },
   boardingDescriptionText: {
-    ...styles.mt5,
+    textAlign: 'center',
+    lineHeight: moderateScale(22),
+    paddingHorizontal: moderateScale(10),
   },
   bottomIndicatorContainer: {
     ...styles.flexRow,
@@ -188,14 +215,12 @@ const localStyle = StyleSheet.create({
   browseAssetsText: {
     ...styles.mb20,
   },
-
   skipWrapper: {
     position: 'absolute',
     top: getHeight(50),
     right: moderateScale(20),
     zIndex: 99,
   },
-
   skipIconContainer: {
     width: moderateScale(36),
     height: moderateScale(36),
@@ -204,7 +229,7 @@ const localStyle = StyleSheet.create({
     justifyContent: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.22,
     shadowRadius: 2.62,
   },

@@ -17,42 +17,120 @@ import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {Short_Black, Short_White} from '../../../assets/svg';
 import {
+  useGuardianAcceptedListQuery,
   useGuardianDeleteQuery,
+  useGuardianInvitationActionQuery,
   useGuardianPatchQuery,
+  useMyGuardianInvitationsListQuery,
+  useMyGuardianRecoveryListQuery,
   useMyGuardiansAllListQuery,
+  useRecoveryActionQuery,
 } from '../../../data/guardians';
+import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
+import {useKycFindPublicQuery} from '../../../data/kyc';
+import {getSecrets} from '../../../utils/Cifrate';
+import {
+  acceptGuardianOnChain,
+  approveRecoveryOnChain,
+} from '../../../api/guardianOnChain';
+import {CHAIN} from '@env';
+import {getDeviceId} from '../../../utils/device-id';
 
 export default function GuardiansAdmin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
-  const {mutate: deleteGuardianId, isLoading: loading} =
-    useGuardianDeleteQuery();
-  const {mutate: patchGuardianId, isLoading: loadingpatch} =
-    useGuardianPatchQuery();
+  const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
+  const {mutate: findPublicDni} = useKycFindPublicQuery();
 
-  console.log(selectedGuardian);
+  const {data: recData = [], isLoading: loadingrecData} =
+    useMyGuardianRecoveryListQuery();
+  const {data: accData = [], isLoading: loadingdataAccepted} =
+    useGuardianAcceptedListQuery();
 
-  const guardians = useMemo(() => data.map(edge => edge.node), [data]);
+  const {mutate: mutateInvitation, isLoading: loadingInvitationAction} =
+    useGuardianInvitationActionQuery();
+  const {mutate: mutateRecovery, isLoading: loadingRecoveryAction} =
+    useRecoveryActionQuery();
 
-  const statusColorKey = {
-    ACCEPTED: 'activeColor',
-    PENDING: 'pendingColor',
-    REJECTED: 'rejectedColor',
-    REMOVED: 'rejectedColor',
+  const handleAcceptInvitation = async id => {
+    const inv = invData.map(e => e.node).find(i => i.id === id);
+    if (!inv) return;
+    const dni = inv.governmentIdentifier;
+    const fp = await new Promise((res, rej) =>
+      findPublicDni(
+        {identifier: dni},
+        {
+          onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error buscando'))),
+          onError: rej,
+        },
+      ),
+    );
+    const ownerGuardianCt = fp.guardianAddress;
+    const {payloadQr} = await getSecrets();
+    await acceptGuardianOnChain(
+      CHAIN,
+      payloadQr.privKey,
+      payloadQr.account,
+      ownerGuardianCt,
+    );
+
+    mutateInvitation({id, action: 'accept'});
   };
-  // Etiquetas según status
-  const statusLabel = {
-    ACCEPTED: String.active,
-    PENDING: String.pending,
-    REJECTED: String.rejected,
-    REMOVED: String.removed ?? 'Removido',
+  const handleRejectInvitation = id => {
+    mutateInvitation({id, action: 'reject'});
   };
 
-  const onPressAddGuardian = () => {
-    navigation.navigate(StackNav.AddGuardians);
+  const handleApproveRecovery = async id => {
+    try {
+      const rec = recData.map(e => e.node).find(r => r.id === id);
+      if (!rec) return;
+
+      const dni = rec.governmentIdentifier;
+      const fp = await new Promise((res, rej) =>
+        findPublicDni(
+          {identifier: dni},
+          {
+            onSuccess: d =>
+              d?.ok ? res(d) : rej(new Error('Error buscando usuario')),
+            onError: rej,
+          },
+        ),
+      );
+      const ownerAccount = fp.accountAddress;
+      const ownerGuardianCt = fp.guardianAddress;
+
+      const {payloadQr} = await getSecrets();
+      await approveRecoveryOnChain(
+        CHAIN,
+        payloadQr.privKey,
+        payloadQr.account,
+        ownerGuardianCt,
+        ownerAccount,
+      );
+
+      mutateRecovery({id, action: 'approve'});
+    } catch (e) {}
   };
+  const handleRejectRecovery = id => {
+    mutateRecovery({id, action: 'reject'});
+  };
+
+  const invitations = useMemo(
+    () => invData.map(e => e.node).filter(i => i.status === 'PENDING'),
+    [invData],
+  );
+  const recoveries = useMemo(
+    () => recData.map(e => e.node).filter(r => r.status === 'PENDING'),
+    [recData],
+  );
+  const accepted = useMemo(
+    () => invData.map(e => e.node).filter(i => i.status === 'ACCEPTED'),
+    [invData],
+  );
+
+  const handleAccept = id => {};
+  const handleReject = id => {};
 
   const openModal = item => {
     setSelectedGuardian(item);
@@ -64,42 +142,34 @@ export default function GuardiansAdmin({navigation}) {
     setSelectedGuardian(null);
   };
 
-  const deleteGuardian = () => {
-    deleteGuardianId(selectedGuardian.id, {
-      onSuccess: () => {
-        closeModal();
-      },
-    });
+  const statusColorKey = {
+    ACCEPTED: 'activeColor',
+    PENDING: 'pendingColor',
+    REJECTED: 'rejectedColor',
+    REMOVED: 'rejectedColor',
   };
-  const saveGuardian = newNick => {
-    patchGuardianId(
-      {id: selectedGuardian.id, nickname: newNick},
-      {
-        onSuccess: () => {
-          closeModal();
-        },
-      },
-    );
+
+  const statusLabel = {
+    ACCEPTED: String.active,
+    PENDING: String.pending,
+    REJECTED: String.rejected,
+    REMOVED: String.removed ?? 'Removido',
   };
-  const RightIcon = () => {
-    return (
-      <TouchableOpacity>
-        {colors.dark ? <Short_White /> : <Short_Black />}
-      </TouchableOpacity>
-    );
+
+  const onPressAddGuardian = () => {
+    navigation.navigate(StackNav.AddGuardians);
   };
 
   const renderGuardianOption = ({item}) => {
-    const parts = (item.fullName || '').split(' ');
+    const parts = (item.publicFullName || '').split(' ');
     const firstSegment = parts[0] || '';
     const secondSegment = parts[1] || '';
 
-    const abbreviated = secondSegment.slice(0, 2).toUpperCase();
+    const abbreviated = secondSegment.toUpperCase();
     const displayName = secondSegment
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
 
-    const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
       <TouchableOpacity
         style={[
@@ -112,8 +182,61 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
+        <View style={styles.rowCenter}>
+          <View
+            style={[
+              localStyle.iconBg,
+              {
+                borderColor: colors.dark
+                  ? colors.stepBackgroundColor
+                  : colors.grayScale200,
+              },
+            ]}>
+            <Icono name="account" size={moderateScale(24)} />
+          </View>
+          <View style={styles.ml10}>
+            <View style={styles.rowCenter}>
+              <CText type="B16">{item.governmentIdentifier}</CText>
+            </View>
+            <CText type="R12" color={colors.grayScale500}>
+              {displayName ?? '(sin apodo)'}
+            </CText>
+          </View>
+        </View>
+        <TouchableOpacity onPress={() => openModal(item)}>
+          <Icono
+            name="dots-vertical"
+            size={moderateScale(30)}
+            style={styles.mr10}
+          />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderRevoceryOption = ({item}) => {
+    const parts = (item.publicFullName || '').split(' ');
+    const firstSegment = parts[0] || '';
+    const secondSegment = parts[1] || '';
+
+    const displayName = secondSegment
+      ? `${firstSegment} ${secondSegment}`
+      : firstSegment;
+
+    return (
+      <View
+        style={[
+          localStyle.optionContainer1,
+          {
+            backgroundColor: colors.backgroundColor,
+            borderColor: colors.dark
+              ? colors.grayScale700
+              : colors.grayScale200,
+
+            elevation: 5,
+          },
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -129,59 +252,144 @@ export default function GuardiansAdmin({navigation}) {
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
               <CText type="B16">{displayName}</CText>
-
-              <View
-                style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>
-                <CText type="R12" color={colors.white}>
-                  {statusLabel[item.status]}
-                </CText>
-              </View>
             </View>
             <CText type="R12" color={colors.grayScale500}>
-              {item.nickname ?? '(sin apodo)'}
+              {item.governmentIdentifier}
             </CText>
           </View>
         </View>
-        <TouchableOpacity onPress={() => openModal(item)}>
-          <Icono
-            name="dots-vertical"
-            size={moderateScale(30)}
-            style={styles.mr10}
+        <View style={localStyle.actionsRow}>
+          <CButton
+            title={String.accept}
+            type="B16"
+            bgColor={'#4caf50'}
+            disabled={loadingRecoveryAction}
+            onPress={() => handleApproveRecovery(item.id)}
+            containerStyle={[
+              localStyle.actionButton,
+              {backgroundColor: '#4caf50'},
+            ]}
           />
-        </TouchableOpacity>
-      </TouchableOpacity>
+          <CButton
+            title={String.reject}
+            type="B16"
+            disabled={loadingRecoveryAction}
+            onPress={() => handleRejectRecovery(item.id)}
+            containerStyle={[
+              localStyle.actionButton,
+              {backgroundColor: '#f44336'},
+            ]}
+          />
+        </View>
+      </View>
+    );
+  };
+  const renderInvitationOption = ({item}) => {
+    const parts = (item.publicFullName || '').split(' ');
+    const firstSegment = parts[0] || '';
+    const secondSegment = parts[1] || '';
+
+    const displayName = secondSegment
+      ? `${firstSegment} ${secondSegment}`
+      : firstSegment;
+
+    return (
+      <View
+        style={[
+          localStyle.optionContainer1,
+          {
+            backgroundColor: colors.backgroundColor,
+            borderColor: colors.dark
+              ? colors.grayScale700
+              : colors.grayScale200,
+
+            elevation: 5,
+          },
+        ]}>
+        <View style={styles.rowCenter}>
+          <View
+            style={[
+              localStyle.iconBg,
+              {
+                borderColor: colors.dark
+                  ? colors.stepBackgroundColor
+                  : colors.grayScale200,
+              },
+            ]}>
+            <Icono name="account" size={moderateScale(24)} />
+          </View>
+          <View style={styles.ml10}>
+            <View style={styles.rowCenter}>
+              <CText type="B16">{item.governmentIdentifier}</CText>
+            </View>
+            <CText type="R12" color={colors.grayScale500}>
+              {displayName ?? '(nombre no visible)'}
+            </CText>
+          </View>
+        </View>
+        <View style={localStyle.actionsRow}>
+          <CButton
+            title={String.accept}
+            type="B16"
+            bgColor={'#4caf50'}
+            disabled={loadingInvitationAction}
+            onPress={() => handleAcceptInvitation(item.id)}
+            containerStyle={[
+              localStyle.actionButton,
+              {backgroundColor: '#4caf50'},
+            ]}
+          />
+          <CButton
+            title={String.reject}
+            type="B16"
+            disabled={loadingInvitationAction}
+            onPress={() => handleRejectInvitation(item.id)}
+            containerStyle={[
+              localStyle.actionButton,
+              {backgroundColor: '#f44336'},
+            ]}
+          />
+        </View>
+      </View>
     );
   };
 
   return (
     <CSafeAreaView>
-      <CHeader title={String.guardiansTitle} rightIcon={<RightIcon />} />
-      <View style={styles.ph20}>
+      <CHeader title={String.myProtected} />
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
-          {String.guardiansSubtitle}
+          {String.myInvitations}
         </CText>
         <FlatList
-          data={guardians}
+          data={invitations}
+          keyExtractor={item => item.id}
+          renderItem={renderInvitationOption}
+          contentContainerStyle={styles.mt20}
+        />
+        <CText type={'B16'} align={'center'} marginTop={15}>
+          {String.myRecovery}
+        </CText>
+        <FlatList
+          data={recoveries}
+          keyExtractor={item => item.id}
+          renderItem={renderRevoceryOption}
+          contentContainerStyle={styles.mt20}
+        />
+        <CText type={'B16'} align={'center'} marginTop={15}>
+          {String.myProtectedInfo}
+        </CText>
+        <FlatList
+          data={accepted}
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
         />
-      </View>
-      <View style={localStyle.bottomTextContainer}>
-        <CButton
-          title={` ${String.addGuardian}`}
-          onPress={onPressAddGuardian}
-          type={'B16'}
-          containerStyle={localStyle.btnStyle}
-          frontIcon={<Icono size={20} name="account-plus" color={'#fff'} />}
-        />
-      </View>
-      <GuardianActionModal
+      </KeyBoardAvoidWrapper>
+      <GuardianInfoActionModal
         visible={modalVisible}
         guardian={selectedGuardian}
         onClose={closeModal}
-        onDelete={deleteGuardian}
-        onSave={saveGuardian}
       />
     </CSafeAreaView>
   );
@@ -258,6 +466,16 @@ const localStyle = StyleSheet.create({
     paddingVertical: moderateScale(12),
     marginVertical: moderateScale(6),
   },
+  optionContainer1: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(12),
+    marginVertical: moderateScale(6),
+  },
   iconBg: {
     height: moderateScale(40),
     width: moderateScale(40),
@@ -273,5 +491,15 @@ const localStyle = StyleSheet.create({
     borderRadius: moderateScale(10),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: moderateScale(4),
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: moderateScale(4),
+    borderRadius: moderateScale(8),
   },
 });

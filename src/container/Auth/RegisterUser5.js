@@ -2,7 +2,7 @@ import {ActivityIndicator, Image, StyleSheet, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
@@ -85,13 +85,7 @@ export default function RegisterUser5({navigation, route}) {
           dni,
         });
       } catch (err) {
-        console.log(err);
-
-        setErrorMessage(
-          err.response?.data?.message ||
-            err.message ||
-            'Error de verificación. Intenta de nuevo.',
-        );
+        setErrorMessage('Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.');
         setErrorModalVisible(true);
       } finally {
         setLoading(false);
@@ -100,7 +94,7 @@ export default function RegisterUser5({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={5} />
       <View style={localStyle.center}>
         <View style={localStyle.mainContainer}>
@@ -137,14 +131,19 @@ export default function RegisterUser5({navigation, route}) {
         buttonText="Reintentar"
         onClose={() => {
           setErrorModalVisible(false);
-          navigation.navigate(AuthNav.RegisterUser2, {
-            dni,
-            frontImage,
-            backImage,
+          navigation.reset({
+            index: 1,
+            routes: [
+              {
+                name: AuthNav.RegisterUser2,
+                params: {dni, frontImage, backImage},
+              },
+            ],
           });
         }}
+        
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

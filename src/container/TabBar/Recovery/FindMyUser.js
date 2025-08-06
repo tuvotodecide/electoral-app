@@ -25,6 +25,7 @@ import {
   useGuardiansRecoveryRequestQuery,
   useHasGuardiansQuery,
 } from '../../../data/guardians';
+import {CHAIN} from '@env';
 import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
@@ -38,6 +39,8 @@ export default function FindMyUser({navigation}) {
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
+  const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
+  const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -73,12 +76,18 @@ export default function FindMyUser({navigation}) {
     findPublicDni(
       {identifier: carnet.trim()},
       {
-        onSuccess: data => {
+        onSuccess: async data => {
           if (!data.ok) {
             setErrorMsg('Persona no encontrada');
             return;
           }
-          setCandidate({did: data.did, fullName: data.fullName});
+          setCandidate({
+            did: data.did,
+            fullName: data.fullName,
+            accountAddress: data.accountAddress,
+            guardianAddress: data.guardianAddress,
+          });
+          await AsyncStorage.setItem('PENDING_DID', data.did);
           checkHas();
         },
       },
@@ -89,12 +98,16 @@ export default function FindMyUser({navigation}) {
       return;
     }
     const deviceId = await getDeviceId();
-
     sendRequest(
       {dni: carnet.trim(), deviceId},
       {
         onSuccess: async data => {
           await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
+          await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
+          await AsyncStorage.setItem(
+            PENDING_OWNER_GUARDIAN_CT,
+            candidate.guardianAddress,
+          );
 
           setModalMessage(`${String.messagetorecovery}`);
           setModalVisible(true);
@@ -287,15 +300,9 @@ const localStyle = StyleSheet.create({
     alignItems: 'center',
   },
   bottomTextContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    paddingHorizontal: moderateScale(20),
-    paddingBottom: moderateScale(16),
-    backgroundColor: 'transparent',
+    ...styles.ph20,
     gap: 5,
+    marginTop: moderateScale(16),
   },
   btnStyle: {
     width: '100%',

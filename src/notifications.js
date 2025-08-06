@@ -5,10 +5,7 @@ import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {setPendingNav} from './redux/slices/authSlice';
 
-/**
- * Registra todos los handlers de FCM + Notifee
- * Llamar UNA sola vez al iniciar la app.
- */
+
 export async function registerNotifications() {
   await notifee.createChannel({
     id: 'high_prio',
@@ -16,24 +13,30 @@ export async function registerNotifications() {
     importance: AndroidImportance.HIGH,
   });
 
-  messaging().onMessage(display);
+  messaging().onMessage(async msg => {
+    maybeStorePendingNav(msg);
+    display(msg);
+  });
 
   messaging().setBackgroundMessageHandler(display);
   notifee.onForegroundEvent(({type, detail}) => {
-    if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
-      handleNotificationPress(detail.notification);
-    }
+    if (type === EventType.PRESS) handleNotificationPress(detail.notification);
   });
   notifee.onBackgroundEvent(async ({type, detail}) => {
-    if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
-      handleNotificationPress(detail.notification);
-    }
+    if (type === EventType.PRESS) handleNotificationPress(detail.notification);
   });
+}
+
+function maybeStorePendingNav(remoteMessage) {
+  const scr = remoteMessage.data?.screen;
+  const auth = store.getState().auth;
+  if (!scr || !StackNav[scr] || auth.isAuthenticated) return;
+  store.dispatch(setPendingNav({name: scr, params: remoteMessage.data}));
 }
 
 async function display(remoteMessage) {
   await notifee.displayNotification({
-    title: remoteMessage.notification?.title ?? 'Tu Voto',
+    title: remoteMessage.notification?.title ?? 'Tu Voto decide',
     body: remoteMessage.notification?.body ?? 'Mensaje nuevo',
     android: {
       channelId: 'high_prio',
@@ -45,21 +48,20 @@ async function display(remoteMessage) {
   });
 }
 export function handleNotificationPress(notification) {
-  console.log('[Notif-press] data →', notification.data);
-  const d = notification.data || {};
-  const target =
-    d.type === 'INVITE'
-      ? {name: d.screen || 'AddGuardians', params: {invId: d.invId}}
-      : d.type === 'TRANSACTION'
-      ? {name: d.screen || 'TransactionDetails', params: {txId: d.txId}}
-      : {name: 'Home'};
+  const d = notification.data ?? {};
+
+ 
+  const route =
+    d.screen && StackNav[d.screen]
+      ? {name: d.screen, params: d}
+      : {name: 'Splash'};
+
   const {isAuthenticated} = store.getState().auth;
-  console.log(isAuthenticated);
 
   if (isAuthenticated) {
-    navigate(target.name, target.params);
+    navigate(route.name, route.params);
   } else {
-    store.dispatch(setPendingNav(target));
+    store.dispatch(setPendingNav(route));
     navigate('LoginUser');
   }
 }

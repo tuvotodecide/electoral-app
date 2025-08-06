@@ -2,7 +2,7 @@ import {Image, StyleSheet, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -16,7 +16,7 @@ import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
-import { biometricLogin, biometryAvailability } from '../../utils/Biometry';
+import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
 
 export default function RegisterUser7({navigation, route}) {
@@ -60,7 +60,7 @@ export default function RegisterUser7({navigation, route}) {
       vc,
       offerUrl,
       useBiometry: true,
-      dni
+      dni,
     });
   };
 
@@ -69,13 +69,11 @@ export default function RegisterUser7({navigation, route}) {
       vc,
       offerUrl,
       useBiometry: false,
-      dni
+      dni,
     });
 
-
-
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={7} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -126,7 +124,7 @@ export default function RegisterUser7({navigation, route}) {
         message={modal.msg}
         onClose={() => setModal({visible: false, msg: ''})}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

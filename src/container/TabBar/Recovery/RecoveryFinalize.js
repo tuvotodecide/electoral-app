@@ -16,14 +16,36 @@ import {ActivityIndicator} from 'react-native-paper';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {saveSecrets} from '../../../utils/Cifrate';
-import { StyleSheet } from 'react-native';
-import { styles } from '../../../themes';
+import {StyleSheet, View} from 'react-native';
+import {styles} from '../../../themes';
+import messaging from '@react-native-firebase/messaging';
+import {CHAIN} from '@env';
+const PENDING_REQHASH = 'PENDING_REQHASH';
+const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
+const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+
+import {registerDeviceToken} from '../../../utils/registerDeviceToken';
+import {readOnChainApprovals} from '../../../api/guardianOnChain';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, reqId} = route.params;
   useEffect(() => {
     (async () => {
       const deviceId = await getDeviceId();
+
+      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
+      const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
+      if (!ownerAccount || !guardianCt) return;
+      const {required, current, executed, expired} = await readOnChainApprovals(
+        CHAIN,
+        guardianCt,
+        ownerAccount,
+      );
+      if (current < required) {
+        // aún no alcanzó el umbral → volver a status
+        navigation.goBack();
+        return;
+      }
 
       const {data} = await axios.post(
         `${BACKEND}session/recover/guardian`,
@@ -33,7 +55,6 @@ export default function RecoveryFinalize({route, navigation}) {
       if (!data.ok) {
         return;
       }
-      console.log('y');
 
       await Keychain.setGenericPassword(
         'bundle',
@@ -44,7 +65,8 @@ export default function RecoveryFinalize({route, navigation}) {
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       dispatch(setSecrets(data.payload));
       await startSession(data.token);
-      console.log('fdsak');
+      await registerDeviceToken();
+      messaging().onTokenRefresh(registerDeviceToken);
 
       navigation.navigate(AuthNav.LoginUser);
     })();

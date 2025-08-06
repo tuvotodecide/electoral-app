@@ -24,6 +24,7 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              add(com.identity.bridge.IdentityBridgePackage()) 
             }
 
         override fun getJSMainModuleName(): String = "index"
@@ -42,7 +43,7 @@ class MainApplication : Application(), ReactApplication {
 
      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channelId   = "high_prio"            // ⇠ mismo ID que en Manifest
-      val channelName = "Notificaciones Tu Voto"  // Texto que ve el usuario
+      val channelName = "Notificaciones Tu Voto decide"  // Texto que ve el usuario
       val channel     = NotificationChannel(
         channelId,
         channelName,

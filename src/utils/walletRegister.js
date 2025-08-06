@@ -1,7 +1,7 @@
 import {privateKeyToAccount} from 'viem/accounts';
 import {walletConfig} from './constants';
 import {toSimpleSmartAccount} from 'permissionless/accounts';
-import {TOKEN_NETWORK, TOKEN_ADDRESS, TOKEN_DECIMALS} from '@env';
+import {TOKEN_ADDRESS, SIGNER_PRIVATE_KEY} from '@env';
 import factoryAbi from '../abi/SimpleAccountFactory.json';
 
 import {
@@ -10,10 +10,12 @@ import {
   encodeFunctionData,
   erc20Abi,
   http,
-  keccak256,
   parseEther,
   bytesToHex,
-  parseUnits,
+  concat,
+  numberToHex,
+  encodeAbiParameters,
+  getContract,
 } from 'viem';
 import {
   createBundlerClient,
@@ -23,10 +25,11 @@ import {hashIdentifier} from './Cifrate';
 import {randomBytes} from 'react-native-quick-crypto';
 import {
   availableNetworks,
+  FACTORY_ADDRESS,
   gasParams,
-  TOKEN_PAYMASTER_ADDRESS,
+  PAYMASTER_ADDRESS,
 } from '../api/params';
-import { getGuardian, getPredictedGuardian } from './getGuardian';
+import { getPredictedGuardian } from './getGuardian';
 
 export async function predictAccount(client, factoryAddress, ownerKey, salt) {
   const account = await toSimpleSmartAccount({
@@ -43,16 +46,18 @@ export const predictWalletAddress = async (chain, privateKey, salt) => {
   const newSalt = salt ?? BigInt('0x' + randomBytes(32).toString('hex'));
 
   const client = createPublicClient({
-    chain: walletConfig[chain].chain,
+    chain: availableNetworks[chain].chain,
     transport: http(),
   });
 
-  const account = await predictAccount(
+  const account = await toSimpleSmartAccount({
     client,
-    walletConfig[chain].factory,
-    privateKey,
-    salt ?? newSalt,
-  );
+    factoryAddress: FACTORY_ADDRESS,
+    owner: privateKeyToAccount(privateKey),
+    entryPoint: {address: entryPoint07Address, version: '0.7'},
+    index: salt ?? newSalt,
+  });
+
   return {address: account.address, salt: salt ?? newSalt};
 };
 
@@ -130,23 +135,23 @@ export async function registerStreamAndGuardian(
   streamId,
 ) {
   try {
-    if (!walletConfig[chain]) {
+    if (!availableNetworks[chain]) {
       throw new Error(`Configuración no encontrada para chain: ${chain}`);
     }
 
     const publicClient = createPublicClient({
-      chain: walletConfig[chain].chain,
+      chain: availableNetworks[chain].chain,
       transport: http(),
     });
 
     const bundlerClient = createBundlerClient({
       client: publicClient,
-      transport: http(walletConfig[chain].bundler),
+      transport: http(availableNetworks[chain].bundler),
     });
 
     const account = await toSimpleSmartAccount({
       client: publicClient,
-      factoryAddress: walletConfig[chain].factory,
+      factoryAddress: FACTORY_ADDRESS,
       owner: privateKeyToAccount(privateKey),
       entryPoint: {address: entryPoint07Address, version: '0.7'},
       index: salt,
@@ -170,58 +175,72 @@ export async function registerStreamAndGuardian(
       args: [idHash, streamId],
     });
 
-    const regHash = await bundlerClient.sendUserOperation({
-      account,
-      calls: [
-        {
-          to: account.address,
-          value: BigInt(0),
-          data,
-        },
-      ],
-      maxFeePerGas: BigInt(3000000000),
-      maxPriorityFeePerGas: BigInt(100000000),
-    });
-
-    await bundlerClient.waitForUserOperationReceipt({
-      hash: regHash,
-    });
-
     const dataGuardian = encodeFunctionData({
       abi: factoryAbi,
       functionName: 'createGuardianForAccount',
       args: [account.address, salt],
     });
 
-    const guardianHash = await bundlerClient.sendUserOperation({
+    const approveData = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [availableNetworks[chain].tokenPaymaster, BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935')],
+    });
+    
+    //prepare userOp to sign
+    const userOp = await bundlerClient.prepareUserOperation({
       account,
       calls: [
         {
-          to: walletConfig[chain].factory,
+          to: account.address,
           value: BigInt(0),
-          data: dataGuardian,
+          data
         },
+        {
+          to: FACTORY_ADDRESS,
+          value: BigInt(0),
+          data: dataGuardian
+        },
+        {
+          to: TOKEN_ADDRESS,
+          value: BigInt(0),
+          data: approveData
+        }
       ],
-      maxFeePerGas: BigInt(3_000_000_000),
-      maxPriorityFeePerGas: BigInt(100_000_000),
+      ...gasParams,
+      verificationGasLimit: BigInt(400000),
+    });
+
+    const { factory, factoryData } = await account.getFactoryArgs();
+    const initCode = factory && factoryData ? concat([factory, factoryData]) : undefined;
+    // Get the paymaster data (signature from the verifying signer)
+    const packedUserOp = await signUserOpAsService(userOp, initCode, publicClient);
+
+    // Remove signature for sendUserOperation
+    const {signature, ...noSignedUserOp} = userOp;
+
+    // Send the user operation with paymaster data
+    const hash = await bundlerClient.sendUserOperation({
+      ...noSignedUserOp,
+      paymaster: PAYMASTER_ADDRESS,
+      paymasterData: packedUserOp.paymasterAndData,
+      ...gasParams,
+      verificationGasLimit: BigInt(400000),
     });
 
     const guardianReceipt = await bundlerClient.waitForUserOperationReceipt({
-      hash: guardianHash,
+      hash,
     });
+
     const guardianAddress = await getPredictedGuardian(
       chain,
       account.address,
       salt,
     );
-
-    const code = await publicClient.getCode({ address: guardianAddress });
-    if (code === '0x') {
-     console.log('Guardian aún no desplegado – esperando bloque…')
-
-    }
+   
     return {guardianReceipt, guardianAddress};
   } catch (error) {
+    console.log(error);
     if (error.message.includes('instanceof')) {
       throw new Error(
         'Error de tipo en registerStreamOnChain - verifica las importaciones de viem',
@@ -232,49 +251,152 @@ export async function registerStreamAndGuardian(
   }
 }
 
-export async function approveGasToPaymaster(address, privateKey) {
-  try {
-    const publicClient = createPublicClient({
-      chain: availableNetworks[TOKEN_NETWORK].chain,
-      transport: http(),
-    });
+export async function signUserOpAsService(userOp, initCode, client) {
+  const signerAccount = privateKeyToAccount(SIGNER_PRIVATE_KEY);
 
-    const bundlerClient = createBundlerClient({
-      client: publicClient,
-      transport: http(availableNetworks[TOKEN_NETWORK].bundler),
-    });
+  // Prepare validity timestamps (valid for 1 hour)
+  const now = Math.floor(Date.now() / 1000);
+  const validUntil = now + 3600; // Valid for 1 hour
+  const validAfter = now - 60; // Valid from 1 minute ago (to account for clock differences)
 
-    const account = await toSimpleSmartAccount({
-      client: publicClient,
-      address,
-      owner: privateKeyToAccount(privateKey),
-      entryPoint: {address: entryPoint07Address, version: '0.7'},
-    });
-
-    const data = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [availableNetworks[TOKEN_NETWORK].tokenPaymaster, parseUnits('1000', TOKEN_DECIMALS)],
-    });
-
-    const userOpHash = await bundlerClient.sendUserOperation({
-      account,
-      calls: [
+  const paymasterContract = getContract({
+    abi: [{
+      "type": "function",
+      "name": "getHash",
+      "inputs": [
         {
-          to: TOKEN_ADDRESS,
-          value: BigInt(0),
-          data,
+          "name": "userOp",
+          "type": "tuple",
+          "internalType": "struct PackedUserOperation",
+          "components": [
+            {
+              "name": "sender",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "nonce",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "initCode",
+              "type": "bytes",
+              "internalType": "bytes"
+            },
+            {
+              "name": "callData",
+              "type": "bytes",
+              "internalType": "bytes"
+            },
+            {
+              "name": "accountGasLimits",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "preVerificationGas",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "gasFees",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "paymasterAndData",
+              "type": "bytes",
+              "internalType": "bytes"
+            },
+            {
+              "name": "signature",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ]
         },
+        {
+          "name": "validUntil",
+          "type": "uint48",
+          "internalType": "uint48"
+        },
+        {
+          "name": "validAfter",
+          "type": "uint48",
+          "internalType": "uint48"
+        }
       ],
-      ...gasParams,
-    });
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    }],
+    address: PAYMASTER_ADDRESS,
+    client
+  });
 
-    const receipt = await bundlerClient.waitForUserOperationReceipt({
-      hash: userOpHash,
-    });
+  // Format accountGasLimits and gasFees as required by the contract
+  const accountGasLimits = concat([
+    numberToHex(userOp.callGasLimit, { size: 16 }),
+    numberToHex(userOp.verificationGasLimit, { size: 16 })
+  ]);
+    
+  const gasFees = concat([
+    numberToHex(userOp.maxFeePerGas, { size: 16 }),
+    numberToHex(userOp.maxPriorityFeePerGas, { size: 16 })
+  ]);
 
-    return receipt;
-  } catch (error) {
-    console.error(error);
-  }
+  // Create temporary paymasterAndData with just the paymaster address and timestamps
+  // This is used to get the hash that needs to be signed
+  const tempPaymasterAndData = concat([
+    PAYMASTER_ADDRESS,
+    encodeAbiParameters(
+      [{ type: 'uint48' }, { type: 'uint48' }],
+      [validUntil, validAfter]
+    )
+  ]);
+
+  const packedUserOp = {
+    sender: userOp.sender,
+    nonce: userOp.nonce,
+    callData: userOp.callData,
+    initCode: initCode ?? '0x',
+    accountGasLimits,
+    preVerificationGas: userOp.preVerificationGas,
+    gasFees,
+    paymasterAndData: tempPaymasterAndData,
+    signature: '0x',
+  };
+
+  // Get the hash to sign from the paymaster contract
+  const userOpHash = await paymasterContract.read.getHash([
+    packedUserOp,
+    validUntil,
+    validAfter
+  ]);
+
+  // Sign the hash
+  const signature = await signerAccount.signMessage({
+    message: { raw: userOpHash }
+  });
+
+  // Format the final paymasterAndData according to the contract's requirements:
+  // 1. The timestamps (validUntil, validAfter)
+  // 2. The signature
+  const paymasterAndData = concat([
+    encodeAbiParameters(
+      [{ type: 'uint48' }, { type: 'uint48' }],
+      [validUntil, validAfter]
+    ),
+    signature
+  ]);
+
+  packedUserOp.paymasterAndData = paymasterAndData;
+
+  return packedUserOp;
 }

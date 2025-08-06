@@ -1,5 +1,6 @@
 // Mock data para simular datos de mesas desde un endpoint
 export const mockMesasData = [
+  // Mesas del Colegio 23 de marzo
   {
     id: 1,
     numero: 'Mesa 1',
@@ -7,52 +8,136 @@ export const mockMesasData = [
     colegio: 'Colegio 23 de marzo',
     provincia: 'Provincia Murillo - La Paz',
     recinto: 'Colegio 23 de marzo',
+    locationId: '67123abc45def6789',
   },
   {
     id: 2,
     numero: 'Mesa 2',
-    codigo: '123444',
-    colegio: 'Colegio Gregorio Reynolds',
+    codigo: '1235',
+    colegio: 'Colegio 23 de marzo',
     provincia: 'Provincia Murillo - La Paz',
-    recinto: 'Colegio Gregorio Reynolds',
+    recinto: 'Colegio 23 de marzo',
+    locationId: '67123abc45def6789',
   },
   {
     id: 3,
     numero: 'Mesa 3',
-    codigo: '343433',
-    colegio: 'Instituto San José',
+    codigo: '1236',
+    colegio: 'Colegio 23 de marzo',
     provincia: 'Provincia Murillo - La Paz',
-    recinto: 'Instituto San José',
+    recinto: 'Colegio 23 de marzo',
+    locationId: '67123abc45def6789',
   },
+  // Mesas del Colegio Gregorio Reynolds
   {
     id: 4,
     numero: 'Mesa 4',
-    codigo: '567890',
-    colegio: 'Escuela Nacional',
+    codigo: '2234',
+    colegio: 'Colegio Gregorio Reynolds',
     provincia: 'Provincia Murillo - La Paz',
-    recinto: 'Escuela Nacional',
+    recinto: 'Colegio Gregorio Reynolds',
+    locationId: '67123abc45def6790',
   },
   {
     id: 5,
     numero: 'Mesa 5',
-    codigo: '098765',
-    colegio: 'Colegio Santa María',
+    codigo: '2235',
+    colegio: 'Colegio Gregorio Reynolds',
     provincia: 'Provincia Murillo - La Paz',
-    recinto: 'Colegio Santa María',
+    recinto: 'Colegio Gregorio Reynolds',
+    locationId: '67123abc45def6790',
+  },
+  // Mesas del Instituto San José
+  {
+    id: 6,
+    numero: 'Mesa 6',
+    codigo: '3234',
+    colegio: 'Instituto San José',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Instituto San José',
+    locationId: '67123abc45def6791',
+  },
+  {
+    id: 7,
+    numero: 'Mesa 7',
+    codigo: '3235',
+    colegio: 'Instituto San José',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Instituto San José',
+    locationId: '67123abc45def6791',
+  },
+  {
+    id: 8,
+    numero: 'Mesa 8',
+    codigo: '3236',
+    colegio: 'Instituto San José',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Instituto San José',
+    locationId: '67123abc45def6791',
+  },
+  // Mesas de la Escuela Nacional
+  {
+    id: 9,
+    numero: 'Mesa 9',
+    codigo: '4234',
+    colegio: 'Escuela Nacional',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Escuela Nacional',
+    locationId: '67123abc45def6792',
+  },
+  {
+    id: 10,
+    numero: 'Mesa 10',
+    codigo: '4235',
+    colegio: 'Escuela Nacional',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Escuela Nacional',
+    locationId: '67123abc45def6792',
+  },
+  // Mesas adicionales para IDs genéricos (fallback universal)
+  {
+    id: 11,
+    numero: 'Mesa 11',
+    codigo: '5001',
+    colegio: 'Colegio Universal',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Colegio Universal',
+    locationId: 'fallback-location',
+  },
+  {
+    id: 12,
+    numero: 'Mesa 12',
+    codigo: '5002',
+    colegio: 'Colegio Universal',
+    provincia: 'Provincia Murillo - La Paz',
+    recinto: 'Colegio Universal',
+    locationId: 'fallback-location',
   },
 ];
 
 // Simular llamada a API para obtener mesas
-export const fetchMesas = async () => {
+export const fetchMesas = async (locationId = null) => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching mesas...');
+    console.log('API Mock: Fetching mesas...', {locationId});
     // Simular delay de red
     setTimeout(() => {
-      console.log('API Mock: Mesas fetched successfully');
+      // Filtrar mesas por locationId si se proporciona
+      const filteredMesas = locationId
+        ? mockMesasData.filter(mesa => mesa.locationId === locationId)
+        : mockMesasData;
+
+      console.log(
+        'API Mock: Mesas fetched successfully:',
+        filteredMesas.length,
+        'for location:',
+        locationId || 'all',
+      );
       resolve({
         success: true,
-        data: mockMesasData,
-        message: 'Mesas obtenidas exitosamente',
+        data: filteredMesas,
+        message: `Mesas obtenidas exitosamente${
+          locationId ? ' para el recinto seleccionado' : ''
+        }`,
       });
     }, 1000); // 1 segundo de delay
   });
@@ -270,28 +355,50 @@ export const getMockMesas = () =>
     direccion: mesa.provincia,
   }));
 
-export const getMockMesasConteo = () =>
-  mockMesasData.map(mesa => ({
+export const getMockMesasConteo = (locationId = null) => {
+  // Filtrar por locationId si se proporciona
+  let filteredMesas = locationId
+    ? mockMesasData.filter(mesa => mesa.locationId === locationId)
+    : mockMesasData;
+  
+  // Si no encontramos mesas para el locationId específico, devolver mesas de fallback
+  if (locationId && filteredMesas.length === 0) {
+    console.log('getMockMesasConteo: No mesas found for locationId:', locationId, 'using fallback');
+    filteredMesas = mockMesasData.filter(mesa => mesa.locationId === 'fallback-location');
+  }
+  
+  // Si aún no hay mesas, devolver todas como último recurso
+  if (filteredMesas.length === 0) {
+    console.log('getMockMesasConteo: No fallback mesas found, returning all mesas');
+    filteredMesas = mockMesasData;
+  }
+  
+  return filteredMesas.map(mesa => ({
     ...mesa,
     id: mesa.id.toString(),
     direccion: mesa.provincia,
   }));
+};
 
 // Simular llamada a API para obtener mesas de conteo
-export const fetchMesasConteo = async () => {
+export const fetchMesasConteo = async (locationId = null) => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching mesas de conteo...');
+    console.log('API Mock: Fetching mesas de conteo...', {locationId});
     // Simular delay de red
     setTimeout(() => {
-      const mesasConteo = getMockMesasConteo();
+      const mesasConteo = getMockMesasConteo(locationId);
       console.log(
         'API Mock: Mesas de conteo fetched successfully:',
         mesasConteo.length,
+        'for location:',
+        locationId || 'all',
       );
       resolve({
         success: true,
         data: mesasConteo,
-        message: 'Mesas de conteo cargadas exitosamente',
+        message: `Mesas de conteo cargadas exitosamente${
+          locationId ? ' para el recinto seleccionado' : ''
+        }`,
       });
     }, 1500); // 1.5 segundos de delay
   });

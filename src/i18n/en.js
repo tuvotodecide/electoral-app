@@ -14,7 +14,7 @@ export default {
   //Register user
   //page 1
   titleReg:
-    'Para crear tu billetera y proteger tu cuenta, necesitamos verificar tu identidad.',
+    'Para continuar, debes proporcionar tu carnet de identidad y acceso a tu cámara.',
   connectItem1Reg: 'Tu carnet de identidad',
   connectItem2Reg: 'Acceso a tu cámara',
   termsPrefix: 'He leído y acepto los ',
@@ -81,6 +81,7 @@ export default {
   labelDocumentExpiration: 'Fecha de expiración',
   confirmCheckText: 'Confirmo que los datos son correctos',
   confirmButton: 'Confirmar',
+  returntoVerify:'Regresar a verificar',
   //page 7
   authFingerprintTitle: 'Autenticación con huella dactilar',
   authFingerprintDesc: 'Usa tu huella para acceder rápido y seguro',
@@ -90,8 +91,12 @@ export default {
   btnActivateLater: 'Activar más tarde',
   //page 8
   pinAccessTitle: 'Crea tu PIN de acceso',
+  pinConfirmAccessTitle: 'Confirma tu PIN de acceso',
   pinAccessDescription:
-    'Este PIN protegerá tu acceso a Tu Voto. Lo necesitarás cada vez que inicies sesión en la aplicación.',
+    'Este PIN protegerá tu acceso a Tu Voto Decide. Lo necesitarás cada vez que inicies sesión en la aplicación.',
+  pinAccessDescription1:
+    'Confirma el nuevo PIN de acceso. Este PIN protegerá tu acceso a Tu Voto Decide. ',
+      pinChange:'Introduce tu pin actual para confirmar y cambiar tu pin',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
@@ -103,7 +108,7 @@ export default {
 
   //page 10
   welcomeTitle: '¡Bienvenido a Tu Voto!',
-  verifiedIdentity: 'Identidad verificada. Ya puedes usar tu billetera.',
+  verifiedIdentity: 'Identidad verificada. Ya puedes usar tu cuenta.',
   activosTitle: 'Activos',
   activosDesc: 'Compra, guarda y vende criptomonedas libremente',
   transfiereTitle: 'Transfiere',
@@ -111,9 +116,9 @@ export default {
   historialTitle: 'Historial',
   historialDesc: 'Revisa todas tus transacciones',
   seguridadTitle: 'Seguridad',
-  seguridadDesc: 'Eres dueño de tu clave y tu billetera',
-  goToWalletButton: 'Ir a mi billetera',
-  creatingWallet: 'Creando billetera',
+  seguridadDesc: 'Eres dueño de tu clave y tu cuenta',
+  goToWalletButton: 'Ir a mi cuenta',
+  creatingWallet: 'Creando cuenta…',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',
@@ -131,6 +136,36 @@ export default {
   qrBackup: 'Respaldo con QR',
   qrBackupValue: 'Guarda tu código de recuperación',
   guardians: 'Guardianes',
+  pinChangeAccessTitle: 'Cambia tu PIN de acceso',
+  myProtected: 'Mis Protegidos',
+  qrimagelabel: 'Suba la imagen QR',
+  myProtectedInfo: 'Personas de las cuales soy guardián',
+  myInvitations: 'Mis invitaciones',
+  myRecovery: 'Solicitudes de recuperación',
+  protectedValue: 'Administra solicitudes y recuperaciones',
+  moresub: 'Revisa más opciones',
+  onBoardingGuardiansTitleText1: '¿Qué son los guardianes?',
+  onBoardingGuardiansTitleText2: '¿Quién puede ser un guardián?',
+  onBoardingGuardiansTitleText3: '¿Cuántos guardianes se necesitan?',
+  onBoardingGuardiansTitleText4: '¿Cómo funciona la recuperación?',
+  onBoardingGuardiansDescriptionText1:
+    'Son personas o dispositivos que ayudan a confirmar tu identidad cuando necesitas recuperar tu cuenta. Funcionan como respaldo de seguridad ',
+  onBoardingGuardiansDescriptionText2:
+    'Puede ser un familiar, un amigo o incluso otro dispositivo de confianza que tengas registrado. Solo se debe elegir opciones seguras.',
+  onBoardingGuardiansDescriptionText3:
+    'Se requieren al menos 2 guardianes activos para autorizar una recuperación. Tener más aumenta la seguridad',
+  onBoardingGuardiansDescriptionText4:
+    'Al solicitar la recuperación, se notifica a tus guardianes. Ellos deben aprobar la solicitud para que puedas acceder nuevamente a tu cuenta.',
+  totalBalance: 'Saldo total',
+  balanceByCoin: 'Saldo por moneda',
+  commomPayments: 'Pagos frecuentes',
+  help: 'Ayuda',
+  me: 'Yo',
+  configGuardian: 'Configuración de guardianes',
+  configGuardianSubtitle1:
+    'Número mínimo de aprobaciones requeridas para recuperar cuenta:',
+  configGuardianSubtitle2:
+    'Número mínimo de aprobaciones requeridas para transacciones grandes:',
   guardiansValue: 'Administra tus guardianes',
   transactionHistory: 'Historial de transacciones',
   transactionHistoryValue: 'Movimientos recientes',
@@ -205,21 +240,22 @@ export default {
   recoverymethodQR: 'Recuperar con QR',
 
   connectBtnLogin: 'Tengo una cuenta',
-  wira: 'Tu Voto',
-  onBoardingTitleText1: 'Tu identidad digital. Tu billetera. Tu control.',
-  onBoardingTitleText2: 'Envía y recibe tokens fácilmente',
-  onBoardingTitleText3: 'Recupera tu cuenta con ayuda',
-  onBoardingTitleText4: 'Compra tokens fácil, sin bancos',
-  onBoardingTitleText5: 'Tu dinero, tu control. ¡Crea tu billetera ahora!',
+  wira: 'Tu Voto Decide',
+  onBoardingTitleText1: 'Obtén tu identidad digital soberana',
+  onBoardingTitleText2: 'Actas electorales inalterables con NFTs',
+  onBoardingTitleText3: 'Validación abierta, con firma electrónica',
+  onBoardingTitleText4:
+    'Transparencia con Blockchain e Inteligencia Artificial',
+  onBoardingTitleText5: 'Regístrate y contribuye ya!',
   onBoardingDescriptionText1:
-    'Crea tu billetera, protege tu identidad y recupera el acceso fácilmente cuando lo necesites.',
+    'Al registrarte obtienes un sistema de identidad digital, que protege tus datos con contratos inteligentes.',
   onBoardingDescriptionText2:
-    'Escanea un QR o ingresa una dirección sin preocuparte por red ni tarifas.',
+    'Al sacar fotos de las actas el momento del conteo de votos, los firmas electrónicamente y los conviertes en NFTs.',
   onBoardingDescriptionText3:
-    'Selecciona contactos de confianza como guardianes. Si pierdes el acceso, ellos te ayudan a volver.',
+    'Cualquier persona que descargue la app podrá verificar, validar y firmar las actas subidas.',
   onBoardingDescriptionText4:
-    'Usa el mercado P2P para comprar o vender directamente en Bolivia.',
-  onBoardingDescriptionText5: ' ',
+    'El código de los contratos inteligentes y las transacciones en blockchain son públicos y procesado con IA',
+  onBoardingDescriptionText5: '',
   getStarted: 'Siguiente',
   browseAssets: 'Explorar activos',
 
@@ -358,7 +394,7 @@ export default {
   addGuardian: 'Agregar guardián',
   addGuardianSubtitle:
     'Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.',
-  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto.',
+  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto Decide.',
   active: 'Activo',
   pending: 'Pendiente',
   rejected: 'Rechazado',
@@ -778,7 +814,7 @@ export default {
     'I earned $5 in assets by finishing 1 lesson about 4 investments',
   useReferralCodeAndEarnCommission: 'Use referral code and earn commission',
   instagram: 'Instagram',
-  more: 'More',
+  more: 'Más opciones',
   notifications: 'Notifications',
   emailVerified: 'Email verified',
   yourEmailHasBeenVerified: 'Your email has been verified!',
@@ -963,6 +999,7 @@ export default {
   ascending: 'Ascendente',
   descending: 'Descendente',
   accept: 'Aceptar',
+  reject: 'Rechazar',
   error: 'Error',
   success: 'Éxito',
   couldNotLoadTables: 'No se pudieron cargar las mesas',
@@ -1113,13 +1150,8 @@ export default {
   seeMore: 'Ver más',
   understood: 'Entendido',
 
-  // User
-  userName: 'Juan Pérez',
-  userRole: 'Testigo Electoral',
-  userName2: 'Juan Perez Cuellar',
-
   // Common
-  confirmation: 'Confirmation',
+  confirmation: 'Confirmación',
   voluntaryInitiative: 'Iniciativa Voluntaria de',
   // autoNavigating: 'Automatically returning to home in {timeLeft} second{s}...',
   autoNavigating:
@@ -1133,9 +1165,8 @@ export default {
   retry: 'Reintentar',
   next: 'Siguiente',
 
-  // agregados que faltaban en en.js
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
-  verifyTableInformation: 'Verificar Información de la Mesa',
+  verifyTableInformation: 'Asegúrate que esta es la mesa asignada',
 
   // Cámara
   preparingCamera: 'Preparando cámara',
@@ -1168,12 +1199,16 @@ export default {
   noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
   removed: 'Removido',
   sendRecovery: 'Solicitar recuperación',
+  learnMore: 'Más info',
+  blockchainConsultBanner:
+    'Blockchain Consultora desarrollo esta aplicación, contáctelos',
+  needBlockchainApp: '¿Necesitas una aplicación en Blockchain?',
 
   connectTitle: 'Aplicación Electoral',
-  connectItem1: 'Protege tus datos',
-  connectItem2: 'Vota de forma segura',
-  connectItem3: 'Resultados en tiempo real',
-  connectBtnInfo: 'Más información',
+  connectItem1: 'Obten tu identidad digital soberana',
+  connectItem2: 'Convierte actas electorales en NFTs',
+  connectItem3: 'Valida con tu firma electrónica',
+  // connectBtnInfo: 'Más información',
   connectBtnRegister: 'Registrar cuenta',
   connectBtnLogin: 'Tengo una cuenta',
 
@@ -1186,4 +1221,86 @@ export default {
   whatIsGuardians: '¿Qué son los Guardianes?',
   addGuardian: 'Añadir guardián',
   alertguardiansrequired: 'Necesitas al menos un guardián activo',
+  predictSmart:
+    'Prediciendo smart-account… Esto demorará aproximadamente 2 minutos',
+  RecoverywithQR: 'Recuperación con QR',
+  recoveryQrSubtitle:
+    'Para continuar con la recuperación de su cuenta suba la imagen QR que descargó de su cuenta',
+  debtHelp:
+    'La creación de la billetera tiene un pequeño costo que sera cobrado en su primera transacción',
+  sendInvitation: ' Enviar invitación',
+  finishingRecovery: 'Finalizando recuperación',
+  return: 'Regresar',
+  messagetorecovery:
+    'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes 72 horas desde su cuenta.',
+  messengePrivacity:
+    'Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.',
+
+  // Electoral Locations
+  electoralLocations: 'Recintos Electorales',
+  gettingLocation: 'Obteniendo ubicación...',
+  loadingNearbyLocations: 'Cargando recintos cercanos...',
+  showingNearbyLocations: 'Mostrando recintos cercanos a ti',
+  noLocationsFound: 'No se encontraron recintos',
+  noLocationsFoundSubtitle: 'No hay recintos electorales cerca de tu ubicación',
+  noNearbyLocations: 'No hay recintos cercanos disponibles',
+  errorFetchingLocations: 'Error al cargar los recintos electorales',
+  locationPermissionTitle: 'Permiso de ubicación',
+  locationPermissionMessage:
+    'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+  locationPermissionDenied: 'Permiso de ubicación denegado',
+  locationError: 'Error al obtener la ubicación',
+  locationPermissionError: 'Error al solicitar permisos de ubicación',
+  askMeLater: 'Preguntar después',
+  ok: 'OK',
+  tables: 'mesas',
+  code: 'Código',
+  info: 'Información',
+  nftCertificate: 'Certificado NFT',
+  obtain: 'obtenido!',
+  viewMyNFT: 'Ver mi NFT',
+  electoralLocations: 'Recintos Electorales',
+  gettingLocation: 'Obteniendo ubicación...',
+  loadingNearbyLocations: 'Cargando recintos cercanos...',
+  showingNearbyLocations: 'Mostrando recintos cercanos a ti',
+  noLocationsFound: 'No se encontraron recintos',
+  noLocationsFoundSubtitle: 'No hay recintos electorales cerca de tu ubicación',
+  noNearbyLocations: 'No hay recintos cercanos disponibles',
+  errorFetchingLocations: 'Error al cargar los recintos electorales',
+  locationPermissionTitle: 'Permiso de ubicación',
+  locationPermissionMessage:
+    'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+  locationPermissionDenied: 'Permiso de ubicación denegado',
+  locationError: 'Error al obtener la ubicación',
+  locationPermissionError: 'Error al solicitar permisos de ubicación',
+  askMeLater: 'Preguntar después',
+  continueButton: 'Continuar',
+
+  // Profile Screen
+  reputationSummary: 'Resumen de reputación',
+  oracleParticipation: 'Participación en oráculos',
+  coincidences: 'coincidencias',
+  trust: 'Confianza',
+  nftsObtained: 'NFTs obtenidos',
+  uploadActaNFT: 'Subir Acta 2025',
+  uploadActaNFTDesc:
+    'Participó subiendo actas - Elecciones generales Bolivia 2025',
+  witnessNFT: 'Atestiguamiento',
+  witnessNFTDesc:
+    'Participó atestiguando actas - Elecciones generales Bolivia 2025',
+  selectFeaturedBadge: 'Seleccionar insignia destacada',
+
+  // Home Screen
+  participate: 'Participar',
+  participateDescription:
+    'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
+
+  // Oracle Participation
+  oracleParticipationTitle: 'Participación en oráculos',
+  lastParticipations: 'Últimas participaciones:',
+  participations: 'participaciones',
+  elections2025: 'Elecciones 2025',
+  coincides: 'Coincide',
+  noCoincides: 'No coincide',
+  shareProfile: 'Compartir perfil',
 };

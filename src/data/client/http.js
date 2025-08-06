@@ -4,7 +4,8 @@ import {BACKEND, AUTH_TOKEN_KEY} from '@env';
 import {Alert} from 'react-native';
 import {getAsyncStorageData} from '../../utils/AsyncStorage';
 import {ACCESS_TOKEN} from '../../utils/Keys';
-import { JWT_KEY } from '../../common/constants';
+import * as Keychain from 'react-native-keychain';
+import {JWT_KEY} from '../../common/constants';
 
 const Axios = axios.create({
   baseURL: BACKEND,
@@ -23,8 +24,8 @@ const AxiosMultipart = axios.create({
 });
 
 async function authHeader(config) {
-  const token = await AsyncStorage.getItem(JWT_KEY);
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = await Keychain.getInternetCredentials(JWT_KEY);
+  if (token) config.headers.Authorization = `Bearer ${token.password}`;
   return config;
 }
 

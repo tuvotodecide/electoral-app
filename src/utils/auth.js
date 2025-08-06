@@ -10,12 +10,11 @@ import * as Keychain from 'react-native-keychain';
 import {setBioFlag} from './BioFlag';
 
 export async function logOut(navigation) {
-  console.log('[logout] empezando…');
   await AsyncStorage.removeItem(JWT_KEY);
 
   delete axios.defaults.headers.common.Authorization;
 
-  console.log('[logout] bundle biométrico borrado');
+;
 
   store.dispatch(clearAuth());
   store.dispatch(clearWallet());
