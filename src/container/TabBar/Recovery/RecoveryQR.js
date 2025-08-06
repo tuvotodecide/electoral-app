@@ -80,7 +80,7 @@ export default function RecoveryQr({navigation}) {
       }
 
       setPayload(data);
-      ToastAndroid.show('QR válido 👍', ToastAndroid.SHORT);
+      ToastAndroid.show('QR válido', ToastAndroid.SHORT);
     } catch (err) {
       Alert.alert('QR inválido', err.message);
       setPayload(null);

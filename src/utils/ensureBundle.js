@@ -25,7 +25,7 @@ export async function ensureBundle() {
     
     return await IdentityBridge.requestBundle();
   } catch (e) {
-    console.warn('[SSI] Bridge error:', e);
+
     return false;
   }
 }
@@ -40,9 +40,8 @@ export async function writeBundleAtomic(data) {
     await moveFile(tmp, dst);
 
     const {size} = await RNFS.stat(dst);
-    console.log('[SSI] ✔ Bundle escrito; size =', size);
+
   } catch (e) {
-    console.error('[SSI] ❌ writeBundleAtomic:', e);
   }
 }
 

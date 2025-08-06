@@ -81,6 +81,7 @@ export default {
   labelDocumentExpiration: 'Fecha de expiración',
   confirmCheckText: 'Confirmo que los datos son correctos',
   confirmButton: 'Confirmar',
+  returntoVerify:'Regresar a verificar',
   //page 7
   authFingerprintTitle: 'Autenticación con huella dactilar',
   authFingerprintDesc: 'Usa tu huella para acceder rápido y seguro',
@@ -90,9 +91,12 @@ export default {
   btnActivateLater: 'Activar más tarde',
   //page 8
   pinAccessTitle: 'Crea tu PIN de acceso',
+  pinConfirmAccessTitle: 'Confirma tu PIN de acceso',
   pinAccessDescription:
-    'Este PIN protegerá tu acceso a Tu Voto. Lo necesitarás cada vez que inicies sesión en la aplicación.',
-      pinChange:'Introduce tu pin actual para confirmar y cambiar tu cuenta',
+    'Este PIN protegerá tu acceso a Tu Voto Decide. Lo necesitarás cada vez que inicies sesión en la aplicación.',
+  pinAccessDescription1:
+    'Confirma el nuevo PIN de acceso. Este PIN protegerá tu acceso a Tu Voto Decide. ',
+      pinChange:'Introduce tu pin actual para confirmar y cambiar tu pin',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
@@ -236,7 +240,7 @@ export default {
   recoverymethodQR: 'Recuperar con QR',
 
   connectBtnLogin: 'Tengo una cuenta',
-  wira: 'Tu Voto',
+  wira: 'Tu Voto Decide',
   onBoardingTitleText1: 'Obtén tu identidad digital soberana',
   onBoardingTitleText2: 'Actas electorales inalterables con NFTs',
   onBoardingTitleText3: 'Validación abierta, con firma electrónica',
@@ -390,7 +394,7 @@ export default {
   addGuardian: 'Agregar guardián',
   addGuardianSubtitle:
     'Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.',
-  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto.',
+  addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto Decide.',
   active: 'Activo',
   pending: 'Pendiente',
   rejected: 'Rechazado',

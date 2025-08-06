@@ -14,7 +14,7 @@ import {
 
 import {randomBytes} from 'react-native-quick-crypto';
 import {aesGcmEncrypt, aesGcmDecrypt} from './aesGcm';
-import {setBioFlag} from './BioFlag';
+import {getBioFlag, setBioFlag} from './BioFlag';
 import {Platform} from 'react-native';
 import {getJwt} from './Session';
 import {readBundleFile, writeBundleAtomic} from './ensureBundle';
@@ -22,13 +22,21 @@ import {readBundleFile, writeBundleAtomic} from './ensureBundle';
 const KEYCHAIN_ID = 'finline.wallet.vc';
 const FLAGS_KEY = 'FINLINE_FLAGS';
 
+export async function createBundleFromPrivKey(pin, privKey) {
+  const seed = buf(privKey.startsWith('0x') ? privKey.slice(2) : privKey); // = seed
+  const salt = randomBytes(16);
+  const key  = argon2id(utf8ToBytes(pin), salt, { t:1, m:512, p:1, dkLen:32 });
+  const cipher = await aesGcmEncrypt(seed, key);
+  return { seedHex: hex(seed), cipherHex: hex(cipher), saltHex: hex(salt) };
+}
+
 export async function createSeedBundle(pin) {
   const seed = randomBytes(32);
   const salt = randomBytes(16);
 
   const key = argon2id(utf8ToBytes(pin), salt, {
     t: 1,
-    m: 1024,
+    m: 512,
     p: 1,
     dkLen: 32,
   });
@@ -36,8 +44,8 @@ export async function createSeedBundle(pin) {
   const cipher = await aesGcmEncrypt(seed, key);
 
   return {
-    seedHex: hex(seed), 
-    cipherHex: hex(cipher), 
+    seedHex: hex(seed),
+    cipherHex: hex(cipher),
     saltHex: hex(salt),
   };
 }
@@ -54,19 +62,25 @@ export function hashIdentifier(dni, salt = '') {
 export async function unlockSeed(pin, bundle) {
   const key = argon2id(utf8ToBytes(pin), buf(bundle.saltHex), {
     t: 1,
-    m: 2 * 1024,
+    m: 512,
     p: 1,
     dkLen: 32,
   });
-  return aesGcmDecrypt(buf(bundle.seedHex), key);
+  return aesGcmDecrypt(buf(bundle.cipherHex), key);
 }
 
-export async function saveSecrets(pin, payloadQr, useBiometry) {
-  const accessControl = !useBiometry
-    ? undefined
-    : Platform.OS === 'ios'
-    ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
-    : Keychain.ACCESS_CONTROL.BIOMETRY_ANY;
+export async function saveSecrets(
+  pin,
+  payloadQr,
+  useBiometry,
+  bundle,
+  pinHashOpt,
+) {
+  // const accessControl = !useBiometry
+  //   ? undefined
+  //   : Platform.OS === 'ios'
+  //   ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
+  //   : Keychain.ACCESS_CONTROL.BIOMETRY_ANY;
 
   await Keychain.setGenericPassword(
     'finline.wallet.vc',
@@ -74,37 +88,51 @@ export async function saveSecrets(pin, payloadQr, useBiometry) {
     {
       service: 'finline.wallet.vc',
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-      accessControl,
-      authenticationPrompt: {
-        title: 'Autentícate',
-        subtitle: 'Desbloquea tu billetera',
-        cancel: 'Cancelar',
-      },
+      // accessControl,
+      // authenticationPrompt: {
+      //   title: 'Autentícate',
+      //   subtitle: 'Desbloquea tu billetera',
+      //   cancel: 'Cancelar',
+      // },
     },
   );
   await setBioFlag(!!useBiometry);
 
+  const pinHash =
+    (pin && String(pin).length ? SHA256(pin.trim()).toString() : pinHashOpt) ||
+    null;
+  if (!pinHash)
+    throw new Error('No hay PIN ni pinHash para finalizar el registro');
+
   await AsyncStorage.setItem(
     FLAGS_KEY,
     JSON.stringify({
-      PIN_HASH: SHA256(pin.trim()).toString(),
+      PIN_HASH: pinHash,
       BIO_ENABLED: useBiometry,
       HAS_WALLET: true,
     }),
   );
   const jwt = await getJwt();
-  await writeBundleAtomic(JSON.stringify({...payloadQr, jwt}));
+  await writeBundleAtomic(
+    JSON.stringify({
+      cipherHex: bundle.cipherHex,
+      saltHex: bundle.saltHex,
+      streamId: payloadQr.streamId,
+      account: payloadQr.account,
+      guardian: payloadQr.guardian,
+      salt: payloadQr.salt,
+      jwt,
+    }),
+  );
 }
 
 export async function getSecrets(allowNoFlags = false) {
   const res = await Keychain.getGenericPassword({
     service: KEYCHAIN_ID,
-    authenticationPrompt: 'Identifícate para abrir tu billetera',
+    // authenticationPrompt: 'Identifícate para abrir tu billetera',
   });
-  console.log(res);
 
   const flags = await AsyncStorage.getItem(FLAGS_KEY);
-  console.log(flags);
 
   if (!res) {
     const bundle = await readBundleFile();
@@ -122,25 +150,40 @@ export async function getSecrets(allowNoFlags = false) {
 export async function checkPin(pin) {
   let flags = await AsyncStorage.getItem(FLAGS_KEY);
   if (!flags) {
-    // console.log('aca');
+    const stored = await getSecrets(true);
+    if (!stored) return false;
 
-    // const stored = await getSecrets(true); // lee el bundle
-    // if (!stored) return false;
-    // console.log(stored);
-    // try {
-    //   await unlockSeed(pin, stored.payloadQr);
-    //   flags = JSON.stringify({
-    //     PIN_HASH: SHA256(pin.trim()).toString(),
-    //     BIO_ENABLED: await getBioFlag(),
-    //     HAS_WALLET: true,
-    //   });
-    //   console.log(flags);
-    //   await AsyncStorage.setItem(FLAGS_KEY, flags);
-    //   const jwt = await getJwt();
-    //   await writeBundleAtomic(JSON.stringify({...stored.payloadQr, jwt}));
-    // } catch {
-    //   return false;
-    // } // PIN incorrecto
+    try {
+      const seedBytes = await unlockSeed(pin, stored.payloadQr);
+      const privKey = '0x' + hex(seedBytes);
+
+      const payloadForKeychain = {
+        streamId: stored.payloadQr.streamId,
+        account: stored.payloadQr.account,
+        guardian: stored.payloadQr.guardian,
+        salt: stored.payloadQr.salt,
+        privKey,
+      };
+      await Keychain.setGenericPassword(
+        'finline.wallet.vc',
+        JSON.stringify(payloadForKeychain),
+        {
+          service: KEYCHAIN_ID,
+          accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        },
+      );
+
+      flags = JSON.stringify({
+        PIN_HASH: SHA256(pin.trim()).toString(),
+        BIO_ENABLED: await getBioFlag(),
+        HAS_WALLET: true,
+      });
+      await AsyncStorage.setItem(FLAGS_KEY, flags);
+      const jwt = await getJwt();
+      await writeBundleAtomic(JSON.stringify({...stored.payloadQr, jwt}));
+    } catch {
+      return false;
+    } // PIN incorrecto
     return true;
   }
   const {PIN_HASH} = JSON.parse(flags);

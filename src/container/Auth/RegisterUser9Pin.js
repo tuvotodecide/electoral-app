@@ -17,6 +17,7 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
+import { setTmpPin } from '../../utils/TempRegister';
 
 export default function RegisterUser9({navigation, route}) {
   const {originalPin, vc, offerUrl, useBiometry, dni} = route.params;
@@ -34,8 +35,9 @@ export default function RegisterUser9({navigation, route}) {
     return () => clearTimeout(timeout);
   }, []);
 
-  const handleConfirmPin = () => {
+  const handleConfirmPin = async () => {
     if (otp === originalPin) {
+      await setTmpPin(otp);
       navigation.navigate(AuthNav.RegisterUser10, {
         originalPin: otp,
         vc,

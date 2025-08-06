@@ -61,7 +61,7 @@ function fmt(err) {
 }
 
 /* ---------- Enhanced send function with retry logic ----------------- */
-async function send(chain, acc, calls) {
+async function send(chain, acc, calls, gasOverrides = {}) {
   const publicClient = createPublicClient({
     chain: availableNetworks[chain].chain,
     transport: http(),
@@ -74,7 +74,7 @@ async function send(chain, acc, calls) {
 
   const finalGasParams = {
     ...gasParams,
-    verificationGasLimit: BigInt(50000),
+    ...gasOverrides,
   };
 
   console.log('Sending UserOp with gas params:', finalGasParams);
@@ -255,18 +255,20 @@ export async function removeGuardianOnChain(
   ownerPrivKey,
   ownerAccount,
   ownerGuardianCt,
-  guardianHash
+  guardianHash,
 ) {
-  const { account } = await getAccount(ownerPrivKey, ownerAccount, chain);
-  const calls = [{
-    to: ownerGuardianCt,
-    data: encodeFunctionData({
-      abi: guardianAbi,
-      functionName: 'remove',
-      args: [guardianHash],
-    }),
-    value: 0n,
-  }];
+  const {account} = await getAccount(ownerPrivKey, ownerAccount, chain);
+  const calls = [
+    {
+      to: ownerGuardianCt,
+      data: encodeFunctionData({
+        abi: guardianAbi,
+        functionName: 'remove',
+        args: [guardianHash],
+      }),
+      value: 0n,
+    },
+  ];
   return await send(chain, account, calls);
 }
 
@@ -275,23 +277,29 @@ export async function approveRecoveryOnChain(
   guardianPrivKey,
   guardianEoa,
   ownerGuardianCt,
-  newOwnerAddress // <- IMPORTANTE: address del dueño a recuperar (no reqHash)
+  newOwnerAddress, // <- IMPORTANTE: address del dueño a recuperar (no reqHash)
 ) {
-  const { account } = await getAccount(guardianPrivKey, guardianEoa, chain);
+  const {account} = await getAccount(guardianPrivKey, guardianEoa, chain);
 
-  const calls = [{
-    to: ownerGuardianCt,
-    data: encodeFunctionData({
-      abi: guardianAbi,
-      functionName: 'approveRecovery',
-      args: [newOwnerAddress],
-    }),
-    value: 0n,
-  }];
+  const calls = [
+    {
+      to: ownerGuardianCt,
+      data: encodeFunctionData({
+        abi: guardianAbi,
+        functionName: 'approveRecovery',
+        args: [newOwnerAddress],
+      }),
+      value: 0n,
+    },
+  ];
 
   return await send(chain, account, calls);
 }
-export async function readOnChainApprovals(chain, ownerGuardianCt, ownerAccount) {
+export async function readOnChainApprovals(
+  chain,
+  ownerGuardianCt,
+  ownerAccount,
+) {
   const publicClient = createPublicClient({
     chain: availableNetworks[chain].chain,
     transport: http(),

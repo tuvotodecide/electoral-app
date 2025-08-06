@@ -27,6 +27,16 @@ export default function RegisterUser6({navigation, route}) {
   const onPressNext = () => {
     navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
   };
+  const onPressReturn = () => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: AuthNav.RegisterUser2,
+        },
+      ],
+    });
+  };
   const onPressRememberMe = () => {
     setCheck(!check);
   };
@@ -92,7 +102,7 @@ export default function RegisterUser6({navigation, route}) {
            title={String.labelDocumentExpiration}
           text={fmtDate(documentExpirationDate)}
         /> */}
-        
+
         {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
           title={String.labelNationality}
@@ -112,14 +122,22 @@ export default function RegisterUser6({navigation, route}) {
             {String.confirmCheckText}
           </CText>
         </View>
-
-        <CButton
-          title={String.confirmButton}
-          disabled={!check}
-          onPress={onPressNext}
-          type={'B18'}
-          containerStyle={localStyle.btnStyle}
-        />
+        <View>
+          <CButton
+            title={String.confirmButton}
+            disabled={!check}
+            onPress={onPressNext}
+            type={'B18'}
+            containerStyle={localStyle.btnStyle}
+          />
+          <CButton
+            title={String.returntoVerify}
+            bgColor={colors.primary4}
+            onPress={onPressReturn}
+            type={'B18'}
+            containerStyle={localStyle.btnStyle1}
+          />
+        </View>
       </View>
     </CSafeAreaViewAuth>
   );
@@ -133,6 +151,10 @@ const localStyle = StyleSheet.create({
   },
   btnStyle: {
     ...styles.selfCenter,
+  },
+  btnStyle1: {
+    ...styles.selfCenter,
+    marginTop: 1,
   },
   divider: {
     ...styles.rowCenter,

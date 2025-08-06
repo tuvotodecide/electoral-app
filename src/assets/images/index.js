@@ -3,7 +3,7 @@ export default {
   OnBoardingImage2: require('./unnamed1.png'),
   OnBoardingImage3: require('./unnamed2.png'),
   OnBoardingImage4: require('./unnamed3.png'),
-  OnBoardingImage5: require('./unnamed4.png'),
+  OnBoardingImage5: require('./logo.png'),
   ConnectImage: require('./ConnectScreenImage.png'),
   logoImg: require('./logo.png'),
   OnBoarding_Dark1: require('./OnBoarding1v2.png'),

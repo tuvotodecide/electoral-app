@@ -100,7 +100,7 @@ export default function Connect({navigation}) {
             color={colors.white}
             bgColor={commonColor.gradient2}
           />
-        </View>
+        </View> 
       </View>
     </CSafeAreaViewAuth>
   );

@@ -175,7 +175,10 @@ export default function Splash({navigation}) {
 
           const alive = await isSessionValid();
 
-          if (alive) navigation.replace(StackNav.TabNavigation);
+          if (alive) {
+            navigation.replace(StackNav.TabNavigation);
+            return;
+          }
           navigation.replace(StackNav.AuthNavigation);
         } else {
           navigation.replace(StackNav.AuthNavigation);

@@ -62,7 +62,7 @@ export default function LoginUser({navigation}) {
 
   const toastError = msg => setModal({visible: true, msg});
 
-  async function unlock(payload, jwt,pin) {
+  async function unlock(payload, jwt, pin) {
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -80,13 +80,10 @@ export default function LoginUser({navigation}) {
 
     try {
       await writeBundleAtomic(JSON.stringify({...payload, jwt}));
-      console.log('[SSI] ✔ Bundle actualizado tras login');
-    } catch (e) {
-      console.error('[SSI] ❌ Error writeFile login:', e);
-    }
+    } catch (e) {}
 
     const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
-    if (!exists ) {
+    if (!exists && typeof pin === 'string' && pin.length) {
       await AsyncStorage.setItem(
         'FINLINE_FLAGS',
         JSON.stringify({
@@ -103,7 +100,6 @@ export default function LoginUser({navigation}) {
         routes: [{name: StackNav.TabNavigation}],
       });
     }
-
   }
 
   const onPressLoginUser1 = () => {
@@ -112,36 +108,34 @@ export default function LoginUser({navigation}) {
 
   async function verifyPin(code) {
     await ensureBundle();
-    if (!(await checkPin(code))) return false;
-    const stored = await getSecrets();
-    console.log(stored);
-    
-    if (!stored) return false;
+    try {
+      if (!(await checkPin(code))) return false;
+      const stored = await getSecrets();
+      if (!stored) return false;
 
-    const {streamId, privKey} = stored.payloadQr;
+      const {streamId, privKey} = stored.payloadQr;
+      const load = await axios.post(
+        `${BACKEND}kyc/load`,
+        {streamId},
+        {withCredentials: true},
+      );
+      if (!load.data.ok) return false;
 
-    const load = await axios.post(
-      `${BACKEND}kyc/load`,
-      {streamId},
-      {withCredentials: true},
-    );
-    if (!load.data.ok) throw new Error(load.data.error);
+      const {dataHash} = load.data.data;
+      const authSig = await buildSiweAuthSig(privKey, dataHash);
+      const dec = await axios.post(
+        `${BACKEND}kyc/decrypt`,
+        {streamId, authSig},
+        {withCredentials: true},
+      );
+      if (!dec.data.ok) return false;
 
-    const {dataHash} = load.data.data;
-
-    const authSig = await buildSiweAuthSig(privKey, dataHash);
-
-    const dec = await axios.post(
-      `${BACKEND}kyc/decrypt`,
-      {streamId, authSig},
-      {withCredentials: true},
-    );
-    if (!dec.data.ok) throw new Error(dec.data.error);
-
-    const {vc, jwt} = dec.data;
-
-    await unlock({...stored.payloadQr, vc}, jwt,code);
-    return true;
+      const {vc, jwt} = dec.data;
+      await unlock({...stored.payloadQr, vc}, jwt, code);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   const onCodeFilled = async code => {
@@ -159,24 +153,51 @@ export default function LoginUser({navigation}) {
     }
 
     setLoading(true);
-    const ok = await verifyPin(code.trim());
-    setLoading(false);
+    // const ok = await verifyPin(code.trim());
+    // setLoading(false);
 
-    if (!ok) {
-      const n = await incAttempts();
+    // if (!ok) {
+    //   const n = await incAttempts();
+    //   setOtp('');
+    //   setModal({
+    //     visible: true,
+    //     msg:
+    //       n >= 5
+    //         ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
+    //         : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+    //   });
+    //   if (n >= 5) {
+    //     await clearSession();
+    //     dispatch(clearWallet());
+    //     dispatch(clearAuth());
+    //   }
+    // }
+    try {
+      const ok = await verifyPin(code.trim());
+      if (!ok) {
+        const n = await incAttempts();
+        setOtp('');
+        setModal({
+          visible: true,
+          msg:
+            n >= 5
+              ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
+              : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+        });
+        if (n >= 5) {
+          await clearSession();
+          dispatch(clearWallet());
+          dispatch(clearAuth());
+        }
+      }
+    } catch (err) {
       setOtp('');
       setModal({
         visible: true,
-        msg:
-          n >= 5
-            ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
-            : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+        msg: 'No se pudo iniciar sesión. Revisa tu conexión e inténtalo nuevamente.',
       });
-      if (n >= 5) {
-        await clearSession();
-        dispatch(clearWallet());
-        dispatch(clearAuth());
-      }
+    } finally {
+      setLoading(false);
     }
   };
 

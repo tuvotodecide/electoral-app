@@ -3,6 +3,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
+import {SHA256} from 'crypto-js';
 
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
@@ -19,7 +20,7 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-import {saveSecrets} from '../../../utils/Cifrate';
+import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
@@ -41,7 +42,18 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
   const finish = async () => {
     try {
-      await saveSecrets(otp, payload, false);
+      const bundle = await createBundleFromPrivKey(otp, payload.privKey);
+      const pinHash = SHA256(otp.trim()).toString();
+
+      
+      await saveSecrets(
+        otp,
+        payload,
+        false, 
+        bundle, 
+        pinHash, 
+      );
+
       dispatch(setSecrets(payload));
       dispatch(
         setAddresses({

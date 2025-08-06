@@ -33,6 +33,5 @@ export async function migrateIfNeeded() {
     );
   }
   await AsyncStorage.setItem(FLAG, '1');
-  console.log('sí');
   
 }

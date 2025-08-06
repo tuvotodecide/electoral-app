@@ -47,7 +47,6 @@ export default function ChangePinVerify({navigation, route}) {
 
   return (
     <CSafeAreaView>
-      <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
