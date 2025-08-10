@@ -18,7 +18,6 @@ import DniExistsModal from '../../components/modal/DniExistsModal';
 import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
-import {startSession} from '../../utils/Session';
 import debounce from 'lodash.debounce';
 
 export default function RegisterUser2({navigation}) {
