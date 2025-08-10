@@ -112,7 +112,6 @@ export default function RegisterUser10({navigation, route}) {
         });
         let bundle = await getTmpRegister();
         if (!bundle) {
-          console.log(pin);
 
           let workingPin = pin;
           if (!workingPin) {
