@@ -1,4 +1,11 @@
-import {Alert, Platform, SectionList, StyleSheet, Switch, View} from 'react-native';
+import {
+  Alert,
+  Platform,
+  SectionList,
+  StyleSheet,
+  Switch,
+  View,
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
 
 // custom imports
@@ -21,6 +28,7 @@ import {getBioFlag, setBioFlag, BIO_KEY} from '../../../utils/BioFlag';
 import * as Keychain from 'react-native-keychain';
 import {getSecrets} from '../../../utils/Cifrate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getJwt} from '../../../utils/Session';
 
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -29,66 +37,64 @@ export default function Security({navigation}) {
     (async () => setBioEnabled(await getBioFlag()))();
   }, []);
 
- const toggleBio = async val => {
-  try {
-    if (val) {
-     
-      const {available} = await biometryAvailability();
-      if (!available) {
-        Alert.alert('Biometría no disponible', 'Actívala en Ajustes del sistema');
-        return;
-      }
+  const toggleBio = async val => {
+    try {
+      if (val) {
+        const {available} = await biometryAvailability();
+        if (!available) {
+          Alert.alert(
+            'Biometría no disponible',
+            'Actívala en Ajustes del sistema',
+          );
+          return;
+        }
 
-      
-      const secrets = await getSecrets();      // { payloadQr, flags }
-      const jwt     = await AsyncStorage.getItem(JWT_KEY);
-      if (!secrets || !jwt) {
-        Alert.alert('Sin datos', 'Crea tu cuenta/PIN antes de activar la biometría');
-        return;
-      }
+        const secrets = await getSecrets();
 
-      
-      const storedPayload = secrets.payloadQr; // lo que tenías guardado con PIN
-      await Keychain.setGenericPassword(
-        'walletBundle',
-        JSON.stringify({ stored: storedPayload, jwt }),
-        {
-          service: 'walletBundle',
-          accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-          accessControl:
-            Platform.OS === 'ios'
-              ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
-              : Keychain.ACCESS_CONTROL.BIOMETRY_ANY,
-        },
-      );
-      console.log('[Security] bundle guardado con biometría');
-    } else {
-     
-      await Keychain.resetGenericPassword({ service: 'walletBundle' });
+        const jwt = await getJwt();
+        if (!secrets || !jwt) {
+          Alert.alert(
+            'Sin datos',
+            'Crea tu cuenta/PIN antes de activar la biometría',
+          );
+          return;
+        }
 
-      const secrets = await getSecrets(); // puede ser null si nunca hubo
-      if (secrets) {
+        const storedPayload = secrets.payloadQr;
         await Keychain.setGenericPassword(
-          'finline.wallet.vc',
-          JSON.stringify(secrets.payloadQr),
+          'walletBundle',
+          JSON.stringify({stored: storedPayload, jwt}),
           {
-            service: 'finline.wallet.vc',
+            service: 'walletBundle',
             accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            accessControl:
+              Platform.OS === 'ios'
+                ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
+                : Keychain.ACCESS_CONTROL.BIOMETRY_ANY,
           },
         );
+      } else {
+        await Keychain.resetGenericPassword({service: 'walletBundle'});
+
+        const secrets = await getSecrets();
+        if (secrets) {
+          await Keychain.setGenericPassword(
+            'finline.wallet.vc',
+            JSON.stringify(secrets.payloadQr),
+            {
+              service: 'finline.wallet.vc',
+              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            },
+          );
+        }
       }
 
+      await setBioFlag(val);
+      setBioEnabled(val);
+    } catch (err) {
+      Alert.alert('Error', err.message);
     }
-
-    
-    await setBioFlag(val);
-    setBioEnabled(val);
-  } catch (err) {
-    console.log('[Security] ERROR', err);
-    Alert.alert('Error', err.message);
-  }
-};
-
+  };
 
   const onPressItem = item => {
     if (!!item.route) {

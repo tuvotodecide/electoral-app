@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import {Splash_Dark, Splash_Light} from '../../assets/svg';
 import {getHeight, moderateScale} from '../../common/constants';
 import {styles} from '../../themes';
@@ -103,7 +103,7 @@ export default function Login({navigation}) {
   });
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper
         containerStyle={[
@@ -227,7 +227,7 @@ export default function Login({navigation}) {
           </CText>
         </TouchableOpacity>
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

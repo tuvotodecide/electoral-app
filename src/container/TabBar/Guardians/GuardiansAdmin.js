@@ -26,19 +26,25 @@ import {
   useMyGuardiansAllListQuery,
   useRecoveryActionQuery,
 } from '../../../data/guardians';
+import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
+import {useKycFindPublicQuery} from '../../../data/kyc';
+import {getSecrets} from '../../../utils/Cifrate';
+import {
+  acceptGuardianOnChain,
+  approveRecoveryOnChain,
+} from '../../../api/guardianOnChain';
+import {CHAIN} from '@env';
+import {getDeviceId} from '../../../utils/device-id';
 
 export default function GuardiansAdmin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {
-    data: invData = [],
-    isLoading,
-  } = useMyGuardianInvitationsListQuery();
-  const {
-    data: recData = [],
-    isLoading: loadingrecData,
-  } = useMyGuardianRecoveryListQuery();
+  const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
+  const {mutate: findPublicDni} = useKycFindPublicQuery();
+
+  const {data: recData = [], isLoading: loadingrecData} =
+    useMyGuardianRecoveryListQuery();
   const {data: accData = [], isLoading: loadingdataAccepted} =
     useGuardianAcceptedListQuery();
 
@@ -47,15 +53,64 @@ export default function GuardiansAdmin({navigation}) {
   const {mutate: mutateRecovery, isLoading: loadingRecoveryAction} =
     useRecoveryActionQuery();
 
-  const handleAcceptInvitation = id => {
+  const handleAcceptInvitation = async id => {
+    const inv = invData.map(e => e.node).find(i => i.id === id);
+    if (!inv) return;
+    const dni = inv.governmentIdentifier;
+    const fp = await new Promise((res, rej) =>
+      findPublicDni(
+        {identifier: dni},
+        {
+          onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error buscando'))),
+          onError: rej,
+        },
+      ),
+    );
+    const ownerGuardianCt = fp.guardianAddress;
+    const {payloadQr} = await getSecrets();
+    await acceptGuardianOnChain(
+      CHAIN,
+      payloadQr.privKey,
+      payloadQr.account,
+      ownerGuardianCt,
+    );
+
     mutateInvitation({id, action: 'accept'});
   };
   const handleRejectInvitation = id => {
     mutateInvitation({id, action: 'reject'});
   };
 
-  const handleApproveRecovery = id => {
-    mutateRecovery({id, action: 'approve'});
+  const handleApproveRecovery = async id => {
+    try {
+      const rec = recData.map(e => e.node).find(r => r.id === id);
+      if (!rec) return;
+
+      const dni = rec.governmentIdentifier;
+      const fp = await new Promise((res, rej) =>
+        findPublicDni(
+          {identifier: dni},
+          {
+            onSuccess: d =>
+              d?.ok ? res(d) : rej(new Error('Error buscando usuario')),
+            onError: rej,
+          },
+        ),
+      );
+      const ownerAccount = fp.accountAddress;
+      const ownerGuardianCt = fp.guardianAddress;
+
+      const {payloadQr} = await getSecrets();
+      await approveRecoveryOnChain(
+        CHAIN,
+        payloadQr.privKey,
+        payloadQr.account,
+        ownerGuardianCt,
+        ownerAccount,
+      );
+
+      mutateRecovery({id, action: 'approve'});
+    } catch (e) {}
   };
   const handleRejectRecovery = id => {
     mutateRecovery({id, action: 'reject'});
@@ -69,7 +124,10 @@ export default function GuardiansAdmin({navigation}) {
     () => recData.map(e => e.node).filter(r => r.status === 'PENDING'),
     [recData],
   );
-  const accepted = useMemo(() => accData.map(e => e.node), [accData]);
+  const accepted = useMemo(
+    () => invData.map(e => e.node).filter(i => i.status === 'ACCEPTED'),
+    [invData],
+  );
 
   const handleAccept = id => {};
   const handleReject = id => {};
@@ -90,7 +148,7 @@ export default function GuardiansAdmin({navigation}) {
     REJECTED: 'rejectedColor',
     REMOVED: 'rejectedColor',
   };
-  // Etiquetas según status
+
   const statusLabel = {
     ACCEPTED: String.active,
     PENDING: String.pending,
@@ -112,7 +170,6 @@ export default function GuardiansAdmin({navigation}) {
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
 
-    const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
       <TouchableOpacity
         style={[
@@ -125,8 +182,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -142,8 +198,6 @@ export default function GuardiansAdmin({navigation}) {
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
               <CText type="B16">{item.governmentIdentifier}</CText>
-
-              
             </View>
             <CText type="R12" color={colors.grayScale500}>
               {displayName ?? '(sin apodo)'}
@@ -182,8 +236,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -252,8 +305,7 @@ export default function GuardiansAdmin({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[

@@ -1,4 +1,4 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -27,12 +27,10 @@ export default function RecoveryUser2Pin({navigation, route}) {
 
   const otpRef = useRef(null);
 
-   
-
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 350);
+    }, 300);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -83,8 +81,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
-              
+              autoFocusOnLoad={true}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

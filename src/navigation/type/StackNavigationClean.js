@@ -26,6 +26,10 @@ export default function StackNavigation() {
 
       {/* Pantallas de Voto */}
       <Stack.Screen
+        name={StackNav.ElectoralLocations}
+        component={StackRoute.ElectoralLocations}
+      />
+      <Stack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
@@ -107,6 +111,14 @@ export default function StackNavigation() {
       <Stack.Screen
         name={StackNav.ChangePinNewConfirm}
         component={StackRoute.ChangePinNewConfirm}
+      />
+      <Stack.Screen
+        name={StackNav.More}
+        component={StackRoute.More}
+      />
+      <Stack.Screen
+        name={StackNav.Security}
+        component={StackRoute.Security}
       />
       <Stack.Screen
         name={StackNav.TermsAndCondition}

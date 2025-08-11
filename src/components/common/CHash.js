@@ -40,7 +40,7 @@ export default function CHash({
   };
 
   const handleCopy = () => {
-    Clipboard.setString(text);
+    Clipboard.setString(title);
     showToast();
   };
 

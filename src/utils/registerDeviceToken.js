@@ -4,6 +4,8 @@ import axios         from 'axios';
 import { BACKEND }   from '@env';
 import { DEVICE_TOKEN, JWT_KEY, PENDING_DID } from '../common/constants';
 import { setAsyncStorageData }   from './AsyncStorage';
+import * as Keychain from 'react-native-keychain';
+import { getJwt } from './Session';
 
 
 export async function registerDeviceToken() {
@@ -12,7 +14,8 @@ export async function registerDeviceToken() {
 
   await setAsyncStorageData(DEVICE_TOKEN, token);
 
-  const jwt = await AsyncStorage.getItem(JWT_KEY);
+  const jwt = await getJwt()
+  
   const did = await AsyncStorage.getItem(PENDING_DID);
   if (!jwt && !did) return;          
 

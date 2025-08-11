@@ -1,18 +1,13 @@
-import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  View,
-  InteractionManager,
-} from 'react-native';
+import {ActivityIndicator, Image, StyleSheet, View} from 'react-native';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import Keychain from 'react-native-keychain';
+import * as Keychain from 'react-native-keychain';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
-import {getHeight, JWT_KEY, moderateScale} from '../../common/constants';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
+import {SHA256} from 'crypto-js';
 import {useDispatch, useSelector} from 'react-redux';
 import images from '../../assets/images';
 import {AuthNav} from '../../navigation/NavigationKey';
@@ -23,7 +18,13 @@ import InfoModal from '../../components/modal/InfoModal';
 
 import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
 import {createSeedBundle, saveSecrets, signWithKey} from '../../utils/Cifrate';
-
+import {
+  getTmpRegister,
+  setTmpRegister,
+  clearTmpRegister,
+  getTmpPin,
+  clearTmpPin,
+} from '../../utils/TempRegister';
 import {
   predictWalletAddress,
   registerStreamAndGuardian,
@@ -31,34 +32,47 @@ import {
 import {CHAIN} from '@env';
 import {useKycRegisterQuery} from '../../data/kyc';
 import {Wallet} from 'ethers';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
 import {getBioFlag} from '../../utils/BioFlag';
+import {startSession} from '../../utils/Session';
 
 export default function RegisterUser10({navigation, route}) {
   const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
+
 
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [stage, setStage] = useState('init');
+  const watchdogRef = useRef(null);
   const dispatch = useDispatch();
   const {mutateAsync: registerStore} = useKycRegisterQuery();
   const startedRef = useRef(false);
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     navigation.navigate(AuthNav.RegisterUser6);
-  //   }, 5000);
 
-  //   return () => clearTimeout(timeout);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  useEffect(() => {
+    clearTimeout(watchdogRef.current);
+    if (stage === 'done') return;
+    watchdogRef.current = setTimeout(() => {
+      setStage(s => (s !== 'done' ? 'stillWorking' : s));
+    }, 30000);
+    return () => clearTimeout(watchdogRef.current);
+  }, [stage]);
+
+  const withTimeout = useCallback(
+    (promise, ms, label) =>
+      Promise.race([
+        promise,
+        new Promise((_, rej) =>
+          setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms),
+        ),
+      ]),
+    [],
+  );
 
   useEffect(() => {
     (async () => {
-      // Si ya vengo usando un draft, simplemente continúo
       if (route.params?.fromDraft) {
         initRegister();
         return;
@@ -67,7 +81,6 @@ export default function RegisterUser10({navigation, route}) {
       const draft = await getDraft();
 
       if (draft) {
-        // Me reemplazo a mí mismo con los datos y la marca
         navigation.replace(AuthNav.RegisterUser10, {
           ...draft,
           fromDraft: true,
@@ -83,7 +96,9 @@ export default function RegisterUser10({navigation, route}) {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const task = InteractionManager.runAfterInteractions(async () => {
+    (async () => {
+      await new Promise(r => requestAnimationFrame(() => r()));
+      await new Promise(r => requestAnimationFrame(() => r()));
       try {
         const yieldUI = () => new Promise(r => setTimeout(r, 50));
         setStage('predict');
@@ -91,17 +106,49 @@ export default function RegisterUser10({navigation, route}) {
 
         await saveDraft({
           step: 'predict',
-          pin,
           dni,
           vc,
-          originalPin: pin,
           useBiometry,
         });
-        const bundle = await createSeedBundle(pin);
+        let bundle = await getTmpRegister();
+        if (!bundle) {
 
-        if (!bundle.seedHex || bundle.seedHex.length !== 64) {
-          throw new Error('seedHex inválido: ' + bundle.seedHex);
+          let workingPin = pin;
+          if (!workingPin) {
+            workingPin = await getTmpPin();
+          }
+          if (!workingPin || `${workingPin}`.length === 0) {
+            throw new Error('PIN no disponible para iniciar registro');
+          }
+          bundle = await createSeedBundle(workingPin);
+
+          if (!bundle.seedHex || bundle.seedHex.length !== 64) {
+            throw new Error('seedHex inválido: ' + bundle.seedHex);
+          }
+
+          const pinHash = SHA256((workingPin || '').trim()).toString();
+          await setTmpRegister({...bundle, pinHash});
+          bundle.pinHash = pinHash;
+
+          await clearTmpPin();
+        } else if (!bundle.pinHash) {
+          if (pin && `${pin}`.length) {
+            bundle.pinHash = SHA256(pin.trim()).toString();
+            await setTmpRegister({...bundle});
+          } else {
+            const workingPin = await getTmpPin();
+            if (workingPin && `${workingPin}`.length) {
+              bundle.pinHash = SHA256(workingPin.trim()).toString();
+              await setTmpRegister({...bundle});
+              await clearTmpPin();
+            } else {
+              throw new Error(
+                'No hay PIN disponible para finalizar el registro.',
+              );
+            }
+          }
         }
+
         const privKey = '0x' + bundle.seedHex;
         const walletData = await predictWalletAddress(CHAIN, privKey);
 
@@ -121,32 +168,38 @@ export default function RegisterUser10({navigation, route}) {
           walletData.salt,
         );
 
-        const {publicStreamId: streamId, jwt} = await registerStore({
-          vc,
-          authSig,
-          accountAddress: walletData.address,
-          guardianAddress: predictedGuardian,
-          salt: walletData.salt.toString(),
-          privKey,
-        });
-        if (jwt) await AsyncStorage.setItem(JWT_KEY, jwt);
+        const {publicStreamId: streamId, jwt} = await withTimeout(
+          registerStore({
+            vc,
+            authSig,
+            accountAddress: walletData.address,
+            guardianAddress: predictedGuardian,
+            salt: walletData.salt.toString(),
+            privKey,
+          }),
+          30000,
+          'registerStore',
+        );
+        if (typeof jwt == 'string' && jwt.length) await startSession(jwt);
         await saveDraft({
           step: 'store',
-          privKey,
           walletData,
-          pin,
           dni,
           vc,
           streamId,
         });
         setStage('guardian');
         await yieldUI();
-        const {guardianAddress} = await registerStreamAndGuardian(
-          CHAIN,
-          walletData.salt,
-          privKey,
-          dni,
-          streamId,
+        const {guardianAddress} = await withTimeout(
+          registerStreamAndGuardian(
+            CHAIN,
+            walletData.salt,
+            privKey,
+            dni,
+            streamId,
+          ),
+          90000,
+          'registerStreamAndGuardian',
         );
 
         dispatch(
@@ -160,7 +213,7 @@ export default function RegisterUser10({navigation, route}) {
         await yieldUI();
 
         await saveSecrets(
-          pin,
+          pin || '',
           {
             streamId,
             dni,
@@ -171,32 +224,25 @@ export default function RegisterUser10({navigation, route}) {
             did: vc.credentialSubject.id,
           },
           useBiometry,
+          bundle,
+          bundle.pinHash,
         );
 
-        // await saveIdentity(
-        //   {
-        //     streamId,
-        //     dni,
-        //     salt: walletData.salt.toString(),
-        //     privKey,
-        //     account: walletData.address,
-        //     did: vc.credentialSubject.id,
-        //   },
-        //   pin.trim(),
-        //   useBiometry,
-        // );
-        const storedPayload = {
-          streamId,
-          dni,
-          salt: walletData.salt.toString(),
-          privKey,
-          account: walletData.address,
-          guardian: guardianAddress,
-        };
         if (await getBioFlag()) {
+          const storedPayload = {
+            streamId,
+            salt: walletData.salt.toString(),
+            privKey,
+            account: walletData.address,
+            guardian: guardianAddress,
+            dni
+          };
           await Keychain.setGenericPassword(
             'bundle',
-            JSON.stringify({stored: storedPayload, jwt}),
+            JSON.stringify({
+              stored: storedPayload,
+              jwt,
+            }),
             {
               service: 'walletBundle',
               accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
@@ -205,6 +251,7 @@ export default function RegisterUser10({navigation, route}) {
           );
         }
         await clearDraft();
+        await clearTmpRegister();
         setStage('done');
         setLoading(false);
         navigation.replace(AuthNav.RegisterUser11, {
@@ -219,8 +266,8 @@ export default function RegisterUser10({navigation, route}) {
         );
         setErrorModalVisible(true);
       }
-    });
-    return () => task?.cancel();
+    })();
+    return () => {}; 
   }, [pin, dni, vc, useBiometry, registerStore, navigation]);
 
   const stageMessage = {
@@ -232,10 +279,11 @@ export default function RegisterUser10({navigation, route}) {
     guardian: 'Creando guardian…',
     save: String.saveData,
     done: String.doneRegister,
+    stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',
   }[stage];
 
   return (
-    <CSafeAreaView style={localStyle.root}>
+    <CSafeAreaViewAuth style={localStyle.root}>
       <StepIndicator step={10} />
       <View style={localStyle.center}>
         <View style={localStyle.mainContainer}>
@@ -267,21 +315,33 @@ export default function RegisterUser10({navigation, route}) {
       </View>
       <InfoModal
         visible={errorModalVisible}
-        title="Verificación fallida"
+        title="Registro fallido"
         message={errorMessage}
         buttonText="Reintentar"
         onClose={() => {
           setErrorModalVisible(false);
-          navigation.navigate(AuthNav.RegisterUser10, {
-            vc,
-            offerUrl,
-            dni,
-            originalPin: pin,
-            useBiometry,
-          });
+          if (
+            errorMessage?.includes('PIN no disponible') ||
+            errorMessage?.includes('No hay PIN disponible')
+          ) {
+            navigation.replace(AuthNav.RegisterUser8, {
+              vc,
+              offerUrl,
+              useBiometry,
+              dni,
+            });
+          } else {
+            navigation.replace(AuthNav.RegisterUser10, {
+              vc,
+              offerUrl,
+              dni,
+              originalPin: pin,
+              useBiometry,
+            });
+          }
         }}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

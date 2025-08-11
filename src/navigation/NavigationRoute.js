@@ -1,3 +1,7 @@
+//import ElectoralLocations from '../container/Vote/Common/ElectoralLocations';
+import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
+import UnifiedTableScreen from '../container/Vote/UnifiedTableScreen';
+import ActaDetailScreen from '../container/Vote/WitnessRecord/ActaDetailScreen';
 import CreateNewPassword from '../container/Auth/CreateNewPassword';
 import CreatePin from '../container/Auth/CreatePin';
 import FaceIdScreen from '../container/Auth/FaceIdScreen';
@@ -19,6 +23,7 @@ import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
+//import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
@@ -43,6 +48,10 @@ import CountTableDetail from '../container/Vote/AnnounceCount/CountTableDetail';
 import MyWitnessesListScreen from '../container/Vote/MyWitnesses/MyWitnessesListScreen';
 import MyWitnessesDetailScreen from '../container/Vote/MyWitnesses/MyWitnessesDetailScreen';
 
+// Nuevas pantallas
+import UnifiedParticipationScreen from '../container/Vote/common/UnifiedParticipationScreen';
+import OracleParticipation from '../container/TabBar/Profile/OracleParticipation';
+
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
 import AuthNavigation from './type/AuthNavigation';
@@ -59,6 +68,8 @@ import PrivacyPolicies from '../container/TabBar/Profile/PrivacyPolicies';
 import ChangePinVerify from '../container/TabBar/Profile/ChangePinVerify';
 import ChangePinNew from '../container/TabBar/Profile/ChangePinNew';
 import ChangePinNewConfirm from '../container/TabBar/Profile/ChangePinNewConfirm';
+import More from '../container/TabBar/Profile/More';
+import Security from '../container/TabBar/Profile/Security';
 import TermsAndCondition from '../container/TabBar/Profile/TermsAndCondition';
 import RecuperationQR from '../container/TabBar/Profile/RecuperationQR';
 
@@ -89,6 +100,9 @@ import GuardiansAdmin from '../container/TabBar/Guardians/GuardiansAdmin';
 import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
+  ElectoralLocations,
+  UnifiedTableScreen,
+  ActaDetailScreen,
   Splash,
   AuthNavigation,
   TabNavigation,
@@ -111,6 +125,10 @@ export const StackRoute = {
   MyWitnessesListScreen,
   MyWitnessesDetailScreen,
 
+  // Nuevas pantallas
+  UnifiedParticipationScreen,
+  OracleParticipation,
+
   // Profile y configuración
   PersonalDetails,
   RecuperationQR,
@@ -125,6 +143,9 @@ export const StackRoute = {
   ChangePinVerify,
   ChangePinNew,
   ChangePinNewConfirm,
+  More,
+  Security,
+
   TermsAndCondition,
   Notification,
   NotificationDetails,

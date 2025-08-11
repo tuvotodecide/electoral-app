@@ -20,12 +20,22 @@ import {useGuardiansInviteQuery} from '../../../data/guardians';
 import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
+import {CHAIN} from '@env';
+import axios from 'axios';
+import {
+  guardianHashFrom,
+  inviteGuardianOnChain,
+} from '../../../api/guardianOnChain';
+import {getSecrets} from '../../../utils/Cifrate';
 
 export default function AddGuardians({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
-  const {mutate: sendInvitation, isLoading: loading} =
-    useGuardiansInviteQuery();
+  const {
+    mutateAsync: sendInvitation,
+    isLoading: loading,
+    error,
+  } = useGuardiansInviteQuery();
   const [carnet, setCarnet] = useState('');
 
   const [dni, setDni] = useState('');
@@ -34,54 +44,74 @@ export default function AddGuardians({navigation}) {
   const [msg, setMsg] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-
+  const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
+  const onPressNext = () => {};
   const onPressSearch = () => {
     setMsg('');
     findPublicDni(
       {identifier: carnet.trim()},
       {
         onSuccess: data => {
-          setCandidate({did: data.did, fullName: data.fullName});
-        },
-        onError: err => setMsg(err?.response?.data?.error ?? err.message),
-      },
-    );
-  };
-  const onPressInvitation = () => {
-    if (!candidate) return;
-    setMsg('');
-    sendInvitation(
-      {guardianId: candidate.did, nickname: nick || null},
-      {
-        onSuccess: data => {
-          setModalMessage(
-            `Invitación enviada. ${
-              candidate.fullName || '(sin nombre)'
-            } debe aprobarla en las siguientes 24 horas desde su cuenta.`,
-          );
-          setModalVisible(true);
+          if (!data.ok) {
+            setMsg(data.message || 'Persona no encontrada');
+            return;
+          }
+          console.log(data);
 
-          setCandidate(null);
-          setDni('');
-          setNick('');
+          setCandidate({
+            did: data.did,
+            fullName: data.fullName,
+            accountAddress: data.accountAddress,
+            guardianAddress: data.guardianAddress,
+          });
         },
         onError: err => setMsg(err?.response?.data?.error ?? err.message),
       },
     );
   };
-  const RightIcon = () => {
-    return (
-      <TouchableOpacity>
-        {colors.dark ? <Short_White /> : <Short_Black />}
-      </TouchableOpacity>
-    );
+  const onPressInvitation = async () => {
+    if (!candidate) return;
+    console.log('candidate', candidate);
+    const {payloadQr} = await getSecrets();
+    console.log('secrets', payloadQr);
+
+    setMsg('');
+    const invitateAddress = guardianHashFrom(candidate.accountAddress);
+    const ownerPk = payloadQr.privKey;
+    const guardianCt = payloadQr.guardian;
+    console.log(guardianCt);
+
+    try {
+      await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
+      const data = await sendInvitation({
+        guardianId: candidate.did,
+        nickname: nick,
+      });
+      setModalMessage(
+        `Invitación enviada. ${
+          candidate.fullName || '(sin nombre)'
+        } debe aprobarla en las siguientes 24 horas desde su cuenta.`,
+      );
+      setModalVisible(true);
+      setCandidate(null);
+      setNick('');
+    } catch (err) {
+      console.log(err);
+
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : err.message;
+      setMsg(message);
+    }
   };
+
   return (
     <CSafeAreaView>
-      <CHeader title={String.addGuardian} rightIcon={<RightIcon />} />
+      <CHeader title={String.addGuardian} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
-          {String.addGuardianSubtitle}
+          {String.addGuardianSubtitle}{' '}
           <CText type="B16" style={{fontWeight: 'bold'}}>
             {String.addGuardianSubtitleSpan}
           </CText>
@@ -140,12 +170,13 @@ export default function AddGuardians({navigation}) {
             </View>
           </>
         )}
+        {msg !== '' && <CAlert status="error" message={msg} />}
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CAlert status="info" message={String.guardianNotificationTitle} />
         <CButton
           title={String.sendInvitation}
-          disabled={loading || !candidate}
+          disabled={loading || !candidate || isWhitespaceOnly}
           onPress={onPressInvitation}
           type={'B16'}
           containerStyle={localStyle.btnStyle}

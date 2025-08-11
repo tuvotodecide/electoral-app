@@ -3,8 +3,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
-// custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+// Custom imports
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -43,7 +43,7 @@ export default function RegisterUser8({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -93,7 +93,7 @@ export default function RegisterUser8({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

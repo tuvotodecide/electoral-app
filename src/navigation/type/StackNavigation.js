@@ -26,6 +26,18 @@ export default function StackNavigation() {
 
       {/* Pantallas de Voto */}
       <Stack.Screen
+        name={StackNav.ElectoralLocations}
+        component={StackRoute.ElectoralLocations}
+      />
+      <Stack.Screen
+        name={StackNav.UnifiedTableScreen}
+        component={StackRoute.UnifiedTableScreen}
+      />
+      <Stack.Screen
+        name={StackNav.ActaDetailScreen}
+        component={StackRoute.ActaDetailScreen}
+      />
+      <Stack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
@@ -36,6 +48,18 @@ export default function StackNavigation() {
       <Stack.Screen
         name={StackNav.WitnessRecord}
         component={StackRoute.WitnessRecord}
+      />
+      <Stack.Screen
+        name={StackNav.WhichIsCorrectScreen}
+        component={StackRoute.WhichIsCorrectScreen}
+      />
+      <Stack.Screen
+        name={StackNav.RecordReviewScreen}
+        component={StackRoute.RecordReviewScreen}
+      />
+      <Stack.Screen
+        name={StackNav.RecordCertificationScreen}
+        component={StackRoute.RecordCertificationScreen}
       />
       <Stack.Screen
         name={StackNav.AnnounceCount}
@@ -109,6 +133,14 @@ export default function StackNavigation() {
         component={StackRoute.ChangePinNewConfirm}
       />
       <Stack.Screen
+        name={StackNav.More}
+        component={StackRoute.More}
+      />
+      <Stack.Screen
+        name={StackNav.Security}
+        component={StackRoute.Security}
+      />
+      <Stack.Screen
         name={StackNav.TermsAndCondition}
         component={StackRoute.TermsAndCondition}
       />
@@ -140,6 +172,16 @@ export default function StackNavigation() {
       <Stack.Screen
         name={StackNav.SuccessScreen}
         component={StackRoute.SuccessScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.UnifiedParticipationScreen}
+        component={StackRoute.UnifiedParticipationScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.OracleParticipation}
+        component={StackRoute.OracleParticipation}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

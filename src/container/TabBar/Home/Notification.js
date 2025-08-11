@@ -12,6 +12,7 @@ import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
 import CStandardHeader from '../../../components/common/CStandardHeader';
+import {FirebaseNotificationService} from '../../../services/FirebaseNotificationService';
 
 import {
   mockNotificaciones,
@@ -27,16 +28,34 @@ export default function Notification({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const notificationService = new FirebaseNotificationService();
 
   useEffect(() => {
     const cargarNotificaciones = async () => {
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setNotificaciones(mockNotificaciones);
+      try {
+        // Combinar notificaciones almacenadas con las del mock
+        const storedNotifications = await notificationService.getStoredNotifications();
+        const allNotifications = [...storedNotifications, ...mockNotificaciones];
+        
+        // Ordenar por timestamp (más recientes primero)
+        const sortedNotifications = allNotifications.sort((a, b) => b.timestamp - a.timestamp);
+        
+        setNotificaciones(sortedNotifications);
+      } catch (error) {
+        console.error('Error cargando notificaciones:', error);
+        setNotificaciones(mockNotificaciones);
+      }
       setLoading(false);
     };
+    
     cargarNotificaciones();
-  }, []);
+    
+    // Recargar notificaciones cuando la pantalla se enfoque
+    const focusListener = navigation.addListener('focus', cargarNotificaciones);
+    
+    return () => focusListener();
+  }, [navigation]);
 
   // Ícono solo negro, como en la imagen
   const getIconName = tipo => {
@@ -48,8 +67,31 @@ export default function Notification({navigation}) {
     }
   };
 
+  const handleNotificationPress = (item) => {
+    if (item.tipo === 'Conteo de Votos') {
+      // Navegar a CountTableDetail con la información de la mesa
+      const mesaData = {
+        id: item.id,
+        numero: item.mesa,
+        nombre: item.mesa,
+        recinto: item.colegio,
+        direccion: item.direccion,
+        distancia: item.distancia || 'Cerca',
+        latitude: -16.5000, // Coordenadas por defecto (La Paz)
+        longitude: -68.1500,
+        estado: item.estado || 'iniciado'
+      };
+      
+      navigation.navigate('CountTableDetail', { mesa: mesaData });
+    }
+  };
+
   const renderNotificationItem = ({item}) => (
-    <View style={localStyle.notificationCard}>
+    <TouchableOpacity 
+      style={localStyle.notificationCard}
+      onPress={() => handleNotificationPress(item)}
+      activeOpacity={0.7}
+    >
       <View style={localStyle.cardContent}>
         <Ionicons
           name={getIconName(item.tipo)}
@@ -60,16 +102,27 @@ export default function Notification({navigation}) {
         <View style={localStyle.contentContainer}>
           <View style={localStyle.headerRow}>
             <Text style={localStyle.title}>{item.mesa}</Text>
-            <Text style={localStyle.time}>
-              {formatTiempoRelativo(item.timestamp)}
-            </Text>
+            <View style={localStyle.rightInfo}>
+              {item.distancia && (
+                <Text style={localStyle.distance}>{item.distancia}</Text>
+              )}
+              <Text style={localStyle.time}>
+                {formatTiempoRelativo(item.timestamp)}
+              </Text>
+            </View>
           </View>
           <Text style={localStyle.subtitle}>{item.tipo}</Text>
           <Text style={localStyle.detailText}>{item.colegio}</Text>
           <Text style={localStyle.detailText}>{item.direccion}</Text>
+          {item.tipo === 'Conteo de Votos' && (
+            <View style={localStyle.actionHint}>
+              <Ionicons name="arrow-forward" size={16} color="#2790b0" />
+              <Text style={localStyle.actionText}>Toca para ver detalles</Text>
+            </View>
+          )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -162,12 +215,22 @@ const localStyle = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 2,
   },
+  rightInfo: {
+    alignItems: 'flex-end',
+  },
+  distance: {
+    color: '#2790b0',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
   title: {
     fontWeight: 'bold',
     fontSize: 22,
     color: '#111',
     marginRight: 10,
     marginTop: -3,
+    flex: 1,
   },
   time: {
     color: '#2790b0',
@@ -186,6 +249,17 @@ const localStyle = StyleSheet.create({
     color: '#444',
     marginTop: 2,
     fontWeight: '400',
+  },
+  actionHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  actionText: {
+    color: '#2790b0',
+    fontSize: 14,
+    marginLeft: 6,
+    fontWeight: '500',
   },
   separator: {
     height: 1,

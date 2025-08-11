@@ -16,7 +16,9 @@ export const useSearchTableLogic = navigationTarget => {
     // If not, assume it's a simple table and wrap it
     const params = tableOrParams.tableData
       ? tableOrParams
-      : {table: tableOrParams};
+      : {table: tableOrParams, mesa: tableOrParams}; // Add mesa parameter for consistency
+
+    console.log('useSearchTableLogic: Navigating with params:', params);
     navigation.navigate(navigationTarget, params);
   };
 

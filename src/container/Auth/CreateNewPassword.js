@@ -5,7 +5,7 @@ import {useSelector} from 'react-redux';
 // custom import
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../themes';
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import CText from '../../components/common/CText';
 import {moderateScale} from '../../common/constants';
@@ -64,7 +64,7 @@ export default function CreateNewPassword({navigation}) {
     navigation.navigate(AuthNav.SuccessfulPassword);
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper
         containerStyle={[
@@ -111,7 +111,7 @@ export default function CreateNewPassword({navigation}) {
           onPress={onPressResetPassword}
         />
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

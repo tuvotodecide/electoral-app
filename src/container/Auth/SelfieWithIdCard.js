@@ -2,7 +2,7 @@ import {Image, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useRef} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import {styles} from '../../themes';
 import CText from '../../components/common/CText';
@@ -25,7 +25,7 @@ export default function SelfieWithIdCard({navigation}) {
     navigation.navigate(AuthNav.VerifySuccess);
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <View style={localStyle.mainContainer}>
         <View style={{height: '90%'}}>
@@ -48,7 +48,7 @@ export default function SelfieWithIdCard({navigation}) {
         />
       </View>
       <TakePictureModal SheetRef={SheetRef} />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

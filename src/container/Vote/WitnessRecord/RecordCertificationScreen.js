@@ -7,6 +7,7 @@ import {
   Modal,
   ActivityIndicator,
   Dimensions,
+  Image,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -18,6 +19,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import nftImage from '../../../assets/images/nft-medal.png';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -38,12 +40,31 @@ const RecordCertificationScreen = () => {
   const colors = useSelector(state => state.theme.theme);
   const {tableData} = route.params || {};
 
+  console.log('RecordCertificationScreen - Received params:', route.params);
+  console.log('RecordCertificationScreen - tableData:', tableData);
+  console.log(
+    'RecordCertificationScreen - tableData keys:',
+    Object.keys(tableData || {}),
+  );
+  console.log('RecordCertificationScreen - tableNumber fields:', {
+    tableNumber: tableData?.tableNumber,
+    numero: tableData?.numero,
+    number: tableData?.number,
+  });
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
+  const [showNFTCertificate, setShowNFTCertificate] = useState(false);
 
-  // Simulated user data - in real app this would come from authentication
+  // Obtener nombre real del usuario desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || {};
+  const data = {
+    name: subject.fullName || '(sin nombre)',
+  };
   const currentUser = {
-    name: 'Juan Pérez',
+    name: data.name || '(sin nombre)',
     role: 'Testigo Electoral',
   };
 
@@ -62,30 +83,11 @@ const RecordCertificationScreen = () => {
     setStep(1);
     // Simulate loading time
     setTimeout(() => {
-      console.log('RecordCertificationScreen - navigating to SuccessScreen');
-      console.log('StackNav.SuccessScreen value:', StackNav.SuccessScreen);
-      console.log('Navigation object:', navigation);
-      console.log('Params to send:', {
-        successType: 'certify',
-        tableData: tableData,
-        autoNavigateDelay: 5000,
-        showAutoNavigation: true,
-      });
+      console.log('RecordCertificationScreen - showing NFT modal');
       setShowConfirmModal(false);
       setStep(0);
-      // Navigate to success screen
-      try {
-        navigation.navigate(StackNav.SuccessScreen, {
-          successType: 'certify',
-          tableData: tableData,
-          autoNavigateDelay: 3000, // 3 seconds before auto-navigation
-          showAutoNavigation: true,
-        });
-      } catch (error) {
-        console.error('Error navigating to SuccessScreen:', error);
-        // Fallback navigation
-        navigation.navigate('WitnessRecord');
-      }
+      // Show NFT modal directly instead of navigating to SuccessScreen
+      setShowNFTCertificate(true);
     }, 2000);
   };
 
@@ -94,13 +96,28 @@ const RecordCertificationScreen = () => {
     setStep(0);
   };
 
+  const closeNFTModal = () => {
+    setShowNFTCertificate(false);
+    // Navigate back to home after closing NFT modal
+    try {
+      navigation.popToTop();
+    } catch {
+      navigation.navigate('TabNavigation');
+    }
+  };
+
   return (
     <CSafeAreaView style={styles.container}>
       {/* Header */}
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table || 'Mesa'} ${tableData?.numero || 'N/A'}`}
+        title={`${String.table || 'Mesa'} ${
+          tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          'N/A'
+        }`}
         showNotification={true}
       />
 
@@ -118,7 +135,13 @@ const RecordCertificationScreen = () => {
                   {(String.certificationText || '')
                     .replace('{userName}', currentUser.name || '')
                     .replace('{userRole}', currentUser.role || '')
-                    .replace('{tableNumber}', tableData?.numero)}
+                    .replace(
+                      '{tableNumber}',
+                      tableData?.tableNumber ||
+                        tableData?.numero ||
+                        tableData?.number ||
+                        'N/A',
+                    )}
                 </CText>
               </View>
             </View>
@@ -147,7 +170,13 @@ const RecordCertificationScreen = () => {
                 {(String.certificationText || '')
                   .replace('{userName}', currentUser.name || '')
                   .replace('{userRole}', currentUser.role || '')
-                  .replace('{tableNumber}', tableData?.numero)}
+                  .replace(
+                    '{tableNumber}',
+                    tableData?.tableNumber ||
+                      tableData?.numero ||
+                      tableData?.number ||
+                      'N/A',
+                  )}
               </CText>
             </View>
 
@@ -218,6 +247,42 @@ const RecordCertificationScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Modal NFT Certificate */}
+      {showNFTCertificate && (
+        <View style={nftModalStyles.nftModalOverlay}>
+          <View style={nftModalStyles.nftCertificate}>
+            {/* Borde decorativo */}
+            <View style={nftModalStyles.certificateBorder}>
+              {/* Medallón NFT */}
+              <View style={nftModalStyles.medalContainer}>
+                <Image
+                  source={nftImage}
+                  style={nftModalStyles.medalImage}
+                  resizeMode="contain"
+                />
+                <CText style={nftModalStyles.nftMedalText}>NFT</CText>
+              </View>
+              {/* Datos del certificado */}
+              <CText style={nftModalStyles.nftName}>{currentUser.name}</CText>
+              <CText style={nftModalStyles.nftCertTitle}>CERTIFICADO DE</CText>
+              <CText style={nftModalStyles.nftCertTitle}>
+                PARTICIPACIÓN ELECTORAL
+              </CText>
+              <CText style={nftModalStyles.nftCertDetail}>
+                ELECCIONES GENERALES
+              </CText>
+              <CText style={nftModalStyles.nftCertDetail}>BOLIVIA 2025</CText>
+            </View>
+            {/* Cerrar */}
+            <TouchableOpacity
+              onPress={closeNFTModal}
+              style={nftModalStyles.closeModalBtn}>
+              <CText style={nftModalStyles.closeModalText}>Cerrar</CText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </CSafeAreaView>
   );
 };
@@ -594,6 +659,101 @@ export const modalStyles = StyleSheet.create({
     color: '#868686',
     textAlign: 'center',
     marginTop: getResponsiveSize(2, 4, 6),
+  },
+});
+
+// NFT Modal Styles
+const nftModalStyles = StyleSheet.create({
+  nftModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  nftCertificate: {
+    backgroundColor: '#f8fff8',
+    borderRadius: 22,
+    padding: 28,
+    width: '88%',
+    alignItems: 'center',
+    elevation: 8,
+  },
+  certificateBorder: {
+    borderWidth: 2.5,
+    borderColor: '#a5deb5',
+    borderRadius: 18,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: '#edffe8',
+    borderStyle: 'dashed',
+  },
+  medalContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    width: 96,
+    height: 96,
+    justifyContent: 'center',
+    borderRadius: 50,
+    backgroundColor: '#ffe9b8',
+    borderWidth: 4,
+    borderColor: '#fff7e0',
+    marginTop: -38,
+  },
+  medalImage: {
+    width: 62,
+    height: 62,
+    position: 'absolute',
+    left: 17,
+    top: 17,
+  },
+  nftMedalText: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 30,
+    color: '#CBA233',
+    letterSpacing: 3,
+  },
+  nftName: {
+    fontWeight: '700',
+    fontSize: 22,
+    marginVertical: 6,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertTitle: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertDetail: {
+    fontWeight: '400',
+    fontSize: 15,
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  closeModalBtn: {
+    marginTop: 8,
+    backgroundColor: '#17694A',
+    paddingHorizontal: 22,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  closeModalText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
 

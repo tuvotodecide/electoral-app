@@ -1,5 +1,5 @@
 // src/container/TabBar/Recovery/RecuperationQR.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Platform,
@@ -11,33 +11,31 @@ import {
   Linking,
 } from 'react-native';
 
-import ViewShot, { captureRef } from 'react-native-view-shot';
-import QRCodeSVG                    from 'react-native-qrcode-svg';
-import RNFS                         from 'react-native-fs';
-import { check, request, RESULTS, openSettings } from 'react-native-permissions';
-import { CameraRoll }               from '@react-native-camera-roll/camera-roll';
-import pako                         from 'pako';
-import { Buffer }                   from 'buffer';
+import ViewShot, {captureRef} from 'react-native-view-shot';
+import QRCodeSVG from 'react-native-qrcode-svg';
+import RNFS from 'react-native-fs';
+import {check, request, RESULTS, openSettings} from 'react-native-permissions';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+import pako from 'pako';
+import {Buffer} from 'buffer';
 
-import { getSecrets }               from '../../../utils/Cifrate';
-import { getBioFlag }               from '../../../utils/BioFlag';
+import {getSecrets} from '../../../utils/Cifrate';
+import {getBioFlag} from '../../../utils/BioFlag';
 
-import CSafeAreaView                from '../../../components/common/CSafeAreaView';
-import CHeader                      from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper         from '../../../components/common/KeyBoardAvoidWrapper';
-import CText                        from '../../../components/common/CText';
-import CAlert                       from '../../../components/common/CAlert';
-import CButton                      from '../../../components/common/CButton';
-import Icono                        from '../../../components/common/Icono';
-import String                       from '../../../i18n/String';
-import { styles }                   from '../../../themes';
-import { getHeight, moderateScale } from '../../../common/constants';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CHeader from '../../../components/common/CHeader';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
+import CText from '../../../components/common/CText';
+import CAlert from '../../../components/common/CAlert';
+import CButton from '../../../components/common/CButton';
+import Icono from '../../../components/common/Icono';
+import String from '../../../i18n/String';
+import {styles} from '../../../themes';
+import {getHeight, moderateScale} from '../../../common/constants';
 
-/* ───────────────── helpers ────────────────── */
 const compress = obj =>
   Buffer.from(pako.deflate(JSON.stringify(obj))).toString('base64');
 
-/* permisos: sólo lectura */
 const requestGalleryPermission = async () => {
   if (Platform.OS !== 'android') return true;
 
@@ -56,44 +54,40 @@ const requestGalleryPermission = async () => {
     Alert.alert(
       'Permiso denegado',
       'Actívalo manualmente en Ajustes > Permisos',
-      [{ text: 'Abrir ajustes', onPress: openSettings }, { text: 'OK' }],
+      [{text: 'Abrir ajustes', onPress: openSettings}, {text: 'OK'}],
     );
   }
   return false;
 };
 
-/* guarda en caché + MediaStore (funciona en todos los Android) */
 const saveToGallery = async (base64Data, fileName = `QR_${Date.now()}.png`) => {
   const tmpPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
 
-  // ① escribimos el PNG en una carpeta de la app (sin permisos especiales)
   await RNFS.writeFile(tmpPath, base64Data, 'base64');
 
-  // ② lo publicamos en la Galería (CameraRoll → MediaStore)
-  await CameraRoll.save(`file://${tmpPath}`, { type: 'photo' });
+  await CameraRoll.save(`file://${tmpPath}`, {type: 'photo'});
 
-  // ③ opcional: limpiar el archivo temporal
-  try { await RNFS.unlink(tmpPath); } catch (_) {}
+  try {
+    await RNFS.unlink(tmpPath);
+  } catch (_) {}
 
   return true;
 };
-/* ──────────────────────────────────────────── */
 
 export default function RecuperationQR() {
-  const [qrData,  setQrData]  = useState('');
+  const [qrData, setQrData] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const viewShotRef           = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const viewShotRef = useRef(null);
 
-  /* cargar secrets y generar payload comprimido */
   useEffect(() => {
     (async () => {
       try {
-        const { payloadQr } = await getSecrets();
+        const {payloadQr} = await getSecrets();
         if (!payloadQr) throw new Error('No se encontró la identidad');
 
         const bioEnabled = await getBioFlag();
-        setQrData(compress({ ...payloadQr, bioEnabled }));
+        setQrData(compress({...payloadQr, bioEnabled}));
       } catch (err) {
         Alert.alert('Error', err.message);
       } finally {
@@ -102,9 +96,9 @@ export default function RecuperationQR() {
     })();
   }, []);
 
-  /* guardar PNG */
   const saveQr = async () => {
-    if (!viewShotRef.current) return Alert.alert('QR', 'El código aún no está listo');
+    if (!viewShotRef.current)
+      return Alert.alert('QR', 'El código aún no está listo');
     if (saving) return;
 
     setSaving(true);
@@ -112,9 +106,9 @@ export default function RecuperationQR() {
       if (!(await requestGalleryPermission())) return setSaving(false);
 
       const b64 = await captureRef(viewShotRef, {
-        format : 'png',
+        format: 'png',
         quality: 1,
-        result : 'base64',
+        result: 'base64',
       });
 
       await saveToGallery(b64);
@@ -124,14 +118,13 @@ export default function RecuperationQR() {
       Alert.alert(
         'Error',
         'No se pudo guardar el QR. Comprueba los permisos de almacenamiento.',
-        [{ text: 'OK' }, { text: 'Ajustes', onPress: openSettings }],
+        [{text: 'OK'}, {text: 'Ajustes', onPress: openSettings}],
       );
     } finally {
       setSaving(false);
     }
   };
 
-  /* ---------------- UI --------------- */
   if (loading) {
     return (
       <CSafeAreaView>
@@ -151,7 +144,7 @@ export default function RecuperationQR() {
         <ViewShot
           ref={viewShotRef}
           style={local.qrBox}
-          options={{ format: 'png', quality: 1 }}>
+          options={{format: 'png', quality: 1}}>
           <QRCodeSVG
             value={qrData}
             size={moderateScale(250)}
@@ -172,26 +165,27 @@ export default function RecuperationQR() {
           onPress={saveQr}
           disabled={saving}
           frontIcon={
-            saving
-              ? <ActivityIndicator size={20} color="#fff" />
-              : <Icono name="download-outline" size={20} color="#fff" />
+            saving ? (
+              <ActivityIndicator size={20} color="#fff" />
+            ) : (
+              <Icono name="download-outline" size={20} color="#fff" />
+            )
           }
-          containerStyle={{ marginVertical: 20 }}
+          containerStyle={{marginVertical: 20}}
         />
       </View>
     </CSafeAreaView>
   );
 }
 
-/* estilos */
 const local = StyleSheet.create({
-  qrBox:{
+  qrBox: {
     ...styles.center,
-    marginTop:50,
-    marginBottom:10,
-    height:getHeight(300),
-    width:'100%',
-    backgroundColor:'#fff',
-    borderRadius:8,
+    marginTop: 50,
+    marginBottom: 10,
+    height: getHeight(300),
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 8,
   },
 });

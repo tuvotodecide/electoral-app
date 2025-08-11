@@ -3,7 +3,7 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -28,7 +28,7 @@ export default function ConditionsRegister({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper
         containerStyle={[styles.justifyBetween, styles.flex]}>
@@ -68,7 +68,7 @@ export default function ConditionsRegister({navigation}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

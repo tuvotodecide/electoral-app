@@ -15,6 +15,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
+import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -40,31 +41,87 @@ const mockMesa = {
 
 export default function CountTableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  const mesa = route?.params?.mesa || mockMesa;
+  
+  // Obtener datos del usuario actual desde Redux
+  const userData = useSelector(state => state.wallet.payload);
+  const userId = userData?.account || 'user-' + Date.now();
+  
+  // Obtener datos de la mesa y ubicación desde los parámetros de navegación
+  const mesaData = route?.params?.mesa || route?.params?.table;
+  const originalTable = route?.params?.originalTable;
+  const locationData = route?.params?.locationData;
+  
+  console.log('CountTableDetail: Received mesa data:', mesaData);
+  console.log('CountTableDetail: Original table data:', originalTable);
+  console.log('CountTableDetail: Location data:', locationData);
+  console.log('CountTableDetail: User ID:', userId);
+  console.log('CountTableDetail: All route params:', route?.params);
+
+  // Use the processed mesa data if available, otherwise fallback to mock
+  const mesa = mesaData || originalTable || mockMesa;
+
+  // Ensure all required fields are present with fallbacks
+  const processedMesa = {
+    numero: mesa.numero || mesa.tableNumber || mesa.number || mesa.name || mesa.id || 'Mesa N/A',
+    codigo: mesa.codigo || mesa.tableCode || mesa.code || mesa.id || 'N/A',
+    recinto: mesa.recinto || mesa.venue || mesa.precinctName || locationData?.name || 'Recinto N/A',
+    colegio: mesa.colegio || mesa.venue || mesa.precinctName || locationData?.name || 'Colegio N/A',
+    provincia: mesa.provincia || mesa.direccion || mesa.address || locationData?.address || 'Provincia N/A',
+    zona: mesa.zona || mesa.zone || locationData?.zone || 'Zona N/A',
+    distrito: mesa.distrito || mesa.district || locationData?.district || 'Distrito N/A',
+  };
+
+  console.log('CountTableDetail: Processed mesa data for display:', processedMesa);
+
   const [modalVisible, setModalVisible] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
+  const [notificationResult, setNotificationResult] = React.useState(null);
 
   const handleAnnounceCount = () => {
     setModalVisible(true);
   };
 
-  const [loading, setLoading] = React.useState(false);
-  const [success, setSuccess] = React.useState(false);
-
-  const handleConfirmCount = () => {
+  const handleConfirmCount = async () => {
     setLoading(true);
-
-    // Simulate loading time
-    setTimeout(() => {
+    
+    try {
+      console.log('Iniciando anuncio de conteo...');
+      
+      // Enviar notificaciones a usuarios cercanos
+      const result = await firebaseNotificationService.announceCountToNearbyUsers(
+        userId,
+        processedMesa,
+        locationData
+      );
+      
+      console.log('Resultado de notificaciones:', result);
+      setNotificationResult(result);
+      
+      // Simular procesamiento adicional
+      setTimeout(() => {
+        setLoading(false);
+        setSuccess(true);
+        
+        // Después de 3 segundos, cerrar modal y navegar
+        setTimeout(() => {
+          setModalVisible(false);
+          setSuccess(false);
+          setNotificationResult(null);
+          navigation.popToTop();
+        }, 3000);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error anunciando conteo:', error);
       setLoading(false);
-      setSuccess(true);
-
-      // Wait a few seconds then close modal and navigate to home
+      setSuccess(false);
+      
+      // Mostrar error por 2 segundos y cerrar
       setTimeout(() => {
         setModalVisible(false);
-        setSuccess(false);
-        navigation.popToTop();
-      }, 1500);
-    }, 1500);
+      }, 2000);
+    }
   };
 
   const handleCancelCount = () => {
@@ -91,15 +148,25 @@ export default function CountTableDetail({navigation, route}) {
               <View style={stylesx.card}>
                 <View style={stylesx.cardContent}>
                   <View style={stylesx.cardTextContainer}>
-                    <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                    <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
                     <CText style={stylesx.label}>
-                      {String.venue} {mesa.recinto}
+                      {String.venue} {processedMesa.recinto}
                     </CText>
-                    <CText style={stylesx.label}>{mesa.colegio}</CText>
-                    <CText style={stylesx.label}>{mesa.provincia}</CText>
+                    <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                    <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                     <CText style={stylesx.label}>
-                      {String.tableCode} {mesa.codigo}
+                      {String.tableCode} {processedMesa.codigo}
                     </CText>
+                    {processedMesa.zona !== 'Zona N/A' && (
+                      <CText style={stylesx.label}>
+                        Zona: {processedMesa.zona}
+                      </CText>
+                    )}
+                    {processedMesa.distrito !== 'Distrito N/A' && (
+                      <CText style={stylesx.label}>
+                        Distrito: {processedMesa.distrito}
+                      </CText>
+                    )}
                   </View>
                   <MaterialIcons
                     name="how-to-vote"
@@ -129,15 +196,25 @@ export default function CountTableDetail({navigation, route}) {
             <View style={stylesx.card}>
               <View style={stylesx.cardContent}>
                 <View style={stylesx.cardTextContainer}>
-                  <CText style={stylesx.mesaTitle}>{mesa.numero}</CText>
+                  <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
                   <CText style={stylesx.label}>
-                    {String.venue} {mesa.recinto}
+                    {String.venue} {processedMesa.recinto}
                   </CText>
-                  <CText style={stylesx.label}>{mesa.colegio}</CText>
-                  <CText style={stylesx.label}>{mesa.provincia}</CText>
+                  <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                  <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                   <CText style={stylesx.label}>
-                    {String.tableCode} {mesa.codigo}
+                    {String.tableCode} {processedMesa.codigo}
                   </CText>
+                  {processedMesa.zona !== 'Zona N/A' && (
+                    <CText style={stylesx.label}>
+                      Zona: {processedMesa.zona}
+                    </CText>
+                  )}
+                  {processedMesa.distrito !== 'Distrito N/A' && (
+                    <CText style={stylesx.label}>
+                      Distrito: {processedMesa.distrito}
+                    </CText>
+                  )}
                 </View>
                 <MaterialIcons
                   name="how-to-vote"
@@ -175,7 +252,7 @@ export default function CountTableDetail({navigation, route}) {
                 <CText style={stylesx.modalSubtitle}>
                   {String.announcingTableCount.replace(
                     '{tableName}',
-                    mesa.numero,
+                    processedMesa.numero,
                   )}
                 </CText>
               </View>
@@ -191,8 +268,16 @@ export default function CountTableDetail({navigation, route}) {
                   {String.countAnnounced}
                 </CText>
                 <CText style={stylesx.modalSubtitle}>
-                  {String.countAnnouncedSuccess}
+                  {notificationResult ? 
+                    `Notificado a ${notificationResult.usuariosNotificados} usuarios cercanos` : 
+                    String.countAnnouncedSuccess
+                  }
                 </CText>
+                {notificationResult && notificationResult.usuariosCercanos && (
+                  <CText style={stylesx.distanceInfo}>
+                    Radio: 300 metros
+                  </CText>
+                )}
               </View>
             ) : (
               <>
@@ -207,7 +292,7 @@ export default function CountTableDetail({navigation, route}) {
                   <CText style={stylesx.modalSubtitle}>
                     {String.wishToAnnounceCount.replace(
                       '{tableName}',
-                      mesa.numero,
+                      processedMesa.numero,
                     )}
                   </CText>
                 </View>
@@ -412,5 +497,11 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
+  },
+  distanceInfo: {
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#666',
+    marginTop: getResponsiveSize(8, 10, 12),
+    textAlign: 'center',
   },
 });

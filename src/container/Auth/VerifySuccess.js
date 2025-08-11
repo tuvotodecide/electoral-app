@@ -3,7 +3,7 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import {styles} from '../../themes';
 import images from '../../assets/images';
@@ -23,7 +23,7 @@ export default function VerifySuccess({navigation}) {
     });
   };
   return (
-    <CSafeAreaView style={styles.justifyBetween}>
+    <CSafeAreaViewAuth style={styles.justifyBetween}>
       <CHeader />
       <View style={localStyle.mainContainer}>
         <Image
@@ -48,7 +48,7 @@ export default function VerifySuccess({navigation}) {
         containerStyle={localStyle.btnStyle}
         onPress={onPressContinue}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

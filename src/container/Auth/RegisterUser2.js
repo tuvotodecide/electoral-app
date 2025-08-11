@@ -3,7 +3,7 @@ import React, {useCallback, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 // Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {moderateScale} from '../../common/constants';
@@ -18,7 +18,6 @@ import DniExistsModal from '../../components/modal/DniExistsModal';
 import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
-import {startSession} from '../../utils/Session';
 import debounce from 'lodash.debounce';
 
 export default function RegisterUser2({navigation}) {
@@ -58,9 +57,9 @@ export default function RegisterUser2({navigation}) {
           },
           onSuccess: response => {
             setSubmitting(false);
-            // Aquí revisamos el ok
+
             if (response.ok) {
-              // abrimos el modal de "DNI ya existe"
+         
               setModalVisible(true);
             } else {
               navigation.navigate(AuthNav.RegisterUser3, {
@@ -76,14 +75,16 @@ export default function RegisterUser2({navigation}) {
               err?.response?.data?.message || err.message || String.unknowerror;
             Alert.alert(String.errorCi, msg);
           },
+          onSettled: () => setSubmitting(false),
         },
       );
     }, 500),
+    
     [idNumber, frontImage, backImage],
   );
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={2} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -143,7 +144,7 @@ export default function RegisterUser2({navigation}) {
         />
       </View>
       <DniExistsModal visible={isModalVisible} onClose={closeModal} />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

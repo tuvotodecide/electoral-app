@@ -2,7 +2,7 @@ import {StyleSheet, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -19,13 +19,23 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 
-export default function RegisterUser6({navigation,route}) {
+export default function RegisterUser6({navigation, route}) {
   const {vc, offerUrl, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
   const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser7, { vc, offerUrl, dni });
+    navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
+  };
+  const onPressReturn = () => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: AuthNav.RegisterUser2,
+        },
+      ],
+    });
   };
   const onPressRememberMe = () => {
     setCheck(!check);
@@ -49,7 +59,7 @@ export default function RegisterUser6({navigation,route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={6} />
       <CHeader onPressBack={() => navigation.navigate(AuthNav.RegisterUser4)} />
       <KeyBoardAvoidWrapper
@@ -92,6 +102,7 @@ export default function RegisterUser6({navigation,route}) {
            title={String.labelDocumentExpiration}
           text={fmtDate(documentExpirationDate)}
         /> */}
+
         {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
           title={String.labelNationality}
@@ -111,16 +122,24 @@ export default function RegisterUser6({navigation,route}) {
             {String.confirmCheckText}
           </CText>
         </View>
-
-        <CButton
-          title={String.confirmButton}
-          disabled={!check}
-          onPress={onPressNext}
-          type={'B18'}
-          containerStyle={localStyle.btnStyle}
-        />
+        <View>
+          <CButton
+            title={String.confirmButton}
+            disabled={!check}
+            onPress={onPressNext}
+            type={'B18'}
+            containerStyle={localStyle.btnStyle}
+          />
+          <CButton
+            title={String.returntoVerify}
+            bgColor={colors.primary4}
+            onPress={onPressReturn}
+            type={'B18'}
+            containerStyle={localStyle.btnStyle1}
+          />
+        </View>
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 
@@ -132,6 +151,10 @@ const localStyle = StyleSheet.create({
   },
   btnStyle: {
     ...styles.selfCenter,
+  },
+  btnStyle1: {
+    ...styles.selfCenter,
+    marginTop: 1,
   },
   divider: {
     ...styles.rowCenter,

@@ -2,7 +2,7 @@ import {PermissionsAndroid, Platform, StatusBar, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import messaging from '@react-native-firebase/messaging';
 import {BACKEND} from '@env';
 import {QueryClient, QueryClientProvider} from 'react-query';
@@ -10,14 +10,41 @@ import {DEVICE_TOKEN} from './common/constants';
 import {setAsyncStorageData} from './utils/AsyncStorage';
 import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
+import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
+import {initializeFirebase} from './config/firebase';
 import axios from 'axios';
+import { migrateIfNeeded } from './utils/migrateBundle';
 const queryClient = new QueryClient();
+
 const App = () => {
   const colors = useSelector(state => state.theme.theme);
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
   const userData = useSelector(state => state.wallet.payload);
   const [ready, setReady] = useState(false);
+  const auth = useSelector(s => s.auth);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.pendingNav) {
+      navigate(auth.pendingNav.name, auth.pendingNav.params);
+      dispatch(setPendingNav(null));
+    }
+  }, [auth.isAuthenticated, auth.pendingNav]);
+  useEffect(() => {
+    migrateIfNeeded();
+  }, []);
+  // Configurar Firebase y usuario automáticamente
+  const {isInitialized, initializationError} = useFirebaseUserSetup();
+
+  // Mostrar estado de inicialización en logs
+  useEffect(() => {
+    if (isInitialized) {
+      console.log('🎉 Firebase User Setup completado exitosamente');
+    }
+    if (initializationError) {
+      console.error('⚠️ Error en Firebase User Setup:', initializationError);
+    }
+  }, [isInitialized, initializationError]);
 
   async function requestNotificationPermission() {
     if (Platform.OS === 'android' && Platform.Version >= 33) {
@@ -35,6 +62,15 @@ const App = () => {
   useEffect(() => {
     registerNotifications();
     requestNotificationPermission();
+    
+    // Inicializar Firebase
+    initializeFirebase().then(success => {
+      if (success) {
+        console.log('🎉 Firebase inicializado correctamente');
+      } else {
+        console.error('⚠️ Error inicializando Firebase');
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -64,7 +100,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.flex}>
-        
         <StatusBar
           barStyle={colors?.dark === 'dark' ? 'light-content' : 'dark-content'}
         />

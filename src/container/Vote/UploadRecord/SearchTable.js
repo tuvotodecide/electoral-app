@@ -1,424 +1,162 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  FlatList,
-  ActivityIndicator,
-  Dimensions,
-} from 'react-native';
+import axios from 'axios';
 import {useSelector} from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import {StyleSheet} from 'react-native';
 
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CText from '../../../components/common/CText';
+import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
-import UniversalHeader from '../../../components/common/UniversalHeader';
-import CustomModal from '../../../components/common/CustomModal';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {
-  fetchMesas,
-  fetchNearbyMesas,
-  getMockMesas,
-  mapMesasToLegacyFormat,
-} from '../../../data/mockMesas';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
-
-// Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
-const isLandscape = screenWidth > screenHeight;
-
-const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
-  return medium;
-};
-
-const getNumColumns = () => {
-  if (isTablet && isLandscape) return 3;
-  if (isTablet) return 2;
-  return 1;
-};
-
-export default function SearchTable({navigation}) {
+export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
-  const [sortOrder, setSortOrder] = useState(String.ascending);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isLoadingMesas, setIsLoadingMesas] = useState(true);
   const [mesas, setMesas] = useState([]);
-
-  // Estados para el modal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    type: 'info',
-    title: '',
-    message: '',
-    buttonText: String.accept,
-  });
+  const [locationData, setLocationData] = useState(null);
 
   // Cargar mesas al montar el componente
   useEffect(() => {
-    loadMesas();
-  }, []);
+    loadMesasFromApi(route?.params?.locationId);
+  }, [route?.params?.locationId]);
 
-  const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-  };
-
-  const loadMesas = async () => {
+  const loadMesasFromApi = async (locationId) => {
     try {
       setIsLoadingMesas(true);
-      console.log('SearchTable: Loading mesas...');
-      const response = await fetchMesas();
+      console.log(
+        'SearchTable: Loading tables from API for location:',
+        locationId || 'default location',
+      );
+      
+      // Always use the same endpoint for now, could be made dynamic based on locationId
+      const response = await axios.get(
+        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
+      );
+      console.log('SearchTable - API Response structure:', response.data);
 
-      if (response.success) {
+      if (response.data && response.data.tables) {
+        console.log('SearchTable - Tables found:', response.data.tables.length);
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.name,
+          address: response.data.address,
+          code: response.data.code,
+          zone: response.data.zone,
+          district: response.data.district,
+        });
+
+        setMesas(response.data.tables);
+      } else if (
+        response.data &&
+        response.data.data &&
+        response.data.data.tables
+      ) {
         console.log(
-          'SearchTable: Mesas loaded successfully:',
-          response.data.length,
+          'SearchTable - Tables found in data.data:',
+          response.data.data.tables.length,
         );
-        setMesas(response.data);
+
+        // Store location data for TableCard components
+        setLocationData({
+          name: response.data.data.name,
+          address: response.data.data.address,
+          code: response.data.data.code,
+          zone: response.data.data.zone,
+          district: response.data.data.district,
+        });
+
+        setMesas(response.data.data.tables);
       } else {
-        console.error('SearchTable: Failed to load mesas');
-        showModal('error', String.error, String.couldNotLoadTables);
+        console.log('SearchTable: No tables found in response');
+        setMesas([]);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas:', error);
-      showModal('error', String.error, String.errorLoadingTables);
+      console.error('SearchTable: Error loading mesas from API:', error);
+      setMesas([]);
     } finally {
       setIsLoadingMesas(false);
     }
   };
 
-  const filteredMesas = mesas.filter(
-    mesa =>
-      mesa.numero.toLowerCase().includes(searchText.toLowerCase()) ||
-      mesa.codigo.includes(searchText) ||
-      mesa.colegio.toLowerCase().includes(searchText.toLowerCase()),
-  );
+  // Filter mesas based on search text
+  const filteredMesas = mesas.filter(mesa => {
+    if (!mesa || !searchText) return true;
 
-  const sortedMesas = [...filteredMesas].sort((a, b) => {
-    if (sortOrder === String.ascending) {
-      return a.numero.localeCompare(b.numero);
-    } else {
-      return b.numero.localeCompare(a.numero);
+    const searchLower = searchText.toLowerCase();
+
+    // Buscar en número/tableNumber
+    const tableNumber = mesa.numero || mesa.tableNumber || mesa.number || '';
+    if (tableNumber.toString().toLowerCase().includes(searchLower)) {
+      return true;
     }
+
+    // Buscar en código
+    const codigo = mesa.codigo || mesa.code || '';
+    if (codigo.toString().includes(searchText)) {
+      return true;
+    }
+
+    // Buscar en colegio/escuela/location
+    const location =
+      mesa.colegio || mesa.escuela || mesa.location?.name || mesa.school || '';
+    if (location.toString().toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    return false;
   });
 
-  const handleSelectMesa = mesa => {
-    navigation.navigate(StackNav.TableDetail, {mesa});
-  };
-
-  const toggleSort = () => {
-    setSortOrder(
-      sortOrder === String.ascending ? String.descending : String.ascending,
-    );
-  };
-
-  const handleNearbyMesas = async () => {
-    try {
-      setIsLoadingLocation(true);
-      console.log('SearchTable: Loading nearby mesas...');
-
-      // Simulate getting location (in production would use real geolocation)
-      const mockLocation = {latitude: -16.5, longitude: -68.15}; // La Paz, Bolivia
-
-      const response = await fetchNearbyMesas(
-        mockLocation.latitude,
-        mockLocation.longitude,
-      );
-
-      if (response.success) {
-        console.log('SearchTable: Nearby mesas loaded:', response.data.length);
-        setMesas(response.data);
-        showModal(
-          'success',
-          String.success,
-          String.foundNearbyTables.replace('{count}', response.data.length),
-        );
-      } else {
-        console.error('SearchTable: Failed to load nearby mesas');
-        showModal('error', String.error, String.couldNotLoadNearbyTables);
-      }
-    } catch (error) {
-      console.error('SearchTable: Error loading nearby mesas:', error);
-      showModal('error', String.error, String.errorSearchingNearbyTables);
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  };
-
-  const renderMesaItem = ({item}) => (
-    <TouchableOpacity
-      style={[localStyle.mesaCard, isTablet && localStyle.mesaCardTablet]}
-      onPress={() => handleSelectMesa(item)}>
-      <View style={localStyle.mesaHeader}>
-        <CText style={localStyle.mesaTitle} color={colors.textColor}>
-          {item.numero}
-        </CText>
-        <CText style={localStyle.codigoMesaText}>
-          {String.tableCode} {item.codigo}
-        </CText>
-      </View>
-      <CText style={localStyle.colegioText} color={colors.textColor}>
-        {item.colegio}
-      </CText>
-      <CText style={localStyle.provinciaText}>{item.provincia}</CText>
-    </TouchableOpacity>
-  );
-
-  return (
-    <CSafeAreaView style={localStyle.container}>
-      <UniversalHeader
+  if (isLoadingMesas) {
+    return (
+      <BaseSearchTableScreen
         colors={colors}
         onBack={() => navigation.goBack()}
         title={String.searchTable}
-        showNotification={false}
+        chooseTableText={String.chooseTableText}
+        searchPlaceholder={String.tableCodePlaceholder}
+        searchValue={searchText}
+        onSearchChange={setSearchText}
+        tables={[]}
+        enableAutoVerification={true}
+        apiEndpoint="http://192.168.1.16:3000/api/v1/mesa"
+        locationData={locationData}
+        styles={localStyle}
       />
+    );
+  }
 
-      {/* Loading indicator for initial data load */}
-      {isLoadingMesas ? (
-        <View style={localStyle.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
-          <CText style={localStyle.loadingText}>{String.loadingTables}</CText>
-        </View>
-      ) : (
-        <>
-          {/* Search Bar */}
-          <View style={localStyle.searchContainer}>
-            <View style={localStyle.searchInputContainer}>
-              <Ionicons
-                name="search-outline"
-                size={getResponsiveSize(18, 20, 24)}
-                color="#979797"
-                style={localStyle.searchIcon}
-              />
-              <TextInput
-                style={localStyle.searchInput}
-                placeholder={String.tableCodePlaceholder}
-                placeholderTextColor="#979797"
-                value={searchText}
-                onChangeText={setSearchText}
-              />
-            </View>
-          </View>
-
-          {/* Filtros */}
-          <View style={localStyle.filterContainer}>
-            <TouchableOpacity
-              style={localStyle.sortButton}
-              onPress={toggleSort}>
-              <Ionicons
-                name="swap-vertical-outline"
-                size={getResponsiveSize(14, 16, 18)}
-                color="#979797"
-              />
-              <CText style={localStyle.sortText}>{sortOrder}</CText>
-              <Ionicons
-                name="chevron-down-outline"
-                size={getResponsiveSize(14, 16, 18)}
-                color="#979797"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={localStyle.locationButton}
-              onPress={handleNearbyMesas}
-              disabled={isLoadingLocation}>
-              {isLoadingLocation ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#2596be"
-                  style={{marginRight: getResponsiveSize(4, 5, 6)}}
-                />
-              ) : (
-                <Ionicons
-                  name="location-outline"
-                  size={getResponsiveSize(14, 16, 18)}
-                  color="#0C5460"
-                />
-              )}
-              <CText style={localStyle.cercaDeTiText}>
-                {isLoadingLocation ? String.searching : String.nearYou}
-              </CText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Listado */}
-          <FlatList
-            data={sortedMesas}
-            renderItem={renderMesaItem}
-            keyExtractor={item => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={localStyle.listContainer}
-            numColumns={getNumColumns()}
-            key={getNumColumns()} // Force re-render when columns change
-            columnWrapperStyle={isTablet ? localStyle.row : null}
-          />
-        </>
-      )}
-
-      {/* Custom Modal */}
-      <CustomModal
-        visible={modalVisible}
-        onClose={closeModal}
-        type={modalConfig.type}
-        title={modalConfig.title}
-        message={modalConfig.message}
-        buttonText={modalConfig.buttonText}
-      />
-    </CSafeAreaView>
+  return (
+    <BaseSearchTableScreen
+      colors={colors}
+      onBack={() => navigation.goBack()}
+      title={String.searchTable}
+      chooseTableText={String.chooseTableText}
+      searchPlaceholder={String.tableCodePlaceholder}
+      searchValue={searchText}
+      onSearchChange={setSearchText}
+      tables={filteredMesas}
+      enableAutoVerification={true}
+      apiEndpoint="http://192.168.1.16:3000/api/v1/mesa"
+      locationData={locationData}
+      styles={localStyle}
+    />
   );
 }
 
 const localStyle = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA', // Gris muy claro
+    backgroundColor: '#FAFAFA',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: getResponsiveSize(30, 50, 70),
+    paddingVertical: 50,
   },
   loadingText: {
-    marginTop: getResponsiveSize(10, 15, 20),
-    fontSize: getResponsiveSize(14, 16, 18),
+    marginTop: 15,
+    fontSize: 16,
     color: '#666',
     textAlign: 'center',
-  },
-  searchContainer: {
-    paddingHorizontal: getResponsiveSize(16, 20, 32),
-    marginBottom: getResponsiveSize(12, 15, 20),
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
-    borderRadius: getResponsiveSize(16, 18, 22),
-    paddingHorizontal: getResponsiveSize(10, 12, 16),
-    paddingVertical: getResponsiveSize(6, 8, 12),
-    backgroundColor: '#FFF',
-  },
-  searchIcon: {
-    marginRight: getResponsiveSize(6, 8, 10),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: getResponsiveSize(14, 16, 18),
-    color: '#222',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    backgroundColor: 'transparent',
-  },
-  filterContainer: {
-    flexDirection: isTablet ? 'row' : isSmallPhone ? 'column' : 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveSize(16, 20, 32),
-    marginBottom: getResponsiveSize(12, 15, 20),
-    gap: isSmallPhone ? 8 : 0,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: getResponsiveSize(8, 10, 12),
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    paddingHorizontal: getResponsiveSize(10, 13, 16),
-    paddingVertical: getResponsiveSize(6, 7, 10),
-    minHeight: getResponsiveSize(36, 40, 48),
-  },
-  sortText: {
-    color: '#979797',
-    fontSize: getResponsiveSize(13, 15, 17),
-    marginHorizontal: getResponsiveSize(4, 5, 6),
-  },
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#D1ECF166',
-    borderRadius: getResponsiveSize(8, 10, 12),
-    paddingHorizontal: getResponsiveSize(14, 18, 22),
-    paddingVertical: getResponsiveSize(6, 7, 10),
-    minHeight: getResponsiveSize(36, 40, 48),
-  },
-  cercaDeTiText: {
-    color: '#0C5460',
-    fontSize: getResponsiveSize(13, 15, 17),
-    marginLeft: getResponsiveSize(4, 5, 6),
-  },
-  row: {
-    justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveSize(8, 12, 16),
-  },
-  listContainer: {
-    paddingHorizontal: getResponsiveSize(16, 20, 32),
-    paddingBottom: getResponsiveSize(16, 20, 24),
-  },
-  mesaCard: {
-    backgroundColor: '#FFF',
-    borderRadius: getResponsiveSize(12, 14, 16),
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    padding: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(12, 18, 24),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
-    flex: isTablet ? (isLandscape ? 0.31 : 0.48) : 1, // For tablet columns
-  },
-  mesaCardTablet: {
-    marginHorizontal: getResponsiveSize(4, 8, 12),
-    maxWidth: isTablet
-      ? isLandscape
-        ? (screenWidth - 120) / 3
-        : (screenWidth - 80) / 2
-      : '100%',
-  },
-  mesaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: getResponsiveSize(3, 4, 6),
-    flexWrap: 'wrap',
-  },
-  mesaTitle: {
-    fontSize: getResponsiveSize(18, 20, 24),
-    fontWeight: 'bold',
-    color: '#222',
-    flex: 1,
-  },
-  codigoMesaText: {
-    color: '#979797',
-    fontSize: getResponsiveSize(12, 14, 16),
-    fontWeight: '400',
-    flexShrink: 1,
-  },
-  colegioText: {
-    marginTop: getResponsiveSize(5, 7, 9),
-    fontSize: getResponsiveSize(14, 16, 18),
-    color: '#222',
-    lineHeight: getResponsiveSize(18, 20, 24),
-  },
-  provinciaText: {
-    fontSize: getResponsiveSize(11, 13, 15),
-    color: '#979797',
-    fontWeight: '400',
-    marginTop: getResponsiveSize(1, 1, 2),
-    lineHeight: getResponsiveSize(14, 16, 18),
   },
 });

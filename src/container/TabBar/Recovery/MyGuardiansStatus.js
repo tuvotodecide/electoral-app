@@ -5,7 +5,11 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {getHeight, moderateScale, PENDINGRECOVERY} from '../../../common/constants';
+import {
+  getHeight,
+  moderateScale,
+  PENDINGRECOVERY,
+} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import Icono from '../../../components/common/Icono';
 
@@ -19,7 +23,10 @@ import {ActivityIndicator} from 'react-native-paper';
 import {getDeviceId} from '../../../utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
-
+import {CHAIN} from '@env';
+import {readOnChainApprovals} from '../../../api/guardianOnChain';
+const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
+const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 const statusColorKey = {
   ACCEPTED: 'activeColor',
   PENDING: 'pendingColor',
@@ -41,10 +48,11 @@ export default function MyGuardiansStatus({navigation, route}) {
 
   const [ready, setReady] = useState(false);
 
-  const {data: detail, isLoading} = useGuardiansRecoveryDetailQuery(
-    deviceId.current,
-    ready,
-  );
+  const {
+    data: detail,
+    isLoading,
+    remove,
+  } = useGuardiansRecoveryDetailQuery(deviceId.current, ready);
 
   const guardians = useMemo(() => {
     if (!detail) return [];
@@ -70,11 +78,14 @@ export default function MyGuardiansStatus({navigation, route}) {
     if (!detail?.ok) return;
 
     if (detail.status === 'APPROVED') {
-      AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       navigation.replace(AuthNav.RecoveryUser1Pin, {
         dni,
         reqId: detail.id,
       });
+    } else if (detail.status === 'REJECTED') {
+      remove();
+      AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+      navigation.replace(AuthNav.SelectRecuperation);
     }
   }, [detail]);
 
@@ -85,6 +96,30 @@ export default function MyGuardiansStatus({navigation, route}) {
     });
   }, []);
 
+  useEffect(() => {
+    let t;
+    (async function poll() {
+      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
+      const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
+      if (!ownerAccount || !guardianCt) return;
+
+      try {
+        const {required, current, executed, expired} =
+          await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
+        if (current >= required) {
+         navigation.replace(AuthNav.RecoveryUser1Pin, {
+
+          dni,
+           reqId: detail?.id, // opcional
+         });
+          return;
+        }
+      } catch (_) {}
+      t = setTimeout(poll, 5000);
+    })();
+    return () => clearTimeout(t);
+  }, [dni, detail?.id]);
+
   if (isLoading || !ready) {
     return (
       <View style={localStyle.loaderContainer}>
@@ -94,7 +129,6 @@ export default function MyGuardiansStatus({navigation, route}) {
   }
 
   const onPressReturn = () => {
-
     navigation.navigate(StackNav.AuthNavigation, {
       screen: AuthNav.Connect,
     });
