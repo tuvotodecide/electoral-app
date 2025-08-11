@@ -3,20 +3,21 @@ import { privateKeyToAccount } from "viem/accounts";
 import { availableNetworkNames, availableNetworks, FACTORY_ADDRESS, gasParams } from "./params";
 import { createBundlerClient, entryPoint07Address } from "viem/account-abstraction";
 import { toSimpleSmartAccount } from "permissionless/accounts";
-import { CHAIN } from '@env';
+import { CHAIN, ORACLE_TOKEN } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
+import oracle from '../abi/oracle.json'
 
 export function getReadAccountContract(chain, address) {
 	const client = createPublicClient({
-    chain: availableNetworks[chain].chain,
-    transport: http(),
-  });
+		chain: availableNetworks[chain].chain,
+		transport: http(),
+	});
 
 	return getContract({
-    address,
-    abi: walletAbi,
-    client: {public: client}
-  });
+		address,
+		abi: walletAbi,
+		client: { public: client }
+	});
 }
 
 export async function getAccount(privateKey, address, chain, includeBundler = false) {
@@ -32,18 +33,18 @@ export async function getAccount(privateKey, address, chain, includeBundler = fa
 		address,
 		factoryAddress: FACTORY_ADDRESS,
 		owner,
-		entryPoint: {address: entryPoint07Address, version: '0.7'},
+		entryPoint: { address: entryPoint07Address, version: '0.7' },
 	});
 
 	let bundlerClient;
-	if(includeBundler) {
+	if (includeBundler) {
 		bundlerClient = createBundlerClient({
 			client: publicClient,
 			transport: http(availableNetworks[chain].bundler),
 		});
 	}
 
-	return {account, publicClient, bundlerClient};
+	return { account, publicClient, bundlerClient };
 }
 
 export async function getWalletBalances(address) {
@@ -61,7 +62,7 @@ export async function getWalletBalances(address) {
 	});
 
 	try {
-		const response = await fetch(url, {method: 'POST', headers, body});
+		const response = await fetch(url, { method: 'POST', headers, body });
 		return response.json();
 	} catch (error) {
 		console.error('Error fetching balance:' + error);
@@ -70,7 +71,7 @@ export async function getWalletBalances(address) {
 
 export async function getWalletCreateTotalDebt(address) {
 	const promises = [];
-	for(const chain of availableNetworkNames) {
+	for (const chain of availableNetworkNames) {
 		promises.push(getWalletCreateDebt(chain, address));
 	}
 
@@ -91,50 +92,51 @@ export async function getWalletCreateDebt(chain, address) {
 	}
 }
 
-export async function send(privateKey, address, chain, targetAddress, token, decimals, amount) {
-	const {account, publicClient: client} = await getAccount(privateKey, address, chain);
+export async function send(privateKey, address, chain, targetAddress, ipfsCID) {
+	const { account, publicClient: client } = await getAccount(privateKey, address, chain);
 
 	const bundlerClient = createBundlerClient({
-    client,
-    transport: http(availableNetworks[chain].bundler),
-  });
+		client,
+		transport: http(availableNetworks[chain].bundler),
+	});
 
 	const hash = await bundlerClient.sendUserOperation({
-    account,
-    calls: [{
-      to: token, //direccion del oraculo 0xfEBBd59dcE9e1E9C5F1431Aa99C1f9e52193da7f
-      value: BigInt(0),
-      data: getSendTokenCall(targetAddress),
-    }],
-    //paymaster: availableNetworks[chain].tokenPaymaster,
+		account,
+		calls: [{
+			to: ORACLE_TOKEN, //direccion del oraculo 0xfEBBd59dcE9e1E9C5F1431Aa99C1f9e52193da7f
+			value: BigInt(0),
+			data: getSendTokenCall(targetAddress),
+		}],
+		//paymaster: availableNetworks[chain].tokenPaymaster,
 		...gasParams,
 		verificationGasLimit: BigInt(90000),
-  });
+	});
 
 	const receipt = await bundlerClient.waitForUserOperationReceipt({ hash });
-  
-	if(!receipt.success) {
+	console.log("Receipt en account", receipt)
+
+	if (!receipt.success) {
 		throw Error('Transaction failed, try again later');
 	}
 
-	const block = await client.getBlock({blockNumber: receipt.receipt.blockNumber});
+	const block = await client.getBlock({ blockNumber: receipt.receipt.blockNumber });
 	const date = new Date(Number(block.timestamp) * 1000);
-  return {receipt, date: date.toLocaleString()};
+	return { receipt, date: date.toLocaleString() };
 }
 
 function getSendTokenCall(to) {
 	return encodeFunctionData({
-		abi: erc20Abi, //json del oraculo
+		abi: oracle, //json del oraculo
 		functionName: 'requestRegister',
 		args: [to] //URI del json de IPFS
 	});
 }
 
-function getSendTokenCall2(to) {
+function getSendTokenCall2(id_mesa, to, emptyData) {
 	return encodeFunctionData({
-		abi: erc20Abi, //json del oraculo
+		abi: oracle, //json del oraculo
 		functionName: 'createAttestation',
-		args: [to] //URI del json de IPFS
+		args: [id_mesa, to, ""] //URI del json de IPFS
 	});
 
 	//receipt deberia retornar (id (mesa), recordId (nft de acta))
@@ -156,15 +158,15 @@ function getSendTokenCall3(to) {
 
 export async function isWallet(address) {
 	const client = createPublicClient({
-    chain: availableNetworks[CHAIN].chain,
-    transport: http(),
-  });
+		chain: availableNetworks[CHAIN].chain,
+		transport: http(),
+	});
 
 	const wallet = getContract({
-    address,
-    abi: walletAbi,
-    client: {public: client}
-  });
+		address,
+		abi: walletAbi,
+		client: { public: client }
+	});
 
 	try {
 		const response = await wallet.read.isThisASimpleAccountContract();
@@ -177,7 +179,7 @@ export async function isWallet(address) {
 // Fetch user attestations from API
 export async function fetchUserAttestations(userId) {
 	const API_BASE_URL = 'http://192.168.1.16:3000/api/v1';
-	
+
 	try {
 		console.log(`Fetching attestations for user ${userId}...`);
 		const response = await fetch(`${API_BASE_URL}/user/${userId}/attestations`, {
@@ -194,7 +196,7 @@ export async function fetchUserAttestations(userId) {
 
 		const data = await response.json();
 		console.log('Attestations fetched successfully:', data);
-		
+
 		return {
 			success: true,
 			data: data,
