@@ -1,11 +1,11 @@
 import React from 'react';
-import {ScrollView, View, Dimensions, ActivityIndicator} from 'react-native';
+import { ScrollView, View, Dimensions, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
 import CustomModal from './CustomModal';
 import CText from './CText';
-import {StackNav} from '../../navigation/NavigationKey';
+import { StackNav } from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import {
   SearchTableHeader,
@@ -19,7 +19,9 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+import { BACKEND } from "@env"
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -96,7 +98,7 @@ const BaseSearchTableScreen = ({
 
   // Auto-verification props
   enableAutoVerification = true, // Enable automatic API verification
-  apiEndpoint = "http://192.168.1.16:3000/api/v1/mesa", // Base API endpoint
+  //apiEndpoint = "http://192.168.1.16:3000/api/v1/mesa", // Base API endpoint
 
   // Styles
   styles,
@@ -117,7 +119,7 @@ const BaseSearchTableScreen = ({
   const finalChooseText = chooseTableText || chooseMesaText;
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -155,7 +157,7 @@ const BaseSearchTableScreen = ({
 
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
-    
+
     if (!tableCode) {
       console.error('BaseSearchTableScreen - No table code found for mesa:', mesa);
       showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
@@ -165,18 +167,18 @@ const BaseSearchTableScreen = ({
     try {
       // Show loading
       setIsVerifying(true);
-      
+
       console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
-      
+
       // Check if mesa has existing attestations
-      const response = await axios.get(`${apiEndpoint}/${tableCode}/results`);
-      
+      const response = await axios.get(`${BACKEND}//api/v1/ballots/by-table/${tableCode}`);
+
       console.log('BaseSearchTableScreen - Mesa results response:', response.data);
-      
+
       if (response.data && response.data.registros && response.data.registros.length > 0) {
         // Mesa has existing attestations - go directly to WhichIsCorrectScreen
         console.log('BaseSearchTableScreen - Mesa has existing attestations:', response.data.registros.length);
-        
+
         // Convert API data to format expected by WhichIsCorrectScreen
         const actaImages = response.data.registros.map((record, index) => {
           console.log(`BaseSearchTableScreen - Mapping record ${index}:`, {
@@ -184,7 +186,7 @@ const BaseSearchTableScreen = ({
             actaImage: record.actaImage,
             hasImage: !!record.actaImage
           });
-          
+
           return {
             id: record.recordId || `record-${index}`,
             uri: record.actaImage, // Use the image URL directly from API
@@ -209,7 +211,7 @@ const BaseSearchTableScreen = ({
       } else {
         // No attestations found, go to table detail first to show mesa information
         console.log('BaseSearchTableScreen - No attestations found, redirecting to table detail');
-        
+
         navigation.navigate(StackNav.TableDetail, {
           tableData: enrichedMesa,
           mesa: enrichedMesa,
@@ -217,14 +219,14 @@ const BaseSearchTableScreen = ({
           isFromUnifiedFlow: true
         });
       }
-      
+
     } catch (error) {
       console.log('BaseSearchTableScreen - Mesa check completed, determining next step:', error.message || error);
-      
+
       // Check if it's a 404 or mesa not found error
       if (error.response && error.response.status === 404) {
         console.log('BaseSearchTableScreen - Mesa not found, redirecting to table detail');
-        
+
         // Mesa not found, go to table detail first to show mesa information
         navigation.navigate(StackNav.TableDetail, {
           tableData: enrichedMesa,
@@ -235,10 +237,10 @@ const BaseSearchTableScreen = ({
       } else if (error.response && error.response.data && error.response.data.message) {
         // Handle specific error messages from API
         const errorData = error.response.data;
-        
+
         if (errorData.message.includes('no encontrada')) {
           console.log('BaseSearchTableScreen - Mesa not found in API, redirecting to table detail');
-          
+
           // Mesa not found, go to table detail first to show mesa information
           navigation.navigate(StackNav.TableDetail, {
             tableData: enrichedMesa,
@@ -388,11 +390,11 @@ const BaseSearchTableScreen = ({
                 </View>
               ))}
               {/* Fill empty spaces for incomplete rows */}
-              {Array.from({length: layout.cardsPerRow - group.length}).map(
+              {Array.from({ length: layout.cardsPerRow - group.length }).map(
                 (_, emptyIndex) => (
                   <View
                     key={`empty-${emptyIndex}`}
-                    style={{flex: layout.cardFlex}}
+                    style={{ flex: layout.cardFlex }}
                   />
                 ),
               )}

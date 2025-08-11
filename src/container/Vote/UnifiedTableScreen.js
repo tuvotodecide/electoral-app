@@ -1,16 +1,17 @@
-import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View, Dimensions} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View, Dimensions } from 'react-native';
 import axios from 'axios';
 import BaseSearchTableScreen from '../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../components/common/CustomModal';
 import CText from '../../components/common/CText';
-import {useSearchTableLogic} from '../../hooks/useSearchTableLogic';
-import {createSearchTableStyles} from '../../styles/searchTableStyles';
-import {fetchMesas} from '../../data/mockMesas';
-import {StackNav} from '../../navigation/NavigationKey';
+import { useSearchTableLogic } from '../../hooks/useSearchTableLogic';
+import { createSearchTableStyles } from '../../styles/searchTableStyles';
+import { fetchMesas } from '../../data/mockMesas';
+import { StackNav } from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
+import { BACKEND } from '@env';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -22,7 +23,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const UnifiedTableScreen = ({navigation, route}) => {
+const UnifiedTableScreen = ({ navigation, route }) => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState(null);
@@ -59,18 +60,18 @@ const UnifiedTableScreen = ({navigation, route}) => {
     try {
       setIsLoading(true);
       console.log('UnifiedTableScreen: Loading tables from API for location:', locationId);
-      
-      // const response = await axios.get(
-      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`
-      // );
+
       const response = await axios.get(
-        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
+        `${BACKEND}/api/v1/geographic/electoral-locations/${locationId}/tables`
       );
+      //const response = await axios.get(
+      //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
+      //);
       console.log('UnifiedTableScreen: API Response:', response.data);
 
       if (response.data && response.data.tables) {
         console.log('UnifiedTableScreen: Tables found:', response.data.tables.length);
-        
+
         // Store location data for TableCard components
         setLocationData({
           name: response.data.name,
@@ -81,7 +82,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
         setMesas(response.data.tables);
       } else if (response.data && response.data.data && response.data.data.tables) {
         console.log('UnifiedTableScreen: Tables found in data.data:', response.data.data.tables.length);
-        
+
         // Store location data for TableCard components
         setLocationData({
           name: response.data.data.name,
@@ -124,7 +125,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
   };
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -156,10 +157,10 @@ const UnifiedTableScreen = ({navigation, route}) => {
       // Check if this table has any actas
       const mesaId = processedMesa.id || processedMesa.numero;
       console.log('UnifiedTableScreen - Checking actas for mesa ID:', mesaId);
-      
+
       // Try to get actas for this table
       const hasActas = await checkTableHasActas(mesaId);
-      
+
       if (hasActas) {
         // Table has actas, go to witness/attestation flow
         console.log('UnifiedTableScreen - Table has actas, navigating to WhichIsCorrectScreen');
@@ -208,11 +209,11 @@ const UnifiedTableScreen = ({navigation, route}) => {
       }
 
       console.log('UnifiedTableScreen - Checking actas for numeric ID:', numericId);
-      
+
       // Try to fetch actas for this mesa
-      const {fetchActasByMesa} = require('../../data/mockMesas');
+      const { fetchActasByMesa } = require('../../data/mockMesas');
       const response = await fetchActasByMesa(numericId);
-      
+
       if (response.success && response.data.images && response.data.images.length > 0) {
         console.log('UnifiedTableScreen - Found actas:', response.data.images.length);
         return true;
