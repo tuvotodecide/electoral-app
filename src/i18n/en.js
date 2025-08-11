@@ -81,7 +81,7 @@ export default {
   labelDocumentExpiration: 'Fecha de expiración',
   confirmCheckText: 'Confirmo que los datos son correctos',
   confirmButton: 'Confirmar',
-  returntoVerify:'Regresar a verificar',
+  returntoVerify: 'Regresar a verificar',
   //page 7
   authFingerprintTitle: 'Autenticación con huella dactilar',
   authFingerprintDesc: 'Usa tu huella para acceder rápido y seguro',
@@ -96,7 +96,7 @@ export default {
     'Este PIN protegerá tu acceso a Tu Voto Decide. Lo necesitarás cada vez que inicies sesión en la aplicación.',
   pinAccessDescription1:
     'Confirma el nuevo PIN de acceso. Este PIN protegerá tu acceso a Tu Voto Decide. ',
-      pinChange:'Introduce tu pin actual para confirmar y cambiar tu pin',
+  pinChange: 'Introduce tu pin actual para confirmar y cambiar tu pin',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
@@ -1303,4 +1303,16 @@ export default {
   coincides: 'Coincide',
   noCoincides: 'No coincide',
   shareProfile: 'Compartir perfil',
+
+  // Electoral period
+  loadingElectionConfig: "Verificando estado electoral...",
+  electionConfigError: "Error al obtener configuración electoral",
+  noActiveElection: "No hay elección activa",
+  noActiveElectionSubtitle: "Actualmente no hay ninguna elección configurada",
+  electionInactive: "Elección inactiva",
+  electionInactiveSubtitle: "La elección está configurada pero no está activa",
+  outOfVotingPeriod: "Fuera del periodo de votación",
+  outOfVotingPeriodSubtitle: "La aplicación solo está disponible durante el periodo de votación activo",
+  currentTime: "Hora actual",
+  votingPeriod: "Periodo de votación",
 };

@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -8,8 +8,8 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import {useSelector} from 'react-redux';
-// import Geolocation from '@react-native-community/geolocation';
+import { useSelector } from 'react-redux';
+import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -17,11 +17,13 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 
-const {width: screenWidth} = Dimensions.get('window');
+import { BACKEND } from '@env';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -37,7 +39,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const ElectoralLocations = ({navigation, route}) => {
+const ElectoralLocations = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,20 +52,24 @@ const ElectoralLocations = ({navigation, route}) => {
     title: '',
     message: '',
     buttonText: String.accept,
+    onCloseAction: null,
   });
+  const [electionStatus, setElectionStatus] = useState(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [configError, setConfigError] = useState(false);
 
   // Get navigation target from route params
-  const {targetScreen} = route.params || {};
+  const { targetScreen } = route.params || {};
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
-      // const response = await axios.get(
-      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
-      // );
       const response = await axios.get(
-        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
+        `${BACKEND}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
       );
+      // const response = await axios.get(
+      //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
+      // );
 
       if (response.data && response.data.data) {
         setLocations(response.data.data);
@@ -79,10 +85,15 @@ const ElectoralLocations = ({navigation, route}) => {
     }
   }, []);
 
+  const formatIsoNoT = (iso) => {
+    if (!iso) return '';
+    return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
+  };
+
   const getCurrentLocation = useCallback(async (retryCount = 0) => {
     try {
       setLoadingLocation(true);
-      
+
       // Show retry message if this is a retry attempt
       if (retryCount > 0) {
         console.log(`Retry attempt ${retryCount} for location`);
@@ -115,54 +126,102 @@ const ElectoralLocations = ({navigation, route}) => {
           return;
         }
       }
+      //fetchNearbyLocations(-17.3746706, -66.1316081);
 
       // Get current position
-      // Geolocation.getCurrentPosition(
-      //   position => {
-      //     const {latitude, longitude} = position.coords;
-      //     console.log('Location obtained:', latitude, longitude);
-      //     setUserLocation({latitude, longitude});
-      //     fetchNearbyLocations(latitude, longitude);
-      //   },
-      //   error => {
-      //     console.error('Location error:', error);
-      //     showModal(
-      //       'error',
-      //       String.error || 'Error',
-      //       String.locationError || 'Error al obtener la ubicación',
-      //     );
-      //     setLoadingLocation(false);
-      //     setLoading(false);
-      //   },
-      //   {
-      //     enableHighAccuracy: true,
-      //     timeout: 15000,
-      //     maximumAge: 10000,
-      //   },
-      // );
+      Geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords;
+          console.log('Location obtained:', latitude, longitude);
+          setUserLocation({ latitude, longitude });
+          fetchNearbyLocations(latitude, longitude);
+        },
+        error => {
+          console.error('Location error:', error);
+          showModal(
+            'error',
+            String.error || 'Error',
+            String.locationError || 'Error al obtener la ubicación',
+          );
+          setLoadingLocation(false);
+          setLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+        },
+      );
     } catch (error) {
       console.error('Permission error:', error);
       showModal(
         'error',
         String.error || 'Error',
         String.locationPermissionError ||
-          'Error al solicitar permisos de ubicación',
+        'Error al solicitar permisos de ubicación',
       );
       setLoadingLocation(false);
       setLoading(false);
     }
   }, [fetchNearbyLocations]);
 
-  useEffect(() => {
-    getCurrentLocation();
-  }, [getCurrentLocation]);
+  const fetchElectionStatus = useCallback(async () => {
+    try {
+      setConfigLoading(true);
+      setConfigError(false);
+      const response = await axios.get(
+        `${BACKEND}/api/v1/elections/config/status`
+      );
+      if (response.data) {
+        setElectionStatus(response.data);
+      } else {
+        setConfigError(true);
+        showModal(
+          'error',
+          String.error,
+          String.electionConfigError,
+          String.accept,
+          () => navigation.goBack()
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching election config:', error);
+      setConfigError(true);
+      showModal(
+        'error',
+        String.error,
+        String.electionConfigError,
+        String.accept,
+        () => navigation.goBack()
+      )
+    } finally {
+      setConfigLoading(false);
+    }
+  }, [navigation])
 
-  const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+  useEffect(() => {
+    fetchElectionStatus();
+  }, [fetchElectionStatus]);
+
+
+  useEffect(() => {
+    if (electionStatus &&
+      electionStatus.hasActiveConfig &&
+      electionStatus.config.isActive &&
+      electionStatus.isVotingPeriod) {
+      getCurrentLocation();
+    }
+  }, [electionStatus, getCurrentLocation]);
+
+  const showModal = (type, title, message, buttonText = String.accept, onCloseAction = null) => {
+    setModalConfig({ type, title, message, buttonText, onCloseAction });
     setModalVisible(true);
   };
 
   const closeModal = () => {
+    if (modalConfig.onCloseAction) {
+      modalConfig.onCloseAction();
+    }
     setModalVisible(false);
   };
 
@@ -194,7 +253,7 @@ const ElectoralLocations = ({navigation, route}) => {
     }
   };
 
-  const renderLocationItem = ({item}) => (
+  const renderLocationItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
@@ -253,6 +312,121 @@ const ElectoralLocations = ({navigation, route}) => {
     </View>
   );
 
+  const renderContent = () => {
+    if (configLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4F9858" />
+          <CText style={styles.loadingText}>
+            {String.loadingElectionConfig}
+          </CText>
+        </View>
+      );
+    }
+
+    if (configError) {
+      return null;
+    }
+
+    // Caso 1: Sin configuración electoral activa
+    if (!electionStatus || !electionStatus.hasActiveConfig) {
+      return (
+        <View style={styles.inactiveContainer}>
+          <Ionicons name="warning-outline" size={64} color="#ccc" />
+          <CText style={styles.inactiveTitle}>{String.noActiveElection}</CText>
+          <CText style={styles.inactiveSubtitle}>
+            {String.noActiveElectionSubtitle}
+          </CText>
+        </View>
+      );
+    }
+
+    // Caso 2: Configuración inactiva
+    if (!electionStatus.config.isActive) {
+      return (
+        <View style={styles.inactiveContainer}>
+          <Ionicons name="warning-outline" size={64} color="#ccc" />
+          <CText style={styles.inactiveTitle}>{String.electionInactive}</CText>
+          <CText style={styles.inactiveSubtitle}>
+            {String.electionInactiveSubtitle}
+          </CText>
+        </View>
+      );
+    }
+
+    // Caso 3: Fuera del periodo de votación
+    if (!electionStatus.isVotingPeriod) {
+      return (
+        <View style={styles.inactiveContainer}>
+          <Ionicons name="time-outline" size={64} color="#ccc" />
+          <CText style={styles.inactiveTitle}>{String.outOfVotingPeriod}</CText>
+
+          <View style={styles.timeContainer}>
+            <Ionicons name="time" size={24} color="#666" />
+            <CText style={styles.timeText}>
+              {String.currentTime}: {formatIsoNoT(electionStatus.currentTimeBolivia)}
+            </CText>
+          </View>
+
+          <CText style={styles.inactiveSubtitle}>
+            {String.outOfVotingPeriodSubtitle}
+          </CText>
+
+          <CText style={styles.votingPeriodText}>
+            {String.votingPeriod}: {formatIsoNoT(electionStatus.config.votingStartDateBolivia)} - {formatIsoNoT(electionStatus.config.votingEndDateBolivia)}
+          </CText>
+        </View>
+      );
+    }
+
+    // Caso 4: Periodo de votación activo
+    return (
+      <>
+        {loadingLocation && (
+          <View style={styles.loadingLocationContainer}>
+            <ActivityIndicator size="small" color="#4F9858" />
+            <CText style={styles.loadingLocationText}>
+              {locationRetries > 0
+                ? `${String.retryingLocation} (${locationRetries}/2)`
+                : String.gettingLocation}
+            </CText>
+          </View>
+        )}
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4F9858" />
+            <CText style={styles.loadingText}>
+              {String.loadingNearbyLocations}
+            </CText>
+          </View>
+        ) : (
+          <>
+            {userLocation && (
+              <View style={styles.locationInfoContainer}>
+                <Ionicons name="location-sharp" size={20} color="#4F9858" />
+                <CText style={styles.locationInfoText}>
+                  {String.showingNearbyLocations}
+                </CText>
+              </View>
+            )}
+
+            <FlatList
+              data={locations}
+              renderItem={renderLocationItem}
+              keyExtractor={item => item._id}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={renderEmptyState}
+              numColumns={isTablet ? 2 : 1}
+              columnWrapperStyle={isTablet ? styles.row : null}
+            />
+          </>
+        )}
+      </>
+    );
+  };
+
   return (
     <CSafeAreaView style={styles.container}>
       {/* <CHeader
@@ -265,48 +439,7 @@ const ElectoralLocations = ({navigation, route}) => {
         onBack={() => navigation.goBack()}
       />
 
-      {loadingLocation && (
-        <View style={styles.loadingLocationContainer}>
-          <ActivityIndicator size="small" color="#4F9858" />
-          <CText style={styles.loadingLocationText}>
-            {locationRetries > 0 
-              ? `${String.retryingLocation || 'Reintentando obtener ubicación'} (${locationRetries}/2)`
-              : String.gettingLocation
-            }
-          </CText>
-        </View>
-      )}
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F9858" />
-          <CText style={styles.loadingText}>
-            {String.loadingNearbyLocations}
-          </CText>
-        </View>
-      ) : (
-        <>
-          {userLocation && (
-            <View style={styles.locationInfoContainer}>
-              <Ionicons name="location-sharp" size={20} color="#4F9858" />
-              <CText style={styles.locationInfoText}>
-                {String.showingNearbyLocations}
-              </CText>
-            </View>
-          )}
-
-          <FlatList
-            data={locations}
-            renderItem={renderLocationItem}
-            keyExtractor={item => item._id}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={renderEmptyState}
-            numColumns={isTablet ? 2 : 1}
-            columnWrapperStyle={isTablet ? styles.row : null}
-          />
-        </>
-      )}
+      {renderContent()}
 
       <CustomModal
         visible={modalVisible}
@@ -379,7 +512,7 @@ const styles = {
     padding: getResponsiveSize(16, 18, 20),
     marginBottom: getResponsiveSize(12, 16, 20),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -496,6 +629,49 @@ const styles = {
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
   },
+
+  inactiveContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(20, 30, 40),
+  },
+  inactiveTitle: {
+    fontSize: getResponsiveSize(18, 20, 22),
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: getResponsiveSize(16, 20, 24),
+    textAlign: 'center',
+  },
+  inactiveSubtitle: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#666',
+    marginTop: getResponsiveSize(8, 10, 12),
+    textAlign: 'center',
+    lineHeight: getResponsiveSize(20, 22, 24),
+    paddingHorizontal: getResponsiveSize(20, 30, 40),
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: getResponsiveSize(12, 16, 20),
+    backgroundColor: '#f5f5f5',
+    padding: getResponsiveSize(10, 12, 14),
+    borderRadius: getResponsiveSize(8, 10, 12),
+  },
+  timeText: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#444',
+    marginLeft: getResponsiveSize(8, 10, 12),
+  },
+  votingPeriodText: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '600',
+    color: '#4F9858',
+    marginTop: getResponsiveSize(12, 16, 20),
+    textAlign: 'center',
+  },
+
 };
 
 export default ElectoralLocations;
