@@ -5,11 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>wirawallet</string>
+	<string>Tu Voto Decide</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<string>com.tuvotodecide</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -41,9 +41,7 @@
 	<string>Esta aplicación necesita acceso a tu ubicación para geolocalizar recintos/mesas.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>La app usa Face ID para autenticarte de forma segura.</string>
-	<key>KeychainSharing</key>
-	<string></string>
-	<true/>
+
 	<key>UILaunchStoryboardName</key>
 	<string>BootSplash</string>
 	<key>UIRequiredDeviceCapabilities</key>

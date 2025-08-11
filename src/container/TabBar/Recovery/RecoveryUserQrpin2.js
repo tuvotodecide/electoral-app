@@ -3,8 +3,9 @@ import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
+import {SHA256} from 'crypto-js';
 
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../../components/common/CText';
@@ -19,7 +20,7 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-import {saveSecrets} from '../../../utils/Cifrate';
+import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
@@ -41,7 +42,18 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
   const finish = async () => {
     try {
-      await saveSecrets(otp, payload, false);
+      const bundle = await createBundleFromPrivKey(otp, payload.privKey);
+      const pinHash = SHA256(otp.trim()).toString();
+
+      
+      await saveSecrets(
+        otp,
+        payload,
+        false, 
+        bundle, 
+        pinHash, 
+      );
+
       dispatch(setSecrets(payload));
       dispatch(
         setAddresses({
@@ -54,7 +66,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
     } catch (err) {
-
       Alert.alert('Error', err.message);
     }
   };
@@ -68,7 +79,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={9} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -121,7 +132,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

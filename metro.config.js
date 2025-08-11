@@ -31,7 +31,7 @@ const config = {
     sourceExts: [...sourceExts, 'svg', 'cjs', 'ts', 'tsx'],
     extraNodeModules,
   },
-  watchFolders: [path.resolve(__dirname, '../packages')],
+  //watchFolders: [path.resolve(__dirname, '../packages')],
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -26,7 +26,7 @@ export default function CreatePin({navigation}) {
     navigation.navigate(AuthNav.UploadDocument);
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <StepIndicator step={5} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
@@ -76,7 +76,7 @@ export default function CreatePin({navigation}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

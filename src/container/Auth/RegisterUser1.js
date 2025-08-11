@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -28,7 +28,7 @@ export default function RegisterUser1({navigation}) {
     navigation.navigate(StackNav.TermsAndCondition);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <StepIndicator step={1} />
       <CHeader />
       <KeyBoardAvoidWrapper
@@ -90,7 +90,7 @@ export default function RegisterUser1({navigation}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

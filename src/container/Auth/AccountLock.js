@@ -2,7 +2,7 @@ import {Dimensions, Image, StyleSheet, View} from 'react-native';
 import React from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -23,7 +23,7 @@ export default function AccountLock({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <View
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
@@ -65,7 +65,7 @@ export default function AccountLock({navigation}) {
           onPress={onPressNext}
         />
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

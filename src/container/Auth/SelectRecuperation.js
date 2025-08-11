@@ -2,7 +2,7 @@ import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React from 'react';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {getHeight, moderateScale} from '../../common/constants';
@@ -17,7 +17,7 @@ import Icono from '../../components/common/Icono';
 export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader
         title={String.recoveryWallet}
         onPressBack={() => navigation.navigate(AuthNav.Connect)}
@@ -99,7 +99,7 @@ export default function SelectRecuperation({navigation}) {
           </View>
         </TouchableOpacity>
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

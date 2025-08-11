@@ -138,7 +138,12 @@ const PhotoReviewScreen = () => {
     <>
       <BaseRecordReviewScreen
         colors={colors}
-        headerTitle={`${String.table} ${tableData?.numero || 'N/A'}`}
+        headerTitle={`${String.table} ${
+          tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          'N/A'
+        }`}
         instructionsText={String.reviewPhotoPlease}
         instructionsStyle={styles.instructionsStyle}
         photoUri={photoUri}

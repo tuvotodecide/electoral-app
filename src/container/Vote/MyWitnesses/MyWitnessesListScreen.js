@@ -17,7 +17,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {fetchMyWitnesses} from '../../../data/mockMesas';
+import {fetchUserAttestations} from '../../../api/account';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -35,6 +35,7 @@ const MyWitnessesListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
+  // const userInfo = useSelector(state => state.user.userInfo); // Get user info from Redux
   const {mesaData} = route.params || {};
 
   // Estados para la carga de datos
@@ -43,6 +44,7 @@ const MyWitnessesListScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({});
   const [selectedImageId, setSelectedImageId] = useState(null);
+  const [hasNoAttestations, setHasNoAttestations] = useState(false);
 
   // Cargar atestiguamientos al montar el componente
   useEffect(() => {
@@ -51,34 +53,64 @@ const MyWitnessesListScreen = () => {
 
   const loadWitnessRecords = async () => {
     setLoading(true);
+    setHasNoAttestations(false);
+    
     try {
-      console.log('MyWitnessesListScreen: Fetching witness records...');
-      const response = await fetchMyWitnesses();
+      // Get user ID from Redux store or use default
+      // const userId = userInfo?.id || userInfo?.userId || '1'; // Default to '1' for testing
+      const userId = "1"
+      console.log('MyWitnessesListScreen: Fetching witness records for user:', userId);
+      
+      const response = await fetchUserAttestations(userId);
       if (response.success) {
-        console.log(
-          'MyWitnessesListScreen: Data loaded successfully:',
-          response.data,
-        );
-        setWitnessRecords(response.data);
+        console.log('MyWitnessesListScreen: Data loaded successfully:', response.data);
+        
+        const attestationsData = response.data.attestations || [];
+        
+        if (attestationsData.length === 0) {
+          console.log('MyWitnessesListScreen: No attestations found for user');
+          setHasNoAttestations(true);
+          setWitnessRecords([]);
+        } else {
+          // Transform API data to match component expectations
+          const transformedData = attestationsData.map((attestation, index) => ({
+            id: attestation.recordId || `attestation-${index}`,
+            tableNumber: attestation.tableNumber,
+            tableCode: attestation.tableCode,
+            mesa: `Mesa ${attestation.tableNumber}`,
+            imagen: attestation.actaImage, // Direct IPFS URL
+            fecha: new Date().toLocaleDateString('es-ES'), // You might want to get this from API
+            hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+            partyResults: attestation.partyResults,
+            voteSummaryResults: attestation.voteSummaryResults,
+            idTableContract: attestation.idTableContract,
+            electoralLocationId: attestation.electoralLocationId,
+            recordId: attestation.recordId,
+          }));
+          
+          console.log('MyWitnessesListScreen: Transformed data:', transformedData);
+          setWitnessRecords(transformedData);
+          setHasNoAttestations(false);
+        }
       } else {
+        console.log('MyWitnessesListScreen: API error:', response.message);
         setModalData({
           title: String.error,
           message: response.message || String.errorLoadingWitnesses,
           type: 'error',
         });
         setModalVisible(true);
+        setHasNoAttestations(true);
       }
     } catch (error) {
-      console.log(
-        'MyWitnessesListScreen: Error loading witness records:',
-        error,
-      );
+      console.log('MyWitnessesListScreen: Error loading witness records:', error);
       setModalData({
         title: String.connectionError,
         message: String.connectionErrorMessage,
         type: 'error',
       });
       setModalVisible(true);
+      setHasNoAttestations(true);
     } finally {
       setLoading(false);
     }
@@ -95,13 +127,20 @@ const MyWitnessesListScreen = () => {
   const handleVerMas = () => {
     if (selectedImageId) {
       const selectedWitnessRecord = witnessRecords.find(
-        item => item.id.toString() === selectedImageId,
+        item => item.id === selectedImageId,
       );
       if (selectedWitnessRecord) {
-        // Navigate to MyWitnessesDetailScreen
+        // Navigate to MyWitnessesDetailScreen with complete data
         navigation.navigate(StackNav.MyWitnessesDetailScreen, {
           photoUri: selectedWitnessRecord.imagen,
-          mesaData: selectedWitnessRecord,
+          mesaData: {
+            tableNumber: selectedWitnessRecord.tableNumber,
+            tableCode: selectedWitnessRecord.tableCode,
+            numero: selectedWitnessRecord.tableNumber,
+          },
+          partyResults: selectedWitnessRecord.partyResults,
+          voteSummaryResults: selectedWitnessRecord.voteSummaryResults,
+          attestationData: selectedWitnessRecord,
         });
       }
     } else {
@@ -113,28 +152,6 @@ const MyWitnessesListScreen = () => {
       setModalVisible(true);
     }
   };
-
-  // Dummy data for attestation images
-  const dummyImages = [
-    {
-      id: '1',
-      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+1',
-      fecha: '15/12/2024',
-      mesa: 'Mesa 001',
-    },
-    {
-      id: '2',
-      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+2',
-      fecha: '14/12/2024',
-      mesa: 'Mesa 045',
-    },
-    {
-      id: '3',
-      uri: 'https://placehold.co/400x200/cccccc/000000?text=Acta+Atestiguada+3',
-      fecha: '13/12/2024',
-      mesa: 'Mesa 102',
-    },
-  ];
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -159,6 +176,24 @@ const MyWitnessesListScreen = () => {
           <ActivityIndicator size="large" color={colors.primary || '#459151'} />
           <CText style={styles.loadingText}>{String.loadingWitnesses}</CText>
         </View>
+      ) : hasNoAttestations ? (
+        <View style={styles.noAttestationsContainer}>
+          <View style={styles.noAttestationsIconContainer}>
+            <CText style={styles.noAttestationsIcon}>📋</CText>
+          </View>
+          <CText style={styles.noAttestationsTitle}>
+            No hay atestiguamientos realizados
+          </CText>
+          <CText style={styles.noAttestationsMessage}>
+            Aún no has realizado ningún atestiguamiento.{'\n'}
+            Cuando completes tu primer atestiguamiento, aparecerá aquí.
+          </CText>
+          <TouchableOpacity 
+            style={[styles.refreshButton, {backgroundColor: colors.primary || '#459151'}]}
+            onPress={loadWitnessRecords}>
+            <CText style={styles.refreshButtonText}>Actualizar</CText>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView
           style={styles.imageList}
@@ -177,12 +212,10 @@ const MyWitnessesListScreen = () => {
                         <TouchableOpacity
                           style={[
                             styles.imageCard,
-                            selectedImageId === witnessRecord.id.toString() &&
+                            selectedImageId === witnessRecord.id &&
                               styles.imageCardSelected,
                           ]}
-                          onPress={() =>
-                            handleImagePress(witnessRecord.id.toString())
-                          }>
+                          onPress={() => handleImagePress(witnessRecord.id)}>
                           <View style={styles.imageHeader}>
                             <CText style={styles.mesaText}>
                               {witnessRecord.mesa}
@@ -192,11 +225,17 @@ const MyWitnessesListScreen = () => {
                             </CText>
                           </View>
                           <Image
-                            source={{uri: witnessRecord.imagen}}
+                            source={{
+                              uri: witnessRecord.imagen,
+                              headers: {
+                                'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
+                                'Accept': 'image/*',
+                              }
+                            }}
                             style={styles.imageDisplay}
                             resizeMode="contain"
                           />
-                          {selectedImageId === witnessRecord.id.toString() && (
+                          {selectedImageId === witnessRecord.id && (
                             <>
                               {/* Corner borders - black color */}
                               <View
@@ -226,7 +265,7 @@ const MyWitnessesListScreen = () => {
                             </>
                           )}
                         </TouchableOpacity>
-                        {selectedImageId === witnessRecord.id.toString() && (
+                        {selectedImageId === witnessRecord.id && (
                           <TouchableOpacity
                             style={styles.detailsButton}
                             onPress={handleVerMas}>
@@ -247,12 +286,10 @@ const MyWitnessesListScreen = () => {
                   <TouchableOpacity
                     style={[
                       styles.imageCard,
-                      selectedImageId === witnessRecord.id.toString() &&
+                      selectedImageId === witnessRecord.id &&
                         styles.imageCardSelected,
                     ]}
-                    onPress={() =>
-                      handleImagePress(witnessRecord.id.toString())
-                    }>
+                    onPress={() => handleImagePress(witnessRecord.id)}>
                     <View style={styles.imageHeader}>
                       <CText style={styles.mesaText}>
                         {witnessRecord.mesa}
@@ -262,11 +299,17 @@ const MyWitnessesListScreen = () => {
                       </CText>
                     </View>
                     <Image
-                      source={{uri: witnessRecord.imagen}}
+                      source={{
+                        uri: witnessRecord.imagen,
+                        headers: {
+                          'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
+                          'Accept': 'image/*',
+                        }
+                      }}
                       style={styles.imageDisplay}
                       resizeMode="contain"
                     />
-                    {selectedImageId === witnessRecord.id.toString() && (
+                    {selectedImageId === witnessRecord.id && (
                       <>
                         {/* Corner borders - black color */}
                         <View
@@ -287,7 +330,7 @@ const MyWitnessesListScreen = () => {
                       </>
                     )}
                   </TouchableOpacity>
-                  {selectedImageId === witnessRecord.id.toString() && (
+                  {selectedImageId === witnessRecord.id && (
                     <TouchableOpacity
                       style={styles.detailsButton}
                       onPress={handleVerMas}>
@@ -444,6 +487,55 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
     color: '#fff',
+  },
+  noAttestationsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(20, 30, 40),
+    paddingVertical: getResponsiveSize(40, 50, 60),
+  },
+  noAttestationsIconContainer: {
+    width: getResponsiveSize(80, 100, 120),
+    height: getResponsiveSize(80, 100, 120),
+    borderRadius: getResponsiveSize(40, 50, 60),
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: getResponsiveSize(16, 20, 24),
+  },
+  noAttestationsIcon: {
+    fontSize: getResponsiveSize(40, 50, 60),
+  },
+  noAttestationsTitle: {
+    fontSize: getResponsiveSize(18, 20, 22),
+    fontWeight: '600',
+    color: '#2F2F2F',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(8, 12, 16),
+  },
+  noAttestationsMessage: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#868686',
+    textAlign: 'center',
+    lineHeight: getResponsiveSize(20, 24, 28),
+    marginBottom: getResponsiveSize(20, 24, 32),
+  },
+  refreshButton: {
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(20, 24, 28),
+    borderRadius: getResponsiveSize(6, 8, 10),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  refreshButtonText: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
 });
 

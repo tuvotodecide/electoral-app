@@ -101,6 +101,7 @@ export default function CameraScreen({navigation, route}) {
     message: '',
     buttons: [],
   });
+
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
   const [imageTranslateX, setImageTranslateX] = useState(new Animated.Value(0));
@@ -371,6 +372,17 @@ export default function CameraScreen({navigation, route}) {
     setAnalyzing(true);
     const mesaInfo = route.params?.tableData || {};
 
+    console.log(
+      'CameraScreen - handleNext: received route.params:',
+      route.params,
+    );
+    console.log('CameraScreen - handleNext: mesaInfo:', mesaInfo);
+    console.log(
+      'CameraScreen - handleNext: mesaInfo tableNumber:',
+      mesaInfo.tableNumber,
+    );
+    console.log('CameraScreen - handleNext: mesaInfo numero:', mesaInfo.numero);
+
     try {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
@@ -586,7 +598,7 @@ export default function CameraScreen({navigation, route}) {
               ) : (
                 <>
                   <Ionicons name="analytics-outline" size={20} color="#fff" />
-                  <CText style={styles.actionButtonText}>Analizar Acta</CText>
+                  <CText style={styles.actionButtonText}>Analizar</CText>
                 </>
               )}
             </TouchableOpacity>
@@ -664,6 +676,22 @@ const styles = StyleSheet.create({
   },
   headerButtonText: {
     color: '#fff',
+    fontSize: 12,
+    marginLeft: 5,
+    fontWeight: '600',
+  },
+  ipfsIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  ipfsText: {
+    color: '#4CAF50',
     fontSize: 12,
     marginLeft: 5,
     fontWeight: '600',

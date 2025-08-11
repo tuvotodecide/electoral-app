@@ -20,7 +20,7 @@ export const ActionButtons = ({buttons, style}) => (
   <View style={[styles.actionButtons, style]}>
     {buttons.map((button, index) => (
       <TouchableOpacity
-        key={index}
+        key={`action-button-${index}`} // Usar key más específica
         style={[styles.actionButton, button.style]}
         onPress={button.onPress}>
         <CText style={[styles.actionButtonText, button.textStyle]}>
@@ -33,19 +33,18 @@ export const ActionButtons = ({buttons, style}) => (
 
 const styles = StyleSheet.create({
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column', // Cambio de 'row' a 'column' para apilar verticalmente
     marginBottom: getResponsiveSize(16, 32, 40),
     gap: getResponsiveSize(8, 12, 16),
   },
   actionButton: {
-    flex: 1,
-    paddingVertical: getResponsiveSize(10, 14, 18),
+    width: '100%', // Ocupar todo el ancho disponible
+    paddingVertical: getResponsiveSize(12, 16, 20), // Aumentar padding vertical
     borderRadius: getResponsiveSize(6, 8, 10),
     alignItems: 'center',
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: getResponsiveSize(14, 16, 18), // Hacer texto responsivo
     fontWeight: '600',
   },
 });

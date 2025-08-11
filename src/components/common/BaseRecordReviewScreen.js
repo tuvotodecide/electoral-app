@@ -72,7 +72,11 @@ const BaseRecordReviewScreen = ({
           {showTableInfo && (
             <View style={styles.tabletTableInfoInline}>
               <CText style={styles.tabletTableTitleText}>
-                Table {tableData?.numero || 'N/A'}
+                Table{' '}
+                {tableData?.tableNumber ||
+                  tableData?.numero ||
+                  tableData?.number ||
+                  'N/A'}
               </CText>
               <CText style={styles.tabletTableSubtitleText}>
                 {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
@@ -186,7 +190,11 @@ const BaseRecordReviewScreen = ({
         <View style={styles.tableInfoContainer}>
           <View style={styles.tableTitle}>
             <CText style={styles.tableTitleText}>
-              Table {tableData?.numero || 'N/A'}
+              Table{' '}
+              {tableData?.tableNumber ||
+                tableData?.numero ||
+                tableData?.number ||
+                'N/A'}
             </CText>
           </View>
           <View style={styles.tableSubtitle}>
@@ -409,11 +417,6 @@ const styles = StyleSheet.create({
   tableSubtitleText: {
     fontSize: 12,
     color: '#868686',
-  },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: getResponsiveSize(12, 32, 40),
   },
 });
 

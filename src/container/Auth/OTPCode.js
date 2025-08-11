@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
 // custom import
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -34,7 +34,7 @@ export default function OTPCode({route, navigation}) {
     }
   };
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
@@ -72,22 +72,22 @@ export default function OTPCode({route, navigation}) {
             </TouchableOpacity>
           </View>
         </View>
-      <CButton
-        title={String.continue}
-        type={'B16'}
-        containerStyle={localStyle.btnStyle}
-        onPress={onPressContinue}
-      />
-      <CButton
-        title={String.resendCode}
-        type={'B16'}
-        containerStyle={localStyle.resendButton}
-        bgColor={colors.dark ? colors.inputBackground : colors.primary50}
-        color={colors.primary}
-        onPress={onPressResendCode}
-      />
+        <CButton
+          title={String.continue}
+          type={'B16'}
+          containerStyle={localStyle.btnStyle}
+          onPress={onPressContinue}
+        />
+        <CButton
+          title={String.resendCode}
+          type={'B16'}
+          containerStyle={localStyle.resendButton}
+          bgColor={colors.dark ? colors.inputBackground : colors.primary50}
+          color={colors.primary}
+          onPress={onPressResendCode}
+        />
       </KeyBoardAvoidWrapper>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

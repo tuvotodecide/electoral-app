@@ -8,9 +8,9 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
-import Keychain from 'react-native-keychain';
-// Custom imports
-import CSafeAreaView from '../../components/common/CSafeAreaView';
+import * as Keychain from 'react-native-keychain';
+
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
@@ -19,6 +19,7 @@ import {JWT_KEY, moderateScale} from '../../common/constants';
 import typography from '../../themes/typography';
 import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
+import RNFS from 'react-native-fs';
 
 import String from '../../i18n/String';
 import {checkPin, getSecrets} from '../../utils/Cifrate';
@@ -38,27 +39,58 @@ import {
 } from '../../redux/slices/authSlice';
 import store from '../../redux/store';
 import {navigate} from '../../navigation/RootNavigation';
+import {SHA256} from 'crypto-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import {getBioFlag} from '../../utils/BioFlag';
 import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
 import {registerDeviceToken} from '../../utils/registerDeviceToken';
+import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
+
+function classifyKycError(error, resp) {
+  const code = error?.code || '';
+  const msg = resp?.data?.error || error?.message || '';
+  const msgLower = (msg || '').toString().toLowerCase();
+
+  if (code === 'ERR_NETWORK' || msgLower.includes('network error')) {
+    return {kind: 'server_down', detail: msg};
+  }
+
+  if (
+    msgLower.includes('timeout error while loading cid') ||
+    msgLower.includes('context deadline exceeded') ||
+    msgLower.includes('timeout error while loading') ||
+    msgLower.includes('loading cid') ||
+    msgLower.includes('ipfs') ||
+    (resp && resp.data && resp.data.ok === false && msgLower.includes('cid'))
+  ) {
+    return {kind: 'vc_missing', detail: msg};
+  }
+
+  if (resp && resp.data && resp.data.ok === false) {
+    return {kind: 'server_error', detail: msg};
+  }
+
+  return {kind: 'unknown', detail: msg};
+}
 
 export default function LoginUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
+  const [skipBiometricsOnce, setSkipBiometricsOnce] = useState(false);
   const dispatch = useDispatch();
   const bioUnlocked = useRef(false);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState({visible: false, msg: ''});
+  const [modal, setModal] = useState({visible: false, msg: '', onClose: null});
+  const hideModal = () => setModal({visible: false, msg: '', onClose: null});
 
   const otpRef = useRef(null);
 
   const toastError = msg => setModal({visible: true, msg});
 
-  async function unlock(payload, jwt) {
+  async function unlock(payload, jwt, pin) {
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -73,13 +105,28 @@ export default function LoginUser({navigation}) {
     await startSession(jwt);
     await registerDeviceToken();
     messaging().onTokenRefresh(registerDeviceToken);
-    const pending = store.getState().auth.pendingNav;
 
-    if (pending) {
-      navigate(pending.name, pending.params);
-      dispatch(setPendingNav(null));
-    } else {
-      navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
+    try {
+      await writeBundleAtomic(JSON.stringify({...payload, jwt}));
+    } catch (e) {}
+
+    const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
+    if (!exists && typeof pin === 'string' && pin.length) {
+      await AsyncStorage.setItem(
+        'FINLINE_FLAGS',
+        JSON.stringify({
+          PIN_HASH: SHA256(pin.trim()).toString(),
+          BIO_ENABLED: await getBioFlag(),
+          HAS_WALLET: true,
+        }),
+      );
+    }
+    const pending = store.getState().auth.pendingNav;
+    if (!pending) {
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.TabNavigation}],
+      });
     }
   }
 
@@ -88,46 +135,86 @@ export default function LoginUser({navigation}) {
   };
 
   async function verifyPin(code) {
-    if (!(await checkPin(code))) return false;
-    const stored = await getSecrets();
-    if (!stored) return false;
+    await ensureBundle();
+    try {
+      const pinOk = await checkPin(code);
 
-    // let payload;
-    // try {
-    //   payload = await login(code.trim()); // verifica PIN y lee bundle
-    // } catch {
-    //   PIN incorrecto
-    //   return false;
-    // }
+      if (!pinOk) return {ok: false, type: 'bad_pin'};
+      const stored = await getSecrets();
+      if (!stored) return {ok: false, type: 'no_local_secrets'};
 
-    const {streamId, privKey} = stored.payloadQr;
+      const {streamId, privKey, dni} = stored.payloadQr;
 
+      try {
+        const clean = (dni || '').toString().replace(/\D/g, '');
+        const exists = await axios.post(
+          `${BACKEND}kyc/find`,
+          {identifier: clean},
+          {withCredentials: true},
+        );
 
-    // const {streamId, privKey} = payload;
+        if (!exists.data?.ok) {
+          return {ok: false, type: 'dni_not_found'};
+        }
+      } catch (err) {
+        return {
+          ok: false,
+          type: 'server',
+          kind: 'server_down',
+          detail: 'find_failed',
+        };
+      }
 
-    const load = await axios.post(
-      `${BACKEND}kyc/load`,
-      {streamId},
-      {withCredentials: true},
-    );
-    if (!load.data.ok) throw new Error(load.data.error);
+      let load;
+      try {
+        load = await axios.post(
+          `${BACKEND}kyc/load`,
+          {streamId},
+          {withCredentials: true},
+        );
+      } catch (err) {
+        const classified = classifyKycError(err, null);
 
-    const {dataHash} = load.data.data;
+        return {ok: false, type: 'server', ...classified};
+      }
 
-    const authSig = await buildSiweAuthSig(privKey, dataHash);
+      if (!load.data?.ok) {
+        const classified = classifyKycError(null, load);
 
-    const dec = await axios.post(
-      `${BACKEND}kyc/decrypt`,
-      {streamId, authSig},
-      {withCredentials: true},
-    );
-    if (!dec.data.ok) throw new Error(dec.data.error);
+        const result = {ok: false, type: 'server', ...classified};
 
-    const {vc, jwt} = dec.data;
+        return result;
+      }
 
-    await unlock({...stored.payloadQr, vc}, jwt);
-    // await unlock({...payload, vc}, jwt);
-    return true;
+      const {dataHash} = load.data.data;
+
+      let dec;
+      try {
+        const authSig = await buildSiweAuthSig(privKey, dataHash);
+        dec = await axios.post(
+          `${BACKEND}kyc/decrypt`,
+          {streamId, authSig},
+          {withCredentials: true},
+        );
+      } catch (e) {
+        const classified = classifyKycError(e, null);
+
+        return {ok: false, type: 'server', ...classified};
+      }
+
+      if (!dec.data?.ok) {
+        const classified = classifyKycError(null, dec);
+
+        return {ok: false, type: 'server', ...classified};
+      }
+
+      const {vc, jwt} = dec.data;
+      return {ok: true, payload: {...stored.payloadQr, vc}, jwt};
+    } catch (err) {
+      const classified = classifyKycError(err, null);
+
+      return {ok: false, type: 'server', ...classified};
+    }
   }
 
   const onCodeFilled = async code => {
@@ -136,32 +223,125 @@ export default function LoginUser({navigation}) {
     if (await isLocked()) {
       setModal({
         visible: true,
-        msg:
-          'Has agotado tus 5 intentos.\n' +
-          'Recupera tu cuenta con tus guardianes.',
+        msg: 'Has agotado tus 5 intentos.\nEspera 15 minutos o recupera tu cuenta con tus guardianes.',
       });
+      navigation.replace(AuthNav.AccountLock);
       return;
     }
 
     setLoading(true);
-    const ok = await verifyPin(code.trim());
-    setLoading(false);
+    try {
+      const res = await verifyPin(code.trim());
 
-    if (!ok) {
-      const n = await incAttempts();
+      if (res.ok) {
+        await unlock(res.payload, res.jwt, code.trim());
+        return;
+      }
       setOtp('');
+      if (res.type === 'bad_pin') {
+        const n = await incAttempts();
+
+        setModal({
+          visible: true,
+          msg:
+            n >= 5
+              ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
+              : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+          onClose: hideModal,
+        });
+        if (n >= 5) {
+          await clearSession();
+          dispatch(clearWallet());
+          dispatch(clearAuth());
+        }
+        return;
+      }
+
+      if (res.kind === 'vc_missing') {
+        setModal({
+          visible: true,
+          msg:
+            'No pudimos cargar tu credencial (VC).\n' +
+            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
+            'Actualiza la aplicación. Necesitas volver a registrarte para emitir una nueva credencial.',
+          onClose: () => {
+            hideModal();
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+          },
+        });
+        return;
+      }
+
+      if (res.type === 'dni_not_found') {
+        setModal({
+          visible: true,
+          msg:
+            'No encontramos tu registro.\n' +
+            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
+            'Debes volver a registrarte para emitir una nueva credencial.',
+          onClose: () => {
+            hideModal();
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+          },
+        });
+        return;
+      }
+      if (res.kind === 'server_down' || res.kind === 'server_error') {
+        setModal({
+          visible: true,
+          msg:
+            'No se pudo conectar al servidor.\n' +
+            'Revisa tu conexión o intenta más tarde.\n\n' +
+            '(Tu PIN no fue contado como intento fallido.)',
+          onClose: hideModal,
+        });
+        return;
+      }
+      if (res.type === 'no_local_secrets') {
+        setModal({
+          visible: true,
+          msg:
+            'No se encontraron datos locales de tu billetera.\n' +
+            'Debes volver a registrarte para emitir una nueva credencial.',
+          onClose: () => {
+            hideModal();
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+          },
+        });
+        return;
+      }
+
       setModal({
         visible: true,
-        msg:
-          n >= 5
-            ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
-            : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+        msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
+        onClose: hideModal,
       });
-      if (n >= 5) {
-        await clearSession();
-        dispatch(clearWallet());
-        dispatch(clearAuth());
-      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,41 +379,176 @@ export default function LoginUser({navigation}) {
           : 'Escanea tu huella dactilar',
       );
 
-      if (!ok) return;
+      if (!ok) {
+        setSkipBiometricsOnce(true);
+        return;
+      }
       setLoading(true);
 
       bioUnlocked.current = true;
-      setLoading(true);
       try {
         const creds = await Keychain.getGenericPassword({
           service: 'walletBundle',
         });
-
         if (!creds) {
+          await ensureBundle();
           setLoading(false);
           return;
         }
 
-        const {stored, jwt} = JSON.parse(creds.password);
+        const {stored} = JSON.parse(creds.password);
+        const {dni} = stored;
 
-        const load = await axios.post(
-          `${BACKEND}kyc/load`,
-          {streamId: stored.streamId},
-          {withCredentials: true},
-        );
-        if (!load.data.ok) throw new Error(load.data.error);
+        try {
+          const clean = (dni || '').toString().replace(/\D/g, '');
+          const exists = await axios.post(
+            `${BACKEND}kyc/find`,
+            {identifier: clean},
+            {withCredentials: true},
+          );
+
+          if (!exists.data?.ok) {
+            setModal({
+              visible: true,
+              msg:
+                'No encontramos tu registro.\n' +
+                'Es probable que el servidor se haya reiniciado.\n\n' +
+                'Debes volver a registrarte para emitir una nueva credencial.',
+              onClose: () => {
+                hideModal();
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: StackNav.AuthNavigation,
+                      params: {screen: AuthNav.RegisterUser2},
+                    },
+                  ],
+                });
+              },
+            });
+            return;
+          }
+        } catch (err) {
+          setModal({
+            visible: true,
+            msg:
+              'No se pudo conectar al servidor.\n' +
+              'Revisa tu conexión o intenta más tarde.\n\n' +
+              '(Tu intento biométrico no fue contado como fallo.)',
+            onClose: hideModal,
+          });
+          return;
+        }
+
+        let load;
+        try {
+          load = await axios.post(
+            `${BACKEND}kyc/load`,
+            {streamId: stored.streamId},
+            {withCredentials: true},
+          );
+        } catch (e) {
+          const klass = classifyKycError(e, null);
+          if (klass.kind === 'server_down') {
+            setModal({
+              visible: true,
+              msg: 'No se pudo conectar al servidor. Intenta más tarde.',
+            });
+          }
+          setLoading(false);
+          return;
+        }
+
+        if (!load.data?.ok) {
+          const klass = classifyKycError(null, load);
+          if (klass.kind === 'vc_missing') {
+            setModal({
+              visible: true,
+              msg:
+                'No pudimos cargar tu credencial (VC).\n' +
+                'Parece que el servidor se reinició. Debes volver a registrarte.',
+            });
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+            setLoading(false);
+            return;
+          }
+          setLoading(false);
+          return;
+        }
+
         const {dataHash} = load.data.data;
         const authSig = await buildSiweAuthSig(stored.privKey, dataHash);
-        const dec = await axios.post(
-          `${BACKEND}kyc/decrypt`,
-          {streamId: stored.streamId, authSig},
-          {withCredentials: true},
-        );
-        if (!dec.data.ok) throw new Error(dec.data.error);
-        const {vc: newVc, jwt: newJwt} = dec.data;
 
+        let dec;
+        try {
+          dec = await axios.post(
+            `${BACKEND}kyc/decrypt`,
+            {streamId: stored.streamId, authSig},
+            {withCredentials: true},
+          );
+        } catch (e) {
+          const klass = classifyKycError(e, null);
+          if (klass.kind === 'server_down') {
+            setModal({
+              visible: true,
+              msg: 'No se pudo conectar al servidor. Intenta más tarde.',
+              onClose: hideModal,
+            });
+          }
+          setLoading(false);
+          return;
+        }
+
+        if (!dec.data?.ok) {
+          const klass = classifyKycError(null, dec);
+          if (klass.kind === 'vc_missing') {
+            setModal({
+              visible: true,
+              msg:
+                'No pudimos descifrar tu credencial.\n' +
+                'Parece que el servidor se reinició. Debes volver a registrarte.',
+              onClose: () => {
+                hideModal();
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: StackNav.AuthNavigation,
+                      params: {screen: AuthNav.RegisterUser2},
+                    },
+                  ],
+                });
+              },
+            });
+
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+            setLoading(false);
+            return;
+          }
+          setLoading(false);
+          return;
+        }
+
+        const {vc: newVc, jwt: newJwt} = dec.data;
         await unlock({...stored, vc: newVc}, newJwt);
-      } catch (err) {
+      } catch {
         setLoading(false);
       }
     })();
@@ -248,12 +563,12 @@ export default function LoginUser({navigation}) {
   }
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaViewAuth>
       <View
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader color={colors.white} />
+      <CHeader color={colors.white} isHideBack />
       <View style={localStyle.imageContainer}>
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
@@ -315,9 +630,9 @@ export default function LoginUser({navigation}) {
         title={String.walletAccess}
         message={modal.msg}
         buttonText={String.understand}
-        onClose={() => setModal({visible: false, msg: ''})}
+        onClose={modal.onClose || hideModal}
       />
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

@@ -1,4 +1,7 @@
 export const StackNav = {
+  ElectoralLocations: 'ElectoralLocations',
+  UnifiedTableScreen: 'UnifiedTableScreen',
+  ActaDetailScreen: 'ActaDetailScreen',
   Splash: 'Splash',
   OnBoarding: 'OnBoarding',
   AuthNavigation: 'AuthNavigation',
@@ -11,6 +14,7 @@ export const StackNav = {
   RecoveryFinalize: 'RecoveryFinalize',
 
   // Nuevas rutas para Mi Voto
+
   SearchTable: 'SearchTable',
   TableDetail: 'TableDetail',
   CameraScreen: 'CameraScreen',
@@ -32,6 +36,10 @@ export const StackNav = {
   MyWitnessesListScreen: 'MyWitnessesListScreen',
   MyWitnessesDetailScreen: 'MyWitnessesDetailScreen',
 
+  // Nuevas pantallas
+  UnifiedParticipationScreen: 'UnifiedParticipationScreen',
+  OracleParticipation: 'OracleParticipation',
+
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
   RecuperationQR: 'RecuperationQR',
@@ -46,6 +54,8 @@ export const StackNav = {
   ChangePinVerify: 'ChangePinVerify',
   ChangePinNew: 'ChangePinNew',
   ChangePinNewConfirm: 'ChangePinNewConfirm',
+  More: 'More',
+  Security: 'Security',
   TermsAndCondition: 'TermsAndCondition',
   Notification: 'Notification',
   NotificationDetails: 'NotificationDetails',
@@ -98,4 +108,3 @@ export const AuthNav = {
   RecoveryUser2Pin: 'RecoveryUser2Pin',
   MyGuardiansStatus: 'MyGuardiansStatus',
 };
-

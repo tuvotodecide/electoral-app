@@ -1,3 +1,4 @@
+
 import {StyleSheet, View, Image} from 'react-native';
 import React, {useEffect} from 'react';
 import BootSplash from 'react-native-bootsplash';
@@ -18,6 +19,7 @@ import {isSessionValid} from '../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
+import {ensureBundle} from '../utils/ensureBundle';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -31,8 +33,7 @@ export default function Splash({navigation}) {
     const asyncProcess = async () => {
       try {
         let asyncData = await initialStorageValueGet();
-      
-        
+
         let {themeColor, onBoardingValue} = asyncData;
         const draft = await getDraft();
         if (draft) {
@@ -61,19 +62,19 @@ export default function Splash({navigation}) {
             });
             return;
           }
-          // const alive = await isSessionValid();
 
-          // if (alive) navigation.replace(StackNav.TabNavigation);
-          // else navigation.replace(StackNav.AuthNavigation);
+          const bundleReady = await ensureBundle();
+          console.log(bundleReady);
 
           const alive = await isSessionValid();
 
-          
-          if (alive) navigation.replace(StackNav.TabNavigation);
-          else
-            navigation.replace(StackNav.AuthNavigation, {
-              screen: AuthNav.Connect, 
-            });
+          if (alive) {
+            navigation.replace(StackNav.TabNavigation);
+            return;
+          }
+          navigation.replace(StackNav.AuthNavigation);
+        } else {
+          navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
         console.log('error ', e);

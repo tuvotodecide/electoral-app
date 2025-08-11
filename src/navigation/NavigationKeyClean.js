@@ -45,6 +45,8 @@ export const StackNav = {
   ChangePinVerify: 'ChangePinVerify',
   ChangePinNew: 'ChangePinNew',
   ChangePinNewConfirm: 'ChangePinNewConfirm',
+  More: 'More',
+  Security: 'Security',
   TermsAndCondition: 'TermsAndCondition',
   Notification: 'Notification',
   NotificationDetails: 'NotificationDetails',

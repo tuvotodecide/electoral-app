@@ -18,7 +18,8 @@ import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
-import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
+//import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
+import RecoveryQr from '../container/TabBar/Recovery/RecoveryQR';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
 import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
@@ -26,6 +27,7 @@ import RecoveryFinalize from '../container/TabBar/Recovery/RecoveryFinalize';
 
 // Pantallas de Voto
 import SearchTable from '../container/Vote/UploadRecord/SearchTable';
+import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
 import TableDetail from '../container/Vote/UploadRecord/TableDetail';
 import CameraScreen from '../container/Vote/UploadRecord/CameraScreen';
 import CameraPermissionTest from '../container/Vote/UploadRecord/CameraPermissionTest';
@@ -58,6 +60,8 @@ import PrivacyPolicies from '../container/TabBar/Profile/PrivacyPolicies';
 import ChangePinVerify from '../container/TabBar/Profile/ChangePinVerify';
 import ChangePinNew from '../container/TabBar/Profile/ChangePinNew';
 import ChangePinNewConfirm from '../container/TabBar/Profile/ChangePinNewConfirm';
+import More from '../container/TabBar/Profile/More';
+import Security from '../container/TabBar/Profile/Security';
 import TermsAndCondition from '../container/TabBar/Profile/TermsAndCondition';
 import RecuperationQR from '../container/TabBar/Profile/RecuperationQR';
 
@@ -93,6 +97,7 @@ export const StackRoute = {
   TabNavigation,
 
   // Pantallas de Voto
+  ElectoralLocations,
   SearchTable,
   TableDetail,
   CameraScreen,
@@ -127,6 +132,8 @@ export const StackRoute = {
   TermsAndCondition,
   Notification,
   NotificationDetails,
+  More,
+  Security
 };
 
 export const AuthRoute = {
