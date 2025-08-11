@@ -1,16 +1,16 @@
-import React, {useState} from 'react';
-import {Alert} from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import React, { useState } from 'react';
+import { Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
-import {moderateScale} from '../../../common/constants';
+import { moderateScale } from '../../../common/constants';
 import String from '../../../i18n/String';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, mesaData, aiAnalysis, mappedData} = route.params || {};
+  const { photoUri, tableData, mesaData, aiAnalysis, mappedData } = route.params || {};
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -22,15 +22,15 @@ const PhotoReviewScreen = () => {
     }
 
     return [
-      {id: 'cc', partido: 'C.C.', presidente: '0', diputado: '0'},
-      {id: 'fpv', partido: 'FPV', presidente: '0', diputado: '0'},
-      {id: 'mts', partido: 'MTS', presidente: '0', diputado: '0'},
-      {id: 'ucs', partido: 'UCS', presidente: '0', diputado: '0'},
-      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '0', diputado: '0'},
-      {id: '21f', partido: '21F', presidente: '0', diputado: '0'},
-      {id: 'pdc', partido: 'PDC', presidente: '0', diputado: '0'},
-      {id: 'mnr', partido: 'MNR', presidente: '0', diputado: '0'},
-      {id: 'pan-bol', partido: 'PAN-BOL', presidente: '0', diputado: '0'},
+      { id: 'cc', partido: 'C.C.', presidente: '0', diputado: '0' },
+      { id: 'fpv', partido: 'FPV', presidente: '0', diputado: '0' },
+      { id: 'mts', partido: 'MTS', presidente: '0', diputado: '0' },
+      { id: 'ucs', partido: 'UCS', presidente: '0', diputado: '0' },
+      { id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '0', diputado: '0' },
+      { id: '21f', partido: '21F', presidente: '0', diputado: '0' },
+      { id: 'pdc', partido: 'PDC', presidente: '0', diputado: '0' },
+      { id: 'mnr', partido: 'MNR', presidente: '0', diputado: '0' },
+      { id: 'pan-bol', partido: 'PAN-BOL', presidente: '0', diputado: '0' },
     ];
   };
 
@@ -40,9 +40,9 @@ const PhotoReviewScreen = () => {
     }
 
     return [
-      {id: 'validos', label: String.validVotes, value1: '0', value2: '0'},
-      {id: 'blancos', label: String.blankVotes, value1: '0', value2: '0'},
-      {id: 'nulos', label: String.nullVotes, value1: '0', value2: '0'},
+      { id: 'validos', label: String.validVotes, value1: '0', value2: '0' },
+      { id: 'blancos', label: String.blankVotes, value1: '0', value2: '0' },
+      { id: 'nulos', label: String.nullVotes, value1: '0', value2: '0' },
     ];
   };
 
@@ -61,10 +61,10 @@ const PhotoReviewScreen = () => {
         number: aiAnalysis.table_number,
         code: aiAnalysis.table_code,
         time: aiAnalysis.time,
-        ...mesaData,
+        ...tableData,
       };
     }
-    return mesaData;
+    return tableData;
   };
 
   // Handler for editing votes
@@ -84,6 +84,7 @@ const PhotoReviewScreen = () => {
 
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri,
+      tableData: mesaInfo,
       mesaData: mesaInfo,
       partyResults,
       voteSummaryResults,
@@ -100,7 +101,7 @@ const PhotoReviewScreen = () => {
   const updatePartyResult = (partyId, field, value) => {
     setPartyResults(prev =>
       prev.map(party =>
-        party.id === partyId ? {...party, [field]: value} : party,
+        party.id === partyId ? { ...party, [field]: value } : party,
       ),
     );
   };
@@ -108,48 +109,48 @@ const PhotoReviewScreen = () => {
   // Function to update vote summary results
   const updateVoteSummaryResult = (id, field, value) => {
     setVoteSummaryResults(prev =>
-      prev.map(item => (item.id === id ? {...item, [field]: value} : item)),
+      prev.map(item => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
 
   // Action buttons for PhotoReviewScreen
   const actionButtons = !isEditing
     ? [
-        {
-          text: String.edit,
-          onPress: handleEdit,
-          style: {
-            backgroundColor: '#fff',
-            borderColor: colors.primary,
-            borderWidth: moderateScale(1),
-          },
-          textStyle: {
-            color: colors.primary,
-          },
+      {
+        text: String.edit,
+        onPress: handleEdit,
+        style: {
+          backgroundColor: '#fff',
+          borderColor: colors.primary,
+          borderWidth: moderateScale(1),
         },
-        {
-          text: String.next,
-          onPress: handleNext,
-          style: {
-            backgroundColor: colors.primary,
-          },
-          textStyle: {
-            color: '#fff',
-          },
+        textStyle: {
+          color: colors.primary,
         },
-      ]
+      },
+      {
+        text: String.next,
+        onPress: handleNext,
+        style: {
+          backgroundColor: colors.primary,
+        },
+        textStyle: {
+          color: '#fff',
+        },
+      },
+    ]
     : [
-        {
-          text: String.save,
-          onPress: handleSave,
-          style: {
-            backgroundColor: colors.primary,
-          },
-          textStyle: {
-            color: '#fff',
-          },
+      {
+        text: String.save,
+        onPress: handleSave,
+        style: {
+          backgroundColor: colors.primary,
         },
-      ];
+        textStyle: {
+          color: '#fff',
+        },
+      },
+    ];
 
   return (
     <BaseRecordReviewScreen

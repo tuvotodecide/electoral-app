@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,18 +8,21 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
-import {moderateScale} from '../../../common/constants'; // Assuming this path is correct for your project
-import {StackNav} from '../../../navigation/NavigationKey';
+import { moderateScale } from '../../../common/constants'; // Assuming this path is correct for your project
+import { StackNav } from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import String from '../../../i18n/String';
+import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
+import { send } from "../../../api/account"
+import { BACKEND, CHAIN, ORACLE_TOKEN } from "@env"
+import axios from 'axios';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -49,7 +52,7 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
+  const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
     route.params || {}; // Destructure all needed data
 
   // Also try to get data from alternative parameter names
@@ -98,6 +101,32 @@ const PhotoConfirmationScreen = () => {
     navigation.goBack();
   };
 
+  // Funcion para subir al Backend
+  const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
+    try {
+      const backendUrl = `${BACKEND}/api/v1/ballots/from-ipfs`
+      const payload = {
+        ipfsUri: String(jsonUrl),
+        recordId: String(jsonCID),
+        tableIdIpfs: String(tableCode)
+      };
+      console.log('📤 Subiendo metadata al backend:', payload);
+
+      const response = await axios.post(backendUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000 // 30 segundos timeout
+      });
+
+      console.log('✅ Metadata subida al backend:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error subiendo metadata al backend:', error);
+      throw error;
+    }
+  }
+
   // Función para subir a IPFS
   const uploadToIPFS = async () => {
     if (!photoUri) {
@@ -109,7 +138,6 @@ const PhotoConfirmationScreen = () => {
 
     try {
       console.log('🚀 Iniciando subida a IPFS...');
-
       // Preparar datos adicionales
       const additionalData = {
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
@@ -119,8 +147,10 @@ const PhotoConfirmationScreen = () => {
           hour: '2-digit',
           minute: '2-digit',
         }),
-        userId: 'current-user-id', // Obtener del estado global
-        userName: 'Usuario Actual', // Obtener del estado global
+        // userId: 'current-user-id', // Obtener del estado global
+        // userName: 'Usuario Actual', // Obtener del estado global
+        userId: userData?.id || 'unknown',
+        userName: userFullName,
         role: 'witness',
       };
 
@@ -131,7 +161,12 @@ const PhotoConfirmationScreen = () => {
       };
 
       // Convertir URI a path
-      const imagePath = photoUri.replace('file://', '');
+      const imagePath = photoUri.startsWith('file://')
+        ? photoUri.substring(7)
+        : photoUri;
+
+      console.log('🖼️ Ruta de la imagen:', imagePath);
+      console.log('📊 voteSummaryResults:', JSON.stringify(voteSummaryResults, null, 2));
 
       // Subir imagen y crear metadata completa
       const result = await pinataService.uploadElectoralActComplete(
@@ -143,7 +178,8 @@ const PhotoConfirmationScreen = () => {
 
       if (result.success) {
         console.log('✅ Subida a IPFS exitosa:', result.data);
-        setIpfsData(result.data);
+        console.log('🔗 Enlace de imagen:', result.data.imageUrl);
+        console.log('📄 Enlace de metadata:', result.data.jsonUrl);
         return result.data;
       } else {
         console.error('❌ Error en subida a IPFS:', result.error);
@@ -166,22 +202,63 @@ const PhotoConfirmationScreen = () => {
     setStep(1);
 
     try {
-      // Simular procesamiento
-      setTimeout(() => {
-        setShowConfirmModal(false);
-        setStep(0);
-        // Navegar directamente a SuccessScreen en lugar de mostrar modal
-        navigation.navigate('SuccessScreen');
-      }, 2000);
+      // 1. Subir a IPFS
+      const ipfsResult = await uploadToIPFS();
+      setIpfsData(ipfsResult);
+
+      // 2. Obtener datos necesarios para blockchain
+      const targetAddress = ipfsResult.imageUrl
+      const privateKey = userData?.privKey
+
+      // 3. Crear NFT en blockchain
+      // const nftResult = await send(
+      //   privateKey,
+      //   ORACLE_TOKEN,
+      //   CHAIN,
+      //   targetAddress,
+      //   ""
+      //   ipfsResult.jsonCID // CID del JSON de metadatos
+      // );
+
+      console.log("CODIGO DE MESA", tableData)
+      // 4. Subir Metadata al backend
+      // await uploadMetadataToBackend(
+      //   ipfsResult.jsonUrl,
+      //   ipfsResult.jsonCID,
+      //   String(tableData.codigo)
+      // );
+
+      // 5. Navegar a pantalla de éxito con datos de IPFS
+      navigation.navigate('SuccessScreen', {
+        ipfsData: ipfsResult,
+        //nftData: nftResult,
+        tableData: tableData
+      });
     } catch (error) {
-      console.error('Error en confirmPublishAndCertify:', error);
-      // Navegar a SuccessScreen incluso en caso de error
-      setTimeout(() => {
-        setShowConfirmModal(false);
-        setStep(0);
-        navigation.navigate('SuccessScreen');
-      }, 1000);
+      console.error('Error en creación NFT:', error);
+      setUploadError(error.message);
+    } finally {
+      setShowConfirmModal(false);
+      setStep(0);
     }
+
+    //try {
+    //  // Simular procesamiento
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
+    //    navigation.navigate('SuccessScreen');
+    //  }, 2000);
+    //} catch (error) {
+    //  console.error('Error en confirmPublishAndCertify:', error);
+    //  // Navegar a SuccessScreen incluso en caso de error
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    navigation.navigate('SuccessScreen');
+    //  }, 1000);
+    //}
   };
 
   const closeModal = () => {
@@ -195,8 +272,7 @@ const PhotoConfirmationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${
-          tableData?.tableNumber ||
+        title={`Mesa ${tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           tableData?.id ||
@@ -211,7 +287,7 @@ const PhotoConfirmationScreen = () => {
             ? tableData.numero.replace('Mesa ', '')
             : '') ||
           'DEBUG-EMPTY' // Changed to make it clear data is missing
-        }`}
+          }`}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -220,13 +296,13 @@ const PhotoConfirmationScreen = () => {
 
       {/* Information Ready to Load Text */}
       <View style={styles.infoContainer}>
-        <CText style={styles.infoText}>{String.infoReadyToLoad}</CText>
+        <CText style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
       </View>
 
       {/* Main Content */}
       <View style={styles.content}>
         <CText style={styles.mainText}>
-          {String.i}
+          {I18nStrings.i}
           <CText style={styles.mainTextBold}> {userFullName}</CText>
         </CText>
 
@@ -234,41 +310,41 @@ const PhotoConfirmationScreen = () => {
           style={styles.publishButton}
           onPress={handlePublishAndCertify}>
           <CText style={styles.publishButtonText}>
-            {String.publishAndCertify}
+            {I18nStrings.publishAndCertify}
           </CText>
         </TouchableOpacity>
 
         <CText style={styles.confirmationText}>
-          {String.actaCorrectConfirmation
+          {I18nStrings.actaCorrectConfirmation
             .replace(
               '{tableNumber}',
               tableData?.tableNumber ||
-                tableData?.numero ||
-                tableData?.number ||
-                tableData?.id ||
-                tableData?.tableId ||
-                mesaData?.tableNumber ||
-                mesaData?.numero ||
-                mesaData?.number ||
-                mesa?.tableNumber ||
-                mesa?.numero ||
-                mesa?.number ||
-                (typeof tableData?.numero === 'string'
-                  ? tableData.numero.replace('Mesa ', '')
-                  : '') ||
-                'DEBUG-EMPTY', // Changed to make it clear data is missing
+              tableData?.numero ||
+              tableData?.number ||
+              tableData?.id ||
+              tableData?.tableId ||
+              mesaData?.tableNumber ||
+              mesaData?.numero ||
+              mesaData?.number ||
+              mesa?.tableNumber ||
+              mesa?.numero ||
+              mesa?.number ||
+              (typeof tableData?.numero === 'string'
+                ? tableData.numero.replace('Mesa ', '')
+                : '') ||
+              'DEBUG-EMPTY', // Changed to make it clear data is missing
             )
             .replace(
               '{location}',
               tableData?.recinto ||
-                tableData?.ubicacion ||
-                tableData?.location ||
-                tableData?.venue ||
-                mesaData?.recinto ||
-                mesaData?.ubicacion ||
-                mesa?.recinto ||
-                mesa?.ubicacion ||
-                String.locationNotAvailable,
+              tableData?.ubicacion ||
+              tableData?.location ||
+              tableData?.venue ||
+              mesaData?.recinto ||
+              mesaData?.ubicacion ||
+              mesa?.recinto ||
+              mesa?.ubicacion ||
+              I18nStrings.locationNotAvailable,
             )}
         </CText>
       </View>
@@ -291,21 +367,21 @@ const PhotoConfirmationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  {String.publishAndCertifyConfirmation}
+                  {I18nStrings.publishAndCertifyConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
-                      {String.cancel}
+                      {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
                     <CText style={modalStyles.confirmButtonText}>
-                      {String.publishAndCertify}
+                      {I18nStrings.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -319,10 +395,10 @@ const PhotoConfirmationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  {String.pleaseWait}
+                  {I18nStrings.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain}
+                  {I18nStrings.savingToBlockchain}
                 </CText>
               </>
             )}
@@ -348,7 +424,7 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     width: getResponsiveModalWidth(),
@@ -414,7 +490,7 @@ const modalStyles = StyleSheet.create({
   },
   loading: {
     marginBottom: getResponsiveSize(12, 16, 20),
-    transform: [{scale: getResponsiveSize(0.8, 1, 1.2)}],
+    transform: [{ scale: getResponsiveSize(0.8, 1, 1.2) }],
   },
   loadingTitle: {
     fontSize: getResponsiveSize(18, 20, 24),
@@ -495,7 +571,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(16, 20, 28),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     minWidth: getResponsiveSize(200, 250, 300), // Minimum button width

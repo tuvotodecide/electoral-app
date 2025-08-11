@@ -1,14 +1,12 @@
 import axios from 'axios';
 import RNFS from 'react-native-fs';
+import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT } from "@env"
 
 class PinataService {
   constructor() {
-    // Usar las credenciales directamente del .env
-    this.apiKey = '06238022e0a0581a30e5';
-    this.apiSecret =
-      '0de6731c2382f777bc96536904b0d271330110da71d12119e3c1076134d129f9';
-    this.jwt =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJhNzMyYjA2Zi0yYTYxLTQ2ZWEtYjExYi1mOTE5ODU0ZWU2N2UiLCJlbWFpbCI6ImNoYW1iaWEwNEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiMDYyMzgwMjJlMGEwNTgxYTMwZTUiLCJzY29wZWRLZXlTZWNyZXQiOiIwZGU2NzMxYzIzODJmNzc3YmM5NjUzNjkwNGIwZDI3MTMzMDExMGRhNzFkMTIxMTllM2MxMDc2MTM0ZDEyOWY5IiwiZXhwIjoxNzg0MDcxNDgzfQ.XTbeu5IQKnaVnM5NIu5CT3oWDF6PIf5BI38O0pxwgU4';
+    this.apiKey = PINATA_API_KEY;
+    this.apiSecret = PINATA_API_SECRET
+    this.jwt = PINATA_JWT
 
     this.baseURL = 'https://api.pinata.cloud';
   }
@@ -173,87 +171,119 @@ class PinataService {
   ) {
     try {
       console.log('🚀 Iniciando subida completa del acta electoral');
+      console.log('📊 Datos recibidos:', {
+        analysisData,
+        electoralData,
+        additionalData
+      });
 
-      // 1️⃣ Subir imagen a IPFS
+      // 1. Subir imagen
       const imageResult = await this.uploadImageToIPFS(imagePath);
       if (!imageResult.success) {
         throw new Error(`Error subiendo imagen: ${imageResult.error}`);
       }
 
-      console.log('✅ Imagen subida con CID:', imageResult.data.ipfsHash);
-
-      // 2️⃣ Crear metadata NFT completa con análisis
+      // 2. Extraer datos base
       const timestamp = new Date().toISOString();
-      const tableNumber =
-        additionalData.tableNumber || analysisData?.table_number || 'N/A';
-      const tableCode =
-        additionalData.tableCode || analysisData?.table_code || 'N/A';
-      const time =
-        additionalData.time ||
-        analysisData?.time ||
-        new Date().toLocaleTimeString('es-ES', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+      const tableNumber = additionalData.tableNumber || analysisData?.table_number || 'N/A';
+      const tableCode = analysisData?.table_code || additionalData.tableCode || 'N/A';
+      const time = additionalData.time || analysisData?.time || new Date().toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-      // Crear attributes array en formato NFT
+      // 3. Construir attributes
       const attributes = [
-        {trait_type: 'Table Number', value: tableNumber},
-        {trait_type: 'Table Code', value: tableCode},
-        {trait_type: 'Time', value: time},
+        { trait_type: 'Table Number', value: tableNumber },
+        { trait_type: 'Table Code', value: tableCode },
+        { trait_type: 'Time', value: time },
       ];
 
-      // Agregar datos de presidente de partyResults
-      if (electoralData && electoralData.partyResults) {
-        electoralData.partyResults.forEach(party => {
-          if (party.presidente && party.presidente !== '') {
-            attributes.push({
-              trait_type: `Presidente - ${party.partido}`,
-              value: parseInt(party.presidente, 10) || 0,
-            });
-          }
+      // Agregar votos por partido
+      electoralData.partyResults.forEach(party => {
+        attributes.push({
+          trait_type: `Presidente - ${party.partido}`,
+          value: parseInt(party.presidente, 10) || 0
         });
-      }
 
-      // Agregar datos de diputado de partyResults
-      if (electoralData && electoralData.partyResults) {
-        electoralData.partyResults.forEach(party => {
-          if (party.diputado && party.diputado !== '') {
-            attributes.push({
-              trait_type: `Diputado - ${party.partido}`,
-              value: parseInt(party.diputado, 10) || 0,
-            });
-          }
+        attributes.push({
+          trait_type: `Diputado - ${party.partido}`,
+          value: parseInt(party.diputado, 10) || 0
         });
-      }
+      });
 
-      // Agregar datos de voteSummaryResults
-      if (electoralData && electoralData.voteSummaryResults) {
-        electoralData.voteSummaryResults.forEach(summary => {
-          if (summary.value1 && summary.value1 !== '') {
-            attributes.push({
-              trait_type: `Presidente - ${summary.label}`,
-              value: parseInt(summary.value1, 10) || 0,
-            });
-          }
-          if (summary.value2 && summary.value2 !== '') {
-            attributes.push({
-              trait_type: `Diputado - ${summary.label}`,
-              value: parseInt(summary.value2, 10) || 0,
-            });
-          }
-        });
-      }
+      // Agregar resumen de votos
+      electoralData.voteSummaryResults.forEach(summary => {
+        if (summary.label === 'Votos Válidos') {
+          attributes.push({
+            trait_type: 'Presidente - Votos Válidos',
+            value: parseInt(summary.value1, 10) || 0
+          });
+          attributes.push({
+            trait_type: 'Diputado - Votos Válidos',
+            value: parseInt(summary.value2, 10) || 0
+          });
+        } else if (summary.label === 'Votos en Blanco') {
+          attributes.push({
+            trait_type: 'Presidente - Votos en Blanco',
+            value: parseInt(summary.value1, 10) || 0
+          });
+          attributes.push({
+            trait_type: 'Diputado - Votos en Blanco',
+            value: parseInt(summary.value2, 10) || 0
+          });
+        } else if (summary.label === 'Votos Nulos') {
+          attributes.push({
+            trait_type: 'Presidente - Votos Nulos',
+            value: parseInt(summary.value1, 10) || 0
+          });
+          attributes.push({
+            trait_type: 'Diputado - Votos Nulos',
+            value: parseInt(summary.value2, 10) || 0
+          });
+        }
+      });
 
-      // Metadata en formato NFT
+      // 4. Construir campo DATA requerido
+      const buildVoteData = (type) => {
+        // Función auxiliar para obtener valores de forma segura
+        const getValue = (label, defaultValue = 0) => {
+          const item = electoralData.voteSummaryResults.find(s => s.label === label);
+          if (!item) return defaultValue;
+
+          const value = type === 'presidente' ? item.value1 : item.value2;
+          return parseInt(value, 10) || defaultValue;
+        };
+
+        return {
+          validVotes: getValue('Votos Válidos'),
+          nullVotes: getValue('Votos Nulos'),
+          blankVotes: getValue('Votos en Blanco'),
+          partyVotes: electoralData.partyResults.map(party => ({
+            partyId: party.partido,
+            votes: parseInt(type === 'presidente' ? party.presidente : party.diputado, 10) || 0
+          })),
+          totalVotes: getValue('Votos Válidos') + getValue('Votos Nulos') + getValue('Votos en Blanco')
+        };
+      };
+
+      const dataField = {
+        tableCode: tableCode,
+        tableNumber: tableNumber,
+        locationId: additionalData.locationId || 'UNKNOWN',
+        votes: {
+          parties: buildVoteData('presidente'),
+          deputies: buildVoteData('diputado')
+        }
+      };
+
+      // 5. Construir metadata final
       const metadata = {
         name: `Acta Electoral Mesa ${tableNumber}`,
         description: `Acta de escrutinio para la mesa ${tableNumber} (${tableCode}), registrada a las ${time}. Incluye resultados de votos para presidente y diputado por candidatura, así como el resumen de votos válidos, blancos, nulos y total.`,
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/acta/${tableCode}`,
         attributes: attributes,
-
-        // Datos adicionales para referencia (no parte del estándar NFT)
         _technical: {
           uploadedAt: timestamp,
           uploadedFrom: 'mobile-app',
@@ -261,28 +291,17 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
           analysisData: analysisData,
-          user: {
-            userId: additionalData.userId,
-            userName: additionalData.userName,
-            role: additionalData.role || 'witness',
-          },
-          verification: {
-            isElectoralAct: analysisData?.if_electoral_act || false,
-            isImageClear: !analysisData?.image_not_clear,
-            verificationDate: timestamp,
-          },
         },
+        data: dataField
       };
 
-      // 3️⃣ Subir JSON con metadata a IPFS
+      console.log('📝 Metadata completa:', JSON.stringify(metadata, null, 2));
+
+      // 6. Subir metadata
       const jsonResult = await this.uploadJSONToIPFS(
         metadata,
-        `electoral-act-${tableCode}-${tableNumber}.json`,
+        `electoral-act-${tableCode}-${tableNumber}.json`
       );
-
-      if (!jsonResult.success) {
-        throw new Error(`Error subiendo JSON: ${jsonResult.error}`);
-      }
 
       console.log('✅ JSON subido con CID:', jsonResult.data.ipfsHash);
 
@@ -294,14 +313,14 @@ class PinataService {
           imageUrl: imageResult.data.gatewayUrl,
           jsonUrl: jsonResult.data.gatewayUrl,
           metadata: metadata,
-          timestamp: timestamp,
-        },
+          timestamp: timestamp
+        }
       };
     } catch (error) {
       console.error('❌ Error en subida completa:', error);
       return {
         success: false,
-        error: error.message || 'Error desconocido en la subida completa',
+        error: error.message || 'Error desconocido'
       };
     }
   }
@@ -320,7 +339,7 @@ class PinataService {
 
       const response = await axios.get(
         `${this.baseURL}/data/pinList?hashContains=${ipfsHash}`,
-        {headers},
+        { headers },
       );
 
       return {
