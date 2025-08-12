@@ -235,6 +235,7 @@ export default function RegisterUser10({navigation, route}) {
             privKey,
             account: walletData.address,
             guardian: guardianAddress,
+            dni
           };
           await Keychain.setGenericPassword(
             'bundle',

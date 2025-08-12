@@ -143,7 +143,27 @@ export default function LoginUser({navigation}) {
       const stored = await getSecrets();
       if (!stored) return {ok: false, type: 'no_local_secrets'};
 
-      const {streamId, privKey} = stored.payloadQr;
+      const {streamId, privKey, dni} = stored.payloadQr;
+
+      try {
+        const clean = (dni || '').toString().replace(/\D/g, '');
+        const exists = await axios.post(
+          `${BACKEND}kyc/find`,
+          {identifier: clean},
+          {withCredentials: true},
+        );
+
+        if (!exists.data?.ok) {
+          return {ok: false, type: 'dni_not_found'};
+        }
+      } catch (err) {
+        return {
+          ok: false,
+          type: 'server',
+          kind: 'server_down',
+          detail: 'find_failed',
+        };
+      }
 
       let load;
       try {
@@ -242,8 +262,8 @@ export default function LoginUser({navigation}) {
           visible: true,
           msg:
             'No pudimos cargar tu credencial (VC).\n' +
-            'Es probable que el servidor de credenciales se haya reiniciado o se haya perdido el stream.\n\n' +
-            'Necesitas volver a registrarte para emitir una nueva credencial.',
+            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
+            'Actualiza la aplicación. Necesitas volver a registrarte para emitir una nueva credencial.',
           onClose: () => {
             hideModal();
             navigation.reset({
@@ -260,6 +280,28 @@ export default function LoginUser({navigation}) {
         return;
       }
 
+      if (res.type === 'dni_not_found') {
+        setModal({
+          visible: true,
+          msg:
+            'No encontramos tu registro.\n' +
+            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
+            'Debes volver a registrarte para emitir una nueva credencial.',
+          onClose: () => {
+            hideModal();
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: StackNav.AuthNavigation,
+                  params: {screen: AuthNav.RegisterUser2},
+                },
+              ],
+            });
+          },
+        });
+        return;
+      }
       if (res.kind === 'server_down' || res.kind === 'server_error') {
         setModal({
           visible: true,
@@ -355,6 +397,49 @@ export default function LoginUser({navigation}) {
         }
 
         const {stored} = JSON.parse(creds.password);
+        const {dni} = stored;
+
+        try {
+          const clean = (dni || '').toString().replace(/\D/g, '');
+          const exists = await axios.post(
+            `${BACKEND}kyc/find`,
+            {identifier: clean},
+            {withCredentials: true},
+          );
+
+          if (!exists.data?.ok) {
+            setModal({
+              visible: true,
+              msg:
+                'No encontramos tu registro.\n' +
+                'Es probable que el servidor se haya reiniciado.\n\n' +
+                'Debes volver a registrarte para emitir una nueva credencial.',
+              onClose: () => {
+                hideModal();
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: StackNav.AuthNavigation,
+                      params: {screen: AuthNav.RegisterUser2},
+                    },
+                  ],
+                });
+              },
+            });
+            return;
+          }
+        } catch (err) {
+          setModal({
+            visible: true,
+            msg:
+              'No se pudo conectar al servidor.\n' +
+              'Revisa tu conexión o intenta más tarde.\n\n' +
+              '(Tu intento biométrico no fue contado como fallo.)',
+            onClose: hideModal,
+          });
+          return;
+        }
 
         let load;
         try {
