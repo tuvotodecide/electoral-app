@@ -18,9 +18,11 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import { send } from "../../../api/account"
+import { executeOperation, send } from "../../../api/account"
 import { BACKEND, CHAIN, ORACLE_TOKEN } from "@env"
 import axios from 'axios';
+import { oracleCalls, oracleReads } from '../../../api/oracle';
+import { availableNetworks } from '../../../api/params';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -207,18 +209,54 @@ const PhotoConfirmationScreen = () => {
       setIpfsData(ipfsResult);
 
       // 2. Obtener datos necesarios para blockchain
-      const targetAddress = ipfsResult.imageUrl
-      const privateKey = userData?.privKey
+      const privateKey = userData?.privKey;
 
       // 3. Crear NFT en blockchain
-      // const nftResult = await send(
-      //   privateKey,
-      //   ORACLE_TOKEN,
-      //   CHAIN,
-      //   targetAddress,
-      //   ""
-      //   ipfsResult.jsonCID // CID del JSON de metadatos
-      // );
+      console.log("check register")
+      const isRegistered = await oracleReads.isRegistered(
+        CHAIN,
+        userData.account,
+        1
+      );
+
+      if(!isRegistered) {
+        console.log("request register")
+        await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl)
+        );
+        
+        console.log("check user is registered")
+        const isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          8
+        );
+
+        if(!isRegistered) {
+          throw Error('Failed to register user on oracle');
+        }
+      }
+
+      console.log("create attestation")
+      const response = await executeOperation(
+        privateKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsResult.jsonUrl),
+        oracleReads.waitForOracleEvent,
+        'AttestationCreated'
+      );
+      console.log("Contract returned data");
+      console.log(response);
+
+      const nftResult = {
+        txHash: response.receipt.receipt.transactionHash,
+        nftId: response.returnData.recordId,
+        txUrl: availableNetworks[CHAIN].explorer + 'tx/' + response.receipt.receipt.transactionHash,
+      }
 
       console.log("CODIGO DE MESA", tableData)
       // 4. Subir Metadata al backend
@@ -231,7 +269,7 @@ const PhotoConfirmationScreen = () => {
       // 5. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {
         ipfsData: ipfsResult,
-        //nftData: nftResult,
+        nftData: nftResult,
         tableData: tableData
       });
     } catch (error) {

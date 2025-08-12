@@ -5,9 +5,10 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  Linking,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {Link, useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
@@ -33,6 +34,8 @@ const SuccessScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
 
+  const { nftData } = route.params;
+
   const handleBack = () => {
     try {
       navigation.popToTop();
@@ -41,9 +44,17 @@ const SuccessScreen = () => {
     }
   };
 
-  const handleViewNFT = () => {
-    // Por el momento enlace vacío
-    console.log('Ver NFT - enlace por implementar');
+  const handleViewNFT = async () => {
+    try {
+      const supported = await Linking.canOpenURL(nftData.txUrl);
+      if(supported) {
+        await Linking.openURL(nftData.txUrl);
+      } else {
+        console.log('Cannot open URL:', nftData.txUrl);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
   };
 
   const handleShareProfile = () => {

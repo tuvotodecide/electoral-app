@@ -1,11 +1,13 @@
-import { createPublicClient, encodeFunctionData, erc20Abi, getContract, http, parseUnits } from "viem";
+import { createPublicClient, getContract, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { availableNetworkNames, availableNetworks, FACTORY_ADDRESS, gasParams } from "./params";
+import { availableNetworkNames, availableNetworks, gasParams, FACTORY_ADDRESS, PAYMASTER_ADDRESS, sponsorshipPolicyId } from "./params";
 import { createBundlerClient, entryPoint07Address } from "viem/account-abstraction";
 import { toSimpleSmartAccount } from "permissionless/accounts";
-import { CHAIN, ORACLE_TOKEN } from '@env';
+import { CHAIN } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
-import oracle from '../abi/oracle.json'
+import { signUserOpAsService } from "../utils/walletRegister";
+import { createPimlicoClient } from "permissionless/clients/pimlico";
+import { createSmartAccountClient } from "permissionless";
 
 export function getReadAccountContract(chain, address) {
 	const client = createPublicClient({
@@ -92,24 +94,68 @@ export async function getWalletCreateDebt(chain, address) {
 	}
 }
 
-export async function send(privateKey, address, chain, targetAddress, ipfsCID) {
-	const { account, publicClient: client } = await getAccount(privateKey, address, chain);
+/*
+export async function executeOperation(privateKey, address, chain, callData) {
+	const {account, publicClient} = await getAccount(privateKey, address, chain);
+
+	const pimlicoClient = createPimlicoClient({
+    chain: availableNetworks[chain].chain,
+    transport: http(
+      availableNetworks[chain].bundler,
+    ),
+    entryPoint: {
+      address: entryPoint07Address,
+      version: "0.7",
+    },
+  });
+
+	const smartAccountClient = createSmartAccountClient({
+    account,
+    chain: availableNetworks[chain].chain,
+    bundlerTransport: http(
+      availableNetworks[chain].bundler,
+    ),
+    paymaster: pimlicoClient,
+    paymasterContext: { sponsorshipPolicyId },
+    userOperation: {
+      estimateFeesPerGas: async () => {
+        return (await pimlicoClient.getUserOperationGasPrice()).fast;
+      },
+    },
+  });
+
+	const txHash = await smartAccountClient.sendTransaction(callData);
+  const receipt = await publicClient.waitForTransactionReceipt({hash: txHash});
+  console.log(receipt);
+  return receipt;
+}*/
+
+
+export async function executeOperation(privateKey, address, chain, callData, waitEvent, eventName) {
+	const {account, publicClient: client} = await getAccount(privateKey, address, chain);
 
 	const bundlerClient = createBundlerClient({
 		client,
 		transport: http(availableNetworks[chain].bundler),
 	});
 
-	const hash = await bundlerClient.sendUserOperation({
-		account,
-		calls: [{
-			to: ORACLE_TOKEN, //direccion del oraculo 0xfEBBd59dcE9e1E9C5F1431Aa99C1f9e52193da7f
-			value: BigInt(0),
-			data: getSendTokenCall(targetAddress),
-		}],
-		//paymaster: availableNetworks[chain].tokenPaymaster,
+	const userOp = await bundlerClient.prepareUserOperation({
+    account,
+    calls: [callData],
 		...gasParams,
-		verificationGasLimit: BigInt(90000),
+		verificationGasLimit: BigInt(70000),
+		paymasterVerificationGasLimit: BigInt(80000)
+	});
+
+	const { factory, factoryData } = await account.getFactoryArgs();
+	const initCode = factory && factoryData ? concat([factory, factoryData]) : undefined;
+	const packedUserOp = await signUserOpAsService(userOp, initCode, client);
+	const {signature, ...noSignedUserOp} = userOp;
+
+	const hash = await bundlerClient.sendUserOperation({
+		...noSignedUserOp,
+		paymaster: PAYMASTER_ADDRESS,
+		paymasterData: packedUserOp.paymasterAndData,
 	});
 
 	const receipt = await bundlerClient.waitForUserOperationReceipt({ hash });
@@ -119,41 +165,14 @@ export async function send(privateKey, address, chain, targetAddress, ipfsCID) {
 		throw Error('Transaction failed, try again later');
 	}
 
+	let returnData;
+	if(waitEvent && eventName) {
+		returnData = await expectReturn(chain, eventName, receipt.receipt.blockNumber);
+	}
+
 	const block = await client.getBlock({ blockNumber: receipt.receipt.blockNumber });
 	const date = new Date(Number(block.timestamp) * 1000);
-	return { receipt, date: date.toLocaleString() };
-}
-
-function getSendTokenCall(to) {
-	return encodeFunctionData({
-		abi: oracle, //json del oraculo
-		functionName: 'requestRegister',
-		args: [to] //URI del json de IPFS
-	});
-}
-
-function getSendTokenCall2(id_mesa, to, emptyData) {
-	return encodeFunctionData({
-		abi: oracle, //json del oraculo
-		functionName: 'createAttestation',
-		args: [id_mesa, to, ""] //URI del json de IPFS
-	});
-
-	//receipt deberia retornar (id (mesa), recordId (nft de acta))
-}
-
-function getSendTokenCall3(to) {
-	return encodeFunctionData({
-		abi: erc20Abi, //json del oraculo
-		functionName: 'attest',
-		args: [
-			id, //id de atestiguamiento (mesa)
-			recordId, //recordId del nft del acta
-			true,
-			"" //vacio si eligio un acta, sino la URI de IPFS
-		]
-	});
-	//return recordId de nuevo nft
+	return { returnData, receipt, date: date.toLocaleString() };
 }
 
 export async function isWallet(address) {

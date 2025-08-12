@@ -21,7 +21,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 
-import { BACKEND } from '@env';
+import { BACKEND_RESULT } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -65,7 +65,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=1000`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=1000`,
       );
       // const response = await axios.get(
       //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
@@ -170,7 +170,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setConfigLoading(true);
       setConfigError(false);
       const response = await axios.get(
-        `${BACKEND}/api/v1/elections/config/status`
+        `${BACKEND_RESULT}/api/v1/elections/config/status`
       );
       if (response.data) {
         setElectionStatus(response.data);

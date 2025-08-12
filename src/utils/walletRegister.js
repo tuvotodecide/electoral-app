@@ -180,12 +180,6 @@ export async function registerStreamAndGuardian(
       functionName: 'createGuardianForAccount',
       args: [account.address, salt],
     });
-
-    const approveData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [availableNetworks[chain].tokenPaymaster, BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935')],
-    });
     
     //prepare userOp to sign
     const userOp = await bundlerClient.prepareUserOperation({
@@ -201,11 +195,6 @@ export async function registerStreamAndGuardian(
           value: BigInt(0),
           data: dataGuardian
         },
-        {
-          to: TOKEN_ADDRESS,
-          value: BigInt(0),
-          data: approveData
-        }
       ],
       ...gasParams,
       verificationGasLimit: BigInt(400000),
