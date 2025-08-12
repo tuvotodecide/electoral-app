@@ -1,9 +1,9 @@
 import React from 'react';
-import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
+import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,9 +16,9 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Party Table Row Component
-export const PartyTableRow = ({party, isEditing, onUpdate}) => (
+export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
   <View style={styles.partyTableRow}>
-    <CText style={styles.partyNameText}>{party.partido}</CText>
+    <CText style={styles.partyNameText}>{party.id}</CText>
     <View style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
@@ -47,17 +47,23 @@ export const PartyTableRow = ({party, isEditing, onUpdate}) => (
 );
 
 // Party Table Component
-export const PartyTable = ({partyResults, isEditing = false, onUpdate}) => (
+export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
   <View style={styles.partyTableContainer}>
     <View style={styles.partyTableHeader}>
       <CText style={styles.partyTableHeaderLeft}>Partido</CText>
       <CText style={styles.partyTableHeaderCenter}>PRESIDENTE/A</CText>
       <CText style={styles.partyTableHeaderCenter}>DIPUTADO/A</CText>
     </View>
+
     {partyResults.map((party, index) => (
       <PartyTableRow
-        key={party.id}
-        party={party}
+        key={party.id || index}
+        party={{
+          ...party,
+          // Asegurar que los nombres de propiedades coincidan
+          presidente: party.presidente?.toString() || "0",
+          diputado: party.diputado?.toString() || "0"
+        }}
         isEditing={isEditing}
         onUpdate={onUpdate}
       />
@@ -71,7 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(4, 8, 10),
     marginBottom: getResponsiveSize(6, 16, 20),
     elevation: 2,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',
