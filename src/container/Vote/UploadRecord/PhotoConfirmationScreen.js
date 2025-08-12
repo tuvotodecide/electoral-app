@@ -140,6 +140,7 @@ const PhotoConfirmationScreen = () => {
       console.log('🚀 Iniciando subida a IPFS...');
       // Preparar datos adicionales
       const additionalData = {
+        idRecinto: tableData?.idRecinto,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
         tableCode: tableData?.tableCode || tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
@@ -222,11 +223,11 @@ const PhotoConfirmationScreen = () => {
 
       console.log("CODIGO DE MESA", tableData)
       // 4. Subir Metadata al backend
-      // await uploadMetadataToBackend(
-      //   ipfsResult.jsonUrl,
-      //   ipfsResult.jsonCID,
-      //   String(tableData.codigo)
-      // );
+      await uploadMetadataToBackend(
+        ipfsResult.jsonUrl,
+        ipfsResult.jsonCID,
+        String(tableData.idRecinto)
+      );
 
       // 5. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {

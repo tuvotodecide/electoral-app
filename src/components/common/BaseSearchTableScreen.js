@@ -157,7 +157,6 @@ const BaseSearchTableScreen = ({
 
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
-
     if (!tableCode) {
       console.error('BaseSearchTableScreen - No table code found for mesa:', mesa);
       showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
@@ -171,16 +170,16 @@ const BaseSearchTableScreen = ({
       console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
 
       // Check if mesa has existing attestations
-      const response = await axios.get(`${BACKEND}//api/v1/ballots/by-table/${tableCode}`);
-
+      const response = await axios.get(`${BACKEND}/api/v1/ballots/by-table/${tableCode}`);
       console.log('BaseSearchTableScreen - Mesa results response:', response.data);
 
-      if (response.data && response.data.registros && response.data.registros.length > 0) {
+      if (response.data) {
         // Mesa has existing attestations - go directly to WhichIsCorrectScreen
+        console.log("ESTOY ENTRANDO AQUI?", response.data.votes)
         console.log('BaseSearchTableScreen - Mesa has existing attestations:', response.data.registros.length);
 
         // Convert API data to format expected by WhichIsCorrectScreen
-        const actaImages = response.data.registros.map((record, index) => {
+        const actaImages = response.data.votes.map((record, index) => {
           console.log(`BaseSearchTableScreen - Mapping record ${index}:`, {
             recordId: record.recordId,
             actaImage: record.actaImage,
