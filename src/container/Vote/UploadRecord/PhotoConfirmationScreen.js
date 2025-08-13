@@ -59,6 +59,7 @@ const PhotoConfirmationScreen = () => {
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
 
+
   console.log('PhotoConfirmationScreen - Received data:', {
     tableData,
     photoUri,
@@ -87,6 +88,9 @@ const PhotoConfirmationScreen = () => {
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
   const [ipfsData, setIpfsData] = useState(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateBallot, setDuplicateBallot] = useState(null);
+  const [uploadError, setUploadError] = useState('');
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -101,6 +105,56 @@ const PhotoConfirmationScreen = () => {
     navigation.goBack();
   };
 
+
+  const verifyAndUpload = async () => {
+    try {
+      // Construir datos para verificación
+      const verificationData = {
+        tableNumber: tableData?.tableCode || 'N/A',
+        votes: {
+          parties: buildVoteData('presidente'),
+          deputies: buildVoteData('diputado')
+        }
+      };
+      // Verificar duplicados
+      const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+
+      if (duplicateCheck.exists) {
+        setDuplicateBallot(duplicateCheck.ballot);
+        setShowDuplicateModal(true);
+      } else {
+        // No existe duplicado, proceder con la publicación
+        handlePublishAndCertify();
+      }
+    } catch (error) {
+      console.error('Error en verificación:', error);
+      setUploadError('Error verificando duplicados');
+    }
+  };
+
+  const buildVoteData = (type) => {
+    const getValue = (label, defaultValue = 0) => {
+      const item = voteSummaryResults.find(s => s.label === label);
+      if (!item) return defaultValue;
+
+      const value = type === 'presidente' ? item.value1 : item.value2;
+      return parseInt(value, 10) || defaultValue;
+    };
+
+    return {
+      validVotes: getValue('Votos Válidos'),
+      nullVotes: getValue('Votos Nulos'),
+      blankVotes: getValue('Votos en Blanco'),
+      partyVotes: partyResults.map(party => ({
+        partyId: party.partido,
+        votes: parseInt(type === 'presidente' ? party.presidente : party.diputado, 10) || 0
+      })),
+      totalVotes: getValue('Votos Válidos') +
+        getValue('Votos Nulos') +
+        getValue('Votos en Blanco')
+    };
+  };
+
   // Funcion para subir al Backend
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
@@ -108,7 +162,7 @@ const PhotoConfirmationScreen = () => {
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
-        tableIdIpfs: String(tableCode)
+        tableIdIpfs: "String"
       };
       console.log('📤 Subiendo metadata al backend:', payload);
 
@@ -309,7 +363,7 @@ const PhotoConfirmationScreen = () => {
 
         <TouchableOpacity
           style={styles.publishButton}
-          onPress={handlePublishAndCertify}>
+          onPress={verifyAndUpload}>
           <CText style={styles.publishButtonText}>
             {I18nStrings.publishAndCertify}
           </CText>
@@ -403,6 +457,41 @@ const PhotoConfirmationScreen = () => {
                 </CText>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showDuplicateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDuplicateModal(false)}>
+        <View style={modalStyles.modalOverlay}>
+          <View style={modalStyles.modalContainer}>
+            <View style={modalStyles.iconCircleWarning}>
+              <Ionicons
+                name="warning-outline"
+                size={getResponsiveSize(36, 48, 60)}
+                color="#FFA000"
+              />
+            </View>
+            <View style={modalStyles.spacer} />
+            <CText style={modalStyles.confirmTitle}>
+              {I18nStrings.duplicateBallotTitle}
+            </CText>
+
+            <CText style={modalStyles.duplicateMessage}>
+              {I18nStrings.duplicateBallotMessage}
+            </CText>
+
+            <View style={modalStyles.buttonContainer}>
+              <TouchableOpacity
+                style={[modalStyles.cancelButton, { flex: 1 }]}
+                onPress={() => setShowDuplicateModal(false)}>
+                <CText style={modalStyles.cancelButtonText}>
+                  {I18nStrings.goBack}
+                </CText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -688,6 +777,14 @@ const nftModalStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  duplicateMessage: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4F4F4F',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(16, 24, 32),
+    lineHeight: getResponsiveSize(20, 24, 28),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
   },
 });
 

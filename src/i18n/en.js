@@ -1325,4 +1325,10 @@ export default {
   votingWillTakePlace: 'Se llevará a cabo en',
   votingTookPlace: 'Se llevó a cabo en',
   votingNotActive: 'La votación no está activa actualmente',
+
+
+  duplicateBallotTitle: "Acta ya existe",
+  duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
+  goBack: "Volver Atrás",
+  uploadAnyway: "Subir Igual"
 };
