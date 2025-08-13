@@ -231,12 +231,35 @@ const WhichIsCorrectScreen = () => {
     if (confirmedCorrectActa) {
       const selectedImage = actaImages.find(img => img.id === confirmedCorrectActa);
       if (selectedImage) {
+        // Transformar voteSummaryResults a array aquí
+        const transformedVoteSummary = [
+          {
+            label: 'Válidos',
+            value1: selectedImage.voteSummaryResults?.presValidVotes || 0,
+            value2: selectedImage.voteSummaryResults?.depValidVotes || 0
+          },
+          {
+            label: 'Blancos',
+            value1: selectedImage.voteSummaryResults?.presBlankVotes || 0,
+            value2: selectedImage.voteSummaryResults?.depBlankVotes || 0
+          },
+          {
+            label: 'Nulos',
+            value1: selectedImage.voteSummaryResults?.presNullVotes || 0,
+            value2: selectedImage.voteSummaryResults?.depNullVotes || 0
+          },
+          {
+            label: 'Total',
+            value1: selectedImage.voteSummaryResults?.presTotalVotes || 0,
+            value2: selectedImage.voteSummaryResults?.depTotalVotes || 0
+          }
+        ];
+
         navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
           tableData: tableData,
-          // Usar los datos del acta seleccionada:
           partyResults: selectedImage.partyResults || [],
-          voteSummaryResults: selectedImage.voteSummaryResults || [],
+          voteSummaryResults: transformedVoteSummary,
         });
       }
     }
