@@ -167,7 +167,7 @@ export async function executeOperation(privateKey, address, chain, callData, wai
 
 	let returnData;
 	if(waitEvent && eventName) {
-		returnData = await expectReturn(chain, eventName, receipt.receipt.blockNumber);
+		returnData = await waitEvent(chain, eventName, receipt.receipt.blockNumber);
 	}
 
 	const block = await client.getBlock({ blockNumber: receipt.receipt.blockNumber });

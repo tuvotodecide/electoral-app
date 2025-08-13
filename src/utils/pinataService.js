@@ -186,7 +186,7 @@ class PinataService {
       // 2. Extraer datos base
       const timestamp = new Date().toISOString();
       const tableNumber = additionalData.tableNumber || analysisData?.table_number || 'N/A';
-      const tableCode = analysisData?.table_code || additionalData.tableCode || 'N/A';
+      const tableCode = additionalData.tableCode || 'N/A';
       const time = additionalData.time || analysisData?.time || new Date().toLocaleTimeString('es-ES', {
         hour: '2-digit',
         minute: '2-digit'
@@ -270,7 +270,7 @@ class PinataService {
       const dataField = {
         tableCode: tableCode,
         tableNumber: tableNumber,
-        locationId: additionalData.locationId || 'UNKNOWN',
+        locationId: additionalData.idRecinto || 'UNKNOWN',
         votes: {
           parties: buildVoteData('presidente'),
           deputies: buildVoteData('diputado')

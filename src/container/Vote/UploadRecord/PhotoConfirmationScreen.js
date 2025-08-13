@@ -11,15 +11,12 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
-import { moderateScale } from '../../../common/constants'; // Assuming this path is correct for your project
-import { StackNav } from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import { executeOperation, send } from "../../../api/account"
-import { BACKEND, CHAIN, ORACLE_TOKEN } from "@env"
+import { executeOperation } from "../../../api/account"
+import { BACKEND_RESULT, CHAIN } from "@env"
 import axios from 'axios';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import { availableNetworks } from '../../../api/params';
@@ -106,7 +103,7 @@ const PhotoConfirmationScreen = () => {
   // Funcion para subir al Backend
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
-      const backendUrl = `${BACKEND}/api/v1/ballots/from-ipfs`
+      const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
@@ -142,6 +139,7 @@ const PhotoConfirmationScreen = () => {
       console.log('🚀 Iniciando subida a IPFS...');
       // Preparar datos adicionales
       const additionalData = {
+        idRecinto: tableData?.idRecinto,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
         tableCode: tableData?.tableCode || tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
@@ -254,17 +252,17 @@ const PhotoConfirmationScreen = () => {
 
       const nftResult = {
         txHash: response.receipt.receipt.transactionHash,
-        nftId: response.returnData.recordId,
+        nftId: response.returnData.recordId.toString(),
         txUrl: availableNetworks[CHAIN].explorer + 'tx/' + response.receipt.receipt.transactionHash,
       }
 
       console.log("CODIGO DE MESA", tableData)
       // 4. Subir Metadata al backend
-      // await uploadMetadataToBackend(
-      //   ipfsResult.jsonUrl,
-      //   ipfsResult.jsonCID,
-      //   String(tableData.codigo)
-      // );
+      await uploadMetadataToBackend(
+        ipfsResult.jsonUrl,
+        nftResult.nftId,
+        String(tableData.idRecinto)
+      );
 
       // 5. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {

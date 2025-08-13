@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Image,
@@ -6,14 +6,14 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -29,19 +29,61 @@ const ActaDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  
+
   const {
     selectedActa,
     tableData,
-    partyResults,
-    voteSummaryResults,
+    partyResults: rawPartyResults = [],
+    voteSummaryResults: rawVoteSummaryResults = {},
     allActas,
     onCorrectActaSelected,
     onUploadNewActa,
   } = route.params || {};
 
-  console.log('ActaDetailScreen - Received params:', route.params);
-  console.log('ActaDetailScreen - selectedActa.uri:', selectedActa?.uri);
+  const partyResultsTransformed = useMemo(() => {
+    try {
+      return rawPartyResults.map(party => ({
+        id: party.partyId,
+        party: party.partyId,
+        presidente: party.presidente || 0,
+        diputado: party.diputado || 0
+      }));
+    } catch (error) {
+      console.error('Error transformando partyResults:', error);
+      return [];
+    }
+  }, [rawPartyResults]);
+
+  const voteSummaryTransformed = useMemo(() => {
+    try {
+      return [
+        {
+          label: 'Válidos',
+          value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
+          value2: rawVoteSummaryResults.depValidVotes || 0  // Diputados
+        },
+        {
+          label: 'Blancos',
+          value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
+          value2: rawVoteSummaryResults.depBlankVotes || 0  // Diputados
+        },
+        {
+          label: 'Nulos',
+          value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
+          value2: rawVoteSummaryResults.depNullVotes || 0   // Diputados
+        },
+        {
+          label: 'Total',
+          value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
+          value2: rawVoteSummaryResults.depTotalVotes || 0   // Diputados
+        }
+      ];
+    } catch (error) {
+      console.error('Error transformando voteSummaryResults:', error);
+      return [];
+    }
+  }, [rawVoteSummaryResults]);
+
 
   // Component for handling IPFS images
   const IPFSImageComponent = () => {
@@ -81,7 +123,7 @@ const ActaDetailScreen = () => {
     return (
       <View style={styles.imageContainer}>
         <Image
-          source={{uri: selectedActa?.uri}}
+          source={{ uri: selectedActa?.uri }}
           style={[styles.actaImage, isLoading && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={handleLoadStart}
@@ -170,12 +212,11 @@ const ActaDetailScreen = () => {
   }
 
   // Header title
-  const headerTitle = `${String.table} ${
-    tableData?.tableNumber ||
+  const headerTitle = `${String.table} ${tableData?.tableNumber ||
     tableData?.numero ||
     tableData?.number ||
     'N/A'
-  }`;
+    }`;
 
   // Instructions text
   const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;
@@ -190,8 +231,8 @@ const ActaDetailScreen = () => {
       instructionsText={instructionsText}
       photoUri={selectedActa?.uri} // This will be overridden by our custom component
       PhotoComponent={PhotoComponent} // Pass our custom photo component
-      partyResults={partyResults || []}
-      voteSummaryResults={voteSummaryResults || []}
+      partyResults={partyResultsTransformed || []}
+      voteSummaryResults={voteSummaryTransformed || []}
       actionButtons={actionButtons}
       onBack={handleBack}
       showTableInfo={true}

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,19 +8,19 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { moderateScale } from '../../../common/constants';
+import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -37,16 +37,16 @@ const WhichIsCorrectScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {
-    tableData, 
-    photoUri, 
-    isFromUnifiedFlow, 
+    tableData,
+    photoUri,
+    isFromUnifiedFlow,
     actaImages: preloadedActaImages,
     existingRecords,
     mesaInfo,
     totalRecords,
     isFromAPI
   } = route.params || {};
-  
+
   console.log('WhichIsCorrectScreen - Received params:', route.params);
 
   // State management
@@ -76,7 +76,7 @@ const WhichIsCorrectScreen = () => {
       console.error('Error details:', error.nativeEvent);
       console.error('Error code:', error.nativeEvent?.error);
       console.error('======================');
-      
+
       setHasError(true);
       setIsLoading(false);
       if (onError) onError(error);
@@ -144,20 +144,8 @@ const WhichIsCorrectScreen = () => {
 
     // If we have preloaded acta images from API, use them directly
     if (isFromAPI && preloadedActaImages && preloadedActaImages.length > 0) {
-      console.log('WhichIsCorrectScreen - Using preloaded acta images from API');
-      console.log('WhichIsCorrectScreen - Number of images:', preloadedActaImages.length);
-      preloadedActaImages.forEach((img, index) => {
-        console.log(`WhichIsCorrectScreen - Image ${index + 1}:`, img.uri);
-        console.log(`WhichIsCorrectScreen - Image ${index + 1} ID:`, img.id);
-      });
+      console.log('Using preloaded acta images from API');
       setActaImages(preloadedActaImages);
-      
-      // Set party results and vote summary from the first record if available
-      if (existingRecords && existingRecords.length > 0) {
-        setPartyResults(existingRecords[0].partyResults || []);
-        setVoteSummaryResults(existingRecords[0].voteSummaryResults || []);
-      }
-      
       setIsLoadingActas(false);
       return;
     }
@@ -184,7 +172,7 @@ const WhichIsCorrectScreen = () => {
   }, [tableData, photoUri, isFromAPI, preloadedActaImages, existingRecords]);
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -207,8 +195,9 @@ const WhichIsCorrectScreen = () => {
         navigation.navigate('ActaDetailScreen', {
           selectedActa: selectedImage,
           tableData: tableData,
-          partyResults: partyResults,
-          voteSummaryResults: voteSummaryResults,
+          // Pasar los datos específicos de ESTE acta:
+          partyResults: selectedImage.partyResults || [],
+          voteSummaryResults: selectedImage.voteSummaryResults || [],
           actaImages: actaImages,
           allActas: actaImages,
           onCorrectActaSelected: handleCorrectActaSelected,
@@ -245,8 +234,9 @@ const WhichIsCorrectScreen = () => {
         navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
           tableData: tableData,
-          partyResults: partyResults,
-          voteSummaryResults: voteSummaryResults,
+          // Usar los datos del acta seleccionada:
+          partyResults: selectedImage.partyResults || [],
+          voteSummaryResults: selectedImage.voteSummaryResults || [],
         });
       }
     }
@@ -261,7 +251,7 @@ const WhichIsCorrectScreen = () => {
 
   const handleDatosNoCorrectos = () => {
     console.log('Estos datos no son correctos pressed');
-    
+
     if (isFromAPI) {
       // If we came from API, go to camera to add new acta
       console.log('WhichIsCorrectScreen - Redirecting to camera to add new acta');
@@ -283,12 +273,11 @@ const WhichIsCorrectScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${
-          tableData?.tableNumber ||
+        title={`${String.table} ${tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
-        }`}
+          }`}
         showNotification={true}
       />
 
@@ -303,7 +292,7 @@ const WhichIsCorrectScreen = () => {
             {actaImages.map(image => {
               const isCorrect = image.id === confirmedCorrectActa;
               console.log(`WhichIsCorrectScreen - CONFIRMATION VIEW - Image ${image.id}: isCorrect=${isCorrect}, confirmedCorrectActa=${confirmedCorrectActa}`);
-              
+
               return (
                 <View key={`confirmation-${image.id}`} style={styles.confirmationImageContainer}>
                   <View
@@ -338,17 +327,17 @@ const WhichIsCorrectScreen = () => {
           {/* Confirmation Buttons */}
           <View style={styles.confirmationButtonsContainer}>
             <TouchableOpacity
-              style={[styles.continueButton, {backgroundColor: colors.primary || '#4F9858'}]}
+              style={[styles.continueButton, { backgroundColor: colors.primary || '#4F9858' }]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
               <CText style={styles.continueButtonText}>{String.continueButton}</CText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.changeOpinionButton, {borderColor: colors.textSecondary}]}
+              style={[styles.changeOpinionButton, { borderColor: colors.textSecondary }]}
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
-              <CText style={[styles.changeOpinionButtonText, {color: colors.textSecondary}]}>
+              <CText style={[styles.changeOpinionButtonText, { color: colors.textSecondary }]}>
                 Cambiar de opinión
               </CText>
             </TouchableOpacity>
@@ -386,100 +375,100 @@ const WhichIsCorrectScreen = () => {
             <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
               {isTablet
                 ? // Two-column layout for tablets
-                  (() => {
-                    const pairs = [];
-                    for (let i = 0; i < actaImages.length; i += 2) {
-                      pairs.push(actaImages.slice(i, i + 2));
-                    }
-                    return pairs.map((pair, pairIndex) => (
-                      <View key={pairIndex} style={styles.tabletRow}>
-                        {pair.map(image => (
-                          <View key={image.id} style={styles.tabletColumn}>
-                            <TouchableOpacity
-                              style={[
-                                styles.imageCard,
-                                selectedImageId === image.id && styles.imageCardSelected,
-                              ]}
-                              onPress={() => handleImagePress(image.id)}>
-                              <IPFSImage
-                                image={image}
-                                style={styles.imageDisplay}
-                                resizeMode="contain"
-                              />
-                              {selectedImageId === image.id && (
-                                <>
-                                  <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
-                                </>
-                              )}
-                            </TouchableOpacity>
+                (() => {
+                  const pairs = [];
+                  for (let i = 0; i < actaImages.length; i += 2) {
+                    pairs.push(actaImages.slice(i, i + 2));
+                  }
+                  return pairs.map((pair, pairIndex) => (
+                    <View key={pairIndex} style={styles.tabletRow}>
+                      {pair.map(image => (
+                        <View key={image.id} style={styles.tabletColumn}>
+                          <TouchableOpacity
+                            style={[
+                              styles.imageCard,
+                              selectedImageId === image.id && styles.imageCardSelected,
+                            ]}
+                            onPress={() => handleImagePress(image.id)}>
+                            <IPFSImage
+                              image={image}
+                              style={styles.imageDisplay}
+                              resizeMode="contain"
+                            />
                             {selectedImageId === image.id && (
-                              <TouchableOpacity
-                                style={styles.detailsButton}
-                                onPress={handleVerMasDetalles}>
-                                <CText style={styles.detailsButtonText}>
-                                  {String.seeMoreDetails}
-                                </CText>
-                              </TouchableOpacity>
+                              <>
+                                <View style={[styles.cornerBorder, styles.topLeftCorner]} />
+                                <View style={[styles.cornerBorder, styles.topRightCorner]} />
+                                <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
+                                <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                              </>
                             )}
-                          </View>
-                        ))}
-                        {pair.length === 1 && <View style={styles.tabletColumn} />}
-                      </View>
-                    ));
-                  })()
+                          </TouchableOpacity>
+                          {selectedImageId === image.id && (
+                            <TouchableOpacity
+                              style={styles.detailsButton}
+                              onPress={handleVerMasDetalles}>
+                              <CText style={styles.detailsButtonText}>
+                                {String.seeMoreDetails}
+                              </CText>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                      {pair.length === 1 && <View style={styles.tabletColumn} />}
+                    </View>
+                  ));
+                })()
                 : // Single column layout for phones
-                  actaImages.map(image => (
-                    <React.Fragment key={image.id}>
-                      <TouchableOpacity
-                        style={[
-                          styles.imageCard,
-                          selectedImageId === image.id && styles.imageCardSelected,
-                        ]}
-                        onPress={() => handleImagePress(image.id)}>
-                        <IPFSImage
-                          image={image}
-                          style={styles.imageDisplay}
-                          resizeMode="contain"
-                        />
-                        {selectedImageId === image.id && (
-                          <>
-                            <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
-                          </>
-                        )}
-                      </TouchableOpacity>
+                actaImages.map(image => (
+                  <React.Fragment key={image.id}>
+                    <TouchableOpacity
+                      style={[
+                        styles.imageCard,
+                        selectedImageId === image.id && styles.imageCardSelected,
+                      ]}
+                      onPress={() => handleImagePress(image.id)}>
+                      <IPFSImage
+                        image={image}
+                        style={styles.imageDisplay}
+                        resizeMode="contain"
+                      />
                       {selectedImageId === image.id && (
-                        <TouchableOpacity
-                          style={styles.detailsButton}
-                          onPress={handleVerMasDetalles}>
-                          <CText style={styles.detailsButtonText}>
-                            {String.seeMoreDetails}
-                          </CText>
-                        </TouchableOpacity>
+                        <>
+                          <View style={[styles.cornerBorder, styles.topLeftCorner]} />
+                          <View style={[styles.cornerBorder, styles.topRightCorner]} />
+                          <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
+                          <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                        </>
                       )}
-                    </React.Fragment>
-                  ))}
+                    </TouchableOpacity>
+                    {selectedImageId === image.id && (
+                      <TouchableOpacity
+                        style={styles.detailsButton}
+                        onPress={handleVerMasDetalles}>
+                        <CText style={styles.detailsButtonText}>
+                          {String.seeMoreDetails}
+                        </CText>
+                      </TouchableOpacity>
+                    )}
+                  </React.Fragment>
+                ))}
             </ScrollView>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.datosNoCorrectosButton,
               isFromAPI && styles.addNewActaButton
-            ]} 
+            ]}
             onPress={handleDatosNoCorrectos}>
-            <CText 
+            <CText
               style={[
                 styles.datosNoCorrectosButtonText,
                 isFromAPI && styles.addNewActaButtonText
               ]}>
-              {isFromAPI 
-                ? "Agregar Nueva Acta" 
+              {isFromAPI
+                ? "Agregar Nueva Acta"
                 : String.dataNotCorrect}
             </CText>
           </TouchableOpacity>
@@ -511,7 +500,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -577,7 +566,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 16),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
