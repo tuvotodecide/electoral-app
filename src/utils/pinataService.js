@@ -1,6 +1,6 @@
 import axios from 'axios';
 import RNFS from 'react-native-fs';
-import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT } from "@env"
+import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND } from "@env"
 
 class PinataService {
   constructor() {
@@ -10,6 +10,85 @@ class PinataService {
 
     this.baseURL = 'https://api.pinata.cloud';
   }
+
+  async checkDuplicateBallot(voteData) {
+    try {
+      // Extraer número de mesa
+      const tableNumber = voteData.tableNumber || 'N/A';
+
+      const response = await axios.get(
+        `${BACKEND}/api/v1/ballots/by-table/${tableNumber}`
+      );
+
+      const data = response.data;
+
+      // Normalizar para siempre tener un array
+      const existingBallots = Array.isArray(data)
+        ? data
+        : data
+          ? [data]
+          : [];
+
+      console.log('Actas existentes normalizadas:', existingBallots);
+
+      // Comparar datos de votación (recibe directamente los objetos .votes)
+      const isEqual = (votes1, votes2) => {
+        try {
+          const partiesEqual =
+            votes1.parties.validVotes === votes2.parties.validVotes &&
+            votes1.parties.nullVotes === votes2.parties.nullVotes &&
+            votes1.parties.blankVotes === votes2.parties.blankVotes &&
+            votes1.parties.totalVotes === votes2.parties.totalVotes &&
+            Array.isArray(votes1.parties.partyVotes) &&
+            Array.isArray(votes2.parties.partyVotes) &&
+            votes1.parties.partyVotes.length === votes2.parties.partyVotes.length &&
+            votes1.parties.partyVotes.every((p, i) =>
+              p.partyId === votes2.parties.partyVotes[i].partyId &&
+              p.votes === votes2.parties.partyVotes[i].votes
+            );
+
+          const deputiesEqual =
+            votes1.deputies.validVotes === votes2.deputies.validVotes &&
+            votes1.deputies.nullVotes === votes2.deputies.nullVotes &&
+            votes1.deputies.blankVotes === votes2.deputies.blankVotes &&
+            votes1.deputies.totalVotes === votes2.deputies.totalVotes &&
+            Array.isArray(votes1.deputies.partyVotes) &&
+            Array.isArray(votes2.deputies.partyVotes) &&
+            votes1.deputies.partyVotes.length === votes2.deputies.partyVotes.length &&
+            votes1.deputies.partyVotes.every((p, i) =>
+              p.partyId === votes2.deputies.partyVotes[i].partyId &&
+              p.votes === votes2.deputies.partyVotes[i].votes
+            );
+
+          return partiesEqual && deputiesEqual;
+        } catch {
+          return false;
+        }
+      };
+
+
+      console.log("EXISTING BALLOTS", existingBallots);
+      console.log("VOTEDATA", voteData);
+
+      // Buscar duplicado
+      const duplicate = existingBallots.find(ballot =>
+        isEqual(ballot.votes, voteData.votes)
+      );
+
+      return {
+        exists: Boolean(duplicate),
+        ballot: duplicate || null
+      };
+    } catch (error) {
+      console.error('Error verificando duplicados:', error);
+      return {
+        exists: false,
+        ballot: null
+      };
+    }
+  }
+
+
 
   /**
    * Sube una imagen a IPFS usando Pinata
