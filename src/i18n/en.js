@@ -1121,7 +1121,7 @@ export default {
   reviewActaData: 'Revise los datos del acta',
   actaCertification: 'Certificación del Acta',
   certificationText:
-    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} es correcta y corresponde a los datos registrados.',
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
   certify: 'Certifico',
   certifyInfoConfirmation:
     '¿Estás seguro de que deseas\nCertificar la información?',

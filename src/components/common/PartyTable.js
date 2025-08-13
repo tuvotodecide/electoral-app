@@ -18,7 +18,7 @@ const getResponsiveSize = (small, medium, large) => {
 // Party Table Row Component
 export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
   <View style={styles.partyTableRow}>
-    <CText style={styles.partyNameText}>{party.id}</CText>
+    <CText style={styles.partyNameText}>{party.id || party.partyId}</CText>
     <View style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
