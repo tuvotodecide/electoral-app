@@ -230,7 +230,7 @@ const PhotoConfirmationScreen = () => {
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
-          8
+          20
         );
 
         if(!isRegistered) {

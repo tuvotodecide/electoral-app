@@ -60,7 +60,7 @@ async function isRegistered(chain, accountAddress, attemps = 3) {
     if(logs.length > 0) {
       return true;
     }
-    await sleep(4000);
+    await sleep(2000);
   }
 
   return false;

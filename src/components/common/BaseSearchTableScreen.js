@@ -19,7 +19,7 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 
-import { BACKEND } from "@env"
+import { BACKEND_RESULT } from "@env"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -170,7 +170,7 @@ const BaseSearchTableScreen = ({
       console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
 
       // Check if mesa has existing attestations
-      const response = await axios.get(`${BACKEND}/api/v1/ballots/by-table/${tableCode}`,
+      const response = await axios.get(`${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
         { timeout: 10000 } // 10 segundos timeout
       );
       console.log('API response:', JSON.stringify(response.data, null, 2));
