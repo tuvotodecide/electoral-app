@@ -1,6 +1,6 @@
 import axios from 'axios';
 import RNFS from 'react-native-fs';
-import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND } from "@env"
+import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND_RESULT } from "@env"
 
 class PinataService {
   constructor() {
@@ -17,7 +17,7 @@ class PinataService {
       const tableNumber = voteData.tableNumber || 'N/A';
 
       const response = await axios.get(
-        `${BACKEND}/api/v1/ballots/by-table/${tableNumber}`
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`
       );
 
       const data = response.data;
