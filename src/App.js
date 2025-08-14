@@ -4,15 +4,11 @@ import AppNavigator from './navigation';
 import {styles} from './themes';
 import {useDispatch, useSelector} from 'react-redux';
 import messaging from '@react-native-firebase/messaging';
-import {BACKEND} from '@env';
 import {QueryClient, QueryClientProvider} from 'react-query';
-import {DEVICE_TOKEN} from './common/constants';
-import {setAsyncStorageData} from './utils/AsyncStorage';
 import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
 import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
 import {initializeFirebase} from './config/firebase';
-import axios from 'axios';
 import { migrateIfNeeded } from './utils/migrateBundle';
 const queryClient = new QueryClient();
 
