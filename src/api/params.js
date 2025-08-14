@@ -1,16 +1,15 @@
 import { arbitrumSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
+import {SPONSORSHIP_POLICY, FACTORY, BUNDLER} from "@env";
 
-export const sponsorshipPolicyId = 'sp_cold_wong';
-export const PAYMASTER_ADDRESS = '0x3B774E534937718c3b573B0709B201cfbC76A745';
-export const FACTORY_ADDRESS = '0xDbCe2Ef053e4e188A102A7DB2C636017f1310562';
+export const sponsorshipPolicyId = SPONSORSHIP_POLICY;
+export const FACTORY_ADDRESS = FACTORY;
 
 export const availableNetworks = {
 	'arbitrum-sepolia': {
     chain: arbitrumSepolia,
-    bundler: 'https://arb-sepolia.g.alchemy.com/v2/1HZ0spY7inRe8hCdLeLCqvUh6itMQA18',
-    //bundler: 'https://api.pimlico.io/v2/421614/rpc?apikey=pim_Bu5j7AZMxGknxbBi8o6rgE',
+    bundler: BUNDLER,
     explorer: 'https://sepolia.arbiscan.io/',
     nftExplorer: 'https://testnet.routescan.io/nft',
     oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80',
