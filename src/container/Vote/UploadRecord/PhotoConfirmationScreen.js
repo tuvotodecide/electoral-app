@@ -308,9 +308,9 @@ const PhotoConfirmationScreen = () => {
       const nftId = response.returnData.recordId.toString();
 
       const nftResult = {
-        txHash: response.receipt.receipt.transactionHash,
+        txHash: response.receipt.transactionHash,
         nftId,
-        txUrl: explorer + 'tx/' + response.receipt.receipt.transactionHash,
+        txUrl: explorer + 'tx/' + response.receipt.transactionHash,
         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
       }
 
