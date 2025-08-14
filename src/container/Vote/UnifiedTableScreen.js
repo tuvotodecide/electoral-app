@@ -9,7 +9,7 @@ import { createSearchTableStyles } from '../../styles/searchTableStyles';
 import { fetchMesas } from '../../data/mockMesas';
 import { StackNav } from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import { BACKEND } from '@env';
+import { BACKEND_RESULT } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -62,7 +62,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
       console.log('UnifiedTableScreen: Loading tables from API for location:', locationId);
 
       const response = await axios.get(
-        `${BACKEND}/api/v1/geographic/electoral-locations/${locationId}/tables`
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`
       );
       //const response = await axios.get(
       //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,

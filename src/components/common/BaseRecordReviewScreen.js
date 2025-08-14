@@ -1,9 +1,9 @@
-import React, {useState} from 'react';
-import {View, StyleSheet, ScrollView, Dimensions} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 import {
   RecordHeader,
   InstructionsContainer,
@@ -13,12 +13,14 @@ import {
   ActionButtons,
 } from './RecordReviewComponents';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375; // Increased from 350 to catch more small devices
 const isLandscape = screenWidth > screenHeight;
+
+
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -54,6 +56,7 @@ const BaseRecordReviewScreen = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
     return (
@@ -72,7 +75,7 @@ const BaseRecordReviewScreen = ({
           {showTableInfo && (
             <View style={styles.tabletTableInfoInline}>
               <CText style={styles.tabletTableTitleText}>
-                Table{' '}
+                Mesa{' '}
                 {tableData?.tableNumber ||
                   tableData?.numero ||
                   tableData?.number ||
@@ -190,7 +193,7 @@ const BaseRecordReviewScreen = ({
         <View style={styles.tableInfoContainer}>
           <View style={styles.tableTitle}>
             <CText style={styles.tableTitleText}>
-              Table{' '}
+              Mesa{' '}
               {tableData?.tableNumber ||
                 tableData?.numero ||
                 tableData?.number ||
@@ -402,7 +405,7 @@ const styles = StyleSheet.create({
     marginVertical: 0,
     elevation: 0,
     shadowColor: 'transparent',
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     shadowRadius: 0,
     paddingHorizontal: getResponsiveSize(6, 16, 24),

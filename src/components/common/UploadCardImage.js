@@ -13,10 +13,26 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
 
+async function requestGalleryPermission() {
+  if (Platform.OS !== 'android') return true;
+
+    const perms =
+    Platform.Version >= 33
+      ? [PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES]
+      : [PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE];
+
+  const result = await PermissionsAndroid.requestMultiple(perms);
+  return Object.values(result).every(
+    v => v === PermissionsAndroid.RESULTS.GRANTED,
+  );
+}
+
 export default function UploadCardImage({label, image, setImage}) {
   const colors = useSelector(state => state.theme.theme);
 
-  const selectImage = () => {
+  const selectImage =  async() => {
+        const ok = await requestGalleryPermission();
+    if (!ok) return;
     launchImageLibrary(
       {
         mediaType: 'photo',
@@ -58,7 +74,7 @@ export default function UploadCardImage({label, image, setImage}) {
       {
         mediaType: 'photo',
         quality: 0.8,
-        saveToPhotos: true,
+        saveToPhotos: false,
       },
       response => {
         if (response.assets) {
