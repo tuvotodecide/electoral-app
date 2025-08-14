@@ -22,11 +22,16 @@ const CHeader = props => {
   const navigation = useNavigation();
   const colors = useSelector(state => state.theme.theme);
 
-  const goBack = () => navigation.goBack();
+  const goBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
   return (
     <View style={[localStyles.container, !!isHideBack && styles.pr10]}>
       <View style={[styles.rowStart, styles.flex]}>
-        {!isHideBack && (
+        {!isHideBack && navigation.canGoBack() && (
           <TouchableOpacity style={styles.pr10} onPress={onPressBack || goBack}>
             <Ionicons
               name="arrow-back"
