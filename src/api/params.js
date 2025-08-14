@@ -12,7 +12,9 @@ export const availableNetworks = {
     bundler: 'https://arb-sepolia.g.alchemy.com/v2/1HZ0spY7inRe8hCdLeLCqvUh6itMQA18',
     //bundler: 'https://api.pimlico.io/v2/421614/rpc?apikey=pim_Bu5j7AZMxGknxbBi8o6rgE',
     explorer: 'https://sepolia.arbiscan.io/',
-    oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80'
+    nftExplorer: 'https://testnet.routescan.io/nft',
+    oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80',
+    attestationNft: '0xdCa6d6E8f4E69C3Cf86B656f0bBf9b460727Bed9',
   },
 };
 

@@ -46,11 +46,11 @@ const SuccessScreen = () => {
 
   const handleViewNFT = async () => {
     try {
-      const supported = await Linking.canOpenURL(nftData.txUrl);
+      const supported = await Linking.canOpenURL(nftData.nftUrl);
       if(supported) {
-        await Linking.openURL(nftData.txUrl);
+        await Linking.openURL(nftData.nftUrl);
       } else {
-        console.log('Cannot open URL:', nftData.txUrl);
+        console.log('Cannot open URL:', nftData.nftUrl);
       }
     } catch (error) {
       console.error('Error opening URL:', error);

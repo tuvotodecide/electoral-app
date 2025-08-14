@@ -304,10 +304,14 @@ const PhotoConfirmationScreen = () => {
       console.log("Contract returned data");
       console.log(response);
 
+      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+      const nftId = response.returnData.recordId.toString();
+
       const nftResult = {
         txHash: response.receipt.receipt.transactionHash,
-        nftId: response.returnData.recordId.toString(),
-        txUrl: availableNetworks[CHAIN].explorer + 'tx/' + response.receipt.receipt.transactionHash,
+        nftId,
+        txUrl: explorer + 'tx/' + response.receipt.receipt.transactionHash,
+        nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
       }
 
       console.log("CODIGO DE MESA", tableData)

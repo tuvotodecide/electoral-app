@@ -79,7 +79,6 @@ async function send(chain, acc, calls, gasOverrides = {}) {
 
   console.log('Sending UserOp with gas params:', finalGasParams);
   console.log('Calls:', calls);
-  console.log('Paymaster:', availableNetworks[chain].tokenPaymaster);
 
   try {
     const userOp = await bundler.prepareUserOperation({
@@ -175,38 +174,12 @@ export async function inviteGuardianOnChain(
     const {account} = await getAccount(ownerPrivKey, ownerAccount, chain);
     console.log('Account created:', account.address);
 
-    const gasEstimate = await estimateGasForInvitation(
-      chain,
-      account,
-      guardianCt,
-      guardianHash,
-    );
-    console.log('gas:', gasEstimate);
-
-    const customGasLimits = gasEstimate
-      ? {
-          callGasLimit: BigInt(
-            Math.ceil(Number(gasEstimate.callGasLimit) * 1.2),
-          ),
-          verificationGasLimit: BigInt(
-            Math.ceil(Number(gasEstimate.verificationGasLimit) * 1.2),
-          ),
-          preVerificationGas: BigInt(
-            Math.ceil(Number(gasEstimate.preVerificationGas) * 1.2),
-          ),
-        }
-      : {
-          callGasLimit: BigInt(5500000),
-          verificationGasLimit: BigInt(5500000),
-          preVerificationGas: BigInt(20000000),
-          paymasterVerificationGasLimit: BigInt(30000000),
-        };
-
-    const approve = await buildApproveIfNeeded(chain, account);
-    console.log('Approval needed:', !!approve);
+    const customGasLimits = {
+      ...gasParams,
+      verificationGasLimit: BigInt(50000),
+    };
 
     const calls = [
-      ...(approve ? [approve] : []),
       {
         to: guardianCt,
         data: encodeFunctionData({

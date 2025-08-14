@@ -63,7 +63,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=1000`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
         { timeout: 10000 } // 10 segundos timeout
       );
       // const response = await axios.get(
