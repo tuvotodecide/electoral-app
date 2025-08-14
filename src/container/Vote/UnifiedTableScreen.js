@@ -48,60 +48,70 @@ const UnifiedTableScreen = ({ navigation, route }) => {
   const styles = createSearchTableStyles();
 
   useEffect(() => {
-    if (route?.params?.locationId) {
-      loadTablesFromApi(route.params.locationId);
-      setLocationData(route.params.locationData);
+    if (route?.params) {
+      console.log("PARAMS", route.params)
+      setIsLoading(true);
+      setLocationData({
+        locationId: route?.params?.locationId,
+        name: route?.params?.locationData.name,
+        address: route?.params?.locationData.address,
+        code: route?.params?.locationData.code,
+      });
+      setMesas(route?.params?.locationData.tables);
+      //loadTablesFromApi(route.params.locationId);
+      //setLocationData(route.params.locationData);
+      setIsLoading(false);
     } else {
       loadTables();
     }
   }, [route?.params?.locationId]);
 
-  const loadTablesFromApi = async (locationId) => {
-    try {
-      setIsLoading(true);
-      console.log('UnifiedTableScreen: Loading tables from API for location:', locationId);
-
-      const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`
-      );
-      //const response = await axios.get(
-      //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
-      //);
-      console.log('UnifiedTableScreen: API Response:', response.data);
-
-      if (response.data && response.data.tables) {
-        console.log('UnifiedTableScreen: Tables found:', response.data.tables.length);
-
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.name,
-          address: response.data.address,
-          code: response.data.code,
-        });
-
-        setMesas(response.data.tables);
-      } else if (response.data && response.data.data && response.data.data.tables) {
-        console.log('UnifiedTableScreen: Tables found in data.data:', response.data.data.tables.length);
-
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.data.name,
-          address: response.data.data.address,
-          code: response.data.data.code,
-        });
-
-        setMesas(response.data.data.tables);
-      } else {
-        console.log('UnifiedTableScreen: No tables found in response');
-        showModal('info', String.info, String.couldNotLoadTables);
-      }
-    } catch (error) {
-      console.error('UnifiedTableScreen: Error loading tables from API:', error);
-      showModal('error', String.error, String.errorLoadingTables);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //const loadTablesFromApi = async (locationId) => {
+  //  try {
+  //    setIsLoading(true);
+  //    console.log('UnifiedTableScreen: Loading tables from API for location:', locationId);
+  //
+  //    const response = await axios.get(
+  //      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`
+  //    );
+  //    //const response = await axios.get(
+  //    //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
+  //    //);
+  //    console.log('UnifiedTableScreen: API Response:', response.data);
+  //
+  //    if (response.data && response.data.tables) {
+  //      console.log('UnifiedTableScreen: Tables found:', response.data.tables.length);
+  //
+  //      // Store location data for TableCard components
+  //      setLocationData({
+  //        name: response.data.name,
+  //        address: response.data.address,
+  //        code: response.data.code,
+  //      });
+  //
+  //      setMesas(response.data.tables);
+  //    } else if (response.data && response.data.data && response.data.data.tables) {
+  //      console.log('UnifiedTableScreen: Tables found in data.data:', response.data.data.tables.length);
+  //
+  //      // Store location data for TableCard components
+  //      setLocationData({
+  //        name: response.data.data.name,
+  //        address: response.data.data.address,
+  //        code: response.data.data.code,
+  //      });
+  //
+  //      setMesas(response.data.data.tables);
+  //    } else {
+  //      console.log('UnifiedTableScreen: No tables found in response');
+  //      showModal('info', String.info, String.couldNotLoadTables);
+  //    }
+  //  } catch (error) {
+  //    console.error('UnifiedTableScreen: Error loading tables from API:', error);
+  //    showModal('error', String.error, String.errorLoadingTables);
+  //  } finally {
+  //    setIsLoading(false);
+  //  }
+  //};
 
   const loadTables = async () => {
     try {

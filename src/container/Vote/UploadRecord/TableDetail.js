@@ -66,7 +66,7 @@ export default function TableDetail({ navigation, route }) {
   // Normalize mesa data structure
   const mesa = {
     idRecinto:
-      rawMesa.electoralLocationId,
+      rawMesa.locationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
