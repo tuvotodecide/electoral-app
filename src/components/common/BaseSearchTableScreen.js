@@ -153,6 +153,7 @@ const BaseSearchTableScreen = ({
       name: locationData?.name || mesa.name || 'N/A',
       address: locationData?.address || mesa.address || 'N/A',
       district: locationData?.district || mesa.district || 'N/A',
+      locationId: locationData?.locationId || 'N/A'
     };
 
     // Get table code for API call

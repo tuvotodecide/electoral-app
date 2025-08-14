@@ -109,7 +109,7 @@ const PhotoConfirmationScreen = () => {
     try {
       // Construir datos para verificación
       const verificationData = {
-        tableNumber: tableData?.tableCode || 'N/A',
+        tableNumber: tableData?.codigo || 'N/A',
         votes: {
           parties: buildVoteData('presidente'),
           deputies: buildVoteData('diputado')
@@ -195,7 +195,7 @@ const PhotoConfirmationScreen = () => {
       const additionalData = {
         idRecinto: tableData?.idRecinto,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.tableCode || tableData?.codigo || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
         time: new Date().toLocaleTimeString('es-ES', {
           hour: '2-digit',
@@ -271,7 +271,7 @@ const PhotoConfirmationScreen = () => {
         1
       );
 
-      if(!isRegistered) {
+      if (!isRegistered) {
         console.log("request register")
         await executeOperation(
           privateKey,
@@ -279,7 +279,7 @@ const PhotoConfirmationScreen = () => {
           CHAIN,
           oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl)
         );
-        
+
         console.log("check user is registered")
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
@@ -287,7 +287,7 @@ const PhotoConfirmationScreen = () => {
           20
         );
 
-        if(!isRegistered) {
+        if (!isRegistered) {
           throw Error('Failed to register user on oracle');
         }
       }
@@ -304,7 +304,7 @@ const PhotoConfirmationScreen = () => {
       console.log("Contract returned data");
       console.log(response);
 
-      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+      const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
 
       const nftResult = {

@@ -1141,7 +1141,7 @@ export default {
   i: 'Yo',
   publishAndCertify: 'Publico y Certifico',
   actaCorrectConfirmation:
-    'que es la ACTA CORRECTA de la {tableNumber} ubicada en {location}',
+    'que es la ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}',
   publishAndCertifyConfirmation:
     '¿Estás seguro de que deseas publicar y certificar la información?',
 
