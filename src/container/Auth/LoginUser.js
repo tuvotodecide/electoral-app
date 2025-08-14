@@ -586,6 +586,7 @@ export default function LoginUser({navigation}) {
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
+              keyboardType="number-pad" 
               onCodeChanged={setOtp}
               onCodeFilled={onCodeFilled}
               secureTextEntry={true}

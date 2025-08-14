@@ -7,7 +7,7 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,9 +16,9 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -40,11 +40,10 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function TableDetail({navigation, route}) {
+export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || mockMesa;
-  
   // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
   const mesaInfo = route.params?.mesaInfo || null;
@@ -66,6 +65,8 @@ export default function TableDetail({navigation, route}) {
 
   // Normalize mesa data structure
   const mesa = {
+    idRecinto:
+      rawMesa.electoralLocationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
@@ -224,13 +225,13 @@ export default function TableDetail({navigation, route}) {
             {/* Left Column: Instructions and Table Data */}
             <View style={stylesx.leftColumn}>
               <View style={stylesx.instructionContainer}>
-                <CText style={[stylesx.bigBold, {color: 'black'}]}>
+                <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {String.ensureAssignedTable}
                 </CText>
                 <CText
                   style={[
                     stylesx.subtitle,
-                    {color: colors.grayScale500 || '#8B9399'},
+                    { color: colors.grayScale500 || '#8B9399' },
                   ]}>
                   {String.verifyTableInformation}
                 </CText>
@@ -270,7 +271,7 @@ export default function TableDetail({navigation, route}) {
                   <CText style={stylesx.existingRecordsSubtitle}>
                     Esta mesa ya tiene actas registradas
                   </CText>
-                  
+
                   {existingRecords.map((record, index) => (
                     <TouchableOpacity
                       key={`${record.recordId}-${index}`}
@@ -287,11 +288,11 @@ export default function TableDetail({navigation, route}) {
                           Acta #{index + 1}
                         </CText>
                       </View>
-                      
+
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
-                            source={{uri: record.actaImage}}
+                            source={{ uri: record.actaImage }}
                             style={stylesx.actaImage}
                             resizeMode="cover"
                           />
@@ -302,7 +303,7 @@ export default function TableDetail({navigation, route}) {
                       )}
                     </TouchableOpacity>
                   ))}
-                  
+
                   <TouchableOpacity
                     style={stylesx.addNewRecordBtn}
                     onPress={handleTakePhoto}>
@@ -342,13 +343,13 @@ export default function TableDetail({navigation, route}) {
           /* Regular Layout: Phones and Tablet Portrait */
           <>
             <View style={stylesx.instructionContainer}>
-              <CText style={[stylesx.bigBold, {color: 'black'}]}>
+              <CText style={[stylesx.bigBold, { color: 'black' }]}>
                 {String.ensureAssignedTable}
               </CText>
               <CText
                 style={[
                   stylesx.subtitle,
-                  {color: colors.grayScale500 || '#8B9399'},
+                  { color: colors.grayScale500 || '#8B9399' },
                 ]}>
                 {String.verifyTableInformation}
               </CText>
@@ -386,7 +387,7 @@ export default function TableDetail({navigation, route}) {
                 <CText style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
                 </CText>
-                
+
                 {existingRecords.map((record, index) => (
                   <TouchableOpacity
                     key={`${record.recordId}-${index}`}
@@ -407,11 +408,11 @@ export default function TableDetail({navigation, route}) {
                         ID: {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}...
                       </CText>
                     </View>
-                    
+
                     {record.actaImage && (
                       <View style={stylesx.actaImageContainer}>
                         <Image
-                          source={{uri: record.actaImage}}
+                          source={{ uri: record.actaImage }}
                           style={stylesx.actaImage}
                           resizeMode="cover"
                         />
@@ -425,7 +426,7 @@ export default function TableDetail({navigation, route}) {
                         </View>
                       </View>
                     )}
-                    
+
                     {record.partyResults && record.partyResults.length > 0 && (
                       <View style={stylesx.recordSummary}>
                         <CText style={stylesx.recordSummaryText}>
@@ -435,7 +436,7 @@ export default function TableDetail({navigation, route}) {
                     )}
                   </TouchableOpacity>
                 ))}
-                
+
                 <TouchableOpacity
                   style={stylesx.addNewRecordBtn}
                   onPress={handleTakePhoto}>
@@ -490,7 +491,7 @@ export default function TableDetail({navigation, route}) {
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
-                source={{uri: capturedImage.uri}}
+                source={{ uri: capturedImage.uri }}
                 style={stylesx.previewImage}
                 resizeMode="contain"
               />
@@ -507,7 +508,7 @@ export default function TableDetail({navigation, route}) {
             <TouchableOpacity
               style={[
                 stylesx.confirmButton,
-                {backgroundColor: colors.primary || '#4F9858'},
+                { backgroundColor: colors.primary || '#4F9858' },
               ]}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
@@ -572,7 +573,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 20, 25),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -688,7 +689,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -747,7 +748,7 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(12, 16, 18),
     marginBottom: getResponsiveSize(12, 15, 18),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,

@@ -19,7 +19,7 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 
-import { BACKEND } from "@env"
+import { BACKEND_RESULT } from "@env"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -157,7 +157,6 @@ const BaseSearchTableScreen = ({
 
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
-
     if (!tableCode) {
       console.error('BaseSearchTableScreen - No table code found for mesa:', mesa);
       showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
@@ -171,47 +170,79 @@ const BaseSearchTableScreen = ({
       console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
 
       // Check if mesa has existing attestations
-      const response = await axios.get(`${BACKEND}//api/v1/ballots/by-table/${tableCode}`);
+      const response = await axios.get(`${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
+        { timeout: 10000 } // 10 segundos timeout
+      );
+      console.log('API response:', JSON.stringify(response.data, null, 2));
 
-      console.log('BaseSearchTableScreen - Mesa results response:', response.data);
+      let records = [];
+      if (Array.isArray(response.data)) {
+        records = response.data;
+      } else if (response.data && Array.isArray(response.data.registros)) {
+        records = response.data.registros;
+      } else if (response.data) {
+        records = [response.data];
+      }
 
-      if (response.data && response.data.registros && response.data.registros.length > 0) {
-        // Mesa has existing attestations - go directly to WhichIsCorrectScreen
-        console.log('BaseSearchTableScreen - Mesa has existing attestations:', response.data.registros.length);
+      if (records.length > 0) {
+        const actaImages = records.map(record => {
+          const imageCid = record.image?.replace('ipfs://', '') || '';
+          const imageUrl = `https://ipfs.io/ipfs/${imageCid}`;
 
-        // Convert API data to format expected by WhichIsCorrectScreen
-        const actaImages = response.data.registros.map((record, index) => {
-          console.log(`BaseSearchTableScreen - Mapping record ${index}:`, {
-            recordId: record.recordId,
-            actaImage: record.actaImage,
-            hasImage: !!record.actaImage
+          // Extraer datos de partidos presidenciales
+          const presidentialParties = record.votes?.parties?.partyVotes || [];
+          // Extraer datos de partidos para diputados
+          const deputyParties = record.votes?.deputies?.partyVotes || [];
+
+          // Combinar ambos tipos de votos
+          const combinedPartyResults = presidentialParties.map(presParty => {
+            const deputyParty = deputyParties.find(d => d.partyId === presParty.partyId) || { votes: 0 };
+            return {
+              partyId: presParty.partyId,
+              presidente: presParty.votes,
+              diputado: deputyParty.votes
+            };
           });
 
+          // Extraer resumen de votos para presidente
+          const presVoteSummary = record.votes?.parties || {};
+          // Extraer resumen de votos para diputados
+          const depVoteSummary = record.votes?.deputies || {};
+
           return {
-            id: record.recordId || `record-${index}`,
-            uri: record.actaImage, // Use the image URL directly from API
+            id: record._id,
+            uri: imageUrl,
             recordId: record.recordId,
             tableCode: record.tableCode,
             tableNumber: record.tableNumber,
-            partyResults: record.partyResults,
-            voteSummaryResults: record.voteSummaryResults,
+            partyResults: combinedPartyResults,
+            voteSummaryResults: {
+              // Presidente
+              presValidVotes: presVoteSummary.validVotes || 0,
+              presBlankVotes: presVoteSummary.blankVotes || 0,
+              presNullVotes: presVoteSummary.nullVotes || 0,
+              presTotalVotes: presVoteSummary.totalVotes || 0,
+              // Diputados
+              depValidVotes: depVoteSummary.validVotes || 0,
+              depBlankVotes: depVoteSummary.blankVotes || 0,
+              depNullVotes: depVoteSummary.nullVotes || 0,
+              depTotalVotes: depVoteSummary.totalVotes || 0
+            },
+            rawData: record
           };
         });
-
-        console.log('BaseSearchTableScreen - Final actaImages array:', actaImages);
 
         navigation.navigate(StackNav.WhichIsCorrectScreen, {
           tableData: enrichedMesa,
           actaImages: actaImages,
-          existingRecords: response.data.registros,
-          mesaInfo: response.data.mesa,
-          totalRecords: response.data.totalRecords,
+          existingRecords: records,
+          mesaInfo: records[0],
+          totalRecords: records.length,
           isFromAPI: true
         });
       } else {
-        // No attestations found, go to table detail first to show mesa information
+        // No hay registros, ir a TableDetail
         console.log('BaseSearchTableScreen - No attestations found, redirecting to table detail');
-
         navigation.navigate(StackNav.TableDetail, {
           tableData: enrichedMesa,
           mesa: enrichedMesa,

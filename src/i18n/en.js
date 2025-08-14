@@ -1121,7 +1121,7 @@ export default {
   reviewActaData: 'Revise los datos del acta',
   actaCertification: 'Certificación del Acta',
   certificationText:
-    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} es correcta y corresponde a los datos registrados.',
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
   certify: 'Certifico',
   certifyInfoConfirmation:
     '¿Estás seguro de que deseas\nCertificar la información?',
@@ -1315,4 +1315,20 @@ export default {
   outOfVotingPeriodSubtitle: "La aplicación solo está disponible durante el periodo de votación activo",
   currentTime: "Hora actual",
   votingPeriod: "Periodo de votación",
+  date: 'Fecha',
+  from: 'De',
+  to: 'Hasta',
+  votingUpcoming: 'Votación pendiente',
+  votingUpcomingSubtitle: 'La votación aún no ha comenzado',
+  votingFinished: 'Votación finalizada',
+  votingFinishedSubtitle: 'La votación ya ha concluido',
+  votingWillTakePlace: 'Se llevará a cabo en',
+  votingTookPlace: 'Se llevó a cabo en',
+  votingNotActive: 'La votación no está activa actualmente',
+
+
+  duplicateBallotTitle: "Acta ya existe",
+  duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
+  goBack: "Volver Atrás",
+  uploadAnyway: "Subir Igual"
 };

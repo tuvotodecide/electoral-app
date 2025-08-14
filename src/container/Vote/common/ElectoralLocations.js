@@ -12,16 +12,14 @@ import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
+import i18nString from '../../../i18n/String';
 import { StackNav } from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 
-import { BACKEND } from '@env';
+import { BACKEND_RESULT } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -51,7 +49,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: String.accept,
+    buttonText: i18nString.accept,
     onCloseAction: null,
   });
   const [electionStatus, setElectionStatus] = useState(null);
@@ -65,7 +63,8 @@ const ElectoralLocations = ({ navigation, route }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=1000`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
+        { timeout: 10000 } // 10 segundos timeout
       );
       // const response = await axios.get(
       //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
@@ -74,11 +73,17 @@ const ElectoralLocations = ({ navigation, route }) => {
       if (response.data && response.data.data) {
         setLocations(response.data.data);
       } else {
-        showModal('info', String.info, String.noNearbyLocations);
+        showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
       console.error('Error fetching locations:', error);
-      showModal('error', String.error, String.errorFetchingLocations);
+      let errorMessage = i18nString.errorFetchingLocations;
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = i18nString.connectionTimeout;
+      } else if (error.response) {
+        errorMessage = `${i18nString.serverError} (${error.response.status})`;
+      }
+      showModal('error', i18nString.error, errorMessage);
     } finally {
       setLoading(false);
       setLoadingLocation(false);
@@ -88,6 +93,23 @@ const ElectoralLocations = ({ navigation, route }) => {
   const formatIsoNoT = (iso) => {
     if (!iso) return '';
     return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
+  };
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
+
+  const formatTime = (isoDate) => {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   const getCurrentLocation = useCallback(async (retryCount = 0) => {
@@ -104,13 +126,13 @@ const ElectoralLocations = ({ navigation, route }) => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
-            title: String.locationPermissionTitle || 'Permiso de ubicación',
+            title: i18nString.locationPermissionTitle || 'Permiso de ubicación',
             message:
-              String.locationPermissionMessage ||
+              i18nString.locationPermissionMessage ||
               'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-            buttonNeutral: String.askMeLater || 'Preguntar después',
-            buttonNegative: String.cancel || 'Cancelar',
-            buttonPositive: String.ok || 'OK',
+            buttonNeutral: i18nString.askMeLater || 'Preguntar después',
+            buttonNegative: i18nString.cancel || 'Cancelar',
+            buttonPositive: i18nString.ok || 'OK',
           },
         );
 
@@ -118,8 +140,8 @@ const ElectoralLocations = ({ navigation, route }) => {
           console.log('Location permission denied');
           showModal(
             'error',
-            String.error || 'Error',
-            String.locationPermissionDenied || 'Permiso de ubicación denegado',
+            i18nString.error || 'Error',
+            i18nString.locationPermissionDenied || 'Permiso de ubicación denegado',
           );
           setLoadingLocation(false);
           setLoading(false);
@@ -140,8 +162,8 @@ const ElectoralLocations = ({ navigation, route }) => {
           console.error('Location error:', error);
           showModal(
             'error',
-            String.error || 'Error',
-            String.locationError || 'Error al obtener la ubicación',
+            i18nString.error || 'Error',
+            i18nString.locationError || 'Error al obtener la ubicación',
           );
           setLoadingLocation(false);
           setLoading(false);
@@ -156,8 +178,8 @@ const ElectoralLocations = ({ navigation, route }) => {
       console.error('Permission error:', error);
       showModal(
         'error',
-        String.error || 'Error',
-        String.locationPermissionError ||
+        i18nString.error || 'Error',
+        i18nString.locationPermissionError ||
         'Error al solicitar permisos de ubicación',
       );
       setLoadingLocation(false);
@@ -170,7 +192,8 @@ const ElectoralLocations = ({ navigation, route }) => {
       setConfigLoading(true);
       setConfigError(false);
       const response = await axios.get(
-        `${BACKEND}/api/v1/elections/config/status`
+        `${BACKEND_RESULT}/api/v1/elections/config/status`,
+        { timeout: 10000 } // 10 segundos timeout
       );
       if (response.data) {
         setElectionStatus(response.data);
@@ -178,20 +201,26 @@ const ElectoralLocations = ({ navigation, route }) => {
         setConfigError(true);
         showModal(
           'error',
-          String.error,
-          String.electionConfigError,
-          String.accept,
+          i18nString.error,
+          i18nString.electionConfigError,
+          i18nString.accept,
           () => navigation.goBack()
         )
       }
     } catch (error) {
       console.error('Error fetching election config:', error);
       setConfigError(true);
+      let errorMessage = i18nString.electionConfigError;
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = i18nString.connectionTimeout;
+      } else if (error.response) {
+        errorMessage = `${i18nString.serverError} (${error.response.status})`;
+      }
       showModal(
         'error',
-        String.error,
-        String.electionConfigError,
-        String.accept,
+        i18nString.error,
+        errorMessage,
+        i18nString.accept,
         () => navigation.goBack()
       )
     } finally {
@@ -213,7 +242,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   }, [electionStatus, getCurrentLocation]);
 
-  const showModal = (type, title, message, buttonText = String.accept, onCloseAction = null) => {
+  const showModal = (type, title, message, buttonText = i18nString.accept, onCloseAction = null) => {
     setModalConfig({ type, title, message, buttonText, onCloseAction });
     setModalVisible(true);
   };
@@ -231,25 +260,36 @@ const ElectoralLocations = ({ navigation, route }) => {
   };
 
   const handleLocationPress = location => {
-    // Special handling for AnnounceCount - it should go to its own screen
-    if (targetScreen === 'AnnounceCount') {
-      navigation.navigate(StackNav.SearchCountTable, {
-        locationId: location._id,
-        locationData: location,
-      });
-    } else if (targetScreen === 'UnifiedParticipation') {
-      // Navigate to unified participation screen
-      navigation.navigate(StackNav.UnifiedParticipationScreen, {
-        locationId: location._id,
-        locationData: location,
-      });
+    // Solo permitir navegar si estamos en periodo de votación activo
+    if (electionStatus &&
+      electionStatus.hasActiveConfig &&
+      electionStatus.config.isActive &&
+      electionStatus.isVotingPeriod) {
+
+      if (targetScreen === 'AnnounceCount') {
+        navigation.navigate(StackNav.SearchCountTable, {
+          locationId: location._id,
+          locationData: location,
+        });
+      } else if (targetScreen === 'UnifiedParticipation') {
+        navigation.navigate(StackNav.UnifiedParticipationScreen, {
+          locationId: location._id,
+          locationData: location,
+        });
+      } else {
+        navigation.navigate(StackNav.UnifiedTableScreen, {
+          locationId: location._id,
+          locationData: location,
+          targetScreen: targetScreen,
+        });
+      }
     } else {
-      // Use unified table screen for upload and witness flows
-      navigation.navigate(StackNav.UnifiedTableScreen, {
-        locationId: location._id,
-        locationData: location,
-        targetScreen: targetScreen, // Pass the target screen for reference
-      });
+      showModal(
+        'error',
+        i18nString.error,
+        i18nString.votingNotActive,
+        i18nString.accept
+      );
     }
   };
 
@@ -264,7 +304,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             {item.name}
           </CText>
           <CText style={styles.locationCode}>
-            {String.code}: {item.code}
+            {i18nString.code}: {item.code}
           </CText>
         </View>
         <View style={styles.distanceContainer}>
@@ -284,7 +324,7 @@ const ElectoralLocations = ({ navigation, route }) => {
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
           <CText style={styles.tablesCount}>
-            {item.tableCount} {String.tables}
+            {item.tableCount} {i18nString.tables}
           </CText>
         </View>
       </View>
@@ -302,15 +342,63 @@ const ElectoralLocations = ({ navigation, route }) => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="location-outline" size={64} color="#ccc" />
-      <CText style={styles.emptyTitle}>{String.noLocationsFound}</CText>
+      <CText style={styles.emptyTitle}>{i18nString.noLocationsFound}</CText>
       <CText style={styles.emptySubtitle}>
-        {String.noLocationsFoundSubtitle}
+        {i18nString.noLocationsFoundSubtitle}
       </CText>
       <TouchableOpacity style={styles.retryButton} onPress={handleRetryLocation}>
-        <CText style={styles.retryButtonText}>{String.retry}</CText>
+        <CText style={styles.retryButtonText}>{i18nString.retry}</CText>
       </TouchableOpacity>
     </View>
   );
+
+  const renderVotingPeriodInfo = () => {
+    if (!electionStatus || !electionStatus.config) return null;
+
+    const currentTime = new Date(electionStatus.currentTimeBolivia);
+    const startDate = new Date(electionStatus.config.votingStartDateBolivia);
+    const endDate = new Date(electionStatus.config.votingEndDateBolivia);
+
+    let title, subtitle, statusText;
+
+    if (currentTime < startDate) {
+      // La votación aún no ha comenzado
+      title = i18nString.votingUpcoming;
+      subtitle = i18nString.votingUpcomingSubtitle;
+      statusText = i18nString.votingWillTakePlace;
+    } else if (currentTime > endDate) {
+      // La votación ya finalizó
+      title = i18nString.votingFinished;
+      subtitle = i18nString.votingFinishedSubtitle;
+      statusText = i18nString.votingTookPlace;
+    } else {
+      // Estamos en periodo de votación
+      return null;
+    }
+
+    return (
+      <View style={styles.votingPeriodInfo}>
+        <CText style={styles.votingStatusText}>{statusText}</CText>
+
+        <View style={styles.votingDetailRow}>
+          <CText style={styles.votingDetailLabel}>{i18nString.date}:</CText>
+          <CText style={styles.votingDetailValue}>{formatDate(electionStatus.config.votingStartDateBolivia)}</CText>
+        </View>
+
+        <View style={styles.votingDetailRow}>
+          <CText style={styles.votingDetailLabel}>{i18nString.from}:</CText>
+          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingStartDateBolivia)}</CText>
+        </View>
+
+        <View style={styles.votingDetailRow}>
+          <CText style={styles.votingDetailLabel}>{i18nString.to}:</CText>
+          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingEndDateBolivia)}</CText>
+        </View>
+
+        <CText style={styles.votingPeriodSubtitle}>{subtitle}</CText>
+      </View>
+    );
+  };
 
   const renderContent = () => {
     if (configLoading) {
@@ -318,7 +406,7 @@ const ElectoralLocations = ({ navigation, route }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4F9858" />
           <CText style={styles.loadingText}>
-            {String.loadingElectionConfig}
+            {i18nString.loadingElectionConfig}
           </CText>
         </View>
       );
@@ -333,9 +421,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{String.noActiveElection}</CText>
+          <CText style={styles.inactiveTitle}>{i18nString.noActiveElection}</CText>
           <CText style={styles.inactiveSubtitle}>
-            {String.noActiveElectionSubtitle}
+            {i18nString.noActiveElectionSubtitle}
           </CText>
         </View>
       );
@@ -346,9 +434,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{String.electionInactive}</CText>
+          <CText style={styles.inactiveTitle}>{i18nString.electionInactive}</CText>
           <CText style={styles.inactiveSubtitle}>
-            {String.electionInactiveSubtitle}
+            {i18nString.electionInactiveSubtitle}
           </CText>
         </View>
       );
@@ -359,21 +447,19 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="time-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{String.outOfVotingPeriod}</CText>
+          <CText style={styles.inactiveTitle}>{i18nString.outOfVotingPeriod}</CText>
 
           <View style={styles.timeContainer}>
             <Ionicons name="time" size={24} color="#666" />
             <CText style={styles.timeText}>
-              {String.currentTime}: {formatIsoNoT(electionStatus.currentTimeBolivia)}
+              {i18nString.currentTime}: {formatIsoNoT(electionStatus.currentTimeBolivia)}
             </CText>
           </View>
 
-          <CText style={styles.inactiveSubtitle}>
-            {String.outOfVotingPeriodSubtitle}
-          </CText>
+          {renderVotingPeriodInfo()}
 
-          <CText style={styles.votingPeriodText}>
-            {String.votingPeriod}: {formatIsoNoT(electionStatus.config.votingStartDateBolivia)} - {formatIsoNoT(electionStatus.config.votingEndDateBolivia)}
+          <CText style={styles.inactiveSubtitle}>
+            {i18nString.outOfVotingPeriodSubtitle}
           </CText>
         </View>
       );
@@ -387,8 +473,8 @@ const ElectoralLocations = ({ navigation, route }) => {
             <ActivityIndicator size="small" color="#4F9858" />
             <CText style={styles.loadingLocationText}>
               {locationRetries > 0
-                ? `${String.retryingLocation} (${locationRetries}/2)`
-                : String.gettingLocation}
+                ? `${i18nString.retryingLocation} (${locationRetries}/2)`
+                : i18nString.gettingLocation}
             </CText>
           </View>
         )}
@@ -397,7 +483,7 @@ const ElectoralLocations = ({ navigation, route }) => {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4F9858" />
             <CText style={styles.loadingText}>
-              {String.loadingNearbyLocations}
+              {i18nString.loadingNearbyLocations}
             </CText>
           </View>
         ) : (
@@ -406,7 +492,7 @@ const ElectoralLocations = ({ navigation, route }) => {
               <View style={styles.locationInfoContainer}>
                 <Ionicons name="location-sharp" size={20} color="#4F9858" />
                 <CText style={styles.locationInfoText}>
-                  {String.showingNearbyLocations}
+                  {i18nString.showingNearbyLocations}
                 </CText>
               </View>
             )}
@@ -427,6 +513,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   };
 
+
   return (
     <CSafeAreaView style={styles.container}>
       {/* <CHeader
@@ -435,7 +522,7 @@ const ElectoralLocations = ({ navigation, route }) => {
         // color={colors.white}
       /> */}
       <UniversalHeader
-        title={String.electoralLocations}
+        title={i18nString.electoralLocations}
         onBack={() => navigation.goBack()}
       />
 
@@ -629,7 +716,6 @@ const styles = {
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
   },
-
   inactiveContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -664,14 +750,43 @@ const styles = {
     color: '#444',
     marginLeft: getResponsiveSize(8, 10, 12),
   },
-  votingPeriodText: {
+  votingPeriodInfo: {
+    backgroundColor: '#f0f8ff',
+    padding: getResponsiveSize(12, 16, 20),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    marginVertical: getResponsiveSize(10, 14, 18),
+    width: '100%',
+    maxWidth: 500,
+  },
+  votingStatusText: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: 'bold',
+    color: '#193b5e',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(10, 12, 14),
+  },
+  votingDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveSize(6, 8, 10),
+  },
+  votingDetailLabel: {
     fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '600',
-    color: '#4F9858',
-    marginTop: getResponsiveSize(12, 16, 20),
-    textAlign: 'center',
+    color: '#333',
   },
-
+  votingDetailValue: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4F9858',
+    fontWeight: 'bold',
+  },
+  votingPeriodSubtitle: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#666',
+    marginTop: getResponsiveSize(10, 12, 14),
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 };
 
 export default ElectoralLocations;
