@@ -13,7 +13,7 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
-import {BACKEND_BLOCKCHAIN, CHAIN, GAS_KEY} from '@env';
+import {BACKEND_BLOCKCHAIN} from '@env';
 import axios from 'axios';
 
 export default function RegisterUser5({navigation, route}) {

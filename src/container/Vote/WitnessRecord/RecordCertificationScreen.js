@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,19 +9,19 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { moderateScale } from '../../../common/constants';
+import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = SCREEN_WIDTH >= 768;
@@ -38,7 +38,7 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {tableData} = route.params || {};
+  const { tableData } = route.params || {};
 
   console.log('RecordCertificationScreen - Received params:', route.params);
   console.log('RecordCertificationScreen - tableData:', tableData);
@@ -112,12 +112,11 @@ const RecordCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table || 'Mesa'} ${
-          tableData?.tableNumber ||
+        title={`${String.table || 'Mesa'} ${tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
-        }`}
+          }`}
         showNotification={true}
       />
 
@@ -138,9 +137,9 @@ const RecordCertificationScreen = () => {
                     .replace(
                       '{tableNumber}',
                       tableData?.tableNumber ||
-                        tableData?.numero ||
-                        tableData?.number ||
-                        'N/A',
+                      tableData?.numero ||
+                      tableData?.number ||
+                      'N/A',
                     )}
                 </CText>
               </View>
@@ -173,10 +172,11 @@ const RecordCertificationScreen = () => {
                   .replace(
                     '{tableNumber}',
                     tableData?.tableNumber ||
-                      tableData?.numero ||
-                      tableData?.number ||
-                      'N/A',
-                  )}
+                    tableData?.numero ||
+                    tableData?.number ||
+                    'N/A',
+                  ).replace('{recinto}', tableData?.recinto || '')
+                }
               </CText>
             </View>
 
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(20, 24, 28),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     paddingTop: getResponsiveSize(10, 12, 14),
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
@@ -585,7 +585,7 @@ export const modalStyles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(20, 24, 30),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 10},
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.13,
     shadowRadius: 16,
     elevation: 10,
