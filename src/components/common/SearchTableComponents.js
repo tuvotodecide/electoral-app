@@ -1,11 +1,11 @@
 import React from 'react';
-import {View, TouchableOpacity, TextInput} from 'react-native';
+import { View, TouchableOpacity, TextInput } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import CText from './CText';
 import UniversalHeader from './UniversalHeader';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
 // Header Component - Now uses UniversalHeader
 export const SearchTableHeader = ({
@@ -32,7 +32,7 @@ export const SearchTableHeader = ({
 );
 
 // Choose Table Text Component
-export const ChooseTableText = ({text = 'Please choose a table:', styles}) => (
+export const ChooseTableText = ({ text = 'Please choose a table:', styles }) => (
   <View style={styles.chooseTableContainer}>
     <CText style={styles.chooseTableText}>{text}</CText>
   </View>
@@ -74,7 +74,7 @@ export const SearchInput = ({
 );
 
 // Table Card Component
-export const TableCard = ({table, onPress, styles, locationData}) => {
+export const TableCard = ({ table, onPress, styles, locationData }) => {
   // Debug: log complete table structure to analyze available fields
   console.log(
     'TableCard: Complete table object:',
@@ -108,12 +108,15 @@ export const TableCard = ({table, onPress, styles, locationData}) => {
   const codigo =
     table.tableCode || table.codigo || table.code || table.id || 'N/A';
 
+  const locationId = locationData.locationId
+
   // Debug: log extracted values to verify mapping
   console.log('TableCard: Extracted values:', {
     tableNumber,
     recinto,
     direccion,
     codigo,
+    locationId
   });
 
   return (
@@ -127,4 +130,4 @@ export const TableCard = ({table, onPress, styles, locationData}) => {
 };
 
 // Export UniversalHeader for use in other components
-export {default as UniversalHeader} from './UniversalHeader';
+export { default as UniversalHeader } from './UniversalHeader';

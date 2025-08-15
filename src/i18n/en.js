@@ -1127,6 +1127,7 @@ export default {
     '¿Estás seguro de que deseas\nCertificar la información?',
   pleaseWait: 'Por favor, espere.....',
   savingToBlockchain: 'La información se está guardando en la Blockchain',
+  alreadyAttested: 'Ya atestiguó en esta mesa',
 
   // UploadRecord
   ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',
@@ -1141,7 +1142,7 @@ export default {
   i: 'Yo',
   publishAndCertify: 'Publico y Certifico',
   actaCorrectConfirmation:
-    'que es la ACTA CORRECTA de la {tableNumber} ubicada en {location}',
+    'que es la ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}',
   publishAndCertifyConfirmation:
     '¿Estás seguro de que deseas publicar y certificar la información?',
 
@@ -1330,5 +1331,7 @@ export default {
   duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
   goBack: "Volver Atrás",
-  uploadAnyway: "Subir Igual"
+  genericError: "Ocurrió un error inesperado",
+  uploadAnyway: "Subir de todos modos",
+  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema"
 };
