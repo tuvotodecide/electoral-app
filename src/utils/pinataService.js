@@ -19,7 +19,8 @@ class PinataService {
 
       // Hacer la petición al backend
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
+        { timeout: 10000 } // 10 segundos timeout
       );
 
       const data = response.data;
