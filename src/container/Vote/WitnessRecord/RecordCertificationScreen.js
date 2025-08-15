@@ -19,7 +19,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { moderateScale } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
-import String from '../../../i18n/String';
+import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import { executeOperation } from '../../../api/account';
 import { CHAIN, BACKEND } from '@env';
@@ -80,6 +80,7 @@ const RecordCertificationScreen = () => {
     name: data.name || '(sin nombre)',
     role: 'Testigo Electoral',
   };
+  console.log("USER DATA", userData.dni)
 
   const handleBack = () => {
     navigation.goBack();
@@ -94,7 +95,8 @@ const RecordCertificationScreen = () => {
         attestations: [{
           ballotId,
           support: true,
-          isJury
+          isJury,
+          dni: String(userData.dni)
         }]
       };
 
@@ -161,11 +163,11 @@ const RecordCertificationScreen = () => {
       setShowConfirmModal(false);
       let message = error.message;
       if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
-        message = String.alreadyAttested;
+        message = i18nString.alreadyAttested;
       }
       setInfoModalData({
         visible: true,
-        title: String.error,
+        title: i18nString.error,
         message,
       })
     }
@@ -200,7 +202,7 @@ const RecordCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table || 'Mesa'} ${tableData?.tableNumber ||
+        title={`${i18nString.table || 'Mesa'} ${tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
@@ -216,10 +218,10 @@ const RecordCertificationScreen = () => {
             <View style={styles.leftColumn}>
               <View style={styles.certificationContainer}>
                 <CText style={styles.certificationTitle}>
-                  {String.actaCertification}
+                  {i18nString.actaCertification}
                 </CText>
                 <CText style={styles.certificationText}>
-                  {(String.certificationText || '')
+                  {(i18nString.certificationText || '')
                     .replace('{userName}', currentUser.name || '')
                     .replace('{userRole}', currentUser.role || '')
                     .replace(
@@ -240,7 +242,7 @@ const RecordCertificationScreen = () => {
                   style={styles.certifyButton}
                   onPress={handleCertify}>
                   <CText style={styles.certifyButtonText}>
-                    {String.certify}
+                    {i18nString.certify}
                   </CText>
                 </TouchableOpacity>
               </View>
@@ -251,10 +253,10 @@ const RecordCertificationScreen = () => {
           <>
             <View style={styles.certificationContainer}>
               <CText style={styles.certificationTitle}>
-                {String.actaCertification}
+                {i18nString.actaCertification}
               </CText>
               <CText style={styles.certificationText}>
-                {(String.certificationText || '')
+                {(i18nString.certificationText || '')
                   .replace('{userName}', currentUser.name || '')
                   .replace('{userRole}', currentUser.role || '')
                   .replace(
@@ -272,7 +274,7 @@ const RecordCertificationScreen = () => {
               <TouchableOpacity
                 style={styles.certifyButton}
                 onPress={handleCertify}>
-                <CText style={styles.certifyButtonText}>{String.certify}</CText>
+                <CText style={styles.certifyButtonText}>{i18nString.certify}</CText>
               </TouchableOpacity>
             </View>
           </>
@@ -297,21 +299,21 @@ const RecordCertificationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  {String.certifyInfoConfirmation}
+                  {i18nString.certifyInfoConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
-                      {String.cancel}
+                      {i18nString.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>
-                      {String.certify}
+                      {i18nString.certify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -325,10 +327,10 @@ const RecordCertificationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  {String.pleaseWait}
+                  {i18nString.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain}
+                  {i18nString.savingToBlockchain}
                 </CText>
               </>
             )}

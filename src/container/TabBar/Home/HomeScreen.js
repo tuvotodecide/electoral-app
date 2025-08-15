@@ -10,25 +10,25 @@ import {
   Image,
   ImageBackground,
 } from 'react-native';
-import React, {useState, useRef, useEffect} from 'react';
-import {useDispatch} from 'react-redux';
-import {clearAuth} from '../../../redux/slices/authSlice';
-import {clearWallet} from '../../../redux/action/walletAction';
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { clearAuth } from '../../../redux/slices/authSlice';
+import { clearWallet } from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import {useSelector} from 'react-redux';
-import {store} from '../../../redux/store';
-import {clearSession} from '../../../utils/Session';
+import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
+import { useSelector } from 'react-redux';
+import { store } from '../../../redux/store';
+import { clearSession } from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY} from '../../../common/constants';
+import { JWT_KEY } from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -53,19 +53,19 @@ const getCardLayout = () => {
     }
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   } else {
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   }
 };
 
-const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
+const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
 
 // Carousel Item Component
-const CarouselItem = ({item}) => (
+const CarouselItem = ({ item }) => (
   <View style={stylesx.carouselItem}>
     <View style={stylesx.carouselContent}>
       <View style={stylesx.carouselMainContent}>
@@ -119,7 +119,7 @@ const MiVotoLogo = () => (
       />
       <View style={stylesx.flagCheckOutline} />
     </View> */}
-    <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+    <View style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
       <CText style={stylesx.logoTitle}>Tu Voto Decide</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
@@ -129,8 +129,8 @@ const MiVotoLogo = () => (
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View style={stylesx.bannerBC}>
-    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-      <View style={{marginLeft: 10, flex: 1}}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={{ marginLeft: 10, flex: 1 }}>
         <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
         <CText style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
@@ -146,7 +146,7 @@ const BlockchainConsultoraBanner = () => (
   </View>
 );
 
-export default function HomeScreen({navigation}) {
+export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
@@ -220,7 +220,7 @@ export default function HomeScreen({navigation}) {
 
       navigation.reset({
         index: 0,
-        routes: [{name: StackNav.AuthNavigation}],
+        routes: [{ name: StackNav.AuthNavigation }],
       });
     } catch (err) {
       console.error('Logout error', err);
@@ -292,11 +292,11 @@ export default function HomeScreen({navigation}) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+            <CText style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+            <View style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
               <TouchableOpacity
                 style={{
                   backgroundColor: '#f5f5f5',
@@ -306,7 +306,7 @@ export default function HomeScreen({navigation}) {
                   marginRight: 8,
                 }}
                 onPress={() => setLogoutModalVisible(false)}>
-                <CText style={{color: '#222', fontWeight: '600'}}>
+                <CText style={{ color: '#222', fontWeight: '600' }}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
@@ -318,7 +318,7 @@ export default function HomeScreen({navigation}) {
                   borderRadius: 8,
                 }}
                 onPress={handleLogout}>
-                <CText style={{color: '#fff', fontWeight: '600'}}>
+                <CText style={{ color: '#fff', fontWeight: '600' }}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -335,11 +335,13 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
-                <TouchableOpacity onPress={onPressNotification}>
+                <TouchableOpacity
+                  disabled={true}
+                  style={stylesx.disabledIcon}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#222'}
+                    color={'#cccccc'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
@@ -366,7 +368,7 @@ export default function HomeScreen({navigation}) {
               <FlatList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({item}) => <CarouselItem item={item} />}
+                renderItem={({ item }) => <CarouselItem item={item} />}
                 keyExtractor={item => item.id.toString()}
                 horizontal
                 pagingEnabled
@@ -385,7 +387,7 @@ export default function HomeScreen({navigation}) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                        stylesx.activePageIndicator,
+                      stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -406,7 +408,7 @@ export default function HomeScreen({navigation}) {
                   name: menuItems[0].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
 
                 <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
@@ -418,17 +420,17 @@ export default function HomeScreen({navigation}) {
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card]}
-                  activeOpacity={0.87}
-                  onPress={menuItems[1].onPress}>
+                  style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
+                  activeOpacity={1}
+                  disabled={true}>
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#41A44D',
-                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                    color: '#cccccc',
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
                   })}
-                  <CText style={stylesx.cardTitle}>{menuItems[1].title}</CText>
-                  <CText style={stylesx.cardDescription}>
+                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
+                  <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -441,7 +443,7 @@ export default function HomeScreen({navigation}) {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#41A44D',
-                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
                   })}
                   <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
@@ -458,11 +460,13 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity onPress={onPressNotification}>
+              <TouchableOpacity
+                disabled={true}
+                style={stylesx.disabledIcon}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#222'}
+                  color={'#cccccc'}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout}>
@@ -488,7 +492,7 @@ export default function HomeScreen({navigation}) {
             <FlatList
               ref={carouselRef}
               data={carouselData}
-              renderItem={({item}) => <CarouselItem item={item} />}
+              renderItem={({ item }) => <CarouselItem item={item} />}
               keyExtractor={item => item.id.toString()}
               horizontal
               pagingEnabled
@@ -507,7 +511,7 @@ export default function HomeScreen({navigation}) {
                   style={[
                     stylesx.pageIndicator,
                     index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                    stylesx.activePageIndicator,
                   ]}
                 />
               ))}
@@ -524,7 +528,7 @@ export default function HomeScreen({navigation}) {
                 name: menuItems[0].icon,
                 size: getResponsiveSize(30, 36, 42),
                 color: '#41A44D',
-                style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                style: { marginBottom: getResponsiveSize(6, 8, 10) },
               })}
               <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
               <CText style={stylesx.cardDescription}>
@@ -534,17 +538,17 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card]}
-                activeOpacity={0.87}
-                onPress={menuItems[1].onPress}>
+                style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
+                activeOpacity={1}
+                disabled={true}>
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
-                  color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  color: '#cccccc',
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
-                <CText style={stylesx.cardTitle}>{menuItems[1].title}</CText>
-                <CText style={stylesx.cardDescription}>
+                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
                   {menuItems[1].description}
                 </CText>
               </TouchableOpacity>
@@ -557,7 +561,7 @@ export default function HomeScreen({navigation}) {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
                 <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
@@ -678,9 +682,9 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(40, 50, 60),
-        marginBottom: getResponsiveSize(20, 25, 30),
-      }),
+      marginTop: getResponsiveSize(40, 50, 60),
+      marginBottom: getResponsiveSize(20, 25, 30),
+    }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -690,8 +694,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -701,8 +705,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -716,7 +720,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   bcLogoCircle: {
@@ -774,8 +778,8 @@ const stylesx = StyleSheet.create({
       CARDS_PER_ROW === 4
         ? 'space-around'
         : isTablet
-        ? 'flex-start'
-        : 'space-between',
+          ? 'flex-start'
+          : 'space-between',
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -786,9 +790,9 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(20, 25, 30),
-        paddingHorizontal: getResponsiveSize(12, 16, 20),
-      }),
+      marginTop: getResponsiveSize(20, 25, 30),
+      paddingHorizontal: getResponsiveSize(12, 16, 20),
+    }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
@@ -800,12 +804,12 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-        marginRight: getResponsiveSize(8, 12, 16),
-      }),
+      marginRight: getResponsiveSize(8, 12, 16),
+    }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
@@ -923,7 +927,7 @@ const stylesx = StyleSheet.create({
     right: getResponsiveSize(16, 20, 24),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -949,8 +953,17 @@ const stylesx = StyleSheet.create({
     backgroundColor: '#4CAF50',
     width: getResponsiveSize(16, 20, 24),
   },
-    logoImage: {
+  logoImage: {
     width: getResponsiveSize(32, 38, 44),
     height: getResponsiveSize(32, 38, 44),
+  },
+  disabledItem: {
+    opacity: 0.6,
+  },
+  disabledText: {
+    color: '#999999',
+  },
+  disabledIcon: {
+    opacity: 0.6,
   },
 });
