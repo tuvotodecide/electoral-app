@@ -1331,5 +1331,7 @@ export default {
   duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
   goBack: "Volver Atrás",
-  uploadAnyway: "Subir Igual"
+  genericError: "Ocurrió un error inesperado",
+  uploadAnyway: "Subir de todos modos",
+  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema"
 };
