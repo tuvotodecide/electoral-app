@@ -22,10 +22,11 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import { executeOperation } from '../../../api/account';
-import {CHAIN} from '@env';
+import { CHAIN, BACKEND } from '@env';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
 import { availableNetworks } from '../../../api/params';
+import axios from 'axios';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -44,10 +45,11 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const { recordId, tableData } = route.params || {};
+  const { recordId, tableData, mesaInfo } = route.params || {};
 
   console.log('RecordCertificationScreen - Received params:', route.params);
   console.log('RecordCertificationScreen - tableData:', tableData);
+  console.log('MESA INFO ID', mesaInfo._id)
   console.log(
     'RecordCertificationScreen - tableData keys:',
     Object.keys(tableData || {}),
@@ -83,6 +85,38 @@ const RecordCertificationScreen = () => {
     navigation.goBack();
   };
 
+  const uploadAttestation = async (ballotId) => {
+    try {
+      const url = `${BACKEND}/api/v1/attestations`;
+      const payload = {
+        attestations: [{
+          ballotId,
+          support: true,
+          isJury: false
+        }]
+      };
+
+      console.log('Subiendo attestation:', payload);
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('Attestation subida exitosamente:', response.data);
+      return true;
+    } catch (error) {
+      console.error('Error subiendo attestation:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      return false;
+    }
+  };
+
   const handleCertify = () => {
     console.log('RecordCertificationScreen - handleCertify called');
     setStep(0);
@@ -104,6 +138,19 @@ const RecordCertificationScreen = () => {
       );
       console.log(response);
 
+      if (mesaInfo._id) {
+        const uploadSuccess = await uploadAttestation(mesaInfo._id);
+        if (!uploadSuccess) {
+          setInfoModalData({
+            visible: true,
+            title: "Advertencia",
+            message: "Certificación completada en blockchain pero no se pudo registrar los datos"
+          });
+        }
+      } else {
+        console.error('No se encontro _id en mesainfo para subir attestation')
+      }
+
       setShowConfirmModal(false);
       setStep(0);
       // Show NFT modal directly instead of navigating to SuccessScreen
@@ -111,7 +158,7 @@ const RecordCertificationScreen = () => {
     } catch (error) {
       setShowConfirmModal(false);
       let message = error.message;
-      if(error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+      if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
         message = String.alreadyAttested;
       }
       setInfoModalData({

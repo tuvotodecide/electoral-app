@@ -43,7 +43,7 @@ const mockMesa = {
 export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
-  const rawMesa = route.params?.mesa || mockMesa;
+  const rawMesa = route.params?.mesa || route.params?.tableData;
   // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
   const mesaInfo = route.params?.mesaInfo || null;

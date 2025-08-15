@@ -20,7 +20,6 @@ import { BACKEND_RESULT, CHAIN } from "@env"
 import axios from 'axios';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import { availableNetworks } from '../../../api/params';
-import String from '../../../i18n/String';
 import InfoModal from '../../../components/modal/InfoModal';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -187,6 +186,36 @@ const PhotoConfirmationScreen = () => {
     }
   }
 
+  // Función para subir el atestiguamiento al backend
+  const uploadAttestation = async (ballotId) => {
+    try {
+      const url = `${BACKEND_RESULT}/api/v1/attestations`;
+      const payload = {
+        attestations: [{
+          ballotId,
+          support: true,
+          isJury: false
+        }]
+      };
+
+      console.log('Subiendo attestation:', payload);
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userData.token}` // Si necesitas autenticación
+        }
+      });
+
+      console.log('Attestation subida exitosamente:', response.data);
+      return true;
+    } catch (error) {
+      console.error('Error subiendo attestation:', error);
+      return false;
+    }
+  };
+
+
   // Función para subir a IPFS
   const uploadToIPFS = async () => {
     if (!photoUri) {
@@ -295,7 +324,7 @@ const PhotoConfirmationScreen = () => {
           throw Error('Failed to register user on oracle');
         }
       }
-      
+
       let response;
 
       try {
@@ -311,7 +340,7 @@ const PhotoConfirmationScreen = () => {
       } catch (error) {
         const message = error.message;
         //check if attestation is already created
-        if(message.indexOf('416c72656164792063726561746564') >= 0) {
+        if (message.indexOf('416c72656164792063726561746564') >= 0) {
           console.log('Attestation already created, attesting instead')
           response = await executeOperation(
             privateKey,
@@ -338,11 +367,22 @@ const PhotoConfirmationScreen = () => {
 
       console.log("CODIGO DE MESA", tableData)
       // 4. Subir Metadata al backend
-      await uploadMetadataToBackend(
+      const uploadedBackendData = await uploadMetadataToBackend(
         ipfsResult.jsonUrl,
         nftResult.nftId,
         String(tableData.idRecinto)
       );
+
+      if (uploadedBackendData._id) {
+        const attestationSuccess = await uploadAttestation(uploadedBackendData._id);
+
+        if (!attestationSuccess) {
+          // Mostrar advertencia pero continuar
+          console.warn('Falló la subida de attestation al backend, pero continuamos');
+        }
+      } else {
+        console.warn('No se encontró _id en tableData para subir attestation');
+      }
 
       // 5. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {
@@ -352,13 +392,13 @@ const PhotoConfirmationScreen = () => {
       });
     } catch (error) {
       let message = error.message;
-      if(error.message.indexOf("616c7265616479206174746573746564") >= 0) {
-        message = String.alreadyAttested;
+      if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+        message = I18nStrings.alreadyAttested;
       }
       console.error('Error en creación NFT:', error);
       setInfoModalData({
         visible: true,
-        title: String.error,
+        title: I18nStrings.genericError,
         message,
       });
     } finally {
