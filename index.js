@@ -25,6 +25,15 @@ import store, { persistor } from './src/redux/store';
 import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
+// Debug de configuración de ambiente en desarrollo
+if (__DEV__) {
+  const { debugEnvironmentConfig } = require('./src/utils/debugNetwork');
+  debugEnvironmentConfig();
+  
+  // Cargar herramientas de debug en la consola
+  require('./src/utils/networkTestConsole');
+}
+
 const RNRoot = () => {
   return (
     <Provider store={store}>

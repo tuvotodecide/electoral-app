@@ -3,7 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { availableNetworks, FACTORY_ADDRESS, sponsorshipPolicyId } from "./params";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSimpleSmartAccount } from "permissionless/accounts";
-import { CHAIN } from '@env';
+import { CHAIN, BACKEND_BLOCKCHAIN } from '@env';
 import walletAbi from './contracts/SimpleAccount.json';
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { createSmartAccountClient } from "permissionless";
@@ -104,34 +104,35 @@ export async function isWallet(address) {
 
 // Fetch user attestations from API
 export async function fetchUserAttestations(userId) {
-	const API_BASE_URL = 'http://192.168.1.16:3000/api/v1';
+       const API_BASE_URL = BACKEND_BLOCKCHAIN || 'https://backocr.tuvotodecide.com';
 
-	try {
-		console.log(`Fetching attestations for user ${userId}...`);
-		const response = await fetch(`${API_BASE_URL}/user/${userId}/attestations`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json',
-			},
-		});
+       try {
+	       console.log(`Fetching attestations for user ${userId}...`);
+	       const response = await fetch(`${API_BASE_URL}/api/v1/user/${userId}/attestations`, {
+		       method: 'GET',
+		       headers: {
+			       'Content-Type': 'application/json',
+			       'Accept': 'application/json',
+		       },
+		       timeout: 10000,
+	       });
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+	       if (!response.ok) {
+		       throw new Error(`HTTP error! status: ${response.status}`);
+	       }
 
-		const data = await response.json();
-		console.log('Attestations fetched successfully:', data);
+	       const data = await response.json();
+	       console.log('Attestations fetched successfully:', data);
 
-		return {
-			success: true,
-			data: data,
-		};
-	} catch (error) {
-		console.error('Error fetching user attestations:', error);
-		return {
-			success: false,
-			message: error.message || 'Error al cargar los atestiguamientos',
-		};
-	}
+	       return {
+		       success: true,
+		       data: data,
+	       };
+       } catch (error) {
+	       console.error('Error fetching user attestations:', error);
+	       return {
+		       success: false,
+		       message: error.message || 'Error al cargar los atestiguamientos',
+	       };
+       }
 }
