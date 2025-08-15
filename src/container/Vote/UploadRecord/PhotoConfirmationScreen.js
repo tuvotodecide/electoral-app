@@ -196,7 +196,8 @@ const PhotoConfirmationScreen = () => {
         attestations: [{
           ballotId,
           support: true,
-          isJury
+          isJury,
+          dni: String(userData.dni)
         }]
       };
 
@@ -205,8 +206,8 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userData.token}` // Si necesitas autenticación
-        }
+        },
+        timeout: 30000 // 30 segundos timeout
       });
 
       console.log('Attestation subida exitosamente:', response.data);

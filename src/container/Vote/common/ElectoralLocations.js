@@ -63,8 +63,8 @@ const ElectoralLocations = ({ navigation, route }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=50000`,
-        { timeout: 10000 } // 10 segundos timeout
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
+        { timeout: 15000 } // 10 segundos timeout
       );
       // const response = await axios.get(
       //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
@@ -193,7 +193,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setConfigError(false);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 10000 } // 10 segundos timeout
+        { timeout: 15000 } // 10 segundos timeout
       );
       if (response.data) {
         setElectionStatus(response.data);

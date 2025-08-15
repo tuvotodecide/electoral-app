@@ -1,11 +1,11 @@
 import React from 'react';
-import {View, TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -65,17 +65,18 @@ const UniversalHeader = ({
     {showNotification && (
       <TouchableOpacity
         style={[
+          styles.disabledIcon,
           styles.bellIcon,
           customStyles.bellIcon,
           {
             padding: getResponsiveSize(6, 8, 12),
           },
         ]}
-        onPress={onNotificationPress}>
+        disabled={true}>
         <Ionicons
           name="notifications-outline"
           size={getResponsiveSize(28, 32, 40)}
-          color={colors?.text || '#2F2F2F'}
+          color={colors?.text || '#cccccc'}
         />
       </TouchableOpacity>
     )}
@@ -104,6 +105,9 @@ const styles = StyleSheet.create({
   bellIcon: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledIcon: {
+    opacity: 0.6,
   },
 });
 
