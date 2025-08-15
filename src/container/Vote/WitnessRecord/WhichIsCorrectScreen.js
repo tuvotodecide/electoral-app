@@ -256,8 +256,10 @@ const WhichIsCorrectScreen = () => {
         ];
 
         navigation.navigate('RecordReviewScreen', {
+          recordId: selectedImage.recordId,
           photoUri: selectedImage.uri,
           tableData: tableData,
+          mesaInfo: mesaInfo,
           partyResults: selectedImage.partyResults || [],
           voteSummaryResults: transformedVoteSummary,
         });
