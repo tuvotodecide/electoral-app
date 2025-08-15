@@ -25,8 +25,8 @@ import { CHAIN } from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
 import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
-import { getSecrets } from '../../../utils/Cifrate';
 import { guardianHashFrom, removeGuardianOnChain } from '../../../api/guardianOnChain';
+import { getSecrets } from '../../../utils/Cifrate';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -57,7 +57,6 @@ export default function Guardians({navigation}) {
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
 
-  console.log(selectedGuardian);
 
   const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
@@ -99,21 +98,21 @@ export default function Guardians({navigation}) {
       const {payloadQr} = await getSecrets();
       const ownerPrivKey = payloadQr.privKey;
       const ownerAccount = payloadQr.account;
-      const ownerGuardianCt = payloadQr.guardian; // ya lo guardas en secrets
-      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress); // o del item
+      const ownerGuardianCt = payloadQr.guardian; 
+      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress); 
 
-      await removeGuardianOnChain(
-        CHAIN,
-        ownerPrivKey,
-        ownerAccount,
-        ownerGuardianCt,
-        guardianHash,
-      );
+      // await removeGuardianOnChain(
+      //   CHAIN,
+      //   ownerPrivKey,
+      //   ownerAccount,
+      //   ownerGuardianCt,
+      //   guardianHash,
+      // );
 
-      // espejo backend (lista/UX)
+      
       deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
     } catch (e) {
-      // alert/toast
+      
     }
   };
   const saveGuardian = newNick => {
@@ -248,7 +247,7 @@ export default function Guardians({navigation}) {
       </View>
       <View style={localStyle.infoTextContainer}>
         <CText
-          style={localStyle.infoText} // estilo para tamaño y negrita
+          style={localStyle.infoText} 
         >
           {String.whatIsGuardians}
         </CText>

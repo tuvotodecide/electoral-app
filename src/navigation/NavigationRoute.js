@@ -19,6 +19,7 @@ import UploadPhotoId from '../container/Auth/UploadPhotoId';
 import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 import OnBoarding from '../container/OnBoarding';
+import OnBoardingGuardians from '../container/OnBoardingGuardians';
 import Splash from '../container/Splash';
 import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
@@ -148,6 +149,7 @@ export const StackRoute = {
 
   TermsAndCondition,
   Notification,
+  OnBoardingGuardians,
   NotificationDetails,
 };
 
