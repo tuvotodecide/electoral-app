@@ -33,7 +33,6 @@ import {
   acceptGuardianOnChain,
   approveRecoveryOnChain,
 } from '../../../api/guardianOnChain';
-import {CHAIN} from '@env';
 import {getDeviceId} from '../../../utils/device-id';
 
 export default function GuardiansAdmin({navigation}) {
@@ -41,12 +40,12 @@ export default function GuardiansAdmin({navigation}) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
-  const {mutate: findPublicDni} = useKycFindPublicQuery();
 
   const {data: recData = [], isLoading: loadingrecData} =
     useMyGuardianRecoveryListQuery();
   const {data: accData = [], isLoading: loadingdataAccepted} =
     useGuardianAcceptedListQuery();
+  const {mutate: findPublicDni} = useKycFindPublicQuery();
 
   const {mutate: mutateInvitation, isLoading: loadingInvitationAction} =
     useGuardianInvitationActionQuery();
@@ -68,12 +67,12 @@ export default function GuardiansAdmin({navigation}) {
     );
     const ownerGuardianCt = fp.guardianAddress;
     const {payloadQr} = await getSecrets();
-    await acceptGuardianOnChain(
-      CHAIN,
-      payloadQr.privKey,
-      payloadQr.account,
-      ownerGuardianCt,
-    );
+    // await acceptGuardianOnChain(
+    //   CHAIN,
+    //   payloadQr.privKey,
+    //   payloadQr.account,
+    //   ownerGuardianCt,
+    // );
 
     mutateInvitation({id, action: 'accept'});
   };
@@ -91,8 +90,7 @@ export default function GuardiansAdmin({navigation}) {
         findPublicDni(
           {identifier: dni},
           {
-            onSuccess: d =>
-              d?.ok ? res(d) : rej(new Error('Error buscando usuario')),
+            onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error'))),
             onError: rej,
           },
         ),
@@ -101,13 +99,13 @@ export default function GuardiansAdmin({navigation}) {
       const ownerGuardianCt = fp.guardianAddress;
 
       const {payloadQr} = await getSecrets();
-      await approveRecoveryOnChain(
-        CHAIN,
-        payloadQr.privKey,
-        payloadQr.account,
-        ownerGuardianCt,
-        ownerAccount,
-      );
+      // await approveRecoveryOnChain(
+      //   CHAIN,
+      //   payloadQr.privKey,
+      //   payloadQr.account,
+      //   ownerGuardianCt,
+      //   ownerAccount,
+      // );
 
       mutateRecovery({id, action: 'approve'});
     } catch (e) {}
