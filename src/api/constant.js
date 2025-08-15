@@ -149,6 +149,37 @@ export const OnBoardingData = [
   },
 ];
 
+export const OnBoardingGuardiansData = [
+  {
+    id: 1,
+    lightImage: images.OnBoardingGuardiansImage1,
+    darkImage: images.OnBoardingGuardians_Dark1,
+    title: String.onBoardingGuardiansTitleText1,
+    description: String.onBoardingGuardiansDescriptionText1,
+  },
+  {
+    id: 2,
+    lightImage: images.OnBoardingGuardiansImage3,
+    darkImage: images.OnBoardingGuardians_Dark3,
+    title: String.onBoardingGuardiansTitleText2,
+    description: String.onBoardingGuardiansDescriptionText2,
+  },
+  {
+    id: 3,
+    lightImage: images.SuccessfulDepositLight,
+    darkImage: images.SuccessfulDepositDark,
+    title: String.onBoardingGuardiansTitleText3,
+    description: String.onBoardingGuardiansDescriptionText3,
+  },
+  {
+    id: 4,
+    lightImage: images.OnBoardingGuardiansImage5,
+    darkImage: images.OnBoardingGuardians_Dark5,
+    title: String.onBoardingGuardiansTitleText4,
+    description: String.onBoardingGuardiansDescriptionText4,
+  },
+];
+
 export const socialIcon = [
   {
     id: 1,

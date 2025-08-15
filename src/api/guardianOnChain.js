@@ -13,6 +13,7 @@ import {
   availableNetworks,
 } from './params';
 import {executeOperation} from './account';
+import { getDeviceId } from '../utils/device-id';
 
 export const guardianHashFrom = eoa =>
   keccak256(encodePacked(['address'], [eoa]));
@@ -53,11 +54,11 @@ export async function inviteGuardianOnChain(
 export async function acceptGuardianOnChain(
   chain,
   guardianPrivKey,
-  guardianEoa,
+  guardianAccount,
   ownerGuardianCt,
 ) {
   // Tu ABI: accept(bytes32 guardianHash)
-  const guardianHash = guardianHashFrom(guardianEoa);
+  const guardianHash = guardianHashFrom(guardianAccount);
 
   const call = {
     to: ownerGuardianCt,
@@ -69,7 +70,7 @@ export async function acceptGuardianOnChain(
     value: 0n,
   };
 
-  return executeOperation(guardianPrivKey, guardianEoa, chain, call);
+  return executeOperation(guardianPrivKey, guardianAccount, chain, call);
 }
 
 export async function removeGuardianOnChain(
@@ -112,33 +113,80 @@ export async function approveRecoveryOnChain(
   return executeOperation(guardianPrivKey, guardianEoa, chain, call);
 }
 
+// export async function readOnChainApprovals(
+//   chain,
+//   ownerGuardianCt,
+//   ownerAccount,
+// ) {
+//   const publicClient = createPublicClient({
+//     chain: availableNetworks[chain].chain,
+//     transport: http(),
+//   });
+
+//   const ct = getContract({
+//     address: ownerGuardianCt,
+//     abi: guardianAbi,
+//     client: publicClient,
+//   });
+
+//   // requiredApprovals() -> uint8
+//   const requiredBn = await ct.read.requiredApprovals();
+//   // getRecoveryStatus(address newOwner) -> (uint8 approvals, bool executed, uint256 deadline, bool expired)
+//   const [approvals, executed, deadline, expired] =
+//     await ct.read.getRecoveryStatus([ownerAccount]);
+
+//   return {
+//     required: Number(requiredBn),
+//     current: Number(approvals),
+//     executed,
+//     expired,
+//     deadline, // BigInt (timestamp)
+//   };
+// }
 export async function readOnChainApprovals(
   chain,
-  ownerGuardianCt,
+  guardianCt,
   ownerAccount,
+  deviceIdOpt,
 ) {
-  const publicClient = createPublicClient({
+  const client = createPublicClient({
     chain: availableNetworks[chain].chain,
     transport: http(),
   });
 
-  const ct = getContract({
-    address: ownerGuardianCt,
+  // reqHash = keccak(ownerAccount, hash(deviceId))
+  const deviceId = deviceIdOpt || (await getDeviceId());
+  const reqHash = calcReqHash(ownerAccount, deviceId);
+
+  // public mapping recoveries(bytes32) → (address newOwner, uint8 approvals, bool executed, uint256 proposedAt)
+  const [newOwner, approvals, executed, proposedAt] = await client.readContract({
+    address: guardianCt,
     abi: guardianAbi,
-    client: publicClient,
+    functionName: 'recoveries',
+    args: [reqHash],
   });
 
-  // requiredApprovals() -> uint8
-  const requiredBn = await ct.read.requiredApprovals();
-  // getRecoveryStatus(address newOwner) -> (uint8 approvals, bool executed, uint256 deadline, bool expired)
-  const [approvals, executed, deadline, expired] =
-    await ct.read.getRecoveryStatus([ownerAccount]);
+  // requiredApprovals (uint8)
+  const required = await client.readContract({
+    address: guardianCt,
+    abi: guardianAbi,
+    functionName: 'requiredApprovals',
+    args: [],
+  });
+
+  // Expiración aprox 3 días (si tu contrato usa otra ventana, expón una view y léela aquí)
+  const nowSec = BigInt(Math.floor(Date.now() / 1000));
+  const RECOVERY_PERIOD = 3n * 24n * 60n * 60n;
+  const expired =
+    proposedAt === 0n ? false : nowSec > (proposedAt + RECOVERY_PERIOD);
 
   return {
-    required: Number(requiredBn),
+    required: Number(required),
     current: Number(approvals),
     executed,
     expired,
-    deadline, // BigInt (timestamp)
+    reqHash,
+    newOwner,
+    proposedAt: Number(proposedAt),
   };
 }

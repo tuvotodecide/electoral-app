@@ -27,6 +27,7 @@ import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
 const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
 const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+
 const statusColorKey = {
   ACCEPTED: 'activeColor',
   PENDING: 'pendingColor',
@@ -90,13 +91,6 @@ export default function MyGuardiansStatus({navigation, route}) {
   }, [detail]);
 
   useEffect(() => {
-    getDeviceId().then(id => {
-      deviceId.current = id;
-      setReady(true);
-    });
-  }, []);
-
-  useEffect(() => {
     let t;
     (async function poll() {
       const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
@@ -104,14 +98,12 @@ export default function MyGuardiansStatus({navigation, route}) {
       if (!ownerAccount || !guardianCt) return;
 
       try {
-        const {required, current, executed, expired} =
-          await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
+        const {required, current, executed, expired} = await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
         if (current >= required) {
-         navigation.replace(AuthNav.RecoveryUser1Pin, {
-
-          dni,
-           reqId: detail?.id, // opcional
-         });
+          navigation.replace(AuthNav.RecoveryUser1Pin, {
+            dni,
+            reqId: detail?.id, // opcional
+          });
           return;
         }
       } catch (_) {}
@@ -119,6 +111,13 @@ export default function MyGuardiansStatus({navigation, route}) {
     })();
     return () => clearTimeout(t);
   }, [dni, detail?.id]);
+
+  useEffect(() => {
+    getDeviceId().then(id => {
+      deviceId.current = id;
+      setReady(true);
+    });
+  }, []);
 
   if (isLoading || !ready) {
     return (
