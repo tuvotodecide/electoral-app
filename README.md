@@ -7,6 +7,8 @@
 ## ✅ Requisitos Previos (verifica con los siguientes comandos)
 
 
+
+
 node -v
 npm -v
 java -version
