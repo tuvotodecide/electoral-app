@@ -172,7 +172,7 @@ const BaseSearchTableScreen = ({
 
       // Check if mesa has existing attestations
       const response = await axios.get(`${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
-        { timeout: 10000 } // 10 segundos timeout
+        { timeout: 15000 } // 10 segundos timeout
       );
       console.log('API response:', JSON.stringify(response.data, null, 2));
 
