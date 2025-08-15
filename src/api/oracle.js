@@ -1,4 +1,4 @@
-import { createPublicClient, encodeFunctionData, http } from "viem";
+import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
 import { availableNetworks } from "./params";
 import oracleAbi from '../abi/OracleAbi.json'
 
@@ -66,6 +66,27 @@ async function isRegistered(chain, accountAddress, attemps = 3) {
   return false;
 }
 
+async function isUserJury(chainId, address) {
+  const {chain, oracle, juryRole} = availableNetworks[chainId];
+
+  const publicClient = createPublicClient({
+    chain: chain,
+    transport: http(),
+  });
+
+  const oracleContract = getContract({
+		address: oracle,
+		abi: oracleAbi,
+		client: { public: publicClient }
+	});
+
+  const response = await oracleContract.read.hasRole([
+    juryRole,
+    address
+  ]);
+	return response;
+}
+
 async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));   
 
@@ -102,5 +123,6 @@ export const oracleCalls = {
 
 export const oracleReads = {
   isRegistered,
+  isUserJury,
   waitForOracleEvent,
 }
