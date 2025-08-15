@@ -1127,6 +1127,7 @@ export default {
     '¿Estás seguro de que deseas\nCertificar la información?',
   pleaseWait: 'Por favor, espere.....',
   savingToBlockchain: 'La información se está guardando en la Blockchain',
+  alreadyAttested: 'Ya atestiguó en esta mesa',
 
   // UploadRecord
   ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',

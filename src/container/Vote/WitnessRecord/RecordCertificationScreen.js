@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -20,6 +21,11 @@ import { moderateScale } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
+import { executeOperation } from '../../../api/account';
+import {CHAIN} from '@env';
+import { oracleCalls, oracleReads } from '../../../api/oracle';
+import InfoModal from '../../../components/modal/InfoModal';
+import { availableNetworks } from '../../../api/params';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,7 +44,7 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const { tableData } = route.params || {};
+  const { recordId, tableData } = route.params || {};
 
   console.log('RecordCertificationScreen - Received params:', route.params);
   console.log('RecordCertificationScreen - tableData:', tableData);
@@ -55,6 +61,11 @@ const RecordCertificationScreen = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -78,23 +89,51 @@ const RecordCertificationScreen = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmCertification = () => {
+  const confirmCertification = async () => {
     console.log('RecordCertificationScreen - confirmCertification called');
     setStep(1);
-    // Simulate loading time
-    setTimeout(() => {
-      console.log('RecordCertificationScreen - showing NFT modal');
+
+    try {
+      const response = await executeOperation(
+        userData.privKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.attest(CHAIN, tableData.codigo, recordId),
+        oracleReads.waitForOracleEvent,
+        'Attested'
+      );
+      console.log(response);
+
       setShowConfirmModal(false);
       setStep(0);
       // Show NFT modal directly instead of navigating to SuccessScreen
       setShowNFTCertificate(true);
-    }, 2000);
+    } catch (error) {
+      setShowConfirmModal(false);
+      let message = error.message;
+      if(error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+        message = String.alreadyAttested;
+      }
+      setInfoModalData({
+        visible: true,
+        title: String.error,
+        message,
+      })
+    }
   };
 
   const closeModal = () => {
     setShowConfirmModal(false);
     setStep(0);
   };
+
+  const closeInfoModal = () => {
+    setInfoModalData({
+      visible: false,
+      title: '',
+      message: ''
+    })
+  }
 
   const closeNFTModal = () => {
     setShowNFTCertificate(false);
@@ -283,6 +322,11 @@ const RecordCertificationScreen = () => {
           </View>
         </View>
       )}
+
+      <InfoModal
+        {...infoModalData}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };
