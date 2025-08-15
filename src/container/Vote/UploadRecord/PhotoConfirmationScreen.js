@@ -190,11 +190,13 @@ const PhotoConfirmationScreen = () => {
   const uploadAttestation = async (ballotId) => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
+      const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+
       const payload = {
         attestations: [{
           ballotId,
           support: true,
-          isJury: false
+          isJury
         }]
       };
 
