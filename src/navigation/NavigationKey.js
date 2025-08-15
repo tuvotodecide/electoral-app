@@ -4,6 +4,7 @@ export const StackNav = {
   ActaDetailScreen: 'ActaDetailScreen',
   Splash: 'Splash',
   OnBoarding: 'OnBoarding',
+  OnBoardingGuardians: 'OnBoardingGuardians',
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
 
@@ -69,6 +70,7 @@ export const TabNav = {
 export const AuthNav = {
   Connect: 'Connect',
   OnBoarding: 'OnBoarding',
+  OnBoardingGuardians: 'OnBoardingGuardians',
   Login: 'Login',
   LoginUser: 'LoginUser',
   SignUp: 'SignUp',
