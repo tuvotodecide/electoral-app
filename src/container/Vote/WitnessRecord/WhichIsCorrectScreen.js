@@ -256,6 +256,7 @@ const WhichIsCorrectScreen = () => {
         ];
 
         navigation.navigate('RecordReviewScreen', {
+          recordId: selectedImage.recordId,
           photoUri: selectedImage.uri,
           tableData: tableData,
           partyResults: selectedImage.partyResults || [],

@@ -9,6 +9,7 @@ const RecordReviewScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {
+    recordId,
     photoUri,
     tableData,
     partyResults: routePartyResults,
@@ -67,6 +68,7 @@ const RecordReviewScreen = () => {
     });
 
     navigation.navigate('RecordCertificationScreen', {
+      recordId,
       photoUri,
       tableData,
       partyResults,

@@ -20,6 +20,8 @@ import { BACKEND_RESULT, CHAIN } from "@env"
 import axios from 'axios';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import { availableNetworks } from '../../../api/params';
+import String from '../../../i18n/String';
+import InfoModal from '../../../components/modal/InfoModal';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -90,6 +92,11 @@ const PhotoConfirmationScreen = () => {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateBallot, setDuplicateBallot] = useState(null);
   const [uploadError, setUploadError] = useState('');
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -264,7 +271,6 @@ const PhotoConfirmationScreen = () => {
       const privateKey = userData?.privKey;
 
       // 3. Crear NFT en blockchain
-      console.log("check register")
       const isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
@@ -272,7 +278,6 @@ const PhotoConfirmationScreen = () => {
       );
 
       if (!isRegistered) {
-        console.log("request register")
         await executeOperation(
           privateKey,
           userData.account,
@@ -280,7 +285,6 @@ const PhotoConfirmationScreen = () => {
           oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl)
         );
 
-        console.log("check user is registered")
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
@@ -291,18 +295,36 @@ const PhotoConfirmationScreen = () => {
           throw Error('Failed to register user on oracle');
         }
       }
+      
+      let response;
 
-      console.log("create attestation")
-      const response = await executeOperation(
-        privateKey,
-        userData.account,
-        CHAIN,
-        oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsResult.jsonUrl),
-        oracleReads.waitForOracleEvent,
-        'AttestationCreated'
-      );
-      console.log("Contract returned data");
-      console.log(response);
+      try {
+        response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsResult.jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'AttestationCreated'
+        );
+
+      } catch (error) {
+        const message = error.message;
+        //check if attestation is already created
+        if(message.indexOf('416c72656164792063726561746564') >= 0) {
+          console.log('Attestation already created, attesting instead')
+          response = await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), ipfsResult.jsonUrl),
+            oracleReads.waitForOracleEvent,
+            'Attested'
+          );
+        } else {
+          throw error;
+        }
+      }
 
       const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
@@ -329,8 +351,16 @@ const PhotoConfirmationScreen = () => {
         tableData: tableData
       });
     } catch (error) {
+      let message = error.message;
+      if(error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+        message = String.alreadyAttested;
+      }
       console.error('Error en creación NFT:', error);
-      setUploadError(error.message);
+      setInfoModalData({
+        visible: true,
+        title: String.error,
+        message,
+      });
     } finally {
       setShowConfirmModal(false);
       setStep(0);
@@ -359,6 +389,14 @@ const PhotoConfirmationScreen = () => {
     setShowConfirmModal(false);
     setStep(0);
   };
+
+  const closeInfoModal = () => {
+    setInfoModalData({
+      visible: false,
+      title: '',
+      message: ''
+    })
+  }
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -534,6 +572,11 @@ const PhotoConfirmationScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <InfoModal
+        {...infoModalData}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };
