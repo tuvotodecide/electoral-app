@@ -41,6 +41,10 @@ export default function StackNavigation() {
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
+            <Stack.Screen
+        name={StackNav.OnBoardingGuardians}
+        component={StackRoute.OnBoardingGuardians}
+      />
       <Stack.Screen
         name={StackNav.TableDetail}
         component={StackRoute.TableDetail}
