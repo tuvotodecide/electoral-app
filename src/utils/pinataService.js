@@ -15,7 +15,9 @@ class PinataService {
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
+      console.log("Verificando duplicados para mesa:", tableNumber);
 
+      // Hacer la petición al backend
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`
       );
@@ -29,7 +31,7 @@ class PinataService {
           ? [data]
           : [];
 
-      console.log('Actas existentes normalizadas:', existingBallots);
+      console.log('Actas existentes encontradas:', existingBallots.length);
 
       // Comparar datos de votación (recibe directamente los objetos .votes)
       const isEqual = (votes1, votes2) => {
@@ -80,6 +82,16 @@ class PinataService {
         ballot: duplicate || null
       };
     } catch (error) {
+      // Manejar específicamente el error 404 (no encontrado)
+      if (error.response?.status === 404) {
+        console.log('No se encontraron actas para esta mesa - Continuando...');
+        return {
+          exists: false,
+          ballot: null
+        };
+      }
+
+      // Para otros errores, loguear pero continuar
       console.error('Error verificando duplicados:', error);
       return {
         exists: false,

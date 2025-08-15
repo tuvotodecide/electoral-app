@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -20,6 +21,12 @@ import { moderateScale } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
+import { executeOperation } from '../../../api/account';
+import { CHAIN, BACKEND } from '@env';
+import { oracleCalls, oracleReads } from '../../../api/oracle';
+import InfoModal from '../../../components/modal/InfoModal';
+import { availableNetworks } from '../../../api/params';
+import axios from 'axios';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,10 +45,11 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const { tableData } = route.params || {};
+  const { recordId, tableData, mesaInfo } = route.params || {};
 
   console.log('RecordCertificationScreen - Received params:', route.params);
   console.log('RecordCertificationScreen - tableData:', tableData);
+  console.log('MESA INFO ID', mesaInfo._id)
   console.log(
     'RecordCertificationScreen - tableData keys:',
     Object.keys(tableData || {}),
@@ -55,6 +63,11 @@ const RecordCertificationScreen = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -72,29 +85,104 @@ const RecordCertificationScreen = () => {
     navigation.goBack();
   };
 
+  const uploadAttestation = async (ballotId) => {
+    try {
+      const url = `${BACKEND}/api/v1/attestations`;
+      const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+
+      const payload = {
+        attestations: [{
+          ballotId,
+          support: true,
+          isJury
+        }]
+      };
+
+      console.log('Subiendo attestation:', payload);
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('Attestation subida exitosamente:', response.data);
+      return true;
+    } catch (error) {
+      console.error('Error subiendo attestation:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      return false;
+    }
+  };
+
   const handleCertify = () => {
     console.log('RecordCertificationScreen - handleCertify called');
     setStep(0);
     setShowConfirmModal(true);
   };
 
-  const confirmCertification = () => {
+  const confirmCertification = async () => {
     console.log('RecordCertificationScreen - confirmCertification called');
     setStep(1);
-    // Simulate loading time
-    setTimeout(() => {
-      console.log('RecordCertificationScreen - showing NFT modal');
+
+    try {
+      const response = await executeOperation(
+        userData.privKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.attest(CHAIN, tableData.codigo, recordId),
+        oracleReads.waitForOracleEvent,
+        'Attested'
+      );
+      console.log(response);
+
+      if (mesaInfo._id) {
+        const uploadSuccess = await uploadAttestation(mesaInfo._id);
+        if (!uploadSuccess) {
+          setInfoModalData({
+            visible: true,
+            title: "Advertencia",
+            message: "Certificación completada en blockchain pero no se pudo registrar los datos"
+          });
+        }
+      } else {
+        console.error('No se encontro _id en mesainfo para subir attestation')
+      }
+
       setShowConfirmModal(false);
       setStep(0);
       // Show NFT modal directly instead of navigating to SuccessScreen
       setShowNFTCertificate(true);
-    }, 2000);
+    } catch (error) {
+      setShowConfirmModal(false);
+      let message = error.message;
+      if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+        message = String.alreadyAttested;
+      }
+      setInfoModalData({
+        visible: true,
+        title: String.error,
+        message,
+      })
+    }
   };
 
   const closeModal = () => {
     setShowConfirmModal(false);
     setStep(0);
   };
+
+  const closeInfoModal = () => {
+    setInfoModalData({
+      visible: false,
+      title: '',
+      message: ''
+    })
+  }
 
   const closeNFTModal = () => {
     setShowNFTCertificate(false);
@@ -283,6 +371,11 @@ const RecordCertificationScreen = () => {
           </View>
         </View>
       )}
+
+      <InfoModal
+        {...infoModalData}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };

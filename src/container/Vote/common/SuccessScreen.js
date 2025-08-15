@@ -6,18 +6,21 @@ import {
   Dimensions,
   Image,
   Linking,
+  Share
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
+import { title } from 'process';
+import { url } from 'inspector';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
@@ -46,7 +49,7 @@ const SuccessScreen = () => {
   const handleViewNFT = async () => {
     try {
       const supported = await Linking.canOpenURL(nftData.nftUrl);
-      if(supported) {
+      if (supported) {
         await Linking.openURL(nftData.nftUrl);
       } else {
         console.log('Cannot open URL:', nftData.nftUrl);
@@ -56,9 +59,32 @@ const SuccessScreen = () => {
     }
   };
 
-  const handleShareProfile = () => {
-    // Por el momento enlace vacío
-    console.log('Compartir perfil - enlace por implementar');
+  const handleShareProfile = async () => {
+    try {
+      if (!nftData || !nftData.nftUrl) {
+        console.log("No hay enlace NFT para compartir");
+        return;
+      }
+      const shareOptions = {
+        title: 'Compartir certificado NFT',
+        message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${nftData.nftUrl}`,
+        url: nftData.nftUrl,
+        subject: 'Certificado NFT - Elecciones Bolivia 2025'
+      }
+
+      const result = await Share.share(shareOptions, {
+        dialogTitle: 'Compartir certificado NFT',
+        subject: 'Certificado NFT - Elecciones Bolivia 2025'
+      });
+
+      if (result.action === Share.sharedAction) {
+        console.log('Contenido compartido exitosamente');
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Compartir cancelado');
+      }
+    } catch (error) {
+      console.error('Error al compartir:', error.message);
+    }
   };
 
   // Obtener nombre real del usuario desde Redux
@@ -76,7 +102,7 @@ const SuccessScreen = () => {
         colors={colors}
         onBack={handleBack}
         // title={String.confirmation}
-        title = "NFT: Elecciones Generales Bolivia 2025"
+        title="NFT: Elecciones Generales Bolivia 2025"
         showNotification={false}
       />
 
