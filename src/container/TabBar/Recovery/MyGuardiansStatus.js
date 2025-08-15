@@ -98,8 +98,7 @@ export default function MyGuardiansStatus({navigation, route}) {
       if (!ownerAccount || !guardianCt) return;
 
       try {
-        const {required, current, executed, expired} =
-          // await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
+        const {required, current, executed, expired} = await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
         if (current >= required) {
           navigation.replace(AuthNav.RecoveryUser1Pin, {
             dni,
