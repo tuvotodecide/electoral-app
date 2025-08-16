@@ -125,7 +125,7 @@ export default function Profile({ navigation }) {
   const RenderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
-        disabled={item === 'darkMode'}s
+        disabled={item === 'darkMode'} s
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
         onPress={() => onPressItem(item)}
@@ -206,11 +206,11 @@ export default function Profile({ navigation }) {
             <CText type={'B20'} color={color.white} align={'center'}>
               {data.name}
             </CText>
-            <CHash text={data.hash} title={userData?.account}  textColor={'#fff'} />
+            <CHash text={data.hash} title={userData?.account} textColor={'#fff'} />
           </View>
         </LinearGradient>
 
-        {/* Resumen de reputación */}
+        {/* Resumen de reputación 
         <View style={localStyle.boxSection}>
           <CText type="B14" style={localStyle.sectionTitle}>
             {String.reputationSummary}
@@ -233,8 +233,9 @@ export default function Profile({ navigation }) {
             </View>
           </TouchableOpacity>
         </View>
+        */}
 
-        {/* NFTs obtenidos */}
+        {/* NFTs obtenidos 
         <View style={localStyle.boxSection}>
           <CText type="B14" style={localStyle.sectionTitle}>
             {String.nftsObtained}
@@ -266,7 +267,7 @@ export default function Profile({ navigation }) {
             ))}
           </View>
         </View>
-
+        */}
         {/* Sección de datos adicionales */}
         <View style={localStyle.mainContainer}>
           <SectionList
@@ -280,7 +281,7 @@ export default function Profile({ navigation }) {
           />
         </View>
 
-        {/* Botón de seleccionar insignia */}
+        {/* Botón de seleccionar insignia 
         <View style={{ marginVertical: 20, alignItems: 'center' }}>
           <TouchableOpacity style={localStyle.mainBtn}>
             <CText type="B16" color="#222">
@@ -288,6 +289,7 @@ export default function Profile({ navigation }) {
             </CText>
           </TouchableOpacity>
         </View>
+        */}
 
         <LogOutModal
           visible={isModalVisible}

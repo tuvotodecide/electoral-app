@@ -22,7 +22,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import { executeOperation } from '../../../api/account';
-import { CHAIN, BACKEND } from '@env';
+import { CHAIN, BACKEND_RESULT } from '@env';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
 import { availableNetworks } from '../../../api/params';
@@ -88,7 +88,7 @@ const RecordCertificationScreen = () => {
 
   const uploadAttestation = async (ballotId) => {
     try {
-      const url = `${BACKEND}/api/v1/attestations`;
+      const url = `${BACKEND_RESULT}/api/v1/attestations`;
       const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
 
       const payload = {
@@ -105,7 +105,9 @@ const RecordCertificationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-        }
+          'x-api-key': BACKEND_SECRET
+        },
+        timeout: 30000 // 30 segundos timeout
       });
 
       console.log('Attestation subida exitosamente:', response.data);

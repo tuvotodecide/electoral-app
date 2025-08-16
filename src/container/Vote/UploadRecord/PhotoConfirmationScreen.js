@@ -16,7 +16,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
 import { executeOperation } from "../../../api/account"
-import { BACKEND_RESULT, CHAIN } from "@env"
+import { BACKEND_RESULT, CHAIN, BACKEND_SECRET } from "@env"
 import axios from 'axios';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import { availableNetworks } from '../../../api/params';
@@ -173,7 +173,8 @@ const PhotoConfirmationScreen = () => {
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET
         },
         timeout: 30000 // 30 segundos timeout
       });
@@ -206,6 +207,7 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET
         },
         timeout: 30000 // 30 segundos timeout
       });
@@ -230,7 +232,8 @@ const PhotoConfirmationScreen = () => {
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET
         },
         timeout: 30000 // 30 segundos timeout
       });
