@@ -21,9 +21,9 @@ export const availableNetworks = {
     bundler: BUNDLER_MAIN,
     explorer: 'https://arbiscan.io/',
     nftExplorer: 'https://routescan.io/nft',
-    oracle: '',
-    juryRole: '',
-    attestationNft: '',
+    oracle: '0x349E50230C48F245D1707A9250aae97639e2f046',
+    juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
+    attestationNft: '0x1FEEF5E4302AdE8Ac70Beff5F8bB7270c6a9aba1',
   }
 };
 
