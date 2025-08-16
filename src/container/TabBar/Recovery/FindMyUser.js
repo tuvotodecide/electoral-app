@@ -6,6 +6,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
+import {CHAIN} from '@env';
 import {
   getHeight,
   moderateScale,
@@ -25,7 +26,6 @@ import {
   useGuardiansRecoveryRequestQuery,
   useHasGuardiansQuery,
 } from '../../../data/guardians';
-import {CHAIN} from '@env';
 import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
@@ -39,7 +39,8 @@ export default function FindMyUser({navigation}) {
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
-  const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
+ 
+    const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
   const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
@@ -98,6 +99,7 @@ export default function FindMyUser({navigation}) {
       return;
     }
     const deviceId = await getDeviceId();
+
     sendRequest(
       {dni: carnet.trim(), deviceId},
       {

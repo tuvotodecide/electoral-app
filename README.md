@@ -48,6 +48,7 @@ npm install
 ### 4. Configurar local.properties
 
 
+
 cd android
 type nul > local.properties
 
