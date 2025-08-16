@@ -183,7 +183,7 @@ const MyWitnessesListScreen = () => {
           tableCode: ballot.tableCode,
           mesa: `Mesa ${ballot.tableNumber}`,
           imagen: ballot.image
-            ? ballot.image.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')
+            ? ballot.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
             : null,
           fecha: new Date(ballot.createdAt).toLocaleDateString('es-ES'),
           hora: new Date(ballot.createdAt).toLocaleTimeString('es-ES', {

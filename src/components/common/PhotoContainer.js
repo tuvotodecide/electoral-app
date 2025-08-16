@@ -1,5 +1,5 @@
-import React, {useRef} from 'react';
-import {View, StyleSheet, Image, Dimensions} from 'react-native';
+import React, { useRef } from 'react';
+import { View, StyleSheet, Image, Dimensions } from 'react-native';
 import {
   PinchGestureHandler,
   PanGestureHandler,
@@ -12,9 +12,9 @@ import Animated, {
   withSpring,
   clamp,
 } from 'react-native-reanimated';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = SCREEN_WIDTH >= 768;
@@ -70,7 +70,7 @@ export const PhotoContainer = ({
           : styles.photoContainer
       }>
       <Image
-        source={{uri: photoUri}}
+        source={{ uri: photoUri }}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
       />
@@ -82,7 +82,7 @@ export const PhotoContainer = ({
   );
 };
 
-const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
+const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -192,9 +192,9 @@ const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        {translateX: translateX.value},
-        {translateY: translateY.value},
-        {scale: scale.value},
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { scale: scale.value },
       ],
     };
   });
@@ -227,7 +227,7 @@ const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
                     animatedStyle,
                   ]}>
                   <Image
-                    source={{uri: photoUri}}
+                    source={{ uri: photoUri }}
                     style={
                       useAspectRatio ? styles.photoAspectRatio : styles.photo
                     }
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     marginBottom: MARGIN_BOTTOM,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -283,16 +283,19 @@ const styles = StyleSheet.create({
     marginBottom: MARGIN_BOTTOM,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
     overflow: 'hidden',
     width: '100%',
-    minHeight: 200, // Altura mínima para evitar contenedores muy pequeños
+    minHeight: 150, // Altura mínima para evitar contenedores muy pequeños
+    maxHeight: 150,
   },
   photoAspectRatio: {
     width: '100%',
+    height: 150,
+    minHeight: 150,
     aspectRatio: 4 / 3, // Proporción estándar para imágenes de documentos
     borderRadius: BORDER_RADIUS,
   },

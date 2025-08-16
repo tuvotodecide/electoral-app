@@ -60,6 +60,7 @@ export const SearchInput = ({
   placeholder = 'Search table',
   value,
   onChangeText,
+  onClear, // Nuevo prop
   styles,
 }) => (
   <View style={styles.searchInputContainer}>
@@ -74,7 +75,7 @@ export const SearchInput = ({
 );
 
 // Table Card Component
-export const TableCard = ({ table, onPress, styles, locationData }) => {
+export const TableCard = ({ table, onPress, styles, locationData, searchQuery }) => {
   // Debug: log complete table structure to analyze available fields
   console.log(
     'TableCard: Complete table object:',
@@ -110,6 +111,24 @@ export const TableCard = ({ table, onPress, styles, locationData }) => {
 
   const locationId = locationData.locationId
 
+  const highlightMatch = (text, query) => {
+    if (!query || !text) return text;
+
+    const index = text.toLowerCase().indexOf(query.toLowerCase());
+    if (index === -1) return text;
+
+    return (
+      <>
+        {text.substring(0, index)}
+        <CText style={{ backgroundColor: 'yellow', color: '#000' }}>
+          {text.substring(index, index + query.length)}
+        </CText>
+        {text.substring(index + query.length)}
+      </>
+    );
+  };
+
+
   // Debug: log extracted values to verify mapping
   console.log('TableCard: Extracted values:', {
     tableNumber,
@@ -121,10 +140,18 @@ export const TableCard = ({ table, onPress, styles, locationData }) => {
 
   return (
     <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
-      <CText style={styles.tableCardTitle}>Mesa {tableNumber}</CText>
-      <CText style={styles.tableCardDetail}>Recinto: {recinto}</CText>
-      <CText style={styles.tableCardDetail}>Dirección: {direccion}</CText>
-      <CText style={styles.tableCardDetail}>Código de Mesa: {codigo}</CText>
+      <CText style={styles.tableCardTitle}>
+        {searchQuery ? highlightMatch(`Mesa ${tableNumber}`, searchQuery) : `Mesa ${tableNumber}`}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Recinto: {searchQuery ? highlightMatch(recinto, searchQuery) : recinto}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Dirección: {searchQuery ? highlightMatch(direccion, searchQuery) : direccion}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Código de Mesa: {searchQuery ? highlightMatch(codigo, searchQuery) : codigo}
+      </CText>
     </TouchableOpacity>
   );
 };
