@@ -8,9 +8,9 @@ import {
 } from 'react-native';
 import CText from './CText';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const CustomModal = ({
   visible,
@@ -20,6 +20,8 @@ const CustomModal = ({
   type = 'info', // 'success', 'error', 'info', 'warning'
   buttonText = 'Aceptar',
   onButtonPress,
+  secondaryButtonText,   // Nueva prop para el botón secundario
+  onSecondaryPress       // Nueva prop para la acción secundaria
 }) => {
   const getIconConfig = () => {
     switch (type) {
@@ -41,6 +43,12 @@ const CustomModal = ({
           color: '#FF9800',
           backgroundColor: '#FFF3E0',
         };
+      case 'settings':
+        return {
+          name: 'settings',
+          color: '#4F9858',
+          backgroundColor: '#E8F5E9',
+        };
       default: // info
         return {
           name: 'information-circle',
@@ -51,14 +59,6 @@ const CustomModal = ({
   };
 
   const iconConfig = getIconConfig();
-
-  const handleButtonPress = () => {
-    if (onButtonPress) {
-      onButtonPress();
-    } else {
-      onClose();
-    }
-  };
 
   return (
     <Modal
@@ -72,7 +72,7 @@ const CustomModal = ({
           <View
             style={[
               styles.iconContainer,
-              {backgroundColor: iconConfig.backgroundColor},
+              { backgroundColor: iconConfig.backgroundColor },
             ]}>
             <Ionicons
               name={iconConfig.name}
@@ -87,13 +87,42 @@ const CustomModal = ({
           {/* Message */}
           <CText style={styles.message}>{message}</CText>
 
-          {/* Button */}
-          <TouchableOpacity
-            style={[styles.button, {backgroundColor: iconConfig.color}]}
-            onPress={handleButtonPress}
-            activeOpacity={0.8}>
-            <CText style={styles.buttonText}>{buttonText}</CText>
-          </TouchableOpacity>
+          {/* Botones */}
+          <View style={styles.buttonsContainer}>
+            {/* Botón secundario (si existe) */}
+            {secondaryButtonText && (
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.secondaryButton,
+                  { borderColor: iconConfig.color }
+                ]}
+                onPress={onSecondaryPress || onClose}
+                activeOpacity={0.8}>
+                <CText
+                  style={[
+                    styles.buttonText,
+                    styles.secondaryButtonText,
+                    { color: iconConfig.color }
+                  ]}>
+                  {secondaryButtonText}
+                </CText>
+              </TouchableOpacity>
+            )}
+
+            {/* Botón primario */}
+            <TouchableOpacity
+              style={[
+                styles.button,
+                { backgroundColor: iconConfig.color },
+                // Ajustar márgenes si hay botón secundario
+                secondaryButtonText && styles.buttonWithSecondary
+              ]}
+              onPress={onButtonPress || onClose}
+              activeOpacity={0.8}>
+              <CText style={styles.buttonText}>{buttonText}</CText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -147,18 +176,35 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 24,
   },
+  buttonsContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
   button: {
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
     minWidth: 120,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    marginBottom: 12,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
+  secondaryButtonText: {
+    color: '#333', // Color para el texto del botón secundario
+  },
+  buttonWithSecondary: {
+    marginTop: 0, // Eliminar margen adicional si hay botón secundario
+  }
 });
 
 export default CustomModal;
