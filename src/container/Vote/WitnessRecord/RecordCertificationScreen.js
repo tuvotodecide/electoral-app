@@ -134,6 +134,31 @@ const RecordCertificationScreen = () => {
     setStep(1);
 
     try {
+      const isRegistered = await oracleReads.isRegistered(
+        CHAIN,
+        userData.account,
+        1
+      );
+
+      if (!isRegistered) {
+        await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.requestRegister(CHAIN, "")
+        );
+
+        const isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          20
+        );
+
+        if (!isRegistered) {
+          throw Error('Failed to register user on oracle');
+        }
+      }
+
       const response = await executeOperation(
         userData.privKey,
         userData.account,
