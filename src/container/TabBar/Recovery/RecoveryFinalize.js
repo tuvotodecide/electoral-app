@@ -15,7 +15,7 @@ import {useEffect} from 'react';
 import {ActivityIndicator} from 'react-native-paper';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import {saveSecrets} from '../../../utils/Cifrate';
+import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
 import messaging from '@react-native-firebase/messaging';
@@ -36,16 +36,16 @@ export default function RecoveryFinalize({route, navigation}) {
       const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
       const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
       if (!ownerAccount || !guardianCt) return;
-      const {required, current, executed, expired} = await readOnChainApprovals(
-        CHAIN,
-        guardianCt,
-        ownerAccount,
-      );
-      if (current < required) {
-        // aún no alcanzó el umbral → volver a status
-        navigation.goBack();
-        return;
-      }
+      // const {required, current, executed, expired} = await readOnChainApprovals(
+      //   CHAIN,
+      //   guardianCt,
+      //   ownerAccount,
+      // );
+      // if (current < required) {
+      //   // aún no alcanzó el umbral → volver a status
+      //   navigation.goBack();
+      //   return;
+      // }
 
       const {data} = await axios.post(
         `${BACKEND}session/recover/guardian`,
@@ -55,18 +55,34 @@ export default function RecoveryFinalize({route, navigation}) {
       if (!data.ok) {
         return;
       }
+      console.log(data);
 
       await Keychain.setGenericPassword(
         'bundle',
-        JSON.stringify({stored: {payloadQr: data.payload}, jwt: data.token}),
+        JSON.stringify({stored: data.payload, jwt: data.token}),
         {service: 'walletBundle'},
       );
-      await saveSecrets(originalPin, data.payload, false);
+
+      console.log('si');
+
+      const bundle = await createBundleFromPrivKey(
+        originalPin,
+        data.payload.privKey,
+      );
+      console.log(bundle);
+      
+      await saveSecrets(originalPin, data.payload, false, bundle);
+      console.log('si1');
+
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+      console.log('si2');
       dispatch(setSecrets(data.payload));
+      console.log('si3');
       await startSession(data.token);
-      await registerDeviceToken();
-      messaging().onTokenRefresh(registerDeviceToken);
+      console.log('si4');
+      // await registerDeviceToken();
+      // messaging().onTokenRefresh(registerDeviceToken);
+      console.log('aca');
 
       navigation.navigate(AuthNav.LoginUser);
     })();
@@ -76,7 +92,9 @@ export default function RecoveryFinalize({route, navigation}) {
     <CSafeAreaView>
       <View style={localStyle.mainContainer}>
         <ActivityIndicator size="large" />
-        <CText type="B16">{String.finishingRecovery}</CText>
+        <CText type="B16" style={localStyle.message}>
+          {String.finishingRecovery}
+        </CText>
       </View>
     </CSafeAreaView>
   );
@@ -86,8 +104,13 @@ const localStyle = StyleSheet.create({
     ...styles.mt10,
   },
   mainContainer: {
-    ...styles.ph20,
-    ...styles.justifyBetween,
     ...styles.flex,
+    ...styles.ph20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  message: {
+    textAlign: 'center',
+    marginTop: 12,
   },
 });

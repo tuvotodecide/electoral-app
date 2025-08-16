@@ -257,7 +257,9 @@ export default function Guardians({navigation}) {
   );
   return (
     <CSafeAreaView>
-      <CHeader title={String.guardiansTitle} rightIcon={<RightIcon />} />
+      <CHeader title={String.guardiansTitle} 
+      // rightIcon={<RightIcon />} 
+      />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansSubtitle}
