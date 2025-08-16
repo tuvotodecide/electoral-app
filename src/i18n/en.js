@@ -1330,8 +1330,18 @@ export default {
 
   duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
-  goBack: "Volver Atrás",
   genericError: "Ocurrió un error inesperado",
   uploadAnyway: "Subir de todos modos",
-  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema"
+  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema",
+  validationError: "Error de validación en el servidor",
+  invalidActaData: "Datos del acta no válidos",
+  validationFailed: "Validación fallida",
+  validationError400: "Datos de solicitud incorrectos",
+  validationError401: "No autorizado para validar",
+  validationError403: "Acceso denegado",
+  validationError404: "Servicio de validación no encontrado",
+  validationError500: "Error interno del servidor",
+  validationErrorGeneric: "Error en la validación",
+  validationTimeout: "Tiempo de espera agotado",
+  validationNoResponse: "El servidor no respondió",
 };
