@@ -22,7 +22,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import { executeOperation } from '../../../api/account';
-import { CHAIN, BACKEND_RESULT } from '@env';
+import { CHAIN, BACKEND_RESULT, BACKEND_SECRET } from '@env';
 import { oracleCalls, oracleReads } from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
 import { availableNetworks } from '../../../api/params';
@@ -100,8 +100,6 @@ const RecordCertificationScreen = () => {
         }]
       };
 
-      console.log('Subiendo attestation:', payload);
-
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +140,7 @@ const RecordCertificationScreen = () => {
 
       if (!isRegistered) {
         await executeOperation(
-          privateKey,
+          userData.privKey,
           userData.account,
           CHAIN,
           oracleCalls.requestRegister(CHAIN, "")
@@ -158,7 +156,6 @@ const RecordCertificationScreen = () => {
           throw Error('Failed to register user on oracle');
         }
       }
-
       const response = await executeOperation(
         userData.privKey,
         userData.account,
