@@ -58,7 +58,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       { "candidate_id": "MORENA",      "votes": "<n o 0>" },
       { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
-      { "candidate_id": "NGP",      "votes": "<n o 0>" },
     ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
@@ -153,9 +152,8 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
       MORENA: 'morena',
-      'UNIDAD': 'pan-bol',
+      'UNIDAD': 'unidad',
       PDC: 'pdc',
-      NGP: 'ngp',
     };
 
     // Mapear resultados de partidos para presidente
