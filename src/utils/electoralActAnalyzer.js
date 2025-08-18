@@ -29,10 +29,10 @@ class ElectoralActAnalyzer {
     return `Analiza la imagen proporcionada.
 PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana:
   • Logotipo del OEP (esquina superior izquierda).
-  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CÓMPUTO”.
-  • Leyenda “ELECCIONES GENERALES” debajo del título.
-  • Tabla “CÓDIGO DE MESA” con un número grande en la parte izquierda.
-  • Cuadros numerados en rojo para los votos de 9 candidaturas.
+  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CONTEO”.
+  • Leyenda “ELECCIÓN DE AUTORIDADES Y REPRESENTANTES DEL ESTADO PLURINACIONAL 2025” debajo del título.
+  • Tabla “CÓDIGO DE MESA” con un número y un código de barras en la parte izquierda.
+  • Cuadros numerados en azul para "candidate_votes" y en amarillo para "deputy_vote_counts"
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
   {"if_electoral_act": false}
