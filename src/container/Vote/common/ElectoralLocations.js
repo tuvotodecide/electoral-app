@@ -7,7 +7,8 @@ import {
   PermissionsAndroid,
   Platform,
   Dimensions,
-  Linking
+  Linking,
+  TextInput
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
@@ -56,15 +57,81 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [electionStatus, setElectionStatus] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredLocations, setFilteredLocations] = useState([]);
 
   // Get navigation target from route params
   const { targetScreen } = route.params || {};
+
+  const filterLocations = (text) => {
+    setSearchTerm(text);
+
+    if (!text) {
+      setFilteredLocations(locations);
+      return;
+    }
+
+    const lowerText = text.toLowerCase();
+
+    const results = locations.filter(location => {
+      return (
+        location.name?.toLowerCase().includes(lowerText) ||
+        location.code?.toLowerCase().includes(lowerText) ||
+        location.address?.toLowerCase().includes(lowerText) ||
+        location.zone?.toLowerCase().includes(lowerText) ||
+        location.district?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.department?.name?.toLowerCase().includes(lowerText)
+      );
+    });
+
+    setFilteredLocations(results);
+  };
+
+  const renderSearchBar = () => (
+    <View style={styles.searchContainer}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar recinto por nombre, código, calle o distrito"
+        placeholderTextColor="#888"
+        value={searchTerm}
+        onChangeText={filterLocations}
+      />
+      {searchTerm ? (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={() => {
+            setSearchTerm('');
+            setFilteredLocations(locations);
+          }}
+        >
+          <Ionicons name="close-circle" size={20} color="#888" />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+      )}
+    </View>
+  );
+
+  const highlightText = (text, highlight) => {
+    if (!highlight || !text) return text;
+
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase()
+        ? <CText key={index} style={styles.highlightedText}>{part}</CText>
+        : part
+    );
+  };
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${-17.368888}&lng=${-66.125137}&maxDistance=300`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
         { timeout: 15000 } // 10 segundos timeout
       );
       // const response = await axios.get(
@@ -277,6 +344,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       getCurrentLocation();
     }
   }, [electionStatus, getCurrentLocation]);
+  useEffect(() => {
+    setFilteredLocations(locations);
+  }, [locations]);
 
   const showModal = (
     type,
@@ -350,13 +420,14 @@ const ElectoralLocations = ({ navigation, route }) => {
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.8}>
+
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
           <CText style={styles.locationName} numberOfLines={2}>
-            {item.name}
+            {highlightText(item.name, searchTerm)}
           </CText>
           <CText style={styles.locationCode}>
-            {i18nString.code}: {item.code}
+            {i18nString.code}: {highlightText(item.code, searchTerm)}
           </CText>
         </View>
         <View style={styles.distanceContainer}>
@@ -366,12 +437,12 @@ const ElectoralLocations = ({ navigation, route }) => {
       </View>
 
       <CText style={styles.locationAddress} numberOfLines={2}>
-        {item.address}
+        {highlightText(item.address, searchTerm)}
       </CText>
 
       <View style={styles.locationDetails}>
         <CText style={styles.locationZone}>
-          {item.zone} - {item.district}
+          {highlightText(item.zone, searchTerm)} - {highlightText(item.district, searchTerm)}
         </CText>
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
@@ -383,9 +454,9 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       <View style={styles.hierarchyContainer}>
         <CText style={styles.hierarchyText}>
-          {item.electoralSeat?.municipality?.province?.department?.name} →{' '}
-          {item.electoralSeat?.municipality?.province?.name} →{' '}
-          {item.electoralSeat?.municipality?.name} → {item.electoralSeat?.name}
+          {highlightText(item.electoralSeat?.municipality?.province?.department?.name, searchTerm)} →{' '}
+          {highlightText(item.electoralSeat?.municipality?.province?.name, searchTerm)} →{' '}
+          {highlightText(item.electoralSeat?.municipality?.name, searchTerm)} → {highlightText(item.electoralSeat?.name, searchTerm)}
         </CText>
       </View>
     </TouchableOpacity>
@@ -520,6 +591,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     // Caso 4: Periodo de votación activo
     return (
       <>
+        {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
             <ActivityIndicator size="small" color="#4F9858" />
@@ -550,7 +622,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             )}
 
             <FlatList
-              data={locations}
+              data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
               contentContainerStyle={styles.listContainer}
@@ -841,6 +913,38 @@ const styles = {
     marginTop: getResponsiveSize(10, 12, 14),
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  searchInput: {
+    flex: 1,
+    height: getResponsiveSize(40, 45, 50),
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#333',
+    paddingVertical: 0,
+  },
+  searchIcon: {
+    marginLeft: getResponsiveSize(8, 10, 12),
+  },
+  clearButton: {
+    padding: getResponsiveSize(5, 8, 10),
+  },
+  highlightedText: {
+    backgroundColor: 'yellow',
+    color: '#000',
+    fontWeight: 'bold',
   },
 };
 
