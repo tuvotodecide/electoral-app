@@ -2,7 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import RNFS from 'react-native-fs';
 
 // 🔐 API Key de Gemini - mover a variables de entorno en producción
-const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
+// const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
+const API_KEY = 'AIzaSyAUsg3D-hvXvq4k63Dnf-DRfl6iBecnfVg';
 
 class ElectoralActAnalyzer {
   constructor() {
