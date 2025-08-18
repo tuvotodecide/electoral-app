@@ -1,9 +1,9 @@
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
-import { useSelector } from 'react-redux';
+import {Modal, ScrollView, StyleSheet, View} from 'react-native';
+import {useSelector} from 'react-redux';
 
-import { styles } from '../../themes';
-import { moderateScale } from '../../common/constants';
+import {styles} from '../../themes';
+import {moderateScale} from '../../common/constants';
 import CText from '../common/CText';
 import CButton from '../common/CButton';
 
@@ -18,10 +18,22 @@ export default function InfoModal({
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
-      <View style={[base.overlay, { backgroundColor: colors.modalBackground }]}>
-        <View style={[base.container, { backgroundColor: colors.backgroundColor }]}>
-          {title && <CText type="B18" align="center" style={styles.mb20}>{title}</CText>}
-          <CText type="M16" align="center">{message}</CText>
+      <View style={[base.overlay, {backgroundColor: colors.modalBackground}]}>
+        <View
+          style={[base.container, {backgroundColor: colors.backgroundColor}]}>
+          {title && (
+            <CText type="B18" align="center" style={styles.mb20}>
+              {title}
+            </CText>
+          )}
+          <ScrollView
+            style={base.scroll}
+            contentContainerStyle={{alignItems: 'center'}}
+            showsVerticalScrollIndicator={true}>
+            <CText type="M16" align="center">
+              {message}
+            </CText>
+          </ScrollView>
           <CButton
             title={buttonText}
             type="M16"
@@ -46,6 +58,10 @@ const base = StyleSheet.create({
     paddingVertical: moderateScale(20),
     paddingHorizontal: moderateScale(16),
     alignItems: 'center',
+  },
+  scroll: {
+    maxHeight: moderateScale(200),
+    marginBottom: moderateScale(10),
   },
   button: {
     width: '60%',
