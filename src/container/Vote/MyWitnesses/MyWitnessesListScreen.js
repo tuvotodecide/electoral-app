@@ -204,15 +204,23 @@ const MyWitnessesListScreen = () => {
       setHasNoAttestations(false);
     } catch (error) {
       console.error('MyWitnessesListScreen: Error loading witness records:', error);
-      setModalData({
-        title: String.error,
-        message: error.response?.data?.message ||
-          error.message ||
-          String.errorLoadingWitnesses,
-        type: 'error',
-      });
-      setModalVisible(true);
-      setHasNoAttestations(true);
+      if (error.response?.status === 404) {
+        setHasNoAttestations(true);
+        setWitnessRecords([]);
+      } else {
+        // Otros errores sí se muestran en modal
+        setModalData({
+          title: String.error,
+          message:
+            String.errorLoadingWitnesses ||
+            error.response?.data?.message ||
+            error.message
+          ,
+          type: 'error',
+        });
+        setModalVisible(true);
+        setHasNoAttestations(true);
+      }
     } finally {
       setLoading(false);
     }
