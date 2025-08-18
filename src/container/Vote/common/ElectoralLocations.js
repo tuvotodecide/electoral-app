@@ -193,16 +193,16 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   };
 
-  const getCurrentLocation = useCallback(async (retryCount = 0) => {
+  const getCurrentLocation = useCallback(async (retryCount = 0, useHighAccuracy = true) => {
     try {
       setLoadingLocation(true);
 
-      // Show retry message if this is a retry attempt
+      // Mostrar mensaje de reintento si corresponde
       if (retryCount > 0) {
-        console.log(`Retry attempt ${retryCount} for location`);
+        console.log(`Retry attempt ${retryCount} for location (highAccuracy=${useHighAccuracy})`);
       }
 
-      // Request location permission on Android
+      // Pedir permisos en Android
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -214,7 +214,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             buttonNeutral: i18nString.askMeLater || 'Preguntar después',
             buttonNegative: i18nString.cancel || 'Cancelar',
             buttonPositive: i18nString.ok || 'OK',
-          },
+          }
         );
 
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
@@ -225,16 +225,15 @@ const ElectoralLocations = ({ navigation, route }) => {
             i18nString.locationPermissionDeniedMessage,
             i18nString.openSettings,
             () => Linking.openSettings(),
-            i18nString.cancel,   // Botón secundario
-            closeModal           // Acción secundaria
+            i18nString.cancel,
+            closeModal
           );
           setLoadingLocation(false);
           return;
         }
       }
-      //fetchNearbyLocations(-17.3746706, -66.1316081);
 
-      // Get current position
+      // Obtener ubicación
       Geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords;
@@ -245,6 +244,14 @@ const ElectoralLocations = ({ navigation, route }) => {
         error => {
           console.error('Location error:', error);
 
+          // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
+          if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+            console.log('Retrying with low accuracy...');
+            getCurrentLocation(retryCount + 1, false);
+            return;
+          }
+
+          // Manejo de errores final
           let errorMessage = i18nString.locationError;
           let modalTitle = i18nString.error;
           let action = null;
@@ -253,8 +260,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             errorMessage = i18nString.locationPermissionDeniedMessage;
             modalTitle = i18nString.locationPermissionRequired;
             action = () => Linking.openSettings();
-          }
-          else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
+          } else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
             errorMessage = i18nString.locationDisabledMessage;
             modalTitle = i18nString.locationRequired;
             action = openLocationSettings;
@@ -262,33 +268,32 @@ const ElectoralLocations = ({ navigation, route }) => {
 
           showModal(
             'settings',
-            modalTitle,       // Usar el título correcto
-            errorMessage,     // Usar el mensaje correcto
+            modalTitle,
+            errorMessage,
             i18nString.openSettings,
-            action,           // Usar la acción correcta
+            action,
             i18nString.cancel,
             closeModal
           );
+
           setLoadingLocation(false);
           setLoading(false);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-        },
+          enableHighAccuracy: useHighAccuracy,
+          timeout: useHighAccuracy ? 15000 : 30000,   // menos estricto en fallback
+          maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
+        }
       );
+
     } catch (error) {
       console.error('Permission error:', error);
-      showModal(
-        'error',
-        i18nString.error,
-        i18nString.locationPermissionError,
-      );
+      showModal('error', i18nString.error, i18nString.locationPermissionError);
       setLoadingLocation(false);
       setLoading(false);
     }
   }, [fetchNearbyLocations]);
+
 
   const fetchElectionStatus = useCallback(async () => {
     try {
