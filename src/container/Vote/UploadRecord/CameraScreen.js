@@ -25,6 +25,7 @@ import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -158,6 +159,41 @@ export default function CameraScreen({ navigation, route }) {
           : [{ text: 'OK', onPress: () => setModalVisible(false) }],
     });
     setModalVisible(true);
+  };
+
+  const openGallery = async () => {
+    const options = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8,
+    };
+
+    try {
+      const result = await launchImageLibrary(options);
+
+      if (result.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (result.errorCode) {
+        console.log('ImagePicker Error: ', result.errorMessage);
+        Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      } else if (result.assets && result.assets.length > 0) {
+        const selectedPhoto = result.assets[0];
+        let imagePath = selectedPhoto.uri;
+        if (imagePath.startsWith('file://')) {
+          imagePath = imagePath.substring(7);
+        }
+
+        setPhoto({
+          path: imagePath,
+        });
+        setIsActive(false);
+      }
+    } catch (error) {
+      console.error('Error opening gallery: ', error);
+      Alert.alert('Error', 'Hubo un error al abrir la galería');
+    }
   };
 
   // Funciones para manejar zoom y navegación de imagen
@@ -589,6 +625,12 @@ export default function CameraScreen({ navigation, route }) {
                 </CText>
               )}
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.galleryButtonPreview]}
+              onPress={openGallery}>
+              <Ionicons name="image-outline" size={20} color="#fff" />
+              <CText style={styles.actionButtonText}>Galería</CText>
+            </TouchableOpacity>
           </View>
         </>
       ) : (
@@ -886,11 +928,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 200,
     paddingHorizontal: 20,
+    gap: 5,
   },
   captureButton: {
-    width: 180,
+    width: 70,
+    height: 70,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 35,
     backgroundColor: '#4F9858',
     alignItems: 'center',
     justifyContent: 'center',
@@ -975,4 +1019,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  galleryButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  galleryButtonPreview: {
+    backgroundColor: '#5D5D5D',
+  },
+
 });
