@@ -65,7 +65,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     "total_votes":  "<n o 0>"
   },
   "deputy_vote_counts": {
-    "candidate_votes": [ …mismo orden y reglas… ],
+    "candidate_votes": [ …mismo orden y reglas, excepto por FP que no aparece en la imagen, en ese caso poner como valor 0… ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
     "null_votes":   "<n o 0>",
