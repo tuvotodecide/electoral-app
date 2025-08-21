@@ -22,15 +22,15 @@ const PhotoReviewScreen = () => {
     }
 
     return [
-      { id: 'cc', partido: 'C.C.', presidente: '0', diputado: '0' },
-      { id: 'fpv', partido: 'FPV', presidente: '0', diputado: '0' },
-      { id: 'mts', partido: 'MTS', presidente: '0', diputado: '0' },
-      { id: 'ucs', partido: 'UCS', presidente: '0', diputado: '0' },
+      { id: 'ap', partido: 'AP', presidente: '0', diputado: '0' },
+      { id: 'lyp-adn', partido: 'LYP-ADN', presidente: '0', diputado: '0' },
+      { id: 'apbsumate', partido: 'APBSUMATE', presidente: '0', diputado: '0' },
+      { id: 'libre', partido: 'LIBRE', presidente: '0', diputado: '0' },
+      { id: 'fp', partido: 'FP', presidente: '0', diputado: '0' },
       { id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '0', diputado: '0' },
-      { id: '21f', partido: '21F', presidente: '0', diputado: '0' },
+      { id: 'morena', partido: 'MORENA', presidente: '0', diputado: '0' },
+      { id: 'unidad', partido: 'UNIDAD', presidente: '0', diputado: '0' },
       { id: 'pdc', partido: 'PDC', presidente: '0', diputado: '0' },
-      { id: 'mnr', partido: 'MNR', presidente: '0', diputado: '0' },
-      { id: 'pan-bol', partido: 'PAN-BOL', presidente: '0', diputado: '0' },
     ];
   };
 

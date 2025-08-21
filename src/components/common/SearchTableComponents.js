@@ -1,11 +1,11 @@
 import React from 'react';
-import {View, TouchableOpacity, TextInput} from 'react-native';
+import { View, TouchableOpacity, TextInput } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import CText from './CText';
 import UniversalHeader from './UniversalHeader';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
 // Header Component - Now uses UniversalHeader
 export const SearchTableHeader = ({
@@ -32,7 +32,7 @@ export const SearchTableHeader = ({
 );
 
 // Choose Table Text Component
-export const ChooseTableText = ({text = 'Please choose a table:', styles}) => (
+export const ChooseTableText = ({ text = 'Please choose a table:', styles }) => (
   <View style={styles.chooseTableContainer}>
     <CText style={styles.chooseTableText}>{text}</CText>
   </View>
@@ -60,6 +60,7 @@ export const SearchInput = ({
   placeholder = 'Search table',
   value,
   onChangeText,
+  onClear, // Nuevo prop
   styles,
 }) => (
   <View style={styles.searchInputContainer}>
@@ -74,7 +75,7 @@ export const SearchInput = ({
 );
 
 // Table Card Component
-export const TableCard = ({table, onPress, styles, locationData}) => {
+export const TableCard = ({ table, onPress, styles, locationData, searchQuery }) => {
   // Debug: log complete table structure to analyze available fields
   console.log(
     'TableCard: Complete table object:',
@@ -108,23 +109,52 @@ export const TableCard = ({table, onPress, styles, locationData}) => {
   const codigo =
     table.tableCode || table.codigo || table.code || table.id || 'N/A';
 
+  const locationId = locationData.locationId
+
+  const highlightMatch = (text, query) => {
+    if (!query || !text) return text;
+
+    const index = text.toLowerCase().indexOf(query.toLowerCase());
+    if (index === -1) return text;
+
+    return (
+      <>
+        {text.substring(0, index)}
+        <CText style={{ backgroundColor: 'yellow', color: '#000' }}>
+          {text.substring(index, index + query.length)}
+        </CText>
+        {text.substring(index + query.length)}
+      </>
+    );
+  };
+
+
   // Debug: log extracted values to verify mapping
   console.log('TableCard: Extracted values:', {
     tableNumber,
     recinto,
     direccion,
     codigo,
+    locationId
   });
 
   return (
     <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
-      <CText style={styles.tableCardTitle}>Mesa {tableNumber}</CText>
-      <CText style={styles.tableCardDetail}>Recinto: {recinto}</CText>
-      <CText style={styles.tableCardDetail}>Dirección: {direccion}</CText>
-      <CText style={styles.tableCardDetail}>Código de Mesa: {codigo}</CText>
+      <CText style={styles.tableCardTitle}>
+        {searchQuery ? highlightMatch(`Mesa ${tableNumber}`, searchQuery) : `Mesa ${tableNumber}`}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Recinto: {searchQuery ? highlightMatch(recinto, searchQuery) : recinto}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Dirección: {searchQuery ? highlightMatch(direccion, searchQuery) : direccion}
+      </CText>
+      <CText style={styles.tableCardDetail}>
+        Código de Mesa: {searchQuery ? highlightMatch(codigo, searchQuery) : codigo}
+      </CText>
     </TouchableOpacity>
   );
 };
 
 // Export UniversalHeader for use in other components
-export {default as UniversalHeader} from './UniversalHeader';
+export { default as UniversalHeader } from './UniversalHeader';

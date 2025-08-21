@@ -1100,7 +1100,7 @@ export default {
   validVotes: 'Válidos',
   blankVotes: 'Blancos',
   nullVotes: 'Nulos',
-  goBack: 'Volver',
+  goBack: 'Cerrar',
   witnessDetail: 'Detalle del Atestiguamiento',
   attestedResults: 'Resultados atestiguados de {tableName} - {precinctName}',
   registeredVotes: 'Los votos registrados de la mesa',
@@ -1127,6 +1127,7 @@ export default {
     '¿Estás seguro de que deseas\nCertificar la información?',
   pleaseWait: 'Por favor, espere.....',
   savingToBlockchain: 'La información se está guardando en la Blockchain',
+  alreadyAttested: 'Ya atestiguó en esta mesa',
 
   // UploadRecord
   ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',
@@ -1141,7 +1142,7 @@ export default {
   i: 'Yo',
   publishAndCertify: 'Publico y Certifico',
   actaCorrectConfirmation:
-    'que es la ACTA CORRECTA de la {tableNumber} ubicada en {location}',
+    'que es la ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}',
   publishAndCertifyConfirmation:
     '¿Estás seguro de que deseas publicar y certificar la información?',
 
@@ -1329,6 +1330,24 @@ export default {
 
   duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
-  goBack: "Volver Atrás",
-  uploadAnyway: "Subir Igual"
+  genericError: "Ocurrió un error inesperado",
+  uploadAnyway: "Subir de todos modos",
+  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema",
+  validationError: "Error de validación en el servidor",
+  invalidActaData: "Datos del acta no válidos",
+  validationFailed: "Validación fallida",
+  validationError400: "Datos de solicitud incorrectos",
+  validationError401: "No autorizado para validar",
+  validationError403: "Acceso denegado",
+  validationError404: "Servicio de validación no encontrado",
+  validationError500: "Error interno del servidor",
+  validationErrorGeneric: "Error en la validación",
+  validationTimeout: "Tiempo de espera agotado",
+  validationNoResponse: "El servidor no respondió",
+  cancel: 'Cancelar',
+  openSettings: 'Abrir configuración',
+  locationRequired: 'Ubicación requerida',
+  locationPermissionRequired: 'Permiso de ubicación',
+  locationDisabledMessage: 'El GPS está desactivado. Active la ubicación del dispositivo para continuar',
+  locationPermissionDeniedMessage: 'La aplicación no tiene permisos de ubicación. Active los permisos en configuración',
 };

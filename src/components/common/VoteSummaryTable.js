@@ -1,9 +1,9 @@
 import React from 'react';
-import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
+import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
+import { moderateScale } from '../../common/constants';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,7 +16,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Vote Summary Row Component
-export const VoteSummaryRow = ({item, isEditing, onUpdate}) => (
+export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
   <View style={styles.voteSummaryTableRow}>
     <CText style={styles.voteSummaryLabel}>{item.label}</CText>
     <View style={styles.voteSummaryValueContainer}>
@@ -56,7 +56,7 @@ export const VoteSummaryTable = ({
     <CText style={styles.voteSummaryTableTitle}>Votos</CText>
     {voteSummaryResults.map((item, index) => (
       <VoteSummaryRow
-        key={item.id}
+        key={index}
         item={item}
         isEditing={isEditing}
         onUpdate={onUpdate}
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 24, 32),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     paddingTop: getResponsiveSize(4, 12, 16),

@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import RNFS from 'react-native-fs';
 
 // 🔐 API Key de Gemini - mover a variables de entorno en producción
-const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';  
+const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
 
 class ElectoralActAnalyzer {
   constructor() {
@@ -29,10 +29,10 @@ class ElectoralActAnalyzer {
     return `Analiza la imagen proporcionada.
 PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana:
   • Logotipo del OEP (esquina superior izquierda).
-  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CÓMPUTO”.
-  • Leyenda “ELECCIONES GENERALES” debajo del título.
-  • Tabla “CÓDIGO DE MESA” con un número grande en la parte izquierda.
-  • Cuadros numerados en rojo para los votos de 9 candidaturas.
+  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CONTEO”.
+  • Leyenda “ELECCIÓN DE AUTORIDADES Y REPRESENTANTES DEL ESTADO PLURINACIONAL 2025” debajo del título.
+  • Tabla “CÓDIGO DE MESA” con un número y un código de barras en la parte izquierda.
+  • Cuadros numerados en azul para "candidate_votes" y en amarillo para "deputy_vote_counts"
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
   {"if_electoral_act": false}
@@ -49,15 +49,15 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
   "table_code": "<código de mesa, parte superior izquierda>",
   "president_vote_counts": {
     "candidate_votes": [
-      { "candidate_id": "C.C.",     "votes": "<n o 0>" },
-      { "candidate_id": "FPV",      "votes": "<n o 0>" },
-      { "candidate_id": "MTS",      "votes": "<n o 0>" },
-      { "candidate_id": "UCS",      "votes": "<n o 0>" },
-      { "candidate_id": "MAS-IPSP", "votes": "<n o 0>" },
-      { "candidate_id": "21F",      "votes": "<n o 0>" },
+      { "candidate_id": "AP",     "votes": "<n o 0>" },
+      { "candidate_id": "LYP-ADN",      "votes": "<n o 0>" },
+      { "candidate_id": "APBSUMATE", "votes": "<n o 0>" },
+      { "candidate_id": "LIBRE",      "votes": "<n o 0>" },
+      { "candidate_id": "FP",      "votes": "<n o 0>" },
+      { "candidate_id": "MAS-IPSP",  "votes": "<n o 0>" }
+      { "candidate_id": "MORENA",      "votes": "<n o 0>" },
+      { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
-      { "candidate_id": "MNR",      "votes": "<n o 0>" },
-      { "candidate_id": "PAN-BOL",  "votes": "<n o 0>" }
     ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
@@ -65,7 +65,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     "total_votes":  "<n o 0>"
   },
   "deputy_vote_counts": {
-    "candidate_votes": [ …mismo orden y reglas… ],
+    "candidate_votes": [ …mismo orden y reglas, excepto por FP que no aparece en la imagen, en ese caso poner como valor 0… ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
     "null_votes":   "<n o 0>",
@@ -145,15 +145,15 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     }
 
     const partyMapping = {
-      'C.C.': 'cc',
-      FPV: 'fpv',
-      MTS: 'mts',
-      UCS: 'ucs',
+      AP: 'ap',
+      'LYP-ADN': 'lyp-adn',
+      APBSUMATE: 'apbsumate',
+      LIBRE: 'libre',
+      FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
-      '21F': '21f',
+      MORENA: 'morena',
+      'UNIDAD': 'unidad',
       PDC: 'pdc',
-      MNR: 'mnr',
-      'PAN-BOL': 'pan-bol',
     };
 
     // Mapear resultados de partidos para presidente

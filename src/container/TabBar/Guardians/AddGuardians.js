@@ -82,7 +82,7 @@ export default function AddGuardians({navigation}) {
     console.log(guardianCt);
 
     try {
-      await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
+      // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
       const data = await sendInvitation({
         guardianId: candidate.did,
         nickname: nick,

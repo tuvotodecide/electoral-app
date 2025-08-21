@@ -118,6 +118,72 @@ const BaseSearchTableScreen = ({
   const finalOnPress = onTablePress || onMesaPress;
   const finalChooseText = chooseTableText || chooseMesaText;
 
+  const [internalSearch, setInternalSearch] = React.useState('');
+  const actualSearchValue = searchValue !== undefined ? searchValue : internalSearch;
+  const actualOnSearchChange = onSearchChange || setInternalSearch;
+  const [searchText, setSearchText] = React.useState('');
+
+  const getSearchFields = (table) => {
+    const tableNumber = (
+      table.tableNumber?.toString() ||
+      table.numero?.toString() ||
+      table.number?.toString() ||
+      ''
+    ).toLowerCase().trim();
+
+    const tableCode = (
+      table.tableCode?.toString() ||
+      table.codigo?.toString() ||
+      table.code?.toString() ||
+      ''
+    ).toLowerCase().trim();
+
+    const recinto = (
+      locationData?.name ||
+      table.recinto ||
+      table.venue ||
+      table.precinctName ||
+      ''
+    ).toLowerCase().trim();
+
+    const direccion = (
+      locationData?.address ||
+      table.direccion ||
+      table.address ||
+      table.provincia ||
+      ''
+    ).toLowerCase().trim();
+
+    return { tableNumber, tableCode, recinto, direccion };
+  };
+
+  // Función para obtener el recinto de una mesa
+  const getRecintoForTable = (table) => {
+    return locationData?.name ||
+      table.recinto ||
+      table.venue ||
+      table.precinctName ||
+      '';
+  };
+
+  // Filtrar mesas basado en el texto de búsqueda
+  const filteredTables = finalTables.filter(table => {
+    if (!searchText.trim()) return true;
+
+    const searchLower = searchText.toLowerCase().trim();
+    const { tableNumber, tableCode, recinto, direccion } = getSearchFields(table);
+
+    // Buscar en todos los campos relevantes
+    return (
+      tableNumber.includes(searchLower) ||
+      tableCode.includes(searchLower) ||
+      recinto.includes(searchLower) ||
+      direccion.includes(searchLower) ||
+      `mesa ${tableNumber}`.includes(searchLower) // Para buscar "mesa 1"
+    );
+  });
+
+
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
@@ -153,6 +219,7 @@ const BaseSearchTableScreen = ({
       name: locationData?.name || mesa.name || 'N/A',
       address: locationData?.address || mesa.address || 'N/A',
       district: locationData?.district || mesa.district || 'N/A',
+      locationId: locationData?.locationId || 'N/A'
     };
 
     // Get table code for API call
@@ -171,7 +238,7 @@ const BaseSearchTableScreen = ({
 
       // Check if mesa has existing attestations
       const response = await axios.get(`${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
-        { timeout: 10000 } // 10 segundos timeout
+        { timeout: 15000 } // 10 segundos timeout
       );
       console.log('API response:', JSON.stringify(response.data, null, 2));
 
@@ -291,50 +358,44 @@ const BaseSearchTableScreen = ({
       setIsVerifying(false);
     }
   };
+
+
   const renderSearchAndLocation = () => {
     const containerStyle = {
       paddingHorizontal: getResponsiveSize(12, 16, 20),
       marginVertical: getResponsiveSize(8, 12, 16),
     };
 
-    if (showLocationFirst) {
-      return (
-        <View style={containerStyle}>
-          <LocationInfoBar
-            text={locationText}
-            iconColor={locationIconColor}
-            styles={styles}
-          />
-          <SearchInput
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            onChangeText={onSearchChange}
-            styles={styles}
-          />
-        </View>
-      );
-    } else {
-      return (
-        <View style={containerStyle}>
-          <SearchInput
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            onChangeText={onSearchChange}
-            styles={styles}
-          />
-          <LocationInfoBar
-            text={locationText}
-            iconColor={locationIconColor}
-            styles={styles}
-          />
-        </View>
-      );
-    }
+    return (
+      <View style={containerStyle}>
+        <SearchInput
+          placeholder={searchPlaceholder || "Buscar mesa, código o recinto..."}
+          value={searchText}
+          onChangeText={setSearchText}
+          onClear={() => setSearchText('')}
+          styles={styles}
+        />
+        <LocationInfoBar
+          text={locationText}
+          iconColor={locationIconColor}
+          styles={styles}
+        />
+      </View>
+    );
   };
 
   const renderTablesList = () => {
-    if (!finalTables || finalTables.length === 0) {
-      return null;
+    if (!filteredTables || filteredTables.length === 0) {
+      // Mostrar mensaje cuando no hay resultados
+      return (
+        <View style={[styles.noResultsContainer, { padding: 20 }]}>
+          <CText style={[styles.noResultsText, { fontSize: 16, color: '#666' }]}>
+            {searchText.trim() ?
+              "No se encontraron mesas que coincidan con la búsqueda" :
+              "No hay mesas disponibles"}
+          </CText>
+        </View>
+      );
     }
 
     const layout = getCardLayout();
@@ -348,26 +409,30 @@ const BaseSearchTableScreen = ({
           contentContainerStyle={{
             paddingBottom: getResponsiveSize(20, 30, 40),
           }}>
-          {finalTables.map((table, index) => (
-            <View
-              key={table.id || table._id || table.codigo || table.code || index}
-              style={{
-                paddingHorizontal: layout.paddingHorizontal,
-                marginBottom: layout.marginBottom,
-              }}>
-              <TableCard
-                table={table}
-                onPress={handleTablePress}
-                locationData={locationData}
-                styles={{
-                  tableCard: styles.tableCard || styles.mesaCard,
-                  tableCardTitle: styles.tableCardTitle || styles.mesaCardTitle,
-                  tableCardDetail:
-                    styles.tableCardDetail || styles.mesaCardDetail,
-                }}
-              />
-            </View>
-          ))}
+          {filteredTables.map((table, index) => {
+            const searchFields = getSearchFields(table);
+
+            return (
+              <View
+                key={table.id || table._id || table.codigo || table.code || index}
+                style={{
+                  paddingHorizontal: layout.paddingHorizontal,
+                  marginBottom: layout.marginBottom,
+                }}>
+                <TableCard
+                  table={table}
+                  onPress={handleTablePress}
+                  locationData={locationData}
+                  searchQuery={searchText} // Pasar el texto de búsqueda
+                  styles={{
+                    tableCard: styles.tableCard || styles.mesaCard,
+                    tableCardTitle: styles.tableCardTitle || styles.mesaCardTitle,
+                    tableCardDetail: styles.tableCardDetail || styles.mesaCardDetail,
+                  }}
+                />
+              </View>
+            );
+          })}
         </ScrollView>
       );
     } else {

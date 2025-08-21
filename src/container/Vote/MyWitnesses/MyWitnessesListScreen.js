@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,18 +8,21 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {fetchUserAttestations} from '../../../api/account';
+import { moderateScale } from '../../../common/constants';
+import { StackNav } from '../../../navigation/NavigationKey';
+//import {fetchUserAttestations} from '../../../api/account';
 
-const {width: screenWidth} = Dimensions.get('window');
+import axios from 'axios';
+import { BACKEND_RESULT } from '@env';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -36,7 +39,10 @@ const MyWitnessesListScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   // const userInfo = useSelector(state => state.user.userInfo); // Get user info from Redux
-  const {mesaData} = route.params || {};
+  const { mesaData } = route.params || {};
+
+  const userData = useSelector(state => state.wallet.payload);
+  const dni = userData?.dni;
 
   // Estados para la carga de datos
   const [witnessRecords, setWitnessRecords] = useState([]);
@@ -48,69 +54,173 @@ const MyWitnessesListScreen = () => {
 
   // Cargar atestiguamientos al montar el componente
   useEffect(() => {
-    loadWitnessRecords();
-  }, []);
+    if (dni) {
+      loadWitnessRecords();
+    } else {
+      setLoading(false);
+      setHasNoAttestations(true);
+      setModalData({
+        title: String.error,
+        message: 'DNI del usuario no disponible',
+        type: 'error',
+      });
+      setModalVisible(true);
+    }
+  }, [dni]);
 
   const loadWitnessRecords = async () => {
     setLoading(true);
     setHasNoAttestations(false);
-    
+
     try {
-      // Get user ID from Redux store or use default
-      // const userId = userInfo?.id || userInfo?.userId || '1'; // Default to '1' for testing
-      const userId = "1"
-      console.log('MyWitnessesListScreen: Fetching witness records for user:', userId);
-      
-      const response = await fetchUserAttestations(userId);
-      if (response.success) {
-        console.log('MyWitnessesListScreen: Data loaded successfully:', response.data);
-        
-        const attestationsData = response.data.attestations || [];
-        
-        if (attestationsData.length === 0) {
-          console.log('MyWitnessesListScreen: No attestations found for user');
-          setHasNoAttestations(true);
-          setWitnessRecords([]);
-        } else {
-          // Transform API data to match component expectations
-          const transformedData = attestationsData.map((attestation, index) => ({
-            id: attestation.recordId || `attestation-${index}`,
-            tableNumber: attestation.tableNumber,
-            tableCode: attestation.tableCode,
-            mesa: `Mesa ${attestation.tableNumber}`,
-            imagen: attestation.actaImage, // Direct IPFS URL
-            fecha: new Date().toLocaleDateString('es-ES'), // You might want to get this from API
-            hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-            partyResults: attestation.partyResults,
-            voteSummaryResults: attestation.voteSummaryResults,
-            idTableContract: attestation.idTableContract,
-            electoralLocationId: attestation.electoralLocationId,
-            recordId: attestation.recordId,
-          }));
-          
-          console.log('MyWitnessesListScreen: Transformed data:', transformedData);
-          setWitnessRecords(transformedData);
-          setHasNoAttestations(false);
-        }
+      console.log('MyWitnessesListScreen: Fetching witness records for DNI:', dni);
+
+      // Paso 1: Obtener los attestations por DNI
+      const attestationsResponse = await axios.get(
+        `${BACKEND_RESULT}/api/v1/attestations/by-user/${dni}`
+      );
+
+      const attestationsData = attestationsResponse.data.data || [];
+
+      if (attestationsData.length === 0) {
+        console.log('MyWitnessesListScreen: No attestations found for user');
+        setHasNoAttestations(true);
+        setWitnessRecords([]);
+        return;
+      }
+
+      // Paso 2: Obtener los detalles de cada ballot usando los ballotIds
+      const ballotsData = await Promise.all(
+        attestationsData.map(async attestation => {
+          try {
+            const ballotResponse = await axios.get(
+              `${BACKEND_RESULT}/api/v1/ballots/${attestation.ballotId}`
+            );
+            return ballotResponse.data;
+          } catch (error) {
+            console.error(`Error fetching ballot ${attestation.ballotId}:`, error);
+            return null;
+          }
+        })
+      );
+
+      // Filtrar resultados nulos y transformar datos
+      const validBallotsData = ballotsData.filter(ballot => ballot !== null);
+
+      if (validBallotsData.length === 0) {
+        setHasNoAttestations(true);
+        setWitnessRecords([]);
+        return;
+      }
+
+      // Transformar datos para la UI
+      const transformedData = validBallotsData.map((ballot, index) => {
+        // Convertir votos de presidente
+        const presidentVotes = (ballot.votes?.parties?.partyVotes || []).map(party => ({
+          partyId: party.partyId,
+          presidente: party.votes ? party.votes.toString() : '0',
+          diputado: '0'
+        }));
+
+        // Convertir votos de diputados
+        const deputyVotes = (ballot.votes?.deputies?.partyVotes || []).map(party => ({
+          partyId: party.partyId,
+          presidente: '0',
+          diputado: party.votes ? party.votes.toString() : '0'
+        }));
+
+        // Consolidar votos por partido
+        const allVotes = [...presidentVotes, ...deputyVotes];
+        const consolidatedPartyResults = allVotes.reduce((acc, current) => {
+          const existing = acc.find(item => item.partyId === current.partyId);
+          if (existing) {
+            // Sumar votos para el mismo partido
+            if (current.presidente) {
+              existing.presidente =
+                (parseInt(existing.presidente) + parseInt(current.presidente)).toString();
+            }
+            if (current.diputado) {
+              existing.diputado =
+                (parseInt(existing.diputado) + parseInt(current.diputado)).toString();
+            }
+          } else {
+            acc.push({
+              partyId: current.partyId,
+              presidente: current.presidente || '0',
+              diputado: current.diputado || '0'
+            });
+          }
+          return acc;
+        }, []);
+
+        // Crear voteSummaryResults
+        const voteSummaryResults = [
+          {
+            label: 'Válidos',
+            value1: ballot.votes?.parties?.validVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.validVotes?.toString() || '0'
+          },
+          {
+            label: 'Blanco',
+            value1: ballot.votes?.parties?.blankVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.blankVotes?.toString() || '0'
+          },
+          {
+            label: 'Nulos',
+            value1: ballot.votes?.parties?.nullVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.nullVotes?.toString() || '0'
+          },
+          {
+            label: 'Total',
+            value1: ballot.votes?.parties?.totalVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.totalVotes?.toString() || '0'
+          }
+        ];
+
+        return {
+          id: ballot._id || `ballot-${index}`,
+          tableNumber: ballot.tableNumber,
+          tableCode: ballot.tableCode,
+          mesa: `Mesa ${ballot.tableNumber}`,
+          imagen: ballot.image
+            ? ballot.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+            : null,
+          fecha: new Date(ballot.createdAt).toLocaleDateString('es-ES'),
+          hora: new Date(ballot.createdAt).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          partyResults: consolidatedPartyResults,
+          voteSummaryResults,
+          idTableContract: ballot._id,
+          electoralLocationId: ballot.electoralLocationId,
+          recordId: ballot.recordId,
+          ballotData: ballot // Guardar datos completos para referencia
+        };
+      });
+
+      console.log('MyWitnessesListScreen: Transformed data:', transformedData);
+      setWitnessRecords(transformedData);
+      setHasNoAttestations(false);
+    } catch (error) {
+      console.error('MyWitnessesListScreen: Error loading witness records:', error);
+      if (error.response?.status === 404) {
+        setHasNoAttestations(true);
+        setWitnessRecords([]);
       } else {
-        console.log('MyWitnessesListScreen: API error:', response.message);
+        // Otros errores sí se muestran en modal
         setModalData({
           title: String.error,
-          message: response.message || String.errorLoadingWitnesses,
+          message:
+            String.errorLoadingWitnesses ||
+            error.response?.data?.message ||
+            error.message
+          ,
           type: 'error',
         });
         setModalVisible(true);
         setHasNoAttestations(true);
       }
-    } catch (error) {
-      console.log('MyWitnessesListScreen: Error loading witness records:', error);
-      setModalData({
-        title: String.connectionError,
-        message: String.connectionErrorMessage,
-        type: 'error',
-      });
-      setModalVisible(true);
-      setHasNoAttestations(true);
     } finally {
       setLoading(false);
     }
@@ -188,8 +298,8 @@ const MyWitnessesListScreen = () => {
             Aún no has realizado ningún atestiguamiento.{'\n'}
             Cuando completes tu primer atestiguamiento, aparecerá aquí.
           </CText>
-          <TouchableOpacity 
-            style={[styles.refreshButton, {backgroundColor: colors.primary || '#459151'}]}
+          <TouchableOpacity
+            style={[styles.refreshButton, { backgroundColor: colors.primary || '#459151' }]}
             onPress={loadWitnessRecords}>
             <CText style={styles.refreshButtonText}>Actualizar</CText>
           </TouchableOpacity>
@@ -200,147 +310,147 @@ const MyWitnessesListScreen = () => {
           showsVerticalScrollIndicator={false}>
           {isTablet
             ? // Two-column layout for tablets
-              (() => {
-                const pairs = [];
-                for (let i = 0; i < witnessRecords.length; i += 2) {
-                  pairs.push(witnessRecords.slice(i, i + 2));
-                }
-                return pairs.map((pair, pairIndex) => (
-                  <View key={pairIndex} style={styles.tabletRow}>
-                    {pair.map(witnessRecord => (
-                      <View key={witnessRecord.id} style={styles.tabletColumn}>
-                        <TouchableOpacity
-                          style={[
-                            styles.imageCard,
-                            selectedImageId === witnessRecord.id &&
-                              styles.imageCardSelected,
-                          ]}
-                          onPress={() => handleImagePress(witnessRecord.id)}>
-                          <View style={styles.imageHeader}>
-                            <CText style={styles.mesaText}>
-                              {witnessRecord.mesa}
-                            </CText>
-                            <CText style={styles.fechaText}>
-                              {witnessRecord.fecha} - {witnessRecord.hora}
-                            </CText>
-                          </View>
-                          <Image
-                            source={{
-                              uri: witnessRecord.imagen,
-                              headers: {
-                                'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
-                                'Accept': 'image/*',
-                              }
-                            }}
-                            style={styles.imageDisplay}
-                            resizeMode="contain"
-                          />
-                          {selectedImageId === witnessRecord.id && (
-                            <>
-                              {/* Corner borders - black color */}
-                              <View
-                                style={[
-                                  styles.cornerBorder,
-                                  styles.topLeftCorner,
-                                ]}
-                              />
-                              <View
-                                style={[
-                                  styles.cornerBorder,
-                                  styles.topRightCorner,
-                                ]}
-                              />
-                              <View
-                                style={[
-                                  styles.cornerBorder,
-                                  styles.bottomLeftCorner,
-                                ]}
-                              />
-                              <View
-                                style={[
-                                  styles.cornerBorder,
-                                  styles.bottomRightCorner,
-                                ]}
-                              />
-                            </>
-                          )}
-                        </TouchableOpacity>
+            (() => {
+              const pairs = [];
+              for (let i = 0; i < witnessRecords.length; i += 2) {
+                pairs.push(witnessRecords.slice(i, i + 2));
+              }
+              return pairs.map((pair, pairIndex) => (
+                <View key={pairIndex} style={styles.tabletRow}>
+                  {pair.map(witnessRecord => (
+                    <View key={witnessRecord.id} style={styles.tabletColumn}>
+                      <TouchableOpacity
+                        style={[
+                          styles.imageCard,
+                          selectedImageId === witnessRecord.id &&
+                          styles.imageCardSelected,
+                        ]}
+                        onPress={() => handleImagePress(witnessRecord.id)}>
+                        <View style={styles.imageHeader}>
+                          <CText style={styles.mesaText}>
+                            {witnessRecord.mesa}
+                          </CText>
+                          <CText style={styles.fechaText}>
+                            {witnessRecord.fecha} - {witnessRecord.hora}
+                          </CText>
+                        </View>
+                        <Image
+                          source={{
+                            uri: witnessRecord.imagen,
+                            headers: {
+                              'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
+                              'Accept': 'image/*',
+                            }
+                          }}
+                          style={styles.imageDisplay}
+                          resizeMode="contain"
+                        />
                         {selectedImageId === witnessRecord.id && (
-                          <TouchableOpacity
-                            style={styles.detailsButton}
-                            onPress={handleVerMas}>
-                            <CText style={styles.detailsButtonText}>
-                              {String.seeMore}
-                            </CText>
-                          </TouchableOpacity>
+                          <>
+                            {/* Corner borders - black color */}
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topRightCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomRightCorner,
+                              ]}
+                            />
+                          </>
                         )}
-                      </View>
-                    ))}
-                    {pair.length === 1 && <View style={styles.tabletColumn} />}
-                  </View>
-                ));
-              })()
-            : // Single column layout for phones
-              witnessRecords.map(witnessRecord => (
-                <React.Fragment key={witnessRecord.id}>
-                  <TouchableOpacity
-                    style={[
-                      styles.imageCard,
-                      selectedImageId === witnessRecord.id &&
-                        styles.imageCardSelected,
-                    ]}
-                    onPress={() => handleImagePress(witnessRecord.id)}>
-                    <View style={styles.imageHeader}>
-                      <CText style={styles.mesaText}>
-                        {witnessRecord.mesa}
-                      </CText>
-                      <CText style={styles.fechaText}>
-                        {witnessRecord.fecha} - {witnessRecord.hora}
-                      </CText>
+                      </TouchableOpacity>
+                      {selectedImageId === witnessRecord.id && (
+                        <TouchableOpacity
+                          style={styles.detailsButton}
+                          onPress={handleVerMas}>
+                          <CText style={styles.detailsButtonText}>
+                            {String.seeMore}
+                          </CText>
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <Image
-                      source={{
-                        uri: witnessRecord.imagen,
-                        headers: {
-                          'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
-                          'Accept': 'image/*',
-                        }
-                      }}
-                      style={styles.imageDisplay}
-                      resizeMode="contain"
-                    />
-                    {selectedImageId === witnessRecord.id && (
-                      <>
-                        {/* Corner borders - black color */}
-                        <View
-                          style={[styles.cornerBorder, styles.topLeftCorner]}
-                        />
-                        <View
-                          style={[styles.cornerBorder, styles.topRightCorner]}
-                        />
-                        <View
-                          style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                        />
-                        <View
-                          style={[
-                            styles.cornerBorder,
-                            styles.bottomRightCorner,
-                          ]}
-                        />
-                      </>
-                    )}
-                  </TouchableOpacity>
+                  ))}
+                  {pair.length === 1 && <View style={styles.tabletColumn} />}
+                </View>
+              ));
+            })()
+            : // Single column layout for phones
+            witnessRecords.map(witnessRecord => (
+              <React.Fragment key={witnessRecord.id}>
+                <TouchableOpacity
+                  style={[
+                    styles.imageCard,
+                    selectedImageId === witnessRecord.id &&
+                    styles.imageCardSelected,
+                  ]}
+                  onPress={() => handleImagePress(witnessRecord.id)}>
+                  <View style={styles.imageHeader}>
+                    <CText style={styles.mesaText}>
+                      {witnessRecord.mesa}
+                    </CText>
+                    <CText style={styles.fechaText}>
+                      {witnessRecord.fecha} - {witnessRecord.hora}
+                    </CText>
+                  </View>
+                  <Image
+                    source={{
+                      uri: witnessRecord.imagen,
+                      headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
+                        'Accept': 'image/*',
+                      }
+                    }}
+                    style={styles.imageDisplay}
+                    resizeMode="contain"
+                  />
                   {selectedImageId === witnessRecord.id && (
-                    <TouchableOpacity
-                      style={styles.detailsButton}
-                      onPress={handleVerMas}>
-                      <CText style={styles.detailsButtonText}>
-                        {String.seeMore}
-                      </CText>
-                    </TouchableOpacity>
+                    <>
+                      {/* Corner borders - black color */}
+                      <View
+                        style={[styles.cornerBorder, styles.topLeftCorner]}
+                      />
+                      <View
+                        style={[styles.cornerBorder, styles.topRightCorner]}
+                      />
+                      <View
+                        style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                      />
+                      <View
+                        style={[
+                          styles.cornerBorder,
+                          styles.bottomRightCorner,
+                        ]}
+                      />
+                    </>
                   )}
-                </React.Fragment>
-              ))}
+                </TouchableOpacity>
+                {selectedImageId === witnessRecord.id && (
+                  <TouchableOpacity
+                    style={styles.detailsButton}
+                    onPress={handleVerMas}>
+                    <CText style={styles.detailsButtonText}>
+                      {String.seeMore}
+                    </CText>
+                  </TouchableOpacity>
+                )}
+              </React.Fragment>
+            ))}
         </ScrollView>
       )}
 
@@ -412,7 +522,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 16),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -527,7 +637,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },

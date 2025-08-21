@@ -25,20 +25,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
+
 const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
 const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+
 const statusColorKey = {
   ACCEPTED: 'activeColor',
   PENDING: 'pendingColor',
   REJECTED: 'rejectedColor',
   REMOVED: 'rejectedColor',
-};
-
-const baseColors = {
-  success: '#4caf50',
-  error: '#f44336',
-  warning: '#ff9800',
-  info: '#2196f3',
 };
 
 export default function MyGuardiansStatus({navigation, route}) {
@@ -48,24 +43,35 @@ export default function MyGuardiansStatus({navigation, route}) {
 
   const [ready, setReady] = useState(false);
 
+  // Mantén tu firma original del hook; el segundo arg puede ser "enabled/ready" según tu implementación
   const {
-    data: detail,
+    data: detailRaw,
     isLoading,
     remove,
   } = useGuardiansRecoveryDetailQuery(deviceId.current, ready);
 
+  // Normaliza para que siempre existan arrays y evita "map of undefined"
+  const safeDetail = useMemo(() => {
+    const d = detailRaw?.data ?? detailRaw ?? {};
+    return {
+      ...d,
+      pending: Array.isArray(d?.pending) ? d.pending : [],
+      approved: Array.isArray(d?.approved) ? d.approved : [],
+      rejected: Array.isArray(d?.rejected) ? d.rejected : [],
+    };
+  }, [detailRaw]);
+
   const guardians = useMemo(() => {
-    if (!detail) return [];
     return [
-      ...detail.pending.map(g => ({...g, status: 'PENDING'})),
-      ...detail.approved.map(g => ({...g, status: 'ACCEPTED'})),
-      ...detail.rejected.map(g => ({...g, status: 'REJECTED'})),
+      ...safeDetail.pending.map((g) => ({...g, status: 'PENDING'})),
+      ...safeDetail.approved.map((g) => ({...g, status: 'ACCEPTED'})),
+      ...safeDetail.rejected.map((g) => ({...g, status: 'REJECTED'})),
     ];
-  }, [detail]);
+  }, [safeDetail.pending, safeDetail.approved, safeDetail.rejected]);
 
   useEffect(() => {
-    console.log(detail);
-  }, [detail]);
+    console.log('detail', safeDetail);
+  }, [safeDetail]);
 
   const statusLabel = {
     ACCEPTED: String.active,
@@ -75,26 +81,19 @@ export default function MyGuardiansStatus({navigation, route}) {
   };
 
   useEffect(() => {
-    if (!detail?.ok) return;
+    if (!safeDetail?.ok) return;
 
-    if (detail.status === 'APPROVED') {
+    if (safeDetail.status === 'APPROVED') {
       navigation.replace(AuthNav.RecoveryUser1Pin, {
         dni,
-        reqId: detail.id,
+        reqId: safeDetail.id,
       });
-    } else if (detail.status === 'REJECTED') {
+    } else if (safeDetail.status === 'REJECTED') {
       remove();
       AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       navigation.replace(AuthNav.SelectRecuperation);
     }
-  }, [detail]);
-
-  useEffect(() => {
-    getDeviceId().then(id => {
-      deviceId.current = id;
-      setReady(true);
-    });
-  }, []);
+  }, [safeDetail, navigation, dni, remove]);
 
   useEffect(() => {
     let t;
@@ -104,21 +103,30 @@ export default function MyGuardiansStatus({navigation, route}) {
       if (!ownerAccount || !guardianCt) return;
 
       try {
-        const {required, current, executed, expired} =
-          await readOnChainApprovals(CHAIN, guardianCt, ownerAccount);
+        const {required, current} = await readOnChainApprovals(
+          CHAIN,
+          guardianCt,
+          ownerAccount,
+        );
         if (current >= required) {
-         navigation.replace(AuthNav.RecoveryUser1Pin, {
-
-          dni,
-           reqId: detail?.id, // opcional
-         });
+          navigation.replace(AuthNav.RecoveryUser1Pin, {
+            dni,
+            reqId: safeDetail?.id, // opcional
+          });
           return;
         }
       } catch (_) {}
       t = setTimeout(poll, 5000);
     })();
     return () => clearTimeout(t);
-  }, [dni, detail?.id]);
+  }, [dni, navigation, safeDetail?.id]);
+
+  useEffect(() => {
+    getDeviceId().then(id => {
+      deviceId.current = id;
+      setReady(true);
+    });
+  }, []);
 
   if (isLoading || !ready) {
     return (
@@ -163,10 +171,7 @@ export default function MyGuardiansStatus({navigation, route}) {
           localStyle.optionContainer,
           {
             backgroundColor: colors.backgroundColor,
-            borderColor: colors.dark
-              ? colors.grayScale700
-              : colors.grayScale200,
-
+            borderColor: colors.dark ? colors.grayScale700 : colors.grayScale200,
             elevation: 5,
           },
         ]}>
@@ -210,7 +215,7 @@ export default function MyGuardiansStatus({navigation, route}) {
 
         <FlatList
           data={guardians}
-          keyExtractor={g => g.guardianId}
+          keyExtractor={(g, i) => g.guardianId || g.id || String(i)}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
         />
@@ -343,5 +348,10 @@ const localStyle = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: moderateScale(10),
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

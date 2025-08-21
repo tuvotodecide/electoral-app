@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -18,8 +19,14 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { moderateScale } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
-import String from '../../../i18n/String';
+import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
+import { executeOperation } from '../../../api/account';
+import { CHAIN, BACKEND_RESULT, BACKEND_SECRET } from '@env';
+import { oracleCalls, oracleReads } from '../../../api/oracle';
+import InfoModal from '../../../components/modal/InfoModal';
+import { availableNetworks } from '../../../api/params';
+import axios from 'axios';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,10 +45,11 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const { tableData } = route.params || {};
+  const { recordId, tableData, mesaInfo } = route.params || {};
 
   console.log('RecordCertificationScreen - Received params:', route.params);
   console.log('RecordCertificationScreen - tableData:', tableData);
+  console.log('MESA INFO ID', mesaInfo._id)
   console.log(
     'RecordCertificationScreen - tableData keys:',
     Object.keys(tableData || {}),
@@ -55,6 +63,11 @@ const RecordCertificationScreen = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -67,9 +80,45 @@ const RecordCertificationScreen = () => {
     name: data.name || '(sin nombre)',
     role: 'Testigo Electoral',
   };
+  console.log("USER DATA", userData.dni)
 
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  const uploadAttestation = async (ballotId) => {
+    try {
+      const url = `${BACKEND_RESULT}/api/v1/attestations`;
+      const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+
+      const payload = {
+        attestations: [{
+          ballotId,
+          support: true,
+          isJury,
+          dni: String(userData.dni)
+        }]
+      };
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET
+        },
+        timeout: 30000 // 30 segundos timeout
+      });
+
+      console.log('Attestation subida exitosamente:', response.data);
+      return true;
+    } catch (error) {
+      console.error('Error subiendo attestation:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      return false;
+    }
   };
 
   const handleCertify = () => {
@@ -78,23 +127,88 @@ const RecordCertificationScreen = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmCertification = () => {
+  const confirmCertification = async () => {
     console.log('RecordCertificationScreen - confirmCertification called');
     setStep(1);
-    // Simulate loading time
-    setTimeout(() => {
-      console.log('RecordCertificationScreen - showing NFT modal');
+
+    try {
+      const isRegistered = await oracleReads.isRegistered(
+        CHAIN,
+        userData.account,
+        1
+      );
+
+      if (!isRegistered) {
+        await executeOperation(
+          userData.privKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.requestRegister(CHAIN, "")
+        );
+
+        const isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          20
+        );
+
+        if (!isRegistered) {
+          throw Error('Failed to register user on oracle');
+        }
+      }
+      const response = await executeOperation(
+        userData.privKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.attest(CHAIN, tableData.codigo, recordId),
+        oracleReads.waitForOracleEvent,
+        'Attested'
+      );
+      console.log(response);
+
+      if (mesaInfo._id) {
+        const uploadSuccess = await uploadAttestation(mesaInfo._id);
+        if (!uploadSuccess) {
+          setInfoModalData({
+            visible: true,
+            title: "Advertencia",
+            message: "Certificación completada en blockchain pero no se pudo registrar los datos"
+          });
+        }
+      } else {
+        console.error('No se encontro _id en mesainfo para subir attestation')
+      }
+
       setShowConfirmModal(false);
       setStep(0);
       // Show NFT modal directly instead of navigating to SuccessScreen
       setShowNFTCertificate(true);
-    }, 2000);
+    } catch (error) {
+      setShowConfirmModal(false);
+      let message = error.message;
+      if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+        message = i18nString.alreadyAttested;
+      }
+      setInfoModalData({
+        visible: true,
+        title: i18nString.error,
+        message,
+      })
+    }
   };
 
   const closeModal = () => {
     setShowConfirmModal(false);
     setStep(0);
   };
+
+  const closeInfoModal = () => {
+    setInfoModalData({
+      visible: false,
+      title: '',
+      message: ''
+    })
+  }
 
   const closeNFTModal = () => {
     setShowNFTCertificate(false);
@@ -112,7 +226,7 @@ const RecordCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table || 'Mesa'} ${tableData?.tableNumber ||
+        title={`${i18nString.table || 'Mesa'} ${tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
@@ -128,10 +242,10 @@ const RecordCertificationScreen = () => {
             <View style={styles.leftColumn}>
               <View style={styles.certificationContainer}>
                 <CText style={styles.certificationTitle}>
-                  {String.actaCertification}
+                  {i18nString.actaCertification}
                 </CText>
                 <CText style={styles.certificationText}>
-                  {(String.certificationText || '')
+                  {(i18nString.certificationText || '')
                     .replace('{userName}', currentUser.name || '')
                     .replace('{userRole}', currentUser.role || '')
                     .replace(
@@ -152,7 +266,7 @@ const RecordCertificationScreen = () => {
                   style={styles.certifyButton}
                   onPress={handleCertify}>
                   <CText style={styles.certifyButtonText}>
-                    {String.certify}
+                    {i18nString.certify}
                   </CText>
                 </TouchableOpacity>
               </View>
@@ -163,10 +277,10 @@ const RecordCertificationScreen = () => {
           <>
             <View style={styles.certificationContainer}>
               <CText style={styles.certificationTitle}>
-                {String.actaCertification}
+                {i18nString.actaCertification}
               </CText>
               <CText style={styles.certificationText}>
-                {(String.certificationText || '')
+                {(i18nString.certificationText || '')
                   .replace('{userName}', currentUser.name || '')
                   .replace('{userRole}', currentUser.role || '')
                   .replace(
@@ -184,7 +298,7 @@ const RecordCertificationScreen = () => {
               <TouchableOpacity
                 style={styles.certifyButton}
                 onPress={handleCertify}>
-                <CText style={styles.certifyButtonText}>{String.certify}</CText>
+                <CText style={styles.certifyButtonText}>{i18nString.certify}</CText>
               </TouchableOpacity>
             </View>
           </>
@@ -209,21 +323,21 @@ const RecordCertificationScreen = () => {
                 </View>
                 <View style={modalStyles.spacer} />
                 <CText style={modalStyles.confirmTitle}>
-                  {String.certifyInfoConfirmation}
+                  {i18nString.certifyInfoConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
-                      {String.cancel}
+                      {i18nString.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>
-                      {String.certify}
+                      {i18nString.certify}
                     </CText>
                   </TouchableOpacity>
                 </View>
@@ -237,10 +351,10 @@ const RecordCertificationScreen = () => {
                   style={modalStyles.loading}
                 />
                 <CText style={modalStyles.loadingTitle}>
-                  {String.pleaseWait}
+                  {i18nString.pleaseWait}
                 </CText>
                 <CText style={modalStyles.loadingSubtext}>
-                  {String.savingToBlockchain}
+                  {i18nString.savingToBlockchain}
                 </CText>
               </>
             )}
@@ -283,6 +397,11 @@ const RecordCertificationScreen = () => {
           </View>
         </View>
       )}
+
+      <InfoModal
+        {...infoModalData}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };
