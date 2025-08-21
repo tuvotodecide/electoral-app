@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,19 +8,19 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { moderateScale } from '../../../common/constants';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {moderateScale} from '../../../common/constants';
+import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -44,10 +44,8 @@ const WhichIsCorrectScreen = () => {
     existingRecords,
     mesaInfo,
     totalRecords,
-    isFromAPI
+    isFromAPI,
   } = route.params || {};
-
-  console.log('WhichIsCorrectScreen - Received params:', route.params);
 
   // State management
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -66,16 +64,18 @@ const WhichIsCorrectScreen = () => {
   const [voteSummaryResults, setVoteSummaryResults] = useState([]);
 
   // Component for handling IPFS images
-  const IPFSImage = ({ image, style, resizeMode = "contain", onError, onLoad }) => {
+  const IPFSImage = ({
+    image,
+    style,
+    resizeMode = 'contain',
+    onError,
+    onLoad,
+  }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const handleImageError = (error) => {
-      console.error('=== IMAGE LOAD ERROR ===');
-      console.error('URL:', image.uri);
-      console.error('Error details:', error.nativeEvent);
-      console.error('Error code:', error.nativeEvent?.error);
-      console.error('======================');
+    const handleImageError = error => {
+
 
       setHasError(true);
       setIsLoading(false);
@@ -83,14 +83,12 @@ const WhichIsCorrectScreen = () => {
     };
 
     const handleImageLoad = () => {
-      console.log('✅ Image loaded successfully:', image.uri);
       setIsLoading(false);
       setHasError(false);
       if (onLoad) onLoad();
     };
 
     const handleLoadStart = () => {
-      console.log('🔄 Starting to load image:', image.uri);
       setIsLoading(true);
       setHasError(false);
     };
@@ -114,8 +112,8 @@ const WhichIsCorrectScreen = () => {
             uri: image.uri,
             headers: {
               'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
-              'Accept': 'image/*',
-            }
+              Accept: 'image/*',
+            },
           }}
           style={[style, isLoading && styles.imageLoading]}
           resizeMode={resizeMode}
@@ -125,7 +123,10 @@ const WhichIsCorrectScreen = () => {
         />
         {isLoading && (
           <View style={[style, styles.imageLoadingOverlay]}>
-            <ActivityIndicator size="small" color={colors.primary || '#4F9858'} />
+            <ActivityIndicator
+              size="small"
+              color={colors.primary || '#4F9858'}
+            />
             <CText style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
@@ -137,14 +138,8 @@ const WhichIsCorrectScreen = () => {
 
   // Load actas when component mounts
   useEffect(() => {
-    console.log('WhichIsCorrectScreen - useEffect triggered with tableData:', tableData);
-    console.log('WhichIsCorrectScreen - isFromAPI:', isFromAPI);
-    console.log('WhichIsCorrectScreen - preloadedActaImages:', preloadedActaImages);
-    console.log('WhichIsCorrectScreen - existingRecords:', existingRecords);
-
     // If we have preloaded acta images from API, use them directly
     if (isFromAPI && preloadedActaImages && preloadedActaImages.length > 0) {
-      console.log('Using preloaded acta images from API');
       setActaImages(preloadedActaImages);
       setIsLoadingActas(false);
       return;
@@ -152,7 +147,6 @@ const WhichIsCorrectScreen = () => {
 
     // If we don't have API data and have a photoUri, create a single acta image
     if (photoUri) {
-      console.log('WhichIsCorrectScreen - Using provided photoUri');
       setActaImages([
         {
           id: '1',
@@ -163,8 +157,6 @@ const WhichIsCorrectScreen = () => {
       return;
     }
 
-    // If we reach here, we don't have sufficient data
-    console.warn('WhichIsCorrectScreen - No valid data provided');
     setActaImages([]);
     setPartyResults([]);
     setVoteSummaryResults([]);
@@ -172,7 +164,7 @@ const WhichIsCorrectScreen = () => {
   }, [tableData, photoUri, isFromAPI, preloadedActaImages, existingRecords]);
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({ type, title, message, buttonText });
+    setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
 
@@ -205,13 +197,15 @@ const WhichIsCorrectScreen = () => {
         });
       }
     } else {
-      showModal('warning', String.selectionRequired, String.pleaseSelectImageFirst);
+      showModal(
+        'warning',
+        String.selectionRequired,
+        String.pleaseSelectImageFirst,
+      );
     }
   };
 
   const handleCorrectActaSelected = actaId => {
-    console.log('WhichIsCorrectScreen - Correct acta selected:', actaId);
-    console.log('WhichIsCorrectScreen - Available acta IDs:', actaImages.map(img => img.id));
     // Clear any previous selection and set the new one
     setSelectedImageId(null);
     setConfirmedCorrectActa(actaId);
@@ -219,7 +213,6 @@ const WhichIsCorrectScreen = () => {
   };
 
   const handleUploadNewActa = () => {
-    console.log('WhichIsCorrectScreen - Upload new acta requested');
     navigation.navigate(StackNav.TableDetail, {
       tableData: tableData,
       isFromUnifiedFlow: true,
@@ -229,30 +222,32 @@ const WhichIsCorrectScreen = () => {
 
   const handleContinueWithSelectedActa = () => {
     if (confirmedCorrectActa) {
-      const selectedImage = actaImages.find(img => img.id === confirmedCorrectActa);
+      const selectedImage = actaImages.find(
+        img => img.id === confirmedCorrectActa,
+      );
       if (selectedImage) {
         // Transformar voteSummaryResults a array aquí
         const transformedVoteSummary = [
           {
             label: 'Válidos',
             value1: selectedImage.voteSummaryResults?.presValidVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depValidVotes || 0
+            value2: selectedImage.voteSummaryResults?.depValidVotes || 0,
           },
           {
             label: 'Blancos',
             value1: selectedImage.voteSummaryResults?.presBlankVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depBlankVotes || 0
+            value2: selectedImage.voteSummaryResults?.depBlankVotes || 0,
           },
           {
             label: 'Nulos',
             value1: selectedImage.voteSummaryResults?.presNullVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depNullVotes || 0
+            value2: selectedImage.voteSummaryResults?.depNullVotes || 0,
           },
           {
             label: 'Total',
             value1: selectedImage.voteSummaryResults?.presTotalVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depTotalVotes || 0
-          }
+            value2: selectedImage.voteSummaryResults?.depTotalVotes || 0,
+          },
         ];
 
         navigation.navigate('RecordReviewScreen', {
@@ -268,24 +263,21 @@ const WhichIsCorrectScreen = () => {
   };
 
   const handleChangeOpinion = () => {
-    console.log('WhichIsCorrectScreen - Change opinion requested');
     setConfirmedCorrectActa(null);
     setShowConfirmationView(false);
     setSelectedImageId(null);
   };
 
   const handleDatosNoCorrectos = () => {
-    console.log('Estos datos no son correctos pressed');
-
     if (isFromAPI) {
       // If we came from API, go to camera to add new acta
-      console.log('WhichIsCorrectScreen - Redirecting to camera to add new acta');
+
       navigation.navigate(StackNav.CameraScreen, {
         tableData: tableData,
         mesa: tableData,
         mesaData: tableData,
         existingActas: actaImages,
-        isAddingToExisting: actaImages.length > 0
+        isAddingToExisting: actaImages.length > 0,
       });
     } else {
       // For legacy cases without API data, show info modal
@@ -298,11 +290,12 @@ const WhichIsCorrectScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${tableData?.tableNumber ||
+        title={`${String.table} ${
+          tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
-          }`}
+        }`}
         showNotification={true}
       />
 
@@ -313,17 +306,22 @@ const WhichIsCorrectScreen = () => {
             <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
           </View>
 
-          <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.imageList}
+            showsVerticalScrollIndicator={false}>
             {actaImages.map(image => {
               const isCorrect = image.id === confirmedCorrectActa;
-              console.log(`WhichIsCorrectScreen - CONFIRMATION VIEW - Image ${image.id}: isCorrect=${isCorrect}, confirmedCorrectActa=${confirmedCorrectActa}`);
 
               return (
-                <View key={`confirmation-${image.id}`} style={styles.confirmationImageContainer}>
+                <View
+                  key={`confirmation-${image.id}`}
+                  style={styles.confirmationImageContainer}>
                   <View
                     style={[
                       styles.imageCard,
-                      isCorrect ? styles.imageCardCorrect : styles.imageCardIncorrect,
+                      isCorrect
+                        ? styles.imageCardCorrect
+                        : styles.imageCardIncorrect,
                     ]}>
                     <IPFSImage
                       image={image}
@@ -352,17 +350,29 @@ const WhichIsCorrectScreen = () => {
           {/* Confirmation Buttons */}
           <View style={styles.confirmationButtonsContainer}>
             <TouchableOpacity
-              style={[styles.continueButton, { backgroundColor: colors.primary || '#4F9858' }]}
+              style={[
+                styles.continueButton,
+                {backgroundColor: colors.primary || '#4F9858'},
+              ]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
-              <CText style={styles.continueButtonText}>{String.continueButton}</CText>
+              <CText style={styles.continueButtonText}>
+                {String.continueButton}
+              </CText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.changeOpinionButton, { borderColor: colors.textSecondary }]}
+              style={[
+                styles.changeOpinionButton,
+                {borderColor: colors.textSecondary},
+              ]}
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
-              <CText style={[styles.changeOpinionButtonText, { color: colors.textSecondary }]}>
+              <CText
+                style={[
+                  styles.changeOpinionButtonText,
+                  {color: colors.textSecondary},
+                ]}>
                 Cambiar de opinión
               </CText>
             </TouchableOpacity>
@@ -376,7 +386,9 @@ const WhichIsCorrectScreen = () => {
             {isFromAPI && actaImages.length > 0 && (
               <View style={styles.apiInfoContainer}>
                 <CText style={styles.apiInfoText}>
-                  Se encontraron {actaImages.length} acta{actaImages.length > 1 ? 's' : ''} atestiguada{actaImages.length > 1 ? 's' : ''} para esta mesa
+                  Se encontraron {actaImages.length} acta
+                  {actaImages.length > 1 ? 's' : ''} atestiguada
+                  {actaImages.length > 1 ? 's' : ''} para esta mesa
                 </CText>
               </View>
             )}
@@ -384,7 +396,10 @@ const WhichIsCorrectScreen = () => {
 
           {isLoadingActas ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+              <ActivityIndicator
+                size="large"
+                color={colors.primary || '#4F9858'}
+              />
               <CText style={styles.loadingText}>{String.loadingActas}</CText>
             </View>
           ) : actaImages.length === 0 ? (
@@ -393,108 +408,153 @@ const WhichIsCorrectScreen = () => {
                 No se encontraron imágenes para mostrar
               </CText>
               <CText style={styles.debugText}>
-                Debug: isFromAPI={String(isFromAPI)}, preloadedLength={preloadedActaImages?.length || 0}
+                Debug: isFromAPI={String(isFromAPI)}, preloadedLength=
+                {preloadedActaImages?.length || 0}
               </CText>
             </View>
           ) : (
-            <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.imageList}
+              showsVerticalScrollIndicator={false}>
               {isTablet
                 ? // Two-column layout for tablets
-                (() => {
-                  const pairs = [];
-                  for (let i = 0; i < actaImages.length; i += 2) {
-                    pairs.push(actaImages.slice(i, i + 2));
-                  }
-                  return pairs.map((pair, pairIndex) => (
-                    <View key={pairIndex} style={styles.tabletRow}>
-                      {pair.map(image => (
-                        <View key={image.id} style={styles.tabletColumn}>
-                          <TouchableOpacity
-                            style={[
-                              styles.imageCard,
-                              selectedImageId === image.id && styles.imageCardSelected,
-                            ]}
-                            onPress={() => handleImagePress(image.id)}>
-                            <IPFSImage
-                              image={image}
-                              style={styles.imageDisplay}
-                              resizeMode="contain"
-                            />
-                            {selectedImageId === image.id && (
-                              <>
-                                <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                                <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                                <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                                <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
-                              </>
-                            )}
-                          </TouchableOpacity>
-                          {selectedImageId === image.id && (
+                  (() => {
+                    const pairs = [];
+                    for (let i = 0; i < actaImages.length; i += 2) {
+                      pairs.push(actaImages.slice(i, i + 2));
+                    }
+                    return pairs.map((pair, pairIndex) => (
+                      <View key={pairIndex} style={styles.tabletRow}>
+                        {pair.map(image => (
+                          <View key={image.id} style={styles.tabletColumn}>
                             <TouchableOpacity
-                              style={styles.detailsButton}
-                              onPress={handleVerMasDetalles}>
-                              <CText style={styles.detailsButtonText}>
-                                {String.seeMoreDetails}
-                              </CText>
+                              style={[
+                                styles.imageCard,
+                                selectedImageId === image.id &&
+                                  styles.imageCardSelected,
+                              ]}
+                              onPress={() => handleImagePress(image.id)}>
+                              <IPFSImage
+                                image={image}
+                                style={styles.imageDisplay}
+                                resizeMode="contain"
+                              />
+                              {selectedImageId === image.id && (
+                                <>
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topRightCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomRightCorner,
+                                    ]}
+                                  />
+                                </>
+                              )}
                             </TouchableOpacity>
-                          )}
-                        </View>
-                      ))}
-                      {pair.length === 1 && <View style={styles.tabletColumn} />}
-                    </View>
-                  ));
-                })()
+                            {selectedImageId === image.id && (
+                              <TouchableOpacity
+                                style={styles.detailsButton}
+                                onPress={handleVerMasDetalles}>
+                                <CText style={styles.detailsButtonText}>
+                                  {String.seeMoreDetails}
+                                </CText>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        ))}
+                        {pair.length === 1 && (
+                          <View style={styles.tabletColumn} />
+                        )}
+                      </View>
+                    ));
+                  })()
                 : // Single column layout for phones
-                actaImages.map(image => (
-                  <React.Fragment key={image.id}>
-                    <TouchableOpacity
-                      style={[
-                        styles.imageCard,
-                        selectedImageId === image.id && styles.imageCardSelected,
-                      ]}
-                      onPress={() => handleImagePress(image.id)}>
-                      <IPFSImage
-                        image={image}
-                        style={styles.imageDisplay}
-                        resizeMode="contain"
-                      />
-                      {selectedImageId === image.id && (
-                        <>
-                          <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                          <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                          <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                          <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
-                        </>
-                      )}
-                    </TouchableOpacity>
-                    {selectedImageId === image.id && (
+                  actaImages.map(image => (
+                    <React.Fragment key={image.id}>
                       <TouchableOpacity
-                        style={styles.detailsButton}
-                        onPress={handleVerMasDetalles}>
-                        <CText style={styles.detailsButtonText}>
-                          {String.seeMoreDetails}
-                        </CText>
+                        style={[
+                          styles.imageCard,
+                          selectedImageId === image.id &&
+                            styles.imageCardSelected,
+                        ]}
+                        onPress={() => handleImagePress(image.id)}>
+                        <IPFSImage
+                          image={image}
+                          style={styles.imageDisplay}
+                          resizeMode="contain"
+                        />
+                        {selectedImageId === image.id && (
+                          <>
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topRightCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomRightCorner,
+                              ]}
+                            />
+                          </>
+                        )}
                       </TouchableOpacity>
-                    )}
-                  </React.Fragment>
-                ))}
+                      {selectedImageId === image.id && (
+                        <TouchableOpacity
+                          style={styles.detailsButton}
+                          onPress={handleVerMasDetalles}>
+                          <CText style={styles.detailsButtonText}>
+                            {String.seeMoreDetails}
+                          </CText>
+                        </TouchableOpacity>
+                      )}
+                    </React.Fragment>
+                  ))}
             </ScrollView>
           )}
 
           <TouchableOpacity
             style={[
               styles.datosNoCorrectosButton,
-              isFromAPI && styles.addNewActaButton
+              isFromAPI && styles.addNewActaButton,
             ]}
             onPress={handleDatosNoCorrectos}>
             <CText
               style={[
                 styles.datosNoCorrectosButtonText,
-                isFromAPI && styles.addNewActaButtonText
+                isFromAPI && styles.addNewActaButtonText,
               ]}>
-              {isFromAPI
-                ? "Agregar Nueva Acta"
-                : String.dataNotCorrect}
+              {isFromAPI ? 'Agregar Nueva Acta' : String.dataNotCorrect}
             </CText>
           </TouchableOpacity>
         </>
@@ -525,7 +585,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -591,7 +651,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 16),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',

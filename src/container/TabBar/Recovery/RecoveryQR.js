@@ -1,15 +1,12 @@
-// src/container/Auth/Recovery/RecoveryQr.js
 import React, {useState} from 'react';
 import {
   View,
   Alert,
   Platform,
-  PermissionsAndroid,
   ToastAndroid,
   StyleSheet,
 } from 'react-native';
-import {launchImageLibrary} from 'react-native-image-picker';
-import RNQRGenerator from 'rn-qr-generator'; // ← nueva librería
+import RNQRGenerator from 'rn-qr-generator';
 import pako from 'pako';
 import {Buffer} from 'buffer';
 
@@ -24,7 +21,6 @@ import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 
-
 const decompress = b64 =>
   JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
 
@@ -33,38 +29,25 @@ export default function RecoveryQr({navigation}) {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  
-  const pickImage = async () => {
-    if (Platform.OS === 'android') {
-      const perm =
-        Platform.Version >= 33
-          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-
-      const status = await PermissionsAndroid.request(perm);
-      if (status !== PermissionsAndroid.RESULTS.GRANTED) {
-        return Alert.alert('Permiso denegado', 'Necesitamos acceso a fotos');
-      }
+  // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
+  const onImageSelected = async (asset) => {
+    if (!asset?.uri) {
+      Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
+      return;
     }
 
-    const res = await launchImageLibrary({mediaType: 'photo', quality: 1});
-    if (res.didCancel || !res.assets?.length) return;
-
-    const {uri} = res.assets[0];
-    setImageUri(uri);
+    setImageUri(asset.uri);
     setLoading(true);
-
     try {
-      
-      const {values} = await RNQRGenerator.detect({uri});
-      if (!values.length) {
+      // RNQRGenerator acepta content:// y file:// en Android
+      const { values } = await RNQRGenerator.detect({ uri: asset.uri });
+
+      if (!values?.length) {
         throw new Error('No pude leer un QR válido');
       }
 
-      
       const data = decompress(values[0]);
 
-      
       const required = [
         'streamId',
         'dni',
@@ -80,22 +63,22 @@ export default function RecoveryQr({navigation}) {
       }
 
       setPayload(data);
-      ToastAndroid.show('QR válido', ToastAndroid.SHORT);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('QR válido', ToastAndroid.SHORT);
+      }
     } catch (err) {
-      Alert.alert('QR inválido', err.message);
       setPayload(null);
       setImageUri(null);
+      Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');
     } finally {
       setLoading(false);
     }
   };
 
-  
   const goSetPin = () => {
-    navigation.navigate(AuthNav.RecoveryUserQrpin, {payload});
+    navigation.navigate(AuthNav.RecoveryUserQrpin, { payload });
   };
 
-  
   return (
     <CSafeAreaViewAuth>
       <CHeader />
@@ -110,8 +93,8 @@ export default function RecoveryQr({navigation}) {
 
           <UploadCardImage
             label={String.qrimagelabel}
-            image={imageUri ? {uri: imageUri} : null}
-            setImage={pickImage}
+            image={imageUri ? { uri: imageUri } : null}
+            setImage={onImageSelected}
             loading={loading}
           />
 
@@ -133,7 +116,6 @@ export default function RecoveryQr({navigation}) {
     </CSafeAreaViewAuth>
   );
 }
-
 
 const local = StyleSheet.create({
   main: {...styles.ph20, gap: moderateScale(8)},

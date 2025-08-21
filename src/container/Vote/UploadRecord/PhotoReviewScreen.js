@@ -52,15 +52,6 @@ const PhotoReviewScreen = () => {
 
   // Handler for navigating to the next screen
   const handleNext = () => {
-    console.log(
-      'PhotoReviewScreen - Navigating to PhotoConfirmationScreen with:',
-      {
-        photoUri,
-        tableData,
-        partyResults,
-        voteSummaryResults,
-      },
-    );
 
     navigation.navigate(StackNav.PhotoConfirmationScreen, {
       photoUri,

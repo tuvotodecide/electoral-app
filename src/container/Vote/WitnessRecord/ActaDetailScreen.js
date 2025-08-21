@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   View,
   Image,
@@ -6,14 +6,14 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -46,10 +46,9 @@ const ActaDetailScreen = () => {
         id: party.partyId,
         party: party.partyId,
         presidente: party.presidente || 0,
-        diputado: party.diputado || 0
+        diputado: party.diputado || 0,
       }));
     } catch (error) {
-      console.error('Error transformando partyResults:', error);
       return [];
     }
   }, [rawPartyResults]);
@@ -60,50 +59,47 @@ const ActaDetailScreen = () => {
         {
           label: 'Válidos',
           value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depValidVotes || 0  // Diputados
+          value2: rawVoteSummaryResults.depValidVotes || 0, // Diputados
         },
         {
           label: 'Blancos',
           value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depBlankVotes || 0  // Diputados
+          value2: rawVoteSummaryResults.depBlankVotes || 0, // Diputados
         },
         {
           label: 'Nulos',
           value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depNullVotes || 0   // Diputados
+          value2: rawVoteSummaryResults.depNullVotes || 0, // Diputados
         },
         {
           label: 'Total',
           value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depTotalVotes || 0   // Diputados
-        }
+          value2: rawVoteSummaryResults.depTotalVotes || 0, // Diputados
+        },
       ];
     } catch (error) {
-      console.error('Error transformando voteSummaryResults:', error);
+  
       return [];
     }
   }, [rawVoteSummaryResults]);
-
 
   // Component for handling IPFS images
   const IPFSImageComponent = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const handleImageError = (error) => {
-      console.error('ActaDetailScreen - Image load error:', selectedActa?.uri, error.nativeEvent);
+    const handleImageError = error => {
+
       setHasError(true);
       setIsLoading(false);
     };
 
     const handleImageLoad = () => {
-      console.log('ActaDetailScreen - Image loaded successfully:', selectedActa?.uri);
       setIsLoading(false);
       setHasError(false);
     };
 
     const handleLoadStart = () => {
-      console.log('ActaDetailScreen - Loading image:', selectedActa?.uri);
       setIsLoading(true);
       setHasError(false);
     };
@@ -123,7 +119,7 @@ const ActaDetailScreen = () => {
     return (
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: selectedActa?.uri }}
+          source={{uri: selectedActa?.uri}}
           style={[styles.actaImage, isLoading && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={handleLoadStart}
@@ -132,7 +128,10 @@ const ActaDetailScreen = () => {
         />
         {isLoading && (
           <View style={styles.imageLoadingOverlay}>
-            <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+            <ActivityIndicator
+              size="large"
+              color={colors.primary || '#4F9858'}
+            />
             <CText style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
@@ -147,9 +146,6 @@ const ActaDetailScreen = () => {
   };
 
   const handleThisIsCorrect = () => {
-    console.log('ActaDetailScreen - This is correct pressed for acta:', selectedActa?.id);
-    console.log('ActaDetailScreen - selectedActa object:', selectedActa);
-    console.log('ActaDetailScreen - Calling onCorrectActaSelected with ID:', selectedActa?.id);
     if (onCorrectActaSelected) {
       onCorrectActaSelected(selectedActa?.id);
     }
@@ -157,14 +153,12 @@ const ActaDetailScreen = () => {
   };
 
   const handleUploadCorrectActa = () => {
-    console.log('ActaDetailScreen - Upload correct acta pressed');
     if (onUploadNewActa) {
       onUploadNewActa();
     }
   };
 
   const handleChange = () => {
-    console.log('ActaDetailScreen - Change pressed');
     navigation.goBack();
   };
 
@@ -212,11 +206,9 @@ const ActaDetailScreen = () => {
   }
 
   // Header title
-  const headerTitle = `${String.table} ${tableData?.tableNumber ||
-    tableData?.numero ||
-    tableData?.number ||
-    'N/A'
-    }`;
+  const headerTitle = `${String.table} ${
+    tableData?.tableNumber || tableData?.numero || tableData?.number || 'N/A'
+  }`;
 
   // Instructions text
   const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;

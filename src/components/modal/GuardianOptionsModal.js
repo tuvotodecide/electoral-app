@@ -12,8 +12,8 @@ import Icono from '../common/Icono';
 export default function GuardianOptionsModal({
   visible,
   onClose,
-  onSaveFirst,
-  onSaveSecond,
+  onSaveFirst = () => {}, // fallback para evitar crashes
+  onSaveSecond = () => {},
 }) {
   const colors = useSelector(state => state.theme.theme);
   const [firstValue, setFirstValue] = useState('');

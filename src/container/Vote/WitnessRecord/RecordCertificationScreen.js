@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,25 +10,25 @@ import {
   Image,
   Linking,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { moderateScale } from '../../../common/constants';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {moderateScale} from '../../../common/constants';
+import {StackNav} from '../../../navigation/NavigationKey';
 import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
-import { executeOperation } from '../../../api/account';
-import { CHAIN, BACKEND_RESULT, BACKEND_SECRET } from '@env';
-import { oracleCalls, oracleReads } from '../../../api/oracle';
+import {executeOperation} from '../../../api/account';
+import {CHAIN, BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import {oracleCalls, oracleReads} from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
-import { availableNetworks } from '../../../api/params';
+import {availableNetworks} from '../../../api/params';
 import axios from 'axios';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = SCREEN_WIDTH >= 768;
@@ -45,28 +45,15 @@ const RecordCertificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const { recordId, tableData, mesaInfo } = route.params || {};
-
-  console.log('RecordCertificationScreen - Received params:', route.params);
-  console.log('RecordCertificationScreen - tableData:', tableData);
-  console.log('MESA INFO ID', mesaInfo._id)
-  console.log(
-    'RecordCertificationScreen - tableData keys:',
-    Object.keys(tableData || {}),
-  );
-  console.log('RecordCertificationScreen - tableNumber fields:', {
-    tableNumber: tableData?.tableNumber,
-    numero: tableData?.numero,
-    number: tableData?.number,
-  });
+  const {recordId, tableData, mesaInfo} = route.params || {};
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [showNFTCertificate, setShowNFTCertificate] = useState(false);
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
-    title: "",
-    message: "",
+    title: '',
+    message: '',
   });
 
   // Obtener nombre real del usuario desde Redux
@@ -80,62 +67,56 @@ const RecordCertificationScreen = () => {
     name: data.name || '(sin nombre)',
     role: 'Testigo Electoral',
   };
-  console.log("USER DATA", userData.dni)
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const uploadAttestation = async (ballotId) => {
+  const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
       const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
 
       const payload = {
-        attestations: [{
-          ballotId,
-          support: true,
-          isJury,
-          dni: String(userData.dni)
-        }]
+        attestations: [
+          {
+            ballotId,
+            support: true,
+            isJury,
+            dni: String(userData.dni),
+          },
+        ],
       };
 
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000, // 30 segundos timeout
       });
 
-      console.log('Attestation subida exitosamente:', response.data);
       return true;
     } catch (error) {
-      console.error('Error subiendo attestation:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
+
 
       return false;
     }
   };
 
   const handleCertify = () => {
-    console.log('RecordCertificationScreen - handleCertify called');
     setStep(0);
     setShowConfirmModal(true);
   };
 
   const confirmCertification = async () => {
-    console.log('RecordCertificationScreen - confirmCertification called');
     setStep(1);
 
     try {
       const isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
-        1
+        1,
       );
 
       if (!isRegistered) {
@@ -143,13 +124,13 @@ const RecordCertificationScreen = () => {
           userData.privKey,
           userData.account,
           CHAIN,
-          oracleCalls.requestRegister(CHAIN, "")
+          oracleCalls.requestRegister(CHAIN, ''),
         );
 
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
-          20
+          20,
         );
 
         if (!isRegistered) {
@@ -162,21 +143,20 @@ const RecordCertificationScreen = () => {
         CHAIN,
         oracleCalls.attest(CHAIN, tableData.codigo, recordId),
         oracleReads.waitForOracleEvent,
-        'Attested'
+        'Attested',
       );
-      console.log(response);
 
       if (mesaInfo._id) {
         const uploadSuccess = await uploadAttestation(mesaInfo._id);
         if (!uploadSuccess) {
           setInfoModalData({
             visible: true,
-            title: "Advertencia",
-            message: "Certificación completada en blockchain pero no se pudo registrar los datos"
+            title: 'Advertencia',
+            message:
+              'Certificación completada en blockchain pero no se pudo registrar los datos',
           });
         }
       } else {
-        console.error('No se encontro _id en mesainfo para subir attestation')
       }
 
       setShowConfirmModal(false);
@@ -186,14 +166,14 @@ const RecordCertificationScreen = () => {
     } catch (error) {
       setShowConfirmModal(false);
       let message = error.message;
-      if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+      if (error.message.indexOf('616c7265616479206174746573746564') >= 0) {
         message = i18nString.alreadyAttested;
       }
       setInfoModalData({
         visible: true,
         title: i18nString.error,
         message,
-      })
+      });
     }
   };
 
@@ -206,9 +186,9 @@ const RecordCertificationScreen = () => {
     setInfoModalData({
       visible: false,
       title: '',
-      message: ''
-    })
-  }
+      message: '',
+    });
+  };
 
   const closeNFTModal = () => {
     setShowNFTCertificate(false);
@@ -226,11 +206,12 @@ const RecordCertificationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`${i18nString.table || 'Mesa'} ${tableData?.tableNumber ||
+        title={`${i18nString.table || 'Mesa'} ${
+          tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           'N/A'
-          }`}
+        }`}
         showNotification={true}
       />
 
@@ -251,9 +232,9 @@ const RecordCertificationScreen = () => {
                     .replace(
                       '{tableNumber}',
                       tableData?.tableNumber ||
-                      tableData?.numero ||
-                      tableData?.number ||
-                      'N/A',
+                        tableData?.numero ||
+                        tableData?.number ||
+                        'N/A',
                     )}
                 </CText>
               </View>
@@ -286,11 +267,11 @@ const RecordCertificationScreen = () => {
                   .replace(
                     '{tableNumber}',
                     tableData?.tableNumber ||
-                    tableData?.numero ||
-                    tableData?.number ||
-                    'N/A',
-                  ).replace('{recinto}', tableData?.recinto || '')
-                }
+                      tableData?.numero ||
+                      tableData?.number ||
+                      'N/A',
+                  )
+                  .replace('{recinto}', tableData?.recinto || '')}
               </CText>
             </View>
 
@@ -298,7 +279,9 @@ const RecordCertificationScreen = () => {
               <TouchableOpacity
                 style={styles.certifyButton}
                 onPress={handleCertify}>
-                <CText style={styles.certifyButtonText}>{i18nString.certify}</CText>
+                <CText style={styles.certifyButtonText}>
+                  {i18nString.certify}
+                </CText>
               </TouchableOpacity>
             </View>
           </>
@@ -398,10 +381,7 @@ const RecordCertificationScreen = () => {
         </View>
       )}
 
-      <InfoModal
-        {...infoModalData}
-        onClose={closeInfoModal}
-      />
+      <InfoModal {...infoModalData} onClose={closeInfoModal} />
     </CSafeAreaView>
   );
 };
@@ -461,7 +441,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -507,7 +487,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     marginBottom: getResponsiveSize(14, 16, 18),
     elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',
@@ -566,7 +546,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(20, 24, 28),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     paddingTop: getResponsiveSize(10, 12, 14),
@@ -633,7 +613,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
@@ -704,7 +684,7 @@ export const modalStyles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(20, 24, 30),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: {width: 0, height: 10},
     shadowOpacity: 0.13,
     shadowRadius: 16,
     elevation: 10,

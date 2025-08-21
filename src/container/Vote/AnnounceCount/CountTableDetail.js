@@ -51,11 +51,7 @@ export default function CountTableDetail({navigation, route}) {
   const originalTable = route?.params?.originalTable;
   const locationData = route?.params?.locationData;
   
-  console.log('CountTableDetail: Received mesa data:', mesaData);
-  console.log('CountTableDetail: Original table data:', originalTable);
-  console.log('CountTableDetail: Location data:', locationData);
-  console.log('CountTableDetail: User ID:', userId);
-  console.log('CountTableDetail: All route params:', route?.params);
+  
 
   // Use the processed mesa data if available, otherwise fallback to mock
   const mesa = mesaData || originalTable || mockMesa;
@@ -71,7 +67,7 @@ export default function CountTableDetail({navigation, route}) {
     distrito: mesa.distrito || mesa.district || locationData?.district || 'Distrito N/A',
   };
 
-  console.log('CountTableDetail: Processed mesa data for display:', processedMesa);
+
 
   const [modalVisible, setModalVisible] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -86,7 +82,7 @@ export default function CountTableDetail({navigation, route}) {
     setLoading(true);
     
     try {
-      console.log('Iniciando anuncio de conteo...');
+
       
       // Enviar notificaciones a usuarios cercanos
       const result = await firebaseNotificationService.announceCountToNearbyUsers(
@@ -94,8 +90,7 @@ export default function CountTableDetail({navigation, route}) {
         processedMesa,
         locationData
       );
-      
-      console.log('Resultado de notificaciones:', result);
+  
       setNotificationResult(result);
       
       // Simular procesamiento adicional
@@ -113,7 +108,6 @@ export default function CountTableDetail({navigation, route}) {
       }, 1500);
       
     } catch (error) {
-      console.error('Error anunciando conteo:', error);
       setLoading(false);
       setSuccess(false);
       

@@ -38,10 +38,6 @@ const WhichIsCorrectScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {tableData, photoUri, isFromUnifiedFlow} = route.params || {};
-  console.log('WhichIsCorrectScreen - Received params:', route.params);
-  console.log('WhichIsCorrectScreen - tableData:', tableData);
-  console.log('WhichIsCorrectScreen - photoUri:', photoUri);
-  console.log('WhichIsCorrectScreen - isFromUnifiedFlow:', isFromUnifiedFlow);
 
   // State to keep track of the currently selected image
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -65,10 +61,6 @@ const WhichIsCorrectScreen = () => {
 
   // Cargar actas de la mesa al montar el componente
   useEffect(() => {
-    console.log(
-      'WhichIsCorrectScreen - useEffect triggered with tableData:',
-      tableData,
-    );
 
     // Try to get ID from multiple possible fields
     const mesaId =
@@ -76,14 +68,12 @@ const WhichIsCorrectScreen = () => {
       tableData?.numero ||
       tableData?.tableNumber ||
       tableData?.number;
-    console.log('WhichIsCorrectScreen - Extracted mesaId:', mesaId);
+    
 
     if (mesaId) {
       loadActasByMesa(mesaId);
     } else {
-      console.warn(
-        'WhichIsCorrectScreen - No valid mesa ID found, using fallback',
-      );
+
       // Fallback: load default data if no ID is found
       setActaImages([
         {
@@ -100,7 +90,7 @@ const WhichIsCorrectScreen = () => {
   const loadActasByMesa = async mesaId => {
     try {
       setIsLoadingActas(true);
-      console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
+      
 
       // For string IDs (like "Mesa 1"), try to extract numeric ID
       let numericId = mesaId;
@@ -111,19 +101,15 @@ const WhichIsCorrectScreen = () => {
         }
       }
 
-      console.log('WhichIsCorrectScreen: Using numeric ID:', numericId);
+      
       const response = await fetchActasByMesa(numericId);
 
       if (response.success) {
-        console.log(
-          'WhichIsCorrectScreen: Actas loaded successfully:',
-          response.data,
-        );
+  
         setActaImages(response.data.images);
         setPartyResults(response.data.partyResults);
         setVoteSummaryResults(response.data.voteSummaryResults);
       } else {
-        console.error('WhichIsCorrectScreen: Failed to load actas');
         showModal('error', String.error, String.couldNotLoadActas);
         // Fallback con imagen por defecto
         setActaImages([
@@ -153,7 +139,6 @@ const WhichIsCorrectScreen = () => {
         ]);
       }
     } catch (error) {
-      console.error('WhichIsCorrectScreen: Error loading actas:', error);
       showModal('error', String.error, String.errorLoadingActas);
       // Fallback con imagen por defecto
       setActaImages([
@@ -202,10 +187,6 @@ const WhichIsCorrectScreen = () => {
     if (selectedImageId) {
       const selectedImage = actaImages.find(img => img.id === selectedImageId);
       if (selectedImage) {
-        console.log(
-          'WhichIsCorrectScreen - handleVerMasDetalles: Passing tableData:',
-          tableData,
-        );
 
         // Navigate to ActaDetailScreen for detailed view
         navigation.navigate('ActaDetailScreen', {
@@ -229,13 +210,13 @@ const WhichIsCorrectScreen = () => {
   };
 
   const handleCorrectActaSelected = (actaId) => {
-    console.log('WhichIsCorrectScreen - Correct acta selected:', actaId);
+    
     setConfirmedCorrectActa(actaId);
     setShowConfirmationView(true);
   };
 
   const handleUploadNewActa = () => {
-    console.log('WhichIsCorrectScreen - Upload new acta requested');
+    
     // Navigate to upload flow
     navigation.navigate(StackNav.TableDetail, {
       tableData: tableData,
@@ -260,14 +241,14 @@ const WhichIsCorrectScreen = () => {
   };
 
   const handleChangeOpinion = () => {
-    console.log('WhichIsCorrectScreen - Change opinion requested');
+    
     setConfirmedCorrectActa(null);
     setShowConfirmationView(false);
     setSelectedImageId(null);
   };
 
   const handleDatosNoCorrectos = () => {
-    console.log('Estos datos no son correctos pressed');
+    
     showModal('info', String.information, String.dataReportedAsIncorrect);
   };
 

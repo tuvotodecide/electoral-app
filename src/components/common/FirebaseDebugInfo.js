@@ -30,7 +30,6 @@ export const FirebaseDebugInfo = () => {
         setUserInfo(null);
       }
     } catch (error) {
-      console.error('Error cargando info del usuario:', error);
       Alert.alert('Error', 'No se pudo cargar la información del usuario');
     }
     setLoading(false);

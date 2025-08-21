@@ -10,8 +10,7 @@ export default function AppNavigator() {
     (async () => {
       const initial = await notifee.getInitialNotification();
       if (initial) {
-        console.log('[Cold-start] notificación pulsada:', initial.notification.data);
-        handleNotificationPress(initial.notification);
+     handleNotificationPress(initial.notification);
       }
     })();
   }, []);

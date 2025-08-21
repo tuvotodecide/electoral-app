@@ -55,7 +55,6 @@ export default function RecoveryFinalize({route, navigation}) {
       if (!data.ok) {
         return;
       }
-      console.log(data);
 
       await Keychain.setGenericPassword(
         'bundle',
@@ -63,26 +62,21 @@ export default function RecoveryFinalize({route, navigation}) {
         {service: 'walletBundle'},
       );
 
-      console.log('si');
-
       const bundle = await createBundleFromPrivKey(
         originalPin,
         data.payload.privKey,
       );
-      console.log(bundle);
-      
+
       await saveSecrets(originalPin, data.payload, false, bundle);
-      console.log('si1');
 
       await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
-      console.log('si2');
+
       dispatch(setSecrets(data.payload));
-      console.log('si3');
+
       await startSession(data.token);
-      console.log('si4');
+
       // await registerDeviceToken();
       // messaging().onTokenRefresh(registerDeviceToken);
-      console.log('aca');
 
       navigation.navigate(AuthNav.LoginUser);
     })();

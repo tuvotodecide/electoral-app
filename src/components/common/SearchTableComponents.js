@@ -77,12 +77,7 @@ export const SearchInput = ({
 // Table Card Component
 export const TableCard = ({ table, onPress, styles, locationData, searchQuery }) => {
   // Debug: log complete table structure to analyze available fields
-  console.log(
-    'TableCard: Complete table object:',
-    JSON.stringify(table, null, 2),
-  );
-  console.log('TableCard: Available keys:', Object.keys(table));
-  console.log('TableCard: Location data:', locationData);
+
 
   // Extract table information with API structure
   const tableNumber =
@@ -129,14 +124,6 @@ export const TableCard = ({ table, onPress, styles, locationData, searchQuery })
   };
 
 
-  // Debug: log extracted values to verify mapping
-  console.log('TableCard: Extracted values:', {
-    tableNumber,
-    recinto,
-    direccion,
-    codigo,
-    locationId
-  });
 
   return (
     <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>

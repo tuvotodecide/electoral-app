@@ -16,9 +16,6 @@ const MyWitnessesDetailScreen = () => {
     attestationData
   } = route.params || {};
 
-  console.log('MyWitnessesDetailScreen - Received params:', route.params);
-  console.log('MyWitnessesDetailScreen - API Party Results:', apiPartyResults);
-  console.log('MyWitnessesDetailScreen - API Vote Summary Results:', apiVoteSummaryResults);
 
   // Usar los datos reales del API que vienen desde MyWitnessesListScreen
   const partyResults = apiPartyResults || [];

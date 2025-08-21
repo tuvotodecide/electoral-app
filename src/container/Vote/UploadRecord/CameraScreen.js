@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -22,20 +22,20 @@ import {
 } from 'react-native-vision-camera';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
-import { launchImageLibrary } from 'react-native-image-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
 
-const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
+const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
 
 // Función para obtener el mejor formato de cámara
-const getBestCameraFormat = (device) => {
+const getBestCameraFormat = device => {
   if (!device?.formats) return undefined;
 
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+  const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
   const isPortrait = screenHeight >= screenWidth;
   const screenRatio = screenWidth / screenHeight;
 
@@ -62,12 +62,24 @@ const getBestCameraFormat = (device) => {
   return bestFormat;
 };
 
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const getContainedSize = (srcW, srcH, maxW, maxH) => {
+  if (!srcW || !srcH || !maxW || !maxH) return {width: maxW, height: maxH};
+  const srcRatio = srcW / srcH;
+  const maxRatio = maxW / maxH;
+  if (srcRatio > maxRatio) {
+    const width = maxW;
+    const height = width / srcRatio;
+    return {width, height};
+  } else {
+    const height = maxH;
+    const width = height * srcRatio;
+    return {width, height};
+  }
+};
+
 // Marco de overlay reutilizable - movido fuera del componente
-const RenderFrame = ({
-  color = 'red',
-  screenWidth,
-  screenHeight,
-}) => {
+const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
   const frameSize = Math.min(screenWidth, screenHeight) - 40;
   const topOffset = (screenHeight - frameSize) / 2;
   const leftOffset = (screenWidth - frameSize) / 2;
@@ -77,23 +89,23 @@ const RenderFrame = ({
       pointerEvents="none"
       style={[
         styles.fullScreenOverlay,
-        { width: screenWidth, height: screenHeight }
+        {width: screenWidth, height: screenHeight},
       ]}>
-      <View style={[styles.corner, styles.topLeft, { borderColor: color }]} />
-      <View style={[styles.corner, styles.topRight, { borderColor: color }]} />
-      <View style={[styles.corner, styles.bottomLeft, { borderColor: color }]} />
-      <View style={[styles.corner, styles.bottomRight, { borderColor: color }]} />
+      <View style={[styles.corner, styles.topLeft, {borderColor: color}]} />
+      <View style={[styles.corner, styles.topRight, {borderColor: color}]} />
+      <View style={[styles.corner, styles.bottomLeft, {borderColor: color}]} />
+      <View style={[styles.corner, styles.bottomRight, {borderColor: color}]} />
       <View style={styles.fullBorder} />
     </View>
   );
 };
 
-export default function CameraScreen({ navigation, route }) {
+export default function CameraScreen({navigation, route}) {
   const camera = useRef(null);
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
   const device = backDevice || frontDevice;
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const {hasPermission, requestPermission} = useCameraPermission();
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -111,6 +123,7 @@ export default function CameraScreen({ navigation, route }) {
 
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
+  const [photoMeta, setPhotoMeta] = useState({width: 0, height: 0});
   const [imageTranslateX, setImageTranslateX] = useState(new Animated.Value(0));
   const [imageTranslateY, setImageTranslateY] = useState(new Animated.Value(0));
   const [lastScale, setLastScale] = useState(1);
@@ -139,7 +152,7 @@ export default function CameraScreen({ navigation, route }) {
 
   // Detectar cambios de orientación
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+    const subscription = Dimensions.addEventListener('change', ({window}) => {
       setScreenData(window);
       const newOrientation =
         window.width > window.height ? 'landscape' : 'portrait';
@@ -157,7 +170,7 @@ export default function CameraScreen({ navigation, route }) {
       buttons:
         buttons.length > 0
           ? buttons
-          : [{ text: 'OK', onPress: () => setModalVisible(false) }],
+          : [{text: 'OK', onPress: () => setModalVisible(false)}],
     });
     setModalVisible(true);
   };
@@ -175,9 +188,7 @@ export default function CameraScreen({ navigation, route }) {
       const result = await launchImageLibrary(options);
 
       if (result.didCancel) {
-        console.log('User cancelled image picker');
       } else if (result.errorCode) {
-        console.log('ImagePicker Error: ', result.errorMessage);
         Alert.alert('Error', 'No se pudo seleccionar la imagen');
       } else if (result.assets && result.assets.length > 0) {
         const selectedPhoto = result.assets[0];
@@ -189,6 +200,24 @@ export default function CameraScreen({ navigation, route }) {
         setPhoto({
           path: imagePath,
         });
+
+        if (selectedPhoto.width && selectedPhoto.height) {
+          setPhotoMeta({
+            width: selectedPhoto.width,
+            height: selectedPhoto.height,
+          });
+        } else {
+          const uriForSize = selectedPhoto.path
+            ? `file://${selectedPhoto.path}`
+            : selectedPhoto.uri;
+          if (uriForSize) {
+            Image.getSize(
+              uriForSize,
+              (w, h) => setPhotoMeta({width: w, height: h}),
+              () => {},
+            );
+          }
+        }
         setIsActive(false);
       }
     } catch (error) {
@@ -226,7 +255,7 @@ export default function CameraScreen({ navigation, route }) {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
+      onPanResponderGrant: evt => {
         // Inicializar solo para pan (un dedo)
         if (evt.nativeEvent.touches.length === 1) {
           imageScale.setOffset(lastScale);
@@ -253,25 +282,62 @@ export default function CameraScreen({ navigation, route }) {
             initialScale.current = lastScale;
           }
 
-          let scale = (distance / initialDistance.current) * initialScale.current;
+          let scale =
+            (distance / initialDistance.current) * initialScale.current;
           scale = Math.max(0.5, Math.min(3, scale));
 
           imageScale.setValue(scale);
         }
         // Manejar pan con un dedo (solo si no estamos en medio de un zoom)
-        else if (touches.length === 1 && !isZooming.current) {
-          // Calcular límites de traslación en función de la escala actual
-          const maxTranslateX = (screenData.width * (lastScale - 1)) / 2;
-          const maxTranslateY = (screenData.height * (lastScale - 1)) / 2;
+        // else if (touches.length === 1 && !isZooming.current) {
+        //   // Calcular límites de traslación en función de la escala actual
+        //   const maxTranslateX = (screenData.width * (lastScale - 1)) / 2;
+        //   const maxTranslateY = (screenData.height * (lastScale - 1)) / 2;
 
-          const dx = Math.max(-maxTranslateX, Math.min(maxTranslateX, gestureState.dx));
-          const dy = Math.max(-maxTranslateY, Math.min(maxTranslateY, gestureState.dy));
+        //   const dx = Math.max(
+        //     -maxTranslateX,
+        //     Math.min(maxTranslateX, gestureState.dx),
+        //   );
+        //   const dy = Math.max(
+        //     -maxTranslateY,
+        //     Math.min(maxTranslateY, gestureState.dy),
+        //   );
+
+        //   imageTranslateX.setValue(dx);
+        //   imageTranslateY.setValue(dy);
+        // }
+        else if (touches.length === 1 && !isZooming.current) {
+          const containerW = screenData.width;
+          const containerH = screenData.height;
+
+          // Tamaño real con el que se DIBUJA la imagen en 'contain'
+          const draw = getContainedSize(
+            photoMeta.width,
+            photoMeta.height,
+            containerW,
+            containerH,
+          );
+
+          // Usamos la escala "actual" para limitar (cuando no hay pinch en curso)
+          const currentScale = lastScale;
+
+          const maxX = Math.max(
+            0,
+            (draw.width * currentScale - containerW) / 2,
+          );
+          const maxY = Math.max(
+            0,
+            (draw.height * currentScale - containerH) / 2,
+          );
+
+          const dx = clamp(gestureState.dx, -maxX, maxX);
+          const dy = clamp(gestureState.dy, -maxY, maxY);
 
           imageTranslateX.setValue(dx);
           imageTranslateY.setValue(dy);
         }
       },
-      onPanResponderRelease: (evt) => {
+      onPanResponderRelease: evt => {
         const touches = evt.nativeEvent.touches;
 
         // Finalizar zoom si había dos dedos
@@ -301,13 +367,14 @@ export default function CameraScreen({ navigation, route }) {
       onPanResponderTerminate: () => {
         isZooming.current = false;
         initialDistance.current = null;
-      }
-    })
+      },
+    }),
   ).current;
 
   // Función para tomar nueva foto
   const takeNewPhoto = () => {
     setPhoto(null);
+    setPhotoMeta({width: 0, height: 0});
     setIsActive(true);
     resetImageTransform();
   };
@@ -413,7 +480,6 @@ export default function CameraScreen({ navigation, route }) {
     );
   }
 
-
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
     if (!camera.current || loading || !isActive) {
@@ -431,42 +497,58 @@ export default function CameraScreen({ navigation, route }) {
         enableShutterSound: false,
       });
 
-      const photoInfo = await new Promise((resolve, reject) => {
-        Image.getSize(`file://${result.path}`, (width, height) => {
-          resolve({ width, height });
-        }, reject);
+      // const photoInfo = await new Promise((resolve, reject) => {
+      //   Image.getSize(
+      //     `file://${result.path}`,
+      //     (width, height) => {
+      //       resolve({width, height});
+      //     },
+      //     reject,
+      //   );
+      // });
+
+      // // Calcular relación de aspecto
+      // const screenRatio = screenData.width / screenData.height;
+      // const photoRatio = photoInfo.width / photoInfo.height;
+
+      // // Determinar si la foto está en landscape
+      // const isLandscapePhoto = photoRatio > 1;
+
+      // // Calcular el área visible de la foto que coincide con la vista previa
+      // let visibleWidth, visibleHeight;
+      // if (isLandscapePhoto) {
+      //   visibleHeight = photoInfo.height;
+      //   visibleWidth = visibleHeight * screenRatio;
+      // } else {
+      //   visibleWidth = photoInfo.width;
+      //   visibleHeight = visibleWidth / screenRatio;
+      // }
+
+      // // Calcular desplazamiento para centrar
+      // const offsetX = (photoInfo.width - visibleWidth) / 2;
+      // const offsetY = (photoInfo.height - visibleHeight) / 2;
+
+      // setPhoto({
+      //   path: result.path,
+      //   cropData: {
+      //     x: offsetX,
+      //     y: offsetY,
+      //     width: visibleWidth,
+      //     height: visibleHeight,
+      //   },
+      // });
+      const meta = await new Promise((resolve, reject) => {
+        Image.getSize(
+          `file://${result.path}`,
+          (width, height) => {
+            resolve({width, height});
+          },
+          reject,
+        );
       });
 
-      // Calcular relación de aspecto
-      const screenRatio = screenData.width / screenData.height;
-      const photoRatio = photoInfo.width / photoInfo.height;
-
-      // Determinar si la foto está en landscape
-      const isLandscapePhoto = photoRatio > 1;
-
-      // Calcular el área visible de la foto que coincide con la vista previa
-      let visibleWidth, visibleHeight;
-      if (isLandscapePhoto) {
-        visibleHeight = photoInfo.height;
-        visibleWidth = visibleHeight * screenRatio;
-      } else {
-        visibleWidth = photoInfo.width;
-        visibleHeight = visibleWidth / screenRatio;
-      }
-
-      // Calcular desplazamiento para centrar
-      const offsetX = (photoInfo.width - visibleWidth) / 2;
-      const offsetY = (photoInfo.height - visibleHeight) / 2;
-
-      setPhoto({
-        path: result.path,
-        cropData: {
-          x: offsetX,
-          y: offsetY,
-          width: visibleWidth,
-          height: visibleHeight
-        }
-      });
+      setPhoto({path: result.path}); // sin cropData
+      setPhotoMeta(meta);
 
       setIsActive(false);
     } catch (err) {
@@ -508,17 +590,6 @@ export default function CameraScreen({ navigation, route }) {
     setAnalyzing(true);
     const mesaInfo = route.params?.tableData || {};
 
-    console.log(
-      'CameraScreen - handleNext: received route.params:',
-      route.params,
-    );
-    console.log('CameraScreen - handleNext: mesaInfo:', mesaInfo);
-    console.log(
-      'CameraScreen - handleNext: mesaInfo tableNumber:',
-      mesaInfo.tableNumber,
-    );
-    console.log('CameraScreen - handleNext: mesaInfo numero:', mesaInfo.numero);
-
     try {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
@@ -529,7 +600,7 @@ export default function CameraScreen({ navigation, route }) {
         showModal(
           'Error de Análisis',
           analysisResult.error || 'No se pudo analizar la imagen',
-          [{ text: 'OK', onPress: () => setModalVisible(false) }],
+          [{text: 'OK', onPress: () => setModalVisible(false)}],
         );
         setAnalyzing(false);
         return;
@@ -686,33 +757,59 @@ export default function CameraScreen({ navigation, route }) {
           {/* Contenedor de imagen con zoom y pan */}
           <View
             style={styles.imageViewContainer}
-            {...panResponder.panHandlers}  // Mover los gestos aquí
+            {...panResponder.panHandlers} // Mover los gestos aquí
           >
             <Animated.View
               style={[
                 styles.animatedImageContainer,
                 {
                   transform: [
-                    { scale: imageScale },
-                    { translateX: imageTranslateX },
-                    { translateY: imageTranslateY },
+                    {scale: imageScale},
+                    {translateX: imageTranslateX},
+                    {translateY: imageTranslateY},
                   ],
                 },
               ]}>
-              <Image
-                source={{ uri: 'file://' + photo.path }}
+              {/* <Image
+                source={{uri: 'file://' + photo.path}}
                 style={[
                   styles.zoomableImage,
                   {
                     width: screenData.width,
                     height: screenData.height,
                     // Aplicar recorte visual
-                    marginLeft: photo.cropData ? -photo.cropData.x * (screenData.width / photo.cropData.width) : 0,
-                    marginTop: photo.cropData ? -photo.cropData.y * (screenData.height / photo.cropData.height) : 0
-                  }
+                    marginLeft: photo.cropData
+                      ? -photo.cropData.x *
+                        (screenData.width / photo.cropData.width)
+                      : 0,
+                    marginTop: photo.cropData
+                      ? -photo.cropData.y *
+                        (screenData.height / photo.cropData.height)
+                      : 0,
+                  },
                 ]}
                 resizeMode="contain"
-              />
+              /> */}
+              {(() => {
+                const containerW = screenData.width;
+                const containerH = screenData.height;
+                const draw = getContainedSize(
+                  photoMeta.width,
+                  photoMeta.height,
+                  containerW,
+                  containerH,
+                );
+                return (
+                  <Image
+                    source={{uri: 'file://' + photo.path}}
+                    style={[
+                      styles.zoomableImage,
+                      {width: draw.width, height: draw.height}, // ✅ sin márgenes "fake"
+                    ]}
+                    resizeMode="contain"
+                  />
+                );
+              })()}
             </Animated.View>
           </View>
 
@@ -766,7 +863,7 @@ export default function CameraScreen({ navigation, route }) {
                   style={[
                     styles.modalButton,
                     index === modalConfig.buttons.length - 1 &&
-                    styles.modalButtonLast,
+                      styles.modalButtonLast,
                   ]}
                   onPress={button.onPress}>
                   <Text style={styles.modalButtonText}>{button.text}</Text>
@@ -856,7 +953,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   animatedImageContainer: {
-
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -886,7 +982,7 @@ const styles = StyleSheet.create({
     minWidth: 140,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -983,7 +1079,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -996,7 +1092,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -1025,7 +1121,7 @@ const styles = StyleSheet.create({
     width: '90%',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -1089,5 +1185,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 0, 0, 0.5)',
   },
-
 });

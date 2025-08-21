@@ -66,7 +66,6 @@ export default function UploadCardImage({label, image, setImage}) {
   const takePhoto = async () => {
     const permission = await requestCameraPermission();
     if (!permission) {
-      console.warn('Permiso de cámara no concedido');
       return;
     }
 
@@ -80,7 +79,6 @@ export default function UploadCardImage({label, image, setImage}) {
         if (response.assets) {
           setImage(response.assets[0]);
         } else if (response.errorCode) {
-          console.warn('Error al abrir la cámara:', response.errorMessage);
         }
       },
     );

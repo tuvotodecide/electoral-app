@@ -69,9 +69,7 @@ export default function MyGuardiansStatus({navigation, route}) {
     ];
   }, [safeDetail.pending, safeDetail.approved, safeDetail.rejected]);
 
-  useEffect(() => {
-    console.log('detail', safeDetail);
-  }, [safeDetail]);
+ 
 
   const statusLabel = {
     ACCEPTED: String.active,

@@ -118,7 +118,7 @@ export const mockMesasData = [
 // Simular llamada a API para obtener mesas
 export const fetchMesas = async (locationId = null) => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching mesas...', {locationId});
+    
     // Simular delay de red
     setTimeout(() => {
       // Filtrar mesas por locationId si se proporciona
@@ -126,12 +126,8 @@ export const fetchMesas = async (locationId = null) => {
         ? mockMesasData.filter(mesa => mesa.locationId === locationId)
         : mockMesasData;
 
-      console.log(
-        'API Mock: Mesas fetched successfully:',
-        filteredMesas.length,
-        'for location:',
-        locationId || 'all',
-      );
+      
+   
       resolve({
         success: true,
         data: filteredMesas,
@@ -146,12 +142,12 @@ export const fetchMesas = async (locationId = null) => {
 // Simular llamada a API para obtener mesas cercanas
 export const fetchNearbyMesas = async (latitude, longitude) => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching nearby mesas...', {latitude, longitude});
+
     // Simular delay de red
     setTimeout(() => {
       // Por ahora devolvemos las mismas mesas, pero ordenadas aleatoriamente
       const shuffledMesas = [...mockMesasData].sort(() => Math.random() - 0.5);
-      console.log('API Mock: Nearby mesas fetched successfully');
+
       resolve({
         success: true,
         data: shuffledMesas.slice(0, 3), // Solo las 3 más cercanas
@@ -164,10 +160,10 @@ export const fetchNearbyMesas = async (latitude, longitude) => {
 // Simular búsqueda de mesa por código
 export const searchMesaByCode = async codigo => {
   return new Promise(resolve => {
-    console.log('API Mock: Searching mesa by code:', codigo);
+    
     setTimeout(() => {
       const mesa = mockMesasData.find(m => m.codigo === codigo);
-      console.log('API Mock: Search completed, found:', !!mesa);
+      
       resolve({
         success: !!mesa,
         data: mesa || null,
@@ -324,19 +320,19 @@ export const mockActasData = {
 // Simula la llamada a API para obtener actas de una mesa específica
 export const fetchActasByMesa = async mesaId => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching actas for mesa:', mesaId);
+    
     // Simular delay de red
     setTimeout(() => {
       const actaData = mockActasData[mesaId];
       if (actaData) {
-        console.log('API Mock: Actas fetched successfully for mesa:', mesaId);
+        
         resolve({
           success: true,
           data: actaData,
           message: 'Actas obtenidas exitosamente',
         });
       } else {
-        console.log('API Mock: No actas found for mesa:', mesaId);
+        
         resolve({
           success: false,
           data: null,
@@ -363,13 +359,13 @@ export const getMockMesasConteo = (locationId = null) => {
   
   // Si no encontramos mesas para el locationId específico, devolver mesas de fallback
   if (locationId && filteredMesas.length === 0) {
-    console.log('getMockMesasConteo: No mesas found for locationId:', locationId, 'using fallback');
+    
     filteredMesas = mockMesasData.filter(mesa => mesa.locationId === 'fallback-location');
   }
   
   // Si aún no hay mesas, devolver todas como último recurso
   if (filteredMesas.length === 0) {
-    console.log('getMockMesasConteo: No fallback mesas found, returning all mesas');
+    
     filteredMesas = mockMesasData;
   }
   
@@ -383,16 +379,11 @@ export const getMockMesasConteo = (locationId = null) => {
 // Simular llamada a API para obtener mesas de conteo
 export const fetchMesasConteo = async (locationId = null) => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching mesas de conteo...', {locationId});
+    
     // Simular delay de red
     setTimeout(() => {
       const mesasConteo = getMockMesasConteo(locationId);
-      console.log(
-        'API Mock: Mesas de conteo fetched successfully:',
-        mesasConteo.length,
-        'for location:',
-        locationId || 'all',
-      );
+     
       resolve({
         success: true,
         data: mesasConteo,
@@ -407,15 +398,12 @@ export const fetchMesasConteo = async (locationId = null) => {
 // Simular llamada a API para obtener mesas cercanas de conteo
 export const fetchNearbyMesasConteo = async () => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching nearby mesas de conteo...');
+
     // Simular delay de red
     setTimeout(() => {
       // Filtrar solo las primeras 3 mesas como "cercanas"
       const nearbyMesas = getMockMesasConteo().slice(0, 3);
-      console.log(
-        'API Mock: Nearby mesas de conteo fetched:',
-        nearbyMesas.length,
-      );
+    
       resolve({
         success: true,
         data: nearbyMesas,
@@ -547,13 +535,10 @@ export const mockAtestiguamientosData = [
 // Simular llamada a API para obtener atestiguamientos del usuario
 export const fetchMyWitnesses = async () => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching mis atestiguamientos...');
+    
     // Simular delay de red
     setTimeout(() => {
-      console.log(
-        'API Mock: Mis atestiguamientos fetched successfully:',
-        mockAtestiguamientosData.length,
-      );
+
       resolve({
         success: true,
         data: mockAtestiguamientosData,
@@ -566,24 +551,21 @@ export const fetchMyWitnesses = async () => {
 // Simular llamada a API para obtener detalle de un atestiguamiento
 export const fetchDetalleAtestiguamiento = async id => {
   return new Promise(resolve => {
-    console.log('API Mock: Fetching detalle atestiguamiento for ID:', id);
+    
     // Simular delay de red
     setTimeout(() => {
       const atestiguamiento = mockAtestiguamientosData.find(
         item => item.id === id,
       );
       if (atestiguamiento) {
-        console.log(
-          'API Mock: Detalle atestiguamiento fetched:',
-          atestiguamiento,
-        );
+
         resolve({
           success: true,
           data: atestiguamiento,
           message: 'Detalle de atestiguamiento encontrado',
         });
       } else {
-        console.log('API Mock: Atestiguamiento not found for ID:', id);
+        
         resolve({
           success: false,
           data: null,

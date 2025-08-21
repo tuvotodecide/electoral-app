@@ -64,7 +64,7 @@ export default function Splash({navigation}) {
           }
 
           const bundleReady = await ensureBundle();
-          console.log(bundleReady);
+ 
 
           const alive = await isSessionValid();
 
@@ -77,7 +77,6 @@ export default function Splash({navigation}) {
           navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
-        console.log('error ', e);
         navigation.replace(StackNav.AuthNavigation);
       }
     };

@@ -21,12 +21,15 @@ import {
   useGuardianPatchQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
-import { CHAIN } from '@env';
+import {CHAIN} from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
 import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
-import { guardianHashFrom, removeGuardianOnChain } from '../../../api/guardianOnChain';
-import { getSecrets } from '../../../utils/Cifrate';
+import {
+  guardianHashFrom,
+  removeGuardianOnChain,
+} from '../../../api/guardianOnChain';
+import {getSecrets} from '../../../utils/Cifrate';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -56,7 +59,6 @@ export default function Guardians({navigation}) {
     useGuardianDeleteQuery();
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
-
 
   const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
@@ -98,8 +100,8 @@ export default function Guardians({navigation}) {
       const {payloadQr} = await getSecrets();
       const ownerPrivKey = payloadQr.privKey;
       const ownerAccount = payloadQr.account;
-      const ownerGuardianCt = payloadQr.guardian; 
-      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress); 
+      const ownerGuardianCt = payloadQr.guardian;
+      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress);
 
       // await removeGuardianOnChain(
       //   CHAIN,
@@ -109,11 +111,8 @@ export default function Guardians({navigation}) {
       //   guardianHash,
       // );
 
-      
       deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
-    } catch (e) {
-      
-    }
+    } catch (e) {}
   };
   const saveGuardian = newNick => {
     patchGuardianId(
@@ -187,7 +186,8 @@ export default function Guardians({navigation}) {
             elevation: 5,
           },
         ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
+
+        >
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -246,19 +246,16 @@ export default function Guardians({navigation}) {
         />
       </View>
       <View style={localStyle.infoTextContainer}>
-        <CText
-          style={localStyle.infoText} 
-        >
-          {String.whatIsGuardians}
-        </CText>
+        <CText style={localStyle.infoText}>{String.whatIsGuardians}</CText>
         <Icono name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
       </View>
     </TouchableOpacity>
   );
   return (
     <CSafeAreaView>
-      <CHeader title={String.guardiansTitle} 
-      // rightIcon={<RightIcon />} 
+      <CHeader
+        title={String.guardiansTitle}
+        // rightIcon={<RightIcon />}
       />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
@@ -270,6 +267,10 @@ export default function Guardians({navigation}) {
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
