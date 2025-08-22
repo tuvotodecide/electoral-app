@@ -7,6 +7,7 @@ import {
   PermissionsAndroid,
   Platform,
   Dimensions,
+  Linking
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
@@ -112,6 +113,19 @@ const ElectoralLocations = ({ navigation, route }) => {
     return `${hours}:${minutes}`;
   };
 
+  const openLocationSettings = () => {
+    if (Platform.OS === 'android') {
+      // Intenta abrir configuración de ubicación del sistema
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
+        // Fallback si falla
+        Linking.openSettings();
+      });
+    } else {
+      // Para iOS
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION');
+    }
+  };
+
   const getCurrentLocation = useCallback(async (retryCount = 0) => {
     try {
       setLoadingLocation(true);
@@ -139,12 +153,15 @@ const ElectoralLocations = ({ navigation, route }) => {
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           console.log('Location permission denied');
           showModal(
-            'error',
-            i18nString.error || 'Error',
-            i18nString.locationPermissionDenied || 'Permiso de ubicación denegado',
+            'settings',
+            i18nString.locationPermissionRequired,
+            i18nString.locationPermissionDeniedMessage,
+            i18nString.openSettings,
+            () => Linking.openSettings(),
+            i18nString.cancel,   // Botón secundario
+            closeModal           // Acción secundaria
           );
           setLoadingLocation(false);
-          setLoading(false);
           return;
         }
       }
@@ -160,10 +177,30 @@ const ElectoralLocations = ({ navigation, route }) => {
         },
         error => {
           console.error('Location error:', error);
+
+          let errorMessage = i18nString.locationError;
+          let modalTitle = i18nString.error;
+          let action = null;
+
+          if (error.code === 1) { // PERMISSION_DENIED
+            errorMessage = i18nString.locationPermissionDeniedMessage;
+            modalTitle = i18nString.locationPermissionRequired;
+            action = () => Linking.openSettings();
+          }
+          else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
+            errorMessage = i18nString.locationDisabledMessage;
+            modalTitle = i18nString.locationRequired;
+            action = openLocationSettings;
+          }
+
           showModal(
-            'error',
-            i18nString.error || 'Error',
-            i18nString.locationError || 'Error al obtener la ubicación',
+            'settings',
+            modalTitle,       // Usar el título correcto
+            errorMessage,     // Usar el mensaje correcto
+            i18nString.openSettings,
+            action,           // Usar la acción correcta
+            i18nString.cancel,
+            closeModal
           );
           setLoadingLocation(false);
           setLoading(false);
@@ -178,9 +215,8 @@ const ElectoralLocations = ({ navigation, route }) => {
       console.error('Permission error:', error);
       showModal(
         'error',
-        i18nString.error || 'Error',
-        i18nString.locationPermissionError ||
-        'Error al solicitar permisos de ubicación',
+        i18nString.error,
+        i18nString.locationPermissionError,
       );
       setLoadingLocation(false);
       setLoading(false);
@@ -242,8 +278,24 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   }, [electionStatus, getCurrentLocation]);
 
-  const showModal = (type, title, message, buttonText = i18nString.accept, onCloseAction = null) => {
-    setModalConfig({ type, title, message, buttonText, onCloseAction });
+  const showModal = (
+    type,
+    title,
+    message,
+    primaryButtonText = i18nString.accept,
+    onPrimaryAction = null,
+    secondaryButtonText = null,
+    onSecondaryAction = null
+  ) => {
+    setModalConfig({
+      type,
+      title,
+      message,
+      primaryButtonText,
+      onPrimaryAction,
+      secondaryButtonText,
+      onSecondaryAction
+    });
     setModalVisible(true);
   };
 
@@ -534,7 +586,10 @@ const ElectoralLocations = ({ navigation, route }) => {
         type={modalConfig.type}
         title={modalConfig.title}
         message={modalConfig.message}
-        buttonText={modalConfig.buttonText}
+        buttonText={modalConfig.primaryButtonText}
+        onButtonPress={modalConfig.onPrimaryAction}
+        secondaryButtonText={modalConfig.secondaryButtonText}
+        onSecondaryPress={modalConfig.onSecondaryAction}
       />
     </CSafeAreaView>
   );

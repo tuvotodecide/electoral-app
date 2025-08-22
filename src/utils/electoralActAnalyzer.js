@@ -1,9 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import RNFS from 'react-native-fs';
 
-// 🔐 API Key de Gemini - mover a variables de entorno en producción
-const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';  
-
 class ElectoralActAnalyzer {
   constructor() {
     this.genAI = new GoogleGenAI({ apiKey: API_KEY });
@@ -49,15 +46,16 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
   "table_code": "<código de mesa, parte superior izquierda>",
   "president_vote_counts": {
     "candidate_votes": [
-      { "candidate_id": "C.C.",     "votes": "<n o 0>" },
-      { "candidate_id": "FPV",      "votes": "<n o 0>" },
-      { "candidate_id": "MTS",      "votes": "<n o 0>" },
-      { "candidate_id": "UCS",      "votes": "<n o 0>" },
-      { "candidate_id": "MAS-IPSP", "votes": "<n o 0>" },
-      { "candidate_id": "21F",      "votes": "<n o 0>" },
+      { "candidate_id": "AP",     "votes": "<n o 0>" },
+      { "candidate_id": "LYP-ADN",      "votes": "<n o 0>" },
+      { "candidate_id": "APBSUMATE", "votes": "<n o 0>" },
+      { "candidate_id": "LIBRE",      "votes": "<n o 0>" },
+      { "candidate_id": "FP",      "votes": "<n o 0>" },
+      { "candidate_id": "MAS-IPSP",  "votes": "<n o 0>" }
+      { "candidate_id": "MORENA",      "votes": "<n o 0>" },
+      { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
-      { "candidate_id": "MNR",      "votes": "<n o 0>" },
-      { "candidate_id": "PAN-BOL",  "votes": "<n o 0>" }
+      { "candidate_id": "NGP",      "votes": "<n o 0>" },
     ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
@@ -145,15 +143,16 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     }
 
     const partyMapping = {
-      'C.C.': 'cc',
-      FPV: 'fpv',
-      MTS: 'mts',
-      UCS: 'ucs',
+      AP: 'ap',
+      'LYP-ADN': 'lyp-adn',
+      APBSUMATE: 'apbsumate',
+      LIBRE: 'libre',
+      FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
-      '21F': '21f',
+      MORENA: 'morena',
+      'UNIDAD': 'pan-bol',
       PDC: 'pdc',
-      MNR: 'mnr',
-      'PAN-BOL': 'pan-bol',
+      NGP: 'ngp',
     };
 
     // Mapear resultados de partidos para presidente

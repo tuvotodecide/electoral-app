@@ -362,7 +362,7 @@ class PinataService {
       const dataField = {
         tableCode: tableCode,
         tableNumber: tableNumber,
-        locationId: additionalData.idRecinto || 'UNKNOWN',
+        locationId: additionalData.idRecinto,
         votes: {
           parties: buildVoteData('presidente'),
           deputies: buildVoteData('diputado')
