@@ -1,9 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import RNFS from 'react-native-fs';
 
-// 🔐 API Key de Gemini - mover a variables de entorno en producción
-const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
-
 class ElectoralActAnalyzer {
   constructor() {
     this.genAI = new GoogleGenAI({ apiKey: API_KEY });
