@@ -509,7 +509,6 @@ const ElectoralLocations = ({navigation, route}) => {
   );
 
   const renderVotingPeriodInfo = () => {
-    navigation.navigate(StackNav.CameraScreen);
     if (!electionStatus || !electionStatus.config) return null;
 
     const currentTime = new Date(electionStatus.currentTimeBolivia);

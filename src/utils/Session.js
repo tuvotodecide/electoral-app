@@ -17,6 +17,7 @@ async function migrateIfLegacy() {
 export async function startSession(jwt, ttl = TTL_MIN) {
   await migrateIfLegacy();
   if (jwt) {
+    
     await Keychain.setInternetCredentials(JWT_KEY, 'user', jwt, {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
@@ -42,7 +43,7 @@ export async function isSessionValid() {
 
 export async function getJwt() {
   await migrateIfLegacy();
-  const creds = await Keychain.getInternetCredentials(JWT_KEY);
+  const creds = await Keychain.getInternetCredentials(JWT_KEY); 
   return creds?.password ?? null;
 }
 

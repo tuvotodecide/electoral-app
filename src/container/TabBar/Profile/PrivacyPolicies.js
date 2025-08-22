@@ -12,7 +12,7 @@ import {styles} from '../../../themes';
 
 export default function PrivacyPolicies() {
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.privacyPolicy} />
 
       <View style={localStyle.webViewContainer}>

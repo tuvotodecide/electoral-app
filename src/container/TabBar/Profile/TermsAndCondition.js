@@ -12,7 +12,7 @@ import {WebView} from 'react-native-webview';
 
 export default function TermsAndCondition() {
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.termsConditions} />
       <View style={localStyle.webViewContainer}>
         <WebView

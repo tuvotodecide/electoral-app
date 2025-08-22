@@ -42,7 +42,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <StepIndicator step={8} />
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>

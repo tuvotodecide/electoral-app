@@ -80,7 +80,7 @@ export default function RecoveryQr({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth >
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={local.main}>

@@ -100,7 +100,6 @@ export default function LoginUser({navigation}) {
       }),
     );
     dispatch(setAuthenticated(true));
-
     await resetAttempts();
     await startSession(jwt);
     await registerDeviceToken();

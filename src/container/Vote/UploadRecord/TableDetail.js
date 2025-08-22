@@ -181,7 +181,7 @@ export default function TableDetail({ navigation, route }) {
   };
 
   return (
-    <CSafeAreaView style={stylesx.container}>
+    <CSafeAreaView style={stylesx.container} addTabPadding={false}>
       {/* HEADER */}
       <UniversalHeader
         colors={colors}

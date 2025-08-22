@@ -143,14 +143,14 @@ export default function Guardians({navigation}) {
           />
         )}
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => setOptionsVisible(true)}>
+      {/* <TouchableOpacity onPress={() => setOptionsVisible(true)}>
         <Icono
           name="format-list-bulleted"
           size={moderateScale(28)}
           color={colors.primaryColor}
           style={styles.ml10}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 
@@ -252,10 +252,10 @@ export default function Guardians({navigation}) {
     </TouchableOpacity>
   );
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader
         title={String.guardiansTitle}
-        // rightIcon={<RightIcon />}
+        rightIcon={<RightIcon />}
       />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
@@ -286,7 +286,7 @@ export default function Guardians({navigation}) {
           frontIcon={<Icono size={20} name="account-plus" color={'#fff'} />}
         />
       </View>
-      <GuardianOptionsModal
+      {/* <GuardianOptionsModal
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
         currentNickname={selectedGuardian?.nickname || ''}
@@ -299,7 +299,7 @@ export default function Guardians({navigation}) {
         onDeleteGuardian={() =>
           deleteGuardianId(selectedGuardian.id, {onSuccess: closeModal})
         }
-      />
+      /> */}
 
       {selectedGuardian && (
         <GuardianActionModal

@@ -23,24 +23,42 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
-          value={party.presidente}
-          onChangeText={value => onUpdate(party.id, 'presidente', value)}
+          value={String(party.presidente ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              party.id,
+              'presidente',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
         />
       ) : (
-        <CText style={styles.partyVoteText}>{party.presidente}</CText>
+        <CText style={styles.partyVoteText}>
+          {party.presidente === '' || party.presidente == null ? '0' : String(party.presidente)}
+        </CText>
       )}
     </View>
     <View style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
-          value={party.diputado}
-          onChangeText={value => onUpdate(party.id, 'diputado', value)}
+          value={String(party.diputado ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              party.id,
+              'diputado',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '') 
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
         />
       ) : (
-        <CText style={styles.partyVoteText}>{party.diputado}</CText>
+        <CText style={styles.partyVoteText}>
+          {party.diputado === '' || party.diputado == null ? '0' : String(party.diputado)}
+        </CText>
       )}
     </View>
   </View>
@@ -60,9 +78,9 @@ export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
         key={party.id || index}
         party={{
           ...party,
-          // Asegurar que los nombres de propiedades coincidan
-          presidente: party.presidente?.toString() || "0",
-          diputado: party.diputado?.toString() || "0"
+          // Mantener valores en edición sin forzar "0"
+          presidente: party.presidente,
+          diputado: party.diputado
         }}
         isEditing={isEditing}
         onUpdate={onUpdate}

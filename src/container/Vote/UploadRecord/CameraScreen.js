@@ -221,7 +221,6 @@ export default function CameraScreen({navigation, route}) {
         setIsActive(false);
       }
     } catch (error) {
-      console.error('Error opening gallery: ', error);
       Alert.alert('Error', 'Hubo un error al abrir la galería');
     }
   };
@@ -552,8 +551,6 @@ export default function CameraScreen({navigation, route}) {
 
       setIsActive(false);
     } catch (err) {
-      console.error('Camera error:', err);
-
       // Specific handling for "camera already in use" error
       if (
         err.code === 'device/camera-already-in-use' ||
@@ -659,7 +656,6 @@ export default function CameraScreen({navigation, route}) {
         mappedData: mappedData,
       });
     } catch (error) {
-      console.error('❌ Error en análisis:', error);
       showModal(
         'Error',
         'Ocurrió un error al analizar la imagen. ¿Desea continuar sin análisis automático?',
@@ -703,7 +699,6 @@ export default function CameraScreen({navigation, route}) {
               format={getBestCameraFormat(device)}
               zoom={0}
               onError={error => {
-                console.error('Camera onError:', error);
                 if (error.code === 'device/camera-already-in-use') {
                   resetCamera();
                 }

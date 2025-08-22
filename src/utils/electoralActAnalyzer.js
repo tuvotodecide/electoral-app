@@ -1,13 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
+import {GoogleGenAI} from '@google/genai';
 import RNFS from 'react-native-fs';
-
-// 🔐 API Key de Gemini - mover a variables de entorno en producción
-// const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
-const API_KEY = 'AIzaSyAUsg3D-hvXvq4k63Dnf-DRfl6iBecnfVg';
+import {API_GEMINI} from '@env';
 
 class ElectoralActAnalyzer {
   constructor() {
-    this.genAI = new GoogleGenAI({ apiKey: API_KEY });
+    this.genAI = new GoogleGenAI({apiKey: API_GEMINI});
   }
 
   /**
@@ -83,8 +80,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
    */
   async analyzeElectoralAct(imagePath) {
     try {
-
-
       // Convertir imagen a base64
       const base64Image = await this.imageToBase64(imagePath);
 
@@ -101,13 +96,12 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
               data: base64Image,
             },
           },
-          { text: prompt },
+          {text: prompt},
         ],
       });
 
       // La respuesta es ahora response.text (no .text())
       const text = response.text.trim();
-
 
       // Intentar parsear como JSON
       try {
@@ -119,7 +113,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
           rawResponse: text,
         };
       } catch (parseError) {
-     
         return {
           success: false,
           error: 'La respuesta de la IA no es un JSON válido',
@@ -150,7 +143,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
       MORENA: 'morena',
-      'UNIDAD': 'unidad',
+      UNIDAD: 'unidad',
       PDC: 'pdc',
     };
 

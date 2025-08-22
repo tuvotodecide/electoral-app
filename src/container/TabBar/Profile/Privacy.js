@@ -26,7 +26,7 @@ export default function Privacy({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.rewardsProgram} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <Image source={images.RewardImage} style={localStyle.imageContainer} />
