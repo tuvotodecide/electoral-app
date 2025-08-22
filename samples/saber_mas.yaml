@@ -1,0 +1,10 @@
+appId: com.tuvotodecide
+---
+- tapOn: Open debugger to view warnings.
+- assertNotVisible: Open debugger to view warnings.
+- tapOn: Saber más , 󰁔
+- tapOn: Siguiente
+- tapOn: Siguiente
+- tapOn: Siguiente
+- tapOn: Siguiente
+- tapOn: Siguiente
