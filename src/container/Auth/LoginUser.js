@@ -103,8 +103,8 @@ export default function LoginUser({navigation}) {
 
     await resetAttempts();
     await startSession(jwt);
-    await registerDeviceToken();
-    messaging().onTokenRefresh(registerDeviceToken);
+    // await registerDeviceToken();
+    // messaging().onTokenRefresh(registerDeviceToken);
 
     try {
       await writeBundleAtomic(JSON.stringify({...payload, jwt}));
