@@ -1,4 +1,3 @@
-// accounts.js
 
 import { computeAccountAddress } from 'viem/account-abstraction';
 import { privateKeyToAccount }     from 'viem/accounts';

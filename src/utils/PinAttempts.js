@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const KEY = '@FIN/LOGIN_ATTEMPTS';
-const LOCK_KEY = '@FIN/LOCK_UNTIL';
-const LOCK_MS = 15 * 60_000;
+import { KEY, LOCK_KEY, LOCK_MS } from '../common/constants';
+
 
 export async function getAttempts() {
   const n = await AsyncStorage.getItem(KEY);

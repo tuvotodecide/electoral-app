@@ -3,11 +3,10 @@ import {getSecrets} from './Cifrate';
 import {writeBundleAtomic} from './ensureBundle';
 import {getBioFlag} from './BioFlag';
 import * as Keychain from 'react-native-keychain';
-import {JWT_KEY} from '../common/constants';
+import {FLAG, JWT_KEY} from '../common/constants';
 import {Platform} from 'react-native';
 import { getJwt } from './Session';
 
-const FLAG = 'BUNDLE_MIGRATED_v2';
 
 export async function migrateIfNeeded() {
   if (await AsyncStorage.getItem(FLAG)) return;

@@ -1,19 +1,18 @@
-// src/utils/aesGcm.js
+
 import crypto from 'react-native-quick-crypto';
 
-// helpers
-const algo   = 'aes-256-gcm';
-const ivSize = 12;            // 96 bits, recomendado por NIST
+
+const aessize   = 'aes-256-gcm';
+const ivSize = 12;            
 
 export function aesGcmEncrypt(plainBytes, keyBytes) {
   const iv      = crypto.randomBytes(ivSize);
-  const cipher  = crypto.createCipheriv(algo, Buffer.from(keyBytes), iv);
+  const cipher  = crypto.createCipheriv(aessize, Buffer.from(keyBytes), iv);
 
   const enc1    = cipher.update(Buffer.from(plainBytes));
   const enc2    = cipher.final();
-  const tag     = cipher.getAuthTag();        // 16 bytes
+  const tag     = cipher.getAuthTag();    
 
-  // IV + cipher + tag
   return Buffer.concat([iv, enc1, enc2, tag]);
 }
 
@@ -23,7 +22,7 @@ export function aesGcmDecrypt(cipherBytes, keyBytes) {
   const tag   = buf.slice(buf.length - 16);
   const data  = buf.slice(ivSize, buf.length - 16);
 
-  const decipher = crypto.createDecipheriv(algo, Buffer.from(keyBytes), iv);
+  const decipher = crypto.createDecipheriv(aessize, Buffer.from(keyBytes), iv);
   decipher.setAuthTag(tag);
 
   const dec1 = decipher.update(data);

@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY, SESSION, TTL_MIN} from '../common/constants';
+import {EXPIRES_KEY, JWT_KEY,  TTL_MIN} from '../common/constants';
 import * as Keychain from 'react-native-keychain';
 
-const EXPIRES_KEY = `${JWT_KEY}_EXPIRES`;
+
 
 async function migrateIfLegacy() {
   const legacy = await AsyncStorage.getItem(JWT_KEY);

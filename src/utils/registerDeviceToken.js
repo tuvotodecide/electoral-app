@@ -2,9 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging     from '@react-native-firebase/messaging';
 import axios         from 'axios';
 import { BACKEND }   from '@env';
-import { DEVICE_TOKEN, JWT_KEY, PENDING_DID } from '../common/constants';
+import { DEVICE_TOKEN,  PENDING_DID } from '../common/constants';
 import { setAsyncStorageData }   from './AsyncStorage';
-import * as Keychain from 'react-native-keychain';
 import { getJwt } from './Session';
 
 
