@@ -25,33 +25,39 @@ import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
 
 // Función para obtener el mejor formato de cámara
-const getBestCameraFormat = device => {
-  if (!device?.formats) {
-    return undefined;
+const getBestCameraFormat = (device) => {
+  if (!device?.formats) return undefined;
+
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+  const isPortrait = screenHeight >= screenWidth;
+  const screenRatio = screenWidth / screenHeight;
+
+  let bestFormat = undefined;
+  let bestDiff = Number.MAX_VALUE;
+
+  for (const format of device.formats) {
+    // ✅ solo formatos que soporten foto
+    if (!format.photoWidth || !format.photoHeight) continue;
+
+    const formatRatio = format.photoWidth / format.photoHeight;
+    const adjustedRatio = isPortrait
+      ? Math.min(formatRatio, 1 / formatRatio)
+      : formatRatio;
+
+    const diff = Math.abs(adjustedRatio - screenRatio);
+
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestFormat = format;
+    }
   }
-
-  const formatsWithoutZoom = device.formats.filter(
-    format => format.maxZoom === 1 || format.zoomFactor === 1,
-  );
-
-  const candidateFormats = formatsWithoutZoom.length > 0
-    ? formatsWithoutZoom
-    : device.formats;
-
-  // Buscar el formato con mayor resolución disponible
-  const bestFormat = candidateFormats
-    .filter(format => format.photoHeight && format.photoWidth)
-    .sort((a, b) => {
-      const resolutionA = a.photoHeight * a.photoWidth;
-      const resolutionB = b.photoHeight * b.photoWidth;
-      return resolutionB - resolutionA;
-    })[0];
 
   return bestFormat;
 };
@@ -62,26 +68,22 @@ const RenderFrame = ({
   screenWidth,
   screenHeight,
 }) => {
-  const frameMargin = 20;
-  const frameWidth = screenWidth - frameMargin * 2;
-  const frameHeight = screenHeight - frameMargin * 2;
+  const frameSize = Math.min(screenWidth, screenHeight) - 40;
+  const topOffset = (screenHeight - frameSize) / 2;
+  const leftOffset = (screenWidth - frameSize) / 2;
 
   return (
     <View
       pointerEvents="none"
       style={[
-        styles.overlayContainer,
-        {
-          width: frameWidth,
-          height: frameHeight,
-          left: frameMargin,
-          top: frameMargin,
-        },
+        styles.fullScreenOverlay,
+        { width: screenWidth, height: screenHeight }
       ]}>
       <View style={[styles.corner, styles.topLeft, { borderColor: color }]} />
       <View style={[styles.corner, styles.topRight, { borderColor: color }]} />
       <View style={[styles.corner, styles.bottomLeft, { borderColor: color }]} />
       <View style={[styles.corner, styles.bottomRight, { borderColor: color }]} />
+      <View style={styles.fullBorder} />
     </View>
   );
 };
@@ -158,6 +160,41 @@ export default function CameraScreen({ navigation, route }) {
           : [{ text: 'OK', onPress: () => setModalVisible(false) }],
     });
     setModalVisible(true);
+  };
+
+  const openGallery = async () => {
+    const options = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8,
+    };
+
+    try {
+      const result = await launchImageLibrary(options);
+
+      if (result.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (result.errorCode) {
+        console.log('ImagePicker Error: ', result.errorMessage);
+        Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      } else if (result.assets && result.assets.length > 0) {
+        const selectedPhoto = result.assets[0];
+        let imagePath = selectedPhoto.uri;
+        if (imagePath.startsWith('file://')) {
+          imagePath = imagePath.substring(7);
+        }
+
+        setPhoto({
+          path: imagePath,
+        });
+        setIsActive(false);
+      }
+    } catch (error) {
+      console.error('Error opening gallery: ', error);
+      Alert.alert('Error', 'Hubo un error al abrir la galería');
+    }
   };
 
   // Funciones para manejar zoom y navegación de imagen
@@ -376,6 +413,7 @@ export default function CameraScreen({ navigation, route }) {
     );
   }
 
+
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
     if (!camera.current || loading || !isActive) {
@@ -393,8 +431,44 @@ export default function CameraScreen({ navigation, route }) {
         enableShutterSound: false,
       });
 
-      setPhoto(result);
-      setIsActive(false); // Deactivate immediately after taking photo
+      const photoInfo = await new Promise((resolve, reject) => {
+        Image.getSize(`file://${result.path}`, (width, height) => {
+          resolve({ width, height });
+        }, reject);
+      });
+
+      // Calcular relación de aspecto
+      const screenRatio = screenData.width / screenData.height;
+      const photoRatio = photoInfo.width / photoInfo.height;
+
+      // Determinar si la foto está en landscape
+      const isLandscapePhoto = photoRatio > 1;
+
+      // Calcular el área visible de la foto que coincide con la vista previa
+      let visibleWidth, visibleHeight;
+      if (isLandscapePhoto) {
+        visibleHeight = photoInfo.height;
+        visibleWidth = visibleHeight * screenRatio;
+      } else {
+        visibleWidth = photoInfo.width;
+        visibleHeight = visibleWidth / screenRatio;
+      }
+
+      // Calcular desplazamiento para centrar
+      const offsetX = (photoInfo.width - visibleWidth) / 2;
+      const offsetY = (photoInfo.height - visibleHeight) / 2;
+
+      setPhoto({
+        path: result.path,
+        cropData: {
+          x: offsetX,
+          y: offsetY,
+          width: visibleWidth,
+          height: visibleHeight
+        }
+      });
+
+      setIsActive(false);
     } catch (err) {
       console.error('Camera error:', err);
 
@@ -549,7 +623,7 @@ export default function CameraScreen({ navigation, route }) {
         <>
           {isActive && (
             <Camera
-              key={cameraKey} // Forzar re-render cuando cambia
+              key={cameraKey}
               ref={camera}
               style={StyleSheet.absoluteFill}
               device={device}
@@ -589,6 +663,12 @@ export default function CameraScreen({ navigation, route }) {
                 </CText>
               )}
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.galleryButtonPreview]}
+              onPress={openGallery}>
+              <Ionicons name="image-outline" size={20} color="#fff" />
+              <CText style={styles.actionButtonText}>Galería</CText>
+            </TouchableOpacity>
           </View>
         </>
       ) : (
@@ -625,7 +705,10 @@ export default function CameraScreen({ navigation, route }) {
                   styles.zoomableImage,
                   {
                     width: screenData.width,
-                    height: screenData.height * 0.7,
+                    height: screenData.height,
+                    // Aplicar recorte visual
+                    marginLeft: photo.cropData ? -photo.cropData.x * (screenData.width / photo.cropData.width) : 0,
+                    marginTop: photo.cropData ? -photo.cropData.y * (screenData.height / photo.cropData.height) : 0
                   }
                 ]}
                 resizeMode="contain"
@@ -844,6 +927,8 @@ const styles = StyleSheet.create({
   overlayContainer: {
     position: 'absolute',
     zIndex: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   corner: {
     position: 'absolute',
@@ -886,11 +971,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 200,
     paddingHorizontal: 20,
+    gap: 5,
   },
   captureButton: {
-    width: 180,
+    width: 70,
+    height: 70,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 35,
     backgroundColor: '#4F9858',
     alignItems: 'center',
     justifyContent: 'center',
@@ -975,4 +1062,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  galleryButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  galleryButtonPreview: {
+    backgroundColor: '#5D5D5D',
+  },
+
+  fullScreenOverlay: {
+    position: 'absolute',
+    zIndex: 100,
+  },
+
+  fullBorder: {
+    position: 'absolute',
+    top: 1,
+    left: 1,
+    right: 1,
+    bottom: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 0, 0.5)',
+  },
+
 });

@@ -25,6 +25,6 @@ export async function registerDeviceToken() {
   try {
     await axios.post(`${BACKEND}device-token`, body, { headers });
   } catch (err) {
-    console.error('[registerDeviceToken]', err?.response?.data || err);
+    // console.error('[registerDeviceToken]', err?.response?.data || err);
   }
 }

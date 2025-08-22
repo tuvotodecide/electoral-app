@@ -7,7 +7,8 @@ import {
   PermissionsAndroid,
   Platform,
   Dimensions,
-  Linking
+  Linking,
+  TextInput
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
@@ -56,15 +57,81 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [electionStatus, setElectionStatus] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredLocations, setFilteredLocations] = useState([]);
 
   // Get navigation target from route params
   const { targetScreen } = route.params || {};
+
+  const filterLocations = (text) => {
+    setSearchTerm(text);
+
+    if (!text) {
+      setFilteredLocations(locations);
+      return;
+    }
+
+    const lowerText = text.toLowerCase();
+
+    const results = locations.filter(location => {
+      return (
+        location.name?.toLowerCase().includes(lowerText) ||
+        location.code?.toLowerCase().includes(lowerText) ||
+        location.address?.toLowerCase().includes(lowerText) ||
+        location.zone?.toLowerCase().includes(lowerText) ||
+        location.district?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.department?.name?.toLowerCase().includes(lowerText)
+      );
+    });
+
+    setFilteredLocations(results);
+  };
+
+  const renderSearchBar = () => (
+    <View style={styles.searchContainer}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar recinto por nombre, código, calle o distrito"
+        placeholderTextColor="#888"
+        value={searchTerm}
+        onChangeText={filterLocations}
+      />
+      {searchTerm ? (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={() => {
+            setSearchTerm('');
+            setFilteredLocations(locations);
+          }}
+        >
+          <Ionicons name="close-circle" size={20} color="#888" />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+      )}
+    </View>
+  );
+
+  const highlightText = (text, highlight) => {
+    if (!highlight || !text) return text;
+
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase()
+        ? <CText key={index} style={styles.highlightedText}>{part}</CText>
+        : part
+    );
+  };
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=5000`,
         { timeout: 15000 } // 10 segundos timeout
       );
       // const response = await axios.get(
@@ -126,16 +193,16 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   };
 
-  const getCurrentLocation = useCallback(async (retryCount = 0) => {
+  const getCurrentLocation = useCallback(async (retryCount = 0, useHighAccuracy = true) => {
     try {
       setLoadingLocation(true);
 
-      // Show retry message if this is a retry attempt
+      // Mostrar mensaje de reintento si corresponde
       if (retryCount > 0) {
-        console.log(`Retry attempt ${retryCount} for location`);
+        console.log(`Retry attempt ${retryCount} for location (highAccuracy=${useHighAccuracy})`);
       }
 
-      // Request location permission on Android
+      // Pedir permisos en Android
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -147,7 +214,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             buttonNeutral: i18nString.askMeLater || 'Preguntar después',
             buttonNegative: i18nString.cancel || 'Cancelar',
             buttonPositive: i18nString.ok || 'OK',
-          },
+          }
         );
 
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
@@ -158,16 +225,15 @@ const ElectoralLocations = ({ navigation, route }) => {
             i18nString.locationPermissionDeniedMessage,
             i18nString.openSettings,
             () => Linking.openSettings(),
-            i18nString.cancel,   // Botón secundario
-            closeModal           // Acción secundaria
+            i18nString.cancel,
+            closeModal
           );
           setLoadingLocation(false);
           return;
         }
       }
-      //fetchNearbyLocations(-17.3746706, -66.1316081);
 
-      // Get current position
+      // Obtener ubicación
       Geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords;
@@ -178,6 +244,14 @@ const ElectoralLocations = ({ navigation, route }) => {
         error => {
           console.error('Location error:', error);
 
+          // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
+          if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+            console.log('Retrying with low accuracy...');
+            getCurrentLocation(retryCount + 1, false);
+            return;
+          }
+
+          // Manejo de errores final
           let errorMessage = i18nString.locationError;
           let modalTitle = i18nString.error;
           let action = null;
@@ -186,8 +260,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             errorMessage = i18nString.locationPermissionDeniedMessage;
             modalTitle = i18nString.locationPermissionRequired;
             action = () => Linking.openSettings();
-          }
-          else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
+          } else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
             errorMessage = i18nString.locationDisabledMessage;
             modalTitle = i18nString.locationRequired;
             action = openLocationSettings;
@@ -195,33 +268,32 @@ const ElectoralLocations = ({ navigation, route }) => {
 
           showModal(
             'settings',
-            modalTitle,       // Usar el título correcto
-            errorMessage,     // Usar el mensaje correcto
+            modalTitle,
+            errorMessage,
             i18nString.openSettings,
-            action,           // Usar la acción correcta
+            action,
             i18nString.cancel,
             closeModal
           );
+
           setLoadingLocation(false);
           setLoading(false);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-        },
+          enableHighAccuracy: useHighAccuracy,
+          timeout: useHighAccuracy ? 15000 : 30000,   // menos estricto en fallback
+          maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
+        }
       );
+
     } catch (error) {
       console.error('Permission error:', error);
-      showModal(
-        'error',
-        i18nString.error,
-        i18nString.locationPermissionError,
-      );
+      showModal('error', i18nString.error, i18nString.locationPermissionError);
       setLoadingLocation(false);
       setLoading(false);
     }
   }, [fetchNearbyLocations]);
+
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -277,6 +349,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       getCurrentLocation();
     }
   }, [electionStatus, getCurrentLocation]);
+  useEffect(() => {
+    setFilteredLocations(locations);
+  }, [locations]);
 
   const showModal = (
     type,
@@ -350,13 +425,14 @@ const ElectoralLocations = ({ navigation, route }) => {
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.8}>
+
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
           <CText style={styles.locationName} numberOfLines={2}>
-            {item.name}
+            {highlightText(item.name, searchTerm)}
           </CText>
           <CText style={styles.locationCode}>
-            {i18nString.code}: {item.code}
+            {i18nString.code}: {highlightText(item.code, searchTerm)}
           </CText>
         </View>
         <View style={styles.distanceContainer}>
@@ -366,12 +442,12 @@ const ElectoralLocations = ({ navigation, route }) => {
       </View>
 
       <CText style={styles.locationAddress} numberOfLines={2}>
-        {item.address}
+        {highlightText(item.address, searchTerm)}
       </CText>
 
       <View style={styles.locationDetails}>
         <CText style={styles.locationZone}>
-          {item.zone} - {item.district}
+          {highlightText(item.zone, searchTerm)} - {highlightText(item.district, searchTerm)}
         </CText>
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
@@ -383,9 +459,9 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       <View style={styles.hierarchyContainer}>
         <CText style={styles.hierarchyText}>
-          {item.electoralSeat?.municipality?.province?.department?.name} →{' '}
-          {item.electoralSeat?.municipality?.province?.name} →{' '}
-          {item.electoralSeat?.municipality?.name} → {item.electoralSeat?.name}
+          {highlightText(item.electoralSeat?.municipality?.province?.department?.name, searchTerm)} →{' '}
+          {highlightText(item.electoralSeat?.municipality?.province?.name, searchTerm)} →{' '}
+          {highlightText(item.electoralSeat?.municipality?.name, searchTerm)} → {highlightText(item.electoralSeat?.name, searchTerm)}
         </CText>
       </View>
     </TouchableOpacity>
@@ -520,6 +596,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     // Caso 4: Periodo de votación activo
     return (
       <>
+        {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
             <ActivityIndicator size="small" color="#4F9858" />
@@ -550,7 +627,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             )}
 
             <FlatList
-              data={locations}
+              data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
               contentContainerStyle={styles.listContainer}
@@ -841,6 +918,38 @@ const styles = {
     marginTop: getResponsiveSize(10, 12, 14),
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  searchInput: {
+    flex: 1,
+    height: getResponsiveSize(40, 45, 50),
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#333',
+    paddingVertical: 0,
+  },
+  searchIcon: {
+    marginLeft: getResponsiveSize(8, 10, 12),
+  },
+  clearButton: {
+    padding: getResponsiveSize(5, 8, 10),
+  },
+  highlightedText: {
+    backgroundColor: 'yellow',
+    color: '#000',
+    fontWeight: 'bold',
   },
 };
 

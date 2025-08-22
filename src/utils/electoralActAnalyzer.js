@@ -26,10 +26,10 @@ class ElectoralActAnalyzer {
     return `Analiza la imagen proporcionada.
 PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana:
   • Logotipo del OEP (esquina superior izquierda).
-  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CÓMPUTO”.
-  • Leyenda “ELECCIONES GENERALES” debajo del título.
-  • Tabla “CÓDIGO DE MESA” con un número grande en la parte izquierda.
-  • Cuadros numerados en rojo para los votos de 9 candidaturas.
+  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CONTEO”.
+  • Leyenda “ELECCIÓN DE AUTORIDADES Y REPRESENTANTES DEL ESTADO PLURINACIONAL 2025” debajo del título.
+  • Tabla “CÓDIGO DE MESA” con un número y un código de barras en la parte izquierda.
+  • Cuadros numerados en azul para "candidate_votes" y en amarillo para "deputy_vote_counts"
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
   {"if_electoral_act": false}
@@ -55,7 +55,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       { "candidate_id": "MORENA",      "votes": "<n o 0>" },
       { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
-      { "candidate_id": "NGP",      "votes": "<n o 0>" },
     ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
@@ -63,7 +62,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     "total_votes":  "<n o 0>"
   },
   "deputy_vote_counts": {
-    "candidate_votes": [ …mismo orden y reglas… ],
+    "candidate_votes": [ …mismo orden y reglas, excepto por FP que no aparece en la imagen, en ese caso poner como valor 0… ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
     "null_votes":   "<n o 0>",
@@ -150,9 +149,8 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
       MORENA: 'morena',
-      'UNIDAD': 'pan-bol',
+      'UNIDAD': 'unidad',
       PDC: 'pdc',
-      NGP: 'ngp',
     };
 
     // Mapear resultados de partidos para presidente

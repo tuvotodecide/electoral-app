@@ -69,14 +69,14 @@ const App = () => {
     });
   }, []);
 
-  useEffect(() => {
-    registerDeviceToken().catch(console.error);
+  // useEffect(() => {
+  //   registerDeviceToken().catch(console.error);
 
-    const unsub = messaging().onTokenRefresh(() => {
-      registerDeviceToken().catch(console.error);
-    });
-    return unsub;
-  }, []);
+  //   const unsub = messaging().onTokenRefresh(() => {
+  //     registerDeviceToken().catch(console.error);
+  //   });
+  //   return unsub;
+  // }, []);
 
   // useEffect(() => {
   //   const fetchToken = async () => {
