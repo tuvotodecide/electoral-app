@@ -353,7 +353,7 @@ export default function GuardiansAdmin({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.myProtected} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>
@@ -364,6 +364,10 @@ export default function GuardiansAdmin({navigation}) {
           keyExtractor={item => item.id}
           renderItem={renderInvitationOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
         <CText type={'B16'} align={'center'} marginTop={15}>
           {String.myRecovery}
@@ -373,6 +377,10 @@ export default function GuardiansAdmin({navigation}) {
           keyExtractor={item => item.id}
           renderItem={renderRevoceryOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
         <CText type={'B16'} align={'center'} marginTop={15}>
           {String.myProtectedInfo}
@@ -382,6 +390,10 @@ export default function GuardiansAdmin({navigation}) {
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
       </KeyBoardAvoidWrapper>
       <GuardianInfoActionModal

@@ -45,7 +45,6 @@ export default function RegisterUser4({navigation, route}) {
           if (response?.assets) {
             setSelfie(response.assets[0]);
           } else if (response.errorCode) {
-            console.warn('Error al abrir la cámara:', response.errorMessage);
           }
         },
       );

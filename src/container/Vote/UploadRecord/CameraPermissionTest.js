@@ -22,19 +22,17 @@ export default function CameraPermissionTest({navigation}) {
   const checkPermissions = async () => {
     try {
       const status = await Camera.getCameraPermissionStatus();
-      console.log('Current permission status:', status);
+
       setPermissionStatus(status);
     } catch (error) {
-      console.error('Error checking permissions:', error);
+
       setPermissionStatus('error');
     }
   };
 
   const handleRequestPermission = async () => {
     try {
-      console.log('Requesting camera permission...');
       const granted = await requestPermission();
-      console.log('Permission request result:', granted);
 
       if (granted) {
         setPermissionStatus('granted');
@@ -44,7 +42,6 @@ export default function CameraPermissionTest({navigation}) {
         Alert.alert('Error', 'Permisos de cámara denegados');
       }
     } catch (error) {
-      console.error('Error requesting permission:', error);
       Alert.alert('Error', 'Error al solicitar permisos: ' + error.message);
     }
   };

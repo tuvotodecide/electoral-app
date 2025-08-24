@@ -1,7 +1,3 @@
-/* -----------------------------------------------------------------------
- *  Guardian helpers (solo Front-End) – usa viem + bundler
- *  Todas las tx gastan la misma llave “GAS_KEY” gracias a tu paymaster.
- * -------------------------------------------------------------------- */
 import {
   createPublicClient, createWalletClient, createBundlerClient,
   encodeFunctionData, http

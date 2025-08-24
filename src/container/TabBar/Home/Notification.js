@@ -43,7 +43,6 @@ export default function Notification({navigation}) {
         
         setNotificaciones(sortedNotifications);
       } catch (error) {
-        console.error('Error cargando notificaciones:', error);
         setNotificaciones(mockNotificaciones);
       }
       setLoading(false);

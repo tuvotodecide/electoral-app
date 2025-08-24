@@ -1,9 +1,6 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {BACKEND, AUTH_TOKEN_KEY} from '@env';
-import {Alert} from 'react-native';
-import {getAsyncStorageData} from '../../utils/AsyncStorage';
-import {ACCESS_TOKEN} from '../../utils/Keys';
+import {BACKEND} from '@env';
+
 import * as Keychain from 'react-native-keychain';
 import {JWT_KEY} from '../../common/constants';
 

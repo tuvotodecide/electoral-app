@@ -53,7 +53,7 @@ export const useKycRegisterQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
+
       }
     },
     onSettled: () => {

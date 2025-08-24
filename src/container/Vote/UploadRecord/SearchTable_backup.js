@@ -31,33 +31,15 @@ export default function SearchTable({navigation, route}) {
   const loadMesasFromApi = async locationId => {
     try {
       setIsLoadingMesas(true);
-      console.log(
-        'SearchTable: Loading tables from API for location:',
-        locationId,
-      );
+
       // const response = await axios.get(
       //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
       // );
       const response = await axios.get(
         `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
-      console.log('SearchTable - API Response structure:', response.data);
 
       if (response.data && response.data.tables) {
-        console.log('SearchTable - Tables found:', response.data.tables.length);
-        console.log(
-          'SearchTable - First table structure:',
-          response.data.tables[0],
-        );
-        console.log(
-          'SearchTable - Complete first table JSON:',
-          JSON.stringify(response.data.tables[0], null, 2),
-        );
-        console.log('SearchTable - Location data (name, address):', {
-          name: response.data.name,
-          address: response.data.address,
-        });
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.name,
@@ -73,19 +55,6 @@ export default function SearchTable({navigation, route}) {
         response.data.data &&
         response.data.data.tables
       ) {
-        console.log(
-          'SearchTable - Tables found in data.data:',
-          response.data.data.tables.length,
-        );
-        console.log(
-          'SearchTable - First table in data.data structure:',
-          response.data.data.tables[0],
-        );
-        console.log(
-          'SearchTable - Complete first table JSON in data.data:',
-          JSON.stringify(response.data.data.tables[0], null, 2),
-        );
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.data.name,
@@ -97,11 +66,9 @@ export default function SearchTable({navigation, route}) {
 
         setMesas(response.data.data.tables);
       } else {
-        console.log('SearchTable: No tables found in response');
         showModal('info', String.info, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas from API:', error);
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoadingMesas(false);
@@ -120,26 +87,17 @@ export default function SearchTable({navigation, route}) {
   const loadMesas = async () => {
     try {
       setIsLoadingMesas(true);
-      console.log('SearchTable: Loading mesas...');
 
       // Obtener locationId si existe en route.params
       const locationId = route?.params?.locationId;
       const response = await fetchMesas(locationId);
 
       if (response.success) {
-        console.log(
-          'SearchTable: Mesas loaded successfully:',
-          response.data.length,
-          'for location:',
-          locationId || 'all',
-        );
         setMesas(response.data);
       } else {
-        console.error('SearchTable: Failed to load mesas');
         showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas:', error);
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoadingMesas(false);
@@ -208,19 +166,15 @@ export default function SearchTable({navigation, route}) {
       district: locationData?.district || mesa.district || 'N/A',
     };
 
-    console.log('SearchTable - handleSelectMesa - Original mesa:', mesa);
-    console.log(
-      'SearchTable - handleSelectMesa - Enriched mesa:',
-      enrichedMesa,
-    );
-    console.log('SearchTable - handleSelectMesa - LocationData:', locationData);
-
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
-    
+
     if (!tableCode) {
-      console.error('SearchTable - No table code found for mesa:', mesa);
-      showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
+      showModal(
+        'error',
+        String.error,
+        'No se pudo encontrar el código de la mesa',
+      );
       return;
     }
 
@@ -233,23 +187,22 @@ export default function SearchTable({navigation, route}) {
         message: 'Consultando actas atestiguadas para esta mesa...',
         buttonText: String.accept,
       });
-      
-      console.log('SearchTable - Checking mesa results for code:', tableCode);
-      
+
       // Check if mesa has existing attestations
       const response = await axios.get(
-        `http://192.168.1.16:3000/api/v1/mesa/${tableCode}/results`
+        `http://192.168.1.16:3000/api/v1/mesa/${tableCode}/results`,
       );
-      
-      console.log('SearchTable - Mesa results response:', response.data);
-      
+
       // Close loading modal
       closeModal();
-      
-      if (response.data && response.data.registros && response.data.registros.length > 0) {
+
+      if (
+        response.data &&
+        response.data.registros &&
+        response.data.registros.length > 0
+      ) {
         // Mesa has existing attestations - go directly to WhichIsCorrectScreen
-        console.log('SearchTable - Mesa has existing attestations:', response.data.registros.length);
-        
+
         // Convert API data to format expected by WhichIsCorrectScreen
         const actaImages = response.data.registros.map((record, index) => ({
           id: record.recordId || `record-${index}`,
@@ -267,44 +220,48 @@ export default function SearchTable({navigation, route}) {
           existingRecords: response.data.registros,
           mesaInfo: response.data.mesa,
           totalRecords: response.data.totalRecords,
-          isFromAPI: true
+          isFromAPI: true,
         });
       } else {
         // No attestations found, go to photo capture
-        console.log('SearchTable - No attestations found, redirecting to photo capture');
-        
+
         // Navigate to photo capture screen
         navigation.navigate(StackNav.CameraScreen, {mesa: enrichedMesa});
       }
-      
     } catch (error) {
-      console.error('SearchTable - Error checking mesa results:', error);
-      
       // Close loading modal
       closeModal();
-      
+
       // Check if it's a 404 or mesa not found error
       if (error.response && error.response.status === 404) {
-        console.log('SearchTable - Mesa not found, redirecting to photo capture');
-        
         // Mesa not found, go to photo capture to create new attestation
         navigation.navigate(StackNav.CameraCapture, {mesa: enrichedMesa});
-      } else if (error.response && error.response.data && error.response.data.message) {
+      } else if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         // Handle specific error messages from API
         const errorData = error.response.data;
-        
+
         if (errorData.message.includes('no encontrada')) {
-          console.log('SearchTable - Mesa not found in API, redirecting to photo capture');
-          
           // Mesa not found, go to photo capture
           navigation.navigate(StackNav.CameraScreen, {mesa: enrichedMesa});
         } else {
           // Other API error
-          showModal('error', String.error, errorData.message || 'Error al verificar la mesa');
+          showModal(
+            'error',
+            String.error,
+            errorData.message || 'Error al verificar la mesa',
+          );
         }
       } else {
         // Network or other error
-        showModal('error', String.error, 'Error de conexión al verificar la mesa');
+        showModal(
+          'error',
+          String.error,
+          'Error de conexión al verificar la mesa',
+        );
       }
     }
   };
@@ -318,7 +275,6 @@ export default function SearchTable({navigation, route}) {
   const handleNearbyMesas = async () => {
     try {
       setIsLoadingLocation(true);
-      console.log('SearchTable: Loading nearby mesas...');
 
       // Simulate getting location (in production would use real geolocation)
       const mockLocation = {latitude: -16.5, longitude: -68.15}; // La Paz, Bolivia
@@ -329,7 +285,6 @@ export default function SearchTable({navigation, route}) {
       );
 
       if (response.success) {
-        console.log('SearchTable: Nearby mesas loaded:', response.data.length);
         setMesas(response.data);
         showModal(
           'success',
@@ -337,11 +292,9 @@ export default function SearchTable({navigation, route}) {
           String.foundNearbyTables.replace('{count}', response.data.length),
         );
       } else {
-        console.error('SearchTable: Failed to load nearby mesas');
         showModal('error', String.error, String.couldNotLoadNearbyTables);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading nearby mesas:', error);
       showModal('error', String.error, String.errorSearchingNearbyTables);
     } finally {
       setIsLoadingLocation(false);
@@ -366,14 +319,6 @@ export default function SearchTable({navigation, route}) {
       item.province ||
       item.location?.province ||
       'N/A';
-
-    console.log('SearchTable - renderMesaItem with locationData:', {
-      tableNumber,
-      codigo,
-      colegio,
-      provincia,
-      locationData,
-    });
 
     return (
       <TouchableOpacity

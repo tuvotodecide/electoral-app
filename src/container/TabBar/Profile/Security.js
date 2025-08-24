@@ -92,7 +92,12 @@ export default function Security({navigation}) {
       await setBioFlag(val);
       setBioEnabled(val);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      if (isUserCancellation(err)) {
+        await setBioFlag(false);
+        setBioEnabled(false);
+        return;
+      }
+      Alert.alert('Error', err?.message || 'No se pudo cambiar la biometría');
     }
   };
 

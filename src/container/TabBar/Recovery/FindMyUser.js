@@ -10,6 +10,8 @@ import {CHAIN} from '@env';
 import {
   getHeight,
   moderateScale,
+  PENDING_OWNER_ACCOUNT,
+  PENDING_OWNER_GUARDIAN_CT,
   PENDINGRECOVERY,
 } from '../../../common/constants';
 import CText from '../../../components/common/CText';
@@ -22,13 +24,10 @@ import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {
-  useGuardiansInviteQuery,
   useGuardiansRecoveryRequestQuery,
   useHasGuardiansQuery,
 } from '../../../data/guardians';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
-import InfoModal from '../../../components/modal/InfoModal';
 import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClose';
 import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
@@ -39,9 +38,6 @@ export default function FindMyUser({navigation}) {
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
- 
-    const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
-  const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);

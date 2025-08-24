@@ -1,12 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
+import {GoogleGenAI} from '@google/genai';
 import RNFS from 'react-native-fs';
-
-// 🔐 API Key de Gemini - mover a variables de entorno en producción
-const API_KEY = 'AIzaSyBYvHX2YNgOFZyFlcVVQdNvLqNcRc_fk00';
+import {API_GEMINI} from '@env';
 
 class ElectoralActAnalyzer {
   constructor() {
-    this.genAI = new GoogleGenAI({ apiKey: API_KEY });
+    this.genAI = new GoogleGenAI({apiKey: API_GEMINI});
   }
 
   /**
@@ -17,7 +15,6 @@ class ElectoralActAnalyzer {
       const base64 = await RNFS.readFile(imagePath, 'base64');
       return base64;
     } catch (error) {
-      console.error('Error converting image to base64:', error);
       throw new Error('No se pudo procesar la imagen');
     }
   }
@@ -83,8 +80,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
    */
   async analyzeElectoralAct(imagePath) {
     try {
-      console.log('🔍 Iniciando análisis de acta electoral...');
-
       // Convertir imagen a base64
       const base64Image = await this.imageToBase64(imagePath);
 
@@ -101,26 +96,23 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
               data: base64Image,
             },
           },
-          { text: prompt },
+          {text: prompt},
         ],
       });
 
       // La respuesta es ahora response.text (no .text())
       const text = response.text.trim();
 
-      console.log('📄 Respuesta de Gemini:', text);
-
       // Intentar parsear como JSON
       try {
         const analysisResult = JSON.parse(text);
-        console.log('✅ Análisis completado:', analysisResult);
+
         return {
           success: true,
           data: analysisResult,
           rawResponse: text,
         };
       } catch (parseError) {
-        console.error('❌ Error parseando JSON:', parseError);
         return {
           success: false,
           error: 'La respuesta de la IA no es un JSON válido',
@@ -128,7 +120,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
         };
       }
     } catch (error) {
-      console.error('❌ Error en análisis:', error);
       return {
         success: false,
         error: error.message || 'Error al analizar la imagen',
@@ -152,7 +143,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       FP: 'fp',
       'MAS-IPSP': 'mas-ipsp',
       MORENA: 'morena',
-      'UNIDAD': 'unidad',
+      UNIDAD: 'unidad',
       PDC: 'pdc',
     };
 

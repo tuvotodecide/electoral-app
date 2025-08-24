@@ -23,24 +23,42 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
       {isEditing ? (
         <TextInput
           style={styles.voteSummaryInput}
-          value={item.value1}
-          onChangeText={value => onUpdate(item.id, 'value1', value)}
+          value={String(item.value1 ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              item.id,
+              'value1',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
         />
       ) : (
-        <CText style={styles.voteSummaryValue}>{item.value1}</CText>
+        <CText style={styles.voteSummaryValue}>
+          {item.value1 === '' || item.value1 == null ? '0' : String(item.value1)}
+        </CText>
       )}
     </View>
     <View style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
           style={styles.voteSummaryInput}
-          value={item.value2}
-          onChangeText={value => onUpdate(item.id, 'value2', value)}
+          value={String(item.value2 ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              item.id,
+              'value2',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
         />
       ) : (
-        <CText style={styles.voteSummaryValue}>{item.value2}</CText>
+        <CText style={styles.voteSummaryValue}>
+          {item.value2 === '' || item.value2 == null ? '0' : String(item.value2)}
+        </CText>
       )}
     </View>
   </View>

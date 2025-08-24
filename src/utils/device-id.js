@@ -42,7 +42,6 @@ export async function getDeviceId() {
 
     return id;
   } catch (e) {
-    console.error('[device-id] error:', e);
     throw e;
   }
 }

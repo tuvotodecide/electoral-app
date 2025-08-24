@@ -7,7 +7,7 @@ export default {
   guardiansTitleStatus: 'Estado',
   connectBtnForgot: 'Olvidé mi cuenta',
   messagetorecovery:
-    'Para recuperar tu cuenta, debes seleccionar un método de recuperación.',
+    'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes horas desde su cuenta.',
   recoveryAccountWithGuardians: 'Recuperar cuenta con guardianes',
   confirmDataCorrect: 'Confirma que los datos son correctos',
 

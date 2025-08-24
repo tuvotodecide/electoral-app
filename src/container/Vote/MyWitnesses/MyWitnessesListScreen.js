@@ -73,7 +73,7 @@ const MyWitnessesListScreen = () => {
     setHasNoAttestations(false);
 
     try {
-      console.log('MyWitnessesListScreen: Fetching witness records for DNI:', dni);
+
 
       // Paso 1: Obtener los attestations por DNI
       const attestationsResponse = await axios.get(
@@ -83,7 +83,6 @@ const MyWitnessesListScreen = () => {
       const attestationsData = attestationsResponse.data.data || [];
 
       if (attestationsData.length === 0) {
-        console.log('MyWitnessesListScreen: No attestations found for user');
         setHasNoAttestations(true);
         setWitnessRecords([]);
         return;
@@ -98,7 +97,7 @@ const MyWitnessesListScreen = () => {
             );
             return ballotResponse.data;
           } catch (error) {
-            console.error(`Error fetching ballot ${attestation.ballotId}:`, error);
+      
             return null;
           }
         })
@@ -199,11 +198,11 @@ const MyWitnessesListScreen = () => {
         };
       });
 
-      console.log('MyWitnessesListScreen: Transformed data:', transformedData);
+
       setWitnessRecords(transformedData);
       setHasNoAttestations(false);
     } catch (error) {
-      console.error('MyWitnessesListScreen: Error loading witness records:', error);
+
       if (error.response?.status === 404) {
         setHasNoAttestations(true);
         setWitnessRecords([]);

@@ -259,7 +259,7 @@ export default function RegisterUser10({navigation, route}) {
           account: walletData.address,
         });
       } catch (err) {
-        console.log(err);
+  
         setLoading(false);
         setErrorMessage(
           err?.message || 'Ocurrió un error al registrar tu cuenta.',

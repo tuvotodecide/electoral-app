@@ -49,19 +49,7 @@ export default function TableDetail({ navigation, route }) {
   const mesaInfo = route.params?.mesaInfo || null;
   const totalRecords = route.params?.totalRecords || 0;
 
-  console.log('TableDetail - Mesa recibida:', rawMesa);
-  console.log('TableDetail - Existing records:', existingRecords);
-  console.log('TableDetail - Mesa info:', mesaInfo);
-  console.log('TableDetail - Total records:', totalRecords);
-  console.log('TableDetail - Zone data debug:', {
-    zone: rawMesa.zone,
-    zona: rawMesa.zona,
-    electoralZone: rawMesa.electoralZone,
-    district: rawMesa.district,
-    locationZone: rawMesa.location?.zone,
-    locationDistrict: rawMesa.location?.district,
-    allKeys: Object.keys(rawMesa),
-  });
+
 
   // Normalize mesa data structure
   const mesa = {
@@ -121,9 +109,7 @@ export default function TableDetail({ navigation, route }) {
       'Zona no especificada',
   };
 
-  console.log('TableDetail - Mesa normalizada:', mesa);
-  console.log('TableDetail - Mesa numero específico:', mesa.numero);
-  console.log('TableDetail - Mesa tableNumber específico:', mesa.tableNumber);
+
 
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(
@@ -135,16 +121,8 @@ export default function TableDetail({ navigation, route }) {
 
   // Navega a la cámara interna
   const handleTakePhoto = () => {
-    console.log('TableDetail - handleTakePhoto: mesa data:', mesa);
-    console.log('TableDetail - handleTakePhoto: normalized tableData:', {
-      ...mesa,
-      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-    });
-    console.log('TableDetail - handleTakePhoto: mesa.numero:', mesa.numero);
-    console.log(
-      'TableDetail - handleTakePhoto: mesa.tableNumber:',
-      mesa.tableNumber,
-    );
+
+
 
     const finalTableData = {
       ...mesa,
@@ -155,11 +133,7 @@ export default function TableDetail({ navigation, route }) {
       number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
     };
 
-    console.log(
-      'TableDetail - handleTakePhoto: finalTableData:',
-      finalTableData,
-    );
-
+  
     try {
       navigation.navigate(StackNav.CameraScreen, {
         tableData: finalTableData,
@@ -167,7 +141,6 @@ export default function TableDetail({ navigation, route }) {
         mesa: finalTableData,
       });
     } catch (error) {
-      console.error('TableDetail - Error navigating to CameraScreen:', error);
       // Fallback navigation
       navigation.navigate('CameraScreen', {
         tableData: finalTableData,
@@ -208,7 +181,7 @@ export default function TableDetail({ navigation, route }) {
   };
 
   return (
-    <CSafeAreaView style={stylesx.container}>
+    <CSafeAreaView style={stylesx.container} addTabPadding={false}>
       {/* HEADER */}
       <UniversalHeader
         colors={colors}

@@ -74,12 +74,6 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
     'SuccessScreen',
   ];
 
-  console.log(
-    'TabBar - Current route:',
-    routeName,
-    'Should hide:',
-    hideTabBarScreens.includes(routeName),
-  );
 
   // Si estamos en una pantalla que debe ocultar el tab bar, no renderizar nada
   if (hideTabBarScreens.includes(routeName)) {

@@ -8,6 +8,8 @@ import {styles} from '../../../themes';
 import {
   getHeight,
   moderateScale,
+  PENDING_OWNER_ACCOUNT,
+  PENDING_OWNER_GUARDIAN_CT,
   PENDINGRECOVERY,
 } from '../../../common/constants';
 import CText from '../../../components/common/CText';
@@ -26,8 +28,7 @@ import CButton from '../../../components/common/CButton';
 import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
 
-const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
-const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -69,9 +70,7 @@ export default function MyGuardiansStatus({navigation, route}) {
     ];
   }, [safeDetail.pending, safeDetail.approved, safeDetail.rejected]);
 
-  useEffect(() => {
-    console.log('detail', safeDetail);
-  }, [safeDetail]);
+ 
 
   const statusLabel = {
     ACCEPTED: String.active,
