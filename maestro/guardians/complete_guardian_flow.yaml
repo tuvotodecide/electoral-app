@@ -1,0 +1,90 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo completo de guardianes - desde agregar hasta administrar
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: ACCEDER A GUARDIANES ===
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+
+# === FASE 3: REVISAR ESTADO ACTUAL ===
+- assertVisible:
+    text: "Activo"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+- assertVisible:
+    text: "Rechazado"
+    optional: true
+
+# === FASE 4: INTENTAR AGREGAR NUEVO GUARDIÁN ===
+- tapOn: "Agregar guardián"
+- assertVisible: "Ingresa el CI"
+- inputText: "99999999"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+- tapOn: "Regresar"
+
+# === FASE 5: ACCEDER A INFORMACIÓN DE GUARDIANES ===
+- scrollUntilVisible:
+    element:
+      text: "¿Qué son los Guardianes?"
+    direction: down
+    optional: true
+- tapOn:
+    text: "¿Qué son los Guardianes?"
+    optional: true
+- assertVisible:
+    text: "Son personas o dispositivos que ayudan a confirmar tu identidad"
+    optional: true
+- tapOn: "Regresar"
+
+# === FASE 6: ADMINISTRAR PROTEGIDOS ===
+- tapOn: "Perfil"
+- scrollUntilVisible:
+    element:
+      text: "Mis Protegidos"
+    direction: down
+- tapOn: "Mis Protegidos"
+- assertVisible: "Mis invitaciones"
+- assertVisible: "Solicitudes de recuperación"
+
+# === FASE 7: VERIFICAR INVITACIONES PENDIENTES ===
+- assertVisible:
+    text: "Aceptar"
+    optional: true
+- assertVisible:
+    text: "Rechazar"
+    optional: true
+
+# === FASE 8: VERIFICAR SOLICITUDES DE RECUPERACIÓN ===
+- scrollUntilVisible:
+    element:
+      text: "Solicitudes de recuperación"
+    direction: down
+    optional: true
+
+# === FASE 9: REGRESAR A GUARDIANES PRINCIPALES ===
+- tapOn: "Regresar"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+
+# === FASE 10: VERIFICAR CONFIGURACIÓN SI EXISTE ===
+- scrollUntilVisible:
+    element:
+      text: "Configuración de guardianes"
+    direction: down
+    optional: true

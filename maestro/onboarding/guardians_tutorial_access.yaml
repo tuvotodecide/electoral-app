@@ -1,0 +1,56 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Acceder al tutorial de guardianes desde onboarding
+# Verifica que se pueda acceder al tutorial específico de guardianes
+
+- launchApp:
+    clearState: true
+    
+- tapOn: 
+    text: "Saber más"
+  optional: true
+
+# Navegar hasta la pantalla sobre guardianes
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          text: "Siguiente"
+        optional: true
+      - wait: 1000
+
+# Verificar que estamos en pantalla de guardianes
+- assertVisible:
+    text: ".*guard.*cuenta.*"
+  optional: true
+
+# Buscar enlace o botón para "Saber más" sobre guardianes
+- tapOn:
+    text: ".*Saber.*más.*guardianes.*"
+  optional: true
+
+# O probar acceso directo desde menú
+- tapOn:
+    text: ".*Tutorial.*guardian.*"
+  optional: true
+
+# Verificar que se abre el tutorial específico de guardianes
+- assertVisible:
+    text: ".*GuardianTutorial.*|.*OnBoardingGuardians.*"
+  optional: true
+  timeout: 5000
+
+# Completar tutorial de guardianes
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Siguiente"
+        optional: true
+      - wait: 1500
+
+# Finalizar tutorial de guardianes
+- tapOn:
+    text: "Empezar"
+  optional: true

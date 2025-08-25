@@ -1,0 +1,136 @@
+appId: com.tuvotodecide
+---
+# Test: Configuración completa de biometría con diferentes escenarios
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN INICIAL ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: ACCEDER A CONFIGURACIÓN BIOMÉTRICA ===
+- tapOn: "Perfil"
+- scrollUntilVisible:
+    element:
+      text: "Ajustes de seguridad"
+    direction: down
+- tapOn: "Ajustes de seguridad"
+- assertVisible: "Huella dactilar"
+- assertVisible: "Face ID"
+
+# === FASE 3: CONFIGURAR HUELLA DACTILAR ===
+- tapOn: "Huella dactilar"
+# Verificar disponibilidad de biometría
+- assertVisible:
+    text: "Activar huella"
+    optional: true
+- assertVisible:
+    text: "Biometría no disponible"
+    optional: true
+
+# Si está disponible, intentar activar
+- tapOn:
+    text: "Activar huella"
+    optional: true
+
+# Manejar prompt de autenticación biométrica del sistema
+- extendedWaitUntil:
+    visible: "Usa tu huella"
+    timeout: 8000
+    optional: true
+
+# Simular toque en sensor (puede fallar en emulador)
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# === FASE 4: VERIFICAR FACE ID ===
+- tapOn: "Face ID"
+- assertVisible:
+    text: "Activar Face ID"
+    optional: true
+- assertVisible:
+    text: "Face ID no disponible"
+    optional: true
+
+# Si está disponible, intentar activar
+- tapOn:
+    text: "Activar Face ID"
+    optional: true
+
+# Manejar prompt de Face ID
+- extendedWaitUntil:
+    visible: "Escanea tu rostro"
+    timeout: 8000
+    optional: true
+
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# === FASE 5: VERIFICAR ESTADO EN CONFIGURACIÓN ===
+- assertVisible: "Huella dactilar"
+- assertVisible: "Face ID"
+
+# Verificar switches o toggles
+- assertVisible:
+    id: "biometricToggle"
+    optional: true
+
+# === FASE 6: LOGOUT Y PROBAR LOGIN BIOMÉTRICO ===
+- tapOn: "Regresar"
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- tapOn: "Cerrar sesión"
+
+# === FASE 7: LOGIN CON BIOMETRÍA ===
+- tapOn: "Tengo una cuenta"
+# Esperar prompt automático de biometría
+- extendedWaitUntil:
+    visible: "Escanea tu huella"
+    timeout: 5000
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Escanea tu rostro"
+    timeout: 5000
+    optional: true
+
+# Cancelar biometría y usar PIN
+- tapOn:
+    text: "Usar PIN"
+    optional: true
+
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# Fallback a PIN
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 8: DESACTIVAR BIOMETRÍA ===
+- tapOn: "Perfil"
+- scrollUntilVisible:
+    element:
+      text: "Ajustes de seguridad"
+    direction: down
+- tapOn: "Ajustes de seguridad"
+
+# Desactivar huella dactilar si estaba activada
+- tapOn: "Huella dactilar"
+- tapOn:
+    text: "Desactivar huella"
+    optional: true
+
+# Verificar desactivación
+- assertVisible:
+    text: "Activar huella"
+    optional: true

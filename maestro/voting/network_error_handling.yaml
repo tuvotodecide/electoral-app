@@ -1,0 +1,248 @@
+appId: com.tuvotodecide
+---
+# Test: Manejo de errores de red y conectividad en procesos electorales
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN Y NAVEGACIÓN BÁSICA ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: ACCESO CON POSIBLES PROBLEMAS DE RED ===
+- tapOn: ", Participar, Sube actas electorales o participa como testigo en el proceso de verificación ciudadana"
+- extendedWaitUntil:
+    visible: "Participación Electoral"
+    timeout: 20000
+
+# Verificar manejo de timeouts
+- assertVisible:
+    text: "Error de conexión"
+    optional: true
+- assertVisible:
+    text: "Verifica tu conexión a internet"
+    optional: true
+
+# === FASE 3: BÚSQUEDA DE MESA CON PROBLEMAS DE RED ===
+- tapOn: "Subir actas electorales"
+- inputText: "120"
+- tapOn: "Buscar"
+
+# Esperar con timeout extendido
+- extendedWaitUntil:
+    visible: "Mesa 120"
+    timeout: 25000
+    optional: true
+
+# Verificar mensajes de error de red
+- extendedWaitUntil:
+    visible: "Error al cargar mesas"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Servidor no disponible"
+    timeout: 15000
+    optional: true
+
+# Intentar reintento manual
+- tapOn:
+    text: "Reintentar"
+    optional: true
+- extendedWaitUntil:
+    visible: "Mesa 120"
+    timeout: 20000
+
+# === FASE 4: SUBIDA DE ACTA CON CONECTIVIDAD LIMITADA ===
+- tapOn: "Mesa 120"
+- tapOn: "Tomar Foto"
+- tapOn: "Tomar Foto"
+
+# Análisis con IA que puede fallar por red
+- tapOn:
+    text: ", Analizar"
+    optional: false
+    repeat: 1
+    delay: 15000
+
+# Esperar análisis con manejo de errores
+- extendedWaitUntil:
+    visible: "Acta"
+    timeout: 40000
+    optional: true
+
+# Verificar errores de análisis
+- extendedWaitUntil:
+    visible: "Error en el análisis"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "No se pudo procesar la imagen"
+    timeout: 30000
+    optional: true
+
+# === FASE 5: MODO OFFLINE/DEGRADADO ===
+# Si el análisis falla, verificar modo manual
+- assertVisible:
+    text: "Continuar sin análisis"
+    optional: true
+- tapOn:
+    text: "Continuar sin análisis"
+    optional: true
+
+# === FASE 6: CARGA DE DATOS MANUAL CON PROBLEMAS ===
+- tapOn:
+    id: "editButton"
+    optional: true
+
+# Scroll y edición básica
+- scrollUntilVisible:
+    element:
+      id: partyInputPresidente0
+    direction: up
+    optional: true
+
+- doubleTapOn:
+    id: partyInputPresidente0
+    optional: true
+- eraseText
+- inputText: "45"
+
+# === FASE 7: GUARDADO CON PROBLEMAS DE RED ===
+- tapOn:
+    id: "saveButton"
+    optional: true
+
+# Verificar manejo de errores en guardado
+- extendedWaitUntil:
+    visible: "Error al guardar"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Datos guardados localmente"
+    timeout: 10000
+    optional: true
+
+# === FASE 8: SUBIDA A BLOCKCHAIN/IPFS CON PROBLEMAS ===
+- tapOn:
+    id: "nextButton"
+    optional: true
+
+- tapOn: "Publico y Certifico"
+
+# Verificar diferentes tipos de errores de subida
+- extendedWaitUntil:
+    visible: "Error de subida a IPFS"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "Error de blockchain"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "Reintentando subida"
+    timeout: 30000
+    optional: true
+
+# === FASE 9: VERIFICAR CERTIFICADO CON DEMORAS ===
+- extendedWaitUntil:
+    visible: "Certificado NFT"
+    timeout: 60000
+    optional: true
+
+# Si falla la certificación
+- assertVisible:
+    text: "Certificación pendiente"
+    optional: true
+- assertVisible:
+    text: "Se completará cuando se restablezca la conexión"
+    optional: true
+
+# === FASE 10: ATESTIGUAMIENTO CON PROBLEMAS DE RED ===
+- tapOn: "Regresar"
+- tapOn: "Atestiguar actas"
+
+# Carga de actas con problemas
+- extendedWaitUntil:
+    visible: "Cargando actas"
+    timeout: 20000
+    optional: true
+- extendedWaitUntil:
+    visible: "Error al cargar actas"
+    timeout: 20000
+    optional: true
+
+# === FASE 11: MODO DEGRADADO EN ATESTIGUAMIENTO ===
+- assertVisible:
+    text: "Modo sin conexión"
+    optional: true
+- assertVisible:
+    text: "Solo actas descargadas previamente"
+    optional: true
+
+# === FASE 12: REINTENTOS AUTOMÁTICOS ===
+- assertVisible:
+    text: "Reintentando automáticamente"
+    optional: true
+- assertVisible:
+    text: "Reintento 1 de 3"
+    optional: true
+
+# === FASE 13: VERIFICAR CACHE LOCAL ===
+- tapOn:
+    text: "Ver datos locales"
+    optional: true
+
+- assertVisible:
+    text: "Datos guardados offline"
+    optional: true
+- assertVisible:
+    text: "Se sincronizarán automáticamente"
+    optional: true
+
+# === FASE 14: SINCRONIZACIÓN MANUAL ===
+- tapOn:
+    text: "Sincronizar ahora"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Sincronización completada"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "Error de sincronización"
+    timeout: 30000
+    optional: true
+
+# === FASE 15: VERIFICACIÓN DE ESTADO DE RED ===
+- assertVisible:
+    text: "Estado de conexión: Limitada"
+    optional: true
+- assertVisible:
+    text: "Estado de conexión: Sin conexión"
+    optional: true
+- assertVisible:
+    text: "Estado de conexión: Conectado"
+    optional: true
+
+# === FASE 16: NAVEGACIÓN CON CONECTIVIDAD RESTAURADA ===
+- launchApp:
+    clearState: false
+
+# Verificar que la app maneja la reconexión
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 17: VERIFICAR DATOS SINCRONIZADOS ===
+- tapOn: ", Participar, Sube actas electorales o participa como testigo en el proceso de verificación ciudadana"
+- tapOn: "Ver mis atestiguamientos"
+
+# Verificar que los datos se sincronizaron
+- assertVisible:
+    text: "Sincronizado"
+    optional: true
+- assertVisible:
+    text: "Pendiente de sincronización"
+    optional: true

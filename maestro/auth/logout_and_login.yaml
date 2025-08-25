@@ -1,0 +1,29 @@
+appId: com.tuvotodecide
+---
+# Test: Logout y volver a hacer login
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login inicial
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Ir a perfil
+- tapOn: "Perfil"
+- assertVisible: "Datos personales"
+# Hacer scroll para encontrar el botón de logout
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- assertVisible: "¿Seguro que quieres cerrar sesión?"
+- tapOn: "Cerrar sesión"
+# Verificar que regresamos a la pantalla inicial
+- assertVisible: "Tengo una cuenta"
+- assertVisible: "Registrar cuenta"
+# Volver a hacer login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"

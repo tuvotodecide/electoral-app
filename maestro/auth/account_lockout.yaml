@@ -1,0 +1,120 @@
+appId: com.tuvotodecide
+---
+# Test: Bloqueo de cuenta por múltiples intentos fallidos
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: AGOTAMIENTO DE INTENTOS ===
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+
+# Intento 1 - PIN incorrecto
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible:
+    text: "Te quedan 4 intentos"
+    optional: true
+
+# Intento 2 - PIN incorrecto
+- inputText: "1111"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible:
+    text: "Te quedan 3 intentos"
+    optional: true
+
+# Intento 3 - PIN incorrecto
+- inputText: "2222"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible:
+    text: "Te quedan 2 intentos"
+    optional: true
+
+# Intento 4 - PIN incorrecto
+- inputText: "3333"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible:
+    text: "Te quedan 1 intento"
+    optional: true
+
+# Intento 5 - PIN incorrecto (último intento)
+- inputText: "4444"
+- extendedWaitUntil:
+    visible: "Has agotado tus 5 intentos"
+    timeout: 8000
+
+# === FASE 2: VERIFICAR BLOQUEO DE CUENTA ===
+- assertVisible: "Has agotado tus 5 intentos"
+- assertVisible:
+    text: "Espera 15 minutos"
+    optional: true
+- assertVisible:
+    text: "recupera tu cuenta con tus guardianes"
+    optional: true
+
+# Cerrar modal de error
+- tapOn: "Entendido"
+
+# === FASE 3: VERIFICAR QUE NO SE PUEDE REINTENTAR ===
+# Intentar introducir PIN nuevamente
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Cuenta bloqueada"
+    timeout: 5000
+    optional: true
+
+# === FASE 4: NAVEGAR A RECUPERACIÓN ===
+- assertVisible:
+    text: "Recuperar cuenta"
+    optional: true
+- tapOn:
+    text: "Recuperar cuenta"
+    optional: true
+
+# Verificar pantalla de recuperación
+- assertVisible:
+    text: "Selecciona el método de recuperación"
+    optional: true
+- assertVisible:
+    text: "Guardianes"
+    optional: true
+- assertVisible:
+    text: "Código QR"
+    optional: true
+
+# === FASE 5: CANCELAR RECUPERACIÓN Y VERIFICAR BLOQUEO ===
+- tapOn:
+    text: "Regresar"
+    optional: true
+
+# Verificar que sigue bloqueado
+- assertVisible: "Tengo una cuenta"
+- tapOn: "Tengo una cuenta"
+- extendedWaitUntil:
+    visible: "Cuenta bloqueada"
+    timeout: 5000
+    optional: true
+
+# === FASE 6: SIMULAR TIEMPO DE ESPERA (Reset manual) ===
+# En un escenario real, aquí esperaríamos 15 minutos
+# Para el test, simularemos un reset manual
+- launchApp:
+    clearState: true
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# Verificar que después del reset se puede intentar de nuevo
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 10000

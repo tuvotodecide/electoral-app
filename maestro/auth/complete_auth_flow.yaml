@@ -1,0 +1,85 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo completo de autenticación y configuración inicial
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN ===
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: EXPLORAR PERFIL ===
+- tapOn: "Perfil"
+- assertVisible: "Datos personales"
+- assertVisible: "Guardianes"
+- assertVisible: "Respaldo con QR"
+
+# Verificar datos personales
+- tapOn: "Datos personales"
+- assertVisible: "Nombre completo"
+- assertVisible: "CI / N.º de documento"
+- tapOn: "Regresar"
+
+# === FASE 3: CONFIGURAR SEGURIDAD ===
+# Acceder a configuración de seguridad
+- scrollUntilVisible:
+    element:
+      text: "Ajustes de seguridad"
+    direction: down
+- tapOn: "Ajustes de seguridad"
+- assertVisible: "Cambiar PIN"
+- assertVisible: "Huella dactilar"
+
+# === FASE 4: VERIFICAR GUARDIANES ===
+- tapOn: "Regresar"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+- assertVisible: "Administra las personas que pueden ayudarte a recuperar tu cuenta"
+
+# Intentar agregar guardián (se espera que falle)
+- tapOn: "Agregar guardián"
+- assertVisible: "Ingresa el CI"
+- inputText: "99999999"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+- tapOn: "Regresar"
+
+# === FASE 5: VERIFICAR QR BACKUP ===
+- tapOn: "Respaldo con QR"
+- assertVisible: "Código QR de recuperación"
+- assertVisible: "Este código QR contiene la clave de recuperación"
+- tapOn: "Regresar"
+
+# === FASE 6: EXPLORAR OTRAS SECCIONES ===
+- tapOn: "Inicio"
+- assertVisible: "¡Bienvenido"
+- assertVisible: "Participar"
+
+- tapOn: "Más"
+- assertVisible: "Centro de ayuda"
+- assertVisible: "Términos y condiciones"
+
+# === FASE 7: LOGOUT Y RE-LOGIN ===
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- assertVisible: "¿Seguro que quieres cerrar sesión?"
+- tapOn: "Cerrar sesión"
+
+# Verificar regreso a pantalla inicial
+- assertVisible: "Tengo una cuenta"
+- assertVisible: "Registrar cuenta"
+
+# Re-login para confirmar funcionalidad
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"

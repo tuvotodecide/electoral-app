@@ -1,0 +1,81 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Navegación por gestos de swipe
+# Verifica que se pueda navegar el tutorial usando gestos de deslizar
+
+- launchApp:
+    clearState: true
+    
+- tapOn: 
+    text: "Saber más"
+  optional: true
+
+# Verificar primera pantalla
+- assertVisible:
+    text: ".*identidad.*digital.*"
+  optional: true
+
+# Usar swipe hacia la izquierda para avanzar
+- swipe:
+    start: "80%,50%"
+    end: "20%,50%"
+    duration: 500
+
+- wait: 1000
+
+# Verificar segunda pantalla
+- assertVisible:
+    text: ".*vota.*segur.*"
+  optional: true
+
+# Continuar con swipe
+- swipe:
+    start: "80%,50%"
+    end: "20%,50%"
+    duration: 500
+
+- wait: 1000
+
+# Verificar tercera pantalla
+- assertVisible:
+    text: ".*guard.*cuenta.*"
+  optional: true
+
+# Probar swipe hacia atrás (derecha)
+- swipe:
+    start: "20%,50%"
+    end: "80%,50%"
+    duration: 500
+
+- wait: 1000
+
+# Verificar que regresamos a pantalla anterior
+- assertVisible:
+    text: ".*vota.*segur.*"
+  optional: true
+
+# Avanzar de nuevo
+- swipe:
+    start: "80%,50%"
+    end: "20%,50%"
+    duration: 500
+
+- wait: 1000
+
+# Completar usando botones normales
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+- tapOn:
+    text: "Empezar"
+  optional: true

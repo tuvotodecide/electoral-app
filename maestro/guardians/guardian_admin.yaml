@@ -1,0 +1,41 @@
+appId: com.tuvotodecide
+---
+# Test: Acceso a administración de guardianes (Mis Protegidos)
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a perfil
+- tapOn: "Perfil"
+# Buscar "Mis Protegidos" en el perfil
+- scrollUntilVisible:
+    element:
+      text: "Mis Protegidos"
+    direction: down
+- tapOn: "Mis Protegidos"
+- assertVisible: "Mis invitaciones"
+- assertVisible: "Solicitudes de recuperación"
+# Verificar secciones de invitaciones
+- assertVisible:
+    text: "Aceptar"
+    optional: true
+- assertVisible:
+    text: "Rechazar"
+    optional: true
+# Verificar información de personas protegidas
+- assertVisible:
+    text: "12345678"
+    optional: true
+- assertVisible:
+    text: "87654321"
+    optional: true
+# Scroll para ver más contenido
+- scrollUntilVisible:
+    element:
+      text: "Solicitudes de recuperación"
+    direction: down
+    optional: true

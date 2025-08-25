@@ -1,0 +1,42 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo de onboarding inicial y primera experiencia
+- launchApp:
+    clearState: true
+    
+# Verificar pantalla de bienvenida/onboarding
+- assertVisible: "Aplicación Electoral"
+- assertVisible: "Obten tu identidad digital soberana"
+
+# Navegar por pantallas de onboarding
+- tapOn: "Siguiente"
+- assertVisible: "Actas electorales inalterables con NFTs"
+
+- tapOn: "Siguiente"  
+- assertVisible: "Validación abierta, con firma electrónica"
+
+- tapOn: "Siguiente"
+- assertVisible: "Transparencia con Blockchain e Inteligencia Artificial"
+
+- tapOn: "Siguiente"
+- assertVisible: "Regístrate y contribuye ya!"
+
+# Llegar a pantalla principal
+- tapOn: "Siguiente"
+- assertVisible: "Aplicación Electoral"
+- assertVisible: "Registrar cuenta"
+- assertVisible: "Tengo una cuenta"
+- assertVisible: "Saber más"
+
+# Probar "Saber más"
+- tapOn: "Saber más"
+- assertVisible:
+    text: "Blockchain Consultora"
+    optional: true
+- assertVisible:
+    text: "¿Necesitas una aplicación en Blockchain?"
+    optional: true
+
+# Regresar a pantalla principal
+- tapOn: "Regresar"
+- assertVisible: "Registrar cuenta"

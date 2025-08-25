@@ -1,0 +1,31 @@
+appId: com.tuvotodecide
+---
+# Test: Acceso a respaldo con QR desde perfil
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Ir a respaldo QR
+- tapOn: "Perfil"
+- tapOn: "Respaldo con QR"
+- assertVisible: "Código QR de recuperación"
+- assertVisible: "Este código QR contiene la clave de recuperación de tu billetera"
+- assertVisible: "Guárdalo en un lugar seguro"
+# Verificar que se muestra el QR
+- assertVisible:
+    id: "qrCodeImage"
+    optional: true
+# Intentar descargar QR
+- tapOn: " Descargar"
+- extendedWaitUntil:
+    visible: "QR guardado en Descargas"
+    timeout: 10000
+    optional: true
+# Si falla por permisos, verificar mensaje
+- assertVisible:
+    text: "Permiso denegado"
+    optional: true

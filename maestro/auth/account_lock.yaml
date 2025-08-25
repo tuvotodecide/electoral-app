@@ -1,0 +1,52 @@
+appId: com.tuvotodecide
+---
+# Test: Múltiples intentos fallidos de PIN que resultan en bloqueo de cuenta
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+
+# Primer intento fallido
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+    optional: true
+
+# Segundo intento fallido
+- inputText: "1111"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+    optional: true
+
+# Tercer intento fallido
+- inputText: "2222"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+    optional: true
+
+# Cuarto intento fallido
+- inputText: "3333"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+    optional: true
+
+# Quinto intento fallido - debería activar el bloqueo
+- inputText: "4444"
+- extendedWaitUntil:
+    visible: "Tu cuenta ha sido bloqueada"
+    timeout: 10000
+    optional: true
+
+# Verificar mensaje de bloqueo
+- assertVisible:
+    text: "Detectamos múltiples intentos fallidos de ingreso"
+    optional: true
+- assertVisible:
+    text: "¿Olvidaste tu acceso?"
+    optional: true

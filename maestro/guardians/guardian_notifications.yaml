@@ -1,0 +1,55 @@
+appId: com.tuvotodecide
+---
+# Test: Estados de notificaciones y alertas de guardianes
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === VERIFICAR NOTIFICACIONES DE GUARDIANES ===
+- tapOn: "Notificaciones"
+- assertVisible:
+    text: "Invitación de guardián"
+    optional: true
+- assertVisible:
+    text: "Solicitud de recuperación"
+    optional: true
+- assertVisible:
+    text: "Guardián aceptó invitación"
+    optional: true
+- assertVisible:
+    text: "Guardián rechazó invitación"
+    optional: true
+
+# === VERIFICAR ALERTAS DE SEGURIDAD ===
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+
+# Verificar alerta de guardianes insuficientes
+- assertVisible:
+    text: "Necesitas al menos un guardián activo"
+    optional: true
+- assertVisible:
+    text: "Se requieren al menos 2 guardianes activos"
+    optional: true
+
+# === VERIFICAR NOTIFICACIÓN AL AGREGAR GUARDIÁN ===
+- tapOn: "Agregar guardián"
+- assertVisible: "El guardián recibirá una notificación para aceptar su rol"
+
+# === VERIFICAR BANNER INFORMATIVO ===
+- assertVisible:
+    text: "Debe tener una cuenta abierta en Tu Voto Decide"
+    optional: true
+
+# === VERIFICAR ESTADO DE CONECTIVIDAD ===
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Verificando disponibilidad"
+    timeout: 5000
+    optional: true

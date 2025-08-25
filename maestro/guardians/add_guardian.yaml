@@ -1,0 +1,47 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo completo de agregar un nuevo guardián
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+# Iniciar proceso de agregar guardián
+- tapOn: "Agregar guardián"
+- assertVisible: "Ingresa el CI"
+- assertVisible: "Debe tener una cuenta abierta en Tu Voto Decide"
+# Intentar con CI que no existe
+- inputText: "99999999"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+# Intentar con CI válido (simulado)
+- inputText: "12345678"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "María García"
+    timeout: 10000
+    optional: true
+# Si encuentra la persona, proceder con invitación
+- tapOn:
+    text: "Enviar invitación"
+    optional: true
+- extendedWaitUntil:
+    visible: "Invitación enviada"
+    timeout: 15000
+    optional: true
+# Regresar y verificar guardián pendiente
+- tapOn: "Regresar"
+- assertVisible: "Tus Guardianes"
+- assertVisible:
+    text: "Pendiente"
+    optional: true

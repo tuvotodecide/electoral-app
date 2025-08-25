@@ -1,0 +1,81 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Verificar contenido de todas las pantallas
+# Valida que cada pantalla del tutorial muestre el contenido correcto
+
+- launchApp:
+    clearState: true
+    
+- tapOn: 
+    text: "Saber más"
+  optional: true
+
+# Pantalla 1: Identidad Digital
+- assertVisible:
+    text: ".*identidad.*digital.*soberana.*"
+  optional: true
+
+- assertVisible:
+    text: ".*privacidad.*control.*"
+  optional: true
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+# Pantalla 2: Votación Segura
+- assertVisible:
+    text: ".*vota.*segur.*transparent.*"
+  optional: true
+
+- assertVisible:
+    text: ".*blockchain.*verificab.*"
+  optional: true
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+# Pantalla 3: Guardianes
+- assertVisible:
+    text: ".*guard.*cuenta.*recuper.*"
+  optional: true
+
+- assertVisible:
+    text: ".*amigos.*familiares.*confianza.*"
+  optional: true
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+# Pantalla 4: Participación Democrática
+- assertVisible:
+    text: ".*particip.*democr.*"
+  optional: true
+
+- assertVisible:
+    text: ".*comunidad.*decisiones.*"
+  optional: true
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+# Pantalla 5: Finalización
+- assertVisible:
+    text: ".*listo.*comenzar.*"
+  optional: true
+
+- assertVisible:
+    text: "Empezar"
+  timeout: 3000

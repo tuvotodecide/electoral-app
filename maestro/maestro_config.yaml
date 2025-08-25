@@ -1,0 +1,36 @@
+# Configuración principal para tests de Maestro
+# App Electoral - Tu voto decide
+
+appId: com.tuvotodecide
+
+# Variables globales
+env:
+  TEST_USER_EMAIL: "usuario.test@ejemplo.com"
+  TEST_USER_PIN: "1234"
+  TEST_GUARDIAN_EMAIL: "tutor.test@ejemplo.com"
+  TEST_MESA_NUMBER: "12345"
+
+# Configuración específica para debug mode
+# Todos los tests incluyen manejo del debugger de React Native:
+# - tapOn: "Open debugger to view warnings."
+# - assertNotVisible: "Open debugger to view warnings."
+
+# Configuración de autenticación:
+# Tests que requieren acceso a HomeScreen necesitan login con PIN "1234"
+
+# Flujos principales de la aplicación:
+# 1. Onboarding - Introducción a la app
+# 2. Auth - Autenticación y login
+# 3. Register - Registro de nuevos usuarios
+# 4. Recovery - Recuperación de cuentas
+# 5. Voting - Funcionalidades de votación y actas
+# 6. Profile - Gestión de perfil y configuración
+# 7. Guardians - Gestión de tutores/guardianes
+
+# Para ejecutar todos los tests de un flujo:
+# maestro test maestro/onboarding/
+# maestro test maestro/auth/
+# etc.
+
+# Para ejecutar un test específico:
+# maestro test maestro/onboarding/complete_onboarding.yaml

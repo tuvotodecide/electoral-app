@@ -1,0 +1,26 @@
+appId: com.tuvotodecide
+---
+# Test: Acceso a opciones de recuperación de cuenta
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+- tapOn: "Olvidé mi cuenta"
+- assertVisible: "Selecciona método para recuperar cuenta"
+- assertVisible: "Recuperar con guardianes"
+- assertVisible: "Recuperar con QR"
+# Probar flujo de recuperación con guardianes
+- tapOn: "Recuperar con guardianes"
+- assertVisible: "Buscar usuario"
+- assertVisible: "Ingrese su carnet de identidad"
+- inputText: "12345678"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+# Regresar y probar recuperación con QR
+- tapOn: "Regresar"
+- tapOn: "Recuperar con QR"
+- assertVisible: "Recuperación con QR"
+- assertVisible: "suba la imagen QR"

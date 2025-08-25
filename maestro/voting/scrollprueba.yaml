@@ -1,0 +1,191 @@
+appId: com.tuvotodecide
+---
+# Test: Acceder funcionalidad de cuenta existente
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+#- tapOn: Tengo una cuenta
+#- inputText: '1234'
+- tapOn: , Participar, Sube actas electorales o participa como testigo en el proceso de verificación ciudadana
+- tapOn:
+    text: delay
+    optional: true
+    repeat: 1
+    delay: 1000
+- swipe:
+    start: "50%, 80%" # Start at the bottom center of the screen
+    end: "50%, 10%"     # End at the top center of the screen
+    duration: 300       # Duration in milliseconds
+- tapOn: DIRECC9
+- tapOn: Mesa 120
+- tapOn: Tomar Foto
+- tapOn: Tomar Foto
+- tapOn:
+    text: , Analizar
+    optional: false
+    repeat: 1
+    delay: 10000
+- extendedWaitUntil:
+    visible: "Acta"
+    timeout: 25000
+- swipe:
+    start: "50%, 80%" # Start at the bottom center of the screen
+    end: "50%, 10%"     # End at the top center of the screen
+    duration: 300       # Duration in milliseconds
+- tapOn:
+    id: "editButton"
+- scrollUntilVisible:
+    element:
+      id: partyInputPresidente0
+    direction: up
+- doubleTapOn:
+    id: partyInputPresidente0
+- eraseText 
+- inputText: "7"
+
+- doubleTapOn:
+    id: partyInputDiputado0
+- eraseText 
+- inputText: "4"
+
+- doubleTapOn:
+    id: partyInputPresidente1
+- eraseText 
+- inputText: "2"
+
+- doubleTapOn:
+    id: partyInputDiputado1
+- eraseText   
+- inputText: "3"
+
+- doubleTapOn:
+    id: partyInputPresidente2
+- eraseText
+- inputText: "7"
+
+- doubleTapOn:
+    id: partyInputDiputado2
+- eraseText
+- inputText: "19"
+
+- doubleTapOn:
+    id: partyInputPresidente3
+- eraseText
+- inputText: "24"
+
+- doubleTapOn:
+    id: partyInputDiputado3
+- eraseText
+- inputText: "16"
+
+- doubleTapOn:
+    id: partyInputPresidente3
+- eraseText
+- inputText: "24"
+
+- doubleTapOn:
+    id: partyInputDiputado3
+- eraseText
+- inputText: "16"
+
+- doubleTapOn:
+    id: partyInputPresidente4
+- eraseText 
+- inputText: "1"
+
+- doubleTapOn:
+    id: partyInputDiputado4
+- eraseText
+- inputText: "5"
+
+- doubleTapOn:
+    id: partyInputPresidente5
+- eraseText
+- inputText: "6"
+
+- doubleTapOn:
+    id: partyInputDiputado5
+- eraseText
+- inputText: "6"
+
+- doubleTapOn:
+    id: partyInputPresidente6
+- eraseText
+- inputText: "1"
+
+- doubleTapOn:
+    id: partyInputDiputado6
+- eraseText
+- inputText: "2"
+
+- swipe:
+    start: "50%, 80%" # Start at the bottom center of the screen
+    end: "50%, 45%"     # End at the top center of the screen
+    duration: 300
+
+- doubleTapOn:
+    id: partyInputPresidente7
+- eraseText
+- inputText: "45"
+
+- doubleTapOn:
+    id: partyInputDiputado7
+- eraseText
+- inputText: "43"
+
+- doubleTapOn:
+    id: partyInputPresidente8
+- eraseText
+- inputText: "95"
+
+- doubleTapOn:
+    id: partyInputDiputado8
+- eraseText
+- inputText: "65"
+
+- doubleTapOn:
+    id: voteSummary_validos_presidente
+- eraseText
+- inputText: "188"
+
+- doubleTapOn:
+    id: voteSummary_validos_diputado
+- eraseText
+- inputText: "163"
+
+- doubleTapOn:
+    id: voteSummary_blancos_presidente
+- eraseText
+- inputText: "2"
+
+- doubleTapOn:
+    id: voteSummary_blancos_diputado
+- eraseText
+- inputText: "28"
+
+- doubleTapOn:
+    id: voteSummary_nulos_presidente
+- eraseText
+- inputText: "31"
+
+- doubleTapOn:
+    id: voteSummary_nulos_diputado
+- eraseText
+- inputText: "30"
+- tapOn:
+    id: "saveButton"
+
+- tapOn:
+    id: button1
+
+- tapOn:
+    id: "nextButton"
+
+- tapOn: Publico y Certifico
+
+- extendedWaitUntil:
+    visible: "Certificado NFT - Elecciones Bolivia 2025"
+    timeout: 35000
+
+- assertVisible: Certificado NFT - Elecciones Bolivia 2025

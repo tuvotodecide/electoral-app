@@ -1,0 +1,64 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Modo oscuro en onboarding
+# Verifica que el tutorial funcione correctamente en tema oscuro
+
+- launchApp:
+    clearState: true
+
+# Acceder a configuración para cambiar tema (si es posible)
+- tapOn:
+    text: ".*Configuración.*|.*Settings.*"
+  optional: true
+
+# Cambiar a modo oscuro
+- tapOn:
+    text: ".*Modo.*oscuro.*|.*Dark.*mode.*"
+  optional: true
+
+# Regresar y acceder al tutorial
+- tapOn: 
+    text: "Saber más"
+
+# Verificar que las imágenes y texto se muestran correctamente en modo oscuro
+- assertVisible:
+    text: ".*identidad.*digital.*"
+  optional: true
+
+# Verificar que las imágenes oscuras se cargan
+- assertVisible:
+    id: ".*dark.*image.*|.*OnBoarding.*Dark.*"
+  optional: true
+
+# Navegar por algunas pantallas
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          text: "Siguiente"
+        optional: true
+      - wait: 1500
+
+# Verificar que la navegación funciona en modo oscuro
+- assertVisible:
+    text: ".*guard.*cuenta.*"
+  optional: true
+
+# Completar el tutorial
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          text: "Siguiente"
+        optional: true
+      - wait: 1500
+
+- tapOn:
+    text: "Empezar"
+  optional: true
+
+# Verificar regreso exitoso
+- assertVisible:
+    text: "Registrarse"
+  timeout: 5000

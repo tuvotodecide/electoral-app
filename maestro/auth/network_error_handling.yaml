@@ -1,0 +1,177 @@
+appId: com.tuvotodecide
+---
+# Test: Manejo de errores y estados de red en autenticación
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN CON POSIBLES PROBLEMAS DE RED ===
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+
+# Intentar login con PIN válido
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 15000
+
+# Si falla por problemas de red, verificar mensajes de error
+- assertVisible:
+    text: "Error de conexión"
+    optional: true
+- assertVisible:
+    text: "Verifica tu conexión a internet"
+    optional: true
+- assertVisible:
+    text: "Servidor no disponible"
+    optional: true
+
+# Si hay error, intentar de nuevo
+- tapOn:
+    text: "Reintentar"
+    optional: true
+
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 20000
+
+# === FASE 2: EXPLORAR FUNCIONALIDADES CON RED LIMITADA ===
+# Si logró entrar, probar funcionalidades que requieren red
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+
+# Intentar buscar guardián (requiere conexión)
+- tapOn: "Agregar guardián"
+- inputText: "12345678"
+- tapOn: "Buscar"
+
+# Verificar manejo de errores de red en búsqueda
+- extendedWaitUntil:
+    visible: "Error de conexión"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Timeout"
+    timeout: 15000
+    optional: true
+
+# Manejar error y regresar
+- tapOn:
+    text: "Reintentar"
+    optional: true
+- tapOn: "Regresar"
+
+# === FASE 3: VERIFICAR QR BACKUP OFFLINE ===
+- tapOn: "Respaldo con QR"
+- assertVisible: "Código QR de recuperación"
+
+# El QR debería mostrarse incluso sin conexión
+- assertVisible:
+    id: "qrCodeImage"
+    optional: true
+
+# Intentar descargar (puede fallar sin red)
+- tapOn: " Descargar"
+- extendedWaitUntil:
+    visible: "Error al guardar"
+    timeout: 8000
+    optional: true
+- extendedWaitUntil:
+    visible: "QR guardado en Descargas"
+    timeout: 8000
+    optional: true
+
+- tapOn: "Regresar"
+
+# === FASE 4: CAMBIO DE PIN CON PROBLEMAS DE RED ===
+- scrollUntilVisible:
+    element:
+      text: "Ajustes de seguridad"
+    direction: down
+- tapOn: "Ajustes de seguridad"
+- tapOn: "Cambiar PIN"
+
+# Completar flujo de cambio de PIN
+- inputText: "1234"
+- tapOn: "Continuar"
+- inputText: "5678"
+- tapOn: "Continuar"
+- inputText: "5678"
+- tapOn: "Confirmar PIN"
+
+# Verificar manejo de errores en el cambio
+- extendedWaitUntil:
+    visible: "PIN actualizado exitosamente"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Error al actualizar PIN"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Error de conexión"
+    timeout: 15000
+    optional: true
+
+# Si falló el cambio, cancelar
+- tapOn:
+    text: "Reintentar"
+    optional: true
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# === FASE 5: LOGOUT CON POSIBLES PROBLEMAS ===
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- tapOn: "Cerrar sesión"
+
+# Verificar que el logout funciona incluso sin red
+- assertVisible: "Tengo una cuenta"
+
+# === FASE 6: INTENTAR LOGIN DESPUÉS DE PROBLEMAS DE RED ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 20000
+
+# Si el PIN cambió exitosamente antes, usar el nuevo
+- inputText: "5678"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 20000
+    optional: true
+
+# === FASE 7: VERIFICAR RECUPERACIÓN DESPUÉS DE ERRORES ===
+# Si no puede hacer login, verificar opciones de recuperación
+- assertVisible:
+    text: "Recuperar cuenta"
+    optional: true
+- tapOn:
+    text: "Recuperar cuenta"
+    optional: true
+
+- assertVisible:
+    text: "Selecciona el método de recuperación"
+    optional: true
+
+# Verificar que las opciones están disponibles offline
+- assertVisible: "Código QR"
+- assertVisible: "Guardianes"
+
+# === FASE 8: RESET FINAL ===
+- launchApp:
+    clearState: true
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."

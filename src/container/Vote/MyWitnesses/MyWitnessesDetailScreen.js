@@ -29,6 +29,7 @@ const MyWitnessesDetailScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
+      testID: 'goBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,

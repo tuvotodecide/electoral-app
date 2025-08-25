@@ -1,0 +1,31 @@
+appId: com.tuvotodecide
+---
+# Test: Acceso exitoso a la gestión de guardianes
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+- assertVisible: "Administra las personas que pueden ayudarte a recuperar tu cuenta"
+# Verificar elementos de la interfaz
+- assertVisible: "Agregar guardián"
+- assertVisible:
+    text: "Activo"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+- assertVisible:
+    text: "Rechazado"
+    optional: true
+# Verificar información adicional
+- assertVisible:
+    text: "¿Qué son los Guardianes?"
+    optional: true

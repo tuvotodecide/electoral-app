@@ -22,7 +22,9 @@ export const ActionButtons = ({buttons, style}) => (
       <TouchableOpacity
         key={`action-button-${index}`} // Usar key más específica
         style={[styles.actionButton, button.style]}
-        onPress={button.onPress}>
+        onPress={button.onPress}
+        testID={button.testID}
+        >
         <CText style={[styles.actionButtonText, button.textStyle]}>
           {button.text}
         </CText>

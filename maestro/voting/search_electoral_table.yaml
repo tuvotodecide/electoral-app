@@ -1,0 +1,19 @@
+appId: com.tuvotodecide
+---
+# Test: Búsqueda de mesa electoral
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login con PIN
+- inputText: "1234"
+- tapOn: "Continuar"
+- assertVisible: "Bienvenido"
+- tapOn: "Participar"
+- tapOn: "Subir actas electorales"
+- assertVisible: "Buscar mesa"
+- inputText: "12345"
+- tapOn: "Buscar"
+- assertVisible: "Mesa 12345"
+- tapOn: "Mesa 12345"
+- assertVisible: "Detalles de la mesa"

@@ -1,0 +1,65 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Rotación de pantalla durante tutorial
+# Verifica que el tutorial maneje correctamente la rotación del dispositivo
+
+- launchApp:
+    clearState: true
+    
+- tapOn: 
+    text: "Saber más"
+
+# Navegar hasta pantalla intermedia
+- repeat:
+    times: 2
+    commands:
+      - tapOn:
+          text: "Siguiente"
+        optional: true
+      - wait: 1000
+
+# Rotar dispositivo a landscape
+- rotateDevice: 
+    orientation: landscape
+
+- wait: 2000
+
+# Verificar que el contenido sigue visible después de rotación
+- assertVisible:
+    text: ".*guard.*cuenta.*"
+  optional: true
+
+# Continuar navegación en landscape
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+# Rotar de vuelta a portrait
+- rotateDevice: 
+    orientation: portrait
+
+- wait: 2000
+
+# Verificar que sigue funcionando
+- assertVisible:
+    text: ".*particip.*democr.*"
+  optional: true
+
+# Completar tutorial
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+- tapOn:
+    text: "Empezar"
+  optional: true
+
+# Verificar finalización exitosa
+- assertVisible:
+    text: "Registrarse"
+  timeout: 5000

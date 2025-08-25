@@ -1,0 +1,133 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo completo de búsqueda de mesa electoral con validaciones
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN Y ACCESO A PARTICIPACIÓN ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: ACCEDER A PARTICIPACIÓN ELECTORAL ===
+- tapOn: ", Participar, Sube actas electorales o participa como testigo en el proceso de verificación ciudadana"
+- assertVisible: "Participación Electoral"
+- assertVisible: "Subir actas electorales"
+- assertVisible: "Atestiguar actas"
+
+# === FASE 3: BUSCAR MESA - CASOS DE VALIDACIÓN ===
+- tapOn: "Subir actas electorales"
+- assertVisible: "Buscar mesa"
+
+# Caso 1: Búsqueda vacía
+- inputText: ""
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Por favor ingresa un código de mesa"
+    timeout: 3000
+    optional: true
+
+# Caso 2: Código inválido (letras)
+- inputText: "ABCD"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Código de mesa inválido"
+    timeout: 5000
+    optional: true
+
+# Caso 3: Código muy corto
+- inputText: "12"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "El código debe tener al menos 3 dígitos"
+    timeout: 3000
+    optional: true
+
+# Caso 4: Mesa no encontrada
+- inputText: "99999"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Mesa no encontrada"
+    timeout: 10000
+    optional: true
+- extendedWaitUntil:
+    visible: "No se pudo encontrar la mesa"
+    timeout: 10000
+    optional: true
+
+# === FASE 4: BÚSQUEDA EXITOSA ===
+- inputText: "120"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Mesa 120"
+    timeout: 15000
+
+# Verificar información de la mesa
+- assertVisible: "Mesa 120"
+- assertVisible: "DIRECC9"
+- assertVisible:
+    text: "Recinto"
+    optional: true
+
+# === FASE 5: SELECCIÓN DE MESA ===
+- tapOn: "Mesa 120"
+- extendedWaitUntil:
+    visible: "Mesa 120"
+    timeout: 10000
+
+# Verificar detalles de la mesa
+- assertVisible:
+    text: "Código de Mesa"
+    optional: true
+- assertVisible:
+    text: "Recinto"
+    optional: true
+
+# === FASE 6: NAVEGAR ENTRE DIFERENTES MESAS ===
+- tapOn: "Regresar"
+- assertVisible: "Buscar mesa"
+
+# Buscar otra mesa
+- inputText: "150"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Mesa 150"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "Mesa no encontrada"
+    timeout: 15000
+    optional: true
+
+# === FASE 7: USAR FILTROS DE UBICACIÓN ===
+# Si hay filtros de ubicación disponibles
+- assertVisible:
+    text: "Filtrar por ubicación"
+    optional: true
+- tapOn:
+    text: "Filtrar por ubicación"
+    optional: true
+
+# Verificar lista basada en ubicación
+- assertVisible:
+    text: "La siguiente lista se basa en su ubicación"
+    optional: true
+
+# === FASE 8: VERIFICAR FUNCIONALIDAD DE SCROLL ===
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+    duration: 300
+
+- swipe:
+    start: "50%, 20%"
+    end: "50%, 80%"
+    duration: 300
+
+# === FASE 9: REGRESAR AL MENÚ PRINCIPAL ===
+- tapOn: "Regresar"
+- assertVisible: "Participación Electoral"
+- tapOn: "Regresar"
+- assertVisible: "Bienvenido"

@@ -16,7 +16,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Party Table Row Component
-export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
+export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
   <View style={styles.partyTableRow}>
     <CText style={styles.partyNameText}>{party.id || party.partyId}</CText>
     <View style={styles.partyVoteContainer}>
@@ -33,6 +33,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
           }
           keyboardType="numeric"
           placeholder="0"
+          testID={`partyInputPresidente${rowIndex}`}
         />
       ) : (
         <CText style={styles.partyVoteText}>
@@ -54,6 +55,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
           }
           keyboardType="numeric"
           placeholder="0"
+          testID={`partyInputDiputado${rowIndex}`}
         />
       ) : (
         <CText style={styles.partyVoteText}>
@@ -84,6 +86,7 @@ export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
         }}
         isEditing={isEditing}
         onUpdate={onUpdate}
+        rowIndex={index}
       />
     ))}
   </View>

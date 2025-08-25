@@ -88,6 +88,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.edit,
           onPress: handleEdit,
+          testID: 'editButton',
           style: {
             backgroundColor: '#fff',
             borderColor: colors.primary || '#459151',
@@ -102,6 +103,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.next,
           onPress: handleNext,
+          testID: 'nextButton',
           style: {
             backgroundColor: colors.primary || '#459151',
             flex: 1,
@@ -116,6 +118,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.save,
           onPress: handleSave,
+          testID: 'saveButton',
           style: {
             backgroundColor: colors.primary || '#459151',
           },

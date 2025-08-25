@@ -1,0 +1,18 @@
+appId: com.tuvotodecide
+---
+# Test: Login fallido con PIN incorrecto
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+# Intentar con PIN incorrecto
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible: "PIN incorrecto"
+# Intentar de nuevo con PIN correcto
+- inputText: "1234"
+- assertVisible: "Bienvenido"

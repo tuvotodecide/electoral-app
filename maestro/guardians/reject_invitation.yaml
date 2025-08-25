@@ -1,0 +1,47 @@
+appId: com.tuvotodecide
+---
+# Test: Rechazar invitación de guardián desde "Mis Protegidos"
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a administración de guardianes
+- tapOn: "Perfil"
+- scrollUntilVisible:
+    element:
+      text: "Mis Protegidos"
+    direction: down
+- tapOn: "Mis Protegidos"
+- assertVisible: "Mis invitaciones"
+# Buscar invitación pendiente para rechazar
+- assertVisible:
+    text: "Aceptar"
+    optional: true
+- assertVisible:
+    text: "Rechazar"
+    optional: true
+# Rechazar primera invitación disponible
+- tapOn:
+    text: "Rechazar"
+    index: 0
+    optional: true
+# Confirmar acción si aparece modal
+- assertVisible:
+    text: "¿Estás seguro?"
+    optional: true
+- tapOn:
+    text: "Rechazar"
+    optional: true
+# Verificar confirmación
+- extendedWaitUntil:
+    visible: "Invitación rechazada"
+    timeout: 15000
+    optional: true
+# Verificar que la invitación desapareció o cambió de estado
+- assertNotVisible:
+    text: "Rechazar"
+    optional: true

@@ -16,7 +16,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Vote Summary Row Component
-export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
+export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
   <View style={styles.voteSummaryTableRow}>
     <CText style={styles.voteSummaryLabel}>{item.label}</CText>
     <View style={styles.voteSummaryValueContainer}>
@@ -33,6 +33,7 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
           }
           keyboardType="numeric"
           placeholder="0"
+          testID={`voteSummary_${item.id}_presidente`}
         />
       ) : (
         <CText style={styles.voteSummaryValue}>
@@ -54,6 +55,7 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
           }
           keyboardType="numeric"
           placeholder="0"
+          testID={`voteSummary_${item.id}_diputado`}
         />
       ) : (
         <CText style={styles.voteSummaryValue}>
@@ -78,6 +80,7 @@ export const VoteSummaryTable = ({
         item={item}
         isEditing={isEditing}
         onUpdate={onUpdate}
+        rowIndex={index}
       />
     ))}
   </View>

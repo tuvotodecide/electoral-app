@@ -61,6 +61,7 @@ const RecordReviewScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
+      testID: 'goBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -73,6 +74,7 @@ const RecordReviewScreen = () => {
     {
       text: String.correctData,
       onPress: handleCorrectData,
+      testID: 'correctDataButton',
       style: {
         backgroundColor: '#459151',
       },

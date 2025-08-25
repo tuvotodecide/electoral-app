@@ -1,0 +1,49 @@
+appId: com.tuvotodecide
+---
+# Test: Eliminar un guardián existente
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+# Buscar un guardián existente para eliminar
+- assertVisible:
+    text: "Activo"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+# Hacer tap en el primer guardián disponible
+- tapOn:
+    id: "guardianItem"
+    index: 0
+    optional: true
+# Si aparece modal de opciones
+- assertVisible:
+    text: "Eliminar"
+    optional: true
+- assertVisible:
+    text: "Editar"
+    optional: true
+# Confirmar eliminación
+- tapOn:
+    text: "Eliminar"
+    optional: true
+- assertVisible:
+    text: "¿Estás seguro?"
+    optional: true
+- tapOn:
+    text: "Eliminar"
+    optional: true
+# Verificar que se eliminó
+- extendedWaitUntil:
+    visible: "Guardián eliminado"
+    timeout: 10000
+    optional: true

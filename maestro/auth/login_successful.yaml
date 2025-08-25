@@ -1,0 +1,13 @@
+appId: com.tuvotodecide
+---
+# Test: Login exitoso con PIN
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+- assertVisible: "Perfil"
+- assertVisible: "Inicio"

@@ -1,0 +1,53 @@
+# Configuración Maestro para Tests de Autenticación
+# Electoral App - React Native
+
+# Configuración global para todos los tests de auth
+appId: com.tuvotodecide
+
+# Configuración de timeouts
+env:
+  DEFAULT_TIMEOUT: 10000
+  NETWORK_TIMEOUT: 15000
+  BIOMETRIC_TIMEOUT: 5000
+
+# Configuración de dispositivo
+config:
+  # Retry automático en caso de falla
+  retries: 1
+  
+  # Delay entre acciones para estabilidad
+  actionDelay: 500
+  
+  # Screenshots en caso de falla
+  takeScreenshotOnFailure: true
+
+# Variables de ambiente para tests
+testData:
+  validPin: "1234"
+  invalidPin: "0000"
+  testCI: "12345678"
+  nonExistentCI: "99999999"
+  testEmail: "test@electoral.com"
+
+# Configuración de reportes
+reporting:
+  format: junit
+  outputDir: test-results
+  includeScreenshots: true
+  
+# Configuración específica para diferentes tipos de test
+profiles:
+  auth:
+    # Tests de autenticación básica
+    timeout: 10000
+    retries: 2
+    
+  security:
+    # Tests de seguridad que pueden tardar más
+    timeout: 20000
+    retries: 1
+    
+  registration:
+    # Tests de registro que involucran múltiples pantallas
+    timeout: 30000
+    retries: 1

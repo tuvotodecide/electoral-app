@@ -1,0 +1,54 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Flujo completo desde Connect hasta completar onboarding
+# Verifica el flujo completo desde la pantalla Connect hasta completar el tutorial
+
+- launchApp:
+    clearState: true
+
+# Verificar pantalla de conexión inicial
+- assertVisible:
+    text: ".*Electoral.*|.*Conectar.*"
+  timeout: 5000
+
+# Tocar "Saber más" para acceder al onboarding
+- tapOn: 
+    text: "Saber más"
+
+# Verificar que se abre el tutorial
+- assertVisible:
+    text: ".*identidad.*digital.*|.*tutorial.*"
+  timeout: 5000
+
+# Completar todas las pantallas del tutorial
+- repeat:
+    times: 4
+    commands:
+      - tapOn:
+          text: "Siguiente"
+      - wait: 1500
+
+# Verificar llegada a la última pantalla
+- assertVisible:
+    text: "Empezar"
+  timeout: 3000
+
+# Finalizar onboarding
+- tapOn:
+    text: "Empezar"
+
+# Verificar regreso a pantalla Connect
+- assertVisible:
+    text: "Registrarse"
+  timeout: 5000
+
+- assertVisible:
+    text: "Iniciar sesión"
+  timeout: 3000
+
+# Verificar que el onboarding se marcó como completado
+# (no debería aparecer el botón "Saber más" nuevamente)
+- assertNotVisible:
+    text: "Saber más"
+  optional: true

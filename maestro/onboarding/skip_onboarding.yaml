@@ -1,0 +1,35 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Saltar tutorial de onboarding
+# Verifica que el usuario pueda saltar el tutorial usando el botón X
+
+- launchApp:
+    clearState: true
+    
+- tapOn: 
+    text: "Saber más"
+  optional: true
+
+- assertVisible:
+    text: "OnBoarding"
+  optional: true
+
+# Buscar el botón de cerrar/skip (X) en la esquina superior derecha
+- tapOn:
+    id: ".*skip.*|.*close.*"
+  optional: true
+
+# Si no encuentra por ID, buscar por ícono o posición
+- tapOn:
+    point: "90%,10%"
+  optional: true
+
+# Verificar que regresa a Connect o se salta el onboarding
+- assertVisible:
+    text: ".*Conectar.*|.*Registrarse.*|.*Iniciar.*"
+  timeout: 5000
+
+- assertVisible:
+    text: "Registrarse"
+  optional: true

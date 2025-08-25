@@ -1,0 +1,22 @@
+appId: com.tuvotodecide
+---
+# Test: Validar acta incorrecta y subir correcta
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login con PIN
+- inputText: "1234"
+- tapOn: "Continuar"
+- assertVisible: "Bienvenido"
+- tapOn: "Participar"
+- tapOn: "Atestiguar actas"
+- tapOn: "Mesa 54321"
+- assertVisible: "¿Cuál es correcta?"
+- tapOn: "Ninguna es correcta"
+- assertVisible: "Subir acta correcta"
+- tapOn: "Subir foto de acta correcta"
+- assertVisible: "Cámara"
+- tapOn: "Tomar foto"
+- tapOn: "Continuar"
+- assertVisible: "Datos de la nueva acta"

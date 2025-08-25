@@ -1,0 +1,74 @@
+---
+appId: com.tuvotodecide
+---
+# Test: Comportamiento en memoria limitada
+# Verifica el tutorial bajo condiciones de memoria limitada
+
+- launchApp:
+    clearState: true
+
+# Simular condiciones de memoria limitada abriendo múltiples procesos
+- launchApp:
+    appId: "com.android.settings"
+  optional: true
+
+- pressKey: "Back"
+  optional: true
+
+- launchApp:
+    appId: "com.tuvotodecide"
+
+# Acceder al tutorial
+- tapOn: 
+    text: "Saber más"
+  optional: true
+
+# Navegar por el tutorial con pequeñas pausas para permitir carga de recursos
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 2000
+
+# Verificar que las imágenes se cargan correctamente
+- assertVisible:
+    id: ".*OnBoardingImage.*"
+  optional: true
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 2000
+
+# Simular interrupción de memoria
+- pressKey: "Home"
+  optional: true
+
+- wait: 1000
+
+# Regresar a la app
+- launchApp:
+    appId: "com.tuvotodecide"
+
+# Verificar que el estado del tutorial se mantiene o se reinicia correctamente
+- assertVisible:
+    text: ".*tutorial.*|.*onboarding.*|.*Registrarse.*"
+  timeout: 10000
+
+# Si está en tutorial, completarlo
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+- tapOn:
+    text: "Siguiente"
+  optional: true
+
+- wait: 1000
+
+- tapOn:
+    text: "Empezar"
+  optional: true

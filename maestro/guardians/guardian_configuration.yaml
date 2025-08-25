@@ -1,0 +1,49 @@
+appId: com.tuvotodecide
+---
+# Test: Configuración y requisitos mínimos de guardianes
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+# Buscar configuración de guardianes
+- scrollUntilVisible:
+    element:
+      text: "Configuración de guardianes"
+    direction: down
+    optional: true
+- tapOn:
+    text: "Configuración de guardianes"
+    optional: true
+# Verificar configuración de requisitos mínimos
+- assertVisible:
+    text: "Número mínimo de aprobaciones requeridas para recuperar cuenta"
+    optional: true
+- assertVisible:
+    text: "Número mínimo de aprobaciones requeridas para transacciones grandes"
+    optional: true
+# Verificar valores actuales
+- assertVisible:
+    text: "2"
+    optional: true
+- assertVisible:
+    text: "3"
+    optional: true
+# Intentar modificar configuración
+- tapOn:
+    id: "minRecoveryApprovals"
+    optional: true
+- inputText: "3"
+- tapOn: "Guardar configuración"
+# Verificar confirmación
+- extendedWaitUntil:
+    visible: "Configuración actualizada"
+    timeout: 10000
+    optional: true

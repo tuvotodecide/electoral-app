@@ -1,0 +1,24 @@
+appId: com.tuvotodecide
+---
+# Test: Subir foto de acta electoral
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login con PIN
+- inputText: "1234"
+- tapOn: "Continuar"
+- assertVisible: "Bienvenido"
+- tapOn: "Participar"
+- tapOn: "Subir actas electorales"
+- inputText: "12345"
+- tapOn: "Buscar"
+- tapOn: "Mesa 12345"
+- tapOn: "Subir acta"
+- assertVisible: "Cámara"
+- tapOn: "Tomar foto"
+- assertVisible: "Revisar foto"
+- tapOn: "Continuar"
+- assertVisible: "Confirmar datos"
+- tapOn: "Enviar"
+- assertVisible: "Acta enviada exitosamente"

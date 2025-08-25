@@ -167,6 +167,7 @@ const ActaDetailScreen = () => {
     {
       text: String.correctData,
       onPress: handleThisIsCorrect,
+      testID: 'correctDataButton',
       style: {
         backgroundColor: colors.primary || '#4F9858',
       },
@@ -178,6 +179,7 @@ const ActaDetailScreen = () => {
     {
       text: 'Subir foto de acta correcta',
       onPress: handleUploadCorrectActa,
+      testID: 'uploadCorrectActaButton',
       style: {
         backgroundColor: colors.secondary || '#2196F3',
       },
@@ -193,6 +195,7 @@ const ActaDetailScreen = () => {
     actionButtons.push({
       text: 'Cambiar',
       onPress: handleChange,
+      testID: 'changeButton',
       style: {
         backgroundColor: 'transparent',
         borderWidth: 1,

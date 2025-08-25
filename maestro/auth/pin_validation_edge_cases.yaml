@@ -1,0 +1,82 @@
+appId: com.tuvotodecide
+---
+# Test: Casos límite y validación de PIN
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === CASO 1: PIN INCOMPLETO ===
+- tapOn: "Tengo una cuenta"
+- assertVisible: "Acceso a la billetera"
+# Intentar con PIN de 1 dígito
+- inputText: "1"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 3000
+    optional: true
+
+# === CASO 2: PIN INCORRECTO MÚLTIPLES VECES ===
+# Primer intento fallido
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+- assertVisible: "PIN incorrecto"
+
+# Segundo intento fallido
+- inputText: "1111"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+# Tercer intento fallido  
+- inputText: "2222"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+# Cuarto intento fallido
+- inputText: "3333"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+# === CASO 3: VERIFICAR CONTADOR DE INTENTOS ===
+- assertVisible:
+    text: "Te quedan"
+    optional: true
+- assertVisible:
+    text: "intento"
+    optional: true
+
+# === CASO 4: PIN CORRECTO DESPUÉS DE FALLOS ===
+- inputText: "1234"
+- extendedWaitUntil:
+    visible: "Bienvenido"
+    timeout: 10000
+
+# Verificar que el login fue exitoso
+- assertVisible: "Perfil"
+- assertVisible: "Inicio"
+
+# === CASO 5: LOGOUT Y VERIFICAR RESET DE INTENTOS ===
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- tapOn: "Cerrar sesión"
+
+# Re-intentar con PIN incorrecto para verificar reset
+- tapOn: "Tengo una cuenta"
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+# Verificar que el contador se reinició
+- assertVisible:
+    text: "Te quedan 4 intentos"
+    optional: true

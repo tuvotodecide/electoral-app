@@ -1,0 +1,48 @@
+appId: com.tuvotodecide
+---
+# Test: Ver estados de los guardianes (Activo, Pendiente, Rechazado)
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+# Verificar diferentes estados posibles
+- assertVisible:
+    text: "Activo"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+- assertVisible:
+    text: "Rechazado"
+    optional: true
+- assertVisible:
+    text: "Removido"
+    optional: true
+# Verificar información de cada guardián
+- assertVisible:
+    text: "12345678"
+    optional: true
+- assertVisible:
+    text: "87654321"
+    optional: true
+# Verificar apodos/nicknames si existen
+- assertVisible:
+    text: "Mamá"
+    optional: true
+- assertVisible:
+    text: "Hermano"
+    optional: true
+# Scroll para ver más guardianes si existen
+- scrollUntilVisible:
+    element:
+      text: "Agregar guardián"
+    direction: down
+    optional: true

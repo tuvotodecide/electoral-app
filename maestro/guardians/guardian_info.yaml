@@ -1,0 +1,58 @@
+appId: com.tuvotodecide
+---
+# Test: Acceso a información sobre qué son los guardianes
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+# Login
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+# Navegar a guardianes
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+# Buscar información sobre guardianes
+- scrollUntilVisible:
+    element:
+      text: "¿Qué son los Guardianes?"
+    direction: down
+    optional: true
+- tapOn:
+    text: "¿Qué son los Guardianes?"
+    optional: true
+# Verificar información educativa
+- assertVisible:
+    text: "¿Qué son los guardianes?"
+    optional: true
+- assertVisible:
+    text: "Son personas o dispositivos que ayudan a confirmar tu identidad"
+    optional: true
+- assertVisible:
+    text: "¿Quién puede ser un guardián?"
+    optional: true
+- assertVisible:
+    text: "Puede ser un familiar, un amigo o incluso otro dispositivo"
+    optional: true
+- assertVisible:
+    text: "¿Cuántos guardianes se necesitan?"
+    optional: true
+- assertVisible:
+    text: "Se requieren al menos 2 guardianes activos"
+    optional: true
+- assertVisible:
+    text: "¿Cómo funciona la recuperación?"
+    optional: true
+- assertVisible:
+    text: "Al solicitar la recuperación, se notifica a tus guardianes"
+    optional: true
+# Navegar por las diferentes secciones
+- swipe:
+    start: "80%, 50%"
+    end: "20%, 50%"
+    duration: 500
+- swipe:
+    start: "80%, 50%"
+    end: "20%, 50%"
+    duration: 500

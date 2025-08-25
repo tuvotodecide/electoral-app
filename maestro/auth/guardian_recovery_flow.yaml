@@ -1,0 +1,154 @@
+appId: com.tuvotodecide
+---
+# Test: Flujo de recuperación de cuenta mediante guardianes
+- launchApp:
+    clearState: false
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
+
+# === FASE 1: LOGIN INICIAL PARA CONFIGURAR ===
+- tapOn: "Tengo una cuenta"
+- inputText: "1234"
+- assertVisible: "Bienvenido"
+
+# === FASE 2: REVISAR CONFIGURACIÓN DE GUARDIANES ===
+- tapOn: "Perfil"
+- tapOn: "Guardianes"
+- assertVisible: "Tus Guardianes"
+- assertVisible: "Administra las personas que pueden ayudarte"
+
+# Verificar estado inicial de guardianes
+- assertVisible:
+    text: "No tienes guardianes configurados"
+    optional: true
+
+# === FASE 3: INTENTAR AGREGAR GUARDIÁN ===
+- tapOn: "Agregar guardián"
+- assertVisible: "Ingresa el CI"
+- inputText: "12345678"
+- tapOn: "Buscar"
+
+# Esperar resultado de búsqueda
+- extendedWaitUntil:
+    visible: "Persona encontrada"
+    timeout: 10000
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+
+# Si no se encuentra, intentar con otro CI
+- inputText: "87654321"
+- tapOn: "Buscar"
+- extendedWaitUntil:
+    visible: "Persona no encontrada"
+    timeout: 10000
+    optional: true
+
+# Regresar de la búsqueda
+- tapOn: "Regresar"
+
+# === FASE 4: LOGOUT PARA SIMULAR RECUPERACIÓN ===
+- tapOn: "Más"
+- scrollUntilVisible:
+    element:
+      text: "Cerrar sesión"
+    direction: down
+- tapOn: "Cerrar sesión"
+- tapOn: "Cerrar sesión"
+
+# === FASE 5: SIMULAR CUENTA BLOQUEADA ===
+# Agotar intentos para forzar recuperación
+- tapOn: "Tengo una cuenta"
+- inputText: "0000"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+- inputText: "1111"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+- inputText: "2222"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+- inputText: "3333"
+- extendedWaitUntil:
+    visible: "PIN incorrecto"
+    timeout: 5000
+
+- inputText: "4444"
+- extendedWaitUntil:
+    visible: "Has agotado tus 5 intentos"
+    timeout: 8000
+
+# === FASE 6: ACCEDER A RECUPERACIÓN POR GUARDIANES ===
+- tapOn: "Entendido"
+
+# Buscar opción de recuperación
+- assertVisible:
+    text: "Recuperar cuenta"
+    optional: true
+- tapOn:
+    text: "Recuperar cuenta"
+    optional: true
+
+# Verificar pantalla de selección de método
+- assertVisible:
+    text: "Selecciona el método de recuperación"
+    optional: true
+- assertVisible: "Guardianes"
+- tapOn: "Guardianes"
+
+# === FASE 7: VERIFICAR FLUJO DE RECUPERACIÓN CON GUARDIANES ===
+- assertVisible:
+    text: "Recuperación con Guardianes"
+    optional: true
+- assertVisible:
+    text: "No tienes guardianes configurados"
+    optional: true
+
+# O si hay guardianes configurados:
+- assertVisible:
+    text: "Solicitar ayuda"
+    optional: true
+
+# Verificar que se puede regresar
+- tapOn:
+    text: "Regresar"
+    optional: true
+
+# === FASE 8: INTENTAR RECUPERACIÓN POR QR ===
+- tapOn: "Código QR"
+- assertVisible:
+    text: "Escanea tu código QR de recuperación"
+    optional: true
+- assertVisible:
+    text: "Usar el código QR que guardaste durante el registro"
+    optional: true
+
+# Simular escaneo de QR (se espera que falle sin QR real)
+- tapOn:
+    text: "Escanear QR"
+    optional: true
+
+# Verificar cámara o input manual
+- assertVisible:
+    text: "Introducir manualmente"
+    optional: true
+
+# Regresar al inicio
+- tapOn:
+    text: "Regresar"
+    optional: true
+
+# === FASE 9: RESET PARA CONTINUAR CON OTROS TESTS ===
+- launchApp:
+    clearState: true
+- tapOn: "Open debugger to view warnings."
+- assertNotVisible: "Open debugger to view warnings."
