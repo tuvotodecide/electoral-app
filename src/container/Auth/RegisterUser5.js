@@ -94,10 +94,10 @@ export default function RegisterUser5({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={5} />
-      <View style={localStyle.center}>
-        <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth testID="registerUser5Container">
+      <StepIndicator step={5} testID="registerUser5StepIndicator" />
+      <View style={localStyle.center} testID="registerUser5CenterView">
+        <View style={localStyle.mainContainer} testID="registerUser5MainContainer">
           <Image
             source={
               colors.dark
@@ -105,14 +105,16 @@ export default function RegisterUser5({navigation, route}) {
                 : images.IdentityCard_lightImage
             }
             style={localStyle.imageContainer}
+            testID="registerUser5IdentityImage"
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser5TitleText">
             {String.verifyingIdentityTitle}
           </CText>
           <CText
             type={'B16'}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={'center'}
+            testID="registerUser5MessageText">
             {String.verifyingIdentityMessage}
           </CText>
           {loading && (
@@ -120,6 +122,7 @@ export default function RegisterUser5({navigation, route}) {
               size={60}
               color={colors.grayScale500}
               style={localStyle.marginTop}
+              testID="registerUser5LoadingIndicator"
             />
           )}
         </View>
@@ -141,7 +144,7 @@ export default function RegisterUser5({navigation, route}) {
             ],
           });
         }}
-        
+        testID="registerUser5ErrorModal"
       />
     </CSafeAreaViewAuth>
   );

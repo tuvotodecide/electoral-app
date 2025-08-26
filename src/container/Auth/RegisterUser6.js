@@ -59,21 +59,22 @@ export default function RegisterUser6({navigation, route}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={6} />
-      <CHeader onPressBack={() => navigation.navigate(AuthNav.RegisterUser4)} />
+    <CSafeAreaViewAuth testID="registerUser6Container">
+      <StepIndicator step={6} testID="registerUser6StepIndicator" />
+      <CHeader onPressBack={() => navigation.navigate(AuthNav.RegisterUser4)} testID="registerUser6Header" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
-        ]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+        ]}
+        testID="registerUser6KeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="registerUser6MainContainer">
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser6TitleText">
             {String.titleConfirmData}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText type={'B16'} color={getSecondaryTextColor(colors)} testID="registerUser6DescriptionText">
             {String.descriptionConfirmData}
           </CText>
         </View>
@@ -81,6 +82,7 @@ export default function RegisterUser6({navigation, route}) {
           icon={<Icono name="account" color={getSecondaryTextColor(colors)} />}
           title={String.labelFullName}
           text={fullName}
+          testID="registerUser6FullNameField"
         />
         <CEtiqueta
           icon={
@@ -91,11 +93,13 @@ export default function RegisterUser6({navigation, route}) {
           }
           title={String.labelDocumentId}
           text={governmentIdentifier}
+          testID="registerUser6DocumentIdField"
         />
         <CEtiqueta
           icon={<Icono name="calendar" color={getSecondaryTextColor(colors)} />}
           title={String.labelBirthDate}
           text={fmtDate(dateOfBirth)}
+          testID="registerUser6BirthDateField"
         />
         {/* <CEtiqueta
           icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
@@ -109,26 +113,27 @@ export default function RegisterUser6({navigation, route}) {
           text={data.nacionalidad}
         /> */}
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <View style={localStyle.rowWithGap}>
-          <TouchableOpacity onPress={onPressRememberMe}>
+      <View style={localStyle.bottomTextContainer} testID="registerUser6BottomContainer">
+        <View style={localStyle.rowWithGap} testID="registerUser6CheckboxRow">
+          <TouchableOpacity onPress={onPressRememberMe} testID="registerUser6CheckboxButton">
             <Ionicons
               name={check ? 'checkbox' : 'square-outline'}
               color={check ? colors.primary : colors.grayScale50}
               size={moderateScale(24)}
             />
           </TouchableOpacity>
-          <CText type={'B16'} color={colors.colorText} style={localStyle.item}>
+          <CText type={'B16'} color={colors.colorText} style={localStyle.item} testID="registerUser6CheckboxText">
             {String.confirmCheckText}
           </CText>
         </View>
-        <View>
+        <View testID="registerUser6ButtonsContainer">
           <CButton
             title={String.confirmButton}
             disabled={!check}
             onPress={onPressNext}
             type={'B18'}
             containerStyle={localStyle.btnStyle}
+            testID="registerUser6ConfirmButton"
           />
           <CButton
             title={String.returntoVerify}
@@ -136,6 +141,7 @@ export default function RegisterUser6({navigation, route}) {
             onPress={onPressReturn}
             type={'B18'}
             containerStyle={localStyle.btnStyle1}
+            testID="registerUser6ReturnButton"
           />
         </View>
       </View>

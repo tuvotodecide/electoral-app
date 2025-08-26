@@ -62,9 +62,11 @@ export const SearchInput = ({
   onChangeText,
   onClear, // Nuevo prop
   styles,
+  testID = 'searchTableInput',
 }) => (
   <View style={styles.searchInputContainer}>
     <TextInput
+      testID={testID}
       style={styles.searchInput}
       placeholder={placeholder}
       placeholderTextColor="#868686"
@@ -126,17 +128,17 @@ export const TableCard = ({ table, onPress, styles, locationData, searchQuery })
 
 
   return (
-    <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
-      <CText style={styles.tableCardTitle}>
+    <TouchableOpacity testID={`tableCard_${tableNumber}`} style={styles.tableCard} onPress={() => onPress(table)}>
+      <CText testID={`tableTitle_${tableNumber}`} style={styles.tableCardTitle}>
         {searchQuery ? highlightMatch(`Mesa ${tableNumber}`, searchQuery) : `Mesa ${tableNumber}`}
       </CText>
-      <CText style={styles.tableCardDetail}>
+      <CText testID={`tableRecinto_${tableNumber}`} style={styles.tableCardDetail}>
         Recinto: {searchQuery ? highlightMatch(recinto, searchQuery) : recinto}
       </CText>
-      <CText style={styles.tableCardDetail}>
+      <CText testID={`tableAddress_${tableNumber}`} style={styles.tableCardDetail}>
         Dirección: {searchQuery ? highlightMatch(direccion, searchQuery) : direccion}
       </CText>
-      <CText style={styles.tableCardDetail}>
+      <CText testID={`tableCode_${tableNumber}`} style={styles.tableCardDetail}>
         Código de Mesa: {searchQuery ? highlightMatch(codigo, searchQuery) : codigo}
       </CText>
     </TouchableOpacity>

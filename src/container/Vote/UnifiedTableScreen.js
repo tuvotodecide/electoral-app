@@ -254,6 +254,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
   if (isLoading) {
     return (
       <View
+        testID="unifiedTableScreenLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -261,10 +262,12 @@ const UnifiedTableScreen = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
+          testID="unifiedTableScreenLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
+          testID="unifiedTableScreenLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -281,6 +284,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
   return (
     <>
       <BaseSearchTableScreen
+        testID="unifiedTableScreenBaseScreen"
         // Header props
         colors={colors}
         onBack={handleBack}
@@ -311,6 +315,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
+        testID="unifiedTableScreenModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

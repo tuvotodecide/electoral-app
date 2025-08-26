@@ -98,7 +98,8 @@ const CustomModal = ({
                   { borderColor: iconConfig.color }
                 ]}
                 onPress={onSecondaryPress || onClose}
-                activeOpacity={0.8}>
+                activeOpacity={0.8}
+                testID="customModalSecondaryButton">
                 <CText
                   style={[
                     styles.buttonText,
@@ -119,7 +120,8 @@ const CustomModal = ({
                 secondaryButtonText && styles.buttonWithSecondary
               ]}
               onPress={onButtonPress || onClose}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+              testID="customModalPrimaryButton">
               <CText style={styles.buttonText}>{buttonText}</CText>
             </TouchableOpacity>
           </View>

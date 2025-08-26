@@ -562,19 +562,21 @@ export default function LoginUser({navigation}) {
   }
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth testID="loginUserContainer">
       <View
+        testID="loginUserOvalBackground"
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader color={colors.white} isHideBack />
-      <View style={localStyle.imageContainer}>
-        <Image source={images.logoImg} style={localStyle.imageStyle} />
+      <CHeader testID="loginUserHeader" color={colors.white} isHideBack />
+      <View testID="loginUserImageContainer" style={localStyle.imageContainer}>
+        <Image testID="loginUserLogo" source={images.logoImg} style={localStyle.imageStyle} />
       </View>
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+      <KeyBoardAvoidWrapper testID="loginUserKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
+          <View testID="loginUserContentContainer">
             <CText
+              testID="loginTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
@@ -582,6 +584,7 @@ export default function LoginUser({navigation}) {
             </CText>
 
             <OTPInputView
+              testID="pinInputField"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -607,8 +610,9 @@ export default function LoginUser({navigation}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomButtons}>
+      <View testID="loginUserBottomButtons" style={localStyle.bottomButtons}>
         <CButton
+          testID="forgotPasswordButton"
           onPress={onPressLoginUser1}
           title={String.connectBtnForgot}
           type={'B16'}
@@ -618,14 +622,15 @@ export default function LoginUser({navigation}) {
         />
       </View>
       {loading && (
-        <View style={localStyle.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.white} />
-          <CText type="B16" color={colors.white} style={styles.mt10}>
+        <View testID="loginUserLoadingOverlay" style={localStyle.loadingOverlay}>
+          <ActivityIndicator testID="loginUserLoadingIndicator" size="large" color={colors.white} />
+          <CText testID="loginUserLoadingText" type="B16" color={colors.white} style={styles.mt10}>
             {String.loading}
           </CText>
         </View>
       )}
       <InfoModal
+        testID="loginUserInfoModal"
         visible={modal.visible}
         title={String.walletAccess}
         message={modal.msg}

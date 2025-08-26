@@ -283,10 +283,10 @@ export default function RegisterUser10({navigation, route}) {
   }[stage];
 
   return (
-    <CSafeAreaViewAuth style={localStyle.root}>
-      <StepIndicator step={10} />
-      <View style={localStyle.center}>
-        <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth style={localStyle.root} testID="registerUser10Container">
+      <StepIndicator step={10} testID="registerUser10StepIndicator" />
+      <View style={localStyle.center} testID="registerUser10CenterView">
+        <View style={localStyle.mainContainer} testID="registerUser10MainContainer">
           <Image
             source={
               colors.dark
@@ -294,14 +294,16 @@ export default function RegisterUser10({navigation, route}) {
                 : images.IdentityCard_lightImage
             }
             style={localStyle.imageContainer}
+            testID="registerUser10IdentityImage"
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser10TitleText">
             {stageMessage}
           </CText>
           <CText
             type={'B16'}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={'center'}
+            testID="registerUser10MessageText">
             {String.verifyingIdentityMessage}
           </CText>
           {loading && (
@@ -309,6 +311,7 @@ export default function RegisterUser10({navigation, route}) {
               size={60}
               color={colors.grayScale500}
               style={localStyle.marginTop}
+              testID="registerUser10LoadingIndicator"
             />
           )}
         </View>
@@ -340,6 +343,7 @@ export default function RegisterUser10({navigation, route}) {
             });
           }
         }}
+        testID="registerUser10ErrorModal"
       />
     </CSafeAreaViewAuth>
   );

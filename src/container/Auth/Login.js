@@ -81,20 +81,24 @@ export default function Login({navigation}) {
     });
   };
 
-  const RenderSocialBtn = memo(({item, index}) => {
+  const RenderSocialBtn = memo(({item}) => {
     return (
       <TouchableOpacity
-        key={index}
-        onPress={item.onPress}
+        testID={`loginSocialButton_${item.name.toLowerCase()}`}
         style={[
           localStyle.socialBtn,
           {
-            borderColor: colors.bColor,
+            borderColor: colors.dark
+              ? colors.grayScale700
+              : colors.grayScale200,
+            backgroundColor: colors.dark
+              ? colors.inputBackground
+              : colors.backgroundColor,
           },
         ]}>
-        <View style={styles.flexRow}>
-          {colors.dark ? item.svgDark : item.svgLight}
-          <CText type={'M14'} color={colors.textColor} style={styles.ml20}>
+        <View style={localStyle.rowWithGap}>
+          {item.icon}
+          <CText testID={`loginSocialButtonText_${item.name.toLowerCase()}`} type={'M14'} color={colors.textColor} style={styles.ml20}>
             {item.name}
           </CText>
         </View>
@@ -125,13 +129,14 @@ export default function Login({navigation}) {
               />
             )}
           </View>
-          <CText type={'B24'} align={'center'}>
+          <CText testID="welcomeBackTitle" type={'B24'} align={'center'}>
             {String.welcomeBack}
           </CText>
-          <CText type={'R14'} align={'center'} color={colors.grayScale400}>
+          <CText testID="signInSubtitle" type={'R14'} align={'center'} color={colors.grayScale400}>
             {String.signInToYourAccount}
           </CText>
           <CInput
+            testID="emailInput"
             placeholder={String.email}
             _value={email}
             keyBoardType={'email-address'}
@@ -144,6 +149,7 @@ export default function Login({navigation}) {
             onBlur={onBlurEmail}
           />
           <CInput
+            testID="passwordInput"
             placeholder={String.password}
             _value={password}
             _errorText={passwordError}
@@ -158,7 +164,7 @@ export default function Login({navigation}) {
           />
           <View style={[styles.rowSpaceBetween, styles.mt10]}>
             <View style={styles.rowSpaceAround}>
-              <TouchableOpacity onPress={OnPressRememberMe}>
+              <TouchableOpacity testID="rememberMeCheckbox" onPress={OnPressRememberMe}>
                 <Ionicons
                   name={!!rememberMe ? 'checkbox' : 'square-outline'}
                   color={!!rememberMe ? colors.primary : colors.grayScale50}
@@ -166,6 +172,7 @@ export default function Login({navigation}) {
                 />
               </TouchableOpacity>
               <CText
+                testID="rememberMeLabel"
                 type={'r14'}
                 color={colors.colorText}
                 style={styles.ml5}
@@ -173,13 +180,14 @@ export default function Login({navigation}) {
                 {String.rememberMe}
               </CText>
             </View>
-            <TouchableOpacity onPress={onPressForgotPassword}>
+            <TouchableOpacity testID="forgotPasswordLink" onPress={onPressForgotPassword}>
               <CText type={'M14'} color={colors.primary} align={'center'}>
                 {String.forgotPassWord}
               </CText>
             </TouchableOpacity>
           </View>
           <CButton
+            testID="signInButton"
             title={String.signIn}
             onPress={onPressSignIn}
             type={'B16'}
@@ -218,10 +226,10 @@ export default function Login({navigation}) {
         </View>
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
-        <CText type={'R14'} color={colors.grayScale500}>
+        <CText testID="noAccountLabel" type={'R14'} color={colors.grayScale500}>
           {String.doHaveAnAccount}
         </CText>
-        <TouchableOpacity onPress={onPressSignUp}>
+        <TouchableOpacity testID="signUpLink" onPress={onPressSignUp}>
           <CText color={colors.primary} style={localStyle.signUpText}>
             {String.signUp}
           </CText>

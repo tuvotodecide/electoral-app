@@ -17,12 +17,14 @@ import Icono from '../../components/common/Icono';
 export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth testID="selectRecuperationContainer">
       <CHeader
+        testID="selectRecuperationHeader"
         title={String.recoveryWallet}
         onPressBack={() => navigation.navigate(AuthNav.Connect)}
       />
       <KeyBoardAvoidWrapper
+        testID="selectRecuperationKeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
@@ -30,11 +32,12 @@ export default function SelectRecuperation({navigation}) {
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="selectRecuperationTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.recoverymethod}
           </CText>
         </View>
         <TouchableOpacity
+          testID="selectRecuperationGuardiansOption"
           style={[
             localStyle.optionContainer,
             {
@@ -49,6 +52,7 @@ export default function SelectRecuperation({navigation}) {
           onPress={() => navigation.navigate(AuthNav.FindMyUser)}>
           <View style={styles.rowCenter}>
             <View
+              testID="selectRecuperationGuardiansIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -61,12 +65,13 @@ export default function SelectRecuperation({navigation}) {
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText type="B16">{String.recoverymethodGuardians}</CText>
+                <CText testID="selectRecuperationGuardiansText" type="B16">{String.recoverymethodGuardians}</CText>
               </View>
             </View>
           </View>
         </TouchableOpacity>
         <TouchableOpacity
+          testID="selectRecuperationQROption"
           style={[
             localStyle.optionContainer,
             {
@@ -81,6 +86,7 @@ export default function SelectRecuperation({navigation}) {
           onPress={() => navigation.navigate(AuthNav.RecoveryQr)}>
           <View style={styles.rowCenter}>
             <View
+              testID="selectRecuperationQRIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -93,7 +99,7 @@ export default function SelectRecuperation({navigation}) {
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText type="B16">{String.recoverymethodQR}</CText>
+                <CText testID="selectRecuperationQRText" type="B16">{String.recoverymethodQR}</CText>
               </View>
             </View>
           </View>

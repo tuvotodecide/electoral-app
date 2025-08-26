@@ -501,9 +501,10 @@ const PhotoConfirmationScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="photoConfirmationContainer" style={styles.container}>
       {/* Header */}
       <UniversalHeader
+        testID="photoConfirmationHeader"
         colors={colors}
         onBack={handleBack}
         title={`Mesa ${
@@ -530,26 +531,27 @@ const PhotoConfirmationScreen = () => {
       />
 
       {/* Information Ready to Load Text */}
-      <View style={styles.infoContainer}>
-        <CText style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
+      <View testID="photoConfirmationInfoContainer" style={styles.infoContainer}>
+        <CText testID="photoConfirmationInfoText" style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
       </View>
 
       {/* Main Content */}
-      <View style={styles.content}>
-        <CText style={styles.mainText}>
+      <View testID="photoConfirmationContent" style={styles.content}>
+        <CText testID="photoConfirmationMainText" style={styles.mainText}>
           {I18nStrings.i}
           <CText style={styles.mainTextBold}> {userFullName}</CText>
         </CText>
 
         <TouchableOpacity
+          testID="publishAndCertifyButton"
           style={styles.publishButton}
           onPress={verifyAndUpload}>
-          <CText style={styles.publishButtonText}>
+          <CText testID="publishAndCertifyButtonText" style={styles.publishButtonText}>
             {I18nStrings.publishAndCertify}
           </CText>
         </TouchableOpacity>
 
-        <CText style={styles.confirmationText}>
+        <CText testID="photoConfirmationText" style={styles.confirmationText}>
           {I18nStrings.actaCorrectConfirmation
             .replace(
               '{tableNumber}',
@@ -607,14 +609,16 @@ const PhotoConfirmationScreen = () => {
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
-                    onPress={closeModal}>
+                    onPress={closeModal}
+                    testID="cancelConfirmationButton">
                     <CText style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={modalStyles.confirmButton}
-                    onPress={confirmPublishAndCertify}>
+                    onPress={confirmPublishAndCertify}
+                    testID="confirmPublishButton">
                     <CText style={modalStyles.confirmButtonText}>
                       {I18nStrings.publishAndCertify}
                     </CText>
@@ -666,7 +670,8 @@ const PhotoConfirmationScreen = () => {
             <View style={modalStyles.buttonContainer}>
               <TouchableOpacity
                 style={[modalStyles.cancelButton, {flex: 1}]}
-                onPress={() => setShowDuplicateModal(false)}>
+                onPress={() => setShowDuplicateModal(false)}
+                testID="duplicateGoBackButton">
                 <CText style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
                 </CText>

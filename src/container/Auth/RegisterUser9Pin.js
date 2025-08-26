@@ -52,19 +52,21 @@ export default function RegisterUser9({navigation, route}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={9} />
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+    <CSafeAreaViewAuth testID="registerUser9PinContainer">
+      <StepIndicator testID="registerUser9PinStepIndicator" step={9} />
+      <CHeader testID="registerUser9PinHeader" />
+      <KeyBoardAvoidWrapper testID="registerUser9PinKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
+          <View testID="registerUser9PinContentContainer">
             <CText
+              testID="registerUser9PinTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.confirmPinTitle}
             </CText>
             <CText
+              testID="registerUser9PinDescription"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
@@ -72,6 +74,7 @@ export default function RegisterUser9({navigation, route}) {
             </CText>
 
             <OTPInputView
+              testID="registerUser9PinInput"
               ref={otpRef}
               pinCount={4}
               style={localStyle.otpInputViewStyle}
@@ -99,14 +102,15 @@ export default function RegisterUser9({navigation, route}) {
             />
 
             {showError && (
-              <View style={styles.mt10}>
-                <CAlert status="error" message={String.incorrectPinError} />
+              <View testID="registerUser9PinErrorContainer" style={styles.mt10}>
+                <CAlert testID="registerUser9PinErrorAlert" status="error" message={String.incorrectPinError} />
               </View>
             )}
           </View>
 
-          <View>
+          <View testID="registerUser9PinButtonContainer">
             <CButton
+              testID="registerUser9PinConfirmButton"
               disabled={otp.length !== 4}
               title={String.confirmPinButton}
               type={'B16'}

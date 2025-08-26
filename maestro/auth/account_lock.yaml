@@ -6,7 +6,7 @@ appId: com.tuvotodecide
 - tapOn: "Open debugger to view warnings."
 - assertNotVisible: "Open debugger to view warnings."
 - tapOn: "Tengo una cuenta"
-- assertVisible: "Acceso a la billetera"
+
 
 # Primer intento fallido
 - inputText: "0000"
@@ -15,12 +15,18 @@ appId: com.tuvotodecide
     timeout: 5000
     optional: true
 
+- assertVisible: "Acceso a la billetera"
+- tapOn: "Entendido"
+
 # Segundo intento fallido
 - inputText: "1111"
 - extendedWaitUntil:
     visible: "PIN incorrecto"
     timeout: 5000
     optional: true
+
+- assertVisible: "Acceso a la billetera"
+- tapOn: "Entendido"
 
 # Tercer intento fallido
 - inputText: "2222"
@@ -29,6 +35,9 @@ appId: com.tuvotodecide
     timeout: 5000
     optional: true
 
+- assertVisible: "Acceso a la billetera"
+- tapOn: "Entendido"
+
 # Cuarto intento fallido
 - inputText: "3333"
 - extendedWaitUntil:
@@ -36,12 +45,18 @@ appId: com.tuvotodecide
     timeout: 5000
     optional: true
 
+- assertVisible: "Acceso a la billetera"
+- tapOn: "Entendido"
+
 # Quinto intento fallido - debería activar el bloqueo
 - inputText: "4444"
 - extendedWaitUntil:
     visible: "Tu cuenta ha sido bloqueada"
     timeout: 10000
     optional: true
+
+- assertVisible: "Acceso a la billetera"
+- tapOn: "Entendido"
 
 # Verificar mensaje de bloqueo
 - assertVisible:

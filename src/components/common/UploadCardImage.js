@@ -27,7 +27,7 @@ async function requestGalleryPermission() {
   );
 }
 
-export default function UploadCardImage({label, image, setImage}) {
+export default function UploadCardImage({label, image, setImage, testID}) {
   const colors = useSelector(state => state.theme.theme);
 
   const selectImage =  async() => {
@@ -86,11 +86,12 @@ export default function UploadCardImage({label, image, setImage}) {
 
   return (
     <View style={styles.container}>
-      <CText type="B16" color={colors.textColor}>
+      <CText testID={testID ? `${testID}_label` : undefined} type="B16" color={colors.textColor}>
         {label}
       </CText>
 
       <TouchableOpacity
+        testID={testID ? `${testID}_imageBox` : undefined}
         style={[styles.imageBox, {backgroundColor: colors.inputBackground}]}
         onPress={selectImage}>
         {image ? (
@@ -100,7 +101,7 @@ export default function UploadCardImage({label, image, setImage}) {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
+      <TouchableOpacity testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={takePhoto}>
         <CText type="R14" color={colors.primary}>
           Tomar foto
         </CText>

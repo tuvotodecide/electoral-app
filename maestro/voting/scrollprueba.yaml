@@ -8,11 +8,9 @@ appId: com.tuvotodecide
 #- tapOn: Tengo una cuenta
 #- inputText: '1234'
 - tapOn: , Participar, Sube actas electorales o participa como testigo en el proceso de verificación ciudadana
-- tapOn:
-    text: delay
-    optional: true
-    repeat: 1
-    delay: 1000
+- extendedWaitUntil:
+    visible: Mostrando recintos cercanos a ti
+    timeout: 10000
 - swipe:
     start: "50%, 80%" # Start at the bottom center of the screen
     end: "50%, 10%"     # End at the top center of the screen
@@ -20,7 +18,8 @@ appId: com.tuvotodecide
 - tapOn: DIRECC9
 - tapOn: Mesa 120
 - tapOn: Tomar Foto
-- tapOn: Tomar Foto
+- tapOn:
+    id: cameraShutterButton
 - tapOn:
     text: , Analizar
     optional: false
@@ -173,8 +172,10 @@ appId: com.tuvotodecide
     id: voteSummary_nulos_diputado
 - eraseText
 - inputText: "30"
-- tapOn:
+
+- doubleTapOn:
     id: "saveButton"
+    delay: 1000
 
 - tapOn:
     id: button1
@@ -182,7 +183,10 @@ appId: com.tuvotodecide
 - tapOn:
     id: "nextButton"
 
-- tapOn: Publico y Certifico
+- tapOn:
+    id: publishAndCertifyButton
+- tapOn:
+    id: confirmPublishButton
 
 - extendedWaitUntil:
     visible: "Certificado NFT - Elecciones Bolivia 2025"

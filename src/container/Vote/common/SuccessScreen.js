@@ -96,8 +96,9 @@ const SuccessScreen = () => {
   const nombre = data.name || '(sin nombre)';
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="successScreenContainer" style={styles.container}>
       <UniversalHeader
+        testID="successScreenHeader"
         colors={colors}
         onBack={handleBack}
         // title={String.confirmation}
@@ -105,16 +106,17 @@ const SuccessScreen = () => {
         showNotification={false}
       />
 
-      <View style={styles.mainContent}>
+      <View testID="successMainContent" style={styles.mainContent}>
         {/* Título principal */}
-        <CText style={styles.bigTitle}>{String.nftCertificate}{'\n'}{String.obtain}</CText>
+        <CText testID="nftSuccessTitle" style={styles.bigTitle}>{String.nftCertificate}{'\n'}{String.obtain}</CText>
 
         {/* Certificado NFT como vista normal */}
-        <View style={styles.nftCertificate}>
+        <View testID="nftCertificate" style={styles.nftCertificate}>
           <View style={styles.certificateBorder}>
             {/* Medallón NFT */}
-            <View style={styles.medalContainer}>
+            <View testID="nftMedalContainer" style={styles.medalContainer}>
               <Image
+                testID="nftMedalImage"
                 source={nftImage}
                 style={styles.medalImage}
                 resizeMode="contain"
@@ -122,33 +124,36 @@ const SuccessScreen = () => {
               {/* <CText style={styles.nftMedalText}>NFT</CText> */}
             </View>
             {/* Datos del certificado */}
-            <CText style={styles.nftName}>{nombre}</CText>
-            <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
-            <CText style={styles.nftCertTitle}>PARTICIPACIÓN ELECTORAL</CText>
-            <CText style={styles.nftCertDetail}>ELECCIONES GENERALES</CText>
-            <CText style={styles.nftCertDetail}>BOLIVIA 2025</CText>
+            <CText testID="nftUserName" style={styles.nftName}>{nombre}</CText>
+            <CText testID="nftCertTitle1" style={styles.nftCertTitle}>CERTIFICADO DE</CText>
+            <CText testID="nftCertTitle2" style={styles.nftCertTitle}>PARTICIPACIÓN ELECTORAL</CText>
+            <CText testID="nftCertDetail1" style={styles.nftCertDetail}>ELECCIONES GENERALES</CText>
+            <CText testID="nftCertDetail2" style={styles.nftCertDetail}>BOLIVIA 2025</CText>
           </View>
         </View>
 
         {/* Botones de acción */}
-        <View style={styles.buttonsContainer}>
+        <View testID="nftButtonsContainer" style={styles.buttonsContainer}>
           <TouchableOpacity
+            testID="viewNFTButton"
             style={styles.nftButton}
             onPress={handleViewNFT}>
-            <CText style={styles.nftButtonText}>Ver mi NFT</CText>
+            <CText testID="viewNFTButtonText" style={styles.nftButtonText}>Ver mi NFT</CText>
           </TouchableOpacity>
 
           <TouchableOpacity
+            testID="shareProfileButton"
             style={styles.shareButton}
             onPress={handleShareProfile}>
-            <Ionicons name="share-outline" size={20} color="#2196F3" style={styles.shareIcon} />
-            <CText style={styles.shareButtonText}>Compartir perfil</CText>
+            <Ionicons testID="shareIcon" name="share-outline" size={20} color="#2196F3" style={styles.shareIcon} />
+            <CText testID="shareButtonText" style={styles.shareButtonText}>Compartir perfil</CText>
           </TouchableOpacity>
 
           <TouchableOpacity
+            testID="backHomeButton"
             style={styles.backHomeButton}
             onPress={handleBack}>
-            <CText style={styles.backHomeButtonText}>Regresar al inicio</CText>
+            <CText testID="backHomeButtonText" style={styles.backHomeButtonText}>Regresar al inicio</CText>
           </TouchableOpacity>
         </View>
       </View>

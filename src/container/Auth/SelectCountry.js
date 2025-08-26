@@ -38,22 +38,23 @@ export default function SelectCountry({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <StepIndicator step={3} />
+    <CSafeAreaViewAuth testID="selectCountryContainer">
+      <CHeader testID="selectCountryHeader" />
+      <StepIndicator testID="selectCountryStepIndicator" step={3} />
       <View style={localStyle.mainContainer}>
         <View>
-          <CText type={'B24'}>{String.whatsYourCitizenship}</CText>
+          <CText testID="citizenshipTitle" type={'B24'}>{String.whatsYourCitizenship}</CText>
           <CText
+            testID="citizenshipDescription"
             type={'R14'}
             color={colors.grayScale500}
             style={localStyle.descriptionText}>
             {String.citizenDescription}
           </CText>
-          <CText type={'B14'} style={localStyle.citizenText}>
+          <CText testID="citizenshipLabel" type={'B14'} style={localStyle.citizenText}>
             {String.citizenship}
           </CText>
-          <TouchableOpacity onPress={onPressSelect}>
+          <TouchableOpacity testID="countrySelectButton" onPress={onPressSelect}>
             {!!country ? (
               <View
                 style={[
@@ -62,11 +63,12 @@ export default function SelectCountry({navigation}) {
                 ]}>
                 <View style={localStyle.iconAndCountryName}>
                   {country ? country?.svgIcon : null}
-                  <CText type={'M16'} style={styles.m10}>
+                  <CText testID="selectedCountryName" type={'M16'} style={styles.m10}>
                     {country?.countryName}
                   </CText>
                 </View>
                 <Icons
+                  testID="countrySelectChevron"
                   name="chevron-right"
                   size={moderateScale(32)}
                   color={colors.grayScale500}
@@ -80,8 +82,9 @@ export default function SelectCountry({navigation}) {
                   {backgroundColor: colors.inputBackground},
                 ]}>
                 <View style={localStyle.iconAndCountryName}>
-                  <USFlagIcon />
+                  <USFlagIcon testID="defaultCountryFlag" />
                   <CText
+                    testID="countryPlaceholder"
                     type={'M16'}
                     style={styles.m10}
                     color={colors.grayScale500}>
@@ -89,6 +92,7 @@ export default function SelectCountry({navigation}) {
                   </CText>
                 </View>
                 <Icons
+                  testID="placeholderChevron"
                   color={colors.grayScale500}
                   name="chevron-right"
                   size={moderateScale(32)}
@@ -99,13 +103,14 @@ export default function SelectCountry({navigation}) {
           </TouchableOpacity>
         </View>
         <View>
-          <View style={localStyle.securityContainer}>
-            <LockIcon />
-            <CText type={'R12'} color={colors.grayScale500} style={styles.ml5}>
+          <View testID="securityInfo" style={localStyle.securityContainer}>
+            <LockIcon testID="securityIcon" />
+            <CText testID="securityText" type={'R12'} color={colors.grayScale500} style={styles.ml5}>
               {String.securityText}
             </CText>
           </View>
           <CButton
+            testID="continueButton"
             title={String.continue}
             type={'B16'}
             onPress={onPressContinue}
@@ -113,6 +118,7 @@ export default function SelectCountry({navigation}) {
         </View>
       </View>
       <SelectCountryModal
+        testID="countrySelectionModal"
         visible={isModalVisible}
         selectedCountry={selectedCountry}
         onPressClose={onPressCloseModal}

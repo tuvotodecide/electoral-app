@@ -162,32 +162,36 @@ const ElectoralLocationsScreen = () => {
 
   const renderLocationItem = ({item}) => (
     <TouchableOpacity
+      testID={`electoralLocationItem_${item.id}`}
       style={styles.locationCard}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.7}>
       <View style={styles.locationHeader}>
-        <View style={styles.locationIconContainer}>
+        <View testID={`electoralLocationIconContainer_${item.id}`} style={styles.locationIconContainer}>
           <MaterialIcons
+            testID={`electoralLocationIcon_${item.id}`}
             name="location-on"
             size={24}
             color={colors.primary || '#4F9858'}
           />
         </View>
-        <View style={styles.locationInfo}>
-          <CText style={[styles.locationName, {color: colors.text}]}>
+        <View testID={`electoralLocationInfo_${item.id}`} style={styles.locationInfo}>
+          <CText testID={`electoralLocationName_${item.id}`} style={[styles.locationName, {color: colors.text}]}>
             {item.name}
           </CText>
           <CText
+            testID={`electoralLocationAddress_${item.id}`}
             style={[styles.locationAddress, {color: colors.textSecondary}]}>
             {item.address}
           </CText>
           {item.tablesCount && (
-            <CText style={[styles.tablesCount, {color: colors.primary}]}>
+            <CText testID={`electoralLocationTablesCount_${item.id}`} style={[styles.tablesCount, {color: colors.primary}]}>
               {item.tablesCount} {String.tables}
             </CText>
           )}
         </View>
         <Ionicons
+          testID={`electoralLocationChevron_${item.id}`}
           name="chevron-forward"
           size={20}
           color={colors.textSecondary}
@@ -195,8 +199,8 @@ const ElectoralLocationsScreen = () => {
       </View>
 
       {item.code && (
-        <View style={styles.locationCode}>
-          <CText style={[styles.codeLabel, {color: colors.textSecondary}]}>
+        <View testID={`electoralLocationCodeContainer_${item.id}`} style={styles.locationCode}>
+          <CText testID={`electoralLocationCode_${item.id}`} style={[styles.codeLabel, {color: colors.textSecondary}]}>
             {String.code}: {item.code}
           </CText>
         </View>
@@ -207,15 +211,17 @@ const ElectoralLocationsScreen = () => {
   if (isLoading) {
     return (
       <CSafeAreaView
+        testID="electoralLocationsLoadingContainer"
         style={[styles.container, {backgroundColor: colors.background}]}>
         <UniversalHeader
+          testID="electoralLocationsLoadingHeader"
           title={String.electoralLocations}
           onBack={handleBack}
           colors={colors}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
-          <CText style={[styles.loadingText, {color: colors.textSecondary}]}>
+        <View testID="electoralLocationsLoadingContentContainer" style={styles.loadingContainer}>
+          <ActivityIndicator testID="electoralLocationsLoadingIndicator" size="large" color={colors.primary || '#4F9858'} />
+          <CText testID="electoralLocationsLoadingText" style={[styles.loadingText, {color: colors.textSecondary}]}>
             {userLocation
               ? String.loadingNearbyLocations
               : String.gettingLocation}
@@ -227,8 +233,10 @@ const ElectoralLocationsScreen = () => {
 
   return (
     <CSafeAreaView
+      testID="electoralLocationsContainer"
       style={[styles.container, {backgroundColor: colors.background}]}>
       <UniversalHeader
+        testID="electoralLocationsHeader"
         title={String.electoralLocations}
         onBack={handleBack}
         // colors={colors}
@@ -236,37 +244,41 @@ const ElectoralLocationsScreen = () => {
 
       {userLocation && (
         <View
+          testID="electoralLocationsLocationBanner"
           style={[
             styles.locationBanner,
             {backgroundColor: colors.primaryLight || '#E8F5E8'},
           ]}>
           <MaterialIcons
+            testID="electoralLocationsBannerIcon"
             name="near-me"
             size={16}
             color={colors.primary || '#4F9858'}
           />
-          <CText style={[styles.bannerText, {color: colors.primary}]}>
+          <CText testID="electoralLocationsBannerText" style={[styles.bannerText, {color: colors.primary}]}>
             {String.showingNearbyLocations}
           </CText>
         </View>
       )}
 
       {locations.length === 0 ? (
-        <View style={styles.emptyContainer}>
+        <View testID="electoralLocationsEmptyContainer" style={styles.emptyContainer}>
           <MaterialIcons
+            testID="electoralLocationsEmptyIcon"
             name="location-off"
             size={64}
             color={colors.textSecondary}
           />
-          <CText style={[styles.emptyTitle, {color: colors.text}]}>
+          <CText testID="electoralLocationsEmptyTitle" style={[styles.emptyTitle, {color: colors.text}]}>
             {String.noLocationsFound}
           </CText>
-          <CText style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
+          <CText testID="electoralLocationsEmptySubtitle" style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
             {String.noLocationsFoundSubtitle}
           </CText>
         </View>
       ) : (
         <FlatList
+          testID="electoralLocationsList"
           data={locations}
           renderItem={renderLocationItem}
           keyExtractor={item => item.id.toString()}
@@ -276,6 +288,7 @@ const ElectoralLocationsScreen = () => {
       )}
 
       <CustomModal
+        testID="electoralLocationsModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

@@ -27,21 +27,22 @@ export default function RegisterUser11({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={11} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser11Container">
+      <StepIndicator step={11} testID="registerUser11StepIndicator" />
+      <CHeader testID="registerUser11Header" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
-        ]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+        ]}
+        testID="registerUser11KeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="registerUser11MainContainer">
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser11TitleText">
             {String.welcomeTitle}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText type={'B16'} color={getSecondaryTextColor(colors)} testID="registerUser11SubtitleText">
             {String.verifiedIdentity}
           </CText>
         </View>
@@ -57,6 +58,7 @@ export default function RegisterUser11({navigation}) {
               </CText>
             </View>
           }
+          testID="registerUser11AssetsFeature"
         />
 
         <CIconText
@@ -71,6 +73,7 @@ export default function RegisterUser11({navigation}) {
               </CText>
             </View>
           }
+          testID="registerUser11TransferFeature"
         />
 
         <CIconText
@@ -85,6 +88,7 @@ export default function RegisterUser11({navigation}) {
               </CText>
             </View>
           }
+          testID="registerUser11HistoryFeature"
         />
 
         <CIconText
@@ -99,14 +103,16 @@ export default function RegisterUser11({navigation}) {
               </CText>
             </View>
           }
+          testID="registerUser11SecurityFeature"
         />
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View style={localStyle.bottomTextContainer} testID="registerUser11BottomContainer">
         <CButton
           title={String.goToWalletButton}
           onPress={onPressNext}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
+          testID="registerUser11GoToWalletButton"
         />
       </View>
     </CSafeAreaViewAuth>

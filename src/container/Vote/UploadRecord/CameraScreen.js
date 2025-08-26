@@ -720,7 +720,8 @@ export default function CameraScreen({navigation, route}) {
                 (loading || !isActive) && styles.buttonDisabled,
               ]}
               onPress={takePhoto}
-              disabled={loading || !isActive}>
+              disabled={loading || !isActive}
+              testID="cameraShutterButton">
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
@@ -731,7 +732,8 @@ export default function CameraScreen({navigation, route}) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.galleryButtonPreview]}
-              onPress={openGallery}>
+              onPress={openGallery}
+              testID="openGalleryButton">
               <Ionicons name="image-outline" size={20} color="#fff" />
               <CText style={styles.actionButtonText}>Galería</CText>
             </TouchableOpacity>
@@ -743,7 +745,8 @@ export default function CameraScreen({navigation, route}) {
           <View style={styles.photoHeaderContainer}>
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={resetImageTransform}>
+              onPress={resetImageTransform}
+              testID="resetZoomButton">
               <Ionicons name="refresh" size={24} color="#fff" />
               <CText style={styles.headerButtonText}>Reset Zoom</CText>
             </TouchableOpacity>
@@ -812,7 +815,8 @@ export default function CameraScreen({navigation, route}) {
           <View style={styles.photoActionsContainer}>
             <TouchableOpacity
               style={[styles.actionButton, styles.retakeButton]}
-              onPress={takeNewPhoto}>
+              onPress={takeNewPhoto}
+              testID="retakePhotoButton">
               <Ionicons name="camera-outline" size={20} color="#fff" />
               <CText style={styles.actionButtonText}>Tomar Nueva</CText>
             </TouchableOpacity>
@@ -820,7 +824,8 @@ export default function CameraScreen({navigation, route}) {
             <TouchableOpacity
               style={[styles.actionButton, styles.analyzeButton]}
               onPress={handleNext}
-              disabled={analyzing}>
+              disabled={analyzing}
+              testID="analyzePhotoButton">
               {analyzing ? (
                 <View style={styles.analyzingContainer}>
                   <ActivityIndicator
@@ -860,7 +865,8 @@ export default function CameraScreen({navigation, route}) {
                     index === modalConfig.buttons.length - 1 &&
                       styles.modalButtonLast,
                   ]}
-                  onPress={button.onPress}>
+                  onPress={button.onPress}
+                  testID={`modalButton_${button.text?.replace(/\s+/g, '_') || index}`}>
                   <Text style={styles.modalButtonText}>{button.text}</Text>
                 </TouchableOpacity>
               ))}

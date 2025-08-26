@@ -23,15 +23,18 @@ export default function AccountLock({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth testID="accountLockContainer">
       <View
+        testID="accountLockOvalBackground"
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
       <CHeader
+        testID="accountLockHeader"
         onPressBack={() => navigation.navigate(AuthNav.Connect)}
         color={colors.white}
       />
       <KeyBoardAvoidWrapper
+        testID="accountLockKeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
@@ -39,14 +42,16 @@ export default function AccountLock({navigation}) {
         ]}>
         <View style={localStyle.mainContainer}>
           <Image
+            testID="accountLockImage"
             source={images.BloqueoImage}
             style={localStyle.imageContainer}
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="accountLockTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.forgot2}
           </CText>
 
           <CText
+            testID="accountLockDescription"
             type={'B16'}
             color={getSecondaryTextColor(colors)}
             align={'center'}>
@@ -54,8 +59,9 @@ export default function AccountLock({navigation}) {
           </CText>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="accountLockBottomContainer" style={localStyle.bottomTextContainer}>
         <CAlertPrimary
+          testID="accountLockRecoveryAlert"
           icon={<Icono name="lock" color={getSecondaryTextColor(colors)} />}
           iconRiaght={
             <Icono name="chevron-right" color={getSecondaryTextColor(colors)} />

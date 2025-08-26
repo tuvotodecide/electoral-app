@@ -99,6 +99,7 @@ const ElectoralLocations = ({navigation, route}) => {
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <TextInput
+        testID="electoralLocationsSearchInput"
         style={styles.searchInput}
         placeholder="Buscar recinto por nombre, código, calle o distrito"
         placeholderTextColor="#888"
@@ -107,6 +108,7 @@ const ElectoralLocations = ({navigation, route}) => {
       />
       {searchTerm ? (
         <TouchableOpacity
+          testID="clearSearchButton"
           style={styles.clearButton}
           onPress={() => {
             setSearchTerm('');
@@ -440,43 +442,44 @@ const ElectoralLocations = ({navigation, route}) => {
 
   const renderLocationItem = ({item}) => (
     <TouchableOpacity
+      testID={`electoralLocationCard_${item._id}`}
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.8}>
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
-          <CText style={styles.locationName} numberOfLines={2}>
+          <CText testID={`locationName_${item._id}`} style={styles.locationName} numberOfLines={2}>
             {highlightText(item.name, searchTerm)}
           </CText>
-          <CText style={styles.locationCode}>
+          <CText testID={`locationCode_${item._id}`} style={styles.locationCode}>
             {i18nString.code}: {highlightText(item.code, searchTerm)}
           </CText>
         </View>
         <View style={styles.distanceContainer}>
           <Ionicons name="location-outline" size={16} color="#666" />
-          <CText style={styles.distanceText}>{item.distance}m</CText>
+          <CText testID={`locationDistance_${item._id}`} style={styles.distanceText}>{item.distance}m</CText>
         </View>
       </View>
 
-      <CText style={styles.locationAddress} numberOfLines={2}>
+      <CText testID={`locationAddress_${item._id}`} style={styles.locationAddress} numberOfLines={2}>
         {highlightText(item.address, searchTerm)}
       </CText>
 
       <View style={styles.locationDetails}>
-        <CText style={styles.locationZone}>
+        <CText testID={`locationZone_${item._id}`} style={styles.locationZone}>
           {highlightText(item.zone, searchTerm)} -{' '}
           {highlightText(item.district, searchTerm)}
         </CText>
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
-          <CText style={styles.tablesCount}>
+          <CText testID={`tablesCount_${item._id}`} style={styles.tablesCount}>
             {item.tableCount} {i18nString.tables}
           </CText>
         </View>
       </View>
 
       <View style={styles.hierarchyContainer}>
-        <CText style={styles.hierarchyText}>
+        <CText testID={`locationHierarchy_${item._id}`} style={styles.hierarchyText}>
           {highlightText(
             item.electoralSeat?.municipality?.province?.department?.name,
             searchTerm,
@@ -496,11 +499,12 @@ const ElectoralLocations = ({navigation, route}) => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="location-outline" size={64} color="#ccc" />
-      <CText style={styles.emptyTitle}>{i18nString.noLocationsFound}</CText>
-      <CText style={styles.emptySubtitle}>
+      <CText testID="noLocationsFoundTitle" style={styles.emptyTitle}>{i18nString.noLocationsFound}</CText>
+      <CText testID="noLocationsFoundSubtitle" style={styles.emptySubtitle}>
         {i18nString.noLocationsFoundSubtitle}
       </CText>
       <TouchableOpacity
+        testID="retryLocationButton"
         style={styles.retryButton}
         onPress={handleRetryLocation}>
         <CText style={styles.retryButtonText}>{i18nString.retry}</CText>

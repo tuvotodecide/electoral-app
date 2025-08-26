@@ -263,9 +263,10 @@ const MyWitnessesListScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="myWitnessesContainer" style={styles.container}>
       {/* Header */}
       <UniversalHeader
+        testID="myWitnessesHeader"
         colors={colors}
         onBack={handleBack}
         title={String.myWitnessesTitle}
@@ -273,38 +274,40 @@ const MyWitnessesListScreen = () => {
       />
 
       {/* Question Text */}
-      <View style={styles.questionContainer}>
-        <CText style={styles.questionText}>
+      <View testID="witnessesQuestionContainer" style={styles.questionContainer}>
+        <CText testID="witnessesQuestionText" style={styles.questionText}>
           {String.selectDocumentToReview}
         </CText>
       </View>
 
       {/* Content */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary || '#459151'} />
-          <CText style={styles.loadingText}>{String.loadingWitnesses}</CText>
+        <View testID="witnessesLoadingContainer" style={styles.loadingContainer}>
+          <ActivityIndicator testID="witnessesLoadingIndicator" size="large" color={colors.primary || '#459151'} />
+          <CText testID="witnessesLoadingText" style={styles.loadingText}>{String.loadingWitnesses}</CText>
         </View>
       ) : hasNoAttestations ? (
-        <View style={styles.noAttestationsContainer}>
-          <View style={styles.noAttestationsIconContainer}>
-            <CText style={styles.noAttestationsIcon}>📋</CText>
+        <View testID="noAttestationsContainer" style={styles.noAttestationsContainer}>
+          <View testID="noAttestationsIconContainer" style={styles.noAttestationsIconContainer}>
+            <CText testID="noAttestationsIcon" style={styles.noAttestationsIcon}>📋</CText>
           </View>
-          <CText style={styles.noAttestationsTitle}>
+          <CText testID="noAttestationsTitle" style={styles.noAttestationsTitle}>
             No hay atestiguamientos realizados
           </CText>
-          <CText style={styles.noAttestationsMessage}>
+          <CText testID="noAttestationsMessage" style={styles.noAttestationsMessage}>
             Aún no has realizado ningún atestiguamiento.{'\n'}
             Cuando completes tu primer atestiguamiento, aparecerá aquí.
           </CText>
           <TouchableOpacity
+            testID="refreshWitnessesButton"
             style={[styles.refreshButton, { backgroundColor: colors.primary || '#459151' }]}
             onPress={loadWitnessRecords}>
-            <CText style={styles.refreshButtonText}>Actualizar</CText>
+            <CText testID="refreshWitnessesButtonText" style={styles.refreshButtonText}>Actualizar</CText>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView
+          testID="witnessRecordsList"
           style={styles.imageList}
           showsVerticalScrollIndicator={false}>
           {isTablet
@@ -319,6 +322,7 @@ const MyWitnessesListScreen = () => {
                   {pair.map(witnessRecord => (
                     <View key={witnessRecord.id} style={styles.tabletColumn}>
                       <TouchableOpacity
+                        testID={`witnessRecord_${witnessRecord.id}`}
                         style={[
                           styles.imageCard,
                           selectedImageId === witnessRecord.id &&
@@ -326,14 +330,15 @@ const MyWitnessesListScreen = () => {
                         ]}
                         onPress={() => handleImagePress(witnessRecord.id)}>
                         <View style={styles.imageHeader}>
-                          <CText style={styles.mesaText}>
+                          <CText testID={`witnessRecordMesa_${witnessRecord.id}`} style={styles.mesaText}>
                             {witnessRecord.mesa}
                           </CText>
-                          <CText style={styles.fechaText}>
+                          <CText testID={`witnessRecordDate_${witnessRecord.id}`} style={styles.fechaText}>
                             {witnessRecord.fecha} - {witnessRecord.hora}
                           </CText>
                         </View>
                         <Image
+                          testID={`witnessRecordImage_${witnessRecord.id}`}
                           source={{
                             uri: witnessRecord.imagen,
                             headers: {
@@ -376,9 +381,10 @@ const MyWitnessesListScreen = () => {
                       </TouchableOpacity>
                       {selectedImageId === witnessRecord.id && (
                         <TouchableOpacity
+                          testID={`tabletWitnessDetailsButton_${witnessRecord.id}`}
                           style={styles.detailsButton}
                           onPress={handleVerMas}>
-                          <CText style={styles.detailsButtonText}>
+                          <CText testID={`tabletWitnessDetailsButtonText_${witnessRecord.id}`} style={styles.detailsButtonText}>
                             {String.seeMore}
                           </CText>
                         </TouchableOpacity>
@@ -393,6 +399,7 @@ const MyWitnessesListScreen = () => {
             witnessRecords.map(witnessRecord => (
               <React.Fragment key={witnessRecord.id}>
                 <TouchableOpacity
+                  testID={`phoneWitnessRecord_${witnessRecord.id}`}
                   style={[
                     styles.imageCard,
                     selectedImageId === witnessRecord.id &&
@@ -400,14 +407,15 @@ const MyWitnessesListScreen = () => {
                   ]}
                   onPress={() => handleImagePress(witnessRecord.id)}>
                   <View style={styles.imageHeader}>
-                    <CText style={styles.mesaText}>
+                    <CText testID={`phoneWitnessRecordMesa_${witnessRecord.id}`} style={styles.mesaText}>
                       {witnessRecord.mesa}
                     </CText>
-                    <CText style={styles.fechaText}>
+                    <CText testID={`phoneWitnessRecordDate_${witnessRecord.id}`} style={styles.fechaText}>
                       {witnessRecord.fecha} - {witnessRecord.hora}
                     </CText>
                   </View>
                   <Image
+                    testID={`phoneWitnessRecordImage_${witnessRecord.id}`}
                     source={{
                       uri: witnessRecord.imagen,
                       headers: {
@@ -441,9 +449,10 @@ const MyWitnessesListScreen = () => {
                 </TouchableOpacity>
                 {selectedImageId === witnessRecord.id && (
                   <TouchableOpacity
+                    testID={`phoneWitnessDetailsButton_${witnessRecord.id}`}
                     style={styles.detailsButton}
                     onPress={handleVerMas}>
-                    <CText style={styles.detailsButtonText}>
+                    <CText testID={`phoneWitnessDetailsButtonText_${witnessRecord.id}`} style={styles.detailsButtonText}>
                       {String.seeMore}
                     </CText>
                   </TouchableOpacity>
@@ -455,6 +464,7 @@ const MyWitnessesListScreen = () => {
 
       {/* Modal de Error/Advertencia */}
       <CustomModal
+        testID="witnessesErrorModal"
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         title={modalData.title}

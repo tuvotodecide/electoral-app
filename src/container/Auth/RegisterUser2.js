@@ -84,28 +84,30 @@ export default function RegisterUser2({navigation}) {
   );
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={2} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser2Container">
+      <StepIndicator testID="registerUser2StepIndicator" step={2} />
+      <CHeader testID="registerUser2Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser2KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="idVerificationTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.idVerificationTitle}
           </CText>
 
-          <CText type={'B16'} align={'center'}>
+          <CText testID="idVerificationSubtitle" type={'B16'} align={'center'}>
             {String.idVerificationSubtitle}
           </CText>
 
-          <CText type="B14" style={styles.mt10}>
+          <CText testID="idLabel" type="B14" style={styles.mt10}>
             {String.idLabel}
           </CText>
           <TextInput
+            testID="idNumberInput"
             value={idNumber}
             onChangeText={setIdNumber}
             onEndEditing={handleCheckAndNext}
@@ -122,20 +124,23 @@ export default function RegisterUser2({navigation}) {
           />
 
           <UploadCardImage
+            testID="frontCardUpload"
             label={String.frontLabel}
             image={frontImage}
             setImage={setFrontImage}
           />
 
           <UploadCardImage
+            testID="backCardUpload"
             label={String.backLabel}
             image={backImage}
             setImage={setBackImage}
           />
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="registerUser2BottomContainer" style={localStyle.bottomTextContainer}>
         <CButton
+          testID="continueVerificationButton"
           disabled={!isFormValid() || isLoading || submitting}
           title={isLoading ? String.checking : String.continueButton}
           onPress={handleCheckAndNext}
@@ -143,7 +148,7 @@ export default function RegisterUser2({navigation}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-      <DniExistsModal visible={isModalVisible} onClose={closeModal} />
+      <DniExistsModal testID="registerUser2DniExistsModal" visible={isModalVisible} onClose={closeModal} />
     </CSafeAreaViewAuth>
   );
 }

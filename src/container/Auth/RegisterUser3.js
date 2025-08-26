@@ -41,22 +41,24 @@ export default function RegisterUser3({navigation, route}) {
         ]}>
         <View style={localStyle.mainContainer}>
           <Image
+            testID="faceIdImage"
             source={colors.dark ? images.FaceIdImage : images.FaceId_lightImage}
             style={localStyle.imageContainer}
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="cameraTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.titleCamera}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText testID="cameraDescription" type={'B16'} color={getSecondaryTextColor(colors)}>
             {String.description_camera}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText testID="cameraNote" type={'B16'} color={getSecondaryTextColor(colors)}>
             {String.description_note}
           </CText>
         </View>
         <CIconText
+          testID="tipWellLit"
           icon={<Icono name="weather-sunny" color={colors.primary} />}
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
@@ -65,6 +67,7 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
+          testID="tipRemoveItems"
           icon={<Icono name="account-remove-outline" color={colors.primary} />}
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
@@ -73,6 +76,7 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
+          testID="tipLookCamera"
           icon={<Icono name="camera-outline" color={colors.primary} />}
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
@@ -83,6 +87,7 @@ export default function RegisterUser3({navigation, route}) {
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CButton
+          testID="scanFaceButton"
           title={String.button_scan_face}
           onPress={onPressNext}
           type={'B16'}

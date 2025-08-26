@@ -30,14 +30,16 @@ export default function FingerPrintScreen({navigation}) {
         <View />
         <View>
           <Image
+            testID="fingerprintImage"
             source={colors.dark ? images.FingerImage : images.Finger_lightImage}
             style={localStyle.imageContainer}
           />
 
-          <CText type={'B24'} align={'center'}>
+          <CText testID="enableFingerprintTitle" type={'B24'} align={'center'}>
             {String.enableFingerprint}
           </CText>
           <CText
+            testID="enableFingerprintDescription"
             type={'R14'}
             align={'center'}
             color={colors.grayScale500}
@@ -47,12 +49,14 @@ export default function FingerPrintScreen({navigation}) {
         </View>
         <View>
           <CButton
+            testID="enableFingerprintButton"
             title={String.enableFingerprint}
             type={'B16'}
             containerStyle={localStyle.btnStyle}
             onPress={onPressEnableFaceId}
           />
           <CButton
+            testID="skipFingerprintButton"
             title={String.skipForNow}
             type={'B16'}
             containerStyle={localStyle.skipBtn}

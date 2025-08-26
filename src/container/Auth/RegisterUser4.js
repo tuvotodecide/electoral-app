@@ -91,34 +91,37 @@ export default function RegisterUser4({navigation, route}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={4} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser4Container">
+      <StepIndicator testID="registerUser4StepIndicator" step={4} />
+      <CHeader testID="registerUser4Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser4KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B16'}>{String.takePhoto}</CText>
+          <CText testID="registerUser4Title" type={'B16'}>{String.takePhoto}</CText>
           <View
+            testID="registerUser4ImageBox"
             style={[
               localStyle.imageBox,
               {backgroundColor: colors.inputBackground},
             ]}>
             {selfie ? (
-              <Image source={{uri: selfie.uri}} style={localStyle.image} />
+              <Image testID="registerUser4SelfieImage" source={{uri: selfie.uri}} style={localStyle.image} />
             ) : (
-              <CText type="R14" color={colors.primary}>
+              <CText testID="registerUser4LoadingText" type="R14" color={colors.primary}>
                 {String.loadingCamera}
               </CText>
             )}
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="registerUser4BottomContainer" style={localStyle.bottomTextContainer}>
         <CButton
+          testID="registerUser4NextButton"
           title={'Siguiente'}
           onPress={onPressNext}
           type={'B16'}

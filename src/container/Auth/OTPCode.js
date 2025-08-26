@@ -34,18 +34,19 @@ export default function OTPCode({route, navigation}) {
     }
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+    <CSafeAreaViewAuth testID="otpCodeContainer">
+      <CHeader testID="otpCodeHeader" />
+      <KeyBoardAvoidWrapper testID="otpCodeKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
-            <CText type={'B24'} style={localStyle.headerTextStyle}>
+          <View testID="otpCodeContentContainer">
+            <CText testID="authCodeTitle" type={'B24'} style={localStyle.headerTextStyle}>
               {String.authenticationCode}
             </CText>
-            <CText type={'R14'} color={colors.grayScale500}>
+            <CText testID="otpDescription" type={'R14'} color={colors.grayScale500}>
               {String.otpDescription}
             </CText>
             <OTPInputView
+              testID="otpInput"
               pinCount={5}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -65,20 +66,22 @@ export default function OTPCode({route, navigation}) {
               ]}
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
-            <TouchableOpacity>
-              <CText type={'B14'} style={localStyle.diffPhoneNumberText}>
+            <TouchableOpacity testID="differentPhoneNumberButton">
+              <CText testID="differentPhoneNumberText" type={'B14'} style={localStyle.diffPhoneNumberText}>
                 {String.useDifferentPhoneNumber}
               </CText>
             </TouchableOpacity>
           </View>
         </View>
         <CButton
+          testID="continueButton"
           title={String.continue}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
           onPress={onPressContinue}
         />
         <CButton
+          testID="resendCodeButton"
           title={String.resendCode}
           type={'B16'}
           containerStyle={localStyle.resendButton}

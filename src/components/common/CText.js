@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import Typography from '../../themes/typography';
 
 //Text Component
-const CText = ({type, style, align, color, children, ...props}) => {
+const CText = ({type, style, align, color, children, testID, ...props}) => {
   const colors = useSelector(state => state.theme.theme);
 
   const fontWeights = () => {
@@ -75,6 +75,7 @@ const CText = ({type, style, align, color, children, ...props}) => {
         align && {textAlign: align},
         style,
       ]}
+      testID={testID}
       {...props}>
       {children}
     </Text>

@@ -28,61 +28,67 @@ export default function RegisterUser1({navigation}) {
     navigation.navigate(StackNav.TermsAndCondition);
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={1} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser1Container">
+      <StepIndicator testID="registerUser1StepIndicator" step={1} />
+      <CHeader testID="registerUser1Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser1KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B20'}>{String.titleReg}</CText>
+        <View testID="registerUser1MainContent" style={localStyle.mainContainer}>
+          <CText testID="registerUser1Title" type={'B20'}>{String.titleReg}</CText>
 
           <CIconText
+            testID="registerUser1Step1Icon"
             icon={
               <Icono
                 name="card-account-details-outline"
                 color={colors.primary}
               />
             }
-            text={<CText type={'B16'}>{String.connectItem1Reg}</CText>}
+            text={<CText testID="registerUser1Step1Text" type={'B16'}>{String.connectItem1Reg}</CText>}
           />
           <CIconText
+            testID="registerUser1Step2Icon"
             icon={<Icono name="camera-outline" color={colors.primary} />}
-            text={<CText type={'B16'}>{String.connectItem2Reg}</CText>}
+            text={<CText testID="registerUser1Step2Text" type={'B16'}>{String.connectItem2Reg}</CText>}
           />
         </View>
       </KeyBoardAvoidWrapper>
 
-      <View style={localStyle.bottomTextContainer}>
-        <View style={localStyle.rowWithGap}>
-          <TouchableOpacity onPress={onPressRememberMe}>
+      <View testID="registerUser1BottomSection" style={localStyle.bottomTextContainer}>
+        <View testID="termsCheckboxContainer" style={localStyle.rowWithGap}>
+          <TouchableOpacity testID="termsCheckbox" onPress={onPressRememberMe}>
             <Ionicons
+              testID="termsCheckboxIcon"
               name={check ? 'checkbox' : 'square-outline'}
               color={check ? colors.primary : colors.grayScale50}
               size={moderateScale(24)}
             />
           </TouchableOpacity>
 
-          <CText type={'r14'} color={colors.colorText} style={localStyle.item}>
+          <CText testID="termsText" type={'r14'} color={colors.colorText} style={localStyle.item}>
             {String.termsPrefix}
             <CText
+              testID="termsLink"
               type={'r14'}
               color={colors.primary}
               onPress={onPressConditions}>
               {String.termsLink}
             </CText>
-            <CText type={'r14'} color={colors.colorText}>
+            <CText testID="termsSuffix" type={'r14'} color={colors.colorText}>
               {String.termsSuffix}
             </CText>
           </CText>
         </View>
 
-        <CAlert status="info" message={String.infoMessage} />
+        <CAlert testID="registerUser1InfoAlert" status="info" message={String.infoMessage} />
 
         <CButton
+          testID="registerUser1ContinueButton"
           title={String.continueButton}
           disabled={!check}
           onPress={onPressNext}

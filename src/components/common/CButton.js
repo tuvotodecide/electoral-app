@@ -24,6 +24,7 @@ export default function CButton({
   disabled = false,
   variant = 'default',
   sinMargen = false,
+  testID,
   ...props
 }) {
   const colors = useSelector(state => state.theme.theme);
@@ -58,6 +59,7 @@ export default function CButton({
       onPress={disabled ? null : onPress}
       activeOpacity={0.7}
       disabled={disabled}
+      testID={testID}
       {...props}
       style={[
         localStyle.btnContainer,

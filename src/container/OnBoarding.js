@@ -93,7 +93,8 @@ export default function OnBoarding({navigation}) {
             localStyle.skipIconContainer,
             {backgroundColor: colors.grayScale400},
           ]}
-          onPress={onPressSkip}>
+          onPress={onPressSkip}
+          testID="onboardingSkipButton">
           <Icon name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
@@ -139,6 +140,7 @@ export default function OnBoarding({navigation}) {
         type={'B16'}
         containerStyle={localStyle.btnStyle}
         onPress={onPressGetStarted}
+        testID="onboardingGetStartedButton"
       />
     </CSafeAreaViewAuth>
   );

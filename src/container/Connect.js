@@ -80,6 +80,7 @@ export default function Connect({navigation}) {
             icon={<Icon name="arrow-right" size={25} color={colors.white} />}
             containerStyle={localStyle.btnStyle}
             sinMargen
+            testID="connectInfoButton"
           />
 
           <CButton
@@ -90,6 +91,7 @@ export default function Connect({navigation}) {
             color={commonColor.gradient2}
             bgColor={commonColor.white}
             sinMargen
+            testID="connectRegisterButton"
           />
 
           <CButton
@@ -99,6 +101,7 @@ export default function Connect({navigation}) {
             containerStyle={localStyle.btnStyle}
             color={colors.white}
             bgColor={commonColor.gradient2}
+            testID="connectLoginButton"
           />
         </View> 
       </View>

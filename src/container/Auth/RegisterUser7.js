@@ -73,34 +73,37 @@ export default function RegisterUser7({navigation, route}) {
     });
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={7} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser7Container">
+      <StepIndicator step={7} testID="registerUser7StepIndicator" />
+      <CHeader testID="registerUser7Header" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
-        ]}>
-        <View style={localStyle.mainContainer}>
+        ]}
+        testID="registerUser7KeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="registerUser7MainContainer">
           <Image
             source={colors.dark ? images.FingerImage : images.Finger_lightImage}
             style={localStyle.imageContainer}
+            testID="registerUser7FingerprintImage"
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser7TitleText">
             {String.authFingerprintTitle}
           </CText>
 
           <CText
             type={'B16'}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={'center'}
+            testID="registerUser7DescriptionText">
             {String.authFingerprintDesc}
           </CText>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CAlert status="info" message={String.alertFingerprintInfo} />
+      <View style={localStyle.bottomTextContainer} testID="registerUser7BottomContainer">
+        <CAlert status="info" message={String.alertFingerprintInfo} testID="registerUser7InfoAlert" />
 
         <CButton
           title={String.btnActivateFingerprint}
@@ -109,6 +112,7 @@ export default function RegisterUser7({navigation, route}) {
           variant="outlined"
           containerStyle={localStyle.btnStyle}
           sinMargen
+          testID="registerUser7ActivateButton"
         />
 
         <CButton
@@ -116,6 +120,7 @@ export default function RegisterUser7({navigation, route}) {
           onPress={handleLater}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
+          testID="registerUser7LaterButton"
         />
       </View>
       <InfoModal
@@ -123,6 +128,7 @@ export default function RegisterUser7({navigation, route}) {
         title="Atención"
         message={modal.msg}
         onClose={() => setModal({visible: false, msg: ''})}
+        testID="registerUser7InfoModal"
       />
     </CSafeAreaViewAuth>
   );

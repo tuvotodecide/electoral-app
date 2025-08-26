@@ -43,25 +43,28 @@ export default function RegisterUser8({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={8} />
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+    <CSafeAreaViewAuth testID="registerUser8PinContainer">
+      <StepIndicator testID="registerUser8PinStepIndicator" step={8} />
+      <CHeader testID="registerUser8PinHeader" />
+      <KeyBoardAvoidWrapper testID="registerUser8PinKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
+          <View testID="registerUser8PinContentContainer">
             <CText
+              testID="registerUser8PinTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinAccessTitle}
             </CText>
             <CText
+              testID="registerUser8PinDescription"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinAccessDescription}
             </CText>
             <OTPInputView
+              testID="registerUser8PinInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -83,8 +86,9 @@ export default function RegisterUser8({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
+          <View testID="registerUser8PinButtonContainer">
             <CButton
+              testID="registerUser8PinContinueButton"
               disabled={otp.length !== 4}
               title={String.btnContinue}
               type={'B16'}

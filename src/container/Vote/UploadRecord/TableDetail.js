@@ -198,10 +198,11 @@ export default function TableDetail({ navigation, route }) {
             {/* Left Column: Instructions and Table Data */}
             <View style={stylesx.leftColumn}>
               <View style={stylesx.instructionContainer}>
-                <CText style={[stylesx.bigBold, { color: 'black' }]}>
+                <CText testID="tableDetailTitle" style={[stylesx.bigBold, { color: 'black' }]}>
                   {String.ensureAssignedTable}
                 </CText>
                 <CText
+                  testID="tableDetailSubtitle"
                   style={[
                     stylesx.subtitle,
                     { color: colors.grayScale500 || '#8B9399' },
@@ -210,21 +211,22 @@ export default function TableDetail({ navigation, route }) {
                 </CText>
               </View>
 
-              <View style={stylesx.tableCard}>
+              <View testID="tableInformationCard" style={stylesx.tableCard}>
                 <View style={stylesx.tableCardHeader}>
                   <View style={stylesx.tableCardContent}>
-                    <CText style={stylesx.tableCardTitle}>
+                    <CText testID="tableNumber" style={stylesx.tableCardTitle}>
                       Mesa {mesa.numero}
                     </CText>
-                    <CText style={stylesx.tableCardDetail}>
+                    <CText testID="tableLocation" style={stylesx.tableCardDetail}>
                       Recinto: {mesa.recinto}
                     </CText>
-                    <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                    <CText style={stylesx.tableCardDetail}>
+                    <CText testID="tableZone" style={stylesx.tableCardZone}>{mesa.zone}</CText>
+                    <CText testID="tableCode" style={stylesx.tableCardDetail}>
                       Código de Mesa: {mesa.codigo}
                     </CText>
                   </View>
                   <MaterialIcons
+                    testID="tableIcon"
                     name="how-to-vote"
                     size={getResponsiveSize(40, 48, 56)}
                     color="#000"
@@ -237,17 +239,18 @@ export default function TableDetail({ navigation, route }) {
             {/* Right Column: AI Info and Photo Button OR Existing Records */}
             <View style={stylesx.rightColumn}>
               {existingRecords && existingRecords.length > 0 ? (
-                <View style={stylesx.existingRecordsContainer}>
-                  <CText style={stylesx.existingRecordsTitle}>
+                <View testID="existingRecordsContainer" style={stylesx.existingRecordsContainer}>
+                  <CText testID="existingRecordsTitle" style={stylesx.existingRecordsTitle}>
                     Actas Ya Atestiguadas ({totalRecords})
                   </CText>
-                  <CText style={stylesx.existingRecordsSubtitle}>
+                  <CText testID="existingRecordsSubtitle" style={stylesx.existingRecordsSubtitle}>
                     Esta mesa ya tiene actas registradas
                   </CText>
 
                   {existingRecords.map((record, index) => (
                     <TouchableOpacity
                       key={`${record.recordId}-${index}`}
+                      testID={`existingRecord_${index}`}
                       style={stylesx.recordCard}
                       onPress={() => {
                         navigation.navigate(StackNav.PhotoReviewScreen, {
@@ -257,7 +260,7 @@ export default function TableDetail({ navigation, route }) {
                         });
                       }}>
                       <View style={stylesx.recordHeader}>
-                        <CText style={stylesx.recordTitle}>
+                        <CText testID={`recordTitle_${index}`} style={stylesx.recordTitle}>
                           Acta #{index + 1}
                         </CText>
                       </View>
@@ -265,6 +268,7 @@ export default function TableDetail({ navigation, route }) {
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
+                            testID={`actaImage_${index}`}
                             source={{ uri: record.actaImage }}
                             style={stylesx.actaImage}
                             resizeMode="cover"
@@ -278,24 +282,26 @@ export default function TableDetail({ navigation, route }) {
                   ))}
 
                   <TouchableOpacity
+                    testID="addNewRecordButton"
                     style={stylesx.addNewRecordBtn}
                     onPress={handleTakePhoto}>
                     <Ionicons name="add-circle" size={20} color="#4F9858" />
-                    <CText style={stylesx.addNewRecordText}>
+                    <CText testID="addNewRecordText" style={stylesx.addNewRecordText}>
                       Agregar Nueva
                     </CText>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <>
-                  <View style={stylesx.infoAI}>
+                  <View testID="aiInfoSection" style={stylesx.infoAI}>
                     <Ionicons
+                      testID="aiIcon"
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
                       color={'#226678'}
                       style={stylesx.aiIcon}
                     />
-                    <CText style={stylesx.iaText}>
+                    <CText testID="aiInfoText" style={stylesx.iaText}>
                       {String.aiWillSelectClearestPhoto}
                     </CText>
                   </View>
@@ -442,10 +448,11 @@ export default function TableDetail({ navigation, route }) {
                 </View>
 
                 <TouchableOpacity
+                  testID="takePhotoButton"
                   style={stylesx.takePhotoBtn}
                   activeOpacity={0.85}
                   onPress={handleTakePhoto}>
-                  <CText style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
+                  <CText testID="takePhotoButtonText" style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
                 </TouchableOpacity>
               </>
             )}
@@ -454,16 +461,17 @@ export default function TableDetail({ navigation, route }) {
       </View>
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}
-      <Modal visible={modalVisible} animationType="slide" transparent={false}>
+      <Modal testID="photoPreviewModal" visible={modalVisible} animationType="slide" transparent={false}>
         <View style={stylesx.modalContainer}>
           <View style={stylesx.modalHeader}>
-            <CText type={'B18'} color={colors.textColor || '#222'}>
+            <CText testID="previewTitle" type={'B18'} color={colors.textColor || '#222'}>
               {String.preview}
             </CText>
           </View>
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
+                testID="previewImage"
                 source={{ uri: capturedImage.uri }}
                 style={stylesx.previewImage}
                 resizeMode="contain"
@@ -472,19 +480,21 @@ export default function TableDetail({ navigation, route }) {
           )}
           <View style={stylesx.modalButtons}>
             <TouchableOpacity
+              testID="retakePhotoButton"
               style={stylesx.retakeButton}
               onPress={handleRetakePhoto}>
-              <CText type={'B14'} color={colors.grayScale600 || '#666'}>
+              <CText testID="retakePhotoText" type={'B14'} color={colors.grayScale600 || '#666'}>
                 {String.retakePhoto}
               </CText>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="confirmPhotoButton"
               style={[
                 stylesx.confirmButton,
                 { backgroundColor: colors.primary || '#4F9858' },
               ]}
               onPress={handleConfirmPhoto}>
-              <CText type={'B14'} color={colors.white || '#fff'}>
+              <CText testID="confirmPhotoText" type={'B14'} color={colors.white || '#fff'}>
                 {String.confirmAndSend}
               </CText>
             </TouchableOpacity>

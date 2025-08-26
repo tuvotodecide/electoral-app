@@ -83,20 +83,24 @@ export default function SignUp({navigation}) {
   const onPressSignIn = () => {
     navigation.navigate(AuthNav.Login);
   };
-  const RenderSocialBtn = memo(({item, index}) => {
+  const RenderSocialBtn = memo(({item}) => {
     return (
       <TouchableOpacity
-        key={index}
-        onPress={item.onPress}
+        testID={`signUpSocialButton_${item.name.toLowerCase()}`}
         style={[
           localStyle.socialBtn,
           {
-            borderColor: colors.bColor,
+            borderColor: colors.dark
+              ? colors.grayScale700
+              : colors.grayScale200,
+            backgroundColor: colors.dark
+              ? colors.inputBackground
+              : colors.backgroundColor,
           },
         ]}>
-        <View style={styles.flexRow}>
-          {colors.dark ? item.svgDark : item.svgLight}
-          <CText type={'M14'} color={colors.textColor} style={styles.ml20}>
+        <View style={localStyle.rowWithGap}>
+          {item.icon}
+          <CText testID={`signUpSocialButtonText_${item.name.toLowerCase()}`} type={'M14'} color={colors.textColor} style={styles.ml20}>
             {item.name}
           </CText>
         </View>
@@ -104,21 +108,23 @@ export default function SignUp({navigation}) {
     );
   });
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
+    <CSafeAreaViewAuth testID="signUpContainer">
+      <CHeader testID="signUpHeader" />
       <KeyBoardAvoidWrapper
+        testID="signUpKeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(25)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B24'}>{String.createYourAccount}</CText>
+          <CText testID="signUpTitle" type={'B24'}>{String.createYourAccount}</CText>
 
-          <CText type={'R14'} color={colors.grayscale500}>
+          <CText testID="signUpDescription" type={'R14'} color={colors.grayscale500}>
             {String.accountText}
           </CText>
           <CInput
+            testID="signUpFullNameInput"
             placeholder={String.fullName}
             _value={name}
             keyBoardType={'default'}
@@ -131,6 +137,7 @@ export default function SignUp({navigation}) {
             onBlur={onBlurName}
           />
           <CInput
+            testID="signUpEmailInput"
             placeholder={String.email}
             _value={email}
             keyBoardType={'email-address'}
@@ -143,6 +150,7 @@ export default function SignUp({navigation}) {
             onBlur={onBlurEmail}
           />
           <CInput
+            testID="signUpPasswordInput"
             placeholder={String.password}
             _value={password}
             _errorText={passwordError}
@@ -160,16 +168,17 @@ export default function SignUp({navigation}) {
             onPress={onPressSignUp}
             type={'B16'}
             containerStyle={localStyle.btnStyle}
+            testID="signUpButton"
           />
-          <View style={styles.flexRow}>
-            <TouchableOpacity onPress={onPressRememberMe}>
+          <View testID="signUpAgreementContainer" style={styles.flexRow}>
+            <TouchableOpacity onPress={onPressRememberMe} testID="rememberMeCheckbox">
               <Ionicons
                 name={!!rememberMe ? 'checkbox' : 'square-outline'}
                 color={!!rememberMe ? colors.primary : colors.grayScale50}
                 size={moderateScale(24)}
               />
             </TouchableOpacity>
-            <CText type={'r14'} color={colors.colorText} style={{width: '95%'}}>
+            <CText testID="signUpAgreementText" type={'r14'} color={colors.colorText} style={{width: '95%'}}>
               {String.agreementText}
               <CText type={'r14'} color={colors.primary}>
                 {String.userAgreement}
@@ -182,7 +191,7 @@ export default function SignUp({navigation}) {
               </CText>
             </CText>
           </View>
-          <View style={localStyle.divider}>
+          <View testID="signUpDividerContainer" style={localStyle.divider}>
             <View
               style={[
                 localStyle.orContainer,
@@ -193,7 +202,7 @@ export default function SignUp({navigation}) {
                 },
               ]}
             />
-            <CText type={'r12'} style={styles.mh10} color={colors.grayScale500}>
+            <CText testID="signUpOrText" type={'r12'} style={styles.mh10} color={colors.grayScale500}>
               {String.orSignInWith}
             </CText>
             <View
@@ -207,19 +216,19 @@ export default function SignUp({navigation}) {
               ]}
             />
           </View>
-          <View style={localStyle.socialBtnContainer}>
+          <View testID="signUpSocialButtonsContainer" style={localStyle.socialBtnContainer}>
             {socialIcon.map((item, index) => (
               <RenderSocialBtn item={item} key={index.toString()} />
             ))}
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CText type={'R14'} color={colors.grayScale500}>
+      <View testID="signUpBottomContainer" style={localStyle.bottomTextContainer}>
+        <CText testID="signUpAlreadyAccountText" type={'R14'} color={colors.grayScale500}>
           {String.alreadyHaveAccount}
         </CText>
-        <TouchableOpacity onPress={onPressSignIn}>
-          <CText color={colors.primary} style={localStyle.loginText}>
+        <TouchableOpacity onPress={onPressSignIn} testID="signInLinkButton">
+          <CText testID="signInLinkText" color={colors.primary} style={localStyle.loginText}>
             {String.signIn}
           </CText>
         </TouchableOpacity>

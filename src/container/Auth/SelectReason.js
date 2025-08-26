@@ -40,6 +40,7 @@ export default function SelectReason({navigation}) {
   const RenderData = ({item, index}) => {
     return (
       <TouchableOpacity
+        testID={`selectReasonOption_${item.name.replace(/\s+/g, '_').toLowerCase()}`}
         onPress={() => onPressCategory(item)}
         style={[
           localStyle.itemContainer,
@@ -51,6 +52,7 @@ export default function SelectReason({navigation}) {
           },
         ]}>
         <CText
+          testID={`selectReasonOptionText_${item.name.replace(/\s+/g, '_').toLowerCase()}`}
           type={'M14'}
           align={'center'}
           color={isSelect.includes(item) ? colors.primary : colors.grayScale400}
@@ -62,54 +64,59 @@ export default function SelectReason({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <StepIndicator step={4} />
+    <CSafeAreaViewAuth testID="selectReasonContainer">
+      <CHeader testID="selectReasonHeader" />
+      <StepIndicator testID="selectReasonStepIndicator" step={4} />
       <ScrollView
+        testID="selectReasonScrollView"
         style={localStyle.mainContainer}
         bounces={false}
         showsVerticalScrollIndicator={false}>
-        <CText type={'B24'}>{String.whatDoYouWantUseFinancialFor}</CText>
-        <CText type={'R14'} color={colors.grayScale500}>
+        <CText testID="selectReasonMainTitle" type={'B24'}>{String.whatDoYouWantUseFinancialFor}</CText>
+        <CText testID="selectReasonDescription" type={'R14'} color={colors.grayScale500}>
           {String.selectReasonDescription}
         </CText>
-        <CText type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
+        <CText testID="selectReasonBankingTitle" type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
           {String.banking}
         </CText>
         <View
+          testID="selectReasonBankingOptionsContainer"
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
           }}>
           {BankingData.map((item, index) => {
-            return <RenderData item={item} />;
+            return <RenderData item={item} key={index} />;
           })}
         </View>
-        <CText type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
+        <CText testID="selectReasonInvestmentsTitle" type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
           {String.investments}
         </CText>
         <View
+          testID="selectReasonInvestmentsOptionsContainer"
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
           }}>
           {InvestmentData.map((item, index) => {
-            return <RenderData item={item} />;
+            return <RenderData item={item} key={index} />;
           })}
         </View>
-        <CText type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
+        <CText testID="selectReasonGlobalSpendingTitle" type={'B16'} style={localStyle.bankingStyle} numberOfLines={1}>
           {String.globalSpending}
         </CText>
         <View
+          testID="selectReasonGlobalSpendingOptionsContainer"
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
           }}>
           {GlobalSpendingData.map((item, index) => {
-            return <RenderData item={item} />;
+            return <RenderData item={item} key={index} />;
           })}
         </View>
         <CButton
+          testID="selectReasonContinueButton"
           type={'B16'}
           title={String.continue}
           onPress={onPressContinue}

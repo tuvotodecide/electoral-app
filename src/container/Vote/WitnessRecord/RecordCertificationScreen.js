@@ -257,10 +257,10 @@ const RecordCertificationScreen = () => {
           /* Regular Layout: Phones and Tablet Portrait */
           <>
             <View style={styles.certificationContainer}>
-              <CText style={styles.certificationTitle}>
+              <CText testID="certificationTitle" style={styles.certificationTitle}>
                 {i18nString.actaCertification}
               </CText>
-              <CText style={styles.certificationText}>
+              <CText testID="certificationText" style={styles.certificationText}>
                 {(i18nString.certificationText || '')
                   .replace('{userName}', currentUser.name || '')
                   .replace('{userRole}', currentUser.role || '')
@@ -277,6 +277,7 @@ const RecordCertificationScreen = () => {
 
             <View style={styles.actionButtons}>
               <TouchableOpacity
+                testID="certifyButton"
                 style={styles.certifyButton}
                 onPress={handleCertify}>
                 <CText style={styles.certifyButtonText}>
@@ -305,11 +306,12 @@ const RecordCertificationScreen = () => {
                   />
                 </View>
                 <View style={modalStyles.spacer} />
-                <CText style={modalStyles.confirmTitle}>
+                <CText testID="confirmCertificationTitle" style={modalStyles.confirmTitle}>
                   {i18nString.certifyInfoConfirmation}
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
+                    testID="cancelCertificationButton"
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
                     <CText style={modalStyles.cancelButtonText}>
@@ -317,6 +319,7 @@ const RecordCertificationScreen = () => {
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    testID="confirmCertificationButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
                     <CText style={modalStyles.confirmButtonText}>

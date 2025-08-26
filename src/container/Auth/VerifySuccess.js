@@ -23,18 +23,20 @@ export default function VerifySuccess({navigation}) {
     });
   };
   return (
-    <CSafeAreaViewAuth style={styles.justifyBetween}>
-      <CHeader />
-      <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth testID="verifySuccessContainer" style={styles.justifyBetween}>
+      <CHeader testID="verifySuccessHeader" />
+      <View testID="verifySuccessMainContent" style={localStyle.mainContainer}>
         <Image
+          testID="verifySuccessImage"
           source={images.VerifySuccessImage}
           style={localStyle.imageContainer}
         />
 
-        <CText type={'B24'} align={'center'}>
+        <CText testID="verifySuccessTitle" type={'B24'} align={'center'}>
           {String.thanksForSubmittingYourSelfieWithIDCard}
         </CText>
         <CText
+          testID="verifySuccessDescription"
           type={'R14'}
           align={'center'}
           color={colors.grayScale500}
@@ -43,6 +45,7 @@ export default function VerifySuccess({navigation}) {
         </CText>
       </View>
       <CButton
+        testID="verifySuccessContinueButton"
         title={String.continue}
         type={'B16'}
         containerStyle={localStyle.btnStyle}

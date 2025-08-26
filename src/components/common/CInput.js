@@ -38,6 +38,7 @@ export default CInput = props => {
     typeText,
     insideLeftIcon,
     showError = true,
+    testID,
   } = props;
 
   const colors = useSelector(state => state.theme.theme);
@@ -101,6 +102,7 @@ export default CInput = props => {
           onFocus={_onFocus}
           onBlur={_onBlur}
           placeholder={placeHolder}
+          testID={testID}
           style={[
             localStyle.inputBox,
             {color: textColor ? textColor : colors.textColor},
@@ -117,7 +119,7 @@ export default CInput = props => {
           {rightAccessory ? rightAccessory() : null}
         </View>
         {!!isSecure && (
-          <TouchableOpacity onPress={onPressSecureIcon}>
+          <TouchableOpacity onPress={onPressSecureIcon} testID={`${testID}_togglePassword`}>
             <Ionicons
               name={!isSecurePass ? 'eye-outline' : 'eye-off-outline'}
               size={moderateScale(24)}

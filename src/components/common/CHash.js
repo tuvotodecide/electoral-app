@@ -14,6 +14,7 @@ export default function CHash({
   containerStyle,
   textStyle,
   textColor,
+  testID,
 }) {
   const colors = useSelector(state => state.theme.theme);
   const [copied, setCopied] = useState(false);
@@ -47,6 +48,7 @@ export default function CHash({
   return (
     <>
       <TouchableOpacity
+        testID={testID}
         activeOpacity={0.7}
         onPress={handleCopy}
         style={[localStyle.wrapper, containerStyle]}>

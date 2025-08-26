@@ -24,21 +24,23 @@ export default function FaceIdScreen({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader />
-      <StepIndicator step={1} />
+    <CSafeAreaViewAuth testID="faceIdScreenContainer">
+      <CHeader testID="faceIdScreenHeader" />
+      <StepIndicator testID="faceIdScreenStepIndicator" step={1} />
       <View style={localStyle.mainContainer}>
         <View />
-        <View>
+        <View testID="faceIdScreenContentContainer">
           <Image
+            testID="faceIdImage"
             source={colors.dark ? images.FaceIdImage : images.FaceId_lightImage}
             style={localStyle.imageContainer}
           />
 
-          <CText type={'B24'} align={'center'}>
+          <CText testID="enableFaceIdTitle" type={'B24'} align={'center'}>
             {String.enableFaceID}
           </CText>
           <CText
+            testID="enableFaceIdDescription"
             type={'R14'}
             align={'center'}
             color={colors.grayScale500}
@@ -46,13 +48,15 @@ export default function FaceIdScreen({navigation}) {
             {String.enableFaceIdDescription}
           </CText>
         </View>
-        <View>
+        <View testID="faceIdScreenButtonsContainer">
           <CButton
+            testID="enableFaceIdButton"
             title={String.enableFaceID}
             type={'B16'}
             onPress={onPressEnableFaceId}
           />
           <CButton
+            testID="skipFaceIdButton"
             title={String.skipForNow}
             type={'B16'}
             containerStyle={localStyle.skipBtn}
@@ -62,7 +66,7 @@ export default function FaceIdScreen({navigation}) {
           />
         </View>
       </View>
-    </CSafeAreaView>
+    </CSafeAreaViewAuth>
   );
 }
 

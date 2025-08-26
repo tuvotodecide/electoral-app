@@ -43,7 +43,8 @@ const UniversalHeader = ({
         {
           padding: getResponsiveSize(6, 8, 12),
         },
-      ]}>
+      ]}
+      testID="headerBackButton">
       <MaterialIcons
         name="keyboard-arrow-left"
         size={getResponsiveSize(32, 36, 44)}
@@ -72,7 +73,8 @@ const UniversalHeader = ({
             padding: getResponsiveSize(6, 8, 12),
           },
         ]}
-        disabled={true}>
+        disabled={true}
+        testID="headerNotificationButtonDisabled">
         <Ionicons
           name="notifications-outline"
           size={getResponsiveSize(28, 32, 40)}

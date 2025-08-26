@@ -64,19 +64,20 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="unifiedParticipationContainer" style={styles.container}>
       <CHeader
+        testID="unifiedParticipationHeader"
         title={String.participate}
         onBack={handleBack}
         color={colors.white}
       />
 
-      <View style={styles.content}>
-        <View style={styles.headerContainer}>
-          <CText style={styles.title}>
+      <View testID="unifiedParticipationContent" style={styles.content}>
+        <View testID="unifiedParticipationHeaderContainer" style={styles.headerContainer}>
+          <CText testID="redirectingTitle" style={styles.title}>
             Redirigiendo a subir acta...
           </CText>
-          <CText style={styles.subtitle}>
+          <CText testID="redirectingSubtitle" style={styles.subtitle}>
             Por favor espera un momento
           </CText>
         </View>

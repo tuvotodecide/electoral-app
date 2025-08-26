@@ -125,6 +125,7 @@ export default function Profile({ navigation }) {
   const RenderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
+        testID={`profileItem_${item.id || index}`}
         disabled={item === 'darkMode'} s
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
@@ -159,14 +160,15 @@ export default function Profile({ navigation }) {
             )}
           </View>
           <View style={styles.ml10}>
-            <CText type={'B16'}>{item.title}</CText>
-            <CText type={'R12'} color={color.grayScale500}>
+            <CText testID={`profileItemTitle_${item.id || index}`} type={'B16'}>{item.title}</CText>
+            <CText testID={`profileItemValue_${item.id || index}`} type={'R12'} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
         {!!item.rightIcon ? (
           <Switch
+            testID={`themeToggleSwitch`}
             trackColor={{
               false: color.dark ? color.grayScale700 : color.grayScale200,
               true: color.primary,
@@ -199,14 +201,15 @@ export default function Profile({ navigation }) {
         >
           <CHeader color={color.white} />
           <Image
+            testID="profileImage"
             source={images.PersonCircleImage}
             style={localStyle.profileImage}
           />
           <View style={localStyle.userNameAndEmailContainer}>
-            <CText type={'B20'} color={color.white} align={'center'}>
+            <CText testID="profileUserName" type={'B20'} color={color.white} align={'center'}>
               {data.name}
             </CText>
-            <CHash text={data.hash} title={userData?.account} textColor={'#fff'} />
+            <CHash testID="profileUserHash" text={data.hash} title={userData?.account} textColor={'#fff'} />
           </View>
         </LinearGradient>
 

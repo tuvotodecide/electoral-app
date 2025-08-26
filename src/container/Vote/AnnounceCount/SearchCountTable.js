@@ -235,6 +235,7 @@ const SearchCountTable = ({navigation, route}) => {
   if (isLoading) {
     return (
       <View
+        testID="searchCountTableLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -242,10 +243,12 @@ const SearchCountTable = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
+          testID="searchCountTableLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
+          testID="searchCountTableLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -262,6 +265,7 @@ const SearchCountTable = ({navigation, route}) => {
   return (
     <>
       <BaseSearchTableScreen
+        testID="searchCountTableBaseScreen"
         // Header props
         colors={colors}
         onBack={handleBack}
@@ -292,6 +296,7 @@ const SearchCountTable = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
+        testID="searchCountTableModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

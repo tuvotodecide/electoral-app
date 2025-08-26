@@ -87,7 +87,8 @@ const CarouselItem = ({item}) => (
         <TouchableOpacity
           style={stylesx.carouselButtonInline}
           onPress={item.onPress}
-          activeOpacity={0.8}>
+          activeOpacity={0.8}
+          testID={`carouselButton_${item.id}`}>
           <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
         </TouchableOpacity>
       </View>
@@ -142,7 +143,8 @@ const BlockchainConsultoraBanner = () => (
     <TouchableOpacity
       onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
       style={stylesx.bannerButton}
-      activeOpacity={0.8}>
+      activeOpacity={0.8}
+      testID="blockchainConsultoraButton">
       <CText style={stylesx.bannerButtonText}>{String.learnMore}</CText>
     </TouchableOpacity>
   </View>
@@ -293,7 +295,8 @@ export default function HomeScreen({navigation}) {
                   borderRadius: 8,
                   marginRight: 8,
                 }}
-                onPress={() => setLogoutModalVisible(false)}>
+                onPress={() => setLogoutModalVisible(false)}
+                testID="cancelLogoutButton">
                 <CText style={{color: '#222', fontWeight: '600'}}>
                   {String.cancel || 'Cancelar'}
                 </CText>
@@ -305,7 +308,8 @@ export default function HomeScreen({navigation}) {
                   paddingHorizontal: 22,
                   borderRadius: 8,
                 }}
-                onPress={handleLogout}>
+                onPress={handleLogout}
+                testID="confirmLogoutButton">
                 <CText style={{color: '#fff', fontWeight: '600'}}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
@@ -389,7 +393,8 @@ export default function HomeScreen({navigation}) {
               <TouchableOpacity
                 style={[stylesx.gridDiv1, stylesx.card]}
                 activeOpacity={0.87}
-                onPress={menuItems[0].onPress}>
+                onPress={menuItems[0].onPress}
+                testID="participateButton">
                 {React.createElement(menuItems[0].iconComponent, {
                   name: menuItems[0].icon,
                   size: getResponsiveSize(30, 36, 42),
@@ -408,7 +413,8 @@ export default function HomeScreen({navigation}) {
                 <TouchableOpacity
                   style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
                   activeOpacity={1}
-                  disabled={true}>
+                  disabled={true}
+                  testID="announceCountButtonDisabled">
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
@@ -427,7 +433,8 @@ export default function HomeScreen({navigation}) {
                 <TouchableOpacity
                   style={[stylesx.gridDiv3, stylesx.card]}
                   activeOpacity={0.87}
-                  onPress={menuItems[2].onPress}>
+                  onPress={menuItems[2].onPress}
+                  testID="myWitnessesButton">
                   {React.createElement(menuItems[2].iconComponent, {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
@@ -449,14 +456,16 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}
+                testID="notificationsButtonDisabled">
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
                   color={'#cccccc'}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onPressLogout}>
+              <TouchableOpacity onPress={onPressLogout}
+                testID="logoutButton">
                 <Ionicons
                   name="log-out-outline"
                   size={getResponsiveSize(24, 28, 32)}
@@ -510,7 +519,8 @@ export default function HomeScreen({navigation}) {
             <TouchableOpacity
               style={[stylesx.gridDiv1, stylesx.card]}
               activeOpacity={0.87}
-              onPress={menuItems[0].onPress}>
+              onPress={menuItems[0].onPress}
+              testID="participateButtonRegular">
               {React.createElement(menuItems[0].iconComponent, {
                 name: menuItems[0].icon,
                 size: getResponsiveSize(30, 36, 42),
@@ -527,7 +537,8 @@ export default function HomeScreen({navigation}) {
               <TouchableOpacity
                 style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
                 activeOpacity={1}
-                disabled={true}>
+                disabled={true}
+                testID="announceCountButtonRegularDisabled">
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
@@ -545,7 +556,8 @@ export default function HomeScreen({navigation}) {
               <TouchableOpacity
                 style={[stylesx.gridDiv3, stylesx.card]}
                 activeOpacity={0.87}
-                onPress={menuItems[2].onPress}>
+                onPress={menuItems[2].onPress}
+                testID="myWitnessesButtonRegular">
                 {React.createElement(menuItems[2].iconComponent, {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
