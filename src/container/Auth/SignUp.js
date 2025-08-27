@@ -171,8 +171,9 @@ export default function SignUp({navigation}) {
             testID="signUpButton"
           />
           <View testID="signUpAgreementContainer" style={styles.flexRow}>
-            <TouchableOpacity onPress={onPressRememberMe} testID="rememberMeCheckbox">
+            <TouchableOpacity onPress={onPressRememberMe} testID="signUpRememberMeCheckbox">
               <Ionicons
+                testID="signUpRememberMeIcon"
                 name={!!rememberMe ? 'checkbox' : 'square-outline'}
                 color={!!rememberMe ? colors.primary : colors.grayScale50}
                 size={moderateScale(24)}
@@ -180,19 +181,20 @@ export default function SignUp({navigation}) {
             </TouchableOpacity>
             <CText testID="signUpAgreementText" type={'r14'} color={colors.colorText} style={{width: '95%'}}>
               {String.agreementText}
-              <CText type={'r14'} color={colors.primary}>
+              <CText testID="signUpUserAgreementLink" type={'r14'} color={colors.primary}>
                 {String.userAgreement}
               </CText>
-              <CText type={'r14'} color={colors.colorText}>
+              <CText testID="signUpAndText" type={'r14'} color={colors.colorText}>
                 {String.and}
               </CText>
-              <CText type={'r14'} color={colors.primary}>
+              <CText testID="signUpPrivacyPolicyLink" type={'r14'} color={colors.primary}>
                 {String.privacyPolicy}
               </CText>
             </CText>
           </View>
           <View testID="signUpDividerContainer" style={localStyle.divider}>
             <View
+              testID="signUpDividerLine1"
               style={[
                 localStyle.orContainer,
                 {
@@ -206,6 +208,7 @@ export default function SignUp({navigation}) {
               {String.orSignInWith}
             </CText>
             <View
+              testID="signUpDividerLine2"
               style={[
                 localStyle.orContainer,
                 {

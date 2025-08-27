@@ -9,6 +9,7 @@ import { moderateScale } from '../../common/constants';
 
 // Header Component - Now uses UniversalHeader
 export const SearchTableHeader = ({
+  testID = "searchTableHeader",
   colors,
   onBack,
   title = 'Search Table',
@@ -17,6 +18,7 @@ export const SearchTableHeader = ({
   styles,
 }) => (
   <UniversalHeader
+    testID={testID}
     colors={colors}
     onBack={onBack}
     title={title}
@@ -32,26 +34,28 @@ export const SearchTableHeader = ({
 );
 
 // Choose Table Text Component
-export const ChooseTableText = ({ text = 'Please choose a table:', styles }) => (
-  <View style={styles.chooseTableContainer}>
-    <CText style={styles.chooseTableText}>{text}</CText>
+export const ChooseTableText = ({ testID = "chooseTableText", text = 'Please choose a table:', styles }) => (
+  <View testID={`${testID}Container`} style={styles.chooseTableContainer}>
+    <CText testID={testID} style={styles.chooseTableText}>{text}</CText>
   </View>
 );
 
 // Location Info Bar Component
 export const LocationInfoBar = ({
+  testID = "locationInfoBar",
   text = 'The following list is based on your location',
   iconColor = '#0C5460',
   styles,
 }) => (
-  <View style={styles.locationInfoBar}>
+  <View testID={testID} style={styles.locationInfoBar}>
     <FontAwesome
+      testID={`${testID}Icon`}
       name="map-marker"
       size={moderateScale(16)}
       color={iconColor}
       style={styles.locationIcon}
     />
-    <CText style={styles.locationInfoText}>{text}</CText>
+    <CText testID={`${testID}Text`} style={styles.locationInfoText}>{text}</CText>
   </View>
 );
 
@@ -64,7 +68,7 @@ export const SearchInput = ({
   styles,
   testID = 'searchTableInput',
 }) => (
-  <View style={styles.searchInputContainer}>
+  <View testID={`${testID}Container`} style={styles.searchInputContainer}>
     <TextInput
       testID={testID}
       style={styles.searchInput}

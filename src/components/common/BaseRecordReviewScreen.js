@@ -39,6 +39,7 @@ const getTabNavigationHeight = insets => {
 };
 
 const BaseRecordReviewScreen = ({
+  testID = "baseRecordReviewScreen",
   colors,
   headerTitle,
   instructionsText,
@@ -53,36 +54,41 @@ const BaseRecordReviewScreen = ({
   onBack,
   showTableInfo = false,
   tableData,
+  showMesaInfo = false,
+  mesaData,
 }) => {
   const insets = useSafeAreaInsets();
 
+  // Use tableData or mesaData for compatibility
+  const tableInfo = showTableInfo ? tableData : (showMesaInfo ? mesaData : null);
 
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
     return (
-      <CSafeAreaView style={styles.container}>
+      <CSafeAreaView testID={`${testID}Container`} style={styles.container}>
         {/* Header */}
-        <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
+        <RecordHeader testID={`${testID}Header`} onBack={onBack} title={headerTitle} colors={colors} />
 
         {/* Instructions - Compact for tablet */}
-        <View style={styles.tabletInstructionsContainer}>
+        <View testID={`${testID}TabletInstructionsContainer`} style={styles.tabletInstructionsContainer}>
           <InstructionsContainer
+            testID={`${testID}Instructions`}
             text={instructionsText}
             style={[instructionsStyle, styles.tabletInstructionsText]}
           />
 
           {/* Table Info inline with instructions */}
-          {showTableInfo && (
-            <View style={styles.tabletTableInfoInline}>
-              <CText style={styles.tabletTableTitleText}>
+          {tableInfo && (
+            <View testID={`${testID}TabletTableInfoInline`} style={styles.tabletTableInfoInline}>
+              <CText testID={`${testID}TabletTableTitle`} style={styles.tabletTableTitleText}>
                 Mesa{' '}
-                {tableData?.tableNumber ||
-                  tableData?.numero ||
-                  tableData?.number ||
+                {tableInfo?.tableNumber ||
+                  tableInfo?.numero ||
+                  tableInfo?.number ||
                   'N/A'}
               </CText>
-              <CText style={styles.tabletTableSubtitleText}>
-                {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
+              <CText testID={`${testID}TabletTableSubtitle`} style={styles.tabletTableSubtitleText}>
+                {tableInfo?.recinto || tableInfo?.escuela || 'Precinct N/A'}
               </CText>
             </View>
           )}
@@ -90,6 +96,7 @@ const BaseRecordReviewScreen = ({
 
         {/* Main Content: Horizontal layout for landscape, vertical for portrait */}
         <View
+          testID={`${testID}TabletMainContent`}
           style={
             isLandscape
               ? styles.tabletMainContentHorizontal
@@ -97,12 +104,14 @@ const BaseRecordReviewScreen = ({
           }>
           {/* Photo Section */}
           <View
+            testID={`${testID}TabletPhotoSection`}
             style={
               isLandscape
                 ? styles.tabletPhotoSectionHorizontal
                 : styles.tabletPhotoSectionVertical
             }>
             <PhotoContainer
+              testID={`${testID}PhotoContainer`}
               photoUri={photoUri}
               enableZoom={true}
               useAspectRatio={true}
@@ -111,12 +120,14 @@ const BaseRecordReviewScreen = ({
 
           {/* Tables and Actions Section */}
           <View
+            testID={`${testID}TabletTablesSection`}
             style={
               isLandscape
                 ? styles.tabletTablesSectionHorizontal
                 : styles.tabletTablesSectionVertical
             }>
             <ScrollView
+              testID={`${testID}TabletTablesScrollView`}
               style={styles.tabletTablesScrollView}
               contentContainerStyle={[
                 styles.tabletTablesScrollContent,
@@ -129,6 +140,7 @@ const BaseRecordReviewScreen = ({
               showsVerticalScrollIndicator={false}>
               {/* Tables Container - Side by side in landscape, stacked in portrait */}
               <View
+                testID={`${testID}TabletTablesStacked`}
                 style={
                   isLandscape
                     ? styles.tabletTablesStackedHorizontal
@@ -136,12 +148,14 @@ const BaseRecordReviewScreen = ({
                 }>
                 {/* Party Results Table */}
                 <View
+                  testID={`${testID}TabletPartyTableColumn`}
                   style={
                     isLandscape
                       ? styles.tabletTableColumnHorizontal
                       : styles.tabletTableColumnVertical
                   }>
                   <PartyTable
+                    testID={`${testID}PartyTable`}
                     partyResults={partyResults}
                     isEditing={isEditing}
                     onUpdate={onPartyUpdate}
@@ -150,12 +164,14 @@ const BaseRecordReviewScreen = ({
 
                 {/* Vote Summary Table */}
                 <View
+                  testID={`${testID}TabletVoteSummaryTableColumn`}
                   style={
                     isLandscape
                       ? styles.tabletTableColumnHorizontal
                       : styles.tabletTableColumnVertical
                   }>
                   <VoteSummaryTable
+                    testID={`${testID}VoteSummaryTable`}
                     voteSummaryResults={voteSummaryResults}
                     isEditing={isEditing}
                     onUpdate={onVoteSummaryUpdate}
@@ -165,8 +181,8 @@ const BaseRecordReviewScreen = ({
 
               {/* Action Buttons */}
               {actionButtons && (
-                <View style={styles.tabletActionButtonsWrapper}>
-                  <ActionButtons buttons={actionButtons} />
+                <View testID={`${testID}TabletActionButtonsWrapper`} style={styles.tabletActionButtonsWrapper}>
+                  <ActionButtons testID={`${testID}ActionButtons`} buttons={actionButtons} />
                 </View>
               )}
             </ScrollView>
@@ -178,39 +194,41 @@ const BaseRecordReviewScreen = ({
 
   // Phone layout: vertical stack
   return (
-    <CSafeAreaView style={styles.container} addTabPadding={false}>
+    <CSafeAreaView testID={`${testID}Container`} style={styles.container} addTabPadding={false}>
       {/* Header */}
-      <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
+      <RecordHeader testID={`${testID}Header`} onBack={onBack} title={headerTitle} colors={colors} />
 
       {/* Instructions */}
       <InstructionsContainer
+        testID={`${testID}Instructions`}
         text={instructionsText}
         style={instructionsStyle}
       />
 
       {/* Table Info - only for PhotoReviewScreen */}
-      {showTableInfo && (
-        <View style={styles.tableInfoContainer}>
-          <View style={styles.tableTitle}>
-            <CText style={styles.tableTitleText}>
+      {tableInfo && (
+        <View testID={`${testID}TableInfoContainer`} style={styles.tableInfoContainer}>
+          <View testID={`${testID}TableTitle`} style={styles.tableTitle}>
+            <CText testID={`${testID}TableTitleText`} style={styles.tableTitleText}>
               Mesa{' '}
-              {tableData?.tableNumber ||
-                tableData?.numero ||
-                tableData?.number ||
+              {tableInfo?.tableNumber ||
+                tableInfo?.numero ||
+                tableInfo?.number ||
                 'N/A'}
             </CText>
           </View>
-          <View style={styles.tableSubtitle}>
-            <CText style={styles.tableSubtitleText}>
-              {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
+          <View testID={`${testID}TableSubtitle`} style={styles.tableSubtitle}>
+            <CText testID={`${testID}TableSubtitleText`} style={styles.tableSubtitleText}>
+              {tableInfo?.recinto || tableInfo?.escuela || 'Precinct N/A'}
             </CText>
           </View>
         </View>
       )}
 
       {/* Photo - Static (doesn't move with scroll) */}
-      <View style={styles.photoSection}>
+      <View testID={`${testID}PhotoSection`} style={styles.photoSection}>
         <PhotoContainer
+          testID={`${testID}PhotoContainer`}
           photoUri={photoUri}
           enableZoom={true}
           useAspectRatio={true}
@@ -219,6 +237,7 @@ const BaseRecordReviewScreen = ({
 
       {/* Scrollable content below photo */}
       <ScrollView
+        testID={`${testID}ContentScrollView`}
         style={styles.content}
         contentContainerStyle={[
           styles.scrollContent,
@@ -230,6 +249,7 @@ const BaseRecordReviewScreen = ({
         showsVerticalScrollIndicator={false}>
         {/* Party Results Table */}
         <PartyTable
+          testID={`${testID}PartyTable`}
           partyResults={partyResults}
           isEditing={isEditing}
           onUpdate={onPartyUpdate}
@@ -237,13 +257,14 @@ const BaseRecordReviewScreen = ({
 
         {/* Vote Summary Table */}
         <VoteSummaryTable
+          testID={`${testID}VoteSummaryTable`}
           voteSummaryResults={voteSummaryResults}
           isEditing={isEditing}
           onUpdate={onVoteSummaryUpdate}
         />
 
         {/* Action Buttons */}
-        {actionButtons && <ActionButtons buttons={actionButtons} />}
+        {actionButtons && <ActionButtons testID={`${testID}ActionButtons`} buttons={actionButtons} />}
       </ScrollView>
     </CSafeAreaView>
   );

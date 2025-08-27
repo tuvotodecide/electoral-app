@@ -55,15 +55,17 @@ export default function OnBoardingGuardians({navigation}) {
   const RenderItemData = useCallback(
     ({item, index}) => {
       return (
-        <View style={localStyle.container}>
+        <View testID={`onboardingGuardiansSlide_${index}`} style={localStyle.container}>
           <ImageBackground
+            testID={`onboardingGuardiansImage_${index}`}
             source={colors.dark ? item.darkImage : item.lightImage}
             style={localStyle.imageStyle}></ImageBackground>
-          <View style={localStyle.boardingTextContainer}>
-            <CText type={'B24'} style={localStyle.boardingTitleText}>
+          <View testID={`onboardingGuardiansTextContainer_${index}`} style={localStyle.boardingTextContainer}>
+            <CText testID={`onboardingGuardiansTitle_${index}`} type={'B24'} style={localStyle.boardingTitleText}>
               {item.title}
             </CText>
             <CText
+              testID={`onboardingGuardiansDescription_${index}`}
               type={'R16'}
               numberOfLines={4}
               color={colors.grayScale500}
@@ -78,18 +80,20 @@ export default function OnBoardingGuardians({navigation}) {
   );
 
   return (
-    <CSafeAreaView>
-      <View style={localStyle.skipWrapper}>
+    <CSafeAreaView testID="onboardingGuardiansContainer">
+      <View testID="onboardingGuardiansSkipWrapper" style={localStyle.skipWrapper}>
         <TouchableOpacity
+          testID="onboardingGuardiansSkipButton"
           style={[
             localStyle.skipIconContainer,
             {backgroundColor: colors.grayScale400},
           ]}
           onPress={onPressSkip}>
-          <Icon name="close" size={20} color={colors.white} />
+          <Icon testID="onboardingGuardiansSkipIcon" name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
       <FlatList
+        testID="onboardingGuardiansFlatList"
         data={OnBoardingGuardiansData}
         renderItem={({item, index}) => (
           <RenderItemData item={item} index={index} />
@@ -104,9 +108,10 @@ export default function OnBoardingGuardians({navigation}) {
         pagingEnabled
       />
 
-      <View style={localStyle.bottomIndicatorContainer}>
+      <View testID="onboardingGuardiansIndicatorContainer" style={localStyle.bottomIndicatorContainer}>
         {OnBoardingGuardiansData.map((item, index) => (
           <View
+            testID={`onboardingGuardiansIndicator_${index}`}
             key={item.id.toString()}
             style={[
               localStyle.bottomIndicatorStyle,
@@ -127,6 +132,7 @@ export default function OnBoardingGuardians({navigation}) {
         ))}
       </View>
       <CButton
+        testID="onboardingGuardiansGetStartedButton"
         title={String.getStarted}
         type={'B16'}
         containerStyle={localStyle.btnStyle}

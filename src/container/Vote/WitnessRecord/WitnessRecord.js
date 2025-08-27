@@ -178,6 +178,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
   if (isLoading) {
     return (
       <View
+        testID="witnessRecordLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -185,10 +186,12 @@ const WitnessRecordScreen = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
+          testID="witnessRecordLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
+          testID="witnessRecordLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -205,6 +208,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
   return (
     <>
       <BaseSearchTableScreen
+        testID="witnessRecordBaseScreen"
         // Header props
         colors={colors}
         onBack={handleBack}
@@ -235,6 +239,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
+        testID="witnessRecordModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

@@ -15,23 +15,26 @@ export default function LogOutModal(props) {
 
   let {visible, onPressCancel, onPressLogOut} = props;
   return (
-    <Modal visible={visible} animationType="slide" transparent={true}>
+    <Modal testID="logOutModal" visible={visible} animationType="slide" transparent={true}>
       <View
+        testID="logOutModalOverlay"
         style={[
           localStyle.mainViewStyle,
           {backgroundColor: colors.modalBackground},
         ]}>
         <View
+          testID="logOutModalContainer"
           style={[
             localStyle.modalContainer,
             {backgroundColor: colors.backgroundColor},
           ]}>
-          <Image source={images.LogOutImage} style={localStyle.imageStyle} />
-          <CText type={'B18'} align={'center'}>
+          <Image testID="logOutModalImage" source={images.LogOutImage} style={localStyle.imageStyle} />
+          <CText testID="logOutModalTitle" type={'B18'} align={'center'}>
             {String.areYouSureWantToLogout}
           </CText>
 
           <CButton
+            testID="logOutModalCancelButton"
             title={String.cancel}
             type={'M16'}
             containerStyle={localStyle.btnStyle}
@@ -40,6 +43,7 @@ export default function LogOutModal(props) {
           />
 
           <CButton
+            testID="logOutModalLogOutButton"
             title={String.logOut}
             type={'M16'}
             containerStyle={localStyle.btnStyle}

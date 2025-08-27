@@ -23,12 +23,12 @@ export default function FingerPrintScreen({navigation}) {
     navigation.navigate(AuthNav.SelectCountry);
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <StepIndicator step={2} />
-      <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth testID="fingerPrintScreenContainer">
+      <CHeader testID="fingerPrintScreenHeader" />
+      <StepIndicator step={2} testID="fingerPrintScreenStepIndicator" />
+      <View style={localStyle.mainContainer} testID="fingerPrintScreenMainContainer">
         <View />
-        <View>
+        <View testID="fingerPrintScreenContentContainer">
           <Image
             testID="fingerprintImage"
             source={colors.dark ? images.FingerImage : images.Finger_lightImage}
@@ -47,7 +47,7 @@ export default function FingerPrintScreen({navigation}) {
             {String.enableFingerprintDescription}
           </CText>
         </View>
-        <View>
+        <View testID="fingerPrintScreenButtonsContainer">
           <CButton
             testID="enableFingerprintButton"
             title={String.enableFingerprint}

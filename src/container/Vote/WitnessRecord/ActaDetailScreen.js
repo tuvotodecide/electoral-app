@@ -106,10 +106,10 @@ const ActaDetailScreen = () => {
 
     if (hasError) {
       return (
-        <View style={styles.imageError}>
-          <MaterialIcons name="broken-image" size={60} color="#999" />
-          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
-          <CText style={styles.imageErrorSubtext}>
+        <View testID="actaDetailImageError" style={styles.imageError}>
+          <MaterialIcons testID="actaDetailBrokenImageIcon" name="broken-image" size={60} color="#999" />
+          <CText testID="actaDetailImageErrorText" style={styles.imageErrorText}>Error cargando imagen</CText>
+          <CText testID="actaDetailImageErrorSubtext" style={styles.imageErrorSubtext}>
             Verifica tu conexión a internet
           </CText>
         </View>
@@ -117,8 +117,9 @@ const ActaDetailScreen = () => {
     }
 
     return (
-      <View style={styles.imageContainer}>
+      <View testID="actaDetailImageContainer" style={styles.imageContainer}>
         <Image
+          testID="actaDetailActaImage"
           source={{uri: selectedActa?.uri}}
           style={[styles.actaImage, isLoading && styles.imageLoading]}
           resizeMode="contain"
@@ -127,12 +128,13 @@ const ActaDetailScreen = () => {
           onError={handleImageError}
         />
         {isLoading && (
-          <View style={styles.imageLoadingOverlay}>
+          <View testID="actaDetailImageLoadingOverlay" style={styles.imageLoadingOverlay}>
             <ActivityIndicator
+              testID="actaDetailLoadingIndicator"
               size="large"
               color={colors.primary || '#4F9858'}
             />
-            <CText style={styles.loadingIndicatorText}>
+            <CText testID="actaDetailLoadingIndicatorText" style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
           </View>
@@ -167,7 +169,7 @@ const ActaDetailScreen = () => {
     {
       text: String.correctData,
       onPress: handleThisIsCorrect,
-      testID: 'correctDataButton',
+      testID: 'actaDetailCorrectDataButton',
       style: {
         backgroundColor: colors.primary || '#4F9858',
       },
@@ -179,7 +181,7 @@ const ActaDetailScreen = () => {
     {
       text: 'Subir foto de acta correcta',
       onPress: handleUploadCorrectActa,
-      testID: 'uploadCorrectActaButton',
+      testID: 'actaDetailUploadCorrectActaButton',
       style: {
         backgroundColor: colors.secondary || '#2196F3',
       },
@@ -195,7 +197,7 @@ const ActaDetailScreen = () => {
     actionButtons.push({
       text: 'Cambiar',
       onPress: handleChange,
-      testID: 'changeButton',
+      testID: 'actaDetailChangeButton',
       style: {
         backgroundColor: 'transparent',
         borderWidth: 1,
@@ -221,6 +223,7 @@ const ActaDetailScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="actaDetailBaseScreen"
       colors={colors}
       headerTitle={headerTitle}
       instructionsText={instructionsText}

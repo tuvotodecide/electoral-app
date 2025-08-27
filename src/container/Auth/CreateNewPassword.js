@@ -64,17 +64,18 @@ export default function CreateNewPassword({navigation}) {
     navigation.navigate(AuthNav.SuccessfulPassword);
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
+    <CSafeAreaViewAuth testID="createNewPasswordContainer">
+      <CHeader testID="createNewPasswordHeader" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(25)},
-        ]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B24'}>{String.createNewPassword}</CText>
-          <CText type={'R14'} color={colors.grayScale500}>
+        ]}
+        testID="createNewPasswordKeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="createNewPasswordMainContainer">
+          <CText type={'B24'} testID="createNewPasswordTitle">{String.createNewPassword}</CText>
+          <CText type={'R14'} color={colors.grayScale500} testID="createNewPasswordDescription">
             {String.newPasswordDescription}
           </CText>
           <CInput
@@ -89,6 +90,7 @@ export default function CreateNewPassword({navigation}) {
             inputContainerStyle={passwordInputStyle}
             _onFocus={onFocusPassword}
             onBlur={onBlurPassword}
+            testID="createNewPasswordInput"
           />
           <CInput
             placeholder={String.confirmPassword}
@@ -102,6 +104,7 @@ export default function CreateNewPassword({navigation}) {
             inputContainerStyle={confirmPasswordInputStyle}
             _onFocus={onFocusConfirmPassword}
             onBlur={onBlurConfirmPassword}
+            testID="createNewPasswordConfirmInput"
           />
         </View>
         <CButton
@@ -109,6 +112,7 @@ export default function CreateNewPassword({navigation}) {
           type={'B16'}
           containerStyle={localStyle.btnStyle}
           onPress={onPressResetPassword}
+          testID="createNewPasswordResetButton"
         />
       </KeyBoardAvoidWrapper>
     </CSafeAreaViewAuth>

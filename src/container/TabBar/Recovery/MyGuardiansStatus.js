@@ -205,22 +205,24 @@ export default function MyGuardiansStatus({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.guardiansTitleStatus} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+    <CSafeAreaView testID="myGuardiansStatusContainer">
+      <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} />
+      <KeyBoardAvoidWrapper testID="myGuardiansStatusKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <CText testID="myGuardiansStatusDescription" type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansDescriptionStatus}
         </CText>
 
         <FlatList
+          testID="myGuardiansStatusList"
           data={guardians}
           keyExtractor={(g, i) => g.guardianId || g.id || String(i)}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
         />
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="myGuardiansStatusBottomContainer" style={localStyle.bottomTextContainer}>
         <CButton
+          testID="myGuardiansStatusReturnButton"
           title={String.return}
           onPress={onPressReturn}
           type={'B16'}

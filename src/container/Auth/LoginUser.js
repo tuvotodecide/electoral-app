@@ -573,10 +573,10 @@ export default function LoginUser({navigation}) {
         <Image testID="loginUserLogo" source={images.logoImg} style={localStyle.imageStyle} />
       </View>
       <KeyBoardAvoidWrapper testID="loginUserKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
+        <View testID="loginUserMainContainer" style={localStyle.mainContainer}>
           <View testID="loginUserContentContainer">
             <CText
-              testID="loginTitle"
+              testID="loginUserTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
@@ -584,7 +584,7 @@ export default function LoginUser({navigation}) {
             </CText>
 
             <OTPInputView
-              testID="pinInputField"
+              testID="loginUserPinInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -612,7 +612,7 @@ export default function LoginUser({navigation}) {
       </KeyBoardAvoidWrapper>
       <View testID="loginUserBottomButtons" style={localStyle.bottomButtons}>
         <CButton
-          testID="forgotPasswordButton"
+          testID="loginUserForgotPasswordButton"
           onPress={onPressLoginUser1}
           title={String.connectBtnForgot}
           type={'B16'}

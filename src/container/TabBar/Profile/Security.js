@@ -111,21 +111,24 @@ export default function Security({navigation}) {
     if (item.rightIcon === 'switch') {
       return (
         <View
+          testID={`securitySwitchItem_${item.id || index}`}
           style={[
             localStyle.renderItemContainer,
             {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
           ]}>
-          <View style={styles.rowCenter}>
+          <View testID="securityBiometricLabelContainer" style={styles.rowCenter}>
             <Icons
+              testID="securityBiometricIcon"
               name="fingerprint"
               size={moderateScale(20)}
               color={color.primary}
             />
-            <CText style={styles.ml10} type="B12">
+            <CText testID="securityBiometricLabel" style={styles.ml10} type="B12">
               {item.title}
             </CText>
           </View>
           <Switch
+            testID="securityBiometricSwitch"
             value={bioEnabled}
             onValueChange={toggleBio}
             trackColor={{
@@ -140,6 +143,7 @@ export default function Security({navigation}) {
 
     return (
       <TouchableOpacity
+        testID={`securityMenuItem_${item.id || index}`}
         disabled={item === String.darkMode}
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
@@ -150,8 +154,9 @@ export default function Security({navigation}) {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`securityMenuItemContent_${item.id || index}`} style={styles.rowCenter}>
           <View
+            testID={`securityMenuItemIconBackground_${item.id || index}`}
             style={[
               localStyle.iconBackground,
               {
@@ -163,23 +168,25 @@ export default function Security({navigation}) {
             ]}>
             {item.icon ? (
               <Icons
+                testID={`securityMenuItemIcon_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}
                 color={color.dark ? color.grayScale500 : color.grayScale400}
               />
             ) : (
-              <View>{color.dark ? item.darkIcon : item.lightIcon}</View>
+              <View testID={`securityMenuItemCustomIcon_${item.id || index}`}>{color.dark ? item.darkIcon : item.lightIcon}</View>
             )}
           </View>
-          <View style={styles.ml10}>
-            <CText type={'B12'}>{item.title}</CText>
-            <CText type={'R10'} color={color.grayScale500}>
+          <View testID={`securityMenuItemTextContainer_${item.id || index}`} style={styles.ml10}>
+            <CText testID={`securityMenuItemTitle_${item.id || index}`} type={'B12'}>{item.title}</CText>
+            <CText testID={`securityMenuItemValue_${item.id || index}`} type={'R10'} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
 
         <Ionicons
+          testID={`securityMenuItemArrow_${item.id || index}`}
           name={'chevron-forward-outline'}
           size={moderateScale(24)}
           color={color.dark ? color.grayScale500 : color.grayScale400}
@@ -190,10 +197,11 @@ export default function Security({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.settings} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
+    <CSafeAreaView testID="securityContainer">
+      <CHeader testID="securityHeader" title={String.settings} />
+      <KeyBoardAvoidWrapper testID="securityKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <SectionList
+          testID="securitySectionList"
           sections={SecuryData}
           keyExtractor={(item, index) => item + index}
           renderItem={RenderItem}

@@ -49,6 +49,7 @@ const CONTAINER_BORDER_RADIUS = getResponsiveSize(4, 8, 10);
 const MARGIN_BOTTOM = getResponsiveSize(4, 16, 20);
 
 export const PhotoContainer = ({
+  testID = "photoContainer",
   photoUri,
   enableZoom = false,
   useAspectRatio = false,
@@ -56,6 +57,7 @@ export const PhotoContainer = ({
   if (enableZoom) {
     return (
       <ZoomablePhotoContainer
+        testID={testID}
         photoUri={photoUri}
         useAspectRatio={useAspectRatio}
       />
@@ -64,25 +66,27 @@ export const PhotoContainer = ({
 
   return (
     <View
+      testID={testID}
       style={
         useAspectRatio
           ? styles.photoContainerAspectRatio
           : styles.photoContainer
       }>
       <Image
+        testID={`${testID}Image`}
         source={{ uri: photoUri }}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
       />
-      <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.topRightCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+      <View testID={`${testID}TopLeftCorner`} style={[styles.cornerBorder, styles.topLeftCorner]} />
+      <View testID={`${testID}TopRightCorner`} style={[styles.cornerBorder, styles.topRightCorner]} />
+      <View testID={`${testID}BottomLeftCorner`} style={[styles.cornerBorder, styles.bottomLeftCorner]} />
+      <View testID={`${testID}BottomRightCorner`} style={[styles.cornerBorder, styles.bottomRightCorner]} />
     </View>
   );
 };
 
-const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
+const ZoomablePhotoContainer = ({ testID = "zoomablePhotoContainer", photoUri, useAspectRatio = false }) => {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -201,14 +205,16 @@ const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
 
   return (
     <View
+      testID={testID}
       style={
         useAspectRatio
           ? styles.photoContainerAspectRatio
           : styles.photoContainer
       }>
-      <TapGestureHandler numberOfTaps={2} onGestureEvent={doubleTapHandler}>
+      <TapGestureHandler testID={`${testID}DoubleTap`} numberOfTaps={2} onGestureEvent={doubleTapHandler}>
         <Animated.View>
           <PanGestureHandler
+            testID={`${testID}Pan`}
             ref={panRef}
             onGestureEvent={panHandler}
             simultaneousHandlers={[pinchRef]}
@@ -216,10 +222,12 @@ const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
             maxPointers={1}>
             <Animated.View>
               <PinchGestureHandler
+                testID={`${testID}Pinch`}
                 ref={pinchRef}
                 onGestureEvent={pinchHandler}
                 simultaneousHandlers={[panRef]}>
                 <Animated.View
+                  testID={`${testID}AnimatedWrapper`}
                   style={[
                     useAspectRatio
                       ? styles.photoWrapperAspectRatio
@@ -227,6 +235,7 @@ const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
                     animatedStyle,
                   ]}>
                   <Image
+                    testID={`${testID}Image`}
                     source={{ uri: photoUri }}
                     style={
                       useAspectRatio ? styles.photoAspectRatio : styles.photo
@@ -241,10 +250,10 @@ const ZoomablePhotoContainer = ({ photoUri, useAspectRatio = false }) => {
       </TapGestureHandler>
 
       {/* Corner borders */}
-      <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.topRightCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-      <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+      <View testID={`${testID}TopLeftCorner`} style={[styles.cornerBorder, styles.topLeftCorner]} />
+      <View testID={`${testID}TopRightCorner`} style={[styles.cornerBorder, styles.topRightCorner]} />
+      <View testID={`${testID}BottomLeftCorner`} style={[styles.cornerBorder, styles.bottomLeftCorner]} />
+      <View testID={`${testID}BottomRightCorner`} style={[styles.cornerBorder, styles.bottomRightCorner]} />
     </View>
   );
 };

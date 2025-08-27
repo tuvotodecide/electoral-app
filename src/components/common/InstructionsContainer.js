@@ -15,9 +15,9 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-export const InstructionsContainer = ({text, style}) => (
-  <View style={[styles.instructionsContainer, style]}>
-    <CText style={styles.instructionsText}>{text}</CText>
+export const InstructionsContainer = ({testID = "instructionsContainer", text, style}) => (
+  <View testID={testID} style={[styles.instructionsContainer, style]}>
+    <CText testID={`${testID}Text`} style={styles.instructionsText}>{text}</CText>
   </View>
 );
 

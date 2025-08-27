@@ -41,7 +41,7 @@ export default function More({navigation}) {
   };
   const RenderSectionHeader = ({section: {section}}) => {
     return (
-      <CText type={'B16'} style={styles.mv10}>
+      <CText testID={`moreSectionHeader_${section.replace(/\s+/g, '')}`} type={'B16'} style={styles.mv10}>
         {section}
       </CText>
     );
@@ -80,6 +80,7 @@ export default function More({navigation}) {
   const RenderItem = ({item, index}) => {
     return (
       <TouchableOpacity
+        testID={`moreMenuItem_${item.id || index}`}
         disabled={item === String.darkMode}
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
@@ -90,8 +91,9 @@ export default function More({navigation}) {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`moreMenuItemContent_${item.id || index}`} style={styles.rowCenter}>
           <View
+            testID={`moreMenuItemIcon_${item.id || index}`}
             style={[
               localStyle.iconBackground,
               {
@@ -103,23 +105,25 @@ export default function More({navigation}) {
             ]}>
             {item.icon ? (
               <Icons
+                testID={`moreMenuItemIconSvg_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}
                 color={color.dark ? color.grayScale500 : color.grayScale400}
               />
             ) : (
-              <View>{color.dark ? item.darkIcon : item.lightIcon}</View>
+              <View testID={`moreMenuItemCustomIcon_${item.id || index}`}>{color.dark ? item.darkIcon : item.lightIcon}</View>
             )}
           </View>
-          <View style={styles.ml10}>
-            <CText type={'B12'}>{item.title}</CText>
-            <CText type={'R10'} color={color.grayScale500}>
+          <View testID={`moreMenuItemText_${item.id || index}`} style={styles.ml10}>
+            <CText testID={`moreMenuItemTitle_${item.id || index}`} type={'B12'}>{item.title}</CText>
+            <CText testID={`moreMenuItemValue_${item.id || index}`} type={'R10'} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
         {!!item.rightIcon ? (
           <Switch
+            testID={`moreMenuItemSwitch_${item.id || index}`}
             trackColor={{
               false: color.dark ? color.grayScale700 : color.grayScale200,
               true: color.primary,
@@ -130,6 +134,7 @@ export default function More({navigation}) {
           />
         ) : (
           <Ionicons
+            testID={`moreMenuItemArrow_${item.id || index}`}
             name={'chevron-forward-outline'}
             size={moderateScale(24)}
             color={color.dark ? color.grayScale500 : color.grayScale400}
@@ -141,10 +146,11 @@ export default function More({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        <View style={localStyle.mainContainer}>
+    <CSafeAreaView testID="moreContainer">
+      <ScrollView testID="moreScrollView" showsVerticalScrollIndicator={false} bounces={false}>
+        <View testID="moreMainContainer" style={localStyle.mainContainer}>
           <SectionList
+            testID="moreMenuList"
             sections={ProfileDataV3}
             keyExtractor={(item, index) => item + index}
             renderItem={RenderItem}
@@ -155,6 +161,7 @@ export default function More({navigation}) {
           />
         </View>
         <LogOutModal
+          testID="moreLogoutModal"
           visible={isModalVisible}
           onPressCancel={onPressCancelBtn}
           onPressLogOut={onPressLOut}

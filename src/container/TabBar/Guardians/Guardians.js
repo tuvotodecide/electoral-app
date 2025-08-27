@@ -133,10 +133,11 @@ export default function Guardians({navigation}) {
   }
 
   const RightIcon = () => (
-    <View style={localStyle.rightIcons}>
-      <TouchableOpacity onPress={onPressWatchInfoGuardian}>
+    <View testID="guardiansRightIcons" style={localStyle.rightIcons}>
+      <TouchableOpacity testID="guardiansInfoButton" onPress={onPressWatchInfoGuardian}>
         {guardians.length != 0 && (
           <Icono
+            testID="guardiansInfoIcon"
             name="message-question"
             size={moderateScale(28)}
             color={colors.primaryColor}
@@ -156,8 +157,8 @@ export default function Guardians({navigation}) {
 
   if (isLoading) {
     return (
-      <View style={localStyle.loaderContainer}>
-        <ActivityIndicator size="large" color={colors.primaryColor} />
+      <View testID="guardiansLoadingContainer" style={localStyle.loaderContainer}>
+        <ActivityIndicator testID="guardiansLoadingIndicator" size="large" color={colors.primaryColor} />
       </View>
     );
   }
@@ -175,6 +176,7 @@ export default function Guardians({navigation}) {
     const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
       <TouchableOpacity
+        testID={`guardiansListItem_${item.id}`}
         style={[
           localStyle.optionContainer,
           {
@@ -188,8 +190,9 @@ export default function Guardians({navigation}) {
         ]}
 
         >
-        <View style={styles.rowCenter}>
+        <View testID={`guardiansListItemContent_${item.id}`} style={styles.rowCenter}>
           <View
+            testID={`guardiansListItemIcon_${item.id}`}
             style={[
               localStyle.iconBg,
               {
@@ -198,26 +201,28 @@ export default function Guardians({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansListItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
           </View>
-          <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+          <View testID={`guardiansListItemInfo_${item.id}`} style={styles.ml10}>
+            <View testID={`guardiansListItemNameRow_${item.id}`} style={styles.rowCenter}>
+              <CText testID={`guardiansListItemName_${item.id}`} type="B16">{displayName}</CText>
 
               <View
+                testID={`guardiansListItemBadge_${item.id}`}
                 style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>
-                <CText type="R12" color={colors.white}>
+                <CText testID={`guardiansListItemStatus_${item.id}`} type="R12" color={colors.white}>
                   {statusLabel[item.status]}
                 </CText>
               </View>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
+            <CText testID={`guardiansListItemNickname_${item.id}`} type="R12" color={colors.grayScale500}>
               {item.nickname ?? '(sin apodo)'}
             </CText>
           </View>
         </View>
-        <TouchableOpacity onPress={() => openModal(item)}>
+        <TouchableOpacity testID={`guardiansListItemMenu_${item.id}`} onPress={() => openModal(item)}>
           <Icono
+            testID={`guardiansListItemMenuIcon_${item.id}`}
             name="dots-vertical"
             size={moderateScale(30)}
             style={styles.mr10}
@@ -229,6 +234,7 @@ export default function Guardians({navigation}) {
 
   const InfoCard = () => (
     <TouchableOpacity
+      testID="guardiansInfoCard"
       style={[
         localStyle.infoCard,
         {
@@ -238,27 +244,29 @@ export default function Guardians({navigation}) {
       ]}
       activeOpacity={0.7}
       onPress={onPressWatchInfoGuardian}>
-      <View style={localStyle.infoIconContainer}>
+      <View testID="guardiansInfoCardIconContainer" style={localStyle.infoIconContainer}>
         <Icono
+          testID="guardiansInfoCardIcon"
           name="shield-account"
           size={moderateScale(42)}
           color={colors.primaryColor}
         />
       </View>
-      <View style={localStyle.infoTextContainer}>
-        <CText style={localStyle.infoText}>{String.whatIsGuardians}</CText>
-        <Icono name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
+      <View testID="guardiansInfoCardTextContainer" style={localStyle.infoTextContainer}>
+        <CText testID="guardiansInfoCardText" style={localStyle.infoText}>{String.whatIsGuardians}</CText>
+        <Icono testID="guardiansInfoCardArrow" name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
       </View>
     </TouchableOpacity>
   );
   return (
-    <CSafeAreaView addTabPadding={false}>
+    <CSafeAreaView addTabPadding={false} testID="guardiansContainer">
       <CHeader
         title={String.guardiansTitle}
         rightIcon={<RightIcon />}
+        testID="guardiansHeader"
       />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20} testID="guardiansKeyboardWrapper">
+        <CText type={'B16'} align={'center'} marginTop={15} testID="guardiansSubtitle">
           {String.guardiansSubtitle}
         </CText>
         {guardians.length == 0 && <InfoCard />}
@@ -271,19 +279,21 @@ export default function Guardians({navigation}) {
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
           initialNumToRender={8}
+          testID="guardiansList"
         />
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="guardiansBottomContainer" style={localStyle.bottomTextContainer}>
         {guardians.length <= 1 && (
-          <CAlert status="info" message={String.alertguardiansrequired} />
+          <CAlert testID="guardiansRequiredAlert" status="info" message={String.alertguardiansrequired} />
         )}
 
         <CButton
+          testID="guardiansAddButton"
           title={` ${String.addGuardian}`}
           onPress={onPressAddGuardian}
           type={'B16'}
           containerStyle={localStyle.btnStyle1}
-          frontIcon={<Icono size={20} name="account-plus" color={'#fff'} />}
+          frontIcon={<Icono testID="guardiansAddButtonIcon" size={20} name="account-plus" color={'#fff'} />}
         />
       </View>
       {/* <GuardianOptionsModal
@@ -308,6 +318,7 @@ export default function Guardians({navigation}) {
           onClose={closeModal}
           onSave={saveGuardian}
           onDelete={deleteGuardian}
+          testID="guardiansActionModal"
         />
       )}
     </CSafeAreaView>

@@ -66,30 +66,31 @@ const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
 
 // Carousel Item Component
 const CarouselItem = ({item}) => (
-  <View style={stylesx.carouselItem}>
-    <View style={stylesx.carouselGrid}>
-      <View style={stylesx.carouselLeft}>
+  <View testID={`homeCarouselItem_${item.id}`} style={stylesx.carouselItem}>
+    <View testID={`homeCarouselGrid_${item.id}`} style={stylesx.carouselGrid}>
+      <View testID={`homeCarouselLeft_${item.id}`} style={stylesx.carouselLeft}>
         <Image
+          testID={`homeCarouselImage_${item.id}`}
           source={item.image}
           style={stylesx.bcLogoImage}
           resizeMode="contain"
         />
       </View>
 
-      <View style={stylesx.carouselRight}>
-        <View style={stylesx.carouselTextContainer}>
-          <CText style={stylesx.carouselTitle}>{item.title}</CText>
-          <CText style={stylesx.carouselSubtitle} numberOfLines={3}>
+      <View testID={`homeCarouselRight_${item.id}`} style={stylesx.carouselRight}>
+        <View testID={`homeCarouselTextContainer_${item.id}`} style={stylesx.carouselTextContainer}>
+          <CText testID={`homeCarouselTitle_${item.id}`} style={stylesx.carouselTitle}>{item.title}</CText>
+          <CText testID={`homeCarouselSubtitle_${item.id}`} style={stylesx.carouselSubtitle} numberOfLines={3}>
             {item.subtitle}
           </CText>
         </View>
 
         <TouchableOpacity
+          testID={`homeCarouselButton_${item.id}`}
           style={stylesx.carouselButtonInline}
           onPress={item.onPress}
-          activeOpacity={0.8}
-          testID={`carouselButton_${item.id}`}>
-          <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
+          activeOpacity={0.8}>
+          <CText testID={`homeCarouselButtonText_${item.id}`} style={stylesx.carouselButtonText}>{item.buttonText}</CText>
         </TouchableOpacity>
       </View>
     </View>
@@ -97,9 +98,10 @@ const CarouselItem = ({item}) => (
 );
 
 const MiVotoLogo = () => (
-  <View style={stylesx.logoRow}>
+  <View testID="homeMiVotoLogo" style={stylesx.logoRow}>
     {/* Bandera */}
     <Image
+      testID="MiVotoLogoImage"
       source={images.logoImg}
       style={stylesx.logoImage}
       resizeMode="contain"
@@ -122,30 +124,30 @@ const MiVotoLogo = () => (
       />
       <View style={stylesx.flagCheckOutline} />
     </View> */}
-    <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
-      <CText style={stylesx.logoTitle}>Tu Voto Decide</CText>
-      <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
+    <View testID="homeMiVotoLogoText" style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+      <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>Tu Voto Decide</CText>
+      <CText testID="homeMiVotoLogoSubtitle" style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
   </View>
 );
 
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
-  <View style={stylesx.bannerBC}>
-    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-      <View style={{marginLeft: 10, flex: 1}}>
-        <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
-        <CText style={stylesx.bannerSubtitle}>
+  <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
+    <View testID="homeBlockchainBannerContent" style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+      <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
+        <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
+        <CText testID="homeBlockchainBannerSubtitle" style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
         </CText>
       </View>
     </View>
     <TouchableOpacity
+      testID="homeBlockchainBannerButton"
       onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
       style={stylesx.bannerButton}
-      activeOpacity={0.8}
-      testID="blockchainConsultoraButton">
-      <CText style={stylesx.bannerButtonText}>{String.learnMore}</CText>
+      activeOpacity={0.8}>
+      <CText testID="homeBlockchainBannerButtonText" style={stylesx.bannerButtonText}>{String.learnMore}</CText>
     </TouchableOpacity>
   </View>
 );
@@ -260,14 +262,16 @@ export default function HomeScreen({navigation}) {
   ];
 
   return (
-    <CSafeAreaView style={stylesx.bg}>
+    <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
       {/* Modal de cerrar sesión */}
       <Modal
+        testID="homeLogoutModal"
         visible={logoutModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setLogoutModalVisible(false)}>
         <View
+          testID="homeLogoutModalOverlay"
           style={{
             flex: 1,
             backgroundColor: 'rgba(0,0,0,0.4)',
@@ -275,6 +279,7 @@ export default function HomeScreen({navigation}) {
             alignItems: 'center',
           }}>
           <View
+            testID="homeLogoutModalContent"
             style={{
               backgroundColor: '#fff',
               borderRadius: 16,
@@ -282,12 +287,13 @@ export default function HomeScreen({navigation}) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+            <CText testID="homeLogoutModalTitle" style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+            <View testID="homeLogoutModalButtons" style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
               <TouchableOpacity
+                testID="homeLogoutModalCancelButton"
                 style={{
                   backgroundColor: '#f5f5f5',
                   paddingVertical: 10,
@@ -295,22 +301,21 @@ export default function HomeScreen({navigation}) {
                   borderRadius: 8,
                   marginRight: 8,
                 }}
-                onPress={() => setLogoutModalVisible(false)}
-                testID="cancelLogoutButton">
-                <CText style={{color: '#222', fontWeight: '600'}}>
+                onPress={() => setLogoutModalVisible(false)}>
+                <CText testID="homeLogoutModalCancelText" style={{color: '#222', fontWeight: '600'}}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="homeLogoutModalConfirmButton"
                 style={{
                   backgroundColor: '#E72F2F',
                   paddingVertical: 10,
                   paddingHorizontal: 22,
                   borderRadius: 8,
                 }}
-                onPress={handleLogout}
-                testID="confirmLogoutButton">
-                <CText style={{color: '#fff', fontWeight: '600'}}>
+                onPress={handleLogout}>
+                <CText testID="homeLogoutModalConfirmText" style={{color: '#fff', fontWeight: '600'}}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>

@@ -17,9 +17,9 @@ const getResponsiveSize = (small, medium, large) => {
 
 // Party Table Row Component
 export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
-  <View style={styles.partyTableRow}>
-    <CText style={styles.partyNameText}>{party.id || party.partyId}</CText>
-    <View style={styles.partyVoteContainer}>
+  <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
+    <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>{party.id || party.partyId}</CText>
+    <View testID={`partyVotePresidenteContainer_${rowIndex}`} style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
@@ -33,15 +33,15 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`partyInputPresidente${rowIndex}`}
+          testID={`partyInputPresidente_${rowIndex}`}
         />
       ) : (
-        <CText style={styles.partyVoteText}>
+        <CText testID={`partyVotePresidenteText_${rowIndex}`} style={styles.partyVoteText}>
           {party.presidente === '' || party.presidente == null ? '0' : String(party.presidente)}
         </CText>
       )}
     </View>
-    <View style={styles.partyVoteContainer}>
+    <View testID={`partyVoteDiputadoContainer_${rowIndex}`} style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
@@ -55,10 +55,10 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`partyInputDiputado${rowIndex}`}
+          testID={`partyInputDiputado_${rowIndex}`}
         />
       ) : (
-        <CText style={styles.partyVoteText}>
+        <CText testID={`partyVoteDiputadoText_${rowIndex}`} style={styles.partyVoteText}>
           {party.diputado === '' || party.diputado == null ? '0' : String(party.diputado)}
         </CText>
       )}
@@ -68,11 +68,11 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
 
 // Party Table Component
 export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
-  <View style={styles.partyTableContainer}>
-    <View style={styles.partyTableHeader}>
-      <CText style={styles.partyTableHeaderLeft}>Partido</CText>
-      <CText style={styles.partyTableHeaderCenter}>PRESIDENTE/A</CText>
-      <CText style={styles.partyTableHeaderCenter}>DIPUTADO/A</CText>
+  <View testID="partyTableContainer" style={styles.partyTableContainer}>
+    <View testID="partyTableHeader" style={styles.partyTableHeader}>
+      <CText testID="partyTableHeaderPartido" style={styles.partyTableHeaderLeft}>Partido</CText>
+      <CText testID="partyTableHeaderPresidente" style={styles.partyTableHeaderCenter}>PRESIDENTE/A</CText>
+      <CText testID="partyTableHeaderDiputado" style={styles.partyTableHeaderCenter}>DIPUTADO/A</CText>
     </View>
 
     {partyResults.map((party, index) => (

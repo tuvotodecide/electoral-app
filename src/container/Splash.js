@@ -92,11 +92,12 @@ export default function Splash({navigation}) {
         backgroundColor: color.backgroundColor,
         ...styles.center,
         ...styles.flexRow,
-      }}>
-      <View style={localStyle.imageContainer}>
-        <Image source={images.logoImg} style={localStyle.imageStyle} />
+      }}
+      testID="splashContainer">
+      <View style={localStyle.imageContainer} testID="splashImageContainer">
+        <Image source={images.logoImg} style={localStyle.imageStyle} testID="splashLogo" />
       </View>
-      <CText type={'B30'} style={localStyle.textStyle}>
+      <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
         {String.wira}
       </CText>
     </CSafeAreaView>

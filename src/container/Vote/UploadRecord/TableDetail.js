@@ -307,10 +307,11 @@ export default function TableDetail({ navigation, route }) {
                   </View>
 
                   <TouchableOpacity
+                    testID="tableDetailTabletTakePhotoButton"
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
-                    <CText style={stylesx.takePhotoBtnText}>
+                    <CText testID="tableDetailTabletTakePhotoText" style={stylesx.takePhotoBtnText}>
                       {String.takePhoto}
                     </CText>
                   </TouchableOpacity>
@@ -321,11 +322,12 @@ export default function TableDetail({ navigation, route }) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View style={stylesx.instructionContainer}>
-              <CText style={[stylesx.bigBold, { color: 'black' }]}>
+            <View testID="tableDetailInstructionContainer" style={stylesx.instructionContainer}>
+              <CText testID="tableDetailMainTitle" style={[stylesx.bigBold, { color: 'black' }]}>
                 {String.ensureAssignedTable}
               </CText>
               <CText
+                testID="tableDetailMainSubtitle"
                 style={[
                   stylesx.subtitle,
                   { color: colors.grayScale500 || '#8B9399' },
@@ -334,21 +336,22 @@ export default function TableDetail({ navigation, route }) {
               </CText>
             </View>
 
-            <View style={stylesx.tableCard}>
-              <View style={stylesx.tableCardHeader}>
-                <View style={stylesx.tableCardContent}>
-                  <CText style={stylesx.tableCardTitle}>
+            <View testID="tableDetailInfoCard" style={stylesx.tableCard}>
+              <View testID="tableDetailCardHeader" style={stylesx.tableCardHeader}>
+                <View testID="tableDetailCardContent" style={stylesx.tableCardContent}>
+                  <CText testID="tableDetailNumber" style={stylesx.tableCardTitle}>
                     Mesa {mesa.numero}
                   </CText>
-                  <CText style={stylesx.tableCardDetail}>
+                  <CText testID="tableDetailLocation" style={stylesx.tableCardDetail}>
                     Recinto: {mesa.recinto}
                   </CText>
-                  <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                  <CText style={stylesx.tableCardDetail}>
+                  <CText testID="tableDetailZone" style={stylesx.tableCardZone}>{mesa.zone}</CText>
+                  <CText testID="tableDetailCode" style={stylesx.tableCardDetail}>
                     Código de Mesa: {mesa.codigo}
                   </CText>
                 </View>
                 <MaterialIcons
+                  testID="tableDetailIcon"
                   name="how-to-vote"
                   size={getResponsiveSize(40, 48, 56)}
                   color="#000"
@@ -359,17 +362,18 @@ export default function TableDetail({ navigation, route }) {
 
             {/* Show existing attestations if available */}
             {existingRecords && existingRecords.length > 0 && (
-              <View style={stylesx.existingRecordsContainer}>
-                <CText style={stylesx.existingRecordsTitle}>
+              <View testID="tableDetailExistingRecordsContainer" style={stylesx.existingRecordsContainer}>
+                <CText testID="tableDetailExistingRecordsTitle" style={stylesx.existingRecordsTitle}>
                   Actas Ya Atestiguadas ({totalRecords})
                 </CText>
-                <CText style={stylesx.existingRecordsSubtitle}>
+                <CText testID="tableDetailExistingRecordsSubtitle" style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
                 </CText>
 
                 {existingRecords.map((record, index) => (
                   <TouchableOpacity
                     key={`${record.recordId}-${index}`}
+                    testID={`tableDetailExistingRecord_${index}`}
                     style={stylesx.recordCard}
                     onPress={() => {
                       // Navigate to detail view or show full image
@@ -379,36 +383,38 @@ export default function TableDetail({ navigation, route }) {
                         isViewOnly: true
                       });
                     }}>
-                    <View style={stylesx.recordHeader}>
-                      <CText style={stylesx.recordTitle}>
+                    <View testID={`tableDetailRecordHeader_${index}`} style={stylesx.recordHeader}>
+                      <CText testID={`tableDetailRecordTitle_${index}`} style={stylesx.recordTitle}>
                         Acta #{index + 1}
                       </CText>
-                      <CText style={stylesx.recordId}>
+                      <CText testID={`tableDetailRecordId_${index}`} style={stylesx.recordId}>
                         ID: {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}...
                       </CText>
                     </View>
 
                     {record.actaImage && (
-                      <View style={stylesx.actaImageContainer}>
+                      <View testID={`tableDetailActaImageContainer_${index}`} style={stylesx.actaImageContainer}>
                         <Image
+                          testID={`tableDetailActaImage_${index}`}
                           source={{ uri: record.actaImage }}
                           style={stylesx.actaImage}
                           resizeMode="cover"
                         />
-                        <View style={stylesx.imageOverlay}>
+                        <View testID={`tableDetailImageOverlay_${index}`} style={stylesx.imageOverlay}>
                           <Ionicons
+                            testID={`tableDetailViewIcon_${index}`}
                             name="eye"
                             size={24}
                             color="#fff"
                           />
-                          <CText style={stylesx.viewImageText}>Ver Acta</CText>
+                          <CText testID={`tableDetailViewImageText_${index}`} style={stylesx.viewImageText}>Ver Acta</CText>
                         </View>
                       </View>
                     )}
 
                     {record.partyResults && record.partyResults.length > 0 && (
-                      <View style={stylesx.recordSummary}>
-                        <CText style={stylesx.recordSummaryText}>
+                      <View testID={`tableDetailRecordSummary_${index}`} style={stylesx.recordSummary}>
+                        <CText testID={`tableDetailRecordSummaryText_${index}`} style={stylesx.recordSummaryText}>
                           {record.partyResults.length} partidos registrados
                         </CText>
                       </View>
@@ -417,15 +423,17 @@ export default function TableDetail({ navigation, route }) {
                 ))}
 
                 <TouchableOpacity
+                  testID="tableDetailAddNewRecordButton"
                   style={stylesx.addNewRecordBtn}
                   onPress={handleTakePhoto}>
                   <Ionicons
+                    testID="tableDetailAddIcon"
                     name="add-circle"
                     size={24}
                     color="#4F9858"
                     style={stylesx.addIcon}
                   />
-                  <CText style={stylesx.addNewRecordText}>
+                  <CText testID="tableDetailAddNewRecordText" style={stylesx.addNewRecordText}>
                     Agregar Nueva Acta
                   </CText>
                 </TouchableOpacity>
@@ -435,24 +443,25 @@ export default function TableDetail({ navigation, route }) {
             {/* Show photo taking section only if no existing records */}
             {(!existingRecords || existingRecords.length === 0) && (
               <>
-                <View style={stylesx.infoAI}>
+                <View testID="tableDetailAiInfoSection" style={stylesx.infoAI}>
                   <Ionicons
+                    testID="tableDetailAiIcon"
                     name="sparkles"
                     size={getResponsiveSize(16, 19, 22)}
                     color={'#226678'}
                     style={stylesx.aiIcon}
                   />
-                  <CText style={stylesx.iaText}>
+                  <CText testID="tableDetailAiInfoText" style={stylesx.iaText}>
                     {String.aiWillSelectClearestPhoto}
                   </CText>
                 </View>
 
                 <TouchableOpacity
-                  testID="takePhotoButton"
+                  testID="tableDetailTakePhotoButton"
                   style={stylesx.takePhotoBtn}
                   activeOpacity={0.85}
                   onPress={handleTakePhoto}>
-                  <CText testID="takePhotoButtonText" style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
+                  <CText testID="tableDetailTakePhotoButtonText" style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
                 </TouchableOpacity>
               </>
             )}

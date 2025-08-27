@@ -25,18 +25,19 @@ export default function SelfieWithIdCard({navigation}) {
     navigation.navigate(AuthNav.VerifySuccess);
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <View style={localStyle.mainContainer}>
-        <View style={{height: '90%'}}>
-          <CText type={'B24'}>{String.takeSelfieWithIDCard}</CText>
-          <CText type={'R14'} color={colors.grayScale500}>
+    <CSafeAreaViewAuth testID="selfieWithIdCardContainer">
+      <CHeader testID="selfieWithIdCardHeader" />
+      <View style={localStyle.mainContainer} testID="selfieWithIdCardMainContainer">
+        <View style={{height: '90%'}} testID="selfieWithIdCardContentContainer">
+          <CText type={'B24'} testID="selfieWithIdCardTitle">{String.takeSelfieWithIDCard}</CText>
+          <CText type={'R14'} color={colors.grayScale500} testID="selfieWithIdCardDescription">
             {String.pleaseLookAtCameraAndHoldStill}
           </CText>
-          <TouchableOpacity onPress={onPressImage}>
+          <TouchableOpacity onPress={onPressImage} testID="selfieWithIdCardImageButton">
             <Image
               source={images.TakePictureIdImage}
               style={localStyle.pictureImage}
+              testID="selfieWithIdCardImage"
             />
           </TouchableOpacity>
         </View>
@@ -45,9 +46,10 @@ export default function SelfieWithIdCard({navigation}) {
           type={'B16'}
           containerStyle={localStyle.btnStyle}
           onPress={onPressContinue}
+          testID="selfieWithIdCardContinueButton"
         />
       </View>
-      <TakePictureModal SheetRef={SheetRef} />
+      <TakePictureModal SheetRef={SheetRef} testID="selfieWithIdCardModal" />
     </CSafeAreaViewAuth>
   );
 }

@@ -119,7 +119,7 @@ const PhotoReviewScreen = () => {
       {
         text: String.edit,
         onPress: handleEdit,
-        testID: 'editButton',
+        testID: 'photoReviewEditButton',
         style: {
           backgroundColor: '#fff',
           borderColor: colors.primary,
@@ -132,7 +132,7 @@ const PhotoReviewScreen = () => {
       {
         text: String.next,
         onPress: handleNext,
-        testID: 'nextButton',
+        testID: 'photoReviewNextButton',
         style: {
           backgroundColor: colors.primary,
         },
@@ -145,7 +145,7 @@ const PhotoReviewScreen = () => {
       {
         text: String.save,
         onPress: handleSave,
-        testID: 'saveButton',
+        testID: 'photoReviewSaveButton',
         style: {
           backgroundColor: colors.primary,
         },
@@ -157,6 +157,7 @@ const PhotoReviewScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="photoReviewScreen"
       colors={colors}
       headerTitle={String.acta}
       instructionsText={

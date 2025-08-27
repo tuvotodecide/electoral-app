@@ -102,21 +102,22 @@ export default function AddGuardians({navigation}) {
   };
 
   return (
-    <CSafeAreaView addTabPadding={false}>
-      <CHeader title={String.addGuardian} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+    <CSafeAreaView testID="addGuardiansContainer" addTabPadding={false}>
+      <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
+      <KeyBoardAvoidWrapper testID="addGuardiansKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <CText testID="addGuardiansTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.addGuardianSubtitle}{' '}
-          <CText type="B16" style={{fontWeight: 'bold'}}>
+          <CText testID="addGuardiansTitleSpan" type="B16" style={{fontWeight: 'bold'}}>
             {String.addGuardianSubtitleSpan}
           </CText>
         </CText>
-        <CText type="R14" style={localStyle.fieldLabel}>
+        <CText testID="addGuardiansCarnetLabel" type="R14" style={localStyle.fieldLabel}>
           {String.carnet}
         </CText>
-        <View style={localStyle.searchContainer}>
-          <View style={localStyle.inputWrapper}>
+        <View testID="addGuardiansSearchContainer" style={localStyle.searchContainer}>
+          <View testID="addGuardiansInputWrapper" style={localStyle.inputWrapper}>
             <CInput
+              testID="addGuardiansCarnetInput"
               label={null}
               _value={carnet}
               toGetTextFieldValue={setCarnet}
@@ -128,6 +129,7 @@ export default function AddGuardians({navigation}) {
           </View>
 
           <TouchableOpacity
+            testID="addGuardiansSearchButton"
             onPress={onPressSearch}
             disabled={isLoading}
             style={[
@@ -135,29 +137,31 @@ export default function AddGuardians({navigation}) {
               {backgroundColor: colors.primary},
             ]}>
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator testID="addGuardiansSearchLoading" color="#fff" />
             ) : (
-              <Icono name="search-web" size={24} color="#fff" />
+              <Icono testID="addGuardiansSearchIcon" name="search-web" size={24} color="#fff" />
             )}
           </TouchableOpacity>
         </View>
         {candidate && (
           <>
-            <CText type="R14" style={localStyle.fieldLabel}>
+            <CText testID="addGuardiansNameLabel" type="R14" style={localStyle.fieldLabel}>
               {String.guardianName}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View testID="addGuardiansNameWrapper" style={localStyle.inputWrapper}>
               <CInput
+                testID="addGuardiansNameInput"
                 editable={false}
                 _value={candidate.fullName || '(sin nombre)'}
               />
             </View>
 
-            <CText type="R14" style={localStyle.fieldLabel}>
+            <CText testID="addGuardiansNicknameLabel" type="R14" style={localStyle.fieldLabel}>
               {String.nickname}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View testID="addGuardiansNicknameWrapper" style={localStyle.inputWrapper}>
               <CInput
+                testID="addGuardiansNicknameInput"
                 _value={nick}
                 toGetTextFieldValue={setNick}
                 placeHolder={String.nickname}
@@ -165,11 +169,12 @@ export default function AddGuardians({navigation}) {
             </View>
           </>
         )}
-        {msg !== '' && <CAlert status="error" message={msg} />}
+        {msg !== '' && <CAlert testID="addGuardiansErrorAlert" status="error" message={msg} />}
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CAlert status="info" message={String.guardianNotificationTitle} />
+      <View testID="addGuardiansBottomContainer" style={localStyle.bottomTextContainer}>
+        <CAlert testID="addGuardiansInfoAlert" status="info" message={String.guardianNotificationTitle} />
         <CButton
+          testID="addGuardiansSendButton"
           title={String.sendInvitation}
           disabled={loading || !candidate || isWhitespaceOnly}
           onPress={onPressInvitation}
@@ -179,6 +184,7 @@ export default function AddGuardians({navigation}) {
         />
       </View>
       <InfoModal
+        testID="addGuardiansSuccessModal"
         visible={modalVisible}
         title="¡Invitación enviada!"
         message={modalMessage}

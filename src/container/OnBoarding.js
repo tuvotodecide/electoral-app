@@ -59,23 +59,25 @@ export default function OnBoarding({navigation}) {
   const RenderItemData = useCallback(
     ({item, index}) => {
       return (
-        <View style={localStyle.container}>
-          <View style={localStyle.imageContainer}>
+        <View style={localStyle.container} testID={`onboardingSlide_${index}`}>
+          <View style={localStyle.imageContainer} testID={`onboardingSlideImageContainer_${index}`}>
             <Image
               source={colors.dark ? item.darkImage : item.lightImage}
               style={localStyle.imageStyle}
               resizeMode="contain"
+              testID={`onboardingSlideImage_${index}`}
             />
           </View>
-          <View style={localStyle.boardingTextContainer}>
-            <CText type={'B24'} style={localStyle.boardingTitleText}>
+          <View style={localStyle.boardingTextContainer} testID={`onboardingSlideTextContainer_${index}`}>
+            <CText type={'B24'} style={localStyle.boardingTitleText} testID={`onboardingSlideTitle_${index}`}>
               {item.title}
             </CText>
             <CText
               type={'R14'}
               numberOfLines={4}
               color={colors.grayScale500}
-              style={localStyle.boardingDescriptionText}>
+              style={localStyle.boardingDescriptionText}
+              testID={`onboardingSlideDescription_${index}`}>
               {item.description}
             </CText>
           </View>
@@ -86,8 +88,8 @@ export default function OnBoarding({navigation}) {
   );
 
   return (
-    <CSafeAreaViewAuth>
-      <View style={localStyle.skipWrapper}>
+    <CSafeAreaViewAuth testID="onboardingContainer">
+      <View style={localStyle.skipWrapper} testID="onboardingSkipWrapper">
         <TouchableOpacity
           style={[
             localStyle.skipIconContainer,
@@ -111,9 +113,10 @@ export default function OnBoarding({navigation}) {
         onViewableItemsChanged={_onViewableItemsChanged}
         _onViewabilityConfig={_onViewabilityConfig}
         pagingEnabled
+        testID="onboardingFlatList"
       />
 
-      <View style={localStyle.bottomIndicatorContainer}>
+      <View style={localStyle.bottomIndicatorContainer} testID="onboardingIndicatorContainer">
         {OnBoardingData.map((_, index) => (
           <View
             key={index}
@@ -132,6 +135,7 @@ export default function OnBoarding({navigation}) {
                     : colors.primary,
               },
             ]}
+            testID={`onboardingIndicator_${index}`}
           />
         ))}
       </View>

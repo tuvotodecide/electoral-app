@@ -46,24 +46,27 @@ export default function ChangePinVerify({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
+    <CSafeAreaView testID="changePinVerifyContainer">
+      <CHeader testID="changePinVerifyHeader" />
+      <KeyBoardAvoidWrapper testID="changePinVerifyKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="changePinVerifyMainContainer" style={localStyle.mainContainer}>
+          <View testID="changePinVerifyContentContainer">
             <CText
+              testID="changePinVerifyTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinChangeAccessTitle}
             </CText>
             <CText
+              testID="changePinVerifySubtitle"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinChange}
             </CText>
             <OTPInputView
+              testID="changePinVerifyOtpInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -85,10 +88,11 @@ export default function ChangePinVerify({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View></View>
+          <View testID="changePinVerifySpacerContainer"></View>
         </View>
       </KeyBoardAvoidWrapper>
       <InfoModal
+        testID="changePinVerifyErrorModal"
         visible={modal.visible}
         title="Error"
         message={modal.msg}

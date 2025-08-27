@@ -685,7 +685,7 @@ export default function CameraScreen({navigation, route}) {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.mainContainer} testID="cameraScreenContainer">
       {!photo ? (
         <>
           {isActive && (
@@ -703,6 +703,7 @@ export default function CameraScreen({navigation, route}) {
                   resetCamera();
                 }
               }}
+              testID="cameraView"
             />
           )}
           <RenderFrame
@@ -710,8 +711,9 @@ export default function CameraScreen({navigation, route}) {
             isLandscape={orientation === 'landscape'}
             screenWidth={screenData.width}
             screenHeight={screenData.height}
+            testID="cameraFrame"
           />
-          <View style={styles.bottomContainer}>
+          <View style={styles.bottomContainer} testID="cameraBottomContainer">
             <TouchableOpacity
               style={[
                 orientation === 'landscape'
@@ -725,7 +727,7 @@ export default function CameraScreen({navigation, route}) {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <CText style={styles.buttonText}>
+                <CText style={styles.buttonText} testID="cameraShutterButtonText">
                   {isActive ? String.takePhoto : String.preparingCamera}
                 </CText>
               )}
@@ -756,7 +758,7 @@ export default function CameraScreen({navigation, route}) {
           <View
             style={styles.imageViewContainer}
             {...panResponder.panHandlers} // Mover los gestos aquí
-          >
+            testID="cameraImageViewContainer">
             <Animated.View
               style={[
                 styles.animatedImageContainer,
@@ -767,7 +769,8 @@ export default function CameraScreen({navigation, route}) {
                     {translateY: imageTranslateY},
                   ],
                 },
-              ]}>
+              ]}
+              testID="cameraAnimatedImageContainer">
               {/* <Image
                 source={{uri: 'file://' + photo.path}}
                 style={[
@@ -805,6 +808,7 @@ export default function CameraScreen({navigation, route}) {
                       {width: draw.width, height: draw.height}, // ✅ sin márgenes "fake"
                     ]}
                     resizeMode="contain"
+                    testID="cameraCapturedImage"
                   />
                 );
               })()}
@@ -812,13 +816,13 @@ export default function CameraScreen({navigation, route}) {
           </View>
 
           {/* Botones de acción */}
-          <View style={styles.photoActionsContainer}>
+          <View style={styles.photoActionsContainer} testID="cameraPhotoActionsContainer">
             <TouchableOpacity
               style={[styles.actionButton, styles.retakeButton]}
               onPress={takeNewPhoto}
               testID="retakePhotoButton">
               <Ionicons name="camera-outline" size={20} color="#fff" />
-              <CText style={styles.actionButtonText}>Tomar Nueva</CText>
+              <CText style={styles.actionButtonText} testID="retakePhotoButtonText">Tomar Nueva</CText>
             </TouchableOpacity>
 
             <TouchableOpacity

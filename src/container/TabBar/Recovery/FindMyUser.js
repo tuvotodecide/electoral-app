@@ -122,14 +122,14 @@ export default function FindMyUser({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.recoveryAccountWithGuardians} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type="R14" style={localStyle.fieldLabel}>
+    <CSafeAreaView testID="findMyUserContainer">
+      <CHeader title={String.recoveryAccountWithGuardians} testID="findMyUserHeader" />
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20} testID="findMyUserKeyboardWrapper">
+        <CText type="R14" style={localStyle.fieldLabel} testID="findMyUserIdLabel">
           {String.idPlaceholder}
         </CText>
-        <View style={localStyle.searchContainer}>
-          <View style={localStyle.inputWrapper}>
+        <View style={localStyle.searchContainer} testID="findMyUserSearchContainer">
+          <View style={localStyle.inputWrapper} testID="findMyUserInputWrapper">
             <CInput
               label={null}
               _value={carnet}
@@ -138,6 +138,7 @@ export default function FindMyUser({navigation}) {
               keyBoardType="numeric"
               inputContainerStyle={localStyle.inputContainer}
               inputBoxStyle={localStyle.inputBox}
+              testID="findMyUserIdInput"
             />
           </View>
 
@@ -147,7 +148,8 @@ export default function FindMyUser({navigation}) {
             style={[
               localStyle.searchButton,
               {backgroundColor: colors.primary},
-            ]}>
+            ]}
+            testID="findMyUserSearchButton">
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -155,39 +157,41 @@ export default function FindMyUser({navigation}) {
             )}
           </TouchableOpacity>
         </View>
-        {errorMsg && <CAlert status="error" message={errorMsg} />}
+        {errorMsg && <CAlert status="error" message={errorMsg} testID="findMyUserErrorAlert" />}
         {candidate && (
           <>
-            <CText type="R14" style={localStyle.fieldLabel}>
+            <CText type="R14" style={localStyle.fieldLabel} testID="findMyUserNameLabel">
               {String.guardianName}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View style={localStyle.inputWrapper} testID="findMyUserNameWrapper">
               <CInput
                 editable={false}
                 _value={candidate.fullName || '(sin nombre)'}
+                testID="findMyUserNameInput"
               />
             </View>
           </>
         )}
       </KeyBoardAvoidWrapper>
       {candidate && (
-        <View style={localStyle.confirmContainer}>
+        <View style={localStyle.confirmContainer} testID="findMyUserConfirmContainer">
           <TouchableOpacity
             style={localStyle.confirmRow}
             onPress={onToggleConfirm}
-            disabled={loadingHas || !candidate}>
+            disabled={loadingHas || !candidate}
+            testID="findMyUserConfirmButton">
             <Icono
               name={confirmed ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={20}
               color={colors.primaryColor}
             />
-            <CText style={localStyle.confirmText}>
+            <CText style={localStyle.confirmText} testID="findMyUserConfirmText">
               {String.confirmDataCorrect}
             </CText>
           </TouchableOpacity>
         </View>
       )}
-      <View style={localStyle.bottomTextContainer}>
+      <View style={localStyle.bottomTextContainer} testID="findMyUserBottomContainer">
         <CButton
           title={String.sendRecovery}
           disabled={loading || !candidate || !confirmed}
@@ -195,6 +199,7 @@ export default function FindMyUser({navigation}) {
           type={'B16'}
           containerStyle={localStyle.btnStyle}
           frontIcon={<Icono size={20} name="send" color={'#fff'} />}
+          testID="findMyUserSendButton"
         />
       </View>
       <InfoModalWithoutClose
@@ -202,6 +207,7 @@ export default function FindMyUser({navigation}) {
         title="¡Invitación!"
         message={modalMessage}
         onClose={() => setModalVisible(false)}
+        testID="findMyUserInfoModal"
       />
     </CSafeAreaView>
   );

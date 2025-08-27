@@ -34,24 +34,27 @@ export default function ChangePinNew({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView addTabPadding={false}>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
+    <CSafeAreaView testID="changePinNewContainer" addTabPadding={false}>
+      <CHeader testID="changePinNewHeader" />
+      <KeyBoardAvoidWrapper testID="changePinNewKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="changePinNewMainContainer" style={localStyle.mainContainer}>
+          <View testID="changePinNewContentContainer">
             <CText
+              testID="changePinNewTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinAccessTitle}
             </CText>
             <CText
+              testID="changePinNewSubtitle"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinAccessDescription}
             </CText>
             <OTPInputView
+              testID="changePinNewOtpInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -72,8 +75,9 @@ export default function ChangePinNew({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
+          <View testID="changePinNewButtonContainer">
             <CButton
+              testID="changePinNewContinueButton"
               disabled={otp.length !== 4}
               title={String.btnContinue}
               type={'B16'}

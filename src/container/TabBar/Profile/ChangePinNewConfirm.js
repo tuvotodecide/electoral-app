@@ -63,24 +63,27 @@ export default function ChangePinNewConfirm({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
+    <CSafeAreaView testID="changePinNewConfirmContainer">
+      <CHeader testID="changePinNewConfirmHeader" />
+      <KeyBoardAvoidWrapper testID="changePinNewConfirmKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="changePinNewConfirmMainContainer" style={localStyle.mainContainer}>
+          <View testID="changePinNewConfirmContentContainer">
             <CText
+              testID="changePinNewConfirmTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinConfirmAccessTitle}
             </CText>
             <CText
+              testID="changePinNewConfirmSubtitle"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinAccessDescription1}
             </CText>
             <OTPInputView
+              testID="changePinNewConfirmOtpInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -101,8 +104,9 @@ export default function ChangePinNewConfirm({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
+          <View testID="changePinNewConfirmButtonContainer">
             <CButton
+              testID="changePinNewConfirmFinishButton"
               disabled={otp.length !== 4}
               title={String.btnContinue}
               type={'B16'}
@@ -112,6 +116,7 @@ export default function ChangePinNewConfirm({navigation, route}) {
         </View>
       </KeyBoardAvoidWrapper>
       <InfoModal
+        testID="changePinNewConfirmResultModal"
         visible={modal.visible}
         title={modal.title}
         message={modal.msg}

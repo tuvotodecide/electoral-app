@@ -286,8 +286,9 @@ const WhichIsCorrectScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="whichIsCorrectContainer" style={styles.container}>
       <UniversalHeader
+        testID="whichIsCorrectHeader"
         colors={colors}
         onBack={handleBack}
         title={`${String.table} ${
@@ -302,11 +303,12 @@ const WhichIsCorrectScreen = () => {
       {showConfirmationView ? (
         // Confirmation view showing selected acta with icons
         <>
-          <View style={styles.questionContainer}>
-            <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
+          <View testID="whichIsCorrectQuestionContainer" style={styles.questionContainer}>
+            <CText testID="whichIsCorrectQuestionText" style={styles.questionText}>{String.whichIsCorrect}</CText>
           </View>
 
           <ScrollView
+            testID="whichIsCorrectConfirmationImageList"
             style={styles.imageList}
             showsVerticalScrollIndicator={false}>
             {actaImages.map(image => {
@@ -315,8 +317,10 @@ const WhichIsCorrectScreen = () => {
               return (
                 <View
                   key={`confirmation-${image.id}`}
+                  testID={`whichIsCorrectConfirmationImageContainer_${image.id}`}
                   style={styles.confirmationImageContainer}>
                   <View
+                    testID={`whichIsCorrectImageCard_${image.id}`}
                     style={[
                       styles.imageCard,
                       isCorrect
@@ -324,6 +328,7 @@ const WhichIsCorrectScreen = () => {
                         : styles.imageCardIncorrect,
                     ]}>
                     <IPFSImage
+                      testID={`whichIsCorrectImage_${image.id}`}
                       image={image}
                       style={styles.imageDisplay}
                       resizeMode="contain"
@@ -331,11 +336,13 @@ const WhichIsCorrectScreen = () => {
 
                     {/* Status Icon - Check for correct, X for incorrect */}
                     <View
+                      testID={`whichIsCorrectStatusIcon_${image.id}`}
                       style={[
                         styles.statusIcon,
                         isCorrect ? styles.correctIcon : styles.incorrectIcon,
                       ]}>
                       <MaterialIcons
+                        testID={`whichIsCorrectStatusIconSvg_${image.id}`}
                         name={isCorrect ? 'check-circle' : 'cancel'}
                         size={24}
                         color="#FFFFFF"
@@ -348,20 +355,22 @@ const WhichIsCorrectScreen = () => {
           </ScrollView>
 
           {/* Confirmation Buttons */}
-          <View style={styles.confirmationButtonsContainer}>
+          <View testID="whichIsCorrectConfirmationButtonsContainer" style={styles.confirmationButtonsContainer}>
             <TouchableOpacity
+              testID="whichIsCorrectContinueButton"
               style={[
                 styles.continueButton,
                 {backgroundColor: colors.primary || '#4F9858'},
               ]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
-              <CText style={styles.continueButtonText}>
+              <CText testID="whichIsCorrectContinueButtonText" style={styles.continueButtonText}>
                 {String.continueButton}
               </CText>
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="whichIsCorrectChangeOpinionButton"
               style={[
                 styles.changeOpinionButton,
                 {borderColor: colors.textSecondary},
@@ -369,6 +378,7 @@ const WhichIsCorrectScreen = () => {
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
               <CText
+                testID="whichIsCorrectChangeOpinionButtonText"
                 style={[
                   styles.changeOpinionButtonText,
                   {color: colors.textSecondary},
@@ -550,6 +560,7 @@ const WhichIsCorrectScreen = () => {
             ]}
             onPress={handleDatosNoCorrectos}>
             <CText
+              testID="addNewRecordText"
               style={[
                 styles.datosNoCorrectosButtonText,
                 isFromAPI && styles.addNewActaButtonText,
@@ -561,6 +572,7 @@ const WhichIsCorrectScreen = () => {
       )}
 
       <CustomModal
+        testID="whichIsCorrectModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

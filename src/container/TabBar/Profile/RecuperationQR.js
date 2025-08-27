@@ -127,25 +127,27 @@ export default function RecuperationQR() {
 
   if (loading) {
     return (
-      <CSafeAreaView>
-        <CHeader title={String.qrRecoveryTitle} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
+      <CSafeAreaView testID="recuperationQrLoadingContainer">
+        <CHeader testID="recuperationQrLoadingHeader" title={String.qrRecoveryTitle} />
+        <View testID="recuperationQrLoadingCenter" style={styles.center}>
+          <ActivityIndicator testID="recuperationQrLoadingIndicator" size="large" />
         </View>
       </CSafeAreaView>
     );
   }
 
   return (
-    <CSafeAreaView addTabPadding={false}>
-      <CHeader title={String.qrRecoveryTitle} />
+    <CSafeAreaView testID="recuperationQrContainer" addTabPadding={false}>
+      <CHeader testID="recuperationQrHeader" title={String.qrRecoveryTitle} />
 
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
+      <KeyBoardAvoidWrapper testID="recuperationQrKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <ViewShot
           ref={viewShotRef}
+          testID="recuperationQrViewShot"
           style={local.qrBox}
           options={{format: 'png', quality: 1}}>
           <QRCodeSVG
+            testID="recuperationQrCode"
             value={qrData}
             size={moderateScale(250)}
             backgroundColor="#fff"
@@ -153,22 +155,23 @@ export default function RecuperationQR() {
           />
         </ViewShot>
 
-        <CText type="B16" align="center" marginTop={20}>
+        <CText testID="recuperationQrDescription" type="B16" align="center" marginTop={20}>
           {String.qrRecoveryDescription}
         </CText>
       </KeyBoardAvoidWrapper>
 
-      <View style={styles.ph20}>
-        <CAlert status="warning" message={String.qrRecoveryWarning} />
+      <View testID="recuperationQrFooter" style={styles.ph20}>
+        <CAlert testID="recuperationQrWarning" status="warning" message={String.qrRecoveryWarning} />
         <CButton
+          testID="recuperationQrSaveButton"
           title={saving ? 'Guardando…' : String.qrRecoveryButton}
           onPress={saveQr}
           disabled={saving}
           frontIcon={
             saving ? (
-              <ActivityIndicator size={20} color="#fff" />
+              <ActivityIndicator testID="recuperationQrSaveLoading" size={20} color="#fff" />
             ) : (
-              <Icono name="download-outline" size={20} color="#fff" />
+              <Icono testID="recuperationQrSaveIcon" name="download-outline" size={20} color="#fff" />
             )
           }
           containerStyle={{marginVertical: 20}}

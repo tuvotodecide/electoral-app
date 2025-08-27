@@ -88,7 +88,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.edit,
           onPress: handleEdit,
-          testID: 'editButton',
+          testID: 'photoReviewEditButton',
           style: {
             backgroundColor: '#fff',
             borderColor: colors.primary || '#459151',
@@ -103,7 +103,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.next,
           onPress: handleNext,
-          testID: 'nextButton',
+          testID: 'photoReviewNextButton',
           style: {
             backgroundColor: colors.primary || '#459151',
             flex: 1,
@@ -118,7 +118,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.save,
           onPress: handleSave,
-          testID: 'saveButton',
+          testID: 'photoReviewSaveButton',
           style: {
             backgroundColor: colors.primary || '#459151',
           },
@@ -131,6 +131,7 @@ const PhotoReviewScreen = () => {
   return (
     <>
       <BaseRecordReviewScreen
+        testID="photoReviewScreenBase"
         colors={colors}
         headerTitle={`${String.table} ${
           tableData?.tableNumber ||
@@ -153,6 +154,7 @@ const PhotoReviewScreen = () => {
       />
 
       <CustomModal
+        testID="photoReviewSuccessModal"
         visible={modalVisible}
         onClose={closeModal}
         type="success"

@@ -13,28 +13,32 @@ export default function InfoModal({
   message,
   buttonText = 'OK',
   onClose,
+  testID = 'infoModal',
 }) {
   const colors = useSelector(state => state.theme.theme);
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={[base.overlay, {backgroundColor: colors.modalBackground}]}>
+    <Modal testID={testID} visible={visible} animationType="fade" transparent>
+      <View testID={`${testID}Overlay`} style={[base.overlay, {backgroundColor: colors.modalBackground}]}>
         <View
+          testID={`${testID}Container`}
           style={[base.container, {backgroundColor: colors.backgroundColor}]}>
           {title && (
-            <CText type="B18" align="center" style={styles.mb20}>
+            <CText testID={`${testID}Title`} type="B18" align="center" style={styles.mb20}>
               {title}
             </CText>
           )}
           <ScrollView
+            testID={`${testID}ScrollView`}
             style={base.scroll}
             contentContainerStyle={{alignItems: 'center'}}
             showsVerticalScrollIndicator={true}>
-            <CText type="M16" align="center">
+            <CText testID={`${testID}Message`} type="M16" align="center">
               {message}
             </CText>
           </ScrollView>
           <CButton
+            testID={`${testID}Button`}
             title={buttonText}
             type="M16"
             containerStyle={base.button}

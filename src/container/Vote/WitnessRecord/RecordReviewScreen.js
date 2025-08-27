@@ -61,7 +61,7 @@ const RecordReviewScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
-      testID: 'goBackButton',
+      testID: 'recordReviewGoBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -74,7 +74,7 @@ const RecordReviewScreen = () => {
     {
       text: String.correctData,
       onPress: handleCorrectData,
-      testID: 'correctDataButton',
+      testID: 'recordReviewCorrectDataButton',
       style: {
         backgroundColor: '#459151',
       },
@@ -86,6 +86,7 @@ const RecordReviewScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="recordReviewBaseScreen"
       colors={colors}
       headerTitle={`${String.table} ${tableData?.tableNumber ||
         tableData?.numero ||

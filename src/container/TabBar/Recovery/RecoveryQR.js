@@ -80,18 +80,19 @@ export default function RecoveryQr({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth >
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={local.main}>
-          <CText type="B20" align="center" style={styles.boldText}>
+    <CSafeAreaViewAuth testID="recoveryQrContainer">
+      <CHeader testID="recoveryQrHeader" />
+      <KeyBoardAvoidWrapper testID="recoveryQrKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="recoveryQrMainContent" style={local.main}>
+          <CText testID="recoveryQrTitle" type="B20" align="center" style={styles.boldText}>
             {String.RecoverywithQR}
           </CText>
-          <CText type="B16" align="center">
+          <CText testID="recoveryQrSubtitle" type="B16" align="center">
             {String.recoveryQrSubtitle}
           </CText>
 
           <UploadCardImage
+            testID="recoveryQrUploadImage"
             label={String.qrimagelabel}
             image={imageUri ? { uri: imageUri } : null}
             setImage={onImageSelected}
@@ -99,15 +100,16 @@ export default function RecoveryQr({navigation}) {
           />
 
           {payload && (
-            <CText type="R14" align="center" style={{marginTop: 10}}>
+            <CText testID="recoveryQrValidMessage" type="R14" align="center" style={{marginTop: 10}}>
               {String.qrValid}
             </CText>
           )}
         </View>
       </KeyBoardAvoidWrapper>
 
-      <View style={local.footer}>
+      <View testID="recoveryQrFooter" style={local.footer}>
         <CButton
+          testID="recoveryQrContinueButton"
           title={String.continueButton}
           onPress={goSetPin}
           disabled={!payload || loading}

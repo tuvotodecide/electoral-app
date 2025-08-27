@@ -38,22 +38,25 @@ export default function PersonalDetails({navigation, route}) {
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
   return (
-    <CSafeAreaView>
-      <CHeader title={String.personalDetailsTitle} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <View style={{alignItems: 'center', width: '100%'}}>
-          <Icono name="account" size={150} color={colors.primary} />
-         <CHash text={data.hash} title={userData?.account}/>
+    <CSafeAreaView testID="personalDetailsContainer">
+      <CHeader testID="personalDetailsHeader" title={String.personalDetailsTitle} />
+      <KeyBoardAvoidWrapper testID="personalDetailsKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <View testID="personalDetailsAvatarContainer" style={{alignItems: 'center', width: '100%'}}>
+          <Icono testID="personalDetailsAvatarIcon" name="account" size={150} color={colors.primary} />
+         <CHash testID="personalDetailsHash" text={data.hash} title={userData?.account}/>
         </View>
 
         <CEtiqueta
-          icon={<Icono name="account" color={getSecondaryTextColor(colors)} />}
+          testID="personalDetailsNameField"
+          icon={<Icono testID="personalDetailsNameIcon" name="account" color={getSecondaryTextColor(colors)} />}
           title={String.fullNameTitle}
           text={data.name}
         />
         <CEtiqueta
+          testID="personalDetailsDocumentField"
           icon={
             <Icono
+              testID="personalDetailsDocumentIcon"
               name="card-account-details"
               color={getSecondaryTextColor(colors)}
             />
@@ -62,7 +65,8 @@ export default function PersonalDetails({navigation, route}) {
           text={data.document}
         />
         <CEtiqueta
-          icon={<Icono name="calendar" color={getSecondaryTextColor(colors)} />}
+          testID="personalDetailsBirthDateField"
+          icon={<Icono testID="personalDetailsBirthDateIcon" name="calendar" color={getSecondaryTextColor(colors)} />}
           title={String.birthDateTitle}
           text={data.birthDate}
         />

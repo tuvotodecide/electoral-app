@@ -29,7 +29,7 @@ const MyWitnessesDetailScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
-      testID: 'goBackButton',
+      testID: 'myWitnessesDetailGoBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -67,6 +67,7 @@ const MyWitnessesDetailScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="myWitnessesDetailBaseScreen"
       colors={colors}
       headerTitle={headerTitle}
       instructionsText={instructionsText}

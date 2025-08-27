@@ -107,23 +107,26 @@ export default function Login({navigation}) {
   });
 
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
+    <CSafeAreaViewAuth testID="loginContainer">
+      <CHeader testID="loginHeader" />
       <KeyBoardAvoidWrapper
+        testID="loginKeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(25)},
         ]}>
-        <View style={localStyle.mainContainer}>
-          <View style={localStyle.logoStyle}>
+        <View testID="loginMainContainer" style={localStyle.mainContainer}>
+          <View testID="loginLogoContainer" style={localStyle.logoStyle}>
             {colors.dark ? (
               <Splash_Dark
+                testID="loginLogoDark"
                 width={moderateScale(64)}
                 height={moderateScale(64)}
               />
             ) : (
               <Splash_Light
+                testID="loginLogoLight"
                 width={moderateScale(64)}
                 height={moderateScale(64)}
               />
@@ -136,7 +139,7 @@ export default function Login({navigation}) {
             {String.signInToYourAccount}
           </CText>
           <CInput
-            testID="emailInput"
+            testID="loginEmailInput"
             placeholder={String.email}
             _value={email}
             keyBoardType={'email-address'}
@@ -149,7 +152,7 @@ export default function Login({navigation}) {
             onBlur={onBlurEmail}
           />
           <CInput
-            testID="passwordInput"
+            testID="loginPasswordInput"
             placeholder={String.password}
             _value={password}
             _errorText={passwordError}
@@ -162,17 +165,18 @@ export default function Login({navigation}) {
             _onFocus={onFocusPassword}
             onBlur={onBlurPassword}
           />
-          <View style={[styles.rowSpaceBetween, styles.mt10]}>
-            <View style={styles.rowSpaceAround}>
-              <TouchableOpacity testID="rememberMeCheckbox" onPress={OnPressRememberMe}>
+          <View testID="loginRememberAndForgotContainer" style={[styles.rowSpaceBetween, styles.mt10]}>
+            <View testID="loginRememberMeContainer" style={styles.rowSpaceAround}>
+              <TouchableOpacity testID="loginRememberMeCheckbox" onPress={OnPressRememberMe}>
                 <Ionicons
+                  testID="loginRememberMeIcon"
                   name={!!rememberMe ? 'checkbox' : 'square-outline'}
                   color={!!rememberMe ? colors.primary : colors.grayScale50}
                   size={moderateScale(24)}
                 />
               </TouchableOpacity>
               <CText
-                testID="rememberMeLabel"
+                testID="loginRememberMeLabel"
                 type={'r14'}
                 color={colors.colorText}
                 style={styles.ml5}
@@ -180,21 +184,22 @@ export default function Login({navigation}) {
                 {String.rememberMe}
               </CText>
             </View>
-            <TouchableOpacity testID="forgotPasswordLink" onPress={onPressForgotPassword}>
-              <CText type={'M14'} color={colors.primary} align={'center'}>
+            <TouchableOpacity testID="loginForgotPasswordLink" onPress={onPressForgotPassword}>
+              <CText testID="loginForgotPasswordText" type={'M14'} color={colors.primary} align={'center'}>
                 {String.forgotPassWord}
               </CText>
             </TouchableOpacity>
           </View>
           <CButton
-            testID="signInButton"
+            testID="loginSignInButton"
             title={String.signIn}
             onPress={onPressSignIn}
             type={'B16'}
             containerStyle={localStyle.btnStyle}
           />
-          <View style={localStyle.divider}>
+          <View testID="loginDividerContainer" style={localStyle.divider}>
             <View
+              testID="loginDividerLine1"
               style={[
                 localStyle.orContainer,
                 {
@@ -204,10 +209,11 @@ export default function Login({navigation}) {
                 },
               ]}
             />
-            <CText type={'r12'} style={styles.mh10} color={colors.grayScale500}>
+            <CText testID="loginOrText" type={'r12'} style={styles.mh10} color={colors.grayScale500}>
               {String.orSignInWith}
             </CText>
             <View
+              testID="loginDividerLine2"
               style={[
                 localStyle.orContainer,
                 {
@@ -218,19 +224,19 @@ export default function Login({navigation}) {
               ]}
             />
           </View>
-          <View style={localStyle.socialBtnContainer}>
+          <View testID="loginSocialButtonsContainer" style={localStyle.socialBtnContainer}>
             {socialIcon.map((item, index) => (
               <RenderSocialBtn item={item} key={index.toString()} />
             ))}
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CText testID="noAccountLabel" type={'R14'} color={colors.grayScale500}>
+      <View testID="loginBottomContainer" style={localStyle.bottomTextContainer}>
+        <CText testID="loginNoAccountLabel" type={'R14'} color={colors.grayScale500}>
           {String.doHaveAnAccount}
         </CText>
-        <TouchableOpacity testID="signUpLink" onPress={onPressSignUp}>
-          <CText color={colors.primary} style={localStyle.signUpText}>
+        <TouchableOpacity testID="loginSignUpLink" onPress={onPressSignUp}>
+          <CText testID="loginSignUpText" color={colors.primary} style={localStyle.signUpText}>
             {String.signUp}
           </CText>
         </TouchableOpacity>

@@ -85,38 +85,40 @@ export default function Notification({navigation}) {
     }
   };
 
-  const renderNotificationItem = ({item}) => (
+  const renderNotificationItem = ({item, index}) => (
     <TouchableOpacity 
+      testID={`notificationItem_${index}`}
       style={localStyle.notificationCard}
       onPress={() => handleNotificationPress(item)}
       activeOpacity={0.7}
     >
-      <View style={localStyle.cardContent}>
+      <View testID={`notificationCardContent_${index}`} style={localStyle.cardContent}>
         <Ionicons
+          testID={`notificationIcon_${index}`}
           name={getIconName(item.tipo)}
           size={38}
           color={'#111'}
           style={{marginTop: 3}}
         />
-        <View style={localStyle.contentContainer}>
-          <View style={localStyle.headerRow}>
-            <Text style={localStyle.title}>{item.mesa}</Text>
-            <View style={localStyle.rightInfo}>
+        <View testID={`notificationContentContainer_${index}`} style={localStyle.contentContainer}>
+          <View testID={`notificationHeaderRow_${index}`} style={localStyle.headerRow}>
+            <Text testID={`notificationTitle_${index}`} style={localStyle.title}>{item.mesa}</Text>
+            <View testID={`notificationRightInfo_${index}`} style={localStyle.rightInfo}>
               {item.distancia && (
-                <Text style={localStyle.distance}>{item.distancia}</Text>
+                <Text testID={`notificationDistance_${index}`} style={localStyle.distance}>{item.distancia}</Text>
               )}
-              <Text style={localStyle.time}>
+              <Text testID={`notificationTime_${index}`} style={localStyle.time}>
                 {formatTiempoRelativo(item.timestamp)}
               </Text>
             </View>
           </View>
-          <Text style={localStyle.subtitle}>{item.tipo}</Text>
-          <Text style={localStyle.detailText}>{item.colegio}</Text>
-          <Text style={localStyle.detailText}>{item.direccion}</Text>
+          <Text testID={`notificationSubtitle_${index}`} style={localStyle.subtitle}>{item.tipo}</Text>
+          <Text testID={`notificationCollege_${index}`} style={localStyle.detailText}>{item.colegio}</Text>
+          <Text testID={`notificationAddress_${index}`} style={localStyle.detailText}>{item.direccion}</Text>
           {item.tipo === 'Conteo de Votos' && (
-            <View style={localStyle.actionHint}>
-              <Ionicons name="arrow-forward" size={16} color="#2790b0" />
-              <Text style={localStyle.actionText}>Toca para ver detalles</Text>
+            <View testID={`notificationActionHint_${index}`} style={localStyle.actionHint}>
+              <Ionicons testID={`notificationActionIcon_${index}`} name="arrow-forward" size={16} color="#2790b0" />
+              <Text testID={`notificationActionText_${index}`} style={localStyle.actionText}>Toca para ver detalles</Text>
             </View>
           )}
         </View>
@@ -125,48 +127,28 @@ export default function Notification({navigation}) {
   );
 
   return (
-    <View style={{flex: 1, backgroundColor: '#fff'}}>
+    <View testID="notificationScreenContainer" style={{flex: 1, backgroundColor: '#fff'}}>
       {/* HEADER */}
       <CStandardHeader
+        testID="notificationHeader"
         title="Notificaciones"
         onPressBack={() => navigation.goBack()}
       />
 
       <FlatList
+        testID="notificationList"
         data={notificaciones}
         keyExtractor={item => item.id.toString()}
         renderItem={renderNotificationItem}
         contentContainerStyle={localStyle.listContent}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={localStyle.separator} />}
+        ItemSeparatorComponent={() => <View testID="notificationSeparator" style={localStyle.separator} />}
         ListEmptyComponent={
-          <View style={{marginTop: 50, alignItems: 'center'}}>
-            <Text>No hay notificaciones</Text>
+          <View testID="notificationEmptyState" style={{marginTop: 50, alignItems: 'center'}}>
+            <Text testID="notificationEmptyText">No hay notificaciones</Text>
           </View>
         }
       />
-
-      {/* FOOTER */}
-      {/* <View style={localStyle.footer}>
-        <Text style={localStyle.footerText}>Iniciativa voluntaria de:</Text>
-        <View style={localStyle.footerLogos}>
-          <Image
-            source={LOGO1}
-            style={localStyle.footerLogoImg}
-            resizeMode="contain"
-          />
-          <Image
-            source={LOGO_CENTER}
-            style={localStyle.footerLogoCenter}
-            resizeMode="contain"
-          />
-          <Image
-            source={LOGO2}
-            style={localStyle.footerLogoImg}
-            resizeMode="contain"
-          />
-        </View>
-      </View> */}
     </View>
   );
 }

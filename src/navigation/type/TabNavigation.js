@@ -82,6 +82,7 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
 
   return (
     <View
+      testID="tabBarContainer"
       style={[
         stylesx.tabBarContainer,
         {
@@ -113,18 +114,19 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
         return (
           <TouchableOpacity
             key={route.key}
+            testID={`tabButton_${route.name}`}
             accessibilityRole="button"
             accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
             onPress={onPress}
             style={stylesx.tabButton}>
             <Icono
+              testID={`tabIcon_${route.name}`}
               name={iconName}
               color="#222" // SIEMPRE NEGRO, NO cambia por selección
               size={getResponsiveSize(28, 33, 38)}
               style={{marginBottom: getResponsiveSize(0, 1, 2)}}
             />
-            <CText style={stylesx.tabLabel} numberOfLines={1}>
+            <CText testID={`tabLabel_${route.name}`} style={stylesx.tabLabel} numberOfLines={1}>
               {label}
             </CText>
           </TouchableOpacity>
@@ -141,6 +143,7 @@ export default function TabNavigation() {
 
   return (
     <Tab.Navigator
+      testID="mainTabNavigator"
       screenOptions={{
         headerShown: false,
       }}

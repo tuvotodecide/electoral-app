@@ -11,13 +11,13 @@ import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import String from '../../i18n/String';
 
-const RenderEtiqueta = ({title, subtitle, colors}) => {
+const RenderEtiqueta = ({title, subtitle, colors, testId}) => {
   return (
-    <View style={localStyle.loginText}>
-      <CText type={'B16'} color={colors.secondary} style={styles.boldText}>
+    <View testID={`${testId}_container`} style={localStyle.loginText}>
+      <CText testID={`${testId}_title`} type={'B16'} color={colors.secondary} style={styles.boldText}>
         {title}
       </CText>
-      <CText type={'B16'} color={colors.secondary} align={'justify'}>
+      <CText testID={`${testId}_subtitle`} type={'B16'} color={colors.secondary} align={'justify'}>
         {subtitle}
       </CText>
     </View>
@@ -28,40 +28,46 @@ export default function ConditionsRegister({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
+    <CSafeAreaViewAuth testID="conditionsRegisterContainer">
+      <CHeader testID="conditionsRegisterHeader" />
       <KeyBoardAvoidWrapper
+        testID="conditionsRegisterKeyboardWrapper"
         containerStyle={[styles.justifyBetween, styles.flex]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B20'} align="center" style={styles.boldText}>
+        <View testID="conditionsRegisterMainContainer" style={localStyle.mainContainer}>
+          <CText testID="conditionsRegisterTitle" type={'B20'} align="center" style={styles.boldText}>
             {String.termsTitle}
           </CText>
 
-          <CText type={'B16'} align="center" color={colors.secondary}>
+          <CText testID="conditionsRegisterLastUpdate" type={'B16'} align="center" color={colors.secondary}>
             {String.termsLastUpdate}
           </CText>
 
           <RenderEtiqueta
+            testId="conditionsRegisterSection1"
             title={String.termsSection1Title}
             subtitle={String.termsSection1Subtitle}
             colors={colors}
           />
           <RenderEtiqueta
+            testId="conditionsRegisterSection2"
             title={String.termsSection2Title}
             subtitle={String.termsSection2Subtitle}
             colors={colors}
           />
           <RenderEtiqueta
+            testId="conditionsRegisterSection3"
             title={String.termsSection3Title}
             subtitle={String.termsSection3Subtitle}
             colors={colors}
           />
           <RenderEtiqueta
+            testId="conditionsRegisterSection4"
             title={String.termsSection4Title}
             subtitle={String.termsSection4Subtitle}
             colors={colors}
           />
           <RenderEtiqueta
+            testId="conditionsRegisterSection5"
             title={String.termsSection5Title}
             subtitle={String.termsSection5Subtitle}
             colors={colors}

@@ -16,16 +16,16 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Action Buttons Component
-export const ActionButtons = ({buttons, style}) => (
-  <View style={[styles.actionButtons, style]}>
+export const ActionButtons = ({testID = "actionButtons", buttons, style}) => (
+  <View testID={testID} style={[styles.actionButtons, style]}>
     {buttons.map((button, index) => (
       <TouchableOpacity
         key={`action-button-${index}`} // Usar key más específica
         style={[styles.actionButton, button.style]}
         onPress={button.onPress}
-        testID={button.testID}
+        testID={button.testID || `${testID}Button_${index}`}
         >
-        <CText style={[styles.actionButtonText, button.textStyle]}>
+        <CText testID={`${button.testID || `${testID}Button_${index}`}Text`} style={[styles.actionButtonText, button.textStyle]}>
           {button.text}
         </CText>
       </TouchableOpacity>

@@ -35,20 +35,22 @@ export default function Connect({navigation}) {
 
   return (
     // <CSafeAreaView style={localStyle.Container}>
-    <CSafeAreaViewAuth style={localStyle.container}>
-      <View style={localStyle.imageContainer}>
-        <Image source={images.logoImg} style={localStyle.imageStyle} />
+    <CSafeAreaViewAuth style={localStyle.container} testID="connectContainer">
+      <View style={localStyle.imageContainer} testID="connectImageContainer">
+        <Image source={images.logoImg} style={localStyle.imageStyle} testID="MiVotoLogoImage" />
       </View>
       <View
         style={[
           localStyle.contentContainer,
           {backgroundColor: colors.primary},
-        ]}>
+        ]}
+        testID="connectContentContainer">
         <CText
           type={'B24'}
           style={styles.mb20}
           align={'center'}
-          color={colors.white}>
+          color={colors.white}
+          testID="connectTitle">
           {String.connectTitle}
         </CText>
 
@@ -56,12 +58,14 @@ export default function Connect({navigation}) {
           icon={<Icon name="shield-lock" size={24} color={colors.white} />}
           text={String.connectItem1}
           color={colors.white}
+          testID="connectFeature1"
         />
 
         <CIconText
           icon={<Icon name="swap-horizontal" size={24} color={colors.white} />}
           text={String.connectItem2}
           color={colors.white}
+          testID="connectFeature2"
         />
 
         <CIconText
@@ -70,9 +74,10 @@ export default function Connect({navigation}) {
           }
           text={String.connectItem3}
           color={colors.white}
+          testID="connectFeature3"
         />
 
-        <View style={localStyle.bottomButtons}>
+        <View style={localStyle.bottomButtons} testID="connectButtonsContainer">
           <CButton
             onPress={onPressInfo}
             title={String.connectBtnInfo + ' '}

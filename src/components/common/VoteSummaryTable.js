@@ -17,9 +17,9 @@ const getResponsiveSize = (small, medium, large) => {
 
 // Vote Summary Row Component
 export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
-  <View style={styles.voteSummaryTableRow}>
-    <CText style={styles.voteSummaryLabel}>{item.label}</CText>
-    <View style={styles.voteSummaryValueContainer}>
+  <View testID={`voteSummaryRow_${rowIndex}`} style={styles.voteSummaryTableRow}>
+    <CText testID={`voteSummaryLabel_${rowIndex}`} style={styles.voteSummaryLabel}>{item.label}</CText>
+    <View testID={`voteSummaryValue1Container_${rowIndex}`} style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
           style={styles.voteSummaryInput}
@@ -33,15 +33,15 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`voteSummary_${item.id}_presidente`}
+          testID={`voteSummaryInput_${item.id}_presidente`}
         />
       ) : (
-        <CText style={styles.voteSummaryValue}>
+        <CText testID={`voteSummaryValue1Text_${rowIndex}`} style={styles.voteSummaryValue}>
           {item.value1 === '' || item.value1 == null ? '0' : String(item.value1)}
         </CText>
       )}
     </View>
-    <View style={styles.voteSummaryValueContainer}>
+    <View testID={`voteSummaryValue2Container_${rowIndex}`} style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
           style={styles.voteSummaryInput}
@@ -55,10 +55,10 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`voteSummary_${item.id}_diputado`}
+          testID={`voteSummaryInput_${item.id}_diputado`}
         />
       ) : (
-        <CText style={styles.voteSummaryValue}>
+        <CText testID={`voteSummaryValue2Text_${rowIndex}`} style={styles.voteSummaryValue}>
           {item.value2 === '' || item.value2 == null ? '0' : String(item.value2)}
         </CText>
       )}
@@ -68,12 +68,13 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
 
 // Vote Summary Table Component
 export const VoteSummaryTable = ({
+  testID = "voteSummaryTable",
   voteSummaryResults,
   isEditing = false,
   onUpdate,
 }) => (
-  <View style={styles.voteSummaryTableContainer}>
-    <CText style={styles.voteSummaryTableTitle}>Votos</CText>
+  <View testID={testID} style={styles.voteSummaryTableContainer}>
+    <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>Votos</CText>
     {voteSummaryResults.map((item, index) => (
       <VoteSummaryRow
         key={index}
