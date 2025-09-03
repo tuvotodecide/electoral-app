@@ -10,7 +10,7 @@ import {
   Image,
   ImageBackground,
 } from 'react-native';
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {useDispatch} from 'react-redux';
 import {clearAuth} from '../../../redux/slices/authSlice';
 import {clearWallet} from '../../../redux/action/walletAction';
@@ -27,6 +27,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {JWT_KEY} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
+import {useFocusEffect} from '@react-navigation/native';
+import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
+import {ActivityIndicator} from 'react-native-paper';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -183,6 +186,28 @@ export default function HomeScreen({navigation}) {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
+  const [hasPendingActa, setHasPendingActa] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const checkQueue = async () => {
+        try {
+          const list = await getOfflineQueue();
+          const pending = (list || []).some(
+            i => i.task?.type === 'publishActa',
+          );
+          if (isActive) setHasPendingActa(pending);
+        } catch {}
+      };
+      checkQueue();
+      const t = setInterval(checkQueue, 4000); // refresca cada 4s mientras está enfocada
+      return () => {
+        isActive = false;
+        clearInterval(t);
+      };
+    }, []),
+  );
 
   // Datos del carrusel
   const carouselData = [
@@ -453,6 +478,11 @@ export default function HomeScreen({navigation}) {
                   style={[stylesx.gridDiv3, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[2].onPress}>
+                  {hasPendingActa && (
+                    <View style={stylesx.cardBadge}>
+                      <ActivityIndicator size="small" color="#41A44D" />
+                    </View>
+                  )}
                   {React.createElement(menuItems[2].iconComponent, {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
@@ -581,6 +611,11 @@ export default function HomeScreen({navigation}) {
                 style={[stylesx.gridDiv3, stylesx.card]}
                 activeOpacity={0.87}
                 onPress={menuItems[2].onPress}>
+                {hasPendingActa && (
+                  <View style={stylesx.cardBadge}>
+                    <ActivityIndicator size="small" color="#ff0000ff" />
+                  </View>
+                )}
                 {React.createElement(menuItems[2].iconComponent, {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
@@ -1060,5 +1095,16 @@ const stylesx = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: getResponsiveSize(10, 12, 16),
+  },
+  cardBadge: {
+    position: 'absolute',
+    top: getResponsiveSize(10, 12, 14),
+    right: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#f8a1a1ff',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
 });

@@ -10,7 +10,7 @@ export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
-      // 0) ✅ Verificación de duplicados (mismo criterio que online)
+
   const buildFromPayload = (type) => {
     const getV = (label) => {
       const row = (electoralData?.voteSummaryResults || []).find(s => s.label === label);
@@ -39,9 +39,8 @@ export const publishActaHandler = async (item, userData) => {
 
   const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
   if (duplicateCheck?.exists) {
-    // si es duplicado: descartamos la tarea y liberamos la imagen
     await removePersistedImage(imageUri);
-    return; // resolver sin throw → processQueue la elimina
+    return;
   }
 
 
