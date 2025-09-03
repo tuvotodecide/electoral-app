@@ -128,6 +128,30 @@ const MiVotoLogo = () => (
   </View>
 );
 
+const RegisterAlertCard = ({onPress}) => (
+  <View style={stylesx.registerAlertCard}>
+    <View style={{flex: 1}}>
+      <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
+      <CText style={stylesx.registerAlertSubtitle}>
+        Registra tu recinto y mesa para recibir avisos.
+      </CText>
+    </View>
+
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={stylesx.registerAlertCta}
+      accessibilityRole="button"
+      accessibilityLabel="Registrar recinto">
+      <Ionicons
+        name="arrow-forward"
+        size={getResponsiveSize(16, 18, 20)}
+        color="#fff"
+      />
+    </TouchableOpacity>
+  </View>
+);
+
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View style={stylesx.bannerBC}>
@@ -180,7 +204,6 @@ export default function HomeScreen({navigation}) {
       image: require('../../../assets/images/block-aso.png'),
       onPress: () => Linking.openURL('https://asoblockchainbolivia.org/'),
     },
-
   ];
 
   // Auto-scroll del carrusel
@@ -211,8 +234,7 @@ export default function HomeScreen({navigation}) {
         index: 0,
         routes: [{name: StackNav.AuthNavigation}],
       });
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const userData = useSelector(state => state.wallet.payload);
@@ -230,8 +252,8 @@ export default function HomeScreen({navigation}) {
   const menuItems = [
     {
       icon: 'people-outline',
-      title: String.participate,
-      description: String.participateDescription,
+      title: String.sendAct,
+      description: String.sendActDescription,
       onPress: () =>
         navigation.navigate(StackNav.ElectoralLocations, {
           targetScreen: 'UnifiedParticipation',
@@ -380,6 +402,9 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
           </View>
+          <RegisterAlertCard
+            onPress={() => navigation.navigate(StackNav.ElectoralLocations)}
+          />
 
           {/* Right Column: Menu Cards */}
           <View style={stylesx.tabletRightColumn}>
@@ -431,10 +456,10 @@ export default function HomeScreen({navigation}) {
                   {React.createElement(menuItems[2].iconComponent, {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#41A44D',
+                    color: '#fff',
                     style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                  <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
                     {menuItems[2].description}
                   </CText>
@@ -504,23 +529,33 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
+          <RegisterAlertCard
+            onPress={() => navigation.navigate(StackNav.ElectoralLocations)}
+          />
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
             <TouchableOpacity
-              style={[stylesx.gridDiv1, stylesx.card]}
+              style={[
+                stylesx.gridDiv1,
+                stylesx.card,
+                {flexDirection: 'row', alignItems: 'center'},
+              ]}
               activeOpacity={0.87}
               onPress={menuItems[0].onPress}>
               {React.createElement(menuItems[0].iconComponent, {
                 name: menuItems[0].icon,
-                size: getResponsiveSize(30, 36, 42),
+                size: getResponsiveSize(40, 50, 60),
                 color: '#41A44D',
-                style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                style: {marginRight: getResponsiveSize(6, 8, 10)},
               })}
-              <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-              <CText style={stylesx.cardDescription}>
-                {menuItems[0].description}
-              </CText>
+
+              <View style={{flex: 1}}>
+                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {menuItems[0].description}
+                </CText>
+              </View>
             </TouchableOpacity>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
@@ -552,7 +587,7 @@ export default function HomeScreen({navigation}) {
                   color: '#41A44D',
                   style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
                   {menuItems[2].description}
                 </CText>
@@ -806,6 +841,12 @@ const stylesx = StyleSheet.create({
     color: '#232323',
     marginBottom: getResponsiveSize(1, 2, 3),
   },
+  cardTitle1: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#232323',
+    marginBottom: getResponsiveSize(1, 2, 3),
+  },
   cardDescription: {
     fontSize: getResponsiveSize(12, 14, 16),
     color: '#282828',
@@ -856,7 +897,7 @@ const stylesx = StyleSheet.create({
   // Carousel Styles
   carouselContainer: {
     marginVertical: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(50, 24, 28),
+    marginBottom: getResponsiveSize(30, 24, 28),
   },
   carouselItem: {
     width: screenWidth - getResponsiveSize(32, 40, 48),
@@ -980,5 +1021,44 @@ const stylesx = StyleSheet.create({
   },
   disabledIcon: {
     opacity: 0.6,
+  },
+  registerAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2', // rojo claro
+    borderColor: '#FCA5A5', // borde rojo suave
+    borderWidth: 1,
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(14, 16, 20),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    // marginTop: getResponsiveSize(10, 12, 16),
+    marginBottom: getResponsiveSize(8, 10, 12),
+    // sombra sutil
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 1,
+  },
+  registerAlertTitle: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    color: '#7F1D1D',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  registerAlertSubtitle: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#7F1D1D',
+    opacity: 0.9,
+  },
+  registerAlertCta: {
+    width: getResponsiveSize(36, 40, 44),
+    height: getResponsiveSize(36, 40, 44),
+    borderRadius: 999,
+    backgroundColor: '#E72F2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: getResponsiveSize(10, 12, 16),
   },
 });

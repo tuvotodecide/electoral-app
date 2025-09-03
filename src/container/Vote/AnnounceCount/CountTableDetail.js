@@ -149,7 +149,7 @@ export default function CountTableDetail({navigation, route}) {
                     <CText style={stylesx.label}>{processedMesa.colegio}</CText>
                     <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                     <CText style={stylesx.label}>
-                      {String.tableCode} {processedMesa.codigo}
+                      {String.tableCode}{':'} {processedMesa.codigo}
                     </CText>
                     {processedMesa.zona !== 'Zona N/A' && (
                       <CText style={stylesx.label}>
@@ -197,7 +197,7 @@ export default function CountTableDetail({navigation, route}) {
                   <CText style={stylesx.label}>{processedMesa.colegio}</CText>
                   <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                   <CText style={stylesx.label}>
-                    {String.tableCode} {processedMesa.codigo}
+                    {String.tableCode}{':'} {processedMesa.codigo}
                   </CText>
                   {processedMesa.zona !== 'Zona N/A' && (
                     <CText style={stylesx.label}>

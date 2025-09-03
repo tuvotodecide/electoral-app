@@ -1,5 +1,6 @@
 export const StackNav = {
   ElectoralLocations: 'ElectoralLocations',
+  OfflinePendingScreen: 'OfflinePendingScreen',
   UnifiedTableScreen: 'UnifiedTableScreen',
   ActaDetailScreen: 'ActaDetailScreen',
   Splash: 'Splash',

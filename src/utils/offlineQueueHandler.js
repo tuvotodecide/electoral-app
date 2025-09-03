@@ -1,0 +1,141 @@
+import pinataService from '../utils/pinataService';
+import axios from 'axios';
+import {BACKEND_RESULT, CHAIN, BACKEND_SECRET} from '@env';
+import {oracleCalls, oracleReads} from '../api/oracle';
+import {availableNetworks} from '../api/params';
+import {removePersistedImage} from '../utils/persistLocalImage';
+import {executeOperation} from '../api/account';
+
+export const publishActaHandler = async (item, userData) => {
+  const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
+    item.task.payload;
+
+      // 0) ✅ Verificación de duplicados (mismo criterio que online)
+  const buildFromPayload = (type) => {
+    const getV = (label) => {
+      const row = (electoralData?.voteSummaryResults || []).find(s => s.label === label);
+      const raw = type === 'presidente' ? row?.value1 : row?.value2;
+      return parseInt(raw, 10) || 0;
+    };
+    return {
+      validVotes: getV('Votos Válidos'),
+      nullVotes:  getV('Votos Nulos'),
+      blankVotes: getV('Votos en Blanco'),
+      partyVotes: (electoralData?.partyResults || []).map(p => ({
+        partyId: p.partido,
+        votes: parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) || 0,
+      })),
+      totalVotes: getV('Votos Válidos') + getV('Votos Nulos')+  getV('Votos en Blanco'),
+    };
+  };
+
+  const verificationData = {
+    tableNumber: tableData?.codigo || 'N/A',
+    votes: {
+      parties:  buildFromPayload('presidente'),
+      deputies: buildFromPayload('diputado'),
+    },
+  };
+
+  const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+  if (duplicateCheck?.exists) {
+    // si es duplicado: descartamos la tarea y liberamos la imagen
+    await removePersistedImage(imageUri);
+    return; // resolver sin throw → processQueue la elimina
+  }
+
+
+  const imagePath = imageUri.startsWith('file://')
+    ? imageUri.substring(7)
+    : imageUri;
+  const ipfs = await pinataService.uploadElectoralActComplete(
+    imagePath,
+    aiAnalysis || {},
+    electoralData,
+    additionalData,
+  );
+
+  if (!ipfs.success) throw new Error(ipfs.error);
+  const ipfsData = ipfs.data;
+
+  const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
+  await axios.post(
+    backendUrl,
+    {
+      ipfsUri: ipfsData.jsonUrl,
+      recordId: 'String',
+      tableIdIpfs: 'String',
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': BACKEND_SECRET,
+      },
+      timeout: 30000,
+    },
+  );
+
+  const privateKey = userData?.privKey;
+  let isRegistered = await oracleReads.isRegistered(CHAIN, userData.account, 1);
+  if (!isRegistered) {
+    await executeOperation(
+      privateKey,
+      userData.account,
+      CHAIN,
+      oracleCalls.requestRegister(CHAIN, ipfsData.imageUrl),
+    );
+    isRegistered = await oracleReads.isRegistered(CHAIN, userData.account, 20);
+    if (!isRegistered) throw Error('Failed to register user on oracle');
+  }
+
+  let response;
+  try {
+    response = await executeOperation(
+      privateKey,
+      userData.account,
+      CHAIN,
+      oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsData.jsonUrl),
+      oracleReads.waitForOracleEvent,
+      'AttestationCreated',
+    );
+  } catch (e) {
+    const msg = e.message || '';
+    if (msg.indexOf('416c72656164792063726561746564') >= 0) {
+      response = await executeOperation(
+        privateKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.attest(
+          CHAIN,
+          tableData.codigo,
+          BigInt(0),
+          ipfsData.jsonUrl,
+        ),
+        oracleReads.waitForOracleEvent,
+        'Attested',
+      );
+    } else {
+      throw e;
+    }
+  }
+
+  const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+  const nftId = response.returnData.recordId.toString();
+
+  await axios.post(
+    `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
+    {
+      ipfsUri: String(ipfsData.jsonUrl),
+      recordId: String(nftId),
+      tableIdIpfs: 'String',
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': BACKEND_SECRET,
+      },
+      timeout: 30000,
+    },
+  );
+  await removePersistedImage(imageUri);
+};

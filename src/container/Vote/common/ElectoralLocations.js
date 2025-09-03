@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   FlatList,
@@ -9,6 +9,9 @@ import {
   Dimensions,
   Linking,
   TextInput,
+  Animated,
+  Easing,
+  AppState,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
@@ -41,6 +44,7 @@ const getResponsiveSize = (small, medium, large) => {
 
 const ElectoralLocations = ({navigation, route}) => {
   const colors = useSelector(state => state.theme.theme);
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -59,10 +63,10 @@ const ElectoralLocations = ({navigation, route}) => {
   const [configError, setConfigError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredLocations, setFilteredLocations] = useState([]);
+  const pendingPermissionFromSettings = useRef(false);
 
   // Get navigation target from route params
   const {targetScreen} = route.params || {};
-
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -100,7 +104,7 @@ const ElectoralLocations = ({navigation, route}) => {
     <View style={styles.searchContainer}>
       <TextInput
         style={styles.searchInput}
-        placeholder="Buscar recinto por nombre, código, calle o distrito"
+        placeholder="Nombre del recinto"
         placeholderTextColor="#888"
         value={searchTerm}
         onChangeText={filterLocations}
@@ -145,7 +149,7 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=5000`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
         {timeout: 15000}, // 10 segundos timeout
       );
       // const response = await axios.get(
@@ -194,6 +198,8 @@ const ElectoralLocations = ({navigation, route}) => {
   };
 
   const openLocationSettings = () => {
+    setModalVisible(false);
+    pendingPermissionFromSettings.current = true;
     if (Platform.OS === 'android') {
       // Intenta abrir configuración de ubicación del sistema
       Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(
@@ -204,7 +210,9 @@ const ElectoralLocations = ({navigation, route}) => {
       );
     } else {
       // Para iOS
-      Linking.openURL('App-Prefs:Privacy&path=LOCATION');
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION').catch(() =>
+        Linking.openSettings(),
+      );
     }
   };
 
@@ -212,6 +220,7 @@ const ElectoralLocations = ({navigation, route}) => {
     async (retryCount = 0, useHighAccuracy = true) => {
       try {
         setLoadingLocation(true);
+        setLocationRetries(retryCount);
 
         // Mostrar mensaje de reintento si corresponde
         if (retryCount > 0) {
@@ -239,7 +248,26 @@ const ElectoralLocations = ({navigation, route}) => {
               i18nString.locationPermissionRequired,
               i18nString.locationPermissionDeniedMessage,
               i18nString.openSettings,
-              () => Linking.openSettings(),
+              openLocationSettings,
+              i18nString.cancel,
+              closeModal,
+            );
+            setLoadingLocation(false);
+            return;
+          }
+        } else {
+          // iOS
+          const status = await Geolocation.requestAuthorization('whenInUse');
+          if (status !== 'granted') {
+            showModal(
+              'settings',
+              i18nString.locationPermissionRequired,
+              i18nString.locationPermissionDeniedMessage,
+              i18nString.openSettings,
+              () => {
+                pendingPermissionFromSettings.current = true;
+                openLocationSettings();
+              },
               i18nString.cancel,
               closeModal,
             );
@@ -272,7 +300,7 @@ const ElectoralLocations = ({navigation, route}) => {
               // PERMISSION_DENIED
               errorMessage = i18nString.locationPermissionDeniedMessage;
               modalTitle = i18nString.locationPermissionRequired;
-              action = () => Linking.openSettings();
+              action = openLocationSettings;
             } else if (error.code === 2 || error.code === 3) {
               // POSITION_UNAVAILABLE o TIMEOUT
               errorMessage = i18nString.locationDisabledMessage;
@@ -311,6 +339,52 @@ const ElectoralLocations = ({navigation, route}) => {
     },
     [fetchNearbyLocations],
   );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (state === 'active' && pendingPermissionFromSettings.current) {
+        pendingPermissionFromSettings.current = false;
+        try {
+          if (Platform.OS === 'android') {
+            const ok = await PermissionsAndroid.check(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            );
+            if (ok) {
+              setModalVisible(false);
+              getCurrentLocation(0, true);
+            } else {
+              showModal(
+                'settings',
+                i18nString.locationPermissionRequired,
+                i18nString.locationPermissionDeniedMessage,
+                i18nString.openSettings,
+                openLocationSettings,
+                i18nString.cancel,
+                closeModal,
+              );
+            }
+          } else {
+            const status = await Geolocation.requestAuthorization('whenInUse');
+            if (status === 'granted') {
+              setModalVisible(false);
+              getCurrentLocation(0, true);
+            } else {
+              showModal(
+                'settings',
+                i18nString.locationPermissionRequired,
+                i18nString.locationPermissionDeniedMessage,
+                i18nString.openSettings,
+                openLocationSettings,
+                i18nString.cancel,
+                closeModal,
+              );
+            }
+          }
+        } catch (e) {}
+      }
+    });
+    return () => sub.remove();
+  }, [getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -400,7 +474,7 @@ const ElectoralLocations = ({navigation, route}) => {
 
   const handleRetryLocation = () => {
     setLocationRetries(0);
-    getCurrentLocation();
+    getCurrentLocation(0, true);
   };
 
   const handleLocationPress = location => {
@@ -448,48 +522,20 @@ const ElectoralLocations = ({navigation, route}) => {
           <CText style={styles.locationName} numberOfLines={2}>
             {highlightText(item.name, searchTerm)}
           </CText>
-          <CText style={styles.locationCode}>
-            {i18nString.code}: {highlightText(item.code, searchTerm)}
-          </CText>
         </View>
-        <View style={styles.distanceContainer}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <CText style={styles.distanceText}>{item.distance}m</CText>
+        <View style={styles.locationDetails}>
+          <View style={styles.tablesContainer}>
+            <Ionicons name="grid-outline" size={16} color="#4F9858" />
+            <CText style={styles.tablesCount}>
+              {item.tableCount} {i18nString.tables}
+            </CText>
+          </View>
         </View>
       </View>
 
       <CText style={styles.locationAddress} numberOfLines={2}>
         {highlightText(item.address, searchTerm)}
       </CText>
-
-      <View style={styles.locationDetails}>
-        <CText style={styles.locationZone}>
-          {highlightText(item.zone, searchTerm)} -{' '}
-          {highlightText(item.district, searchTerm)}
-        </CText>
-        <View style={styles.tablesContainer}>
-          <Ionicons name="grid-outline" size={16} color="#4F9858" />
-          <CText style={styles.tablesCount}>
-            {item.tableCount} {i18nString.tables}
-          </CText>
-        </View>
-      </View>
-
-      <View style={styles.hierarchyContainer}>
-        <CText style={styles.hierarchyText}>
-          {highlightText(
-            item.electoralSeat?.municipality?.province?.department?.name,
-            searchTerm,
-          )}{' '}
-          →{' '}
-          {highlightText(
-            item.electoralSeat?.municipality?.province?.name,
-            searchTerm,
-          )}{' '}
-          → {highlightText(item.electoralSeat?.municipality?.name, searchTerm)}{' '}
-          → {highlightText(item.electoralSeat?.name, searchTerm)}
-        </CText>
-      </View>
     </TouchableOpacity>
   );
 
@@ -562,13 +608,68 @@ const ElectoralLocations = ({navigation, route}) => {
     );
   };
 
+  useEffect(() => {
+    if (configLoading) {
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ).start();
+    } else {
+      rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
+    }
+  }, [configLoading]);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const spinNeg = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-360deg'],
+  });
+
   const renderContent = () => {
     if (configLoading) {
+      const ringSize = getResponsiveSize(84, 96, 110);
+      const iconSize = getResponsiveSize(40, 50, 60);
+      const half = ringSize / 2;
+
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F9858" />
+          <View
+            style={{
+              position: 'relative',
+              width: ringSize,
+              height: ringSize,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+            <Animated.View
+              style={{
+                position: 'absolute',
+                width: ringSize,
+                height: ringSize,
+                transform: [{rotate: spin}],
+              }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  right: -iconSize / 2,
+                  top: half - iconSize / 2,
+                  transform: [{rotate: spinNeg}],
+                }}>
+                <Ionicons name="search" size={iconSize} color="#4F9858" />
+              </Animated.View>
+            </Animated.View>
+          </View>
+
           <CText style={styles.loadingText}>
-            {i18nString.loadingElectionConfig}
+            {i18nString.findingEstablishment}
           </CText>
         </View>
       );
@@ -636,7 +737,7 @@ const ElectoralLocations = ({navigation, route}) => {
 
     // Caso 4: Periodo de votación activo
     return (
-      <>
+      <View style={{flex: 1}}>
         {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
@@ -668,6 +769,7 @@ const ElectoralLocations = ({navigation, route}) => {
             )}
 
             <FlatList
+              style={{flex: 1}}
               data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
@@ -679,7 +781,7 @@ const ElectoralLocations = ({navigation, route}) => {
             />
           </>
         )}
-      </>
+      </View>
     );
   };
 
@@ -690,10 +792,12 @@ const ElectoralLocations = ({navigation, route}) => {
         onBack={() => navigation.goBack()}
         // color={colors.white}
       /> */}
-      <UniversalHeader
-        title={i18nString.electoralLocations}
-        onBack={() => navigation.goBack()}
-      />
+      {!configLoading && (
+        <UniversalHeader
+          title={i18nString.electoralLocations}
+          onBack={() => navigation.goBack()}
+        />
+      )}
 
       {renderContent()}
 
@@ -739,10 +843,11 @@ const styles = {
     paddingVertical: getResponsiveSize(40, 50, 60),
   },
   loadingText: {
-    marginTop: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(24, 28, 32),
     fontSize: getResponsiveSize(16, 18, 20),
     color: '#666',
     textAlign: 'center',
+    fontWeight: '800',
   },
   locationInfoContainer: {
     flexDirection: 'row',

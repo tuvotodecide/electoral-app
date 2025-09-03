@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,7 +16,12 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Party Table Row Component
-export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
+export const PartyTableRow = ({
+  party,
+  isEditing,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
   <View style={styles.partyTableRow}>
     <CText style={styles.partyNameText}>{party.id || party.partyId}</CText>
     <View style={styles.partyVoteContainer}>
@@ -28,7 +33,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
             onUpdate(
               party.id,
               'presidente',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -36,7 +41,9 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
         />
       ) : (
         <CText style={styles.partyVoteText}>
-          {party.presidente === '' || party.presidente == null ? '0' : String(party.presidente)}
+          {party.presidente === '' || party.presidente == null
+            ? emptyDisplayWhenReadOnly
+            : String(party.presidente)}
         </CText>
       )}
     </View>
@@ -49,7 +56,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
             onUpdate(
               party.id,
               'diputado',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '') 
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -57,7 +64,9 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
         />
       ) : (
         <CText style={styles.partyVoteText}>
-          {party.diputado === '' || party.diputado == null ? '0' : String(party.diputado)}
+          {party.diputado === '' || party.diputado == null
+            ? emptyDisplayWhenReadOnly
+            : String(party.diputado)}
         </CText>
       )}
     </View>
@@ -65,7 +74,12 @@ export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
 );
 
 // Party Table Component
-export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
+export const PartyTable = ({
+  partyResults,
+  isEditing = false,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
   <View style={styles.partyTableContainer}>
     <View style={styles.partyTableHeader}>
       <CText style={styles.partyTableHeaderLeft}>Partido</CText>
@@ -80,10 +94,11 @@ export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
           ...party,
           // Mantener valores en edición sin forzar "0"
           presidente: party.presidente,
-          diputado: party.diputado
+          diputado: party.diputado,
         }}
         isEditing={isEditing}
         onUpdate={onUpdate}
+        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
       />
     ))}
   </View>
@@ -95,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(4, 8, 10),
     marginBottom: getResponsiveSize(6, 16, 20),
     elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',

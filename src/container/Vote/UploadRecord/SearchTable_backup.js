@@ -326,10 +326,10 @@ export default function SearchTable({navigation, route}) {
         onPress={() => handleSelectMesa(item)}>
         <View style={localStyle.mesaHeader}>
           <CText style={localStyle.mesaTitle} color={colors.textColor}>
-            Mesa {tableNumber}
+            {String.table}{':'} {tableNumber}
           </CText>
           <CText style={localStyle.codigoMesaText}>
-            {String.tableCode} {codigo}
+            {String.tableCode}{':'} {codigo}
           </CText>
         </View>
         <CText style={localStyle.colegioText} color={colors.textColor}>

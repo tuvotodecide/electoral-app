@@ -28,10 +28,10 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveSize(6, 12, 16),
   },
   instructionsText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#2F2F2F',
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: '700',
+    textAlign: 'start',
   },
 });
 

@@ -70,12 +70,12 @@ export default function Splash({navigation}) {
             navigation.replace(StackNav.TabNavigation);
             return;
           }
-          navigation.replace(StackNav.AuthNavigation);
+          navigation.replace(StackNav.TabNavigation);
         } else {
-          navigation.replace(StackNav.AuthNavigation);
+          navigation.replace(StackNav.TabNavigation);
         }
       } catch (e) {
-        navigation.replace(StackNav.AuthNavigation);
+        navigation.replace(StackNav.TabNavigation);
       }
     };
     const init = async () => {

@@ -30,6 +30,10 @@ export default function StackNavigation() {
         component={StackRoute.ElectoralLocations}
       />
       <Stack.Screen
+        name={StackNav.OfflinePendingScreen}
+        component={StackRoute.OfflinePendingScreen}
+      />
+      <Stack.Screen
         name={StackNav.UnifiedTableScreen}
         component={StackRoute.UnifiedTableScreen}
       />

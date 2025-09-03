@@ -1,5 +1,11 @@
 import React from 'react';
-import {ScrollView, View, Dimensions, ActivityIndicator} from 'react-native';
+import {
+  ScrollView,
+  View,
+  Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
@@ -18,7 +24,7 @@ import {
   ChooseMesaText,
   MesaCard,
 } from './SearchTableComponents';
-
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {BACKEND_RESULT} from '@env';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -63,6 +69,128 @@ const getCardLayout = () => {
       marginBottom: getResponsiveSize(6, 8, 10),
     };
   }
+};
+const getTableNumber = table => {
+  const raw =
+    table.tableNumber ??
+    table.numero ??
+    table.number ??
+    table.name ??
+    table.id ??
+    '0';
+  const n = parseInt(String(raw).replace(/\D+/g, ''), 10);
+  return Number.isNaN(n) ? 0 : n;
+};
+
+const sortTables = (arr = [], order = 'desc') => {
+  const copy = [...arr];
+  copy.sort((a, b) => {
+    const an = getTableNumber(a);
+    const bn = getTableNumber(b);
+    return order === 'asc' ? an - bn : bn - an;
+  });
+  return copy;
+};
+
+// --- Dropdown simple: "Ascendente / Descendente"
+const SortDropdown = ({
+  value = 'desc',
+  onChange,
+  labelAsc = 'Ascendente',
+  labelDesc = 'Descendente',
+}) => {
+  const [open, setOpen] = React.useState(false);
+  const currentLabel = value === 'asc' ? labelAsc : labelDesc;
+
+  return (
+    <View style={{marginHorizontal: getResponsiveSize(12, 16, 20)}}>
+      <TouchableOpacity
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.8}
+        style={styles1.dropdownMenu}>
+        <Ionicons
+          name="swap-vertical"
+          size={18}
+          color="#4F9858"
+          style={{marginRight: 8}}
+        />
+        <CText
+          style={{
+            fontSize: getResponsiveSize(13, 15, 16),
+            color: '#333',
+            fontWeight: '700',
+          }}>
+          {currentLabel}
+        </CText>
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color="#888"
+          style={{marginLeft: 8}}
+        />
+      </TouchableOpacity>
+
+      {open && (
+        <View style={styles1.iconText}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              onChange?.('asc');
+              setOpen(false);
+            }}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <Ionicons
+              name="arrow-up"
+              size={16}
+              color="#4F9858"
+              style={{marginRight: 8}}
+            />
+            <CText
+              style={{
+                color: value === 'asc' ? '#4F9858' : '#333',
+                fontWeight: value === 'asc' ? '800' : '500',
+              }}>
+              {labelAsc}
+            </CText>
+          </TouchableOpacity>
+
+          <View style={{height: 1, backgroundColor: '#F1F1F1'}} />
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              onChange?.('desc');
+              setOpen(false);
+            }}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <Ionicons
+              name="arrow-down"
+              size={16}
+              color="#4F9858"
+              style={{marginRight: 8}}
+            />
+            <CText
+              style={{
+                color: value === 'desc' ? '#4F9858' : '#333',
+                fontWeight: value === 'desc' ? '800' : '500',
+              }}>
+              {labelDesc}
+            </CText>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
 };
 
 const BaseSearchTableScreen = ({
@@ -112,6 +240,7 @@ const BaseSearchTableScreen = ({
     message: '',
     buttonText: String.accept,
   });
+  const [sortOrder, setSortOrder] = React.useState('asc');
 
   // Support legacy props
   const finalTables = tables || mesas || [];
@@ -193,6 +322,10 @@ const BaseSearchTableScreen = ({
       `mesa ${tableNumber}`.includes(searchLower) // Para buscar "mesa 1"
     );
   });
+  const sortedTables = React.useMemo(
+    () => sortTables(filteredTables, sortOrder),
+    [filteredTables, sortOrder],
+  );
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
@@ -235,7 +368,6 @@ const BaseSearchTableScreen = ({
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
     if (!tableCode) {
-
       showModal(
         'error',
         String.error,
@@ -381,7 +513,8 @@ const BaseSearchTableScreen = ({
   const renderSearchAndLocation = () => {
     const containerStyle = {
       paddingHorizontal: getResponsiveSize(12, 16, 20),
-      marginVertical: getResponsiveSize(8, 12, 16),
+      marginTop: 0,
+      marginBottom: getResponsiveSize(6, 8, 10),
     };
 
     return (
@@ -393,11 +526,62 @@ const BaseSearchTableScreen = ({
           onClear={() => setSearchText('')}
           styles={styles}
         />
-        <LocationInfoBar
-          text={locationText}
-          iconColor={locationIconColor}
+        <SortDropdown
+          value={sortOrder}
+          onChange={setSortOrder}
+          labelAsc="Ascendente"
+          labelDesc="Descendente"
+        />
+      </View>
+    );
+  };
+
+  const CenteredTitleHeader = ({
+    colors,
+    onBack,
+    title,
+    showNotification = true,
+    onNotificationPress,
+    styles,
+  }) => {
+    const sidePadding = getResponsiveSize(56, 64, 72);
+
+    return (
+      <View style={{position: 'relative'}}>
+        <SearchTableHeader
+          colors={colors}
+          onBack={onBack}
+          title=""
+          showNotification={showNotification}
+          onNotificationPress={onNotificationPress}
           styles={styles}
         />
+
+        {/* Overlay centrado */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: sidePadding,
+            right: sidePadding,
+            top: 0,
+            bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <CText
+            style={[
+              {
+                fontWeight: '700',
+                color: '#2F2F2F',
+                fontSize: getResponsiveSize(16, 20, 26),
+              },
+              styles?.headerTitle,
+            ]}
+            numberOfLines={1}>
+            {title}
+          </CText>
+        </View>
       </View>
     );
   };
@@ -406,12 +590,15 @@ const BaseSearchTableScreen = ({
     if (!filteredTables || filteredTables.length === 0) {
       // Mostrar mensaje cuando no hay resultados
       return (
-        <View style={[styles.noResultsContainer, {padding: 20}]}>
-          <CText style={[styles.noResultsText, {fontSize: 16, color: '#666'}]}>
-            {searchText.trim()
-              ? 'No se encontraron mesas que coincidan con la búsqueda'
-              : 'No hay mesas disponibles'}
-          </CText>
+        <View style={{flex: 1}}>
+          <View style={styles1.noResultsContainer}>
+            <CText
+              style={[styles1.noResultsText, {fontSize: 16, color: '#666'}]}>
+              {searchText.trim()
+                ? 'No se encontraron mesas que coincidan con la búsqueda'
+                : 'No hay mesas disponibles'}
+            </CText>
+          </View>
         </View>
       );
     }
@@ -427,7 +614,7 @@ const BaseSearchTableScreen = ({
           contentContainerStyle={{
             paddingBottom: getResponsiveSize(20, 30, 40),
           }}>
-          {filteredTables.map((table, index) => {
+          {sortedTables.map((table, index) => {
             const searchFields = getSearchFields(table);
 
             return (
@@ -460,8 +647,8 @@ const BaseSearchTableScreen = ({
     } else {
       // Multi-column layout for tablets
       const groups = [];
-      for (let i = 0; i < finalTables.length; i += layout.cardsPerRow) {
-        groups.push(finalTables.slice(i, i + layout.cardsPerRow));
+      for (let i = 0; i < sortedTables.length; i += layout.cardsPerRow) {
+        groups.push(sortedTables.slice(i, i + layout.cardsPerRow));
       }
 
       return (
@@ -497,6 +684,7 @@ const BaseSearchTableScreen = ({
                     table={table}
                     onPress={handleTablePress}
                     locationData={locationData}
+                    searchQuery={searchText}
                     styles={{
                       tableCard: styles.tableCard || styles.mesaCard,
                       tableCardTitle:
@@ -525,7 +713,16 @@ const BaseSearchTableScreen = ({
 
   return (
     <CSafeAreaView style={styles.container}>
-      <SearchTableHeader
+      {/* <SearchTableHeader
+        colors={colors}
+        onBack={onBack}
+        title={title}
+        showNotification={showNotification}
+        onNotificationPress={onNotificationPress}
+        styles={styles}
+      /> */}
+
+      <CenteredTitleHeader
         colors={colors}
         onBack={onBack}
         title={title}
@@ -533,14 +730,15 @@ const BaseSearchTableScreen = ({
         onNotificationPress={onNotificationPress}
         styles={styles}
       />
-
+      {/*
       <View
         style={{
           paddingHorizontal: getResponsiveSize(12, 16, 20),
           marginVertical: getResponsiveSize(8, 12, 16),
         }}>
-        <ChooseTableText text={finalChooseText} styles={styles} />
+         <ChooseTableText text={finalChooseText} styles={styles} />
       </View>
+         */}
 
       {renderSearchAndLocation()}
 
@@ -598,6 +796,49 @@ const BaseSearchTableScreen = ({
       />
     </CSafeAreaView>
   );
+};
+const styles1 = {
+  noResultsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    minHeight: getResponsiveSize(240, 280, 320),
+  },
+
+  noResultsText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: getResponsiveSize(14, 16, 18),
+  },
+
+  dropdownMenu: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    height: getResponsiveSize(36, 40, 42),
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    marginTop: getResponsiveSize(6, 8, 10),
+    marginBottom: getResponsiveSize(6, 8, 10),
+  },
+  iconText: {
+    marginTop: 6,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    overflow: 'hidden',
+    width: getResponsiveSize(190, 210, 220),
+  },
 };
 
 // Legacy export for backward compatibility
