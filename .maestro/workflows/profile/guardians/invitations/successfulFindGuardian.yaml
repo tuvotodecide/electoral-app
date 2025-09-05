@@ -6,6 +6,6 @@ appId: com.tuvotodecide
             id: guardiansBottomContainer
     file: ../navigateTo.yaml
 - runFlow:
-    file: components/guardians/findGuardian.yaml
+    file: ../../../../components/guardians/findGuardian.yaml
     env:
       TEST_TYPE: 'pass'

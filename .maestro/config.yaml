@@ -7,58 +7,53 @@ flows:
 executionOrder:
 #  continueOnFailure: false # default is true
   flowsOrder:
-    - skipDebuger
+    - workflows/initialSetup.yaml
     #onBoarding
-    - nextFlow
-    - swipeFlow
-    - xButton
-    - middleBack
+    - workflows/onboarding/nextFlow.yaml
+    - workflows/onboarding/swipeFlow.yaml
+    - workflows/onboarding/xButton.yaml
+    - workflows/onboarding/middleBack.yaml
     #recoveryQR
-    - failedRecoveryQR
-    - successfulRecoveryQR
+    - workflows/recovery/failedRecoveryQR.yaml
+    - workflows/recovery/successfulRecoveryQR.yaml
     #auth
-    - loginWrongPin
-    - loginCorrectPin
+    - workflows/auth/loginWrongPin.yaml
+    - workflows/auth/loginCorrectPin.yaml
     #blockAccount -reset
-    - blockAccount
-    - recoverBlockedAccountQR
-    #startFromScratch
-    - successfulRecoveryQR
-
+    - workflows/recovery/blockedAccount/recoverBlockedAccountQR.yaml
     #profile
-    - assertPersonalData
-    - assertRecoveryQR
+    - workflows/profile/assertPersonalData.yaml
+    - workflows/profile/assertRecoveryQR.yaml
     #moreOptions
-    - assertToS
-    - assertPP
+    - workflows/profile/moreOptions/assertToS.yaml
+    - workflows/profile/moreOptions/assertPP.yaml
     #securityOptions
-    - changePin
+    - workflows/profile/moreOptions/securitySettings/changePin.yaml
     #guardians
-    - navigateTo
+    - workflows/profile/guardians/navigateTo.yaml
     #whatAreGuardians
-    - nextFlowGuard
-    - swipeFlowGuard
-    - xButtonGuard
-    - middleBackGuard
+    - workflows/profile/guardians/whatAreGuardians/nextFlowGuard.yaml
+    - workflows/profile/guardians/whatAreGuardians/swipeFlowGuard.yaml
+    - workflows/profile/guardians/whatAreGuardians/xButtonGuard.yaml
+    - workflows/profile/guardians/whatAreGuardians/middleBackGuard.yaml
     #addGuardian
-    - failedFindGuardian
-    - successfulFindGuardian
-    - selfInvitation
-    - sendGuardInvitation
-    - resendGuardianInvitation
-    #- cancelGuardianInvitation
-    - sendGuardInvitation
-    - acceptGuardInvitation
+    - workflows/profile/guardians/invitations/failedFindGuardian.yaml
+    - workflows/profile/guardians/invitations/successfulFindGuardian.yaml
+    - workflows/profile/guardians/invitations/selfInvitation.yaml
+    - workflows/profile/guardians/invitations/sendGuardInvitation.yaml
+    - workflows/profile/guardians/invitations/resendGuardianInvitation.yaml
+    #- workflows/profile/guardians/invitations/cancelGuardianInvitation.yaml
+    - workflows/profile/guardians/invitations/acceptGuardInvitation.yaml
     #RecoveryGuardian
-    - failedRecoveryGuardian
-    - successfulRecoveryGuardian
+    - workflows/recovery/failedRecoveryGuardian.yaml
+    - workflows/recovery/successfulRecoveryGuardian.yaml
     #Participate
-    - submitWrongImageGallery
-    #- submitWrongImageCamera
-    - wrongPartySumatory
-    - submitElectoralRecordCamera
-    - submitElectoralRecordGallery
-    - resubmitElectoralRecordGallery
+    - workflows/participate/submitWrongImageGallery.yaml
+    #- workflows/participate/submitWrongImageCamera.yaml
+    - workflows/participate/wrongPartySumatory.yaml
+    - workflows/participate/submitElectoralRecordCamera.yaml
+    - workflows/participate/submitElectoralRecordGallery.yaml
+    - workflows/participate/resubmitElectoralRecordGallery.yaml
     #myWitnesses
     #- submitWitnessStatement
     #- resubmitWitnessStatementSameTable

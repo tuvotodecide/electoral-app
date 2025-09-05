@@ -2,16 +2,16 @@ appId: com.tuvotodecide
 ---
 - launchApp:
     clearState: false
-- runFlow: skipDebuger.yaml
+- runFlow: ../components/setup/skipDebuger.yaml
 - tapOn:
     id: connectLoginButton
 - tapOn:
     id: loginUserForgotPasswordButton
     
-#Script RecoveryQR component
+#Script RecoveryGuardian component
 - runFlow: 
-    file: recoveryGuardian.yaml
+    file: ../../components/recovery/recoveryGuardian.yaml
     env:
-        TEST_TYPE: fail
+        TEST_TYPE: pass
         ID_NUMBER: ${PRINCIPAL_ID}
 

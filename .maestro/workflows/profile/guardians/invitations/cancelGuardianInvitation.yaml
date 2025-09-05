@@ -1,0 +1,4 @@
+appId: com.tuvotodecide
+---
+# TODO: Implementar flujo para cancelar invitación de guardián
+- assertVisible: "Placeholder for cancel guardian invitation"

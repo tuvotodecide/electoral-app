@@ -3,7 +3,7 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         false: ${WALKTHROUGH == 'true'}
-    file: workflows/initialSetup.yaml
+    file: ../initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - tapOn:

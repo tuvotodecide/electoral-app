@@ -1,0 +1,4 @@
+appId: com.tuvotodecide
+---
+# TODO: Implementar flujo de recuperación de cuenta bloqueada con QR
+- assertVisible: "Placeholder for blocked account recovery with QR"

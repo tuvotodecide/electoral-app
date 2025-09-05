@@ -3,7 +3,7 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         false: ${WALKTHROUGH == 'true'}
-    file: initialSetup.yaml
+    file: ../../initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - scroll
@@ -19,6 +19,6 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${TEST_TYPE == 'pass'}
-    file: createPin.yaml
+    file: ../../../components/auth/createPin.yaml
     env:
         CORRECT_PIN: '1234'

@@ -1,7 +1,7 @@
 appId: com.tuvotodecide
 ---
 - runFlow:
-    file: components/voting/uploadElectoralRecord.yaml
+    file: ../../components/voting/uploadElectoralRecord.yaml
     env:
         TEST_TYPE: 'pass'
         CAPTURE_TYPE: 'gallery'

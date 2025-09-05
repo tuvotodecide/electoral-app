@@ -9,9 +9,9 @@ appId: com.tuvotodecide
 - runFlow:
     when:
       visible: 'Open debugger to view warnings.'
-    file: components/setup/skipDebuger.yaml
+    file: ../components/setup/skipDebuger.yaml
 - runFlow:
     when:
       visible:
         id: connectLoginButton
-    file: components/auth/login.yaml
+    file: ../components/auth/login.yaml

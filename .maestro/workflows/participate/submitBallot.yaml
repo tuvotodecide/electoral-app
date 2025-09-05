@@ -1,6 +1,6 @@
 appId: com.tuvotodecide
 ---
-- runFlow: initialSetup.yaml
+- runFlow: ../initialSetup.yaml
 
 - tapOn:
     id: participateButtonRegular
@@ -35,7 +35,7 @@ appId: com.tuvotodecide
 - tapOn:
     id: photoReviewEditButton
 
-- runFlow: fillRecord1.yaml
+- runFlow: ../../components/records/electoralRecord1.yaml
 
 - tapOn:
     id: photoReviewNextButton
