@@ -3,23 +3,23 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${RECORD_TYPE == 'new'}
-    file: doesNotExists.yaml
+    file: components/voting/cases/doesNotExists.yaml
 
 - runFlow:
     when:
         true: ${RECORD_TYPE == 'submited'}
-    file: doesExists.yaml
+    file: components/voting/cases/doesExists.yaml
 
 
 - runFlow:
     when:
         true: ${CAPTURE_TYPE == 'camera'}
-    file: cameraCapture.yaml
+    file: components/voting/captureMethod/cameraCapture.yaml
 
 - runFlow:
     when:
         true: ${CAPTURE_TYPE == 'gallery'}
-    file: galleryCapture.yaml
+    file: components/voting/captureMethod/galleryCapture.yaml
 - tapOn:
     id: analyzePhotoButton
 

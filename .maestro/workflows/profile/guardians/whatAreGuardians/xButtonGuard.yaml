@@ -4,7 +4,7 @@ appId: com.tuvotodecide
     when:
         notVisible: 
             id: guardiansBottomContainer
-    file: navigateTo.yaml
+    file: ../navigateTo.yaml
 
 - tapOn:
     id: guardiansInfoCard

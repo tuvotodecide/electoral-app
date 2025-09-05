@@ -3,23 +3,23 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${RECORD_TYPE == 'new'}
-    file: doesNotExists.yaml
+    file: components/voting/cases/doesNotExists.yaml
 
 - runFlow:
     when:
         true: ${RECORD_TYPE == 'submited'}
-    file: doesExists.yaml
+    file: components/voting/cases/doesExists.yaml
 
 
 - runFlow:
     when:
         true: ${CAPTURE_TYPE == 'camera'}
-    file: cameraCapture.yaml
+    file: components/voting/captureMethod/cameraCapture.yaml
 
 - runFlow:
     when:
         true: ${CAPTURE_TYPE == 'gallery'}
-    file: galleryCapture.yaml
+    file: components/voting/captureMethod/galleryCapture.yaml
 
 - tapOn:
     id: analyzePhotoButton
@@ -36,7 +36,7 @@ appId: com.tuvotodecide
 - tapOn:
     id: editButton
 
-- runFlow: fillRecord1.yaml
+- runFlow: components/records/electoralRecord1.yaml
 
 - tapOn:
     id: nextButton
@@ -52,14 +52,14 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${ASSERTION_TYPE == 'new'}
-    file: assertValidUploading.yaml
+    file: components/voting/finish/assertValidUploading.yaml
 
 - runFlow:
     when:
         true: ${ASSERTION_TYPE == 'submited'}
-    file: assertRepeatedUploading.yaml
+    file: components/voting/finish/assertRepeatedUploading.yaml
 
 - runFlow:
     when:
         true: ${ASSERTION_TYPE == 'sumatory'}
-    file: assertBadSumatory.yaml
+    file: components/voting/finish/assertBadSumatory.yaml

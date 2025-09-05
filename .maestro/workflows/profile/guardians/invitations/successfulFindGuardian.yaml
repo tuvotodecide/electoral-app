@@ -4,8 +4,8 @@ appId: com.tuvotodecide
     when:
         notVisible: 
             id: guardiansBottomContainer
-    file: navigateTo.yaml
+    file: ../navigateTo.yaml
 - runFlow:
-    file: findGuardian.yaml
+    file: components/guardians/findGuardian.yaml
     env:
       TEST_TYPE: 'pass'

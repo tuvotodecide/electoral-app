@@ -1,5 +1,5 @@
 flows:
-  - '**'
+  - 'workflows/**'
 #includeTags:
 #  - tagNameToInclude
 #excludeTags:
@@ -18,7 +18,7 @@ executionOrder:
     - successfulRecoveryQR
     #auth
     - loginWrongPin
-    - login
+    - loginCorrectPin
     #blockAccount -reset
     - blockAccount
     - recoverBlockedAccountQR
@@ -36,10 +36,10 @@ executionOrder:
     #guardians
     - navigateTo
     #whatAreGuardians
-    - nextFlowGuardian
-    - swipeFlowGuardian
-    - xButtonGuardian
-    - middleBackGuardian
+    - nextFlowGuard
+    - swipeFlowGuard
+    - xButtonGuard
+    - middleBackGuard
     #addGuardian
     - failedFindGuardian
     - successfulFindGuardian
@@ -58,7 +58,7 @@ executionOrder:
     - wrongPartySumatory
     - submitElectoralRecordCamera
     - submitElectoralRecordGallery
-    - resubmitElectoralRecordSameTable
+    - resubmitElectoralRecordGallery
     #myWitnesses
     #- submitWitnessStatement
     #- resubmitWitnessStatementSameTable

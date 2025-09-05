@@ -4,7 +4,7 @@ appId: com.tuvotodecide
     when:
         visible: 
             id: MiVotoLogoImage
-    file: initialSetup.yaml
+    file: workflows/initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - tapOn:

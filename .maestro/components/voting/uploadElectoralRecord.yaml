@@ -1,6 +1,6 @@
 appId: com.tuvotodecide
 ---
-- runFlow: initialSetup.yaml
+- runFlow: workflows/initialSetup.yaml
 
 - tapOn:
     id: participateButtonRegular
@@ -22,8 +22,8 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${TEST_TYPE == 'fail'}
-    file: wrongImageRecord.yaml
+    file: components/voting/cases/wrongImageRecord.yaml
 - runFlow:
     when:
         true: ${TEST_TYPE == 'pass'}
-    file: validImageRecord.yaml
+    file: components/voting/cases/validImageRecord.yaml

@@ -4,7 +4,7 @@ appId: com.tuvotodecide
     clearState: false
 
 - runFlow:
-    file: recoveryQR.yaml
+    file: components/recovery/recoveryQR.yaml
     env: 
       PHOTO_NAME: ${SECOND_USER_PHOTO_NAME}
       TEST_TYPE: 'pass'

@@ -1,7 +1,7 @@
 appId: com.tuvotodecide
 ---
 - runFlow:
-    file: uploadElectoralRecord.yaml
+    file: components/voting/uploadElectoralRecord.yaml
     env:
         ELECTORAL_RECORD_TABLE: ${ELECTORAL_RECORD_TABLE_1}
         TEST_TYPE: 'fail'
