@@ -1,0 +1,5 @@
+- inputText: '999999999'
+- doubleTapOn:
+    id: addGuardiansSearchButton
+- assertVisible:
+    id: addGuardiansErrorAlert

@@ -1,0 +1,46 @@
+appId: com.tuvotodecide
+---
+- runFlow: initialSetup.yaml
+
+- tapOn:
+    id: participateButtonRegular
+
+#**---------------------------------------
+#- tapOn: Obteniendo ubicación...
+#**---------------------------------------
+#- tapOn: Cargando recintos cercanos...
+- tapOn:
+    id: electoralLocationCard_689fcaf8326206e48d75e2c6
+- tapOn:
+    id: tableCard_777
+
+- tapOn:
+    id: tableDetailTakePhotoButton
+
+- tapOn:
+    id: cameraShutterButton
+- tapOn:
+    id: analyzePhotoButton
+
+- extendedWaitUntil:
+    visible:
+      id: photoReviewScreenInstructionsText
+
+    timeout: 35000
+
+- scrollUntilVisible:
+    element:
+      id: photoReviewEditButton
+
+- tapOn:
+    id: photoReviewEditButton
+
+- runFlow: fillRecord1.yaml
+
+- tapOn:
+    id: photoReviewNextButton
+
+- extendedWaitUntil:
+    visible:
+      id: publishAndCertifyButton
+    timeout: 5000

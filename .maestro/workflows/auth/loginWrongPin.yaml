@@ -1,0 +1,11 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: connectLoginButton
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+
+

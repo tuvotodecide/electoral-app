@@ -1,0 +1,39 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: connectInfoButton
+- assertVisible:
+    id: onboardingSlideImage_0
+- assertVisible:
+    id: onboardingSlideTextContainer_0
+- swipe:           
+    direction: LEFT
+
+- assertVisible:
+    id: onboardingSlideImage_1
+- assertVisible:
+    id: onboardingSlideTextContainer_1
+- tapOn:
+    id: onboardingGetStartedButton
+
+- assertVisible:
+    id: onboardingSlideImage_2
+- assertVisible:
+    id: onboardingSlideTextContainer_2
+- swipe:           
+    direction: LEFT
+
+- assertVisible:
+    id: onboardingSlideImage_3
+- assertVisible:
+    id: onboardingSlideTextContainer_3
+
+- back
+
+- assertNotVisible:
+    id: onboardingSlideImage_3
+- assertNotVisible:
+    id: onboardingSlideTextContainer_3
+
+- assertVisible:
+    id: MiVotoLogoImage

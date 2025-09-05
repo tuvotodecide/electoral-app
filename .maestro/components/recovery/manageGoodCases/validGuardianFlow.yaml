@@ -1,0 +1,5 @@
+- assertVisible: ${GUARDIAN_NAME}
+- tapOn:
+    id: findMyUserConfirmText
+- tapOn:
+    id: findMyUserSendButton

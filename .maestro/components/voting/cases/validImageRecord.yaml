@@ -1,0 +1,65 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        true: ${RECORD_TYPE == 'new'}
+    file: doesNotExists.yaml
+
+- runFlow:
+    when:
+        true: ${RECORD_TYPE == 'submited'}
+    file: doesExists.yaml
+
+
+- runFlow:
+    when:
+        true: ${CAPTURE_TYPE == 'camera'}
+    file: cameraCapture.yaml
+
+- runFlow:
+    when:
+        true: ${CAPTURE_TYPE == 'gallery'}
+    file: galleryCapture.yaml
+
+- tapOn:
+    id: analyzePhotoButton
+
+- extendedWaitUntil:
+    visible:
+      id: photoReviewScreenInstructionsText
+    timeout: 25000
+
+- scrollUntilVisible:
+    element:
+      id: editButton
+
+- tapOn:
+    id: editButton
+
+- runFlow: fillRecord1.yaml
+
+- tapOn:
+    id: nextButton
+
+- extendedWaitUntil:
+    visible:
+      id: publishAndCertifyButton
+    timeout: 5000
+
+- tapOn:
+    id: publishAndCertifyButton
+
+- runFlow:
+    when:
+        true: ${ASSERTION_TYPE == 'new'}
+    file: assertValidUploading.yaml
+
+- runFlow:
+    when:
+        true: ${ASSERTION_TYPE == 'submited'}
+    file: assertRepeatedUploading.yaml
+
+- runFlow:
+    when:
+        true: ${ASSERTION_TYPE == 'sumatory'}
+    file: assertBadSumatory.yaml

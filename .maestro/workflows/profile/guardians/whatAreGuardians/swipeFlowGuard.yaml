@@ -1,0 +1,46 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        notVisible: 
+            id: guardiansBottomContainer
+    file: navigateTo.yaml
+- tapOn:
+    id: guardiansInfoCard
+- assertVisible:
+    id: onboardingGuardiansImage_0
+- assertVisible:
+    id: onboardingGuardiansTextContainer_0
+
+- swipe:           
+    direction: LEFT
+- assertVisible:
+    id: onboardingGuardiansImage_1
+- assertVisible:
+    id: onboardingGuardiansTextContainer_1
+
+- swipe:           
+    direction: LEFT
+- assertVisible:
+    id: onboardingGuardiansImage_2
+- assertVisible:
+    id: onboardingGuardiansTextContainer_2
+
+- swipe:           
+    direction: LEFT
+- assertVisible:
+    id: onboardingGuardiansImage_3
+- assertVisible:
+    id: onboardingGuardiansTextContainer_3
+
+- tapOn:
+    id: onboardingGuardiansGetStartedButton
+- assertNotVisible:
+    id: onboardingGuardiansImage_3
+- assertNotVisible:
+    id: onboardingGuardiansTextContainer_3
+
+- assertVisible:
+    id: guardiansInfoCard
+
+

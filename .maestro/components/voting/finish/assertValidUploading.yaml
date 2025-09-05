@@ -1,0 +1,10 @@
+appId: com.tuvotodecide
+---
+
+- tapOn:
+    id: photoConfirmationConfirmButton
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: nftSuccessTitle

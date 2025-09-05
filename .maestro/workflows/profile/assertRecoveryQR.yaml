@@ -1,0 +1,19 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        false: ${WALKTHROUGH == 'true'}
+    file: initialSetup.yaml
+- tapOn:
+    id: tabButton_Profile
+- tapOn:
+    id: profileMenuItem_2
+- assertVisible:
+    id: recuperationQrCode
+- tapOn:
+    id: recuperationQrSaveButton
+
+- assertVisible:
+    id: alert_title
+- tapOn:
+    id: button1

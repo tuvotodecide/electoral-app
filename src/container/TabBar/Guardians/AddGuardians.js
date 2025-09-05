@@ -169,7 +169,13 @@ export default function AddGuardians({navigation}) {
             </View>
           </>
         )}
-        {msg !== '' && <CAlert testID="addGuardiansErrorAlert" status="error" message={msg} />}
+        {msg !== '' && (
+          <CAlert 
+            testID="addGuardiansErrorAlert" 
+            status="error" 
+            message={msg} 
+          />
+        )}
       </KeyBoardAvoidWrapper>
       <View testID="addGuardiansBottomContainer" style={localStyle.bottomTextContainer}>
         <CAlert testID="addGuardiansInfoAlert" status="info" message={String.guardianNotificationTitle} />

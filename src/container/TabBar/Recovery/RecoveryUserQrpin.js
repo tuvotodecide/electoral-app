@@ -82,6 +82,7 @@ export default function RecoveryUserQrPin({navigation, route}) {
 
           <CButton
             title={String.btnContinue}
+            testID="changePinNewContinueButton"
             disabled={otp.length !== 4}
             onPress={onPressContinue}
           />

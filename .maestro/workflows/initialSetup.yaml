@@ -1,0 +1,17 @@
+appId: com.tuvotodecide
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: MiVotoLogoImage
+    timeout: 25000
+- runFlow:
+    when:
+      visible: 'Open debugger to view warnings.'
+    file: skipDebuger.yaml
+- runFlow:
+    when:
+      visible:
+        id: connectLoginButton
+    file: login.yaml

@@ -1,0 +1,5 @@
+- inputText: ${GUARDIAN_ID}
+- doubleTapOn:
+    id: addGuardiansSearchButton
+- assertVisible:
+    id: addGuardiansNameInput

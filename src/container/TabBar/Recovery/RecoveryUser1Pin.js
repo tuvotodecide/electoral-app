@@ -85,6 +85,7 @@ export default function RecoveryUser1Pin({navigation, route}) {
             <CButton
               disabled={otp.length !== 4}
               title={String.btnContinue}
+              testID="changePinNewContinueButton"
               type={'B16'}
               onPress={onPressContinue}
             />

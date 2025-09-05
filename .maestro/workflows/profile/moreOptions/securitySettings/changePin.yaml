@@ -1,0 +1,24 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        false: ${WALKTHROUGH == 'true'}
+    file: initialSetup.yaml
+- tapOn:
+    id: tabButton_Profile
+- scroll
+- tapOn:
+    id: profileMenuItem_5
+- tapOn:
+    id: moreMenuItem_7
+- tapOn:
+    id: securityMenuItemArrow_7
+- tapOn:
+    id: textInput
+- inputText: '1111'
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: createPin.yaml
+    env:
+        CORRECT_PIN: '1234'

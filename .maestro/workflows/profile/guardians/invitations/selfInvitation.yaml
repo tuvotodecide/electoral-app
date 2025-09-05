@@ -1,0 +1,18 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        notVisible: 
+            id: guardiansBottomContainer
+    file: navigateTo.yaml
+- runFlow:
+    file: findGuardian.yaml
+    env:
+      TEST_TYPE: 'self'
+
+- inputText: 'YOMISMOJAJAQONDA'
+- tapOn:
+    id: addGuardiansSendButton
+
+- assertVisible:
+    id: addGuardiansErrorAlert

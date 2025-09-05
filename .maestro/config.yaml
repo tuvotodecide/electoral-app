@@ -1,0 +1,83 @@
+flows:
+  - '**'
+#includeTags:
+#  - tagNameToInclude
+#excludeTags:
+#  - tagNameToExclude
+executionOrder:
+#  continueOnFailure: false # default is true
+  flowsOrder:
+    - skipDebuger
+    #onBoarding
+    - nextFlow
+    - swipeFlow
+    - xButton
+    - middleBack
+    #recoveryQR
+    - failedRecoveryQR
+    - successfulRecoveryQR
+    #auth
+    - loginWrongPin
+    - login
+    #blockAccount -reset
+    - blockAccount
+    - recoverBlockedAccountQR
+    #startFromScratch
+    - successfulRecoveryQR
+
+    #profile
+    - assertPersonalData
+    - assertRecoveryQR
+    #moreOptions
+    - assertToS
+    - assertPP
+    #securityOptions
+    - changePin
+    #guardians
+    - navigateTo
+    #whatAreGuardians
+    - nextFlowGuardian
+    - swipeFlowGuardian
+    - xButtonGuardian
+    - middleBackGuardian
+    #addGuardian
+    - failedFindGuardian
+    - successfulFindGuardian
+    - selfInvitation
+    - sendGuardInvitation
+    - resendGuardianInvitation
+    #- cancelGuardianInvitation
+    - sendGuardInvitation
+    - acceptGuardInvitation
+    #RecoveryGuardian
+    - failedRecoveryGuardian
+    - successfulRecoveryGuardian
+    #Participate
+    - submitWrongImageGallery
+    #- submitWrongImageCamera
+    - wrongPartySumatory
+    - submitElectoralRecordCamera
+    - submitElectoralRecordGallery
+    - resubmitElectoralRecordSameTable
+    #myWitnesses
+    #- submitWitnessStatement
+    #- resubmitWitnessStatementSameTable
+
+# Customised test output directory
+testOutputDir: test_output_directory
+
+# Cloud only config options
+#baselineBranch: main
+#notifications:
+#  email:
+#    enabled: true
+#    recipients:
+#      - john@example.com
+#
+## Platform Configuration
+#platform:
+#  ios:
+#    snapshotKeyHonorModalViews: false
+#    disableAnimations: true
+#  android:
+#    disableAnimations: true

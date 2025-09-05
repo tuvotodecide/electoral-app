@@ -1,0 +1,6 @@
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: photoConfirmationInfoModalTitle
+- assertVisible:
+    id: photoConfirmationInfoModalContainer

@@ -1,0 +1,10 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: connectLoginButton
+- inputText: ${CORRECT_PIN}
+
+- extendedWaitUntil:
+    visible:
+      id: homeMiVotoLogoTitle
+    timeout: 3000

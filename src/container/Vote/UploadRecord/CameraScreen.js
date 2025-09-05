@@ -79,23 +79,24 @@ const getContainedSize = (srcW, srcH, maxW, maxH) => {
 };
 
 // Marco de overlay reutilizable - movido fuera del componente
-const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
+const RenderFrame = ({color = 'red', screenWidth, screenHeight, testID}) => {
   const frameSize = Math.min(screenWidth, screenHeight) - 40;
   const topOffset = (screenHeight - frameSize) / 2;
   const leftOffset = (screenWidth - frameSize) / 2;
 
   return (
     <View
+      testID={testID || "cameraFrame_overlay"}
       pointerEvents="none"
       style={[
         styles.fullScreenOverlay,
         {width: screenWidth, height: screenHeight},
       ]}>
-      <View style={[styles.corner, styles.topLeft, {borderColor: color}]} />
-      <View style={[styles.corner, styles.topRight, {borderColor: color}]} />
-      <View style={[styles.corner, styles.bottomLeft, {borderColor: color}]} />
-      <View style={[styles.corner, styles.bottomRight, {borderColor: color}]} />
-      <View style={styles.fullBorder} />
+      <View testID={`${testID || "cameraFrame"}_topLeft`} style={[styles.corner, styles.topLeft, {borderColor: color}]} />
+      <View testID={`${testID || "cameraFrame"}_topRight`} style={[styles.corner, styles.topRight, {borderColor: color}]} />
+      <View testID={`${testID || "cameraFrame"}_bottomLeft`} style={[styles.corner, styles.bottomLeft, {borderColor: color}]} />
+      <View testID={`${testID || "cameraFrame"}_bottomRight`} style={[styles.corner, styles.bottomRight, {borderColor: color}]} />
+      <View testID={`${testID || "cameraFrame"}_fullBorder`} style={styles.fullBorder} />
     </View>
   );
 };
@@ -473,8 +474,8 @@ export default function CameraScreen({navigation, route}) {
 
   if (!device || !hasPermission) {
     return (
-      <View style={styles.centered}>
-        <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
+      <View testID="camera_errorContainer" style={styles.centered}>
+        <CText testID="camera_errorText" style={styles.errorText}>{String.cameraNotAvailable}</CText>
       </View>
     );
   }
@@ -725,7 +726,7 @@ export default function CameraScreen({navigation, route}) {
               disabled={loading || !isActive}
               testID="cameraShutterButton">
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator testID="cameraShutter_loadingIndicator" color="#fff" />
               ) : (
                 <CText style={styles.buttonText} testID="cameraShutterButtonText">
                   {isActive ? String.takePhoto : String.preparingCamera}
@@ -736,21 +737,21 @@ export default function CameraScreen({navigation, route}) {
               style={[styles.actionButton, styles.galleryButtonPreview]}
               onPress={openGallery}
               testID="openGalleryButton">
-              <Ionicons name="image-outline" size={20} color="#fff" />
-              <CText style={styles.actionButtonText}>Galería</CText>
+              <Ionicons testID="openGallery_icon" name="image-outline" size={20} color="#fff" />
+              <CText testID="openGallery_text" style={styles.actionButtonText}>Galería</CText>
             </TouchableOpacity>
           </View>
         </>
       ) : (
         <View style={styles.fullContainer}>
           {/* Header con controles */}
-          <View style={styles.photoHeaderContainer}>
+          <View testID="camera_photoHeaderContainer" style={styles.photoHeaderContainer}>
             <TouchableOpacity
               style={styles.headerButton}
               onPress={resetImageTransform}
               testID="resetZoomButton">
-              <Ionicons name="refresh" size={24} color="#fff" />
-              <CText style={styles.headerButtonText}>Reset Zoom</CText>
+              <Ionicons testID="resetZoom_icon" name="refresh" size={24} color="#fff" />
+              <CText testID="resetZoom_text" style={styles.headerButtonText}>Reset Zoom</CText>
             </TouchableOpacity>
           </View>
 
@@ -821,7 +822,7 @@ export default function CameraScreen({navigation, route}) {
               style={[styles.actionButton, styles.retakeButton]}
               onPress={takeNewPhoto}
               testID="retakePhotoButton">
-              <Ionicons name="camera-outline" size={20} color="#fff" />
+              <Ionicons testID="retakePhoto_icon" name="camera-outline" size={20} color="#fff" />
               <CText style={styles.actionButtonText} testID="retakePhotoButtonText">Tomar Nueva</CText>
             </TouchableOpacity>
 
@@ -831,18 +832,19 @@ export default function CameraScreen({navigation, route}) {
               disabled={analyzing}
               testID="analyzePhotoButton">
               {analyzing ? (
-                <View style={styles.analyzingContainer}>
+                <View testID="analyzing_container" style={styles.analyzingContainer}>
                   <ActivityIndicator
+                    testID="analyzing_indicator"
                     color="#fff"
                     size="small"
                     style={styles.analyzingIcon}
                   />
-                  <CText style={styles.actionButtonText}>Analizando...</CText>
+                  <CText testID="analyzing_text" style={styles.actionButtonText}>Analizando...</CText>
                 </View>
               ) : (
                 <>
-                  <Ionicons name="analytics-outline" size={20} color="#fff" />
-                  <CText style={styles.actionButtonText}>Analizar</CText>
+                  <Ionicons testID="analyze_icon" name="analytics-outline" size={20} color="#fff" />
+                  <CText testID="analyze_text" style={styles.actionButtonText}>Analizar</CText>
                 </>
               )}
             </TouchableOpacity>
@@ -855,12 +857,13 @@ export default function CameraScreen({navigation, route}) {
         animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{modalConfig.title}</Text>
-            <Text style={styles.modalMessage}>{modalConfig.message}</Text>
-            <View style={styles.modalButtonContainer}>
+        onRequestClose={() => setModalVisible(false)}
+        testID="cameraScreenModal">
+        <View testID="cameraModal_overlay" style={styles.modalOverlay}>
+          <View testID="cameraModal_container" style={styles.modalContainer}>
+            <Text testID="cameraModal_title" style={styles.modalTitle}>{modalConfig.title}</Text>
+            <Text testID="cameraModal_message" style={styles.modalMessage}>{modalConfig.message}</Text>
+            <View testID="cameraModal_buttonContainer" style={styles.modalButtonContainer}>
               {modalConfig.buttons.map((button, index) => (
                 <TouchableOpacity
                   key={index}
@@ -871,7 +874,7 @@ export default function CameraScreen({navigation, route}) {
                   ]}
                   onPress={button.onPress}
                   testID={`modalButton_${button.text?.replace(/\s+/g, '_') || index}`}>
-                  <Text style={styles.modalButtonText}>{button.text}</Text>
+                  <Text testID={`modalButtonText_${button.text?.replace(/\s+/g, '_') || index}`} style={styles.modalButtonText}>{button.text}</Text>
                 </TouchableOpacity>
               ))}
             </View>

@@ -103,6 +103,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
           <View>
             <CButton
               disabled={otp.length !== 4}
+              testID="changePinNewContinueButton"
               title={String.confirmPinButton}
               type={'B16'}
               onPress={handleConfirmPin}

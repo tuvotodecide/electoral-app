@@ -1,0 +1,13 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        notVisible: 
+            id: guardiansBottomContainer
+    file: navigateTo.yaml
+- runFlow:
+    file: findGuardian.yaml
+    env:
+      TEST_TYPE: 'fail'
+
+

@@ -70,6 +70,7 @@ const WhichIsCorrectScreen = () => {
     resizeMode = 'contain',
     onError,
     onLoad,
+    testID,
   }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
@@ -95,10 +96,10 @@ const WhichIsCorrectScreen = () => {
 
     if (hasError) {
       return (
-        <View style={[style, styles.imageError]}>
-          <MaterialIcons name="broken-image" size={40} color="#999" />
-          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
-          <CText style={styles.imageErrorSubtext}>
+        <View testID={`${testID}_error`} style={[style, styles.imageError]}>
+          <MaterialIcons testID={`${testID}_errorIcon`} name="broken-image" size={40} color="#999" />
+          <CText testID={`${testID}_errorText`} style={styles.imageErrorText}>Error cargando imagen</CText>
+          <CText testID={`${testID}_errorSubtext`} style={styles.imageErrorSubtext}>
             URL: {image.uri?.substring(0, 50)}...
           </CText>
         </View>
@@ -106,8 +107,9 @@ const WhichIsCorrectScreen = () => {
     }
 
     return (
-      <View style={style}>
+      <View testID={`${testID}_container`} style={style}>
         <Image
+          testID={`${testID}_image`}
           source={{
             uri: image.uri,
             headers: {
@@ -122,12 +124,13 @@ const WhichIsCorrectScreen = () => {
           onError={handleImageError}
         />
         {isLoading && (
-          <View style={[style, styles.imageLoadingOverlay]}>
+          <View testID={`${testID}_loadingOverlay`} style={[style, styles.imageLoadingOverlay]}>
             <ActivityIndicator
+              testID={`${testID}_loadingIndicator`}
               size="small"
               color={colors.primary || '#4F9858'}
             />
-            <CText style={styles.loadingIndicatorText}>
+            <CText testID={`${testID}_loadingText`} style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
           </View>
@@ -391,11 +394,11 @@ const WhichIsCorrectScreen = () => {
       ) : (
         // Original selection view
         <>
-          <View style={styles.questionContainer}>
-            <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
+          <View testID="whichIsCorrect_questionContainer" style={styles.questionContainer}>
+            <CText testID="whichIsCorrect_questionText" style={styles.questionText}>{String.whichIsCorrect}</CText>
             {isFromAPI && actaImages.length > 0 && (
-              <View style={styles.apiInfoContainer}>
-                <CText style={styles.apiInfoText}>
+              <View testID="whichIsCorrect_apiInfoContainer" style={styles.apiInfoContainer}>
+                <CText testID="whichIsCorrect_apiInfoText" style={styles.apiInfoText}>
                   Se encontraron {actaImages.length} acta
                   {actaImages.length > 1 ? 's' : ''} atestiguada
                   {actaImages.length > 1 ? 's' : ''} para esta mesa
@@ -405,25 +408,27 @@ const WhichIsCorrectScreen = () => {
           </View>
 
           {isLoadingActas ? (
-            <View style={styles.loadingContainer}>
+            <View testID="whichIsCorrect_loadingContainer" style={styles.loadingContainer}>
               <ActivityIndicator
+                testID="whichIsCorrect_loadingIndicator"
                 size="large"
                 color={colors.primary || '#4F9858'}
               />
-              <CText style={styles.loadingText}>{String.loadingActas}</CText>
+              <CText testID="whichIsCorrect_loadingText" style={styles.loadingText}>{String.loadingActas}</CText>
             </View>
           ) : actaImages.length === 0 ? (
-            <View style={styles.loadingContainer}>
-              <CText style={styles.noImagesText}>
+            <View testID="whichIsCorrect_noImagesContainer" style={styles.loadingContainer}>
+              <CText testID="whichIsCorrect_noImagesText" style={styles.noImagesText}>
                 No se encontraron imágenes para mostrar
               </CText>
-              <CText style={styles.debugText}>
+              <CText testID="whichIsCorrect_debugText" style={styles.debugText}>
                 Debug: isFromAPI={String(isFromAPI)}, preloadedLength=
                 {preloadedActaImages?.length || 0}
               </CText>
             </View>
           ) : (
             <ScrollView
+              testID="whichIsCorrect_imageList"
               style={styles.imageList}
               showsVerticalScrollIndicator={false}>
               {isTablet
@@ -434,10 +439,11 @@ const WhichIsCorrectScreen = () => {
                       pairs.push(actaImages.slice(i, i + 2));
                     }
                     return pairs.map((pair, pairIndex) => (
-                      <View key={pairIndex} style={styles.tabletRow}>
+                      <View testID={`whichIsCorrect_tabletRow_${pairIndex}`} key={pairIndex} style={styles.tabletRow}>
                         {pair.map(image => (
-                          <View key={image.id} style={styles.tabletColumn}>
+                          <View testID={`whichIsCorrect_tabletColumn_${image.id}`} key={image.id} style={styles.tabletColumn}>
                             <TouchableOpacity
+                              testID={`whichIsCorrect_imageCard_${image.id}`}
                               style={[
                                 styles.imageCard,
                                 selectedImageId === image.id &&
@@ -445,6 +451,7 @@ const WhichIsCorrectScreen = () => {
                               ]}
                               onPress={() => handleImagePress(image.id)}>
                               <IPFSImage
+                                testID={`whichIsCorrect_IPFSImage_${image.id}`}
                                 image={image}
                                 style={styles.imageDisplay}
                                 resizeMode="contain"
@@ -452,24 +459,28 @@ const WhichIsCorrectScreen = () => {
                               {selectedImageId === image.id && (
                                 <>
                                   <View
+                                    testID={`whichIsCorrect_topLeftCorner_${image.id}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.topLeftCorner,
                                     ]}
                                   />
                                   <View
+                                    testID={`whichIsCorrect_topRightCorner_${image.id}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.topRightCorner,
                                     ]}
                                   />
                                   <View
+                                    testID={`whichIsCorrect_bottomLeftCorner_${image.id}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.bottomLeftCorner,
                                     ]}
                                   />
                                   <View
+                                    testID={`whichIsCorrect_bottomRightCorner_${image.id}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.bottomRightCorner,
@@ -480,9 +491,10 @@ const WhichIsCorrectScreen = () => {
                             </TouchableOpacity>
                             {selectedImageId === image.id && (
                               <TouchableOpacity
+                                testID={`whichIsCorrect_detailsButton_${image.id}`}
                                 style={styles.detailsButton}
                                 onPress={handleVerMasDetalles}>
-                                <CText style={styles.detailsButtonText}>
+                                <CText testID={`whichIsCorrect_detailsButtonText_${image.id}`} style={styles.detailsButtonText}>
                                   {String.seeMoreDetails}
                                 </CText>
                               </TouchableOpacity>
@@ -490,7 +502,7 @@ const WhichIsCorrectScreen = () => {
                           </View>
                         ))}
                         {pair.length === 1 && (
-                          <View style={styles.tabletColumn} />
+                          <View testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`} style={styles.tabletColumn} />
                         )}
                       </View>
                     ));
@@ -499,6 +511,7 @@ const WhichIsCorrectScreen = () => {
                   actaImages.map(image => (
                     <React.Fragment key={image.id}>
                       <TouchableOpacity
+                        testID={`whichIsCorrect_phoneImageCard_${image.id}`}
                         style={[
                           styles.imageCard,
                           selectedImageId === image.id &&
@@ -506,6 +519,7 @@ const WhichIsCorrectScreen = () => {
                         ]}
                         onPress={() => handleImagePress(image.id)}>
                         <IPFSImage
+                          testID={`whichIsCorrect_phoneIPFSImage_${image.id}`}
                           image={image}
                           style={styles.imageDisplay}
                           resizeMode="contain"
@@ -513,24 +527,28 @@ const WhichIsCorrectScreen = () => {
                         {selectedImageId === image.id && (
                           <>
                             <View
+                              testID={`whichIsCorrect_phoneTopLeftCorner_${image.id}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topLeftCorner,
                               ]}
                             />
                             <View
+                              testID={`whichIsCorrect_phoneTopRightCorner_${image.id}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topRightCorner,
                               ]}
                             />
                             <View
+                              testID={`whichIsCorrect_phoneBottomLeftCorner_${image.id}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomLeftCorner,
                               ]}
                             />
                             <View
+                              testID={`whichIsCorrect_phoneBottomRightCorner_${image.id}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomRightCorner,
@@ -541,9 +559,10 @@ const WhichIsCorrectScreen = () => {
                       </TouchableOpacity>
                       {selectedImageId === image.id && (
                         <TouchableOpacity
+                          testID={`whichIsCorrect_phoneDetailsButton_${image.id}`}
                           style={styles.detailsButton}
                           onPress={handleVerMasDetalles}>
-                          <CText style={styles.detailsButtonText}>
+                          <CText testID={`whichIsCorrect_phoneDetailsButtonText_${image.id}`} style={styles.detailsButtonText}>
                             {String.seeMoreDetails}
                           </CText>
                         </TouchableOpacity>
@@ -554,6 +573,7 @@ const WhichIsCorrectScreen = () => {
           )}
 
           <TouchableOpacity
+            testID="whichIsCorrect_datosNoCorrectosButton"
             style={[
               styles.datosNoCorrectosButton,
               isFromAPI && styles.addNewActaButton,

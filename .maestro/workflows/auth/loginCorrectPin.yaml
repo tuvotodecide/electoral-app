@@ -1,0 +1,6 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    file: login.yaml
+    env:
+      PIN: ${CORRECT_PIN}

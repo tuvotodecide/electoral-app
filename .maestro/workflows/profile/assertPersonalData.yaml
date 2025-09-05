@@ -1,0 +1,12 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        false: ${WALKTHROUGH == 'true'}
+    file: initialSetup.yaml
+- tapOn:
+    id: tabButton_Profile
+- tapOn:
+    id: profileMenuItem_1
+- assertVisible:
+    id: personalDetailsAvatarContainer

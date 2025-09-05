@@ -1,0 +1,8 @@
+appId: com.tuvotodecide
+---
+- assertVisible: Open debugger to view warnings.
+- tapOn: Open debugger to view warnings.
+- extendedWaitUntil:
+    notVisible:
+      text: Open debugger to view warnings.
+    timeout: 4000

@@ -127,6 +127,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
           <CButton
             title={String.confirmPinButton}
+            testID="changePinNewContinueButton"
             disabled={otp.length !== 4}
             onPress={handleConfirmPin}
           />

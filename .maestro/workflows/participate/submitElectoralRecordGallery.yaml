@@ -1,0 +1,11 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    file: uploadElectoralRecord.yaml
+    env:
+        TEST_TYPE: 'pass'
+        CAPTURE_TYPE: 'gallery'
+        IMAGE_NAME: ${ELECTORAL_RECORD_IMAGE_NAME}
+        RECORD_TYPE: 'new'
+        ASSERTION_TYPE: 'new'
+        ELECTORAL_RECORD_TABLE: ${ELECTORAL_RECORD_TABLE_2}

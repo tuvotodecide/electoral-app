@@ -40,7 +40,7 @@ const darkTextColor = {
   info: '#1565c0',
 };
 
-export default function CAlert({status = 'info', message = ''}) {
+export default function CAlert({testID, status = 'info', message = ''}) {
   const theme = useSelector(state => state.theme.theme);
   const isDark = theme.dark;
 
@@ -55,6 +55,7 @@ export default function CAlert({status = 'info', message = ''}) {
 
   return (
     <View
+      testID={testID}
       style={[
         styles.container,
         {
@@ -63,12 +64,13 @@ export default function CAlert({status = 'info', message = ''}) {
         },
       ]}>
       <Icon
+        testID={testID ? `${testID}Icon` : undefined}
         name={iconMap[status]}
         size={24}
         color={mainColor}
         style={styles.icon}
       />
-      <CText type="R14" color={textColor} style={styles.text}>
+      <CText testID={testID ? `${testID}Text` : undefined} type="R14" color={textColor} style={styles.text}>
         {message}
       </CText>
     </View>

@@ -1,0 +1,33 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: guardiansAddButton
+- tapOn:
+    id: addGuardiansCarnetInput
+- inputText: '10062315'
+- doubleTapOn:
+    id: addGuardiansSearchButton
+- assertVisible:
+    id: addGuardiansNameInput
+
+- tapOn:
+    id: addGuardiansNameInput
+- tapOn:
+    id: addGuardiansNicknameInput
+- inputText: 'CHAVO'
+- tapOn:
+    id: addGuardiansSendButton
+- assertVisible:
+    id: addGuardiansErrorAlert
+
+- tapOn:
+    id: tabButton_Profile
+- tapOn:
+    id: profileMenuItem_4
+- assertVisible:
+    id: guardiansAdminInvitationItem_kjzl6kcym7w8y51oob5yrx8af1dofn4875c9ejr5t3pmt21t9g4kzsrbqez1xrr
+- tapOn:
+    id: guardiansAdminInvitationItemAccept_kjzl6kcym7w8y51oob5yrx8af1dofn4875c9ejr5t3pmt21t9g4kzsrbqez1xrr
+- assertVisible:
+    id: guardiansAdminProtectedItem_kjzl6kcym7w8y51oob5yrx8af1dofn4875c9ejr5t3pmt21t9g4kzsrbqez1xrr
+

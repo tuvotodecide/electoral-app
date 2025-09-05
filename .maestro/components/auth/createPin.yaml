@@ -1,0 +1,20 @@
+appId: com.tuvotodecide
+---
+- inputText: ${CORRECT_PIN}
+- tapOn:
+    id: changePinNewContinueButton
+- inputText: ${CORRECT_PIN}
+- tapOn:
+    id: changePinNewContinueButton
+
+- runFlow:
+    when:
+        visible: 
+            id: changePinNewConfirmResultModalContainer
+    file: updatePinAssert.yaml
+
+- runFlow:
+    when:
+        notVisible: 
+            id: MiVotoLogoImage
+    file: login.yaml

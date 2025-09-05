@@ -1,0 +1,148 @@
+appId: com.tuvotodecide
+---
+- scrollUntilVisible:
+    element:
+      id: partyInputPresidente_0
+    direction: UP
+
+- doubleTapOn:
+    id: partyInputPresidente_0
+- eraseText
+- inputText: '7'
+
+- doubleTapOn:
+    id: partyInputDiputado_0
+- eraseText
+- inputText: '4'
+
+- doubleTapOn:
+    id: partyInputPresidente_1
+- eraseText
+- inputText: '2'
+
+- doubleTapOn:
+    id: partyInputDiputado_1
+- eraseText
+- inputText: '3'
+
+- doubleTapOn:
+    id: partyInputPresidente_2
+- eraseText
+- inputText: '7'
+
+- doubleTapOn:
+    id: partyInputDiputado_2
+- eraseText
+- inputText: '19'
+
+- doubleTapOn:
+    id: partyInputPresidente_3
+- eraseText
+- inputText: '24'
+
+- doubleTapOn:
+    id: partyInputDiputado_3
+- eraseText
+- inputText: '15'
+
+- doubleTapOn:
+    id: partyInputPresidente_3
+- eraseText
+- inputText: '24'
+
+- doubleTapOn:
+    id: partyInputDiputado_3
+- eraseText
+- inputText: '6'
+
+- doubleTapOn:
+    id: partyInputPresidente_4
+- eraseText
+- inputText: '1'
+
+- doubleTapOn:
+    id: partyInputDiputado_4
+- eraseText
+- inputText: '5'
+
+- doubleTapOn:
+    id: partyInputPresidente_5
+- eraseText
+- inputText: '6'
+
+- doubleTapOn:
+    id: partyInputDiputado_5
+- eraseText
+- inputText: '6'
+
+- doubleTapOn:
+    id: partyInputPresidente_6
+- eraseText
+- inputText: '1'
+
+- doubleTapOn:
+    id: partyInputDiputado_6
+- eraseText
+- inputText: '2'
+
+- swipe:
+    start: '15%, 80%' # Start at the bottom center of the screen
+    end: '15%, 45%' # End at the top center of the screen
+    duration: 300
+
+- doubleTapOn:
+    id: partyInputPresidente_7
+- eraseText
+- inputText: '45'
+
+- doubleTapOn:
+    id: partyInputDiputado_7
+- eraseText
+- inputText: '39'
+
+- doubleTapOn:
+    id: partyInputPresidente_8
+- eraseText
+- inputText: '95'
+
+- doubleTapOn:
+    id: partyInputDiputado_8
+- eraseText
+- inputText: '65'
+
+- doubleTapOn:
+    id: voteSummaryInput_validos_presidente
+- eraseText
+- inputText: '188'
+
+- doubleTapOn:
+    id: voteSummaryInput_validos_diputado
+- eraseText
+- inputText: '163'
+
+- doubleTapOn:
+    id: voteSummaryInput_blancos_presidente
+- eraseText
+- inputText: '2'
+
+- doubleTapOn:
+    id: voteSummaryInput_blancos_diputado
+- eraseText
+- inputText: '28'
+
+- doubleTapOn:
+    id: voteSummaryInput_nulos_presidente
+- eraseText
+- inputText: '31'
+
+- doubleTapOn:
+    id: voteSummaryInput_nulos_diputado
+- eraseText
+- inputText: '30'
+
+- doubleTapOn:
+    id: photoReviewSaveButton
+    delay: 3000
+
+- tapOn:
+    id: button1

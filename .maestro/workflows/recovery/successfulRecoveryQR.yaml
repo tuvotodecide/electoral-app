@@ -1,0 +1,20 @@
+appId: com.tuvotodecide
+---
+- launchApp:
+    clearState: false
+- runFlow: debugWindow.yaml
+- tapOn:
+    id: connectLoginButton
+- tapOn:
+    id: loginUserForgotPasswordButton
+    
+#Script RecoveryQR component
+- runFlow: 
+    file: recoveryQR.yaml
+    env:
+        TEST_TYPE: pass
+        PHOTO_NAME: ${FIRST_USER_PHOTO_NAME}
+        PIN: ${CORRECT_PIN}
+
+
+

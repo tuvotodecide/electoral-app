@@ -1,0 +1,18 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: selectRecuperationGuardiansOption
+- tapOn:
+    id: findMyUserIdInput
+- inputText: ${ID_NUMBER}
+- doubleTapOn:
+    id: findMyUserSearchButton
+    delay: 100
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: createPin.yaml
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'fail'}
+    file: assertBadGuardian.yaml

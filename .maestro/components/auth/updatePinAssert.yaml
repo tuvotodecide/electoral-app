@@ -1,0 +1,5 @@
+- assertVisible:
+    id: changePinNewConfirmResultModalContainer
+
+- tapOn:
+    id: changePinNewConfirmResultModalButton
