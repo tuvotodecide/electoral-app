@@ -1,7 +1,6 @@
 import bs58 from 'bs58';
 import { Buffer } from 'buffer';
 import {ENVIRONMENT} from '@env';
-import { buildBabyjub, buildEddsa } from 'circomlibjs';
 
 const testnetConfig = {
   method: 'did:polygonid',
@@ -17,19 +16,8 @@ const mainnetConfig = {
   idTypeHex: '0212'
 }
 
-async function generateBbjFromEthPrivateKey(privateKey) {
-  const babyjub = await buildBabyjub();
-  const eddsa = await buildEddsa();
-  const sk = babyjub.F.toObject( babyjub.F.e(BigInt('0x' + pk) % babyjub.subOrder) );
-  const pub = babyjub.mulPointEscalar(babyjub.Base8, sk);
-  return {
-    eddsa,
-    sk,
-    pub
-  }
-}
-
 export function didFromEthAddress(ethAddress) {
+  console.log('Generating DID from EVM address:', ethAddress);
   const config = ENVIRONMENT === 'production' ? mainnetConfig:testnetConfig;
 
   const addrHex = ethAddress.toLowerCase().replace(/^0x/, '');
@@ -45,11 +33,7 @@ export function didFromEthAddress(ethAddress) {
 
   const idBase58 = bs58.encode(Buffer.concat([body, checksum])); 
 
-  const privKey = iden.BabyJub.genRandomPrivateKey(); // BN
-  const pubKey = ideBabyJub.privateToPublicKey(privKey);
-
   return {
     did: `${config.method}:${config.network}:${config.subnet}:${idBase58}`,
-    bbj: { privKey, pubKey }
   };
 }

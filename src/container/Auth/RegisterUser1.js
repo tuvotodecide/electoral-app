@@ -92,7 +92,7 @@ export default function RegisterUser1({navigation}) {
         <CButton
           title={String.continueButton}
           disabled={!check}
-          onPress={getDid}
+          onPress={onPressNext}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
         />
