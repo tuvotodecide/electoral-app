@@ -28,13 +28,13 @@ onFlowStart:
     when:
         visible: 
             id: logoutButton
-    file: logout.yaml
+    file: ../../../../components/auth/logout.yaml
 
 - runFlow:
     when:
         visible:
             id: MiVotoLogoImage
-    file: login.yaml
+    file: ../../../../components/auth/login.yaml
     env: 
         PIN: ${MAESTRO_SECOND_PIN}
 

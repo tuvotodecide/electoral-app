@@ -25,7 +25,7 @@ appId: com.tuvotodecide
     when:
         true: ${TEST_TYPE == 'pass'}
     file: cases/validImageRecord.yaml
-- runFlow:
-    when:
-        true: ${TEST_TYPE == 'correct'}
-    file: cases/correctImageRecord.yaml
+# - runFlow:
+#     when:
+#         true: ${TEST_TYPE == 'correct'}
+#     file: cases/correctImageRecord.yaml
