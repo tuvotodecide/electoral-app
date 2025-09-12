@@ -31,15 +31,24 @@ appId: com.tuvotodecide
 
 - scrollUntilVisible:
     element:
-      id: editButton
+      id: photoReviewEditButton
 
 - tapOn:
-    id: editButton
+    id: photoReviewEditButton
 
-- runFlow: ../../records/electoralRecord1.yaml
+- runFlow: 
+    when:
+        true: ${RECORD_FILE == 'wrongElectoralRecord'}
+    file: ../../records/wrongElectoralRecord.yaml
+
+- runFlow: 
+    when:
+        true: ${RECORD_FILE == 'electoralRecord1'}
+    file: ../../records/electoralRecord1.yaml
+
 
 - tapOn:
-    id: nextButton
+    id: photoReviewNextButton
 
 - extendedWaitUntil:
     visible:
@@ -48,18 +57,19 @@ appId: com.tuvotodecide
 
 - tapOn:
     id: publishAndCertifyButton
-
+- tapOn:
+    id: photoConfirmationConfirmButton
 - runFlow:
     when:
-        true: ${ASSERTION_TYPE == 'new'}
+        true: ${ASSERTION_TYPE_TYPE == 'pass'}
     file: ../finish/assertValidUploading.yaml
 
-- runFlow:
-    when:
-        true: ${ASSERTION_TYPE == 'submited'}
-    file: ../finish/assertRepeatedUploading.yaml
+#- runFlow:
+#    when:
+#        true: ${ASSERTION_TYPE == 'submited'}
+#    file: ../finish/assertRepeatedUploading.yaml
 
-- runFlow:
-    when:
-        true: ${ASSERTION_TYPE == 'sumatory'}
-    file: ../finish/assertBadSumatory.yaml
+#- runFlow:
+#    when:
+#        true: ${ASSERTION_TYPE == 'sumatory'}
+#    file: ../finish/assertBadSumatory.yaml

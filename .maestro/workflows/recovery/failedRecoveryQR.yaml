@@ -1,10 +1,12 @@
 appId: com.tuvotodecide
+name: recoveryFailedQR
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
-- launchApp:
-    clearState: false
-- runFlow: ../components/setup/skipDebuger.yaml
 - tapOn:
     id: connectLoginButton
+- tapOn:
+    id: loginUserTitle
 - tapOn:
     id: loginUserForgotPasswordButton
     
@@ -13,5 +15,5 @@ appId: com.tuvotodecide
     file: ../../components/recovery/recoveryQR.yaml
     env:
         TEST_TYPE: fail
-        PHOTO_NAME: ${WRONG_PHOTO_NAME}
+        PHOTO_NAME: ${MAESTRO_WRONG_PHOTO_NAME}
 

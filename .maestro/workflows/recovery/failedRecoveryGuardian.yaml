@@ -1,8 +1,14 @@
 appId: com.tuvotodecide
+name: recoveryFailedGuardian
+onFlowStart:
+  - runFlow: 
+        file: ../../components/setup/initialSetup.yaml
+        env:
+            CHANGE_USER: 'true'
+            USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+
 ---
-- launchApp:
-    clearState: false
-- runFlow: ../components/setup/skipDebuger.yaml
+- runFlow: ../../components/auth/logout.yaml
 - tapOn:
     id: connectLoginButton
 - tapOn:

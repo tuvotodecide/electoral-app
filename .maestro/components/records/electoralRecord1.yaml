@@ -46,16 +46,6 @@ appId: com.tuvotodecide
 - inputText: '16'
 
 - doubleTapOn:
-    id: partyInputPresidente_3
-- eraseText
-- inputText: '24'
-
-- doubleTapOn:
-    id: partyInputDiputado_3
-- eraseText
-- inputText: '16'
-
-- doubleTapOn:
     id: partyInputPresidente_4
 - eraseText
 - inputText: '1'

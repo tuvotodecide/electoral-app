@@ -170,7 +170,7 @@ export default function GuardiansAdmin({navigation}) {
 
     return (
       <TouchableOpacity
-        testID={`guardiansAdminProtectedItem_${item.id}`}
+        testID={`guardiansAdminProtectedItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer,
           {
@@ -182,9 +182,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View testID={`guardiansAdminProtectedItemContent_${item.id}`} style={styles.rowCenter}>
+        <View testID={`guardiansAdminProtectedItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
-            testID={`guardiansAdminProtectedItemIcon_${item.id}`}
+            testID={`guardiansAdminProtectedItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -193,20 +193,20 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono testID={`guardiansAdminProtectedItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminProtectedItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View testID={`guardiansAdminProtectedItemInfo_${item.id}`} style={styles.ml10}>
-            <View testID={`guardiansAdminProtectedItemIdRow_${item.id}`} style={styles.rowCenter}>
-              <CText testID={`guardiansAdminProtectedItemId_${item.id}`} type="B16">{item.governmentIdentifier}</CText>
+          <View testID={`guardiansAdminProtectedItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminProtectedItemIdRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
+              <CText testID={`guardiansAdminProtectedItemId_${item.governmentIdentifier}`} type="B16">{item.governmentIdentifier}</CText>
             </View>
-            <CText testID={`guardiansAdminProtectedItemName_${item.id}`} type="R12" color={colors.grayScale500}>
+            <CText testID={`guardiansAdminProtectedItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
               {displayName ?? '(sin apodo)'}
             </CText>
           </View>
         </View>
-        <TouchableOpacity testID={`guardiansAdminProtectedItemMenu_${item.id}`} onPress={() => openModal(item)}>
+        <TouchableOpacity testID={`guardiansAdminProtectedItemMenu_${item.governmentIdentifier}`} onPress={() => openModal(item)}>
           <Icono
-            testID={`guardiansAdminProtectedItemMenuIcon_${item.id}`}
+            testID={`guardiansAdminProtectedItemMenuIcon_${item.governmentIdentifier}`}
             name="dots-vertical"
             size={moderateScale(30)}
             style={styles.mr10}
@@ -227,7 +227,7 @@ export default function GuardiansAdmin({navigation}) {
 
     return (
       <View
-        testID={`guardiansAdminRecoveryItem_${item.id}`}
+        testID={`guardiansAdminRecoveryItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer1,
           {
@@ -239,9 +239,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View testID={`guardiansAdminRecoveryItemContent_${item.id}`} style={styles.rowCenter}>
+        <View testID={`guardiansAdminRecoveryItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
-            testID={`guardiansAdminRecoveryItemIcon_${item.id}`}
+            testID={`guardiansAdminRecoveryItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -250,20 +250,20 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono testID={`guardiansAdminRecoveryItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminRecoveryItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View testID={`guardiansAdminRecoveryItemInfo_${item.id}`} style={styles.ml10}>
-            <View testID={`guardiansAdminRecoveryItemNameRow_${item.id}`} style={styles.rowCenter}>
-              <CText testID={`guardiansAdminRecoveryItemName_${item.id}`} type="B16">{displayName}</CText>
+          <View testID={`guardiansAdminRecoveryItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminRecoveryItemNameRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
+              <CText testID={`guardiansAdminRecoveryItemName_${item.governmentIdentifier}`} type="B16">{displayName}</CText>
             </View>
-            <CText testID={`guardiansAdminRecoveryItemId_${item.id}`} type="R12" color={colors.grayScale500}>
+            <CText testID={`guardiansAdminRecoveryItemId_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
               {item.governmentIdentifier}
             </CText>
           </View>
         </View>
-        <View testID={`guardiansAdminRecoveryItemActions_${item.id}`} style={localStyle.actionsRow}>
+        <View testID={`guardiansAdminRecoveryItemActions_${item.governmentIdentifier}`} style={localStyle.actionsRow}>
           <CButton
-            testID={`guardiansAdminRecoveryItemApprove_${item.id}`}
+            testID={`guardiansAdminRecoveryItemApprove_${item.governmentIdentifier}`}
             title={String.accept}
             type="B16"
             bgColor={'#4caf50'}
@@ -275,7 +275,7 @@ export default function GuardiansAdmin({navigation}) {
             ]}
           />
           <CButton
-            testID={`guardiansAdminRecoveryItemReject_${item.id}`}
+            testID={`guardiansAdminRecoveryItemReject_${item.governmentIdentifier}`}
             title={String.reject}
             type="B16"
             disabled={loadingRecoveryAction}
@@ -300,7 +300,7 @@ export default function GuardiansAdmin({navigation}) {
 
     return (
       <View
-        testID={`guardiansAdminInvitationItem_${item.id}`}
+        testID={`guardiansAdminInvitationItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer1,
           {
@@ -312,9 +312,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View testID={`guardiansAdminInvitationItemContent_${item.id}`} style={styles.rowCenter}>
+        <View testID={`guardiansAdminInvitationItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
-            testID={`guardiansAdminInvitationItemIcon_${item.id}`}
+            testID={`guardiansAdminInvitationItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -323,20 +323,20 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono testID={`guardiansAdminInvitationItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminInvitationItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View testID={`guardiansAdminInvitationItemInfo_${item.id}`} style={styles.ml10}>
-            <View testID={`guardiansAdminInvitationItemIdRow_${item.id}`} style={styles.rowCenter}>
-              <CText testID={`guardiansAdminInvitationItemId_${item.id}`} type="B16">{item.governmentIdentifier}</CText>
+          <View testID={`guardiansAdminInvitationItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminInvitationItemIdRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
+              <CText testID={`guardiansAdminInvitationItemId_${item.governmentIdentifier}`} type="B16">{item.governmentIdentifier}</CText>
             </View>
-            <CText testID={`guardiansAdminInvitationItemName_${item.id}`} type="R12" color={colors.grayScale500}>
+            <CText testID={`guardiansAdminInvitationItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
               {displayName ?? '(nombre no visible)'}
             </CText>
           </View>
         </View>
-        <View testID={`guardiansAdminInvitationItemActions_${item.id}`} style={localStyle.actionsRow}>
+        <View testID={`guardiansAdminInvitationItemActions_${item.governmentIdentifier}`} style={localStyle.actionsRow}>
           <CButton
-            testID={`guardiansAdminInvitationItemAccept_${item.id}`}
+            testID={`guardiansAdminInvitationItemAccept_${item.governmentIdentifier}`}
             title={String.accept}
             type="B16"
             bgColor={'#4caf50'}
@@ -348,7 +348,7 @@ export default function GuardiansAdmin({navigation}) {
             ]}
           />
           <CButton
-            testID={`guardiansAdminInvitationItemReject_${item.id}`}
+            testID={`guardiansAdminInvitationItemReject_${item.governmentIdentifier}`}
             title={String.reject}
             type="B16"
             disabled={loadingInvitationAction}

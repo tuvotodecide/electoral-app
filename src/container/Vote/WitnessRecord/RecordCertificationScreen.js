@@ -201,9 +201,10 @@ const RecordCertificationScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="recordCertificationContainer" style={styles.container}>
       {/* Header */}
       <UniversalHeader
+        testID="recordCertificationHeader"
         colors={colors}
         onBack={handleBack}
         title={`${i18nString.table || 'Mesa'} ${
@@ -215,17 +216,17 @@ const RecordCertificationScreen = () => {
         showNotification={true}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView testID="recordCertificationScrollView" style={styles.content} showsVerticalScrollIndicator={false}>
         {/* For tablet landscape, use a more optimized layout */}
         {isTablet && isLandscape ? (
-          <View style={styles.tabletLandscapeContainer}>
+          <View testID="tabletLandscapeContainer" style={styles.tabletLandscapeContainer}>
             {/* Left side: Certification message */}
-            <View style={styles.leftColumn}>
-              <View style={styles.certificationContainer}>
-                <CText style={styles.certificationTitle}>
+            <View testID="tabletLeftColumn" style={styles.leftColumn}>
+              <View testID="tabletCertificationContainer" style={styles.certificationContainer}>
+                <CText testID="tabletCertificationTitle" style={styles.certificationTitle}>
                   {i18nString.actaCertification}
                 </CText>
-                <CText style={styles.certificationText}>
+                <CText testID="tabletCertificationText" style={styles.certificationText}>
                   {(i18nString.certificationText || '')
                     .replace('{userName}', currentUser.name || '')
                     .replace('{userRole}', currentUser.role || '')
@@ -241,12 +242,13 @@ const RecordCertificationScreen = () => {
             </View>
 
             {/* Right side: Action button */}
-            <View style={styles.rightColumn}>
-              <View style={styles.actionButtons}>
+            <View testID="tabletRightColumn" style={styles.rightColumn}>
+              <View testID="tabletActionButtons" style={styles.actionButtons}>
                 <TouchableOpacity
+                  testID="tabletCertifyButton"
                   style={styles.certifyButton}
                   onPress={handleCertify}>
-                  <CText style={styles.certifyButtonText}>
+                  <CText testID="tabletCertifyButtonText" style={styles.certifyButtonText}>
                     {i18nString.certify}
                   </CText>
                 </TouchableOpacity>
@@ -256,7 +258,7 @@ const RecordCertificationScreen = () => {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View style={styles.certificationContainer}>
+            <View testID="certificationContainer" style={styles.certificationContainer}>
               <CText testID="certificationTitle" style={styles.certificationTitle}>
                 {i18nString.actaCertification}
               </CText>
@@ -275,12 +277,12 @@ const RecordCertificationScreen = () => {
               </CText>
             </View>
 
-            <View style={styles.actionButtons}>
+            <View testID="actionButtons" style={styles.actionButtons}>
               <TouchableOpacity
                 testID="certifyButton"
                 style={styles.certifyButton}
                 onPress={handleCertify}>
-                <CText style={styles.certifyButtonText}>
+                <CText testID="certifyButtonText" style={styles.certifyButtonText}>
                   {i18nString.certify}
                 </CText>
               </TouchableOpacity>
@@ -290,31 +292,33 @@ const RecordCertificationScreen = () => {
       </ScrollView>
 
       <Modal
+        testID="confirmModal"
         visible={showConfirmModal}
         transparent
         animationType="fade"
         onRequestClose={closeModal}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
+        <View testID="confirmModalOverlay" style={modalStyles.modalOverlay}>
+          <View testID="confirmModalContainer" style={modalStyles.modalContainer}>
             {step === 0 && (
               <>
-                <View style={modalStyles.iconCircleWarning}>
+                <View testID="warningIconContainer" style={modalStyles.iconCircleWarning}>
                   <Ionicons
+                    testID="warningIcon"
                     name="alert-outline"
                     size={getResponsiveSize(40, 48, 56)}
                     color="#da2a2a"
                   />
                 </View>
-                <View style={modalStyles.spacer} />
+                <View testID="modalSpacer" style={modalStyles.spacer} />
                 <CText testID="confirmCertificationTitle" style={modalStyles.confirmTitle}>
                   {i18nString.certifyInfoConfirmation}
                 </CText>
-                <View style={modalStyles.buttonContainer}>
+                <View testID="modalButtonContainer" style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     testID="cancelCertificationButton"
                     style={modalStyles.cancelButton}
                     onPress={closeModal}>
-                    <CText style={modalStyles.cancelButtonText}>
+                    <CText testID="cancelCertificationButtonText" style={modalStyles.cancelButtonText}>
                       {i18nString.cancel}
                     </CText>
                   </TouchableOpacity>
@@ -322,7 +326,7 @@ const RecordCertificationScreen = () => {
                     testID="confirmCertificationButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmCertification}>
-                    <CText style={modalStyles.confirmButtonText}>
+                    <CText testID="confirmCertificationButtonText" style={modalStyles.confirmButtonText}>
                       {i18nString.certify}
                     </CText>
                   </TouchableOpacity>
@@ -332,14 +336,15 @@ const RecordCertificationScreen = () => {
             {step === 1 && (
               <>
                 <ActivityIndicator
+                  testID="certificationLoadingIndicator"
                   size={isTablet ? 'large' : 'large'}
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <CText style={modalStyles.loadingTitle}>
+                <CText testID="loadingTitle" style={modalStyles.loadingTitle}>
                   {i18nString.pleaseWait}
                 </CText>
-                <CText style={modalStyles.loadingSubtext}>
+                <CText testID="loadingSubtext" style={modalStyles.loadingSubtext}>
                   {i18nString.savingToBlockchain}
                 </CText>
               </>
@@ -350,41 +355,43 @@ const RecordCertificationScreen = () => {
 
       {/* Modal NFT Certificate */}
       {showNFTCertificate && (
-        <View style={nftModalStyles.nftModalOverlay}>
-          <View style={nftModalStyles.nftCertificate}>
+        <View testID="nftModalOverlay" style={nftModalStyles.nftModalOverlay}>
+          <View testID="nftCertificate" style={nftModalStyles.nftCertificate}>
             {/* Borde decorativo */}
-            <View style={nftModalStyles.certificateBorder}>
+            <View testID="nftCertificateBorder" style={nftModalStyles.certificateBorder}>
               {/* Medallón NFT */}
-              <View style={nftModalStyles.medalContainer}>
+              <View testID="nftMedalContainer" style={nftModalStyles.medalContainer}>
                 <Image
+                  testID="nftMedalImage"
                   source={nftImage}
                   style={nftModalStyles.medalImage}
                   resizeMode="contain"
                 />
-                <CText style={nftModalStyles.nftMedalText}>NFT</CText>
+                <CText testID="nftMedalText" style={nftModalStyles.nftMedalText}>NFT</CText>
               </View>
               {/* Datos del certificado */}
-              <CText style={nftModalStyles.nftName}>{currentUser.name}</CText>
-              <CText style={nftModalStyles.nftCertTitle}>CERTIFICADO DE</CText>
-              <CText style={nftModalStyles.nftCertTitle}>
+              <CText testID="nftUserName" style={nftModalStyles.nftName}>{currentUser.name}</CText>
+              <CText testID="nftCertTitle1" style={nftModalStyles.nftCertTitle}>CERTIFICADO DE</CText>
+              <CText testID="nftCertTitle2" style={nftModalStyles.nftCertTitle}>
                 PARTICIPACIÓN ELECTORAL
               </CText>
-              <CText style={nftModalStyles.nftCertDetail}>
+              <CText testID="nftCertDetail1" style={nftModalStyles.nftCertDetail}>
                 ELECCIONES GENERALES
               </CText>
-              <CText style={nftModalStyles.nftCertDetail}>BOLIVIA 2025</CText>
+              <CText testID="nftCertDetail2" style={nftModalStyles.nftCertDetail}>BOLIVIA 2025</CText>
             </View>
             {/* Cerrar */}
             <TouchableOpacity
+              testID="closeNFTModalButton"
               onPress={closeNFTModal}
               style={nftModalStyles.closeModalBtn}>
-              <CText style={nftModalStyles.closeModalText}>Cerrar</CText>
+              <CText testID="closeNFTModalText" style={nftModalStyles.closeModalText}>Cerrar</CText>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      <InfoModal {...infoModalData} onClose={closeInfoModal} />
+      <InfoModal testID="recordCertificationInfoModal" {...infoModalData} onClose={closeInfoModal} />
     </CSafeAreaView>
   );
 };

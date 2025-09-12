@@ -1,11 +1,17 @@
 appId: com.tuvotodecide
+name: submitElectoralRecordGallery
+onFlowStart:
+  - runFlow: ../../components/setup/initialSetup.yaml
 ---
 - runFlow:
     file: ../../components/voting/uploadElectoralRecord.yaml
     env:
+        ELECTORAL_RECORD_LOCATION: ${MAESTRO_ELECTORAL_RECORD_LOCATION}
         TEST_TYPE: 'pass'
         CAPTURE_TYPE: 'gallery'
-        IMAGE_NAME: ${ELECTORAL_RECORD_IMAGE_NAME}
+        IMAGE_NAME: ${MAESTRO_ELECTORAL_RECORD_IMAGE_NAME}
         RECORD_TYPE: 'new'
-        ASSERTION_TYPE: 'new'
-        ELECTORAL_RECORD_TABLE: ${ELECTORAL_RECORD_TABLE_2}
+        #ASSERTION_TYPE: 'new'
+        ELECTORAL_RECORD_TABLE: ${MAESTRO_ELECTORAL_RECORD_TABLE_1}
+        RECORD_FILE: 'electoralRecord1'
+        ASSERTION_TYPE: 'pass'

@@ -1,4 +1,7 @@
 appId: com.tuvotodecide
+name: loginWrongPin
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
 - tapOn:
     id: connectLoginButton

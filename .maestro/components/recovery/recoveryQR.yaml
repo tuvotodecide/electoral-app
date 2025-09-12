@@ -5,14 +5,22 @@ appId: com.tuvotodecide
 - tapOn:
     id: recoveryQrUploadImage_imageBox
 - tapOn: ${PHOTO_NAME}
+
 - runFlow:
     when:
         true: ${TEST_TYPE == 'pass'}
-    file: createPin.yaml
+    file: ./simpleActions/pressNext.yaml
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: ../auth/createPin.yaml
+    env:
+        PIN: ${MAESTRO_CORRECT_PIN}
+        TEST_TYPE: 'create'
 - runFlow:
     when:
         true: ${TEST_TYPE == 'fail'}
-    file: assertBadQR.yaml
+    file: manageBadCases/assertBadQR.yaml
 
 
 

@@ -1,9 +1,12 @@
 appId: com.tuvotodecide
+name: assertPP
+onFlowStart:
+  - runFlow: ../../../components/setup/initialSetup.yaml
 ---
-- runFlow:
-    when:
-        false: ${WALKTHROUGH == 'true'}
-    file: ../initialSetup.yaml
+#- runFlow:
+#    when:
+#        true: ${MAESTRO_WALKTHROUGH != 'true'}
+#    file: ../../initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - scroll
@@ -11,5 +14,11 @@ appId: com.tuvotodecide
     id: profileMenuItem_5
 - tapOn:
     id: moreMenuItem_12
+- extendedWaitUntil:
+    visible: 
+        id: privacyPoliciesHeaderTitle
+    timeout: 10000  
+- waitForAnimationToEnd:
+    timeout: 10000    
 - assertWithAI:
     assertion: Privacy policy page is visible.

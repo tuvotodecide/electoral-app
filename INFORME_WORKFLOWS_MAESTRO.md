@@ -34,7 +34,7 @@ Este informe presenta un análisis exhaustivo de todos los flujos de workflows i
 - **Propósito**: Verificar login exitoso con PIN correcto
 - **Componentes**:
   - Ejecuta flujo base `login.yaml`
-  - Utiliza variable `${CORRECT_PIN}`
+  - Utiliza variable `${MAESTRO_CORRECT_PIN}`
 - **Estado**: ✅ Implementado
 
 ### 1.2 loginWrongPin.yaml
@@ -224,7 +224,7 @@ Este informe presenta un análisis exhaustivo de todos los flujos de workflows i
   - Setup inicial sin clearState
   - Acceso a login
   - Uso de componente `recoveryQR.yaml`
-  - Variables: `FIRST_USER_PHOTO_NAME`, `CORRECT_PIN`
+  - Variables: `MAESTRO_FIRST_USER_PHOTO_NAME`, `MAESTRO_CORRECT_PIN`
 - **Estado**: ✅ Implementado
 
 #### failedRecoveryQR.yaml
@@ -352,9 +352,9 @@ Este informe presenta un análisis exhaustivo de todos los flujos de workflows i
 ### Variables de Entorno
 ```yaml
 env:
-  PIN: ${CORRECT_PIN}
+  PIN: ${MAESTRO_CORRECT_PIN}
   TEST_TYPE: 'pass'
-  PHOTO_NAME: ${FIRST_USER_PHOTO_NAME}
+  PHOTO_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}
 ```
 
 ### Flujos Condicionales

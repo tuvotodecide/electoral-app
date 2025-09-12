@@ -1,0 +1,24 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        visible:
+            id: homeMiVotoLogoTitle
+    file: ../../auth/logout.yaml
+
+- tapOn:
+    id: connectLoginButton
+
+- tapOn:
+    id: loginUserTitle
+    
+- tapOn:
+    id: loginUserForgotPasswordButton
+
+- runFlow:
+    file: ../../recovery/recoveryQR.yaml
+    env:
+        PHOTO_NAME: ${USER}
+        TEST_TYPE: 'pass'
+      
+    

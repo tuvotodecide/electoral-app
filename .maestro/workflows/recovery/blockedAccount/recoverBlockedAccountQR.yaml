@@ -1,4 +1,21 @@
 appId: com.tuvotodecide
+name: recoverBlockedAccountQR
+onFlowStart:
+  - runFlow: ../../../components/setup/skipDebuger.yaml
 ---
-# TODO: Implementar flujo de recuperación de cuenta bloqueada con QR
-- assertVisible: "Placeholder for blocked account recovery with QR"
+
+- tapOn:
+    id: connectLoginButton
+- assertVisible:
+    id: accountLockImage
+- assertVisible:
+    id: accountLockDescription
+
+- tapOn:
+    id: accountLockRecoveryButton
+
+- runFlow: 
+    file: ../../../components/recovery/recoveryQR.yaml
+    env:
+        TEST_TYPE: 'pass'
+        PHOTO_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}

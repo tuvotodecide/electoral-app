@@ -1,5 +1,5 @@
 appId: com.tuvotodecide
 ---
-#- assertVisible: ${SELF_NAME}
+#- assertVisible: ${MAESTRO_SELF_NAME}
 - assertVisible:
     id: findMyUserErrorAlert

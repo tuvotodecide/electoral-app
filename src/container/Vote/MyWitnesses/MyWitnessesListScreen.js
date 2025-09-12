@@ -319,10 +319,12 @@ const MyWitnessesListScreen = () => {
               }
               return pairs.map((pair, pairIndex) => (
                 <View key={pairIndex} style={styles.tabletRow}>
-                  {pair.map(witnessRecord => (
+                  {pair.map((witnessRecord, witnessIndex) => {
+                    const globalIndex = pairIndex * 2 + witnessIndex;
+                    return (
                     <View key={witnessRecord.id} style={styles.tabletColumn}>
                       <TouchableOpacity
-                        testID={`witnessRecord_${witnessRecord.id}`}
+                        testID={`witnessRecord_${globalIndex}`}
                         style={[
                           styles.imageCard,
                           selectedImageId === witnessRecord.id &&
@@ -330,15 +332,15 @@ const MyWitnessesListScreen = () => {
                         ]}
                         onPress={() => handleImagePress(witnessRecord.id)}>
                         <View style={styles.imageHeader}>
-                          <CText testID={`witnessRecordMesa_${witnessRecord.id}`} style={styles.mesaText}>
+                          <CText testID={`witnessRecordMesa_${globalIndex}`} style={styles.mesaText}>
                             {witnessRecord.mesa}
                           </CText>
-                          <CText testID={`witnessRecordDate_${witnessRecord.id}`} style={styles.fechaText}>
+                          <CText testID={`witnessRecordDate_${globalIndex}`} style={styles.fechaText}>
                             {witnessRecord.fecha} - {witnessRecord.hora}
                           </CText>
                         </View>
                         <Image
-                          testID={`witnessRecordImage_${witnessRecord.id}`}
+                          testID={`witnessRecordImage_${globalIndex}`}
                           source={{
                             uri: witnessRecord.imagen,
                             headers: {
@@ -353,24 +355,28 @@ const MyWitnessesListScreen = () => {
                           <>
                             {/* Corner borders - black color */}
                             <View
+                              testID={`witnessTopLeftCorner_${globalIndex}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topLeftCorner,
                               ]}
                             />
                             <View
+                              testID={`witnessTopRightCorner_${globalIndex}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topRightCorner,
                               ]}
                             />
                             <View
+                              testID={`witnessBottomLeftCorner_${globalIndex}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomLeftCorner,
                               ]}
                             />
                             <View
+                              testID={`witnessBottomRightCorner_${globalIndex}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomRightCorner,
@@ -381,25 +387,26 @@ const MyWitnessesListScreen = () => {
                       </TouchableOpacity>
                       {selectedImageId === witnessRecord.id && (
                         <TouchableOpacity
-                          testID={`tabletWitnessDetailsButton_${witnessRecord.id}`}
+                          testID={`tabletWitnessDetailsButton_${globalIndex}`}
                           style={styles.detailsButton}
                           onPress={handleVerMas}>
-                          <CText testID={`tabletWitnessDetailsButtonText_${witnessRecord.id}`} style={styles.detailsButtonText}>
+                          <CText testID={`tabletWitnessDetailsButtonText_${globalIndex}`} style={styles.detailsButtonText}>
                             {String.seeMore}
                           </CText>
                         </TouchableOpacity>
                       )}
                     </View>
-                  ))}
+                    );
+                  })}
                   {pair.length === 1 && <View style={styles.tabletColumn} />}
                 </View>
               ));
             })()
             : // Single column layout for phones
-            witnessRecords.map(witnessRecord => (
+            witnessRecords.map((witnessRecord, index) => (
               <React.Fragment key={witnessRecord.id}>
                 <TouchableOpacity
-                  testID={`phoneWitnessRecord_${witnessRecord.id}`}
+                  testID={`phoneWitnessRecord_${index}`}
                   style={[
                     styles.imageCard,
                     selectedImageId === witnessRecord.id &&
@@ -407,15 +414,15 @@ const MyWitnessesListScreen = () => {
                   ]}
                   onPress={() => handleImagePress(witnessRecord.id)}>
                   <View style={styles.imageHeader}>
-                    <CText testID={`phoneWitnessRecordMesa_${witnessRecord.id}`} style={styles.mesaText}>
+                    <CText testID={`phoneWitnessRecordMesa_${index}`} style={styles.mesaText}>
                       {witnessRecord.mesa}
                     </CText>
-                    <CText testID={`phoneWitnessRecordDate_${witnessRecord.id}`} style={styles.fechaText}>
+                    <CText testID={`phoneWitnessRecordDate_${index}`} style={styles.fechaText}>
                       {witnessRecord.fecha} - {witnessRecord.hora}
                     </CText>
                   </View>
                   <Image
-                    testID={`phoneWitnessRecordImage_${witnessRecord.id}`}
+                    testID={`phoneWitnessRecordImage_${index}`}
                     source={{
                       uri: witnessRecord.imagen,
                       headers: {
@@ -430,15 +437,19 @@ const MyWitnessesListScreen = () => {
                     <>
                       {/* Corner borders - black color */}
                       <View
+                        testID={`phoneWitnessTopLeftCorner_${index}`}
                         style={[styles.cornerBorder, styles.topLeftCorner]}
                       />
                       <View
+                        testID={`phoneWitnessTopRightCorner_${index}`}
                         style={[styles.cornerBorder, styles.topRightCorner]}
                       />
                       <View
+                        testID={`phoneWitnessBottomLeftCorner_${index}`}
                         style={[styles.cornerBorder, styles.bottomLeftCorner]}
                       />
                       <View
+                        testID={`phoneWitnessBottomRightCorner_${index}`}
                         style={[
                           styles.cornerBorder,
                           styles.bottomRightCorner,
@@ -449,10 +460,10 @@ const MyWitnessesListScreen = () => {
                 </TouchableOpacity>
                 {selectedImageId === witnessRecord.id && (
                   <TouchableOpacity
-                    testID={`phoneWitnessDetailsButton_${witnessRecord.id}`}
+                    testID={`phoneWitnessDetailsButton_${index}`}
                     style={styles.detailsButton}
                     onPress={handleVerMas}>
-                    <CText testID={`phoneWitnessDetailsButtonText_${witnessRecord.id}`} style={styles.detailsButtonText}>
+                    <CText testID={`phoneWitnessDetailsButtonText_${index}`} style={styles.detailsButtonText}>
                       {String.seeMore}
                     </CText>
                   </TouchableOpacity>

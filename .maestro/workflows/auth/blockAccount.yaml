@@ -1,0 +1,63 @@
+appId: com.tuvotodecide
+name: blockAccount
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
+---
+- tapOn:
+    id: connectLoginButton
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- assertVisible:
+    id: loginUserInfoModalButton
+- assertVisible:
+    id: loginUserInfoModalContainer
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+
+- assertVisible:
+    id: accountLockImage
+- assertVisible:
+    id: accountLockDescription
+

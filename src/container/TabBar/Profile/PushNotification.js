@@ -161,7 +161,7 @@ export default function PushNotification() {
 
   return (
     <CSafeAreaView>
-      <CHeader title={String.notification} />
+      <CHeader title={String.notification} testID="pushNotificationHeader" />
       <FlatList
         data={PushNotificationData}
         renderItem={NotificationCollection}

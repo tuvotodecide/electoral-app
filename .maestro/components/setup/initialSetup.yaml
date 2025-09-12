@@ -1,0 +1,33 @@
+appId: com.tuvotodecide
+name: initialSetup
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: MiVotoLogoImage
+    timeout: 25000
+- runFlow:
+    when:
+      visible: 'Open debugger to view warnings.'
+    file: skipDebuger.yaml
+    env:
+      EXTERNAL: 'true'
+
+- runFlow:
+    when:
+        true: ${CHANGE_USER == 'true'}
+    file: ./changeUser/changeUser.yaml
+
+- runFlow:
+    when:
+      notVisible:
+        id: MiVotoLogoImage
+    file: ../auth/login.yaml
+    env:
+      PIN: ${MAESTRO_CORRECT_PIN}
+
+- runFlow:
+    when:
+        true: ${LOGOUT == 'true'}
+    file: ../auth/logout.yaml

@@ -1,0 +1,22 @@
+appId: com.tuvotodecide
+name: certifyValidRecord
+onFlowStart:
+  - runFlow: 
+        file: ../../components/setup/initialSetup.yaml
+        env:
+            CHANGE_USER: 'true'
+            USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+---
+- runFlow: 
+    file: ../../components/witness/certifyRecord.yaml
+    env:
+        ELECTORAL_LOCATION: ${MAESTRO_ELECTORAL_RECORD_LOCATION}
+        ELECTORAL_TABLE: ${MAESTRO_ELECTORAL_RECORD_TABLE_1}
+
+- extendedWaitUntil:
+    visible:
+      id: recordCertificationInfoModalTitle
+    timeout: 10000
+
+- assertVisible:
+    id: recordCertificationInfoModalScrollView

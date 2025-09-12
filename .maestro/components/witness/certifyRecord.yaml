@@ -1,0 +1,47 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: participateButtonRegular
+
+- scrollUntilVisible:
+    element:
+      id: ${ELECTORAL_LOCATION}
+
+- tapOn:
+    id: ${ELECTORAL_LOCATION}
+
+- scrollUntilVisible:
+    element:
+      id: ${ELECTORAL_TABLE}
+
+- tapOn:
+    id: ${ELECTORAL_TABLE}
+
+- tapOn:
+    id: whichIsCorrect_phoneIPFSImage_0_container
+
+- tapOn:
+    id: whichIsCorrect_phoneDetailsButtonText_0
+
+- scrollUntilVisible:
+    element:
+      id: actaDetailCorrectDataButton
+      
+- tapOn:
+    id: actaDetailCorrectDataButton
+
+- tapOn:
+    id: whichIsCorrectContinueButton
+
+- scrollUntilVisible:
+    element:
+      id: recordReviewCorrectDataButtonText
+
+- tapOn:
+    id: recordReviewCorrectDataButton
+
+- tapOn:
+    id: certifyButton
+    
+- tapOn:
+    id: confirmCertificationButton

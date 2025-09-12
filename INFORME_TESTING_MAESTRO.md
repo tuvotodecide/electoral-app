@@ -182,15 +182,15 @@ successfulRecoveryGuardian.yaml:
 ### Variables de Entorno (`.maestro.env`)
 ```bash
 # Autenticación
-CORRECT_PIN=1234
+MAESTRO_CORRECT_PIN=1234
 WRONG_PIN=0000
-FIRST_USER_PHOTO_NAME=usuario1.jpg
+MAESTRO_FIRST_USER_PHOTO_NAME=usuario1.jpg
 
 # Datos de prueba electorales
-ELECTORAL_RECORD_TABLE_1=tableCard_001
-ELECTORAL_RECORD_TABLE_2=tableCard_002
-ELECTORAL_RECORD_IMAGE_NAME=acta_electoral.jpg
-ELECTORAL_RECORD_LOCATION=electoralLocationCard_001
+MAESTRO_ELECTORAL_RECORD_TABLE_1=tableCard_001
+MAESTRO_ELECTORAL_RECORD_TABLE_2=tableCard_002
+MAESTRO_ELECTORAL_RECORD_IMAGE_NAME=acta_electoral.jpg
+MAESTRO_ELECTORAL_RECORD_LOCATION=electoralLocationCard_001
 ```
 
 ### Configuración de Timeouts

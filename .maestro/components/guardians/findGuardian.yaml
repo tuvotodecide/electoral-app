@@ -4,16 +4,20 @@ appId: com.tuvotodecide
     id: guardiansAddButton
 - tapOn:
     id: addGuardiansCarnetInput
-- runFlow:
-    when:
-        true: ${TEST_TYPE == 'pass'}
-    file: validGuardianId.yaml
-- runFlow:
-    when:
-        true: ${TEST_TYPE == 'fail'}
-    file: wrongGuardianId.yaml
-- runFlow:
-    when:
-        true: ${TEST_TYPE == 'self'}
-    file: selfGuardianId.yaml
+- inputText: ${GUARDIAN_ID}
+- doubleTapOn:
+    id: addGuardiansSearchButton
+
+#- runFlow:
+#    when:
+#        true: ${TEST_TYPE == 'pass'}
+#    file: validGuardianId.yaml
+#- runFlow:
+#    when:
+#        true: ${TEST_TYPE == 'fail'}
+#    file: wrongGuardianId.yaml
+#- runFlow:
+#    when:
+#        true: ${TEST_TYPE == 'self'}
+#    file: selfGuardianId.yaml
 

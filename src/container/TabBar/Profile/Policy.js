@@ -27,7 +27,7 @@ export default function Policy({navigation}) {
 
   return (
     <CSafeAreaView>
-      <CHeader title={String.rewardsProgram} />
+      <CHeader title={String.rewardsProgram} testID="policyHeader" />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <Image source={images.RewardImage} style={localStyle.imageContainer} />
         <CText

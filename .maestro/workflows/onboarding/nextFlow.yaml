@@ -1,5 +1,9 @@
 appId: com.tuvotodecide
+name: onboardingNextFlow
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
+
 - tapOn:
     id: connectInfoButton
 - assertVisible:

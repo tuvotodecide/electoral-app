@@ -1,4 +1,7 @@
 appId: com.tuvotodecide
+name: onboardingSwipeFlow
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
 - tapOn:
     id: connectInfoButton

@@ -1,0 +1,14 @@
+# Test configuration for sequential execution
+env:
+  PIN: "1111"
+  MAESTRO_CORRECT_PIN: "1111"
+
+executionOrder:
+  continueOnFailure: false
+
+flowsOrder:
+  - workflows/initialSetup.yaml
+  - workflows/onboarding/nextFlow.yaml
+  - workflows/auth/loginWrongPin.yaml
+
+testOutputDir: test_output_directory

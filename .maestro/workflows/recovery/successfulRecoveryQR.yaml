@@ -1,10 +1,12 @@
 appId: com.tuvotodecide
+name: recoverySuccessfulQR
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
-- launchApp:
-    clearState: false
-- runFlow: ../components/setup/skipDebuger.yaml
 - tapOn:
     id: connectLoginButton
+- tapOn:
+    id: loginUserTitle
 - tapOn:
     id: loginUserForgotPasswordButton
     
@@ -13,8 +15,8 @@ appId: com.tuvotodecide
     file: ../../components/recovery/recoveryQR.yaml
     env:
         TEST_TYPE: pass
-        PHOTO_NAME: ${FIRST_USER_PHOTO_NAME}
-        PIN: ${CORRECT_PIN}
+        PHOTO_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+        PIN: ${MAESTRO_CORRECT_PIN}
 
 
 

@@ -1,11 +1,13 @@
 appId: com.tuvotodecide
+onFlowStart:
+  - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---
-- runFlow:
-    when:
-        notVisible: 
-            id: guardiansBottomContainer
-    file: ../navigateTo.yaml
 - runFlow:
     file: ../../../../components/guardians/findGuardian.yaml
     env:
-      TEST_TYPE: 'pass'
+      GUARDIAN_ID: ${MAESTRO_GUARDIAN_ID}
+
+- assertVisible:
+    id: addGuardiansNameInput
+    
+- assertVisible: ${MAESTRO_GUARDIAN_NAME}

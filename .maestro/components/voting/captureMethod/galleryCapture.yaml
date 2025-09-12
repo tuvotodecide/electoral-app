@@ -6,5 +6,4 @@ appId: com.tuvotodecide
 - tapOn:
     id: openGalleryButton
 
-- tapOn:
-    id: ${IMAGE_NAME}
+- tapOn: ${IMAGE_NAME}

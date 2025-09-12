@@ -1,6 +1,10 @@
 appId: com.tuvotodecide
+name: loginCorrectPin
+onFlowStart:
+  - runFlow: 
+        file: ../../components/setup/initialSetup.yaml
+        env:
+            PIN: ${MAESTRO_CORRECT_PIN}
 ---
-- runFlow:
-    file: ../../components/auth/login.yaml
-    env:
-      PIN: ${CORRECT_PIN}
+- assertVisible:
+    id: homeMiVotoLogoTitle

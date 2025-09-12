@@ -1,13 +1,51 @@
 appId: com.tuvotodecide
+name: acceptGuardInvitation
+onFlowStart:
+  - runFlow: 
+        file: ../../../../components/setup/initialSetup.yaml
+        env:
+            CHANGE_USER: 'true'
+            USER: ${MAESTRO_SECOND_USER_PHOTO_NAME}
 ---
-- launchApp:
-    clearState: false
+#- tapOn:
+#    id: connectLoginButton
+#- tapOn:
+#    id: loginUserTitle
+#- tapOn:
+#    id: loginUserForgotPasswordButton
+#
+#- runFlow:
+#    file: ../../../../components/recovery/recoveryQR.yaml
+#    env: 
+#      PHOTO_NAME: ${MAESTRO_SECOND_USER_PHOTO_NAME}
+#      TEST_TYPE: 'pass'
+#
+#- extendedWaitUntil:
+#    visible:
+#        id: loginUserContentContainer
+#    #timeout: 10000
+#
+#- runFlow:
+#    file: ../../../../components/auth/login.yaml
+#    env: 
+#      PIN: ${MAESTRO_CORRECT_PIN}
+    
+- tapOn:
+    id: tabButton_Profile
+- scrollUntilVisible:
+    element:
+      id: profileMenuItem_4
+- tapOn:
+    id: profileMenuItem_4
 
-- runFlow:
-    file: ../../../../components/recovery/recoveryQR.yaml
-    env: 
-      PHOTO_NAME: ${SECOND_USER_PHOTO_NAME}
-      TEST_TYPE: 'pass'
+- assertVisible:
+    id: guardiansAdminInvitationItem_14967419
+- tapOn:
+    id: guardiansAdminInvitationItemAccept_14967419
+- scrollUntilVisible:
+    element:
+      id: guardiansAdminProtectedItem_14967419
+
 
 
 

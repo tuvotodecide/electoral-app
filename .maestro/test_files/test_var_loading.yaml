@@ -1,0 +1,6 @@
+appId: com.tuvotodecide
+---
+- launchApp
+- tapOn:
+    id: connectLoginButton
+- inputText: ${MAESTRO_CORRECT_PIN}

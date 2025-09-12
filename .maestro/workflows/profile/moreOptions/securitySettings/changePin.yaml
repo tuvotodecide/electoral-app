@@ -1,9 +1,12 @@
 appId: com.tuvotodecide
+name: changePin
+onFlowStart:
+  - runFlow: ../../../../components/setup/initialSetup.yaml
 ---
-- runFlow:
-    when:
-        false: ${WALKTHROUGH == 'true'}
-    file: ../../initialSetup.yaml
+#- runFlow:
+#    when:
+#        true: ${MAESTRO_WALKTHROUGH != 'true'}
+#    file: ../../../initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - scroll
@@ -15,10 +18,25 @@ appId: com.tuvotodecide
     id: securityMenuItemArrow_7
 - tapOn:
     id: textInput
-- inputText: '1111'
+- inputText: ${MAESTRO_CORRECT_PIN}
+- runFlow:
+    file: ../../../../components/auth/createPin.yaml
+    env:
+        PIN: ${MAESTRO_SECOND_PIN}
+        TEST_TYPE: 'change'
 - runFlow:
     when:
-        true: ${TEST_TYPE == 'pass'}
-    file: ../../../components/auth/createPin.yaml
-    env:
-        CORRECT_PIN: '1234'
+        visible: 
+            id: logoutButton
+    file: logout.yaml
+
+- runFlow:
+    when:
+        visible:
+            id: MiVotoLogoImage
+    file: login.yaml
+    env: 
+        PIN: ${MAESTRO_SECOND_PIN}
+
+
+        

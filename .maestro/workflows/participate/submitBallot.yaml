@@ -1,6 +1,6 @@
 appId: com.tuvotodecide
 ---
-- runFlow: ../initialSetup.yaml
+- runFlow: ../../components/setup/initialSetup.yaml
 
 - tapOn:
     id: participateButtonRegular

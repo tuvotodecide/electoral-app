@@ -11,8 +11,8 @@ appId: com.tuvotodecide
 - runFlow:
     when:
         true: ${TEST_TYPE == 'pass'}
-    file: createPin.yaml
+    file: manageGoodCases/validGuardianFlow.yaml
 - runFlow:
     when:
         true: ${TEST_TYPE == 'fail'}
-    file: assertBadGuardian.yaml
+    file: manageBadCases/assertBadGuardian.yaml

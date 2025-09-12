@@ -1,6 +1,6 @@
 appId: com.tuvotodecide
 ---
-- inputText: ${PRINCIPAL_ID}
+- inputText: ${MAESTRO_PRINCIPAL_ID}
 - doubleTapOn:
     id: addGuardiansSearchButton
 - assertVisible:

@@ -1,8 +1,13 @@
 appId: com.tuvotodecide
+name: recoverySuccessfulGuardian
+onFlowStart:
+  - runFlow: 
+      file: ../../components/setup/skipDebuger.yaml
+      env:
+          CHANGE_USER: 'true'
+          USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
 ---
-- launchApp:
-    clearState: false
-- runFlow: ../components/setup/skipDebuger.yaml
+- runFlow: ../../components/auth/logout.yaml
 - tapOn:
     id: connectLoginButton
 - tapOn:
@@ -13,5 +18,5 @@ appId: com.tuvotodecide
     file: ../../components/recovery/recoveryGuardian.yaml
     env:
         TEST_TYPE: pass
-        ID_NUMBER: ${PRINCIPAL_ID}
+        ID_NUMBER: ${MAESTRO_PRINCIPAL_ID}
 

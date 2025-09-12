@@ -1,7 +1,15 @@
 appId: com.tuvotodecide
 ---
-- assertVisible: Open debugger to view warnings.
-- tapOn: Open debugger to view warnings.
+- runFlow:
+    when:
+      true: ${EXTERNAL != 'true'}
+    file: ./simpleActions/launchApp.yaml
+- extendedWaitUntil:
+    visible:
+      text: Open debugger to view warnings.
+- tapOn:
+    point: 90%,91%
+#- tapOn: Open debugger to view warnings.
 - extendedWaitUntil:
     notVisible:
       text: Open debugger to view warnings.

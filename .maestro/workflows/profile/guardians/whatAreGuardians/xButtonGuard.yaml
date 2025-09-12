@@ -1,13 +1,13 @@
 appId: com.tuvotodecide
+name: xButtonGuard
+onFlowStart:
+  - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---
-- runFlow:
-    when:
-        notVisible: 
-            id: guardiansBottomContainer
-    file: ../navigateTo.yaml
-
 - tapOn:
-    id: guardiansInfoCard
+    id: guardiansRightIcons
+# La info card de guardianes no es visible una vez eliminado un guardian y quedarse sin guardianes
+#- tapOn:
+#    id: guardiansInfoCard
 - assertVisible:
     id: onboardingGuardiansImage_0
 - assertVisible:
@@ -34,8 +34,8 @@ appId: com.tuvotodecide
     id: onboardingGuardiansImage_2
 - assertNotVisible:
     id: onboardingGuardiansTextContainer_2
-
+    
 - assertVisible:
-    id: guardiansInfoCard
+    id: guardiansHeaderTitle
 
 

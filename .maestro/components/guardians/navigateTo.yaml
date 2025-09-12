@@ -1,0 +1,14 @@
+appId: com.tuvotodecide
+name: navigateToGuardians
+onFlowStart:
+  - runFlow: ../setup/initialSetup.yaml
+---
+#- runFlow:
+#    when:
+#        visible: 
+#            id: MiVotoLogoImage
+#    file: ../../initialSetup.yaml
+- tapOn:
+    id: tabButton_Profile
+- tapOn:
+    id: profileMenuItem_3

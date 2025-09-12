@@ -1,0 +1,6 @@
+appId: com.tuvotodecide
+---
+- launchApp:
+    clearState: false
+- assertVisible:
+    id: MiVotoLogoImage

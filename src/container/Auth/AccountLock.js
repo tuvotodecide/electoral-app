@@ -61,7 +61,7 @@ export default function AccountLock({navigation}) {
       </KeyBoardAvoidWrapper>
       <View testID="accountLockBottomContainer" style={localStyle.bottomTextContainer}>
         <CAlertPrimary
-          testID="accountLockRecoveryAlert"
+          testID="accountLockRecoveryButton"
           icon={<Icono name="lock" color={getSecondaryTextColor(colors)} />}
           iconRiaght={
             <Icono name="chevron-right" color={getSecondaryTextColor(colors)} />

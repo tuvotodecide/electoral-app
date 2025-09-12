@@ -314,16 +314,16 @@ const WhichIsCorrectScreen = () => {
             testID="whichIsCorrectConfirmationImageList"
             style={styles.imageList}
             showsVerticalScrollIndicator={false}>
-            {actaImages.map(image => {
+            {actaImages.map((image, index) => {
               const isCorrect = image.id === confirmedCorrectActa;
 
               return (
                 <View
                   key={`confirmation-${image.id}`}
-                  testID={`whichIsCorrectConfirmationImageContainer_${image.id}`}
+                  testID={`whichIsCorrectConfirmationImageContainer_${index}`}
                   style={styles.confirmationImageContainer}>
                   <View
-                    testID={`whichIsCorrectImageCard_${image.id}`}
+                    testID={`whichIsCorrectImageCard_${index}`}
                     style={[
                       styles.imageCard,
                       isCorrect
@@ -331,7 +331,7 @@ const WhichIsCorrectScreen = () => {
                         : styles.imageCardIncorrect,
                     ]}>
                     <IPFSImage
-                      testID={`whichIsCorrectImage_${image.id}`}
+                      testID={`whichIsCorrectImage_${index}`}
                       image={image}
                       style={styles.imageDisplay}
                       resizeMode="contain"
@@ -339,13 +339,13 @@ const WhichIsCorrectScreen = () => {
 
                     {/* Status Icon - Check for correct, X for incorrect */}
                     <View
-                      testID={`whichIsCorrectStatusIcon_${image.id}`}
+                      testID={`whichIsCorrectStatusIcon_${index}`}
                       style={[
                         styles.statusIcon,
                         isCorrect ? styles.correctIcon : styles.incorrectIcon,
                       ]}>
                       <MaterialIcons
-                        testID={`whichIsCorrectStatusIconSvg_${image.id}`}
+                        testID={`whichIsCorrectStatusIconSvg_${index}`}
                         name={isCorrect ? 'check-circle' : 'cancel'}
                         size={24}
                         color="#FFFFFF"
@@ -440,10 +440,12 @@ const WhichIsCorrectScreen = () => {
                     }
                     return pairs.map((pair, pairIndex) => (
                       <View testID={`whichIsCorrect_tabletRow_${pairIndex}`} key={pairIndex} style={styles.tabletRow}>
-                        {pair.map(image => (
-                          <View testID={`whichIsCorrect_tabletColumn_${image.id}`} key={image.id} style={styles.tabletColumn}>
+                        {pair.map((image, imageIndex) => {
+                          const globalIndex = pairIndex * 2 + imageIndex;
+                          return (
+                          <View testID={`whichIsCorrect_tabletColumn_${globalIndex}`} key={image.id} style={styles.tabletColumn}>
                             <TouchableOpacity
-                              testID={`whichIsCorrect_imageCard_${image.id}`}
+                              testID={`whichIsCorrect_imageCard_${globalIndex}`}
                               style={[
                                 styles.imageCard,
                                 selectedImageId === image.id &&
@@ -451,7 +453,7 @@ const WhichIsCorrectScreen = () => {
                               ]}
                               onPress={() => handleImagePress(image.id)}>
                               <IPFSImage
-                                testID={`whichIsCorrect_IPFSImage_${image.id}`}
+                                testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
                                 image={image}
                                 style={styles.imageDisplay}
                                 resizeMode="contain"
@@ -459,28 +461,28 @@ const WhichIsCorrectScreen = () => {
                               {selectedImageId === image.id && (
                                 <>
                                   <View
-                                    testID={`whichIsCorrect_topLeftCorner_${image.id}`}
+                                    testID={`whichIsCorrect_topLeftCorner_${globalIndex}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.topLeftCorner,
                                     ]}
                                   />
                                   <View
-                                    testID={`whichIsCorrect_topRightCorner_${image.id}`}
+                                    testID={`whichIsCorrect_topRightCorner_${globalIndex}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.topRightCorner,
                                     ]}
                                   />
                                   <View
-                                    testID={`whichIsCorrect_bottomLeftCorner_${image.id}`}
+                                    testID={`whichIsCorrect_bottomLeftCorner_${globalIndex}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.bottomLeftCorner,
                                     ]}
                                   />
                                   <View
-                                    testID={`whichIsCorrect_bottomRightCorner_${image.id}`}
+                                    testID={`whichIsCorrect_bottomRightCorner_${globalIndex}`}
                                     style={[
                                       styles.cornerBorder,
                                       styles.bottomRightCorner,
@@ -491,16 +493,17 @@ const WhichIsCorrectScreen = () => {
                             </TouchableOpacity>
                             {selectedImageId === image.id && (
                               <TouchableOpacity
-                                testID={`whichIsCorrect_detailsButton_${image.id}`}
+                                testID={`whichIsCorrect_detailsButton_${globalIndex}`}
                                 style={styles.detailsButton}
                                 onPress={handleVerMasDetalles}>
-                                <CText testID={`whichIsCorrect_detailsButtonText_${image.id}`} style={styles.detailsButtonText}>
+                                <CText testID={`whichIsCorrect_detailsButtonText_${globalIndex}`} style={styles.detailsButtonText}>
                                   {String.seeMoreDetails}
                                 </CText>
                               </TouchableOpacity>
                             )}
                           </View>
-                        ))}
+                          );
+                        })}
                         {pair.length === 1 && (
                           <View testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`} style={styles.tabletColumn} />
                         )}
@@ -508,10 +511,10 @@ const WhichIsCorrectScreen = () => {
                     ));
                   })()
                 : // Single column layout for phones
-                  actaImages.map(image => (
+                  actaImages.map((image, index) => (
                     <React.Fragment key={image.id}>
                       <TouchableOpacity
-                        testID={`whichIsCorrect_phoneImageCard_${image.id}`}
+                        testID={`whichIsCorrect_phoneImageCard_${index}`}
                         style={[
                           styles.imageCard,
                           selectedImageId === image.id &&
@@ -519,7 +522,7 @@ const WhichIsCorrectScreen = () => {
                         ]}
                         onPress={() => handleImagePress(image.id)}>
                         <IPFSImage
-                          testID={`whichIsCorrect_phoneIPFSImage_${image.id}`}
+                          testID={`whichIsCorrect_phoneIPFSImage_${index}`}
                           image={image}
                           style={styles.imageDisplay}
                           resizeMode="contain"
@@ -527,28 +530,28 @@ const WhichIsCorrectScreen = () => {
                         {selectedImageId === image.id && (
                           <>
                             <View
-                              testID={`whichIsCorrect_phoneTopLeftCorner_${image.id}`}
+                              testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topLeftCorner,
                               ]}
                             />
                             <View
-                              testID={`whichIsCorrect_phoneTopRightCorner_${image.id}`}
+                              testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.topRightCorner,
                               ]}
                             />
                             <View
-                              testID={`whichIsCorrect_phoneBottomLeftCorner_${image.id}`}
+                              testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomLeftCorner,
                               ]}
                             />
                             <View
-                              testID={`whichIsCorrect_phoneBottomRightCorner_${image.id}`}
+                              testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
                               style={[
                                 styles.cornerBorder,
                                 styles.bottomRightCorner,
@@ -559,10 +562,10 @@ const WhichIsCorrectScreen = () => {
                       </TouchableOpacity>
                       {selectedImageId === image.id && (
                         <TouchableOpacity
-                          testID={`whichIsCorrect_phoneDetailsButton_${image.id}`}
+                          testID={`whichIsCorrect_phoneDetailsButton_${index}`}
                           style={styles.detailsButton}
                           onPress={handleVerMasDetalles}>
-                          <CText testID={`whichIsCorrect_phoneDetailsButtonText_${image.id}`} style={styles.detailsButtonText}>
+                          <CText testID={`whichIsCorrect_phoneDetailsButtonText_${index}`} style={styles.detailsButtonText}>
                             {String.seeMoreDetails}
                           </CText>
                         </TouchableOpacity>

@@ -1,9 +1,12 @@
 appId: com.tuvotodecide
+name: assertPersonalData
+onFlowStart:
+  - runFlow: ../../components/setup/initialSetup.yaml
 ---
-- runFlow:
-    when:
-        false: ${WALKTHROUGH == 'true'}
-    file: ../initialSetup.yaml
+#- runFlow:
+#    when:
+#        true: ${MAESTRO_WALKTHROUGH != 'true'}
+#    file: ../initialSetup.yaml
 - tapOn:
     id: tabButton_Profile
 - tapOn:

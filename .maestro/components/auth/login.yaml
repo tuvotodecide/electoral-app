@@ -1,10 +1,17 @@
 appId: com.tuvotodecide
 ---
+- runFlow:
+    when:
+        notVisible: 
+            id: loginUserContentContainer
+    file: ./simpleActions/pressLogin.yaml
+
 - tapOn:
-    id: connectLoginButton
-- inputText: ${CORRECT_PIN}
+    id: textInput
+    
+- inputText: ${PIN}
 
 - extendedWaitUntil:
     visible:
       id: homeMiVotoLogoTitle
-    timeout: 3000
+    timeout: 10000

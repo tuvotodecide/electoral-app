@@ -18,6 +18,7 @@ const CHeader = props => {
     isLeftIcon,
     color,
     textColor,
+    testID,
   } = props;
   const navigation = useNavigation();
   const colors = useSelector(state => state.theme.theme);
@@ -29,10 +30,13 @@ const CHeader = props => {
   };
 
   return (
-    <View style={[localStyles.container, !!isHideBack && styles.pr10]}>
+    <View testID={testID} style={[localStyles.container, !!isHideBack && styles.pr10]}>
       <View style={[styles.rowStart, styles.flex]}>
         {!isHideBack && navigation.canGoBack() && (
-          <TouchableOpacity style={styles.pr10} onPress={onPressBack || goBack}>
+          <TouchableOpacity 
+            testID={testID ? `${testID}BackButton` : undefined}
+            style={styles.pr10} 
+            onPress={onPressBack || goBack}>
             <Ionicons
               name="arrow-back"
               size={moderateScale(24)}
@@ -44,6 +48,7 @@ const CHeader = props => {
         {!!isLeftIcon && isLeftIcon}
 
         <CText
+          testID={testID ? `${testID}Title` : undefined}
           numberOfLines={1}
           style={[styles.flex, styles.mr20]}
           align={'center'}

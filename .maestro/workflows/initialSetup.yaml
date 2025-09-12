@@ -1,4 +1,5 @@
 appId: com.tuvotodecide
+name: initialSetup
 ---
 - launchApp:
     clearState: false
@@ -10,8 +11,11 @@ appId: com.tuvotodecide
     when:
       visible: 'Open debugger to view warnings.'
     file: ../components/setup/skipDebuger.yaml
+    env:
+      EXTERNAL: 'true'
 - runFlow:
     when:
       visible:
         id: connectLoginButton
     file: ../components/auth/login.yaml
+

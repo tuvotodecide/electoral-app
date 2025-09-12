@@ -1,20 +1,23 @@
 appId: com.tuvotodecide
 ---
-- inputText: ${CORRECT_PIN}
-- tapOn:
+- doubleTapOn:
+    id: textInput
+- inputText: ${PIN}
+- doubleTapOn:
     id: changePinNewContinueButton
-- inputText: ${CORRECT_PIN}
-- tapOn:
-    id: changePinNewContinueButton
+
+- doubleTapOn:
+    id: textInput
+- inputText: ${PIN}
 
 - runFlow:
     when:
-        visible: 
-            id: changePinNewConfirmResultModalContainer
-    file: updatePinAssert.yaml
+        true: ${TEST_TYPE == 'create'}
+    file: ./simpleActions/createPinSubactions.yaml
 
 - runFlow:
     when:
-        notVisible: 
-            id: MiVotoLogoImage
-    file: login.yaml
+        true: ${TEST_TYPE == 'change'}
+    file: ./simpleActions/changePinSubactions.yaml
+
+

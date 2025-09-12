@@ -1,3 +1,7 @@
 
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: alert_title
 - tapOn:
-    id: changePinNewConfirmResultModalButton
+    id: button1

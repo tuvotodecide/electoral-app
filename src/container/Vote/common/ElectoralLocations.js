@@ -442,44 +442,44 @@ const ElectoralLocations = ({navigation, route}) => {
 
   const renderLocationItem = ({item}) => (
     <TouchableOpacity
-      testID={`electoralLocationCard_${item._id}`}
+      testID={`electoralLocationCard_${item.code}`}
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.8}>
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
-          <CText testID={`locationName_${item._id}`} style={styles.locationName} numberOfLines={2}>
+          <CText testID={`locationName_${item.code}`} style={styles.locationName} numberOfLines={2}>
             {highlightText(item.name, searchTerm)}
           </CText>
-          <CText testID={`locationCode_${item._id}`} style={styles.locationCode}>
+          <CText testID={`locationCode_${item.code}`} style={styles.locationCode}>
             {i18nString.code}: {highlightText(item.code, searchTerm)}
           </CText>
         </View>
         <View style={styles.distanceContainer}>
           <Ionicons name="location-outline" size={16} color="#666" />
-          <CText testID={`locationDistance_${item._id}`} style={styles.distanceText}>{item.distance}m</CText>
+          <CText testID={`locationDistance_${item.code}`} style={styles.distanceText}>{item.distance}m</CText>
         </View>
       </View>
 
-      <CText testID={`locationAddress_${item._id}`} style={styles.locationAddress} numberOfLines={2}>
+      <CText testID={`locationAddress_${item.code}`} style={styles.locationAddress} numberOfLines={2}>
         {highlightText(item.address, searchTerm)}
       </CText>
 
       <View style={styles.locationDetails}>
-        <CText testID={`locationZone_${item._id}`} style={styles.locationZone}>
+        <CText testID={`locationZone_${item.code}`} style={styles.locationZone}>
           {highlightText(item.zone, searchTerm)} -{' '}
           {highlightText(item.district, searchTerm)}
         </CText>
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
-          <CText testID={`tablesCount_${item._id}`} style={styles.tablesCount}>
+          <CText testID={`tablesCount_${item.code}`} style={styles.tablesCount}>
             {item.tableCount} {i18nString.tables}
           </CText>
         </View>
       </View>
 
       <View style={styles.hierarchyContainer}>
-        <CText testID={`locationHierarchy_${item._id}`} style={styles.hierarchyText}>
+        <CText testID={`locationHierarchy_${item.code}`} style={styles.hierarchyText}>
           {highlightText(
             item.electoralSeat?.municipality?.province?.department?.name,
             searchTerm,
@@ -674,7 +674,7 @@ const ElectoralLocations = ({navigation, route}) => {
             <FlatList
               data={filteredLocations}
               renderItem={renderLocationItem}
-              keyExtractor={item => item._id}
+              keyExtractor={item => item.code}
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={renderEmptyState}
