@@ -28,7 +28,7 @@ export default function Notification({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const notificationService = new FirebaseNotificationService();
+  // const notificationService = new FirebaseNotificationService();
 
   useEffect(() => {
     const cargarNotificaciones = async () => {

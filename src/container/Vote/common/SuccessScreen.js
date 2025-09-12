@@ -147,15 +147,15 @@ const SuccessScreen = () => {
 
         {/* Botones de acción */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.nftButton} onPress={handleViewNFT}>
+          {/* <TouchableOpacity style={styles.nftButton} onPress={handleViewNFT}>
             <CText style={styles.nftButtonText}>Ver mi NFT</CText>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity style={styles.shareButton} onPress={handleShareNft}>
             <Ionicons
               name="share-outline"
               size={20}
-              color="#2196F3"
+              color="#fff"
               style={styles.shareIcon}
             />
             <CText style={styles.shareButtonText}>Compartir NFT</CText>
@@ -167,7 +167,7 @@ const SuccessScreen = () => {
             <Ionicons
               name="document-text-outline"
               size={20}
-              color="#2196F3"
+            color="#fff"
               style={styles.shareIcon}
             />
             <CText style={styles.shareButtonText}>Compartir NFT del acta </CText>
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shareButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#17694A',
     borderRadius: 12,
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(30, 36, 42),
@@ -310,13 +310,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: "#fff",
   },
   shareIcon: {
     marginRight: 8,
   },
   shareButtonText: {
-    color: '#2196F3',
+    color: "#fff",
     fontWeight: '700',
     fontSize: getResponsiveSize(14, 16, 18),
     textAlign: 'center',

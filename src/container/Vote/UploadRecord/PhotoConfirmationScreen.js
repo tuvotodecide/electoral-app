@@ -24,6 +24,7 @@ import InfoModal from '../../../components/modal/InfoModal';
 import NetInfo from '@react-native-community/netinfo';
 import {enqueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
+import {validateBallotLocally} from '../../../utils/ballotValidation';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -100,6 +101,18 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
       // Construir datos para verificación
       const verificationData = {
         tableNumber: tableData?.codigo || 'N/A',
@@ -125,19 +138,58 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
-  const buildVoteData = type => {
-    const getValue = (label, defaultValue = 0) => {
-      const item = (voteSummaryResults || []).find(s => s.label === label);
-      if (!item) return defaultValue;
+  // const buildVoteData = type => {
+  //   const getValue = (label, defaultValue = 0) => {
+  //     const item = (voteSummaryResults || []).find(s => s.label === label);
+  //     if (!item) return defaultValue;
 
-      const value = type === 'presidente' ? item.value1 : item.value2;
-      return parseInt(value, 10) || defaultValue;
+  //     const value = type === 'presidente' ? item.value1 : item.value2;
+  //     return parseInt(value, 10) || defaultValue;
+  //   };
+
+  //   return {
+  //     validVotes: getValue('Votos Válidos'),
+  //     nullVotes: getValue('Votos Nulos'),
+  //     blankVotes: getValue('Votos en Blanco'),
+  //     partyVotes: partyResults.map(party => ({
+  //       partyId: party.partido,
+  //       votes:
+  //         parseInt(
+  //           type === 'presidente' ? party.presidente : party.diputado,
+  //           10,
+  //         ) || 0,
+  //     })),
+  //     totalVotes:
+  //       getValue('Votos Válidos') +
+  //       getValue('Votos Nulos') +
+  //       getValue('Votos en Blanco'),
+  //   };
+  // };
+  const buildVoteData = type => {
+    const norm = s =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
+    const aliases = {
+      validos: ['validos', 'válidos', 'votos válidos'],
+      nulos: ['nulos', 'votos nulos'],
+      blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    };
+    const pickRow = key =>
+      (voteSummaryResults || []).find(
+        r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      );
+    const getValue = key => {
+      const row = pickRow(key);
+      const raw = type === 'presidente' ? row?.value1 : row?.value2;
+      const n = parseInt(String(raw ?? '0'), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
     };
 
     return {
-      validVotes: getValue('Votos Válidos'),
-      nullVotes: getValue('Votos Nulos'),
-      blankVotes: getValue('Votos en Blanco'),
+      validVotes: getValue('validos'),
+      nullVotes: getValue('nulos'),
+      blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
         partyId: party.partido,
         votes:
@@ -146,10 +198,7 @@ const PhotoConfirmationScreen = () => {
             10,
           ) || 0,
       })),
-      totalVotes:
-        getValue('Votos Válidos') +
-        getValue('Votos Nulos') +
-        getValue('Votos en Blanco'),
+      totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
   };
 
@@ -222,7 +271,7 @@ const PhotoConfirmationScreen = () => {
           'Content-Type': 'application/json',
           'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000, // 30 segundos timeout
+        timeout: 30000,
       });
 
       // Manejar diferentes tipos de respuestas
@@ -318,6 +367,15 @@ const PhotoConfirmationScreen = () => {
         voteSummaryResults: voteSummaryResults || [],
       };
 
+      const normalizedVoteSummary = (
+        electoralData.voteSummaryResults || []
+      ).map(r => {
+        if (r.id === 'validos') return {...r, label: 'Votos Válidos'};
+        if (r.id === 'nulos') return {...r, label: 'Votos Nulos'};
+        if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
+        return r;
+      });
+
       // Convertir URI a path
       const imagePath = photoUri.startsWith('file://')
         ? photoUri.substring(7)
@@ -327,7 +385,7 @@ const PhotoConfirmationScreen = () => {
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        electoralData,
+        {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
       );
 
@@ -352,6 +410,19 @@ const PhotoConfirmationScreen = () => {
     const net = await NetInfo.fetch();
     const online = !!(net.isConnected && (net.isInternetReachable ?? true));
     if (!online) {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
+
       const persistedUri = await persistLocalImage(photoUri);
       const additionalData = {
         idRecinto: tableData?.idRecinto || tableData.locationId,

@@ -28,6 +28,7 @@ import RecoveryFinalize from '../container/TabBar/Recovery/RecoveryFinalize';
 // Pantallas de Voto
 import SearchTable from '../container/Vote/UploadRecord/SearchTable';
 import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
+import ElectoralLocationsSave from '../container/Vote/common/ElectoralLocationsSave';
 import OfflinePendingScreen from '../container/Vote/common/OfflinePendingScreen';
 import TableDetail from '../container/Vote/UploadRecord/TableDetail';
 import CameraScreen from '../container/Vote/UploadRecord/CameraScreen';
@@ -99,6 +100,7 @@ export const StackRoute = {
 
   // Pantallas de Voto
   ElectoralLocations,
+  ElectoralLocationsSave,
   OfflinePendingScreen,
   SearchTable,
   TableDetail,

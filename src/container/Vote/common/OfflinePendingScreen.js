@@ -1,26 +1,28 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import {CommonActions} from '@react-navigation/native';
+import { TabNav } from '../../../navigation/NavigationKey';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
-export default function OfflinePendingScreen({ navigation }) {
+export default function OfflinePendingScreen({navigation}) {
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>
         <Ionicons name="warning-outline" size={72} color="#2563eb" />
         <CText style={styles.title}>No tienes conexión a Internet.</CText>
         <CText style={styles.body}>
-          El acta se guardará y se publicará automáticamente
-          cuando vuelvas a conectarte. En ese momento recibirás tu NFT.
+          El acta se guardará y se publicará automáticamente cuando vuelvas a
+          conectarte. En ese momento recibirás tu NFT.
         </CText>
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('HomeScreen')}>
+          onPress={() =>navigation.navigate(TabNav.Profile)}>
           <CText style={styles.buttonText}>Volver al inicio</CText>
         </TouchableOpacity>
       </View>
@@ -29,7 +31,7 @@ export default function OfflinePendingScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8F9' },
+  container: {flex: 1, backgroundColor: '#F7F8F9'},
   center: {
     flex: 1,
     alignItems: 'center',
@@ -60,5 +62,5 @@ const styles = StyleSheet.create({
     minWidth: 220,
     alignItems: 'center',
   },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  buttonText: {color: '#fff', fontWeight: '700'},
 });

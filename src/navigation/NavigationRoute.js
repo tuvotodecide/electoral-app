@@ -1,7 +1,9 @@
 //import ElectoralLocations from '../container/Vote/Common/ElectoralLocations';
 import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
+import ElectoralLocationsSave from '../container/Vote/common/ElectoralLocationsSave';
 import OfflinePendingScreen from '../container/Vote/common/OfflinePendingScreen';
 import UnifiedTableScreen from '../container/Vote/UnifiedTableScreen';
+import UnifiedTableScreenUser from '../container/Vote/UnifiedTableScreenUser';
 import ActaDetailScreen from '../container/Vote/WitnessRecord/ActaDetailScreen';
 import CreateNewPassword from '../container/Auth/CreateNewPassword';
 import CreatePin from '../container/Auth/CreatePin';
@@ -103,8 +105,10 @@ import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
   ElectoralLocations,
+  ElectoralLocationsSave,
   OfflinePendingScreen,
   UnifiedTableScreen,
+  UnifiedTableScreenUser,
   ActaDetailScreen,
   Splash,
   AuthNavigation,

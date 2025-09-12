@@ -12,7 +12,7 @@ export class FirebaseNotificationService {
 
   // Inicializar notificaciones
   async setupNotifications() {
-    await this.requestUserPermission();
+    // await this.requestUserPermission();
     await this.setupForegroundMessageHandler();
     await this.setupBackgroundMessageHandler();
   }

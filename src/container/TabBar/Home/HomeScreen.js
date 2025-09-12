@@ -24,12 +24,18 @@ import {useSelector} from 'react-redux';
 import {store} from '../../../redux/store';
 import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY} from '../../../common/constants';
+import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 import {useFocusEffect} from '@react-navigation/native';
-import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
+import {
+  getAll as getOfflineQueue,
+  processQueue,
+} from '../../../utils/offlineQueue';
 import {ActivityIndicator} from 'react-native-paper';
+import NetInfo from '@react-native-community/netinfo';
+import {publishActaHandler} from '../../../utils/offlineQueueHandler';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -183,10 +189,38 @@ export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
+  const auth = useSelector(s => s.auth);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
   const [hasPendingActa, setHasPendingActa] = useState(false);
+  const processingRef = useRef(false);
+  const [checkingVotePlace, setCheckingVotePlace] = useState(true);
+  const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
+
+  const userData = useSelector(state => state.wallet.payload);
+
+  const runOfflineQueueOnce = useCallback(async () => {
+    if (processingRef.current) return;
+    // Solo si hay sesión y llaves listas
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
+      return;
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (!online) return;
+    processingRef.current = true;
+    try {
+      await processQueue(async item => {
+        const res = await publishActaHandler(item, userData);
+        // Si llega aquí, processQueue igual borrará ese item.
+        // La notificación ya se dispara dentro de publishActaHandler.
+      });
+    } catch (e) {
+      // no-op: los que fallen se quedan en cola
+    } finally {
+      processingRef.current = false;
+    }
+  }, [auth?.isAuthenticated, userData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -194,9 +228,11 @@ export default function HomeScreen({navigation}) {
       const checkQueue = async () => {
         try {
           const list = await getOfflineQueue();
+
           const pending = (list || []).some(
             i => i.task?.type === 'publishActa',
           );
+
           if (isActive) setHasPendingActa(pending);
         } catch {}
       };
@@ -207,6 +243,27 @@ export default function HomeScreen({navigation}) {
         clearInterval(t);
       };
     }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      checkUserVotePlace();
+      let alive = true;
+      // intenta una vez al enfocar
+      runOfflineQueueOnce();
+      // escucha cambios de red mientras esta pantalla está activa
+      const unsubNet = NetInfo.addEventListener(state => {
+        const online = !!(
+          state.isConnected &&
+          (state.isInternetReachable ?? true)
+        );
+        if (online && alive) runOfflineQueueOnce();
+      });
+      return () => {
+        alive = false;
+        unsubNet && unsubNet();
+      };
+    }, [runOfflineQueueOnce]),
   );
 
   // Datos del carrusel
@@ -262,9 +319,35 @@ export default function HomeScreen({navigation}) {
     } catch (err) {}
   };
 
-  const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
   const subject = vc?.credentialSubject || {};
+  const dni = subject?.governmentIdentifier;
+
+  const checkUserVotePlace = useCallback(async () => {
+    if (!dni) {
+      setShouldShowRegisterAlert(false);
+      setCheckingVotePlace(false);
+      return;
+    }
+    try {
+      setCheckingVotePlace(true);
+      const res = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+        {
+          timeout: 12000,
+          headers: {'x-api-key': BACKEND_SECRET},
+        },
+      );
+      const hasLocation = !!res?.data?.location;
+      setShouldShowRegisterAlert(!hasLocation);
+    } catch (e) {
+      // Si falla el GET, mostramos el aviso para que el usuario pueda registrar
+      setShouldShowRegisterAlert(true);
+    } finally {
+      setCheckingVotePlace(false);
+    }
+  }, [dni]);
+
   const data = {
     name: subject.fullName || '(sin nombre)',
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
@@ -427,11 +510,16 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
           </View>
-          <RegisterAlertCard
-            onPress={() => navigation.navigate(StackNav.ElectoralLocations)}
-          />
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni: subject?.governmentIdentifier,
+                })
+              }
+            />
+          )}
 
-          {/* Right Column: Menu Cards */}
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
             <View style={stylesx.gridParent}>
@@ -559,9 +647,15 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
-          <RegisterAlertCard
-            onPress={() => navigation.navigate(StackNav.ElectoralLocations)}
-          />
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni: subject?.governmentIdentifier,
+                })
+              }
+            />
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}

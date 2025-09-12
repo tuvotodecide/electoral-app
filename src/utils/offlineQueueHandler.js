@@ -10,47 +10,73 @@ export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
+  console.log(item.task.payload);
 
-  const buildFromPayload = (type) => {
-    const getV = (label) => {
-      const row = (electoralData?.voteSummaryResults || []).find(s => s.label === label);
+  const buildFromPayload = type => {
+    const norm = s =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
+    const aliases = {
+      validos: ['validos', 'válidos', 'votos válidos'],
+      nulos: ['nulos', 'votos nulos'],
+      blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    };
+    const pickRow = key =>
+      (electoralData?.voteSummaryResults || []).find(
+        r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      );
+    const getValue = key => {
+      const row = pickRow(key);
       const raw = type === 'presidente' ? row?.value1 : row?.value2;
-      return parseInt(raw, 10) || 0;
+      const n = parseInt(String(raw ?? '0'), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
     };
     return {
-      validVotes: getV('Votos Válidos'),
-      nullVotes:  getV('Votos Nulos'),
-      blankVotes: getV('Votos en Blanco'),
+      validVotes: getValue('validos'),
+      nullVotes: getValue('nulos'),
+      blankVotes: getValue('blancos'),
       partyVotes: (electoralData?.partyResults || []).map(p => ({
         partyId: p.partido,
-        votes: parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) || 0,
+        votes:
+          parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) || 0,
       })),
-      totalVotes: getV('Votos Válidos') + getV('Votos Nulos')+  getV('Votos en Blanco'),
+      totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
   };
-
   const verificationData = {
     tableNumber: tableData?.codigo || 'N/A',
     votes: {
-      parties:  buildFromPayload('presidente'),
+      parties: buildFromPayload('presidente'),
       deputies: buildFromPayload('diputado'),
     },
   };
 
-  const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+  const duplicateCheck = await pinataService.checkDuplicateBallot(
+    verificationData,
+  );
   if (duplicateCheck?.exists) {
     await removePersistedImage(imageUri);
-    return;
+    return true;
   }
-
 
   const imagePath = imageUri.startsWith('file://')
     ? imageUri.substring(7)
     : imageUri;
+
+  const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
+    data => {
+      if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
+      if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
+      if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
+      return data;
+    },
+  );
+
   const ipfs = await pinataService.uploadElectoralActComplete(
     imagePath,
     aiAnalysis || {},
-    electoralData,
+    {...electoralData, voteSummaryResults: normalizedVoteSummary},
     additionalData,
   );
 
@@ -58,6 +84,7 @@ export const publishActaHandler = async (item, userData) => {
   const ipfsData = ipfs.data;
 
   const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
+
   await axios.post(
     backendUrl,
     {
@@ -120,6 +147,12 @@ export const publishActaHandler = async (item, userData) => {
 
   const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
   const nftId = response.returnData.recordId.toString();
+  const nftResult = {
+    txHash: response.receipt.transactionHash,
+    nftId,
+    txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+    nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+  };
 
   await axios.post(
     `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
@@ -137,4 +170,6 @@ export const publishActaHandler = async (item, userData) => {
     },
   );
   await removePersistedImage(imageUri);
+  await displayLocalActaPublished({ ipfsData, nftData: nftResult, tableData });
+  return {success: true, ipfsData, nftData: nftResult, tableData};
 };

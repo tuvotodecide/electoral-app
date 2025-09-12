@@ -5,6 +5,8 @@ import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import {moderateScale} from '../../../common/constants';
 import String from '../../../i18n/String';
+import {validateBallotLocally} from '../../../utils/ballotValidation';
+import InfoModal from '../../../components/modal/InfoModal';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -13,9 +15,15 @@ const PhotoReviewScreen = () => {
   const {photoUri, tableData, mesaData, aiAnalysis, mappedData, offline} =
     route.params || {};
 
-  
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
+  const closeInfoModal = () =>
+    setInfoModalData({visible: false, title: '', message: ''});
 
   // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
   const getInitialPartyResults = () => {
@@ -78,7 +86,11 @@ const PhotoReviewScreen = () => {
   // Handler for saving changes
   const handleSave = () => {
     setIsEditing(false);
-    Alert.alert(String.saved, String.changesSavedSuccessfully);
+    setInfoModalData({
+      visible: true,
+      title: String.saved,
+      message: String.changesSavedSuccessfully,
+    });
   };
 
   // Handler for navigating to the next screen
@@ -96,6 +108,19 @@ const PhotoReviewScreen = () => {
       value1: v.value1 === '' ? '0' : v.value1,
       value2: v.value2 === '' ? '0' : v.value2,
     }));
+
+    const check = validateBallotLocally(
+      normalizedPartyResults,
+      normalizedVoteSummaryResults,
+    );
+    if (!check.ok) {
+      setInfoModalData({
+        visible: true,
+        title: 'Datos inconsistentes',
+        message: check.errors.join('\n'),
+      });
+      return; // NO avanzar
+    }
 
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri,
@@ -169,33 +194,36 @@ const PhotoReviewScreen = () => {
       ];
 
   return (
-    <BaseRecordReviewScreen
-      colors={colors}
-      headerTitle={`${String.table} ${tableData.numero}`}
-      instructionsText={
-        offline
-          ? 'Completar los datos por favor'
-          : aiAnalysis
-          ? 'Revise los votos de la pizarra'
-          : String.reviewPhotoPlease
-      }
-      instructionsStyle={{
-        fontSize: moderateScale(20),
-        fontWeight: '800',
-        color: colors.text || '#000000',
-      }}
-      photoUri={photoUri}
-      partyResults={partyResults}
-      voteSummaryResults={voteSummaryResults}
-      isEditing={isEditing}
-      onPartyUpdate={updatePartyResult}
-      onVoteSummaryUpdate={updateVoteSummaryResult}
-      actionButtons={actionButtons}
-      onBack={handleBack}
-      showMesaInfo={true}
-      mesaData={getMesaInfo()}
-      emptyDisplayWhenReadOnly={offline ? '' : '0'}
-    />
+    <>
+      <BaseRecordReviewScreen
+        colors={colors}
+        headerTitle={`${String.table} ${tableData.numero}`}
+        instructionsText={
+          offline
+            ? 'Completar los datos por favor'
+            : aiAnalysis
+            ? 'Revise los votos de la pizarra'
+            : String.reviewPhotoPlease
+        }
+        instructionsStyle={{
+          fontSize: moderateScale(20),
+          fontWeight: '800',
+          color: colors.text || '#000000',
+        }}
+        photoUri={photoUri}
+        partyResults={partyResults}
+        voteSummaryResults={voteSummaryResults}
+        isEditing={isEditing}
+        onPartyUpdate={updatePartyResult}
+        onVoteSummaryUpdate={updateVoteSummaryResult}
+        actionButtons={actionButtons}
+        onBack={handleBack}
+        showMesaInfo={true}
+        mesaData={getMesaInfo()}
+        emptyDisplayWhenReadOnly={offline ? '' : '0'}
+      />
+      <InfoModal {...infoModalData} onClose={closeInfoModal} />
+    </>
   );
 };
 

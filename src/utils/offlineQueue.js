@@ -1,15 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KEY_OFFLINE } from '../common/constants';
 
-const KEY = '@offline_queue_v1';
+
 let processing = false;
 
 const read = async () => {
-  const raw = await AsyncStorage.getItem(KEY);
+  const raw = await AsyncStorage.getItem(KEY_OFFLINE);
   return raw ? JSON.parse(raw) : [];
 };
 
 const write = async (list) => {
-  await AsyncStorage.setItem(KEY, JSON.stringify(list));
+  await AsyncStorage.setItem(KEY_OFFLINE, JSON.stringify(list));
 };
 
 export const enqueue = async (task) => {
