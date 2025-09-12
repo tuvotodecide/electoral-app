@@ -17,6 +17,9 @@ import Icono from '../../components/common/Icono';
 import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
+import { didFromEthAddress } from '../../api/did';
+import { bytesToHex } from '@noble/hashes/utils';
+import { randomBytes } from 'react-native-quick-crypto';
 
 export default function RegisterUser1({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -26,6 +29,10 @@ export default function RegisterUser1({navigation}) {
   const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2);
   const onPressConditions = () =>
     navigation.navigate(StackNav.TermsAndCondition);
+
+  const getDid = () => {
+    console.log(didFromEthAddress(bytesToHex(randomBytes(20))))
+  }
 
   return (
     <CSafeAreaViewAuth>

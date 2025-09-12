@@ -1,15 +1,15 @@
 /**
  * @format
  */
-if (__DEV__) {
-  require('./ReactotronConfig');
-}
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import 'text-encoding-polyfill';
-import 'react-native-quick-crypto';
 import 'react-native-gesture-handler';
 
+import crypto from 'react-native-quick-crypto';
+if (!global.crypto?.getRandomValues) {
+  global.crypto = crypto.webcrypto;
+}
 import {Buffer} from 'buffer';
 global.Buffer = Buffer;
 
@@ -17,6 +17,10 @@ import process from 'process';
 global.process = process;
 
 global.crypto = crypto.webcrypto;
+
+if (__DEV__) {
+  require('./ReactotronConfig');
+}
 import {AppRegistry} from 'react-native';
 import App from './src/App';
 import {name as appName} from './app.json';
