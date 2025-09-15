@@ -17,7 +17,7 @@ import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 
 import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
-import {createSeedBundle, saveSecrets, signWithKey} from '../../utils/Cifrate';
+import {createSeedBundle, saveSecrets} from '../../utils/Cifrate';
 import {
   getTmpRegister,
   setTmpRegister,
@@ -30,16 +30,20 @@ import {
   registerStreamAndGuardian,
 } from '../../utils/walletRegister';
 import {CHAIN} from '@env';
-import {useKycRegisterQuery} from '../../data/kyc';
-import {Wallet} from 'ethers';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
 import {getBioFlag} from '../../utils/BioFlag';
 import {startSession} from '../../utils/Session';
+import {didFromEthAddress} from '../../api/did';
+import {
+  createCredential,
+  mapOcrToClaims,
+  waitForVC,
+} from '../../utils/issuerClient';
+import {encryptVCWithPin} from '../../utils/vcCrypto';
 
 export default function RegisterUser10({navigation, route}) {
-  const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
-
+  const {ocrData, dni, originalPin: pin, useBiometry} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
@@ -48,7 +52,7 @@ export default function RegisterUser10({navigation, route}) {
   const [stage, setStage] = useState('init');
   const watchdogRef = useRef(null);
   const dispatch = useDispatch();
-  const {mutateAsync: registerStore} = useKycRegisterQuery();
+
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -107,12 +111,10 @@ export default function RegisterUser10({navigation, route}) {
         await saveDraft({
           step: 'predict',
           dni,
-          vc,
           useBiometry,
         });
         let bundle = await getTmpRegister();
         if (!bundle) {
-
           let workingPin = pin;
           if (!workingPin) {
             workingPin = await getTmpPin();
@@ -150,20 +152,22 @@ export default function RegisterUser10({navigation, route}) {
         }
 
         const privKey = '0x' + bundle.seedHex;
-        // const address = new Wallet(privKey).address;
-        // didFromEthAddress(address);
-
         const walletData = await predictWalletAddress(CHAIN, privKey);
 
-        setStage('store');
+        const {did: subjectDid} = didFromEthAddress(walletData.address);
+        setStage('issueVC');
         await yieldUI();
-        const sig = await signWithKey(privKey, vc.id);
-        const authSig = {
-          sig,
-          signedMessage: vc.id,
-          derivedVia: 'ethers.signMessage',
-          address: new Wallet(privKey).address,
-        };
+        const claims = mapOcrToClaims(ocrData);
+        const {id: credentialId} = await createCredential(subjectDid, claims);
+        const vc = await waitForVC(credentialId);
+        if (
+          vc?.credentialSubject?.id &&
+          vc.credentialSubject.id !== subjectDid
+        ) {
+          throw new Error('El VC devuelto no corresponde al DID del usuario.');
+        }
+
+        const vcCipher = await encryptVCWithPin(vc, pin || '');
 
         const predictedGuardian = await getPredictedGuardian(
           CHAIN,
@@ -171,36 +175,10 @@ export default function RegisterUser10({navigation, route}) {
           walletData.salt,
         );
 
-        const {publicStreamId: streamId, jwt} = await withTimeout(
-          registerStore({
-            vc,
-            authSig,
-            accountAddress: walletData.address,
-            guardianAddress: predictedGuardian,
-            salt: walletData.salt.toString(),
-            privKey,
-          }),
-          30000,
-          'registerStore',
-        );
-        if (typeof jwt == 'string' && jwt.length) await startSession(jwt);
-        await saveDraft({
-          step: 'store',
-          walletData,
-          dni,
-          vc,
-          streamId,
-        });
         setStage('guardian');
         await yieldUI();
         const {guardianAddress} = await withTimeout(
-          registerStreamAndGuardian(
-            CHAIN,
-            walletData.salt,
-            privKey,
-            dni,
-            streamId,
-          ),
+          registerStreamAndGuardian(CHAIN, walletData.salt, privKey, dni),
           90000,
           'registerStreamAndGuardian',
         );
@@ -218,13 +196,13 @@ export default function RegisterUser10({navigation, route}) {
         await saveSecrets(
           pin || '',
           {
-            streamId,
             dni,
             salt: walletData.salt.toString(),
             privKey,
             account: walletData.address,
             guardian: guardianAddress,
-            did: vc.credentialSubject.id,
+            did: subjectDid,
+            vcCipher,
           },
           useBiometry,
           bundle,
@@ -233,18 +211,17 @@ export default function RegisterUser10({navigation, route}) {
 
         if (await getBioFlag()) {
           const storedPayload = {
-            streamId,
+            dni,
             salt: walletData.salt.toString(),
             privKey,
             account: walletData.address,
             guardian: guardianAddress,
-            dni
+            did: subjectDid,
           };
           await Keychain.setGenericPassword(
             'bundle',
             JSON.stringify({
               stored: storedPayload,
-              jwt,
             }),
             {
               service: 'walletBundle',
@@ -258,11 +235,9 @@ export default function RegisterUser10({navigation, route}) {
         setStage('done');
         setLoading(false);
         navigation.replace(AuthNav.RegisterUser11, {
-          offerUrl,
           account: walletData.address,
         });
       } catch (err) {
-  
         setLoading(false);
         setErrorMessage(
           err?.message || 'Ocurrió un error al registrar tu cuenta.',
@@ -270,15 +245,15 @@ export default function RegisterUser10({navigation, route}) {
         setErrorModalVisible(true);
       }
     })();
-    return () => {}; 
-  }, [pin, dni, vc, useBiometry, registerStore, navigation]);
+    return () => {};
+  }, [pin, dni, useBiometry, navigation]);
 
   const stageMessage = {
     init: String.creatingWallet,
     predict: String.predictSmart,
     fund: String.fundAccount,
     deposit: String.depositGas,
-    store: String.storeVC,
+    issueVC: 'Solicitando credencial…',
     guardian: 'Creando guardian…',
     save: String.saveData,
     done: String.doneRegister,
@@ -329,14 +304,14 @@ export default function RegisterUser10({navigation, route}) {
           ) {
             navigation.replace(AuthNav.RegisterUser8, {
               vc,
-              offerUrl,
+
               useBiometry,
               dni,
             });
           } else {
             navigation.replace(AuthNav.RegisterUser10, {
               vc,
-              offerUrl,
+
               dni,
               originalPin: pin,
               useBiometry,

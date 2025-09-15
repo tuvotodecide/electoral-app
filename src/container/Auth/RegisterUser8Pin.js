@@ -18,7 +18,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 
 export default function RegisterUser8({navigation, route}) {
-  const {vc, offerUrl, useBiometry, dni} = route.params;
+  const {ocrData, useBiometry, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
@@ -27,8 +27,7 @@ export default function RegisterUser8({navigation, route}) {
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RegisterUser9, {
       originalPin: otp,
-      vc,
-      offerUrl,
+      ocrData,
       useBiometry,
       dni,
     });

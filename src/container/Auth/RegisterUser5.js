@@ -13,8 +13,11 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
-import {BACKEND_BLOCKCHAIN} from '@env';
-import axios from 'axios';
+import idCardAnalyzer from '../../utils/idCardAnalyzer';
+
+function onlyDigits(s = '') {
+  return (s || '').replace(/\D/g, '');
+}
 
 export default function RegisterUser5({navigation, route}) {
   const {dni, frontImage, backImage, selfie} = route.params;
@@ -32,60 +35,112 @@ export default function RegisterUser5({navigation, route}) {
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, []);
 
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const form = new FormData();
+  //       form.append('frontCI', {
+  //         uri: frontImage.uri,
+  //         name: frontImage.fileName || 'front.jpg',
+  //         type: frontImage.type || 'image/jpeg',
+  //       });
+  //       form.append('backCI', {
+  //         uri: backImage.uri,
+  //         name: backImage.fileName || 'back.jpg',
+  //         type: backImage.type || 'image/jpeg',
+  //       });
+  //       form.append('selfie', {
+  //         uri: selfie.uri,
+  //         name: selfie.fileName || 'selfie.jpg',
+  //         type: selfie.type || 'image/jpeg',
+  //       });
+
+  //       const {data: apiResp} = await axios.post(
+  //         `${BACKEND_BLOCKCHAIN}/api/users`,
+  //         form,
+  //         {
+  //           // headers: { 'Content-Type': 'multipart/form-data' }
+  //           headers: {'Content-Type': 'multipart/form-data'},
+  //           timeout: 60_000,
+  //         },
+  //       );
+  //       const data = apiResp.data;
+  //       const vc = data.credentialData.vc;
+
+  //       const returnedDni = vc.credentialSubject.governmentIdentifier.replace(
+  //         /\D/g,
+  //         '',
+  //       );
+
+  //       if (returnedDni !== dni) {
+  //         setErrorMessage(
+  //           'El documento devuelto no coincide con el DNI ingresado. ' +
+  //             'Por favor, vuelve a cargar tus imágenes.',
+  //         );
+  //         setErrorModalVisible(true);
+  //         return;
+  //       }
+
+  //       navigation.replace(AuthNav.RegisterUser6, {
+  //         vc,
+  //         offerUrl: data.offerUrl,
+
+  //         dni,
+  //       });
+  //     } catch (err) {
+  //       setErrorMessage('Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.');
+  //       setErrorModalVisible(true);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   })();
+  // }, []);
+
   useEffect(() => {
     (async () => {
       try {
-        const form = new FormData();
-        form.append('frontCI', {
-          uri: frontImage.uri,
-          name: frontImage.fileName || 'front.jpg',
-          type: frontImage.type || 'image/jpeg',
-        });
-        form.append('backCI', {
-          uri: backImage.uri,
-          name: backImage.fileName || 'back.jpg',
-          type: backImage.type || 'image/jpeg',
-        });
-        form.append('selfie', {
-          uri: selfie.uri,
-          name: selfie.fileName || 'selfie.jpg',
-          type: selfie.type || 'image/jpeg',
-        });
-
-        const {data: apiResp} = await axios.post(
-          `${BACKEND_BLOCKCHAIN}/api/users`,
-          form,
-          {
-            // headers: { 'Content-Type': 'multipart/form-data' }
-            headers: {'Content-Type': 'multipart/form-data'},
-            timeout: 60_000,
-          },
-        );
-        const data = apiResp.data;
-        const vc = data.credentialData.vc;
-
-        const returnedDni = vc.credentialSubject.governmentIdentifier.replace(
-          /\D/g,
-          '',
+        const res = await idCardAnalyzer.analyze(
+          frontImage?.uri,
+          backImage?.uri,
+          selfie?.uri,
         );
 
-        if (returnedDni !== dni) {
+        if (!res.success) {
+          if (res.error === 'front/back order') {
+            setErrorMessage(
+              'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
+            );
+          } else {
+            setErrorMessage(
+              res.error ||
+                'Error de verificación. Vuelve a intentar con fotos más nítidas.',
+            );
+          }
+          setErrorModalVisible(true);
+          return;
+        }
+
+        const {data} = res;
+        const returnedDni = onlyDigits(data.numeroDoc);
+        if (returnedDni !== onlyDigits(dni)) {
           setErrorMessage(
-            'El documento devuelto no coincide con el DNI ingresado. ' +
+            'El número de documento detectado no coincide con el DNI ingresado. ' +
               'Por favor, vuelve a cargar tus imágenes.',
           );
           setErrorModalVisible(true);
           return;
         }
 
+      
         navigation.replace(AuthNav.RegisterUser6, {
-          vc,
-          offerUrl: data.offerUrl,
 
           dni,
+          ocrData: data, 
         });
       } catch (err) {
-        setErrorMessage('Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.');
+        setErrorMessage(
+          'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
+        );
         setErrorModalVisible(true);
       } finally {
         setLoading(false);
@@ -141,7 +196,6 @@ export default function RegisterUser5({navigation, route}) {
             ],
           });
         }}
-        
       />
     </CSafeAreaViewAuth>
   );

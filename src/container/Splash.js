@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
+import {ensureProvisioned} from '../utils/provisionClient';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -31,6 +32,7 @@ export default function Splash({navigation}) {
   useEffect(() => {
     const asyncProcess = async () => {
       try {
+        await ensureProvisioned({mock: true});
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;
@@ -64,9 +66,15 @@ export default function Splash({navigation}) {
 
           const bundleReady = await ensureBundle();
 
-          const alive = await isSessionValid();
+          // const alive = await isSessionValid();
 
-          if (alive) {
+          // if (alive) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
+
+          const isAuth = store.getState().auth?.isAuthenticated;
+          if (isAuth) {
             navigation.replace(StackNav.TabNavigation);
             return;
           }

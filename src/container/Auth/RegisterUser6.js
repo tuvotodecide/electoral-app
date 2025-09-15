@@ -20,12 +20,12 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 
 export default function RegisterUser6({navigation, route}) {
-  const {vc, offerUrl, dni} = route.params;
+  const {dni, ocrData} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
   const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
+    navigation.navigate(AuthNav.RegisterUser7, {ocrData, dni});
   };
   const onPressReturn = () => {
     navigation.reset({
@@ -41,13 +41,7 @@ export default function RegisterUser6({navigation, route}) {
     setCheck(!check);
   };
 
-  const {
-    fullName,
-    governmentIdentifier,
-    dateOfBirth,
-    documentExpirationDate,
-    governmentIdentifierType,
-  } = vc.credentialSubject;
+  const {fullName, governmentIdentifier, dateOfBirth} = ocrData;
 
   const fmtDate = epoch => {
     const d = new Date(epoch * 1000);
