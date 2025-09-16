@@ -6,7 +6,7 @@ const testnetConfig = {
   method: 'did:polygonid',
   network: 'polygon',
   subnet: 'amoy', 
-  idTypeHex: '0212'
+  idTypeHex: '0213'
 }
 
 const mainnetConfig = {

@@ -14,6 +14,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import idCardAnalyzer from '../../utils/idCardAnalyzer';
+import {normalizeOcrForUI} from '../../utils/issuerClient';
 
 function onlyDigits(s = '') {
   return (s || '').replace(/\D/g, '');
@@ -131,12 +132,8 @@ export default function RegisterUser5({navigation, route}) {
           return;
         }
 
-      
-        navigation.replace(AuthNav.RegisterUser6, {
-
-          dni,
-          ocrData: data, 
-        });
+        const ocrData = normalizeOcrForUI(data);
+        navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
       } catch (err) {
         setErrorMessage(
           'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',

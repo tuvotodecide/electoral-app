@@ -34,7 +34,7 @@ async function getIssuerApi() {
 async function getCreatePath() {
   const prov = await getProvision();
   console.log(prov);
-  
+
   const p = prov?.issuer?.createCredentialPath;
   if (!p) throw new Error('createCredentialPath no entregado');
   return p;
@@ -55,7 +55,8 @@ export async function createCredential(subjectDid, claims) {
     Math.floor(Date.now() / 1000) +
     parseInt(CRED_EXP_DAYS || '365', 10) * 86400;
   const body = {
-    credentialSchema: 'https://ipfs.io/ipfs/QmeQhwtwP6XNG155M49yV6TFmm6s8er13WfeU7tcuM8eat',
+    credentialSchema:
+      'https://ipfs.io/ipfs/QmeQhwtwP6XNG155M49yV6TFmm6s8er13WfeU7tcuM8eat',
     type: CRED_TYPE,
     credentialSubject: {id: subjectDid, ...claims},
     expiration,
@@ -64,7 +65,7 @@ export async function createCredential(subjectDid, claims) {
 
   const api = await getIssuerApi();
   console.log(api);
-  
+
   const path = await getCreatePath();
   console.log(path);
   const {data} = await api.post(path, body);
@@ -93,13 +94,62 @@ export async function waitForVC(id, {tries = 20, delayMs = 1500} = {}) {
   throw lastErr || new Error('Timeout esperando VC');
 }
 
-export function mapOcrToClaims(ocrData) {
-  return {
-    documentNumber: ocrData?.numeroDoc,
-    fullName: ocrData?.fullName,
-    dateOfBirth: ocrData?.fechaNacimiento,
-    issueDate: ocrData?.fechaExpedicion,
-    issuePlace: ocrData?.lugarExpedicion,
-    faceMatch: !!ocrData?.faceMatch,
-  };
+export function mapOcrToClaims(ocr = {}) {
+  const fullName =
+    ocr.fullName?.trim?.() ||
+    ocr.full_name?.trim?.() ||
+    ocr.name?.trim?.() ||
+    '';
+
+  const nationalIdNumber = (
+    ocr.governmentIdentifier ??
+    ocr.numeroDoc ??
+    ocr.nationalIdNumber ??
+    ''
+  )
+    .toString()
+    .replace(/\D/g, '');
+
+  let birthDate = ocr.dateOfBirth;
+  if (!(typeof birthDate === 'number' && Number.isFinite(birthDate))) {
+    const iso =
+      ocr.fechaNacimiento || ocr.birthDateISO || ocr.dateOfBirthISO || null;
+    const t = iso ? Date.parse(iso) : NaN;
+    birthDate = Number.isFinite(t) ? Math.floor(t / 1000) : null;
+  }
+
+  if (!fullName || !nationalIdNumber || !birthDate) {
+    throw new Error(
+      'Faltan claims requeridos para emitir el VC (fullName / nationalIdNumber / birthDate).',
+    );
+  }
+
+  return {fullName, nationalIdNumber, birthDate};
+}
+
+export function normalizeOcrForUI(src = {}) {
+  const fullName =
+    src.fullName?.trim?.() ||
+    src.full_name?.trim?.() ||
+    src.name?.trim?.() ||
+    '';
+
+  const governmentIdentifier = (
+    src.governmentIdentifier ??
+    src.numeroDoc ??
+    src.nationalIdNumber ??
+    ''
+  )
+    .toString()
+    .replace(/\D/g, '');
+
+  let dateOfBirth = src.dateOfBirth;
+  if (!(typeof dateOfBirth === 'number' && Number.isFinite(dateOfBirth))) {
+    const iso =
+      src.fechaNacimiento || src.birthDateISO || src.dateOfBirthISO || null;
+    const t = iso ? Date.parse(iso) : NaN;
+    dateOfBirth = Number.isFinite(t) ? Math.floor(t / 1000) : null;
+  }
+
+  return {fullName, governmentIdentifier, dateOfBirth};
 }

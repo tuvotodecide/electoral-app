@@ -19,6 +19,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {title} from 'process';
 import {url} from 'inspector';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -99,12 +100,8 @@ const SuccessScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-  };
-  const nombre = data.name || '(sin nombre)';
+const subject = getCredentialSubjectFromPayload(userData) || {};
+  const nombre = subject?.fullName || '(sin nombre)';
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -167,10 +164,12 @@ const SuccessScreen = () => {
             <Ionicons
               name="document-text-outline"
               size={20}
-            color="#fff"
+              color="#fff"
               style={styles.shareIcon}
             />
-            <CText style={styles.shareButtonText}>Compartir NFT del acta </CText>
+            <CText style={styles.shareButtonText}>
+              Compartir NFT del acta{' '}
+            </CText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.backHomeButton} onPress={handleBack}>
@@ -310,13 +309,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: "#fff",
+    borderColor: '#fff',
   },
   shareIcon: {
     marginRight: 8,
   },
   shareButtonText: {
-    color: "#fff",
+    color: '#fff',
     fontWeight: '700',
     fontSize: getResponsiveSize(14, 16, 18),
     textAlign: 'center',

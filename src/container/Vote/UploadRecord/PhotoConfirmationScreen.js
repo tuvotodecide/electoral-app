@@ -25,6 +25,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {enqueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -88,11 +89,11 @@ const PhotoConfirmationScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
+  console.log(userData);
+
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-  };
+  const subject = getCredentialSubjectFromPayload(userData) || {};
+  const data = {name: subject?.fullName || '(sin nombre)'};
   const userFullName = data.name || '(sin nombre)';
 
   const handleBack = () => {

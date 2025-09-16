@@ -1,4 +1,10 @@
-import {ActivityIndicator, Image, StyleSheet, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  View,
+  Platform,
+} from 'react-native';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import * as Keychain from 'react-native-keychain';
 
@@ -209,7 +215,7 @@ export default function RegisterUser10({navigation, route}) {
           bundle.pinHash,
         );
 
-        if (await getBioFlag()) {
+        if (useBiometry) {
           const storedPayload = {
             dni,
             salt: walletData.salt.toString(),
@@ -217,18 +223,24 @@ export default function RegisterUser10({navigation, route}) {
             account: walletData.address,
             guardian: guardianAddress,
             did: subjectDid,
+            vcCipher, // importante: así el login con huella no pide pin
           };
+
           await Keychain.setGenericPassword(
             'bundle',
-            JSON.stringify({
-              stored: storedPayload,
-            }),
+            JSON.stringify({stored: storedPayload}),
             {
               service: 'walletBundle',
-              accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
               accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+              accessControl:
+                Platform.OS === 'ios'
+                  ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
+                  : Keychain.ACCESS_CONTROL.BIOMETRY_STRONG,
+              securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
             },
           );
+
+          await setBioFlag(true);
         }
         await clearDraft();
         await clearTmpRegister();
@@ -303,15 +315,13 @@ export default function RegisterUser10({navigation, route}) {
             errorMessage?.includes('No hay PIN disponible')
           ) {
             navigation.replace(AuthNav.RegisterUser8, {
-              vc,
-
+              ocrData,
               useBiometry,
               dni,
             });
           } else {
             navigation.replace(AuthNav.RegisterUser10, {
-              vc,
-
+              ocrData,
               dni,
               originalPin: pin,
               useBiometry,

@@ -52,6 +52,11 @@ export default function LoginUser({navigation}) {
   const toastError = msg => setModal({visible: true, msg});
 
   async function unlock(payload, _jwt, pin) {
+    try {
+      if (payload?.vc?.vc && !payload?.vc?.credentialSubject) {
+        payload.vc = payload.vc.vc;
+      }
+    } catch {}
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -62,9 +67,18 @@ export default function LoginUser({navigation}) {
     );
     dispatch(setAuthenticated(true));
     await resetAttempts();
-
     try {
-      await writeBundleAtomic(JSON.stringify({...payload}));
+      const safe = {
+        cipherHex: payload.cipherHex,
+        saltHex: payload.saltHex,
+        account: payload.account,
+        guardian: payload.guardian,
+        salt: payload.salt,
+      };
+      if (payload.streamId) safe.streamId = payload.streamId;
+      if (safe.cipherHex && safe.saltHex) {
+        await writeBundleAtomic(JSON.stringify(safe));
+      }
     } catch (e) {}
 
     const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
@@ -92,7 +106,6 @@ export default function LoginUser({navigation}) {
       if (!pinOk) return {ok: false, type: 'bad_pin'};
 
       const stored = await getSecrets();
-      console.log('secret: ', stored);
       if (!stored) return {ok: false, type: 'no_local_secrets'};
 
       const localCipher = stored.payloadQr?.vcCipher;

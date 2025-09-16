@@ -320,8 +320,12 @@ export default function HomeScreen({navigation}) {
   };
 
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const dni = subject?.governmentIdentifier;
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni;
 
   const checkUserVotePlace = useCallback(async () => {
     if (!dni) {
@@ -352,7 +356,7 @@ export default function HomeScreen({navigation}) {
     name: subject.fullName || '(sin nombre)',
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
-  const userFullName = data.name || '(sin nombre)';
+  const userFullName = data.name || '(sin nolombre)';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -514,7 +518,7 @@ export default function HomeScreen({navigation}) {
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni: subject?.governmentIdentifier,
+                  dni,
                 })
               }
             />
@@ -651,7 +655,7 @@ export default function HomeScreen({navigation}) {
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni: subject?.governmentIdentifier,
+                  dni,
                 })
               }
             />

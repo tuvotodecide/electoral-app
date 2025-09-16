@@ -40,10 +40,11 @@ export default function RegisterUser6({navigation, route}) {
   const onPressRememberMe = () => {
     setCheck(!check);
   };
-
+console.log(ocrData)
   const {fullName, governmentIdentifier, dateOfBirth} = ocrData;
 
   const fmtDate = epoch => {
+    if (typeof epoch !== 'number' || !Number.isFinite(epoch)) return '-';
     const d = new Date(epoch * 1000);
     return `${d.getUTCDate().toString().padStart(2, '0')}/${(
       d.getUTCMonth() + 1

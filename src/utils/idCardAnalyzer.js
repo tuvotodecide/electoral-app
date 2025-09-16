@@ -4,6 +4,70 @@ import RNFS from 'react-native-fs';
 import {getProvision} from './provisionClient';
 import {API_GEMINI} from '@env';
 
+const safeStringify = obj => {
+  const seen = new WeakSet();
+  return JSON.stringify(
+    obj,
+    (k, v) => {
+      if (typeof v === 'object' && v !== null) {
+        if (seen.has(v)) return '[Circular]';
+        seen.add(v);
+      }
+      if (typeof v === 'function') return `[Function ${v.name || 'anonymous'}]`;
+      return v;
+    },
+    2,
+  );
+};
+
+// Extrae texto a prueba de cambios del SDK
+async function extractText(resp) {
+  if (!resp) return '';
+  if (typeof resp.text === 'function') return String(await resp.text()).trim();
+  if (typeof resp.text === 'string') return resp.text.trim();
+  if (resp.response && typeof resp.response.text === 'function') {
+    return String(await resp.response.text()).trim();
+  }
+  // fallback: intenta leer de candidates->content->parts
+  try {
+    const parts = resp.response?.candidates?.[0]?.content?.parts;
+    if (Array.isArray(parts)) {
+      const t = parts
+        .map(p => (typeof p.text === 'string' ? p.text : ''))
+        .join('\n')
+        .trim();
+      if (t) return t;
+    }
+  } catch {}
+  return '';
+}
+
+// Intenta sacar JSON aunque venga con ```json ... ``` o texto extra
+function tryParseLooseJSON(s) {
+  // 1) si viene en bloque ```json ... ```
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence && fence[1]) {
+    try {
+      return JSON.parse(fence[1]);
+    } catch {}
+  }
+  // 2) busca el mayor bloque que empiece con { y termine con }
+  const first = s.indexOf('{');
+  const last = s.lastIndexOf('}');
+  if (first !== -1 && last !== -1 && last > first) {
+    const candidate = s.slice(first, last + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch {}
+  }
+  // 3) pequeños fixes comunes (comas colgantes)
+  const fixed = s.replace(/,\s*([\]}])/g, '$1');
+  try {
+    return JSON.parse(fixed);
+  } catch {}
+  return null;
+}
+
 function stripFilePrefix(uri = '') {
   return uri.startsWith('file://') ? uri.slice(7) : uri;
 }
@@ -92,15 +156,37 @@ Si el orden SÍ es correcto, responde SOLO este JSON (sin texto extra):
       model: this.model,
       contents,
     });
+    console.log(resp)
+    const text = await extractText(resp);
 
-    const raw =
-      typeof resp.text === 'function' ? await resp.text() : resp.text || '';
-    const text = String(raw).trim();
+    if (__DEV__) {
+      console.log('--- GENAI RAW TEXT (start) ---');
+      console.log(text);
+      console.log('--- GENAI RAW TEXT (end) ---');
+      // Si necesitas más, imprime una vista del objeto respuesta
+      try {
+        console.log('GENAI resp keys:', Object.keys(resp || {}));
+        console.log(
+          'GENAI resp snapshot:',
+          safeStringify({
+            textType: typeof resp?.text,
+            hasResponse: !!resp?.response,
+            parts: resp?.response?.candidates?.[0]?.content?.parts?.length,
+          }),
+        );
+      } catch {}
+    }
 
     let data;
+
     try {
       data = JSON.parse(text);
+      console.log(data)
     } catch (e) {
+      const loose = tryParseLooseJSON(text);
+      if (loose) {
+        return {success: true, data: loose, raw: text};
+      }
       return {
         success: false,
         error: 'La respuesta de la IA no es un JSON válido',

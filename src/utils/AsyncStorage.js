@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ON_BOARDING, THEME} from '../common/constants';
-import {jsonSafe} from './jsonSafe';
+import { jsonSafe } from './RegisterDraft';
 
 const setOnBoarding = async v =>
   AsyncStorage.setItem(ON_BOARDING, JSON.stringify(v));

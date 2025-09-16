@@ -71,15 +71,15 @@ export default function RegisterUser2({navigation}) {
           onSuccess: response => {
             setSubmitting(false);
 
-            if (response.ok) {
-              setModalVisible(true);
-            } else {
+            // if (response.ok) {
+            //   setModalVisible(true);
+            // } else {
               navigation.navigate(AuthNav.RegisterUser3, {
                 dni: idNumber.trim(),
                 frontImage,
                 backImage,
               });
-            }
+            // }
           },
           onError: err => {
             setSubmitting(false);
