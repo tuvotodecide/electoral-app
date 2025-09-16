@@ -11,6 +11,7 @@ import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 import BaseSearchTableScreenUser from '../../components/common/BaseSearchTableScreenUser';
+import { saveVotePlace } from '../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -63,7 +64,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         address: route?.params?.locationData.address,
         code: route?.params?.locationData.code,
       });
-      setMesas(route?.params?.locationData.tables);
+      setMesas(route?.params?.locationData.tables ?? []);
       setIsLoading(false);
     } else {
       loadTables();
@@ -140,6 +141,30 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
           },
         },
       );
+      const cachePayload = {
+        dni,
+        location: {
+          _id: locationData.locationId,
+          name: locationData.name,
+          address: locationData.address,
+          code: locationData.code,
+        },
+        table:
+          mesa?.id || mesa?.codigo || mesa?.numero
+            ? {
+                _id: mesa.id && mesa.id !== 'N/A' ? mesa.id : undefined,
+                tableCode:
+                  mesa.codigo && mesa.codigo !== 'N/A'
+                    ? mesa.codigo
+                    : undefined,
+                tableNumber:
+                  mesa.numero && mesa.numero !== 'N/A'
+                    ? String(mesa.numero)
+                    : undefined,
+              }
+            : undefined,
+      };
+      await saveVotePlace(dni, cachePayload);
       showModal(
         'success',
         'Guardado',

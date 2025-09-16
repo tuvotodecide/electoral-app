@@ -23,8 +23,9 @@ import i18nString from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-
+import NetInfo from '@react-native-community/netinfo';
 import {BACKEND_RESULT} from '@env';
+import {getVotePlace} from '../../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -44,6 +45,10 @@ const getResponsiveSize = (small, medium, large) => {
 
 const ElectoralLocations = ({navigation, route}) => {
   const colors = useSelector(state => state.theme.theme);
+  const userData = useSelector(state => state.wallet.payload);
+  const dni = userData?.vc?.credentialSubject?.governmentIdentifier;
+  const [offline, setOffline] = useState(false);
+  const [cachedVotePlace, setCachedVotePlace] = useState(null);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -339,6 +344,34 @@ const ElectoralLocations = ({navigation, route}) => {
     },
     [fetchNearbyLocations],
   );
+  useEffect(() => {
+    const init = async () => {
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      setOffline(!online);
+      if (!online) {
+        setConfigLoading(false);
+        if (dni) {
+          const cached = await getVotePlace(dni);
+          setCachedVotePlace(cached);
+          if (
+            route?.params?.targetScreen === 'UnifiedParticipation' &&
+            cached?.location?._id
+          ) {
+            navigation.replace(StackNav.UnifiedParticipationScreen, {
+              locationId: cached.location._id,
+              locationData: cached.location,
+              ...(cached.table ? {tableData: cached.table} : {}),
+              fromCache: true,
+              offline: true,
+            });
+            return;
+          }
+        }
+      }
+    };
+    init();
+  }, [dni]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
@@ -407,6 +440,8 @@ const ElectoralLocations = ({navigation, route}) => {
         );
       }
     } catch (error) {
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
@@ -414,32 +449,41 @@ const ElectoralLocations = ({navigation, route}) => {
       } else if (error.response) {
         errorMessage = `${i18nString.serverError} (${error.response.status})`;
       }
-      showModal(
-        'error',
-        i18nString.error,
-        errorMessage,
-        i18nString.accept,
-        () => navigation.goBack(),
-      );
+      if (online) {
+        showModal(
+          'error',
+          i18nString.error,
+          errorMessage,
+          i18nString.accept,
+          () => navigation.goBack(),
+        );
+      } else {
+        setConfigLoading(false);
+      }
     } finally {
       setConfigLoading(false);
     }
   }, [navigation]);
 
   useEffect(() => {
-    fetchElectionStatus();
-  }, [fetchElectionStatus]);
+    if (!offline) {
+      fetchElectionStatus();
+    } else {
+      setConfigLoading(false);
+    }
+  }, [offline, fetchElectionStatus]);
 
   useEffect(() => {
     if (
       electionStatus &&
       electionStatus.hasActiveConfig &&
       electionStatus.config.isActive &&
-      electionStatus.isVotingPeriod
+      electionStatus.isVotingPeriod &&
+      !offline
     ) {
       getCurrentLocation();
     }
-  }, [electionStatus, getCurrentLocation]);
+  }, [electionStatus, getCurrentLocation, offline]);
   useEffect(() => {
     setFilteredLocations(locations);
   }, [locations]);

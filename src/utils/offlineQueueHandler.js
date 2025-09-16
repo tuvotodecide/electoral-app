@@ -5,6 +5,7 @@ import {oracleCalls, oracleReads} from '../api/oracle';
 import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
 import {executeOperation} from '../api/account';
+import { displayLocalActaPublished } from '../notifications';
 
 export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
@@ -72,7 +73,8 @@ export const publishActaHandler = async (item, userData) => {
       return data;
     },
   );
-
+  console.log(normalizedVoteSummary);
+  
   const ipfs = await pinataService.uploadElectoralActComplete(
     imagePath,
     aiAnalysis || {},
