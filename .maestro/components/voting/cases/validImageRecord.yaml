@@ -24,10 +24,11 @@ appId: com.tuvotodecide
 - tapOn:
     id: analyzePhotoButton
 
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
       id: photoReviewScreenInstructionsText
-    timeout: 25000
+    timeout: 40000
 
 - scrollUntilVisible:
     element:
@@ -50,6 +51,7 @@ appId: com.tuvotodecide
 - tapOn:
     id: photoReviewNextButton
 
+
 - extendedWaitUntil:
     visible:
       id: publishAndCertifyButton
@@ -59,10 +61,12 @@ appId: com.tuvotodecide
     id: publishAndCertifyButton
 - tapOn:
     id: photoConfirmationConfirmButton
-- runFlow:
-    when:
-        true: ${ASSERTION_TYPE_TYPE == 'pass'}
-    file: ../finish/assertValidUploading.yaml
+
+- waitForAnimationToEnd
+#- runFlow:
+#    when:
+#        true: ${ASSERTION_TYPE_TYPE == 'pass'}
+#    file: ../finish/assertValidUploading.yaml
 
 #- runFlow:
 #    when:

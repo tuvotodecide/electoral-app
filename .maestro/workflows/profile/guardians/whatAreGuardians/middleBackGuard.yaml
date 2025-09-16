@@ -1,5 +1,5 @@
 appId: com.tuvotodecide
-name: xButtonGuard
+name: middleBackGuard
 onFlowStart:
   - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---

@@ -1,4 +1,5 @@
 appId: com.tuvotodecide
+name: successfulFindGuardian
 onFlowStart:
   - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---

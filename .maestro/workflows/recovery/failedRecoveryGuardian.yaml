@@ -1,16 +1,24 @@
 appId: com.tuvotodecide
-name: recoveryFailedGuardian
+name: failedRecoveryGuardian
 onFlowStart:
   - runFlow: 
         file: ../../components/setup/initialSetup.yaml
         env:
             CHANGE_USER: 'true'
             USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
-
 ---
-- runFlow: ../../components/auth/logout.yaml
+- runFlow:
+    when:
+        visible:
+            id: homeMiVotoLogoTitle
+    file: ../../components/auth/logout.yaml
+    
 - tapOn:
     id: connectLoginButton
+
+- tapOn:
+    id: loginUserTitle
+
 - tapOn:
     id: loginUserForgotPasswordButton
     

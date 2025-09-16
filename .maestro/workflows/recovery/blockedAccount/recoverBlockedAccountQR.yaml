@@ -19,3 +19,10 @@ onFlowStart:
     env:
         TEST_TYPE: 'pass'
         PHOTO_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+
+- extendedWaitUntil:
+    visible:
+        id: homeMiVotoLogoTitle
+    timeout: 15000
+- assertVisible:
+    id: homeMiVotoLogoTitle

@@ -76,3 +76,4 @@ yarn-error.log
 
 .env
 .env_real
+/.maestro/test_output_directory

@@ -1,4 +1,5 @@
 appId: com.tuvotodecide
+name: sendGuardInvitation
 onFlowStart:
   - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---

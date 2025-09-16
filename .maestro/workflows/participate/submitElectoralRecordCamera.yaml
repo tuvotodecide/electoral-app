@@ -15,3 +15,12 @@ onFlowStart:
         #ASSERTION_TYPE: 'new'
         RECORD_FILE: 'electoralRecord1'
         ASSERTION_TYPE: 'pass'
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: nftSuccessTitle
+    timeout: 25000
+- assertVisible:
+    id: nftSuccessTitle

@@ -1,0 +1,13 @@
+appId: com.tuvotodecide
+name: resetAndRecoverAccount
+
+---
+- runFlow: 
+    file: ../../components/setup/initialSetup.yaml
+    env:
+        CHANGE_USER: 'true'
+        USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+        FRESH_START: 'true'
+
+
+

@@ -3,52 +3,78 @@ name: blockAccount
 onFlowStart:
   - runFlow: ../../components/setup/skipDebuger.yaml
 ---
+- runFlow:
+    when:
+        visible:
+            id: homeMiVotoLogoTitle
+    file: ../../components/auth/logout.yaml
 - tapOn:
     id: connectLoginButton
 - inputText: '9999'
-- assertVisible:
-    id: loginUserInfoModalButton
-- assertVisible:
-    id: loginUserInfoModalContainer
+
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
 - tapOn:
     id: loginUserInfoModalButton
 
 
 - inputText: '9999'
-- assertVisible:
-    id: loginUserInfoModalButton
-- assertVisible:
-    id: loginUserInfoModalContainer
-- tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-- assertVisible:
-    id: loginUserInfoModalButton
-- assertVisible:
-    id: loginUserInfoModalContainer
-- tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-- assertVisible:
-    id: loginUserInfoModalButton
-- assertVisible:
-    id: loginUserInfoModalContainer
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
 - tapOn:
     id: loginUserInfoModalButton
 
 
 
 - inputText: '9999'
-- assertVisible:
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
     id: loginUserInfoModalButton
-- assertVisible:
-    id: loginUserInfoModalContainer
+
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
 - tapOn:
     id: loginUserInfoModalButton
 
@@ -56,8 +82,12 @@ onFlowStart:
 
 - inputText: '9999'
 
-- assertVisible:
-    id: accountLockImage
-- assertVisible:
-    id: accountLockDescription
-
+- extendedWaitUntil:
+    visible:
+      id: accountLockImage
+    timeout: 5000
+    
+- extendedWaitUntil:
+    visible:
+      id: accountLockDescription
+    timeout: 5000

@@ -1,8 +1,16 @@
 appId: com.tuvotodecide
 name: initialSetup
 ---
-- launchApp:
-    clearState: false
+- runFlow:
+    when:
+      true: ${FRESH_START == 'true'}
+    file: ./cases/freshStart.yaml
+
+- runFlow:
+    when:
+      true: ${FRESH_START != 'true'}
+    file: ./cases/normalStart.yaml
+
 - extendedWaitUntil:
     visible:
       id: MiVotoLogoImage
@@ -22,7 +30,7 @@ name: initialSetup
 - runFlow:
     when:
       notVisible:
-        id: MiVotoLogoImage
+        id: homeMiVotoLogoTitle
     file: ../auth/login.yaml
     env:
       PIN: ${MAESTRO_CORRECT_PIN}
