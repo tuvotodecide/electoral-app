@@ -173,7 +173,7 @@ export default function TableDetail({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView style={stylesx.container} addTabPadding={false}>
+    <CSafeAreaView testID="tableDetailContainer" style={stylesx.container} addTabPadding={false}>
       {/* HEADER */}
       <UniversalHeader
         colors={colors}
@@ -247,6 +247,7 @@ export default function TableDetail({navigation, route}) {
                   {existingRecords.map((record, index) => (
                     <TouchableOpacity
                       key={`${record.recordId}-${index}`}
+                      testID={`tableDetailExistingRecord_${index}`}
                       style={stylesx.recordCard}
                       onPress={() => {
                         navigation.navigate(StackNav.PhotoReviewScreen, {
