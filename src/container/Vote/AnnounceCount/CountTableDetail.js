@@ -123,10 +123,9 @@ export default function CountTableDetail({navigation, route}) {
   };
 
   return (
-    <CSafeAreaView testID="countTableDetailContainer" style={stylesx.container}>
+    <CSafeAreaView style={stylesx.container}>
       {/* HEADER */}
       <UniversalHeader
-        testID="countTableDetailHeader"
         colors={colors}
         onBack={() => navigation.goBack()}
         title={String.tableInformation}
@@ -134,37 +133,36 @@ export default function CountTableDetail({navigation, route}) {
       />
 
       {/* CONTENT */}
-      <View testID="countTableDetailContent" style={stylesx.scrollableContent}>
+      <View style={stylesx.scrollableContent}>
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
-          <View testID="tabletLandscapeLayout" style={stylesx.tabletLandscapeContainer}>
+          <View style={stylesx.tabletLandscapeContainer}>
             {/* Left Column: Table Data */}
-            <View testID="leftColumnContent" style={stylesx.leftColumn}>
-              <View testID="countTableCard" style={stylesx.card}>
+            <View style={stylesx.leftColumn}>
+              <View style={stylesx.card}>
                 <View style={stylesx.cardContent}>
                   <View style={stylesx.cardTextContainer}>
-                    <CText testID="countTableNumber" style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
-                    <CText testID="countTableVenue" style={stylesx.label}>
+                    <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
+                    <CText style={stylesx.label}>
                       {String.venue} {processedMesa.recinto}
                     </CText>
-                    <CText testID="countTableSchool" style={stylesx.label}>{processedMesa.colegio}</CText>
-                    <CText testID="countTableProvince" style={stylesx.label}>{processedMesa.provincia}</CText>
-                    <CText testID="countTableCode" style={stylesx.label}>
-                      {String.tableCode} {processedMesa.codigo}
+                    <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                    <CText style={stylesx.label}>{processedMesa.provincia}</CText>
+                    <CText style={stylesx.label}>
+                      {String.tableCode}{':'} {processedMesa.codigo}
                     </CText>
                     {processedMesa.zona !== 'Zona N/A' && (
-                      <CText testID="countTableZone" style={stylesx.label}>
+                      <CText style={stylesx.label}>
                         Zona: {processedMesa.zona}
                       </CText>
                     )}
                     {processedMesa.distrito !== 'Distrito N/A' && (
-                      <CText testID="countTableDistrict" style={stylesx.label}>
+                      <CText style={stylesx.label}>
                         Distrito: {processedMesa.distrito}
                       </CText>
                     )}
                   </View>
                   <MaterialIcons
-                    testID="countTableIcon"
                     name="how-to-vote"
                     size={getResponsiveSize(50, 60, 70)}
                     color={colors.textColor}
@@ -175,13 +173,12 @@ export default function CountTableDetail({navigation, route}) {
             </View>
 
             {/* Right Column: Action Button */}
-            <View testID="rightColumnContent" style={stylesx.rightColumn}>
+            <View style={stylesx.rightColumn}>
               <TouchableOpacity
-                testID="announceCountButton"
                 style={stylesx.takePhotoBtn}
                 activeOpacity={0.85}
                 onPress={handleAnnounceCount}>
-                <CText testID="announceCountButtonText" style={stylesx.takePhotoBtnText}>
+                <CText style={stylesx.takePhotoBtnText}>
                   {String.announceCountButton}
                 </CText>
               </TouchableOpacity>
@@ -190,31 +187,30 @@ export default function CountTableDetail({navigation, route}) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View testID="regularTableCard" style={stylesx.card}>
+            <View style={stylesx.card}>
               <View style={stylesx.cardContent}>
                 <View style={stylesx.cardTextContainer}>
-                  <CText testID="regularTableNumber" style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
-                  <CText testID="regularTableVenue" style={stylesx.label}>
+                  <CText style={stylesx.mesaTitle}>{processedMesa.numero}</CText>
+                  <CText style={stylesx.label}>
                     {String.venue} {processedMesa.recinto}
                   </CText>
-                  <CText testID="regularTableSchool" style={stylesx.label}>{processedMesa.colegio}</CText>
-                  <CText testID="regularTableProvince" style={stylesx.label}>{processedMesa.provincia}</CText>
-                  <CText testID="regularTableCode" style={stylesx.label}>
-                    {String.tableCode} {processedMesa.codigo}
+                  <CText style={stylesx.label}>{processedMesa.colegio}</CText>
+                  <CText style={stylesx.label}>{processedMesa.provincia}</CText>
+                  <CText style={stylesx.label}>
+                    {String.tableCode}{':'} {processedMesa.codigo}
                   </CText>
                   {processedMesa.zona !== 'Zona N/A' && (
-                    <CText testID="regularTableZone" style={stylesx.label}>
+                    <CText style={stylesx.label}>
                       Zona: {processedMesa.zona}
                     </CText>
                   )}
                   {processedMesa.distrito !== 'Distrito N/A' && (
-                    <CText testID="regularTableDistrict" style={stylesx.label}>
+                    <CText style={stylesx.label}>
                       Distrito: {processedMesa.distrito}
                     </CText>
                   )}
                 </View>
                 <MaterialIcons
-                  testID="regularTableIcon"
                   name="how-to-vote"
                   size={getResponsiveSize(50, 60, 70)}
                   color={colors.textColor}
@@ -224,11 +220,10 @@ export default function CountTableDetail({navigation, route}) {
             </View>
 
             <TouchableOpacity
-              testID="regularAnnounceCountButton"
               style={stylesx.takePhotoBtn}
               activeOpacity={0.85}
               onPress={handleAnnounceCount}>
-              <CText testID="regularAnnounceCountButtonText" style={stylesx.takePhotoBtnText}>
+              <CText style={stylesx.takePhotoBtnText}>
                 {String.announceCountButton}
               </CText>
             </TouchableOpacity>
@@ -237,19 +232,18 @@ export default function CountTableDetail({navigation, route}) {
       </View>
 
       {/* MODAL DE CONFIRMACIÓN */}
-      <Modal testID="countConfirmationModal" visible={modalVisible} animationType="slide" transparent={true}>
-        <View testID="modalOverlay" style={stylesx.modalOverlay}>
-          <View testID="modalContent" style={stylesx.modalContent}>
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View style={stylesx.modalOverlay}>
+          <View style={stylesx.modalContent}>
             {loading ? (
-              <View testID="loadingModalHeader" style={stylesx.modalHeader}>
+              <View style={stylesx.modalHeader}>
                 <ActivityIndicator
-                  testID="loadingIndicator"
                   size="large"
                   color="#4F9858"
                   style={{marginBottom: getResponsiveSize(16, 20, 24)}}
                 />
-                <CText testID="processingTitle" style={stylesx.modalTitle}>{String.processing}</CText>
-                <CText testID="processingSubtitle" style={stylesx.modalSubtitle}>
+                <CText style={stylesx.modalTitle}>{String.processing}</CText>
+                <CText style={stylesx.modalSubtitle}>
                   {String.announcingTableCount.replace(
                     '{tableName}',
                     processedMesa.numero,
@@ -257,41 +251,39 @@ export default function CountTableDetail({navigation, route}) {
                 </CText>
               </View>
             ) : success ? (
-              <View testID="successModalHeader" style={stylesx.modalHeader}>
+              <View style={stylesx.modalHeader}>
                 <Ionicons
-                  testID="successIcon"
                   name="checkmark-circle"
                   size={getResponsiveSize(50, 60, 70)}
                   color="#4F9858"
                   style={stylesx.modalIcon}
                 />
-                <CText testID="countAnnouncedTitle" style={stylesx.modalTitle}>
+                <CText style={stylesx.modalTitle}>
                   {String.countAnnounced}
                 </CText>
-                <CText testID="countAnnouncedSubtitle" style={stylesx.modalSubtitle}>
+                <CText style={stylesx.modalSubtitle}>
                   {notificationResult ? 
                     `Notificado a ${notificationResult.usuariosNotificados} usuarios cercanos` : 
                     String.countAnnouncedSuccess
                   }
                 </CText>
                 {notificationResult && notificationResult.usuariosCercanos && (
-                  <CText testID="distanceInfo" style={stylesx.distanceInfo}>
+                  <CText style={stylesx.distanceInfo}>
                     Radio: 300 metros
                   </CText>
                 )}
               </View>
             ) : (
               <>
-                <View testID="confirmationModalHeader" style={stylesx.modalHeader}>
+                <View style={stylesx.modalHeader}>
                   <Ionicons
-                    testID="confirmationIcon"
                     name="checkmark-circle"
                     size={getResponsiveSize(50, 60, 70)}
                     color="#4F9858"
                     style={stylesx.modalIcon}
                   />
-                  <CText testID="confirmModalTitle" style={stylesx.modalTitle}>{String.areYouSure}</CText>
-                  <CText testID="confirmModalSubtitle" style={stylesx.modalSubtitle}>
+                  <CText style={stylesx.modalTitle}>{String.areYouSure}</CText>
+                  <CText style={stylesx.modalSubtitle}>
                     {String.wishToAnnounceCount.replace(
                       '{tableName}',
                       processedMesa.numero,
@@ -299,20 +291,18 @@ export default function CountTableDetail({navigation, route}) {
                   </CText>
                 </View>
 
-                <View testID="modalButtonsContainer" style={stylesx.modalButtons}>
+                <View style={stylesx.modalButtons}>
                   <TouchableOpacity
-                    testID="cancelCountButton"
                     style={stylesx.cancelButton}
                     onPress={handleCancelCount}>
-                    <CText testID="cancelCountButtonText" style={stylesx.cancelButtonText}>
+                    <CText style={stylesx.cancelButtonText}>
                       {String.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    testID="confirmCountButton"
                     style={stylesx.confirmButton}
                     onPress={handleConfirmCount}>
-                    <CText testID="confirmCountButtonText" style={stylesx.confirmButtonText}>
+                    <CText style={stylesx.confirmButtonText}>
                       {String.confirm}
                     </CText>
                   </TouchableOpacity>

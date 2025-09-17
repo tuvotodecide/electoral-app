@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,7 +16,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Party Table Row Component
-export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
+export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex, emptyDisplayWhenReadOnly = '0' }) => (
   <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
     <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>{party.id || party.partyId}</CText>
     <View testID={`partyVotePresidenteContainer_${rowIndex}`} style={styles.partyVoteContainer}>
@@ -28,7 +28,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
             onUpdate(
               party.id,
               'presidente',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -37,7 +37,9 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
         />
       ) : (
         <CText testID={`partyVotePresidenteText_${rowIndex}`} style={styles.partyVoteText}>
-          {party.presidente === '' || party.presidente == null ? '0' : String(party.presidente)}
+          {party.presidente === '' || party.presidente == null
+            ? emptyDisplayWhenReadOnly
+            : String(party.presidente)}
         </CText>
       )}
     </View>
@@ -50,7 +52,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
             onUpdate(
               party.id,
               'diputado',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '') 
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -59,7 +61,9 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
         />
       ) : (
         <CText testID={`partyVoteDiputadoText_${rowIndex}`} style={styles.partyVoteText}>
-          {party.diputado === '' || party.diputado == null ? '0' : String(party.diputado)}
+          {party.diputado === '' || party.diputado == null
+            ? emptyDisplayWhenReadOnly
+            : String(party.diputado)}
         </CText>
       )}
     </View>
@@ -67,7 +71,7 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex }) => (
 );
 
 // Party Table Component
-export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
+export const PartyTable = ({ partyResults, isEditing = false, onUpdate, emptyDisplayWhenReadOnly = '0' }) => (
   <View testID="partyTableContainer" style={styles.partyTableContainer}>
     <View testID="partyTableHeader" style={styles.partyTableHeader}>
       <CText testID="partyTableHeaderPartido" style={styles.partyTableHeaderLeft}>Partido</CText>
@@ -82,11 +86,12 @@ export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
           ...party,
           // Mantener valores en edición sin forzar "0"
           presidente: party.presidente,
-          diputado: party.diputado
+          diputado: party.diputado,
         }}
         isEditing={isEditing}
         onUpdate={onUpdate}
         rowIndex={index}
+        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
       />
     ))}
   </View>
@@ -98,7 +103,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(4, 8, 10),
     marginBottom: getResponsiveSize(6, 16, 20),
     elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',

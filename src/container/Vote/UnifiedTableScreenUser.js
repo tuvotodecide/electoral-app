@@ -9,7 +9,9 @@ import {createSearchTableStyles} from '../../styles/searchTableStyles';
 import {fetchMesas} from '../../data/mockMesas';
 import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import {BACKEND_RESULT} from '@env';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import BaseSearchTableScreenUser from '../../components/common/BaseSearchTableScreenUser';
+import { saveVotePlace } from '../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -23,7 +25,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const UnifiedTableScreen = ({navigation, route}) => {
+const UnifiedTableScreenUser = ({navigation, route}) => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState(null);
@@ -33,7 +35,12 @@ const UnifiedTableScreen = ({navigation, route}) => {
     title: '',
     message: '',
     buttonText: String.accept,
+    onButtonPress: null,
+    secondaryButtonText: null,
+    onSecondaryPress: null,
   });
+  const [selectedMesa, setSelectedMesa] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const {
     colors,
@@ -46,93 +53,23 @@ const UnifiedTableScreen = ({navigation, route}) => {
   } = useSearchTableLogic();
 
   const styles = createSearchTableStyles();
-  async function loadTablesFromApi(locationId) {
-    try {
-      setIsLoading(true);
-      const {data} = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`,
-        {timeout: 15000},
-      );
-      const list = data?.tables || data?.data?.tables || [];
-      setMesas(list);
-    } catch (e) {
-      // si estás offline o falla, simplemente deja la lista como está (vacía)
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const dni = route?.params?.dni;
+
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);
-      const loc = route.params.locationData || {};
       setLocationData({
-        locationId: route.params.locationId,
-        name: loc.name,
-        address: loc.address,
-        code: loc.code,
-        zone: loc.zone,
-        district: loc.district,
+        locationId: route?.params?.locationId,
+        name: route?.params?.locationData.name,
+        address: route?.params?.locationData.address,
+        code: route?.params?.locationData.code,
       });
-
-      const initial = Array.isArray(loc.tables) ? loc.tables : [];
-      setMesas(initial);
-
-      if (initial.length === 0) {
-        loadTablesFromApi(route.params.locationId);
-      } else {
-        setIsLoading(false);
-      }
-    } else {
+      setMesas(route?.params?.locationData.tables ?? []);
       setIsLoading(false);
+    } else {
+      loadTables();
     }
   }, [route?.params?.locationId]);
-
-  //const loadTablesFromApi = async (locationId) => {
-  //  try {
-  //    setIsLoading(true);
-  //
-  //
-  //    const response = await axios.get(
-  //      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`
-  //    );
-  //    //const response = await axios.get(
-  //    //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
-  //    //);
-  //
-  //
-  //    if (response.data && response.data.tables) {
-  //
-  //
-  //      // Store location data for TableCard components
-  //      setLocationData({
-  //        name: response.data.name,
-  //        address: response.data.address,
-  //        code: response.data.code,
-  //      });
-  //
-  //      setMesas(response.data.tables);
-  //    } else if (response.data && response.data.data && response.data.data.tables) {
-  //
-  //
-  //      // Store location data for TableCard components
-  //      setLocationData({
-  //        name: response.data.data.name,
-  //        address: response.data.data.address,
-  //        code: response.data.data.code,
-  //      });
-  //
-  //      setMesas(response.data.data.tables);
-  //    } else {
-  //
-  //      showModal('info', String.info, String.couldNotLoadTables);
-  //    }
-  //  } catch (error) {
-  //
-  //    showModal('error', String.error, String.errorLoadingTables);
-  //  } finally {
-  //    setIsLoading(false);
-  //  }
-  //};
 
   const loadTables = async () => {
     try {
@@ -152,13 +89,103 @@ const UnifiedTableScreen = ({navigation, route}) => {
     }
   };
 
-  const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+  const showModal = (
+    type,
+    title,
+    message,
+    buttonText = String.accept,
+    onButtonPress = null,
+    secondaryButtonText = null,
+    onSecondaryPress = null,
+  ) => {
+    setModalConfig({
+      type,
+      title,
+      message,
+      buttonText,
+      onButtonPress,
+      secondaryButtonText,
+      onSecondaryPress,
+    });
     setModalVisible(true);
   };
 
   const closeModal = () => {
     setModalVisible(false);
+  };
+
+  const saveSelectedMesa = async mesa => {
+    if (!dni) {
+      showModal('error', String.error, 'DNI no disponible.');
+      return;
+    }
+    if (!locationData?.locationId) {
+      showModal('error', String.error, 'Recinto no disponible.');
+      return;
+    }
+    const payload = {
+      locationId: locationData.locationId,
+      ...(mesa.id && mesa.id !== 'N/A' ? {tableId: mesa.id} : {}),
+      ...(mesa.codigo && mesa.codigo !== 'N/A' ? {tableCode: mesa.codigo} : {}),
+    };
+    try {
+      setSaving(true);
+      await axios.patch(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+        payload,
+        {
+          timeout: 15000,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': BACKEND_SECRET,
+          },
+        },
+      );
+      const cachePayload = {
+        dni,
+        location: {
+          _id: locationData.locationId,
+          name: locationData.name,
+          address: locationData.address,
+          code: locationData.code,
+        },
+        table:
+          mesa?.id || mesa?.codigo || mesa?.numero
+            ? {
+                _id: mesa.id && mesa.id !== 'N/A' ? mesa.id : undefined,
+                tableCode:
+                  mesa.codigo && mesa.codigo !== 'N/A'
+                    ? mesa.codigo
+                    : undefined,
+                tableNumber:
+                  mesa.numero && mesa.numero !== 'N/A'
+                    ? String(mesa.numero)
+                    : undefined,
+              }
+            : undefined,
+      };
+      await saveVotePlace(dni, cachePayload);
+      showModal(
+        'success',
+        'Guardado',
+        'Tu lugar de votación fue guardado correctamente.',
+        String.accept,
+        () => {
+          setModalVisible(false);
+          handleHomePress();
+        },
+      );
+    } catch (error) {
+      const msg =
+        (error?.response?.data?.message &&
+          (Array.isArray(error.response.data.message)
+            ? error.response.data.message.join('\n')
+            : error.response.data.message)) ||
+        'No se pudo guardar tu lugar de votación.';
+      showModal('error', String.error, msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Check if table has actas and navigate to appropriate screen
@@ -198,85 +225,23 @@ const UnifiedTableScreen = ({navigation, route}) => {
       originalTableData: mesa,
       locationData: locationData,
     };
+    setSelectedMesa(processedMesa);
 
-    try {
-      // Check if this table has any actas
-      const mesaId = processedMesa.id || processedMesa.numero;
-
-      // Try to get actas for this table
-      const hasActas = await checkTableHasActas(mesaId);
-
-      if (hasActas) {
-        // Table has actas, go to witness/attestation flow
-
-        navigation.navigate(StackNav.WhichIsCorrectScreen, {
-          tableData: processedMesa,
-          mesa: processedMesa,
-          originalTable: mesa,
-          locationData: locationData,
-          photoUri:
-            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-          isFromUnifiedFlow: true,
-        });
-      } else {
-        // Table has no actas, go to upload flow
-
-        navigation.navigate(StackNav.TableDetail, {
-          tableData: processedMesa,
-          mesa: processedMesa,
-          originalTable: mesa,
-          locationData: locationData,
-          isFromUnifiedFlow: true,
-        });
-      }
-    } catch (error) {
-      // Default to upload flow if there's an error checking actas
-      navigation.navigate(StackNav.TableDetail, {
-        tableData: processedMesa,
-        mesa: processedMesa,
-        originalTable: mesa,
-        locationData: locationData,
-        isFromUnifiedFlow: true,
-      });
-    }
-  };
-
-  // Function to check if a table has actas
-  const checkTableHasActas = async mesaId => {
-    try {
-      // For string IDs (like "Mesa 1"), try to extract numeric ID
-      let numericId = mesaId;
-      if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
-        const match = mesaId.match(/\d+/);
-        if (match) {
-          numericId = parseInt(match[0], 10);
-        }
-      }
-
-      // Try to fetch actas for this mesa
-      const {fetchActasByMesa} = require('../../data/mockMesas');
-      const response = await fetchActasByMesa(numericId);
-
-      if (
-        response.success &&
-        response.data.images &&
-        response.data.images.length > 0
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (error) {
-      // If there's an error, assume no actas (default to upload flow)
-      return false;
-    }
+    showModal(
+      'success',
+      '¿Confirmar?',
+      `Te llegarán notificaciones del conteo para el recinto`,
+      'Confirmar',
+      () => saveSelectedMesa(processedMesa),
+      String.cancel || 'Cancelar',
+      () => setModalVisible(false),
+    );
   };
 
   // Show loading indicator while tables are being loaded
   if (isLoading) {
     return (
       <View
-        testID="unifiedTableScreenLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -284,12 +249,10 @@ const UnifiedTableScreen = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
-          testID="unifiedTableScreenLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
-          testID="unifiedTableScreenLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -305,8 +268,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
 
   return (
     <>
-      <BaseSearchTableScreen
-        testID="unifiedTableScreenBaseScreen"
+      <BaseSearchTableScreenUser
         // Header props
         colors={colors}
         onBack={handleBack}
@@ -326,6 +288,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
         // Table list props
         tables={mesas}
         onTablePress={handleTablePress}
+        enableAutoVerification={false}
         // Navigation props
         onHomePress={handleHomePress}
         onProfilePress={handleProfilePress}
@@ -337,16 +300,55 @@ const UnifiedTableScreen = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
-        testID="unifiedTableScreenModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}
         title={modalConfig.title}
         message={modalConfig.message}
         buttonText={modalConfig.buttonText}
+        onButtonPress={modalConfig.onButtonPress}
+        secondaryButtonText={modalConfig.secondaryButtonText}
+        onSecondaryPress={modalConfig.onSecondaryPress}
       />
+
+      {saving && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <View
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              padding: 20,
+              alignItems: 'center',
+              minWidth: 150,
+            }}>
+            <ActivityIndicator
+              size="large"
+              color={colors?.primary || '#4F9858'}
+            />
+            <CText
+              style={{
+                marginTop: 12,
+                fontSize: 14,
+                color: '#666',
+                textAlign: 'center',
+              }}>
+              Guardando…
+            </CText>
+          </View>
+        </View>
+      )}
     </>
   );
 };
 
-export default UnifiedTableScreen;
+export default UnifiedTableScreenUser;

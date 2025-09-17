@@ -193,7 +193,7 @@ const SortDropdown = ({
   );
 };
 
-const BaseSearchTableScreen = ({
+const BaseSearchTableScreenUser = ({
   // Header props
   colors,
   onBack,
@@ -518,19 +518,12 @@ const BaseSearchTableScreen = ({
     };
 
     return (
-      <View testID="baseSearchTableScreenSearchContainer" style={containerStyle}>
+      <View style={containerStyle}>
         <SearchInput
-          testID="baseSearchTableScreenSearchInput"
           placeholder={searchPlaceholder || 'Buscar mesa, código o recinto...'}
           value={searchText}
           onChangeText={setSearchText}
           onClear={() => setSearchText('')}
-          styles={styles}
-        />
-        <LocationInfoBar
-          testID="baseSearchTableScreenLocationBar"
-          text={locationText}
-          iconColor={locationIconColor}
           styles={styles}
         />
         <SortDropdown
@@ -597,10 +590,10 @@ const BaseSearchTableScreen = ({
     if (!filteredTables || filteredTables.length === 0) {
       // Mostrar mensaje cuando no hay resultados
       return (
-      return (
         <View style={{flex: 1}}>
-          <View testID="baseSearchTableScreenNoResultsContainer" style={[styles.noResultsContainer, styles1.noResultsContainer, {padding: 20}]}>
-            <CText testID="baseSearchTableScreenNoResultsText" style={[styles.noResultsText, styles1.noResultsText, {fontSize: 16, color: '#666'}]}>
+          <View style={styles1.noResultsContainer}>
+            <CText
+              style={[styles1.noResultsText, {fontSize: 16, color: '#666'}]}>
               {searchText.trim()
                 ? 'No se encontraron mesas que coincidan con la búsqueda'
                 : 'No hay mesas disponibles'}
@@ -616,7 +609,6 @@ const BaseSearchTableScreen = ({
       // Single column layout for phones
       return (
         <ScrollView
-          testID="baseSearchTableScreenScrollView"
           style={styles.tableList || styles.mesaList}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
@@ -627,7 +619,6 @@ const BaseSearchTableScreen = ({
 
             return (
               <View
-                testID={`baseSearchTableScreenTableItem_${index}`}
                 key={
                   table.id || table._id || table.codigo || table.code || index
                 }
@@ -636,7 +627,6 @@ const BaseSearchTableScreen = ({
                   marginBottom: layout.marginBottom,
                 }}>
                 <TableCard
-                  testID={`baseSearchTableScreenTableCard_${index}`}
                   table={table}
                   onPress={handleTablePress}
                   locationData={locationData}
@@ -663,7 +653,6 @@ const BaseSearchTableScreen = ({
 
       return (
         <ScrollView
-          testID="baseSearchTableScreenTabletScrollView"
           style={styles.tableList || styles.mesaList}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
@@ -671,7 +660,6 @@ const BaseSearchTableScreen = ({
           }}>
           {groups.map((group, index) => (
             <View
-              testID={`baseSearchTableScreenTabletRow_${index}`}
               key={index}
               style={{
                 flexDirection: 'row',
@@ -682,7 +670,6 @@ const BaseSearchTableScreen = ({
               }}>
               {group.map((table, tableIndex) => (
                 <View
-                  testID={`baseSearchTableScreenTabletTableItem_${index}_${tableIndex}`}
                   key={
                     table.id ||
                     table._id ||
@@ -694,7 +681,6 @@ const BaseSearchTableScreen = ({
                     flex: layout.cardFlex,
                   }}>
                   <TableCard
-                    testID={`baseSearchTableScreenTabletTableCard_${index}_${tableIndex}`}
                     table={table}
                     onPress={handleTablePress}
                     locationData={locationData}
@@ -726,7 +712,16 @@ const BaseSearchTableScreen = ({
   };
 
   return (
-    <CSafeAreaView testID="baseSearchTableScreenContainer" style={styles.container}>
+    <CSafeAreaView style={styles.container}>
+      {/* <SearchTableHeader
+        colors={colors}
+        onBack={onBack}
+        title={title}
+        showNotification={showNotification}
+        onNotificationPress={onNotificationPress}
+        styles={styles}
+      /> */}
+
       <CenteredTitleHeader
         colors={colors}
         onBack={onBack}
@@ -737,12 +732,11 @@ const BaseSearchTableScreen = ({
       />
       {/*
       <View
-        testID="baseSearchTableScreenChooseTextContainer"
         style={{
           paddingHorizontal: getResponsiveSize(12, 16, 20),
           marginVertical: getResponsiveSize(8, 12, 16),
         }}>
-        <ChooseTableText testID="baseSearchTableScreenChooseText" text={finalChooseText} styles={styles} />
+         <ChooseTableText text={finalChooseText} styles={styles} />
       </View>
          */}
 
@@ -753,7 +747,6 @@ const BaseSearchTableScreen = ({
       {/* Loading overlay when verifying mesa */}
       {isVerifying && (
         <View
-          testID="baseSearchTableScreenLoadingOverlay"
           style={
             styles.loadingOverlay || {
               position: 'absolute',
@@ -768,7 +761,6 @@ const BaseSearchTableScreen = ({
             }
           }>
           <View
-            testID="baseSearchTableScreenLoadingContent"
             style={{
               backgroundColor: '#fff',
               borderRadius: 12,
@@ -777,12 +769,10 @@ const BaseSearchTableScreen = ({
               minWidth: 150,
             }}>
             <ActivityIndicator
-              testID="baseSearchTableScreenLoadingIndicator"
               size="large"
               color={colors?.primary || '#4F9858'}
             />
             <CText
-              testID="baseSearchTableScreenLoadingText"
               style={{
                 marginTop: 12,
                 fontSize: 14,
@@ -797,7 +787,6 @@ const BaseSearchTableScreen = ({
 
       {/* Custom Modal */}
       <CustomModal
-        testID="baseSearchTableScreenModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}
@@ -853,5 +842,5 @@ const styles1 = {
 };
 
 // Legacy export for backward compatibility
-export const BaseSearchMesaScreen = BaseSearchTableScreen;
-export default BaseSearchTableScreen;
+export const BaseSearchMesaUserScreen = BaseSearchTableScreenUser;
+export default BaseSearchTableScreenUser;

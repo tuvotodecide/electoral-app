@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,32 +16,40 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Vote Summary Row Component
-export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
-  <View testID={`voteSummaryRow_${rowIndex}`} style={styles.voteSummaryTableRow}>
-    <CText testID={`voteSummaryLabel_${rowIndex}`} style={styles.voteSummaryLabel}>{item.label}</CText>
-    <View testID={`voteSummaryValue1Container_${rowIndex}`} style={styles.voteSummaryValueContainer}>
+export const VoteSummaryRow = ({
+  testID = "voteSummaryRow",
+  item,
+  isEditing,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
+  <View testID={testID} style={styles.voteSummaryTableRow}>
+    <CText testID={`${testID}Label`} style={styles.voteSummaryLabel}>{item.label}</CText>
+    <View testID={`${testID}ValueContainer`} style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
+          testID={`${testID}Input`}
           style={styles.voteSummaryInput}
           value={String(item.value1 ?? '')}
           onChangeText={value =>
             onUpdate(
               item.id,
               'value1',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`voteSummaryInput_${item.id}_presidente`}
         />
       ) : (
-        <CText testID={`voteSummaryValue1Text_${rowIndex}`} style={styles.voteSummaryValue}>
-          {item.value1 === '' || item.value1 == null ? '0' : String(item.value1)}
+        <CText testID={`${testID}Value`} style={styles.voteSummaryValue}>
+          {item.value1 === '' || item.value1 == null
+            ? emptyDisplayWhenReadOnly
+            : String(item.value1)}
         </CText>
       )}
     </View>
-    <View testID={`voteSummaryValue2Container_${rowIndex}`} style={styles.voteSummaryValueContainer}>
+    <View style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
           style={styles.voteSummaryInput}
@@ -50,16 +58,17 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate, rowIndex }) => (
             onUpdate(
               item.id,
               'value2',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
           placeholder="0"
-          testID={`voteSummaryInput_${item.id}_diputado`}
         />
       ) : (
-        <CText testID={`voteSummaryValue2Text_${rowIndex}`} style={styles.voteSummaryValue}>
-          {item.value2 === '' || item.value2 == null ? '0' : String(item.value2)}
+        <CText style={styles.voteSummaryValue}>
+          {item.value2 === '' || item.value2 == null
+            ? emptyDisplayWhenReadOnly
+            : String(item.value2)}
         </CText>
       )}
     </View>
@@ -72,16 +81,18 @@ export const VoteSummaryTable = ({
   voteSummaryResults,
   isEditing = false,
   onUpdate,
+  emptyDisplayWhenReadOnly = '0',
 }) => (
   <View testID={testID} style={styles.voteSummaryTableContainer}>
     <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>Votos</CText>
     {voteSummaryResults.map((item, index) => (
       <VoteSummaryRow
         key={index}
+        testID={`${testID}Row_${index}`}
         item={item}
         isEditing={isEditing}
         onUpdate={onUpdate}
-        rowIndex={index}
+        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
       />
     ))}
   </View>
@@ -94,7 +105,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 24, 32),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     paddingTop: getResponsiveSize(4, 12, 16),

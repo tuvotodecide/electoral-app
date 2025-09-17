@@ -150,6 +150,9 @@ export default function RegisterUser10({navigation, route}) {
         }
 
         const privKey = '0x' + bundle.seedHex;
+        // const address = new Wallet(privKey).address;
+        // didFromEthAddress(address);
+
         const walletData = await predictWalletAddress(CHAIN, privKey);
 
         setStage('store');

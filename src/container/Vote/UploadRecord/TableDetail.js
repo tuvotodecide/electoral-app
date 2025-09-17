@@ -7,7 +7,7 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,9 +16,9 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -40,21 +40,19 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function TableDetail({ navigation, route }) {
+export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData;
   // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
+  const shouldCenter = !(existingRecords && existingRecords.length > 0);
   const mesaInfo = route.params?.mesaInfo || null;
   const totalRecords = route.params?.totalRecords || 0;
 
-
-
   // Normalize mesa data structure
   const mesa = {
-    idRecinto:
-      rawMesa.locationId,
+    idRecinto: rawMesa.locationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
@@ -109,8 +107,6 @@ export default function TableDetail({ navigation, route }) {
       'Zona no especificada',
   };
 
-
-
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(
     route.params?.capturedImage || null,
@@ -121,9 +117,6 @@ export default function TableDetail({ navigation, route }) {
 
   // Navega a la cámara interna
   const handleTakePhoto = () => {
-
-
-
     const finalTableData = {
       ...mesa,
       ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
@@ -133,7 +126,6 @@ export default function TableDetail({ navigation, route }) {
       number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
     };
 
-  
     try {
       navigation.navigate(StackNav.CameraScreen, {
         tableData: finalTableData,
@@ -186,47 +178,52 @@ export default function TableDetail({ navigation, route }) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title={String.tableInformation}
-        showNotification={false}
+        title={
+          /*  mesa ? mesa.colegio : String.tableInformation*/
+          'Revisa'
+        }
+        showNotification={true}
       />
 
       {/* SCROLLABLE CONTENT */}
-      <View style={stylesx.scrollableContent}>
+      <View
+        style={[
+          stylesx.scrollableContent,
+          shouldCenter && stylesx.centerVertically,
+        ]}>
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
             {/* Left Column: Instructions and Table Data */}
             <View style={stylesx.leftColumn}>
-              <View style={stylesx.instructionContainer}>
-                <CText testID="tableDetailTitle" style={[stylesx.bigBold, { color: 'black' }]}>
+              <View
+                style={[
+                  stylesx.instructionContainer,
+                  shouldCenter && {marginTop: 0},
+                ]}>
+                <CText style={[stylesx.bigBold, {color: 'black'}]}>
                   {String.ensureAssignedTable}
                 </CText>
-                <CText
-                  testID="tableDetailSubtitle"
+                {/* <CText
                   style={[
                     stylesx.subtitle,
-                    { color: colors.grayScale500 || '#8B9399' },
+                    {color: colors.grayScale500 || '#8B9399'},
                   ]}>
                   {String.verifyTableInformation}
-                </CText>
+                </CText> */}
               </View>
 
-              <View testID="tableInformationCard" style={stylesx.tableCard}>
+              <View style={stylesx.tableCard}>
                 <View style={stylesx.tableCardHeader}>
                   <View style={stylesx.tableCardContent}>
-                    <CText testID="tableNumber" style={stylesx.tableCardTitle}>
+                    <CText style={stylesx.tableCardTitle}>
                       Mesa {mesa.numero}
                     </CText>
-                    <CText testID="tableLocation" style={stylesx.tableCardDetail}>
-                      Recinto: {mesa.recinto}
-                    </CText>
-                    <CText testID="tableZone" style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                    <CText testID="tableCode" style={stylesx.tableCardDetail}>
+                    <CText style={stylesx.tableCardDetail}>
                       Código de Mesa: {mesa.codigo}
                     </CText>
                   </View>
                   <MaterialIcons
-                    testID="tableIcon"
                     name="how-to-vote"
                     size={getResponsiveSize(40, 48, 56)}
                     color="#000"
@@ -239,28 +236,27 @@ export default function TableDetail({ navigation, route }) {
             {/* Right Column: AI Info and Photo Button OR Existing Records */}
             <View style={stylesx.rightColumn}>
               {existingRecords && existingRecords.length > 0 ? (
-                <View testID="existingRecordsContainer" style={stylesx.existingRecordsContainer}>
-                  <CText testID="existingRecordsTitle" style={stylesx.existingRecordsTitle}>
+                <View style={stylesx.existingRecordsContainer}>
+                  <CText style={stylesx.existingRecordsTitle}>
                     Actas Ya Atestiguadas ({totalRecords})
                   </CText>
-                  <CText testID="existingRecordsSubtitle" style={stylesx.existingRecordsSubtitle}>
+                  <CText style={stylesx.existingRecordsSubtitle}>
                     Esta mesa ya tiene actas registradas
                   </CText>
 
                   {existingRecords.map((record, index) => (
                     <TouchableOpacity
                       key={`${record.recordId}-${index}`}
-                      testID={`existingRecord_${index}`}
                       style={stylesx.recordCard}
                       onPress={() => {
                         navigation.navigate(StackNav.PhotoReviewScreen, {
                           mesa: mesa,
                           existingRecord: record,
-                          isViewOnly: true
+                          isViewOnly: true,
                         });
                       }}>
                       <View style={stylesx.recordHeader}>
-                        <CText testID={`recordTitle_${index}`} style={stylesx.recordTitle}>
+                        <CText style={stylesx.recordTitle}>
                           Acta #{index + 1}
                         </CText>
                       </View>
@@ -268,8 +264,7 @@ export default function TableDetail({ navigation, route }) {
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
-                            testID={`actaImage_${index}`}
-                            source={{ uri: record.actaImage }}
+                            source={{uri: record.actaImage}}
                             style={stylesx.actaImage}
                             resizeMode="cover"
                           />
@@ -282,36 +277,33 @@ export default function TableDetail({ navigation, route }) {
                   ))}
 
                   <TouchableOpacity
-                    testID="addNewRecordButton"
                     style={stylesx.addNewRecordBtn}
                     onPress={handleTakePhoto}>
                     <Ionicons name="add-circle" size={20} color="#4F9858" />
-                    <CText testID="addNewRecordText" style={stylesx.addNewRecordText}>
+                    <CText style={stylesx.addNewRecordText}>
                       Agregar Nueva
                     </CText>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <>
-                  <View testID="aiInfoSection" style={stylesx.infoAI}>
+                  <View style={stylesx.infoAI}>
                     <Ionicons
-                      testID="aiIcon"
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
                       color={'#226678'}
                       style={stylesx.aiIcon}
                     />
-                    <CText testID="aiInfoText" style={stylesx.iaText}>
+                    <CText style={stylesx.iaText}>
                       {String.aiWillSelectClearestPhoto}
                     </CText>
                   </View>
 
                   <TouchableOpacity
-                    testID="tableDetailTabletTakePhotoButton"
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
-                    <CText testID="tableDetailTabletTakePhotoText" style={stylesx.takePhotoBtnText}>
+                    <CText style={stylesx.takePhotoBtnText}>
                       {String.takePhoto}
                     </CText>
                   </TouchableOpacity>
@@ -322,99 +314,95 @@ export default function TableDetail({ navigation, route }) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View testID="tableDetailInstructionContainer" style={stylesx.instructionContainer}>
-              <CText testID="tableDetailMainTitle" style={[stylesx.bigBold, { color: 'black' }]}>
+            <View
+              style={[
+                stylesx.instructionContainer,
+                shouldCenter && {marginTop: 0},
+              ]}>
+              <CText style={[stylesx.bigBold, {color: 'black'}]}>
                 {String.ensureAssignedTable}
               </CText>
-              <CText
-                testID="tableDetailMainSubtitle"
+              {/* <CText
                 style={[
                   stylesx.subtitle,
-                  { color: colors.grayScale500 || '#8B9399' },
+                  {color: colors.grayScale500 || '#8B9399'},
                 ]}>
                 {String.verifyTableInformation}
-              </CText>
+              </CText> */}
             </View>
 
-            <View testID="tableDetailInfoCard" style={stylesx.tableCard}>
-              <View testID="tableDetailCardHeader" style={stylesx.tableCardHeader}>
-                <View testID="tableDetailCardContent" style={stylesx.tableCardContent}>
-                  <CText testID="tableDetailNumber" style={stylesx.tableCardTitle}>
-                    Mesa {mesa.numero}
-                  </CText>
-                  <CText testID="tableDetailLocation" style={stylesx.tableCardDetail}>
-                    Recinto: {mesa.recinto}
-                  </CText>
-                  <CText testID="tableDetailZone" style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                  <CText testID="tableDetailCode" style={stylesx.tableCardDetail}>
-                    Código de Mesa: {mesa.codigo}
-                  </CText>
-                </View>
+            <View style={stylesx.tableCard}>
+              <View style={stylesx.tableCardHeader}>
                 <MaterialIcons
-                  testID="tableDetailIcon"
                   name="how-to-vote"
                   size={getResponsiveSize(40, 48, 56)}
                   color="#000"
                   style={stylesx.downloadIcon}
                 />
+                <View style={stylesx.tableCardContent}>
+                  <CText style={stylesx.tableCardTitle}>
+                    {String.table} {mesa.numero}
+                  </CText>
+                  <CText style={stylesx.tableCardDetail}>
+                    {String.tableCode}{':'} {mesa.codigo}
+                  </CText>
+                  <CText style={stylesx.tableCardDetail}>
+                    {String.precinct}{':'} {mesa.colegio}
+                  </CText>
+                </View>
               </View>
             </View>
 
             {/* Show existing attestations if available */}
             {existingRecords && existingRecords.length > 0 && (
-              <View testID="tableDetailExistingRecordsContainer" style={stylesx.existingRecordsContainer}>
-                <CText testID="tableDetailExistingRecordsTitle" style={stylesx.existingRecordsTitle}>
+              <View style={stylesx.existingRecordsContainer}>
+                <CText style={stylesx.existingRecordsTitle}>
                   Actas Ya Atestiguadas ({totalRecords})
                 </CText>
-                <CText testID="tableDetailExistingRecordsSubtitle" style={stylesx.existingRecordsSubtitle}>
+                <CText style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
                 </CText>
 
                 {existingRecords.map((record, index) => (
                   <TouchableOpacity
                     key={`${record.recordId}-${index}`}
-                    testID={`tableDetailExistingRecord_${index}`}
                     style={stylesx.recordCard}
                     onPress={() => {
                       // Navigate to detail view or show full image
                       navigation.navigate(StackNav.PhotoReviewScreen, {
                         mesa: mesa,
                         existingRecord: record,
-                        isViewOnly: true
+                        isViewOnly: true,
                       });
                     }}>
-                    <View testID={`tableDetailRecordHeader_${index}`} style={stylesx.recordHeader}>
-                      <CText testID={`tableDetailRecordTitle_${index}`} style={stylesx.recordTitle}>
+                    <View style={stylesx.recordHeader}>
+                      <CText style={stylesx.recordTitle}>
                         Acta #{index + 1}
                       </CText>
-                      <CText testID={`tableDetailRecordId_${index}`} style={stylesx.recordId}>
-                        ID: {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}...
+                      <CText style={stylesx.recordId}>
+                        ID:{' '}
+                        {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}
+                        ...
                       </CText>
                     </View>
 
                     {record.actaImage && (
-                      <View testID={`tableDetailActaImageContainer_${index}`} style={stylesx.actaImageContainer}>
+                      <View style={stylesx.actaImageContainer}>
                         <Image
-                          testID={`tableDetailActaImage_${index}`}
-                          source={{ uri: record.actaImage }}
+                          source={{uri: record.actaImage}}
                           style={stylesx.actaImage}
                           resizeMode="cover"
                         />
-                        <View testID={`tableDetailImageOverlay_${index}`} style={stylesx.imageOverlay}>
-                          <Ionicons
-                            testID={`tableDetailViewIcon_${index}`}
-                            name="eye"
-                            size={24}
-                            color="#fff"
-                          />
-                          <CText testID={`tableDetailViewImageText_${index}`} style={stylesx.viewImageText}>Ver Acta</CText>
+                        <View style={stylesx.imageOverlay}>
+                          <Ionicons name="eye" size={24} color="#fff" />
+                          <CText style={stylesx.viewImageText}>Ver Acta</CText>
                         </View>
                       </View>
                     )}
 
                     {record.partyResults && record.partyResults.length > 0 && (
-                      <View testID={`tableDetailRecordSummary_${index}`} style={stylesx.recordSummary}>
-                        <CText testID={`tableDetailRecordSummaryText_${index}`} style={stylesx.recordSummaryText}>
+                      <View style={stylesx.recordSummary}>
+                        <CText style={stylesx.recordSummaryText}>
                           {record.partyResults.length} partidos registrados
                         </CText>
                       </View>
@@ -423,17 +411,15 @@ export default function TableDetail({ navigation, route }) {
                 ))}
 
                 <TouchableOpacity
-                  testID="tableDetailAddNewRecordButton"
                   style={stylesx.addNewRecordBtn}
                   onPress={handleTakePhoto}>
                   <Ionicons
-                    testID="tableDetailAddIcon"
                     name="add-circle"
                     size={24}
                     color="#4F9858"
                     style={stylesx.addIcon}
                   />
-                  <CText testID="tableDetailAddNewRecordText" style={stylesx.addNewRecordText}>
+                  <CText style={stylesx.addNewRecordText}>
                     Agregar Nueva Acta
                   </CText>
                 </TouchableOpacity>
@@ -443,25 +429,25 @@ export default function TableDetail({ navigation, route }) {
             {/* Show photo taking section only if no existing records */}
             {(!existingRecords || existingRecords.length === 0) && (
               <>
-                <View testID="tableDetailAiInfoSection" style={stylesx.infoAI}>
+                <View style={stylesx.infoAI}>
                   <Ionicons
-                    testID="tableDetailAiIcon"
                     name="sparkles"
                     size={getResponsiveSize(16, 19, 22)}
                     color={'#226678'}
                     style={stylesx.aiIcon}
                   />
-                  <CText testID="tableDetailAiInfoText" style={stylesx.iaText}>
+                  <CText style={stylesx.iaText}>
                     {String.aiWillSelectClearestPhoto}
                   </CText>
                 </View>
 
                 <TouchableOpacity
-                  testID="tableDetailTakePhotoButton"
                   style={stylesx.takePhotoBtn}
                   activeOpacity={0.85}
                   onPress={handleTakePhoto}>
-                  <CText testID="tableDetailTakePhotoButtonText" style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
+                  <CText style={stylesx.takePhotoBtnText}>
+                    {String.takePhoto}
+                  </CText>
                 </TouchableOpacity>
               </>
             )}
@@ -470,18 +456,17 @@ export default function TableDetail({ navigation, route }) {
       </View>
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}
-      <Modal testID="photoPreviewModal" visible={modalVisible} animationType="slide" transparent={false}>
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
         <View style={stylesx.modalContainer}>
           <View style={stylesx.modalHeader}>
-            <CText testID="previewTitle" type={'B18'} color={colors.textColor || '#222'}>
+            <CText type={'B18'} color={colors.textColor || '#222'}>
               {String.preview}
             </CText>
           </View>
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
-                testID="previewImage"
-                source={{ uri: capturedImage.uri }}
+                source={{uri: capturedImage.uri}}
                 style={stylesx.previewImage}
                 resizeMode="contain"
               />
@@ -489,21 +474,19 @@ export default function TableDetail({ navigation, route }) {
           )}
           <View style={stylesx.modalButtons}>
             <TouchableOpacity
-              testID="retakePhotoButton"
               style={stylesx.retakeButton}
               onPress={handleRetakePhoto}>
-              <CText testID="retakePhotoText" type={'B14'} color={colors.grayScale600 || '#666'}>
+              <CText type={'B14'} color={colors.grayScale600 || '#666'}>
                 {String.retakePhoto}
               </CText>
             </TouchableOpacity>
             <TouchableOpacity
-              testID="confirmPhotoButton"
               style={[
                 stylesx.confirmButton,
-                { backgroundColor: colors.primary || '#4F9858' },
+                {backgroundColor: colors.primary || '#4F9858'},
               ]}
               onPress={handleConfirmPhoto}>
-              <CText testID="confirmPhotoText" type={'B14'} color={colors.white || '#fff'}>
+              <CText type={'B14'} color={colors.white || '#fff'}>
                 {String.confirmAndSend}
               </CText>
             </TouchableOpacity>
@@ -550,6 +533,7 @@ const stylesx = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: getResponsiveSize(6, 8, 10),
     color: '#222',
+    textAlign: 'center',
     lineHeight: getResponsiveSize(24, 26, 30),
   },
   subtitle: {
@@ -565,7 +549,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 20, 25),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -681,7 +665,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -689,6 +673,7 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
   },
   tableCardContent: {
     flex: 1,
@@ -740,7 +725,7 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(12, 16, 18),
     marginBottom: getResponsiveSize(12, 15, 18),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -818,5 +803,8 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(15, 16, 17),
     fontWeight: '600',
     color: '#4F9858',
+  },
+  centerVertically: {
+    justifyContent: 'center',
   },
 });

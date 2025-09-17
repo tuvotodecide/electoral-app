@@ -24,6 +24,14 @@ export default function HomeStackNavigation() {
         component={StackRoute.ElectoralLocations}
       />
       <HomeStack.Screen
+        name={StackNav.ElectoralLocationsSave}
+        component={StackRoute.ElectoralLocationsSave}
+      />
+      <HomeStack.Screen
+        name={StackNav.OfflinePendingScreen}
+        component={StackRoute.OfflinePendingScreen}
+      />
+      <HomeStack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -21,6 +21,10 @@ import axios from 'axios';
 import {oracleCalls, oracleReads} from '../../../api/oracle';
 import {availableNetworks} from '../../../api/params';
 import InfoModal from '../../../components/modal/InfoModal';
+import NetInfo from '@react-native-community/netinfo';
+import {enqueue} from '../../../utils/offlineQueue';
+import {persistLocalImage} from '../../../utils/persistLocalImage';
+import {validateBallotLocally} from '../../../utils/ballotValidation';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -72,6 +76,16 @@ const PhotoConfirmationScreen = () => {
     message: '',
   });
 
+  const didAutoOpenRef = useRef(false);
+  useEffect(() => {
+    if (didAutoOpenRef.current) return;
+    didAutoOpenRef.current = true;
+    const t = setTimeout(() => {
+      verifyAndUpload();
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
@@ -87,6 +101,18 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
       // Construir datos para verificación
       const verificationData = {
         tableNumber: tableData?.codigo || 'N/A',
@@ -112,19 +138,58 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
-  const buildVoteData = type => {
-    const getValue = (label, defaultValue = 0) => {
-      const item = voteSummaryResults.find(s => s.label === label);
-      if (!item) return defaultValue;
+  // const buildVoteData = type => {
+  //   const getValue = (label, defaultValue = 0) => {
+  //     const item = (voteSummaryResults || []).find(s => s.label === label);
+  //     if (!item) return defaultValue;
 
-      const value = type === 'presidente' ? item.value1 : item.value2;
-      return parseInt(value, 10) || defaultValue;
+  //     const value = type === 'presidente' ? item.value1 : item.value2;
+  //     return parseInt(value, 10) || defaultValue;
+  //   };
+
+  //   return {
+  //     validVotes: getValue('Votos Válidos'),
+  //     nullVotes: getValue('Votos Nulos'),
+  //     blankVotes: getValue('Votos en Blanco'),
+  //     partyVotes: partyResults.map(party => ({
+  //       partyId: party.partido,
+  //       votes:
+  //         parseInt(
+  //           type === 'presidente' ? party.presidente : party.diputado,
+  //           10,
+  //         ) || 0,
+  //     })),
+  //     totalVotes:
+  //       getValue('Votos Válidos') +
+  //       getValue('Votos Nulos') +
+  //       getValue('Votos en Blanco'),
+  //   };
+  // };
+  const buildVoteData = type => {
+    const norm = s =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
+    const aliases = {
+      validos: ['validos', 'válidos', 'votos válidos'],
+      nulos: ['nulos', 'votos nulos'],
+      blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    };
+    const pickRow = key =>
+      (voteSummaryResults || []).find(
+        r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      );
+    const getValue = key => {
+      const row = pickRow(key);
+      const raw = type === 'presidente' ? row?.value1 : row?.value2;
+      const n = parseInt(String(raw ?? '0'), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
     };
 
     return {
-      validVotes: getValue('Votos Válidos'),
-      nullVotes: getValue('Votos Nulos'),
-      blankVotes: getValue('Votos en Blanco'),
+      validVotes: getValue('validos'),
+      nullVotes: getValue('nulos'),
+      blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
         partyId: party.partido,
         votes:
@@ -133,10 +198,7 @@ const PhotoConfirmationScreen = () => {
             10,
           ) || 0,
       })),
-      totalVotes:
-        getValue('Votos Válidos') +
-        getValue('Votos Nulos') +
-        getValue('Votos en Blanco'),
+      totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
   };
 
@@ -209,7 +271,7 @@ const PhotoConfirmationScreen = () => {
           'Content-Type': 'application/json',
           'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000, // 30 segundos timeout
+        timeout: 30000,
       });
 
       // Manejar diferentes tipos de respuestas
@@ -305,6 +367,15 @@ const PhotoConfirmationScreen = () => {
         voteSummaryResults: voteSummaryResults || [],
       };
 
+      const normalizedVoteSummary = (
+        electoralData.voteSummaryResults || []
+      ).map(r => {
+        if (r.id === 'validos') return {...r, label: 'Votos Válidos'};
+        if (r.id === 'nulos') return {...r, label: 'Votos Nulos'};
+        if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
+        return r;
+      });
+
       // Convertir URI a path
       const imagePath = photoUri.startsWith('file://')
         ? photoUri.substring(7)
@@ -314,7 +385,7 @@ const PhotoConfirmationScreen = () => {
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        electoralData,
+        {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
       );
 
@@ -336,6 +407,55 @@ const PhotoConfirmationScreen = () => {
   };
 
   const confirmPublishAndCertify = async () => {
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (!online) {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
+
+      const persistedUri = await persistLocalImage(photoUri);
+      const additionalData = {
+        idRecinto: tableData?.idRecinto || tableData.locationId,
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
+        location: tableData?.location || 'Bolivia',
+        userId: userData?.id || 'unknown',
+        userName: userFullName,
+        role: 'witness',
+      };
+      const electoralData = {
+        partyResults: partyResults || [],
+        voteSummaryResults: voteSummaryResults || [],
+      };
+
+      await enqueue({
+        type: 'publishActa',
+        payload: {
+          imageUri: persistedUri,
+          aiAnalysis: aiAnalysis || {},
+          electoralData,
+          additionalData,
+          tableData: {
+            codigo: tableData?.codigo,
+            idRecinto: tableData?.idRecinto,
+          },
+        },
+      });
+      setShowConfirmModal(false);
+      setStep(0);
+      navigation.replace('OfflinePendingScreen');
+      return;
+    }
     setStep(1);
 
     try {
@@ -350,7 +470,7 @@ const PhotoConfirmationScreen = () => {
       const privateKey = userData?.privKey;
 
       // 4. Crear NFT en blockchain
-      const isRegistered = await oracleReads.isRegistered(
+      let isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
         1,
@@ -364,7 +484,7 @@ const PhotoConfirmationScreen = () => {
           oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
         );
 
-        const isRegistered = await oracleReads.isRegistered(
+        isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
           20,
@@ -437,7 +557,6 @@ const PhotoConfirmationScreen = () => {
         if (!attestationSuccess) {
         }
       } else {
-
       }
 
       // 6. Navegar a pantalla de éxito con datos de IPFS
@@ -487,11 +606,11 @@ const PhotoConfirmationScreen = () => {
     //}
   };
 
-  const closeModal = () => {
+  const closeModal = (goBack = false) => {
     setShowConfirmModal(false);
     setStep(0);
+    if (goBack) navigation.goBack();
   };
-
   const closeInfoModal = () => {
     setInfoModalData({
       visible: false,
@@ -501,10 +620,9 @@ const PhotoConfirmationScreen = () => {
   };
 
   return (
-    <CSafeAreaView testID="photoConfirmationContainer" style={styles.container}>
+    <CSafeAreaView style={styles.container}>
       {/* Header */}
       <UniversalHeader
-        testID="photoConfirmationHeader"
         colors={colors}
         onBack={handleBack}
         title={`Mesa ${
@@ -531,27 +649,29 @@ const PhotoConfirmationScreen = () => {
       />
 
       {/* Information Ready to Load Text */}
-      <View testID="photoConfirmationInfoContainer" style={styles.infoContainer}>
-        <CText testID="photoConfirmationInfoText" style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
+      <View style={styles.infoContainer}>
+        <CText style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
       </View>
 
       {/* Main Content */}
-      <View testID="photoConfirmationContent" style={styles.content}>
-        <CText testID="photoConfirmationMainText" style={styles.mainText}>
-          {I18nStrings.i}
-          <CText style={styles.mainTextBold}> {userFullName}</CText>
-        </CText>
+      <View style={styles.content}>
+        {!showConfirmModal && !showDuplicateModal && (
+          <>
+            <CText style={styles.mainText}>
+              {I18nStrings.i}
+              <CText style={styles.mainTextBold}> {userFullName}</CText>
+            </CText>
 
-        <TouchableOpacity
-          testID="publishAndCertifyButton"
-          style={styles.publishButton}
-          onPress={verifyAndUpload}>
-          <CText testID="publishAndCertifyButtonText" style={styles.publishButtonText}>
-            {I18nStrings.publishAndCertify}
-          </CText>
-        </TouchableOpacity>
-
-        <CText testID="photoConfirmationText" style={styles.confirmationText}>
+            <TouchableOpacity
+              style={styles.publishButton}
+              onPress={verifyAndUpload}>
+              <CText style={styles.publishButtonText}>
+                {I18nStrings.publishAndCertify}
+              </CText>
+            </TouchableOpacity>
+          </>
+        )}
+        <CText style={styles.confirmationText}>
           {I18nStrings.actaCorrectConfirmation
             .replace(
               '{tableNumber}',
@@ -587,41 +707,44 @@ const PhotoConfirmationScreen = () => {
       </View>
 
       <Modal
-        testID="photoConfirmationModal"
         visible={showConfirmModal}
         transparent
         animationType="fade"
-        onRequestClose={closeModal}>
-        <View testID="photoConfirmationModalOverlay" style={modalStyles.modalOverlay}>
-          <View testID="photoConfirmationModalContainer" style={modalStyles.modalContainer}>
+        onRequestClose={() => closeModal(true)}>
+        <View style={modalStyles.modalOverlay}>
+          <View style={modalStyles.modalContainer}>
             {step === 0 && (
               <>
-                <View testID="photoConfirmationWarningIcon" style={modalStyles.iconCircleWarning}>
+                <View style={modalStyles.iconCircleWarning}>
                   <Ionicons
-                    testID="photoConfirmationAlertIcon"
                     name="alert-outline"
                     size={getResponsiveSize(36, 48, 60)}
                     color="#da2a2a"
                   />
                 </View>
-                <View testID="photoConfirmationSpacer" style={modalStyles.spacer} />
-                <CText testID="photoConfirmationTitle" style={modalStyles.confirmTitle}>
-                  {I18nStrings.publishAndCertifyConfirmation}
+
+                <CText style={modalStyles.confirmBody}>
+                  <CText style={modalStyles.boldText}>Yo {userFullName}</CText>
+                  {'\n'}
+                  Certifico que los datos que ingreso coinciden con la foto del
+                  acta de la mesa y declaro que no he{' '}
+                  <CText style={modalStyles.boldText}>
+                    inventado ni modificado
+                  </CText>{' '}
+                  información.
                 </CText>
-                <View testID="photoConfirmationButtonContainer" style={modalStyles.buttonContainer}>
+                <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
-                    testID="photoConfirmationCancelButton"
                     style={modalStyles.cancelButton}
-                    onPress={closeModal}>
-                    <CText testID="photoConfirmationCancelButtonText" style={modalStyles.cancelButtonText}>
+                    onPress={() => closeModal(true)}>
+                    <CText style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    testID="photoConfirmationConfirmButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
-                    <CText testID="photoConfirmationConfirmButtonText" style={modalStyles.confirmButtonText}>
+                    <CText style={modalStyles.confirmButtonText}>
                       {I18nStrings.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
@@ -631,15 +754,14 @@ const PhotoConfirmationScreen = () => {
             {step === 1 && (
               <>
                 <ActivityIndicator
-                  testID="photoConfirmationLoadingIndicator"
                   size="large"
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <CText testID="photoConfirmationLoadingTitle" style={modalStyles.loadingTitle}>
+                <CText style={modalStyles.loadingTitle}>
                   {I18nStrings.pleaseWait}
                 </CText>
-                <CText testID="photoConfirmationLoadingSubtext" style={modalStyles.loadingSubtext}>
+                <CText style={modalStyles.loadingSubtext}>
                   {I18nStrings.savingToBlockchain}
                 </CText>
               </>
@@ -648,36 +770,33 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
       <Modal
-        testID="duplicateBallotModal"
         visible={showDuplicateModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowDuplicateModal(false)}>
-        <View testID="duplicateBallotModalOverlay" style={modalStyles.modalOverlay}>
-          <View testID="duplicateBallotModalContainer" style={modalStyles.modalContainer}>
-            <View testID="duplicateBallotWarningIcon" style={modalStyles.iconCircleWarning}>
+        <View style={modalStyles.modalOverlay}>
+          <View style={modalStyles.modalContainer}>
+            <View style={modalStyles.iconCircleWarning}>
               <Ionicons
-                testID="duplicateBallotWarningIconSvg"
                 name="warning-outline"
                 size={getResponsiveSize(36, 48, 60)}
                 color="#FFA000"
               />
             </View>
-            <View testID="duplicateBallotSpacer" style={modalStyles.spacer} />
-            <CText testID="duplicateBallotTitle" style={modalStyles.confirmTitle}>
+            <View style={modalStyles.spacer} />
+            <CText style={modalStyles.confirmTitle}>
               {I18nStrings.duplicateBallotTitle}
             </CText>
 
-            <CText testID="duplicateBallotMessage" style={modalStyles.duplicateMessage}>
+            <CText style={modalStyles.duplicateMessage}>
               {I18nStrings.duplicateBallotMessage}
             </CText>
 
-            <View testID="duplicateBallotButtonContainer" style={modalStyles.buttonContainer}>
+            <View style={modalStyles.buttonContainer}>
               <TouchableOpacity
-                testID="duplicateBallotGoBackButton"
                 style={[modalStyles.cancelButton, {flex: 1}]}
                 onPress={() => setShowDuplicateModal(false)}>
-                <CText testID="duplicateBallotGoBackButtonText" style={modalStyles.cancelButtonText}>
+                <CText style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
                 </CText>
               </TouchableOpacity>
@@ -686,7 +805,7 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
 
-      <InfoModal testID="photoConfirmationInfoModal" {...infoModalData} onClose={closeInfoModal} />
+      <InfoModal {...infoModalData} onClose={closeInfoModal} />
     </CSafeAreaView>
   );
 };
@@ -698,6 +817,19 @@ const modalStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: getResponsiveSize(16, 20, 32),
+  },
+  confirmBody: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4F4F4F',
+    textAlign: 'justify',
+    lineHeight: getResponsiveSize(20, 24, 28),
+    marginBottom: getResponsiveSize(14, 18, 22),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    alignSelf: 'stretch',
+  },
+  boldText: {
+    fontWeight: '700',
+    color: '#2F2F2F',
   },
   modalContainer: {
     backgroundColor: '#fff',

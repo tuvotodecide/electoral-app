@@ -1,5 +1,12 @@
-import {PermissionsAndroid, Platform, StatusBar, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import {
+  PermissionsAndroid,
+  Platform,
+  StatusBar,
+  View,
+  AppState,
+  ReactNative,
+} from 'react-native';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
 import {useDispatch, useSelector} from 'react-redux';
@@ -10,6 +17,8 @@ import {registerDeviceToken} from './utils/registerDeviceToken';
 import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
 import {initializeFirebase} from './config/firebase';
 import {migrateIfNeeded} from './utils/migrateBundle';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -20,6 +29,10 @@ const App = () => {
   const [ready, setReady] = useState(false);
   const auth = useSelector(s => s.auth);
   const dispatch = useDispatch();
+  const processingRef = useRef(false);
+
+
+
   useEffect(() => {
     if (auth.isAuthenticated && auth.pendingNav) {
       navigate(auth.pendingNav.name, auth.pendingNav.params);
@@ -88,6 +101,10 @@ const App = () => {
   //   };
   //   fetchToken();
   // }, []);
+
+  // 1 al montar (por si ya hay internet),
+  // 2 cuando vuelve el internet,
+  // 3 cuando la app vuelve a primer plano.
 
   return (
     <QueryClientProvider client={queryClient}>
