@@ -597,7 +597,6 @@ const BaseSearchTableScreen = ({
     if (!filteredTables || filteredTables.length === 0) {
       // Mostrar mensaje cuando no hay resultados
       return (
-      return (
         <View style={{flex: 1}}>
           <View testID="baseSearchTableScreenNoResultsContainer" style={[styles.noResultsContainer, styles1.noResultsContainer, {padding: 20}]}>
             <CText testID="baseSearchTableScreenNoResultsText" style={[styles.noResultsText, styles1.noResultsText, {fontSize: 16, color: '#666'}]}>
