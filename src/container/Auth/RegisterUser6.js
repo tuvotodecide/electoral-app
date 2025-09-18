@@ -40,7 +40,6 @@ export default function RegisterUser6({navigation, route}) {
   const onPressRememberMe = () => {
     setCheck(!check);
   };
-console.log(ocrData)
   const {fullName, governmentIdentifier, dateOfBirth} = ocrData;
 
   const fmtDate = epoch => {

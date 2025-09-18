@@ -38,8 +38,6 @@ import {
 import {CHAIN} from '@env';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
-import {getBioFlag} from '../../utils/BioFlag';
-import {startSession} from '../../utils/Session';
 import {didFromEthAddress} from '../../api/did';
 import {
   createCredential,

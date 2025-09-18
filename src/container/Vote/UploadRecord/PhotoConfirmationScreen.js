@@ -89,7 +89,7 @@ const PhotoConfirmationScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-  console.log(userData);
+
 
   const vc = userData?.vc;
   const subject = getCredentialSubjectFromPayload(userData) || {};

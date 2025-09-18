@@ -156,32 +156,14 @@ Si el orden SÍ es correcto, responde SOLO este JSON (sin texto extra):
       model: this.model,
       contents,
     });
-    console.log(resp)
+
     const text = await extractText(resp);
 
-    if (__DEV__) {
-      console.log('--- GENAI RAW TEXT (start) ---');
-      console.log(text);
-      console.log('--- GENAI RAW TEXT (end) ---');
-      // Si necesitas más, imprime una vista del objeto respuesta
-      try {
-        console.log('GENAI resp keys:', Object.keys(resp || {}));
-        console.log(
-          'GENAI resp snapshot:',
-          safeStringify({
-            textType: typeof resp?.text,
-            hasResponse: !!resp?.response,
-            parts: resp?.response?.candidates?.[0]?.content?.parts?.length,
-          }),
-        );
-      } catch {}
-    }
 
     let data;
 
     try {
       data = JSON.parse(text);
-      console.log(data)
     } catch (e) {
       const loose = tryParseLooseJSON(text);
       if (loose) {

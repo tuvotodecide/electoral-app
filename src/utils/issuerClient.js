@@ -33,7 +33,6 @@ async function getIssuerApi() {
 
 async function getCreatePath() {
   const prov = await getProvision();
-  console.log(prov);
 
   const p = prov?.issuer?.createCredentialPath;
   if (!p) throw new Error('createCredentialPath no entregado');
@@ -56,20 +55,19 @@ export async function createCredential(subjectDid, claims) {
     parseInt(CRED_EXP_DAYS || '365', 10) * 86400;
   const body = {
     credentialSchema:
+      CRED_SCHEMA_URL ||
       'https://ipfs.io/ipfs/QmeQhwtwP6XNG155M49yV6TFmm6s8er13WfeU7tcuM8eat',
     type: CRED_TYPE,
     credentialSubject: {id: subjectDid, ...claims},
     expiration,
   };
-  console.log(body);
 
   const api = await getIssuerApi();
-  console.log(api);
 
   const path = await getCreatePath();
-  console.log(path);
+
   const {data} = await api.post(path, body);
-  console.log(data);
+
   return data;
 }
 

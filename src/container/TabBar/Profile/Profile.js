@@ -38,7 +38,6 @@ export default function Profile({navigation}) {
   const dispatch = useDispatch();
 
   const userData = useSelector(state => state.wallet.payload);
-  console.log(userData);
 
 const subject = getCredentialSubjectFromPayload(userData) || {};
   const addr = userData?.account ?? '';

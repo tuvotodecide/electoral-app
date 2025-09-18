@@ -17,7 +17,6 @@ const mainnetConfig = {
 }
 
 export function didFromEthAddress(ethAddress) {
-  console.log('Generating DID from EVM address:', ethAddress);
   const config = ENVIRONMENT === 'production' ? mainnetConfig:testnetConfig;
 
   const addrHex = ethAddress.toLowerCase().replace(/^0x/, '');

@@ -10,7 +10,6 @@ export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
-  console.log(item.task.payload);
 
   const buildFromPayload = type => {
     const norm = s =>

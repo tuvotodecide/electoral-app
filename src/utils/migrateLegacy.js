@@ -63,11 +63,9 @@ export async function migrateFromBackendIfNeeded(stored, pin) {
   }
 
   const legacyVc = dec.data.vc;
-  console.log(legacyVc);
   
   
   const claims = mapLegacyVcToNewClaims(legacyVc);
-  console.log(claims);
 
 
   let address = payload.account;
@@ -77,7 +75,7 @@ export async function migrateFromBackendIfNeeded(stored, pin) {
   if (!address) return {ok:false, reason:'no_eth_address'};
 
   const {did: subjectDid} = didFromEthAddress(address);
-  console.log(subjectDid);
+
   
   let credentialId;
   try {
