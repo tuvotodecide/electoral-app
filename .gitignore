@@ -1,4 +1,11 @@
-# OSX
+/.dev-local/
+
+# Existing ignores (keep common defaults)
+node_modules/
+android/
+ios/
+*.log
+.env# OSX
 #
 .DS_Store
 
@@ -77,3 +84,5 @@ yarn-error.log
 .env
 .env_real
 /.maestro/test_output_directory
+
+.sh
