@@ -9,8 +9,11 @@ import CHeader from '../../../components/common/CHeader';
 import String from '../../../i18n/String';
 import {PRIVACY_URL} from '@env';
 import {styles} from '../../../themes';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function PrivacyPolicies() {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('PrivacyPolicies', true);
   return (
     <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.privacyPolicy} testID="privacyPoliciesHeader" />

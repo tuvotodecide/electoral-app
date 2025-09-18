@@ -13,11 +13,14 @@ import CText from '../../../components/common/CText';
 import {LanguageData} from '../../../api/constant';
 import CButton from '../../../components/common/CButton';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function SelectLanguage({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [isSelect, setIsSelect] = useState('English (USA)');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SelectLanguage', true);
   const onPressLanguage = item => {
     setIsSelect(item.lName);
   };

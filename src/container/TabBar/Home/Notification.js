@@ -13,6 +13,7 @@ import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import {FirebaseNotificationService} from '../../../services/FirebaseNotificationService';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 import {
   mockNotificaciones,
@@ -29,6 +30,8 @@ export default function Notification({navigation}) {
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   // const notificationService = new FirebaseNotificationService();
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Notification', true);
 
   useEffect(() => {
     const cargarNotificaciones = async () => {

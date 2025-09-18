@@ -12,10 +12,13 @@ import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import CButton from '../../components/common/CButton';
 import {StackNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function VerifySuccess({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('VerifySuccess', true);
   const onPressContinue = () => {
     navigation.reset({
       index: 0,

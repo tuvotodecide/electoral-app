@@ -25,6 +25,7 @@ import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUserQrPin2({navigation, route}) {
   const {originalPin, payload} = route.params;
@@ -34,6 +35,8 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const [showError, setShowError] = useState(false);
   const dispatch = useDispatch();
   const otpRef = useRef(null);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecoveryUserQrpin2', true);
 
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);

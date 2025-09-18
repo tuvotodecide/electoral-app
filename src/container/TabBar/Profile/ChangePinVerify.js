@@ -18,12 +18,15 @@ import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 import {checkPin} from '../../../utils/Cifrate';
 import InfoModal from '../../../components/modal/InfoModal';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function ChangePinVerify({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onOtpChange = text => setOtp(text);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('ChangePinVerify', true);
   const otpRef = useRef(null);
 
   const verify = async code => {

@@ -18,6 +18,7 @@ import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 import {changePin} from '../../../utils/changePin';
 import InfoModal from '../../../components/modal/InfoModal';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function ChangePinNewConfirm({navigation, route}) {
   const {oldPin, newPin} = route.params;
@@ -25,6 +26,8 @@ export default function ChangePinNewConfirm({navigation, route}) {
   const [modal, setModal] = useState({visible: false, msg: '', title: ''});
   const [otp, setOtp] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('ChangePinNewConfirm', true);
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
   const finish = async () => {

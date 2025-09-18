@@ -16,12 +16,15 @@ import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function ChangePinNew({navigation, route}) {
   const {oldPin} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('ChangePinNew', true);
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
 

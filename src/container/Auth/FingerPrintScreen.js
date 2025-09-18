@@ -13,10 +13,13 @@ import {moderateScale} from '../../common/constants';
 import CButton from '../../components/common/CButton';
 import String from '../../i18n/String';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function FingerPrintScreen({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const onPressEnableFaceId = () => {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('FingerPrintScreen', true);
     navigation.navigate(AuthNav.SelectCountry);
   };
   const onPressSkipNow = () => {

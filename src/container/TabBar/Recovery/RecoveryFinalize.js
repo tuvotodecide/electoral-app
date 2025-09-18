@@ -26,9 +26,12 @@ const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 
 import {registerDeviceToken} from '../../../utils/registerDeviceToken';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, reqId} = route.params;
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecoveryFinalize', true);
   useEffect(() => {
     (async () => {
       const deviceId = await getDeviceId();

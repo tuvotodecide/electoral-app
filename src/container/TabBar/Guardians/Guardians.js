@@ -30,6 +30,7 @@ import {
   removeGuardianOnChain,
 } from '../../../api/guardianOnChain';
 import {getSecrets} from '../../../utils/Cifrate';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -54,6 +55,8 @@ export default function Guardians({navigation}) {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Guardians', true);
   const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
   const {mutate: deleteGuardianId, isLoading: loading} =
     useGuardianDeleteQuery();

@@ -36,6 +36,7 @@ import {setAddresses} from '../../redux/slices/addressSlice';
 import {getPredictedGuardian} from '../../utils/getGuardian';
 import {getBioFlag} from '../../utils/BioFlag';
 import {startSession} from '../../utils/Session';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser10({navigation, route}) {
   const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
@@ -49,6 +50,8 @@ export default function RegisterUser10({navigation, route}) {
   const watchdogRef = useRef(null);
   const dispatch = useDispatch();
   const {mutateAsync: registerStore} = useKycRegisterQuery();
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser10', true);
   const startedRef = useRef(false);
 
   useEffect(() => {

@@ -11,10 +11,13 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import CButton from '../../../components/common/CButton';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function NotificationDetails({route}) {
   const colors = useSelector(state => state.theme.theme);
   const item = route?.params?.item;
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('NotificationDetails', true);
 
   const RightIcon = () => {
     return (

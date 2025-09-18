@@ -14,6 +14,7 @@ import {validPassword, validateConfirmPassword} from '../../utils/Validation';
 import CInput from '../../components/common/CInput';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function CreateNewPassword({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -26,6 +27,9 @@ export default function CreateNewPassword({navigation}) {
   const [confirmPasswordInputStyle, setConfirmPasswordInputStyle] = useState(
     {},
   );
+
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CreateNewPassword', true);
 
   const onFocusInput = onHighlight => onHighlight(FocusedStyle);
   const onBlurInput = onUnHighlight => onUnHighlight(BlurredStyle);

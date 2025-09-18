@@ -34,12 +34,15 @@ import {
   approveRecoveryOnChain,
 } from '../../../api/guardianOnChain';
 import {getDeviceId} from '../../../utils/device-id';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function GuardiansAdmin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('GuardiansAdmin', true);
 
   const {data: recData = [], isLoading: loadingrecData} =
     useMyGuardianRecoveryListQuery();

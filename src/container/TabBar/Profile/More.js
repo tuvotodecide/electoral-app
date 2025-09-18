@@ -24,6 +24,7 @@ import {changeThemeAction} from '../../../redux/action/themeAction';
 import {setAsyncStorageData} from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import {logOut} from '../../../utils/auth';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function More({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -32,6 +33,8 @@ export default function More({navigation}) {
 
   const dispatch = useDispatch();
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('More', true);
   const onPressItem = item => {
     if (!!item.route) {
       navigation.navigate(item.route, {item: item});

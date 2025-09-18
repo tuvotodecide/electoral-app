@@ -25,6 +25,8 @@ export default function SignUpWithMobileNumber({route, navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [number, setNumber] = useState('');
   const [numberInputStyle, setNumberInputStyle] = useState(BlurredStyle);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SignUpWithMobileNumber', true);
   const [callingCodeLib, setCallingCodeLib] = useState('+91');
   const [visiblePiker, setVisiblePiker] = useState(false);
   const [countryCodeLib, setCountryCodeLib] = useState('IN');

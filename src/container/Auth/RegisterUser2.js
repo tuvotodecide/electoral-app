@@ -19,6 +19,7 @@ import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser2({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -32,6 +33,8 @@ export default function RegisterUser2({navigation}) {
   const {mutate: findDni, isLoading} = useKycFindQuery();
   const dispatch = useDispatch();
   const isFormValid = () => {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser2', true);
     return idNumber.trim() !== '' && frontImage && backImage;
   };
 

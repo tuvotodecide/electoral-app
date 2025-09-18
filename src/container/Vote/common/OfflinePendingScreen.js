@@ -6,10 +6,13 @@ import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {CommonActions} from '@react-navigation/native';
 import { TabNav } from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width} = Dimensions.get('window');
 
 export default function OfflinePendingScreen({navigation}) {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('OfflinePendingScreen', true);
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>

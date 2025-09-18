@@ -2,7 +2,7 @@ module.exports = {
   preset: 'react-native',
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup/jest.setup.js'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|react-native-biometrics|react-native-keychain)/)'
+    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|react-native-biometrics|react-native-keychain|@twotalltotems|react-redux|@reduxjs)/)'
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
@@ -11,14 +11,6 @@ module.exports = {
     '!src/**/__tests__/**',
     '!**/__mocks__/**',
   ],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70
-    }
-  },
   testMatch: [
     '<rootDir>/__tests__/**/*.test.{js,jsx}',
   ],

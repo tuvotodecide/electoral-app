@@ -18,6 +18,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
 import { setTmpPin } from '../../utils/TempRegister';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser9({navigation, route}) {
   const {originalPin, vc, offerUrl, useBiometry, dni} = route.params;
@@ -26,6 +27,8 @@ export default function RegisterUser9({navigation, route}) {
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser9Pin', true);
   const otpRef = useRef(null);
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 
 
@@ -44,6 +45,8 @@ export default function MyGuardiansStatus({navigation, route}) {
 
   const [ready, setReady] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('MyGuardiansStatus', true);
   // Mantén tu firma original del hook; el segundo arg puede ser "enabled/ready" según tu implementación
   const {
     data: detailRaw,

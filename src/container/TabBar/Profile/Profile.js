@@ -28,6 +28,7 @@ import { setAsyncStorageData } from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function Profile({ navigation }) {
   const color = useSelector(state => state.theme.theme);
@@ -35,6 +36,9 @@ export default function Profile({ navigation }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const dispatch = useDispatch();
+
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Profile', true);
 
   const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;

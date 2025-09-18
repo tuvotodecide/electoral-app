@@ -25,11 +25,14 @@ import String from '../i18n/String';
 import {setOnBoarding} from '../utils/AsyncStorage';
 import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useNavigationLogger} from '../hooks/useNavigationLogger';
 
 export default function OnBoardingGuardians({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideRef = useRef(null);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('OnBoardingGuardians', true);
 
   const _onViewableItemsChanged = useCallback(({viewableItems}) => {
     setCurrentIndex(viewableItems[0]?.index);

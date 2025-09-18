@@ -15,8 +15,11 @@ import images from '../../../assets/images';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function Policy({navigation}) {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Policy', true);
   const onPressCode = () => {
     navigation.navigate(StackNav.RewardCode);
   };

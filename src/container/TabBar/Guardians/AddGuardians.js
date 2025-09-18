@@ -27,6 +27,7 @@ import {
   inviteGuardianOnChain,
 } from '../../../api/guardianOnChain';
 import {getSecrets} from '../../../utils/Cifrate';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function AddGuardians({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -45,6 +46,8 @@ export default function AddGuardians({navigation}) {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('AddGuardians', true);
   const onPressNext = () => {};
   const onPressSearch = () => {
     setMsg('');

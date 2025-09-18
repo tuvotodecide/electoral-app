@@ -28,6 +28,7 @@ import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 import {launchImageLibrary} from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -133,6 +134,8 @@ export default function CameraScreen({navigation, route}) {
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CameraScreen', true);
   const initialScale = useRef(1);
   const isZooming = useRef(false);
 

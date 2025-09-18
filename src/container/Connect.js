@@ -15,11 +15,14 @@ import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
+import {useNavigationLogger} from '../hooks/useNavigationLogger';
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
     const wallet = useSelector(s => s.wallet.payload);
     const account = useSelector(state => state.account);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Connect', true);
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
   };

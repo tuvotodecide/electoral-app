@@ -20,6 +20,7 @@ import {styles} from '../../../themes';
 import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const decompress = b64 =>
   JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
@@ -29,6 +30,8 @@ export default function RecoveryQr({navigation}) {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecoveryQR', true);
   // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
   const onImageSelected = async (asset) => {
     if (!asset?.uri) {

@@ -5,6 +5,7 @@ import {StyleSheet} from 'react-native';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -13,6 +14,8 @@ export default function SearchTable({navigation, route}) {
   const [mesas, setMesas] = useState([]);
   const [locationData, setLocationData] = useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SearchTable', true);
   // Cargar mesas al montar el componente
   useEffect(() => {
     loadMesasFromApi(route?.params?.locationId);

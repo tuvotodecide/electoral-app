@@ -15,12 +15,15 @@ import String from '../../i18n/String';
 import {LockIcon, USFlagIcon} from '../../assets/svg';
 import SelectCountryModal from '../../components/modal/SelectCountryModal';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function SelectCountry({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [country, setCountry] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SelectCountry', true);
   const onPressSelect = () => {
     setIsModalVisible(!isModalVisible);
   };

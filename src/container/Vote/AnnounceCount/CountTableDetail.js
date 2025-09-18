@@ -16,6 +16,7 @@ import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
 import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -74,6 +75,8 @@ export default function CountTableDetail({navigation, route}) {
   const [success, setSuccess] = React.useState(false);
   const [notificationResult, setNotificationResult] = React.useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CountTableDetail', true);
   const handleAnnounceCount = () => {
     setModalVisible(true);
   };

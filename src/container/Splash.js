@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
+import {useNavigationLogger} from '../hooks/useNavigationLogger';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -27,6 +28,9 @@ export default function Splash({navigation}) {
   const userData = useSelector(state => state.wallet.payload);
 
   const dispatch = useDispatch();
+
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Splash', true);
 
   useEffect(() => {
     const asyncProcess = async () => {

@@ -15,6 +15,7 @@ import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import {BACKEND_BLOCKCHAIN} from '@env';
 import axios from 'axios';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser5({navigation, route}) {
   const {dni, frontImage, backImage, selfie} = route.params;
@@ -23,6 +24,8 @@ export default function RegisterUser5({navigation, route}) {
   const [errorMessage, setErrorMessage] = useState('');
   const colors = useSelector(state => state.theme.theme);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser5', true);
   // useEffect(() => {
   //   const timeout = setTimeout(() => {
   //     navigation.navigate(AuthNav.RegisterUser6);

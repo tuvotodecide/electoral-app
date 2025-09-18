@@ -12,10 +12,13 @@ import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function UploadPhotoId({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('UploadPhotoId', true);
   const onPressContinue = () => {
     navigation.navigate(AuthNav.SelfieWithIdCard);
   };

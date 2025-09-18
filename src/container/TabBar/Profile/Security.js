@@ -29,11 +29,14 @@ import * as Keychain from 'react-native-keychain';
 import {getSecrets} from '../../../utils/Cifrate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getJwt} from '../../../utils/Session';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
   const [bioEnabled, setBioEnabled] = useState(false);
   useEffect(() => {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Security', true);
     (async () => setBioEnabled(await getBioFlag()))();
   }, []);
 

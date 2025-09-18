@@ -18,12 +18,15 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser7({navigation, route}) {
   const {vc, offerUrl, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onPressNext = () => {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser7', true);
     navigation.navigate(AuthNav.RegisterUser8);
   };
 

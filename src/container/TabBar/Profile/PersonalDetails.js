@@ -12,11 +12,14 @@ import CEtiqueta from '../../../components/common/CEtiqueta';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function PersonalDetails({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('PersonalDetails', true);
   const subject = vc?.credentialSubject || {};
 
   const birthSec = Number(subject.dateOfBirth);

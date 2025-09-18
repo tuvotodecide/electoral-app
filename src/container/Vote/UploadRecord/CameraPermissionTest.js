@@ -7,6 +7,7 @@ import {
 } from 'react-native-vision-camera';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function CameraPermissionTest({navigation}) {
   const {hasPermission, requestPermission} = useCameraPermission();
@@ -15,6 +16,8 @@ export default function CameraPermissionTest({navigation}) {
   const device = backDevice || frontDevice;
   const [permissionStatus, setPermissionStatus] = useState('checking');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CameraPermissionTest', true);
   useEffect(() => {
     checkPermissions();
   }, []);

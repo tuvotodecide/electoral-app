@@ -16,6 +16,27 @@ import { configureStore } from '@reduxjs/toolkit';
  * Creates a mock Redux store for testing
  */
 export function createMockStore(initialState = {}) {
+  // Default theme state to prevent errors
+  const defaultTheme = {
+    theme: {
+      primary: '#007AFF',
+      grayScale500: '#9E9E9E',
+      textColor: '#000000',
+      inputBackground: '#F5F5F5',
+      primary50: '#E3F2FD',
+      dark: false,
+    }
+  };
+
+  // Merge default state with provided initial state
+  const mergedInitialState = {
+    auth: { isAuthenticated: false },
+    user: { profile: null },
+    voting: { currentVote: null },
+    theme: defaultTheme,
+    ...initialState
+  };
+
   return configureStore({
     reducer: {
       // auth: authSlice,
@@ -23,8 +44,9 @@ export function createMockStore(initialState = {}) {
       auth: (state = { isAuthenticated: false }, action) => state,
       user: (state = { profile: null }, action) => state,
       voting: (state = { currentVote: null }, action) => state,
+      theme: (state = defaultTheme, action) => state,
     },
-    preloadedState: initialState,
+    preloadedState: mergedInitialState,
   });
 }
 

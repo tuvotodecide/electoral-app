@@ -32,6 +32,7 @@ import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClo
 import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -46,6 +47,8 @@ export default function FindMyUser({navigation}) {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('FindMyUser', true);
   const {
     has,
     loading: loadingHas,

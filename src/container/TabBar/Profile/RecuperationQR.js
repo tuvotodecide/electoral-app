@@ -32,6 +32,7 @@ import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
 import {styles} from '../../../themes';
 import {getHeight, moderateScale} from '../../../common/constants';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const compress = obj =>
   Buffer.from(pako.deflate(JSON.stringify(obj))).toString('base64');
@@ -79,6 +80,8 @@ export default function RecuperationQR() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const viewShotRef = useRef(null);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecuperationQR', true);
 
   useEffect(() => {
     (async () => {

@@ -18,12 +18,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser6({navigation, route}) {
   const {vc, offerUrl, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser6', true);
   const onPressNext = () => {
     navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
   };

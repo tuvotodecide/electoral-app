@@ -47,6 +47,7 @@ import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
 import {registerDeviceToken} from '../../utils/registerDeviceToken';
 import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 function classifyKycError(error, resp) {
   const code = error?.code || '';
@@ -85,6 +86,8 @@ export default function LoginUser({navigation}) {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: '', onClose: null});
   const hideModal = () => setModal({visible: false, msg: '', onClose: null});
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('LoginUser', true);
 
   const otpRef = useRef(null);
 

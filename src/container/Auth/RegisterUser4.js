@@ -21,12 +21,15 @@ import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage} = route.params;
   const [selfie, setSelfie] = useState(null);
   const colors = useSelector(state => state.theme.theme);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser4', true);
   useEffect(() => {
     const openCamera = async () => {
       const granted = await requestCameraPermission();

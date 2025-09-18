@@ -16,12 +16,15 @@ import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser8({navigation, route}) {
   const {vc, offerUrl, useBiometry, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser8Pin', true);
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
   const onPressContinue = () => {

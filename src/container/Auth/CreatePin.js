@@ -26,7 +26,7 @@ export default function CreatePin({navigation}) {
 
   const onOtpChange = text => {
     setOtp(text);
-    logAction('OTP Changed', `Length: ${text.length}`);
+    logAction('OTP Changed', `Length: ${text ? text.length : 0}`);
   };
 
   const onPressContinue = () => {

@@ -17,6 +17,7 @@ import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import {StackNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -42,6 +43,10 @@ const mockMesa = {
 
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
+  
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('TableDetail', true);
+  
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData;
   // Get existing records if they exist

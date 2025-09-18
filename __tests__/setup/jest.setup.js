@@ -3,7 +3,10 @@
  * Configuración global para todos los tests
  */
 
-import 'react-native-gesture-handler/jestSetup';
+// Setup window object before anything else
+if (typeof window === 'undefined') {
+  global.window = {};
+}
 
 // Global test setup
 global.__DEV__ = true;

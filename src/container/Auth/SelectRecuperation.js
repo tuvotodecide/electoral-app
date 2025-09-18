@@ -13,9 +13,14 @@ import String from '../../i18n/String';
 import CButton from '../../components/common/CButton';
 import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SelectRecuperation', true);
+  
   return (
     <CSafeAreaViewAuth testID="selectRecuperationContainer">
       <CHeader

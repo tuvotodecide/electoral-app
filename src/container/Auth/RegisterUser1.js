@@ -20,11 +20,14 @@ import String from '../../i18n/String';
 import { didFromEthAddress } from '../../api/did';
 import { bytesToHex } from '@noble/hashes/utils';
 import { randomBytes } from 'react-native-quick-crypto';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser1({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RegisterUser1', true);
   const onPressRememberMe = () => setCheck(!check);
   const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2);
   const onPressConditions = () =>
