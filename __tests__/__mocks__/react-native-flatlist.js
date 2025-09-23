@@ -8,7 +8,7 @@ const FlatList = ({ data, renderItem, testID, keyExtractor, ...props }) => {
 
   const items = data.map((item, index) => {
     const key = keyExtractor ? keyExtractor(item, index) : index.toString();
-    return renderItem({ item, index });
+    return React.createElement('View', { key }, renderItem({ item, index }));
   });
 
   return React.createElement('ScrollView', { testID, ...props }, items);
