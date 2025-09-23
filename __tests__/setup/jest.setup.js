@@ -23,23 +23,98 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 // Mock React Native modules
 jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter');
 
+// Mock complete react-native module
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+    Version: '14.0',
+    select: jest.fn((obj) => obj.ios || obj.default),
+    isPad: false,
+    isTesting: true,
+  },
+  Dimensions: {
+    get: jest.fn(() => ({width: 375, height: 667})),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  },
+  PixelRatio: {
+    get: jest.fn(() => 2),
+    roundToNearestPixel: jest.fn(x => Math.round(x)),
+  },
+  StyleSheet: {
+    create: jest.fn(styles => styles),
+    hairlineWidth: 1,
+    flatten: jest.fn(styles => styles),
+  },
+  Text: 'Text',
+  View: 'View',
+  TouchableOpacity: 'TouchableOpacity',
+  ActivityIndicator: 'ActivityIndicator',
+  FlatList: 'FlatList',
+  ScrollView: 'ScrollView',
+  Modal: 'Modal',
+  Alert: {
+    alert: jest.fn(),
+  },
+  PermissionsAndroid: {
+    request: jest.fn(() => Promise.resolve('granted')),
+    PERMISSIONS: {
+      ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+      ACCESS_COARSE_LOCATION: 'android.permission.ACCESS_COARSE_LOCATION',
+      CAMERA: 'android.permission.CAMERA',
+      WRITE_EXTERNAL_STORAGE: 'android.permission.WRITE_EXTERNAL_STORAGE',
+      READ_EXTERNAL_STORAGE: 'android.permission.READ_EXTERNAL_STORAGE',
+    },
+    RESULTS: {
+      GRANTED: 'granted',
+      DENIED: 'denied',
+      NEVER_ASK_AGAIN: 'never_ask_again',
+    },
+  },
+}));
+
+// Mock TurboModuleRegistry to prevent DevMenu errors
+jest.mock('react-native/Libraries/TurboModule/TurboModuleRegistry', () => ({
+  getEnforcing: jest.fn(() => ({})),
+  get: jest.fn(() => null),
+}));
+
+// Mock DevMenu specifically
+jest.mock('react-native/src/private/devmenu/DevMenu', () => ({}));
+
+// Mock Dimensions globally (redundant with above but kept for safety)
+jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
+  get: jest.fn(() => ({width: 375, height: 667})),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+}));
+
+// Mock Platform globally (redundant with above but kept for safety)
+jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+  OS: 'ios',
+  Version: '14.0',
+  select: jest.fn((obj) => obj.ios || obj.default),
+  isPad: false,
+  isTesting: true,
+}));
+
 // Mock React Navigation
-jest.mock('@react-navigation/native', () => {
-  const actualNav = jest.requireActual('@react-navigation/native');
-  return {
-    ...actualNav,
-    useNavigation: () => ({
-      navigate: jest.fn(),
-      goBack: jest.fn(),
-      reset: jest.fn(),
-      setParams: jest.fn(),
-    }),
-    useRoute: () => ({
-      params: {},
-    }),
-    useFocusEffect: jest.fn(),
-  };
-});
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    reset: jest.fn(),
+    setParams: jest.fn(),
+  }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: jest.fn(),
+  NavigationContainer: ({ children }) => children,
+  createNavigationContainerRef: () => ({
+    current: null,
+  }),
+}));
 
 // Mock Firebase
 jest.mock('@react-native-firebase/app', () => ({

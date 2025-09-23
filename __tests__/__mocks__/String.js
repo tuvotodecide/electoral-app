@@ -1,0 +1,40 @@
+// Mock para los strings de i18n
+const strings = {
+  // Electoral Locations
+  electoralLocations: 'Recintos Electorales',
+  gettingLocation: 'Obteniendo ubicación...',
+  loadingNearbyLocations: 'Cargando recintos cercanos...',
+  showingNearbyLocations: 'Mostrando recintos cercanos a ti',
+  noLocationsFound: 'No se encontraron recintos',
+  noLocationsFoundSubtitle: 'No hay recintos electorales cerca de tu ubicación',
+  errorFetchingLocations: 'Error al cargar los recintos electorales',
+  locationPermissionTitle: 'Permiso de ubicación',
+  locationPermissionMessage:
+    'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+  locationPermissionDenied: 'Permiso de ubicación denegado',
+  locationError: 'Error al obtener la ubicación',
+  locationPermissionError: 'Error al solicitar permisos de ubicación',
+  askMeLater: 'Preguntar después',
+  cancel: 'Cancelar',
+  ok: 'OK',
+  accept: 'Aceptar',
+  tables: 'mesas',
+  code: 'Código',
+  error: 'Error',
+  success: 'Éxito',
+  info: 'Información',
+  understanding: 'Entendido',
+  loading: 'Cargando...',
+  retry: 'Reintentar',
+  next: 'Siguiente',
+  back: 'Atrás',
+  close: 'Cerrar',
+  done: 'Hecho',
+  save: 'Guardar',
+  edit: 'Editar',
+  delete: 'Eliminar',
+  confirm: 'Confirmar',
+  continueButton: 'Continuar',
+};
+
+export default strings;
