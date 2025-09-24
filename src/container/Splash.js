@@ -73,11 +73,11 @@ export default function Splash({navigation}) {
           //   return;
           // }
 
-          const isAuth = store.getState().auth?.isAuthenticated;
-          if (isAuth) {
-            navigation.replace(StackNav.TabNavigation);
-            return;
-          }
+          // const isAuth = store.getState().auth?.isAuthenticated;
+          // if (isAuth) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
           navigation.replace(StackNav.AuthNavigation);
         } else {
           navigation.replace(StackNav.AuthNavigation);

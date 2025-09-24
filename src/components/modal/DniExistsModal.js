@@ -6,11 +6,9 @@ import CText from '../common/CText';
 import CButton from '../common/CButton';
 import { styles } from '../../themes';
 import { moderateScale } from '../../common/constants';
-import String from '../../i18n/String';
 
 
-
-export default function DniExistsModal({ visible, onClose }) {
+export default function DniExistsModal({ visible, message, onClose }) {
   const colors = useSelector((state) => state.theme.theme);
 
   return (
@@ -18,7 +16,7 @@ export default function DniExistsModal({ visible, onClose }) {
       <View style={[localStyles.overlay, { backgroundColor: colors.modalBackground }]}>
         <View style={[localStyles.container, { backgroundColor: colors.backgroundColor }]}>
           <CText type="B18" align="center" style={styles.mb20}>
-            {String.DniExists}
+            {message}
           </CText>
 
           <CButton

@@ -83,11 +83,11 @@ android {
         applicationId = "com.tuvotodecide"
         minSdkVersion  = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
-        versionCode =  8
+        versionCode =  12
         versionName = "1.0.4"
     }
     signingConfigs {
-   shared {
+    shared {
             storeFile file("$rootDir/app/keystores/identity-release.keystore")
             storePassword "password"
             keyAlias      "my-key-alias"
@@ -105,6 +105,9 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
 
         }
+    }
+    packagingOptions {
+        pickFirst("**/libc++_shared.so")
     }
 }
 

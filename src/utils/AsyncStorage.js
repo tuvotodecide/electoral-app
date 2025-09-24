@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ON_BOARDING, THEME} from '../common/constants';
-import { jsonSafe } from './RegisterDraft';
+import {jsonSafe} from './RegisterDraft';
 
 const setOnBoarding = async v =>
   AsyncStorage.setItem(ON_BOARDING, JSON.stringify(v));
@@ -24,12 +24,25 @@ const initialStorageValueGet = async () => {
   }
   return {themeColor, onBoardingValue};
 };
+const toStoredString = v =>
+  v == null
+    ? '' 
+    : typeof v === 'string'
+    ? v
+    : JSON.stringify(v);
 
 const setAsyncStorageData = async (k, v) =>
-  AsyncStorage.setItem(k, jsonSafe(v));
-const getAsyncStorageData = async k =>
-  JSON.parse(await AsyncStorage.getItem(k));
+  AsyncStorage.setItem(k, toStoredString(v));
 
+const getAsyncStorageData = async k => {
+  const raw = await AsyncStorage.getItem(k);
+  if (raw == null || raw === '') return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+};
 export {
   setOnBoarding,
   initialStorageValueGet,

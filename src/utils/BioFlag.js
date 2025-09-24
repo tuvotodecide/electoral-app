@@ -1,4 +1,4 @@
-// utils/BioFlag.ts
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {BIO_KEY} from '../common/constants';
 

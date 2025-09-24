@@ -42,6 +42,7 @@ import {didFromEthAddress} from '../../api/did';
 import {
   createCredential,
   mapOcrToClaims,
+  normalizeOcrForUI,
   waitForVC,
 } from '../../utils/issuerClient';
 import {encryptVCWithPin} from '../../utils/vcCrypto';
@@ -91,6 +92,7 @@ export default function RegisterUser10({navigation, route}) {
       if (draft) {
         navigation.replace(AuthNav.RegisterUser10, {
           ...draft,
+          ocrData: draft.ocrData ?? route.params?.ocrData ?? null,
           fromDraft: true,
         });
         return;
@@ -116,6 +118,7 @@ export default function RegisterUser10({navigation, route}) {
           step: 'predict',
           dni,
           useBiometry,
+          ocrData: normalizeOcrForUI(ocrData),
         });
         let bundle = await getTmpRegister();
         if (!bundle) {
