@@ -1,4 +1,3 @@
-
 import {StyleSheet, View, Image} from 'react-native';
 import React, {useEffect} from 'react';
 import BootSplash from 'react-native-bootsplash';
@@ -34,7 +33,7 @@ export default function Splash({navigation}) {
       try {
         let asyncData = await initialStorageValueGet();
 
-        let {themeColor, onBoardingValue} = asyncData;
+        let {themeColor} = asyncData;
         const draft = await getDraft();
         if (draft) {
           navigation.replace(StackNav.AuthNavigation, {
@@ -64,7 +63,6 @@ export default function Splash({navigation}) {
           }
 
           const bundleReady = await ensureBundle();
-          console.log(bundleReady);
 
           const alive = await isSessionValid();
 
@@ -77,7 +75,6 @@ export default function Splash({navigation}) {
           navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
-        console.log('error ', e);
         navigation.replace(StackNav.AuthNavigation);
       }
     };

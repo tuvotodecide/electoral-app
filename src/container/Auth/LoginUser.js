@@ -100,7 +100,6 @@ export default function LoginUser({navigation}) {
       }),
     );
     dispatch(setAuthenticated(true));
-
     await resetAttempts();
     await startSession(jwt);
     // await registerDeviceToken();
@@ -568,7 +567,7 @@ export default function LoginUser({navigation}) {
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader color={colors.white} isHideBack />
+      <CHeader color={colors.primary} />
       <View style={localStyle.imageContainer}>
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
@@ -586,7 +585,7 @@ export default function LoginUser({navigation}) {
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
-              keyboardType="number-pad" 
+              keyboardType="number-pad"
               onCodeChanged={setOtp}
               onCodeFilled={onCodeFilled}
               secureTextEntry={true}

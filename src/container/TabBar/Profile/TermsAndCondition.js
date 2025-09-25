@@ -12,7 +12,7 @@ import {WebView} from 'react-native-webview';
 
 export default function TermsAndCondition() {
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.termsConditions} />
       <View style={localStyle.webViewContainer}>
         <WebView
@@ -49,5 +49,10 @@ const localStyle = StyleSheet.create({
   webViewContainer: {
     flex: 1,
     overflow: 'hidden',
+    marginHorizontal: moderateScale(10), 
+    marginTop: moderateScale(10),        
+    marginBottom: moderateScale(10),     
+    borderRadius: moderateScale(8),      
+    backgroundColor: '#fff',             
   },
 });

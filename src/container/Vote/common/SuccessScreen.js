@@ -52,17 +52,16 @@ const SuccessScreen = () => {
       if (supported) {
         await Linking.openURL(nftData.nftUrl);
       } else {
-        console.log('Cannot open URL:', nftData.nftUrl);
+      
       }
     } catch (error) {
-      console.error('Error opening URL:', error);
+      
     }
   };
 
   const handleShareProfile = async () => {
     try {
       if (!nftData || !nftData.nftUrl) {
-        console.log("No hay enlace NFT para compartir");
         return;
       }
       const shareOptions = {
@@ -78,12 +77,12 @@ const SuccessScreen = () => {
       });
 
       if (result.action === Share.sharedAction) {
-        console.log('Contenido compartido exitosamente');
+   
       } else if (result.action === Share.dismissedAction) {
-        console.log('Compartir cancelado');
+
       }
     } catch (error) {
-      console.error('Error al compartir:', error.message);
+      
     }
   };
 

@@ -12,17 +12,16 @@ import {styles} from '../../../themes';
 
 export default function PrivacyPolicies() {
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.privacyPolicy} />
 
       <View style={localStyle.webViewContainer}>
-         <WebView
-          source={{ uri: PRIVACY_URL }}
-          style={{ flex: 1 }}
+        <WebView
+          source={{uri: PRIVACY_URL}}
+          style={{flex: 1}}
           javaScriptEnabled
           domStorageEnabled
           startInLoadingState
-       
         />
       </View>
     </CSafeAreaView>
@@ -48,5 +47,10 @@ const localStyle = StyleSheet.create({
   webViewContainer: {
     flex: 1,
     overflow: 'hidden',
+    marginHorizontal: moderateScale(10),
+    marginTop: moderateScale(10),
+    marginBottom: moderateScale(10),
+    borderRadius: moderateScale(8),
+    backgroundColor: '#fff',
   },
 });

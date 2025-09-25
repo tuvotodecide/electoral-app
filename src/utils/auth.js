@@ -6,16 +6,11 @@ import store from '../redux/store';
 import {clearWallet} from '../redux/action/walletAction';
 import {clearAuth} from '../redux/slices/authSlice';
 import {clearSession} from './Session';
-import * as Keychain from 'react-native-keychain';
-import {setBioFlag} from './BioFlag';
 
 export async function logOut(navigation) {
   await AsyncStorage.removeItem(JWT_KEY);
 
   delete axios.defaults.headers.common.Authorization;
-
-;
-
   store.dispatch(clearAuth());
   store.dispatch(clearWallet());
   await clearSession();

@@ -1,5 +1,5 @@
 import {StyleSheet, View, TextInput, Alert} from 'react-native';
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 // Custom imports
@@ -27,6 +27,7 @@ export default function RegisterUser2({navigation}) {
   const [idNumber, setIdNumber] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   const {mutate: findDni, isLoading} = useKycFindQuery();
   const dispatch = useDispatch();
@@ -36,8 +37,22 @@ export default function RegisterUser2({navigation}) {
 
   const closeModal = () => setModalVisible(false);
 
+  useEffect(() => {
+    const trimmed = idNumber.trim();
+    if (!hasRedirectedRef.current && trimmed == REVIEW_DNI) {
+      hasRedirectedRef.current = true;
+      dispatch(setSecrets(DEMO_SECRETS));
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.TabNavigation}],
+      });
+    }
+  }, [idNumber, dispatch, navigation]);
+
   const handleCheckAndNext = useCallback(
     debounce(() => {
+      console.log(idNumber);
+
       if (idNumber.trim() === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));
         navigation.reset({
@@ -59,7 +74,6 @@ export default function RegisterUser2({navigation}) {
             setSubmitting(false);
 
             if (response.ok) {
-         
               setModalVisible(true);
             } else {
               navigation.navigate(AuthNav.RegisterUser3, {
@@ -79,7 +93,7 @@ export default function RegisterUser2({navigation}) {
         },
       );
     }, 500),
-    
+
     [idNumber, frontImage, backImage],
   );
 

@@ -1,11 +1,11 @@
 import React from 'react';
-import { ScrollView, View, Dimensions, ActivityIndicator } from 'react-native';
+import {ScrollView, View, Dimensions, ActivityIndicator} from 'react-native';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
 import CustomModal from './CustomModal';
 import CText from './CText';
-import { StackNav } from '../../navigation/NavigationKey';
+import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import {
   SearchTableHeader,
@@ -19,9 +19,9 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 
-import { BACKEND_RESULT } from "@env"
+import {BACKEND_RESULT} from '@env';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -119,24 +119,29 @@ const BaseSearchTableScreen = ({
   const finalChooseText = chooseTableText || chooseMesaText;
 
   const [internalSearch, setInternalSearch] = React.useState('');
-  const actualSearchValue = searchValue !== undefined ? searchValue : internalSearch;
+  const actualSearchValue =
+    searchValue !== undefined ? searchValue : internalSearch;
   const actualOnSearchChange = onSearchChange || setInternalSearch;
   const [searchText, setSearchText] = React.useState('');
 
-  const getSearchFields = (table) => {
+  const getSearchFields = table => {
     const tableNumber = (
       table.tableNumber?.toString() ||
       table.numero?.toString() ||
       table.number?.toString() ||
       ''
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
     const tableCode = (
       table.tableCode?.toString() ||
       table.codigo?.toString() ||
       table.code?.toString() ||
       ''
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
     const recinto = (
       locationData?.name ||
@@ -144,7 +149,9 @@ const BaseSearchTableScreen = ({
       table.venue ||
       table.precinctName ||
       ''
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
     const direccion = (
       locationData?.address ||
@@ -152,18 +159,22 @@ const BaseSearchTableScreen = ({
       table.address ||
       table.provincia ||
       ''
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
-    return { tableNumber, tableCode, recinto, direccion };
+    return {tableNumber, tableCode, recinto, direccion};
   };
 
   // Función para obtener el recinto de una mesa
-  const getRecintoForTable = (table) => {
-    return locationData?.name ||
+  const getRecintoForTable = table => {
+    return (
+      locationData?.name ||
       table.recinto ||
       table.venue ||
       table.precinctName ||
-      '';
+      ''
+    );
   };
 
   // Filtrar mesas basado en el texto de búsqueda
@@ -171,7 +182,7 @@ const BaseSearchTableScreen = ({
     if (!searchText.trim()) return true;
 
     const searchLower = searchText.toLowerCase().trim();
-    const { tableNumber, tableCode, recinto, direccion } = getSearchFields(table);
+    const {tableNumber, tableCode, recinto, direccion} = getSearchFields(table);
 
     // Buscar en todos los campos relevantes
     return (
@@ -183,9 +194,8 @@ const BaseSearchTableScreen = ({
     );
   });
 
-
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({ type, title, message, buttonText });
+    setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
 
@@ -193,7 +203,7 @@ const BaseSearchTableScreen = ({
     setModalVisible(false);
   };
 
-  const handleTablePress = async (mesa) => {
+  const handleTablePress = async mesa => {
     if (!enableAutoVerification) {
       // Use original handler if auto-verification is disabled
       if (finalOnPress) {
@@ -219,14 +229,18 @@ const BaseSearchTableScreen = ({
       name: locationData?.name || mesa.name || 'N/A',
       address: locationData?.address || mesa.address || 'N/A',
       district: locationData?.district || mesa.district || 'N/A',
-      locationId: locationData?.locationId || 'N/A'
+      locationId: locationData?.locationId || 'N/A',
     };
 
     // Get table code for API call
     const tableCode = mesa.tableCode || mesa.codigo || mesa.code;
     if (!tableCode) {
-      console.error('BaseSearchTableScreen - No table code found for mesa:', mesa);
-      showModal('error', String.error, 'No se pudo encontrar el código de la mesa');
+
+      showModal(
+        'error',
+        String.error,
+        'No se pudo encontrar el código de la mesa',
+      );
       return;
     }
 
@@ -234,13 +248,11 @@ const BaseSearchTableScreen = ({
       // Show loading
       setIsVerifying(true);
 
-      console.log('BaseSearchTableScreen - Checking mesa results for code:', tableCode);
-
       // Check if mesa has existing attestations
-      const response = await axios.get(`${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
-        { timeout: 15000 } // 10 segundos timeout
+      const response = await axios.get(
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
+        {timeout: 15000}, // 10 segundos timeout
       );
-      console.log('API response:', JSON.stringify(response.data, null, 2));
 
       let records = [];
       if (Array.isArray(response.data)) {
@@ -263,11 +275,13 @@ const BaseSearchTableScreen = ({
 
           // Combinar ambos tipos de votos
           const combinedPartyResults = presidentialParties.map(presParty => {
-            const deputyParty = deputyParties.find(d => d.partyId === presParty.partyId) || { votes: 0 };
+            const deputyParty = deputyParties.find(
+              d => d.partyId === presParty.partyId,
+            ) || {votes: 0};
             return {
               partyId: presParty.partyId,
               presidente: presParty.votes,
-              diputado: deputyParty.votes
+              diputado: deputyParty.votes,
             };
           });
 
@@ -293,9 +307,9 @@ const BaseSearchTableScreen = ({
               depValidVotes: depVoteSummary.validVotes || 0,
               depBlankVotes: depVoteSummary.blankVotes || 0,
               depNullVotes: depVoteSummary.nullVotes || 0,
-              depTotalVotes: depVoteSummary.totalVotes || 0
+              depTotalVotes: depVoteSummary.totalVotes || 0,
             },
-            rawData: record
+            rawData: record,
           };
         });
 
@@ -305,60 +319,64 @@ const BaseSearchTableScreen = ({
           existingRecords: records,
           mesaInfo: records[0],
           totalRecords: records.length,
-          isFromAPI: true
+          isFromAPI: true,
         });
       } else {
         // No hay registros, ir a TableDetail
-        console.log('BaseSearchTableScreen - No attestations found, redirecting to table detail');
+
         navigation.navigate(StackNav.TableDetail, {
           tableData: enrichedMesa,
           mesa: enrichedMesa,
           mesaData: enrichedMesa,
-          isFromUnifiedFlow: true
+          isFromUnifiedFlow: true,
         });
       }
-
     } catch (error) {
-      console.log('BaseSearchTableScreen - Mesa check completed, determining next step:', error.message || error);
-
       // Check if it's a 404 or mesa not found error
       if (error.response && error.response.status === 404) {
-        console.log('BaseSearchTableScreen - Mesa not found, redirecting to table detail');
-
         // Mesa not found, go to table detail first to show mesa information
         navigation.navigate(StackNav.TableDetail, {
           tableData: enrichedMesa,
           mesa: enrichedMesa,
           mesaData: enrichedMesa,
-          isFromUnifiedFlow: true
+          isFromUnifiedFlow: true,
         });
-      } else if (error.response && error.response.data && error.response.data.message) {
+      } else if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         // Handle specific error messages from API
         const errorData = error.response.data;
 
         if (errorData.message.includes('no encontrada')) {
-          console.log('BaseSearchTableScreen - Mesa not found in API, redirecting to table detail');
-
           // Mesa not found, go to table detail first to show mesa information
           navigation.navigate(StackNav.TableDetail, {
             tableData: enrichedMesa,
             mesa: enrichedMesa,
             mesaData: enrichedMesa,
-            isFromUnifiedFlow: true
+            isFromUnifiedFlow: true,
           });
         } else {
           // Other API error
-          showModal('error', String.error, errorData.message || 'Error al verificar la mesa');
+          showModal(
+            'error',
+            String.error,
+            errorData.message || 'Error al verificar la mesa',
+          );
         }
       } else {
         // Network or other error
-        showModal('error', String.error, 'Error de conexión al verificar la mesa');
+        showModal(
+          'error',
+          String.error,
+          'Error de conexión al verificar la mesa',
+        );
       }
     } finally {
       setIsVerifying(false);
     }
   };
-
 
   const renderSearchAndLocation = () => {
     const containerStyle = {
@@ -369,7 +387,7 @@ const BaseSearchTableScreen = ({
     return (
       <View style={containerStyle}>
         <SearchInput
-          placeholder={searchPlaceholder || "Buscar mesa, código o recinto..."}
+          placeholder={searchPlaceholder || 'Buscar mesa, código o recinto...'}
           value={searchText}
           onChangeText={setSearchText}
           onClear={() => setSearchText('')}
@@ -388,11 +406,11 @@ const BaseSearchTableScreen = ({
     if (!filteredTables || filteredTables.length === 0) {
       // Mostrar mensaje cuando no hay resultados
       return (
-        <View style={[styles.noResultsContainer, { padding: 20 }]}>
-          <CText style={[styles.noResultsText, { fontSize: 16, color: '#666' }]}>
-            {searchText.trim() ?
-              "No se encontraron mesas que coincidan con la búsqueda" :
-              "No hay mesas disponibles"}
+        <View style={[styles.noResultsContainer, {padding: 20}]}>
+          <CText style={[styles.noResultsText, {fontSize: 16, color: '#666'}]}>
+            {searchText.trim()
+              ? 'No se encontraron mesas que coincidan con la búsqueda'
+              : 'No hay mesas disponibles'}
           </CText>
         </View>
       );
@@ -414,7 +432,9 @@ const BaseSearchTableScreen = ({
 
             return (
               <View
-                key={table.id || table._id || table.codigo || table.code || index}
+                key={
+                  table.id || table._id || table.codigo || table.code || index
+                }
                 style={{
                   paddingHorizontal: layout.paddingHorizontal,
                   marginBottom: layout.marginBottom,
@@ -426,8 +446,10 @@ const BaseSearchTableScreen = ({
                   searchQuery={searchText} // Pasar el texto de búsqueda
                   styles={{
                     tableCard: styles.tableCard || styles.mesaCard,
-                    tableCardTitle: styles.tableCardTitle || styles.mesaCardTitle,
-                    tableCardDetail: styles.tableCardDetail || styles.mesaCardDetail,
+                    tableCardTitle:
+                      styles.tableCardTitle || styles.mesaCardTitle,
+                    tableCardDetail:
+                      styles.tableCardDetail || styles.mesaCardDetail,
                   }}
                 />
               </View>
@@ -486,11 +508,11 @@ const BaseSearchTableScreen = ({
                 </View>
               ))}
               {/* Fill empty spaces for incomplete rows */}
-              {Array.from({ length: layout.cardsPerRow - group.length }).map(
+              {Array.from({length: layout.cardsPerRow - group.length}).map(
                 (_, emptyIndex) => (
                   <View
                     key={`empty-${emptyIndex}`}
-                    style={{ flex: layout.cardFlex }}
+                    style={{flex: layout.cardFlex}}
                   />
                 ),
               )}
@@ -526,31 +548,39 @@ const BaseSearchTableScreen = ({
 
       {/* Loading overlay when verifying mesa */}
       {isVerifying && (
-        <View style={styles.loadingOverlay || {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-        }}>
-          <View style={{
-            backgroundColor: '#fff',
-            borderRadius: 12,
-            padding: 20,
-            alignItems: 'center',
-            minWidth: 150,
-          }}>
-            <ActivityIndicator size="large" color={colors?.primary || '#4F9858'} />
-            <CText style={{
-              marginTop: 12,
-              fontSize: 14,
-              color: '#666',
-              textAlign: 'center',
+        <View
+          style={
+            styles.loadingOverlay || {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+            }
+          }>
+          <View
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              padding: 20,
+              alignItems: 'center',
+              minWidth: 150,
             }}>
+            <ActivityIndicator
+              size="large"
+              color={colors?.primary || '#4F9858'}
+            />
+            <CText
+              style={{
+                marginTop: 12,
+                fontSize: 14,
+                color: '#666',
+                textAlign: 'center',
+              }}>
               Verificando mesa...
             </CText>
           </View>

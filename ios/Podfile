@@ -7,7 +7,7 @@ platform :ios, '16.0'
 prepare_react_native_project!
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
-target 'wirawallet' do
+target 'tuvotodecide' do
   use_frameworks! :linkage => :static
 
   config = use_native_modules!
@@ -15,7 +15,8 @@ target 'wirawallet' do
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-
+  
+  # pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
   pod 'RNNotifee',     :path => '../node_modules/@notifee/react-native'
   pod 'RNFBApp',       :path => '../node_modules/@react-native-firebase/app'
   pod 'RNFBMessaging', :path => '../node_modules/@react-native-firebase/messaging'

@@ -2,7 +2,6 @@
 
 import {SHA256} from 'crypto-js';
 import * as Keychain from 'react-native-keychain';
-import {JWT_KEY}          from '../common/constants';
 import {checkPin, createBundleFromPrivKey, getSecrets, saveSecrets} from './Cifrate';
 import {resetAttempts}    from './PinAttempts';
 import {getBioFlag}       from './BioFlag';
@@ -18,11 +17,9 @@ export async function changePin(oldPin , newPin ) {
   if (!stored) throw new Error('No se encontraron datos cifrados');
 
   const payload = stored.payloadQr;
-
   const bundle  = await createBundleFromPrivKey(newPin.trim(), payload.privKey);
   const pinHash = SHA256(newPin.trim()).toString();
-
-  // 4) guarda secretos base (sin biometría)
+  
   await saveSecrets(newPin.trim(), payload, await getBioFlag(), bundle, pinHash);
   const jwt = await getJwt();
   await writeBundleAtomic(JSON.stringify({ ...bundle, ...payload, jwt }));

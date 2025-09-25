@@ -34,7 +34,7 @@ export default function ChangePinNew({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>

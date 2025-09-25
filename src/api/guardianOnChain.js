@@ -46,7 +46,6 @@ export async function inviteGuardianOnChain(
 
     return executeOperation(ownerPrivKey, ownerAccount, chain, call);
   } catch (error) {
-    console.error('inviteGuardianOnChain error:', error);
     throw error;
   }
 }

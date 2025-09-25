@@ -74,8 +74,7 @@ const OracleParticipation = ({ navigation }) => {
   };
 
   const handleShareProfile = () => {
-    // Implementar funcionalidad de compartir perfil
-    console.log('Compartir perfil');
+
   };
 
   const renderParticipationItem = (item) => {

@@ -178,7 +178,7 @@ const BaseRecordReviewScreen = ({
 
   // Phone layout: vertical stack
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container} addTabPadding={false}>
       {/* Header */}
       <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
 

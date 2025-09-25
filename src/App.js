@@ -9,7 +9,7 @@ import {registerNotifications} from './notifications';
 import {registerDeviceToken} from './utils/registerDeviceToken';
 import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
 import {initializeFirebase} from './config/firebase';
-import { migrateIfNeeded } from './utils/migrateBundle';
+import {migrateIfNeeded} from './utils/migrateBundle';
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -30,44 +30,40 @@ const App = () => {
     migrateIfNeeded();
   }, []);
   // Configurar Firebase y usuario automáticamente
-  const {isInitialized, initializationError} = useFirebaseUserSetup();
+  // const {isInitialized, initializationError} = useFirebaseUserSetup();
 
-  // Mostrar estado de inicialización en logs
-  useEffect(() => {
-    if (isInitialized) {
-      console.log('🎉 Firebase User Setup completado exitosamente');
-    }
-    if (initializationError) {
-      console.error('⚠️ Error en Firebase User Setup:', initializationError);
-    }
-  }, [isInitialized, initializationError]);
+  // // Mostrar estado de inicialización en logs
+  // useEffect(() => {
+  //   if (isInitialized) {
+  //   }
+  //   if (initializationError) {
+  //   }
+  // }, [isInitialized, initializationError]);
 
-  async function requestNotificationPermission() {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      const authStatus = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-      );
+  // async function requestNotificationPermission() {
+  //   if (Platform.OS === 'android' && Platform.Version >= 33) {
+  //     const authStatus = await PermissionsAndroid.request(
+  //       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  //     );s
+  //     const granted = await PermissionsAndroid.request(
+  //       PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+  //     );
 
-      if (authStatus === PermissionsAndroid.RESULTS.GRANTED) {
-      }
-    }
-  }
-  useEffect(() => {
-    registerNotifications();
-    requestNotificationPermission();
-    
-    // Inicializar Firebase
-    initializeFirebase().then(success => {
-      if (success) {
-        console.log('🎉 Firebase inicializado correctamente');
-      } else {
-        console.error('⚠️ Error inicializando Firebase');
-      }
-    });
-  }, []);
+  //     if (authStatus === PermissionsAndroid.RESULTS.GRANTED) {
+  //     }
+  //   }
+  // }
+  // useEffect(() => {
+  //   registerNotifications();
+  //   requestNotificationPermission();
+
+  //   // Inicializar Firebase
+  //   initializeFirebase().then(success => {
+  //     if (success) {
+  //     } else {
+  //     }
+  //   });
+  // }, []);
 
   // useEffect(() => {
   //   registerDeviceToken().catch(console.error);
@@ -81,8 +77,8 @@ const App = () => {
   // useEffect(() => {
   //   const fetchToken = async () => {
   //     const token = await messaging().getToken();
-  //     console.log('[FCM token]', token);
-  //     console.log('[FCM token]');
+  //
+  //
   //     if (!!token) {
   //       setAsyncStorageData(DEVICE_TOKEN, token);
   //     }

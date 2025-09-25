@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BIO_KEY } from "../common/constants";
 
-export const BIO_KEY = 'BIO_ENABLED';
+
 
 export async function getBioFlag(){
   const v = await AsyncStorage.getItem(BIO_KEY);

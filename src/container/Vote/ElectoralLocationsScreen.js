@@ -37,7 +37,7 @@ const getResponsiveSize = (small, medium, large) => {
 const ElectoralLocationsScreen = () => {
   const navigation = useNavigation();
   const colors = useSelector(state => state.theme.theme);
-  
+
   const [locations, setLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
@@ -66,18 +66,21 @@ const ElectoralLocationsScreen = () => {
             buttonPositive: String.ok,
           },
         );
-        
+
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           getCurrentLocation();
         } else {
-          showModal('info', String.locationPermissionDenied, String.locationPermissionMessage);
+          showModal(
+            'info',
+            String.locationPermissionDenied,
+            String.locationPermissionMessage,
+          );
           loadAllLocations();
         }
       } else {
         getCurrentLocation();
       }
     } catch (error) {
-      console.error('Location permission error:', error);
       showModal('error', String.error, String.locationPermissionError);
       loadAllLocations();
     }
@@ -86,12 +89,11 @@ const ElectoralLocationsScreen = () => {
   const getCurrentLocation = () => {
     // Geolocation.getCurrentPosition(
     //   position => {
-    //     console.log('Current position:', position);
+    //
     //     setUserLocation(position.coords);
     //     loadNearbyLocations(position.coords);
     //   },
     //   error => {
-    //     console.error('Location error:', error);
     //     showModal('error', String.error, String.locationError);
     //     loadAllLocations();
     //   },
@@ -99,22 +101,19 @@ const ElectoralLocationsScreen = () => {
     // );
   };
 
-  const loadNearbyLocations = async (coords) => {
+  const loadNearbyLocations = async coords => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${coords.latitude}&lng=${coords.longitude}&radius=50`
+        `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/nearby?lat=${coords.latitude}&lng=${coords.longitude}&radius=50`,
       );
-      
+
       if (response.data && response.data.length > 0) {
         setLocations(response.data);
-        console.log(`Found ${response.data.length} nearby locations`);
       } else {
-        console.log('No nearby locations found, loading all locations');
         await loadAllLocations();
       }
     } catch (error) {
-      console.error('Error loading nearby locations:', error);
       showModal('error', String.error, String.errorFetchingLocations);
       await loadAllLocations();
     } finally {
@@ -126,17 +125,15 @@ const ElectoralLocationsScreen = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        'https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations'
+        'https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations',
       );
-      
+
       if (response.data) {
         setLocations(response.data);
-        console.log(`Loaded ${response.data.length} electoral locations`);
       } else {
         showModal('error', String.error, String.errorFetchingLocations);
       }
     } catch (error) {
-      console.error('Error loading all locations:', error);
       showModal('error', String.error, String.errorFetchingLocations);
     } finally {
       setIsLoading(false);
@@ -156,8 +153,7 @@ const ElectoralLocationsScreen = () => {
     navigation.goBack();
   };
 
-  const handleLocationPress = (location) => {
-    console.log('Selected location:', location);
+  const handleLocationPress = location => {
     navigation.navigate(StackNav.UnifiedTableScreen, {
       locationId: location.id,
       locationData: location,
@@ -171,13 +167,18 @@ const ElectoralLocationsScreen = () => {
       activeOpacity={0.7}>
       <View style={styles.locationHeader}>
         <View style={styles.locationIconContainer}>
-          <MaterialIcons name="location-on" size={24} color={colors.primary || '#4F9858'} />
+          <MaterialIcons
+            name="location-on"
+            size={24}
+            color={colors.primary || '#4F9858'}
+          />
         </View>
         <View style={styles.locationInfo}>
           <CText style={[styles.locationName, {color: colors.text}]}>
             {item.name}
           </CText>
-          <CText style={[styles.locationAddress, {color: colors.textSecondary}]}>
+          <CText
+            style={[styles.locationAddress, {color: colors.textSecondary}]}>
             {item.address}
           </CText>
           {item.tablesCount && (
@@ -186,9 +187,13 @@ const ElectoralLocationsScreen = () => {
             </CText>
           )}
         </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.textSecondary}
+        />
       </View>
-      
+
       {item.code && (
         <View style={styles.locationCode}>
           <CText style={[styles.codeLabel, {color: colors.textSecondary}]}>
@@ -201,19 +206,19 @@ const ElectoralLocationsScreen = () => {
 
   if (isLoading) {
     return (
-      <CSafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+      <CSafeAreaView
+        style={[styles.container, {backgroundColor: colors.background}]}>
         <UniversalHeader
           title={String.electoralLocations}
           onBack={handleBack}
           colors={colors}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primary || '#4F9858'}
-          />
+          <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
           <CText style={[styles.loadingText, {color: colors.textSecondary}]}>
-            {userLocation ? String.loadingNearbyLocations : String.gettingLocation}
+            {userLocation
+              ? String.loadingNearbyLocations
+              : String.gettingLocation}
           </CText>
         </View>
       </CSafeAreaView>
@@ -221,7 +226,8 @@ const ElectoralLocationsScreen = () => {
   }
 
   return (
-    <CSafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+    <CSafeAreaView
+      style={[styles.container, {backgroundColor: colors.background}]}>
       <UniversalHeader
         title={String.electoralLocations}
         onBack={handleBack}
@@ -229,8 +235,16 @@ const ElectoralLocationsScreen = () => {
       />
 
       {userLocation && (
-        <View style={[styles.locationBanner, {backgroundColor: colors.primaryLight || '#E8F5E8'}]}>
-          <MaterialIcons name="near-me" size={16} color={colors.primary || '#4F9858'} />
+        <View
+          style={[
+            styles.locationBanner,
+            {backgroundColor: colors.primaryLight || '#E8F5E8'},
+          ]}>
+          <MaterialIcons
+            name="near-me"
+            size={16}
+            color={colors.primary || '#4F9858'}
+          />
           <CText style={[styles.bannerText, {color: colors.primary}]}>
             {String.showingNearbyLocations}
           </CText>
@@ -239,7 +253,11 @@ const ElectoralLocationsScreen = () => {
 
       {locations.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="location-off" size={64} color={colors.textSecondary} />
+          <MaterialIcons
+            name="location-off"
+            size={64}
+            color={colors.textSecondary}
+          />
           <CText style={[styles.emptyTitle, {color: colors.text}]}>
             {String.noLocationsFound}
           </CText>
@@ -251,7 +269,7 @@ const ElectoralLocationsScreen = () => {
         <FlatList
           data={locations}
           renderItem={renderLocationItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />

@@ -47,7 +47,7 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 // Cloud Function para anunciar conteo a usuarios cercanos
 exports.announceCountToNearby = functions.https.onCall(async (data, context) => {
   try {
-    console.log('🚀 Iniciando anuncio de conteo con datos:', data);
+    
     
     const { 
       emisorId, 
@@ -66,13 +66,13 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
 
     const { latitude: emisorLat, longitude: emisorLng } = ubicacionEmisor;
 
-    console.log(`📍 Buscando usuarios en radio de ${radio} metros desde ${emisorLat}, ${emisorLng}`);
+    
 
     // Obtener todos los usuarios activos de Realtime Database
     const usuariosSnapshot = await database.ref('usuarios').once('value');
     const usuarios = usuariosSnapshot.val() || {};
 
-    console.log(`👥 Total usuarios encontrados: ${Object.keys(usuarios).length}`);
+    
 
     const usuariosCercanos = [];
     const tokensNotificacion = [];
@@ -80,13 +80,13 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
     Object.entries(usuarios).forEach(([usuarioId, usuario]) => {
       // No enviar notificación al usuario que está anunciando
       if (usuarioId === emisorId) {
-        console.log(`⏭️ Saltando emisor: ${usuarioId}`);
+        
         return;
       }
 
       // Verificar que el usuario tenga ubicación y token FCM
       if (!usuario.ubicacion || !usuario.fcmToken || !usuario.activo) {
-        console.log(`⚠️ Usuario ${usuarioId} sin datos completos`);
+        
         return;
       }
 
@@ -101,7 +101,7 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
         usuarioLng
       );
 
-      console.log(`📏 Distancia a usuario ${usuarioId}: ${Math.round(distancia)} metros`);
+      
 
       // Si está dentro del radio, agregarlo a la lista
       if (distancia <= radio) {
@@ -111,11 +111,11 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
           token: usuario.fcmToken
         });
         tokensNotificacion.push(usuario.fcmToken);
-        console.log(`✅ Usuario ${usuarioId} agregado (${Math.round(distancia)}m)`);
+        
       }
     });
 
-    console.log(`🎯 Encontrados ${usuariosCercanos.length} usuarios cercanos`);
+    
 
     if (tokensNotificacion.length === 0) {
       return {
@@ -150,7 +150,7 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
       }
     };
 
-    console.log('📧 Enviando notificaciones a', tokensNotificacion.length, 'usuarios');
+    
 
     // Enviar notificaciones a todos los tokens
     const resultados = await admin.messaging().sendMulticast({
@@ -176,15 +176,14 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
       }
     });
 
-    console.log('📊 Resultados del envío:');
-    console.log(`✅ Exitosos: ${resultados.successCount}`);
-    console.log(`❌ Fallidos: ${resultados.failureCount}`);
+    
+    
+    
 
     // Log de errores si los hay
     if (resultados.failureCount > 0) {
       resultados.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          console.error(`❌ Error enviando a token ${idx}:`, resp.error);
         }
       });
     }
@@ -202,7 +201,6 @@ exports.announceCountToNearby = functions.https.onCall(async (data, context) => 
     };
 
   } catch (error) {
-    console.error('💥 Error en announceCountToNearby:', error);
     throw new functions.https.HttpsError(
       'internal', 
       `Error interno del servidor: ${error.message}`
@@ -234,10 +232,9 @@ exports.getUserStats = functions.https.onCall(async (data, context) => {
       timestamp: new Date().toISOString()
     };
     
-    console.log('📊 Estadísticas de usuarios:', stats);
+    
     return stats;
   } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
     throw new functions.https.HttpsError('internal', 'Error obteniendo estadísticas');
   }
 });

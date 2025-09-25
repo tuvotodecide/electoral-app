@@ -103,8 +103,7 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
       fromBlock: txBlock,
       toBlock: txBlock
     });
-    console.log("event logs:")
-    console.log(logs);
+ 
 
     if(logs.length > 0) {
       return logs[0].args;

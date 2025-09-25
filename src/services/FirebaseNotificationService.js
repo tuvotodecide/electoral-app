@@ -1,7 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
 import functions from '@react-native-firebase/functions';
-import { PermissionsAndroid, Platform } from 'react-native';
+import {PermissionsAndroid, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración Firebase para notificaciones
@@ -25,7 +25,6 @@ export class FirebaseNotificationService {
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
-      console.log('Authorization status:', authStatus);
       return true;
     }
     return false;
@@ -35,10 +34,9 @@ export class FirebaseNotificationService {
   async getFCMToken() {
     try {
       const token = await messaging().getToken();
-      console.log('FCM Token:', token);
+
       return token;
     } catch (error) {
-      console.error('Error getting FCM token:', error);
       return null;
     }
   }
@@ -46,7 +44,6 @@ export class FirebaseNotificationService {
   // Configurar handler para mensajes en primer plano
   setupForegroundMessageHandler() {
     messaging().onMessage(async remoteMessage => {
-      console.log('Mensaje recibido en primer plano:', remoteMessage);
       // Almacenar la notificación localmente
       await this.storeNotificationLocally(remoteMessage);
     });
@@ -73,15 +70,15 @@ export class FirebaseNotificationService {
       // Obtener notificaciones existentes
       const existingNotifications = await this.getStoredNotifications();
       const updatedNotifications = [notification, ...existingNotifications];
-      
+
       // Limitar a 50 notificaciones máximo
       const limitedNotifications = updatedNotifications.slice(0, 50);
-      
-      await AsyncStorage.setItem('local_notifications', JSON.stringify(limitedNotifications));
-      console.log('Notificación almacenada localmente');
-    } catch (error) {
-      console.error('Error almacenando notificación:', error);
-    }
+
+      await AsyncStorage.setItem(
+        'local_notifications',
+        JSON.stringify(limitedNotifications),
+      );
+    } catch (error) {}
   }
 
   // Obtener notificaciones almacenadas
@@ -90,7 +87,6 @@ export class FirebaseNotificationService {
       const notifications = await AsyncStorage.getItem('local_notifications');
       return notifications ? JSON.parse(notifications) : [];
     } catch (error) {
-      console.error('Error obteniendo notificaciones:', error);
       return [];
     }
   }
@@ -98,7 +94,6 @@ export class FirebaseNotificationService {
   // Configurar handler para mensajes en segundo plano
   setupBackgroundMessageHandler() {
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('Mensaje recibido en segundo plano:', remoteMessage);
       // Almacenar la notificación localmente
       await this.storeNotificationLocally(remoteMessage);
     });
@@ -107,8 +102,6 @@ export class FirebaseNotificationService {
   // Inicializar usuario al entrar a la aplicación
   async initializeUser(userId, userData = {}) {
     try {
-      console.log('Inicializando usuario:', userId);
-      
       // Obtener token FCM
       const fcmToken = await this.getFCMToken();
       if (!fcmToken) {
@@ -117,42 +110,40 @@ export class FirebaseNotificationService {
 
       // Obtener ubicación actual
       const location = await this.getCurrentLocation();
-      const geohash = this.calculateGeohash(location.latitude, location.longitude);
+      const geohash = this.calculateGeohash(
+        location.latitude,
+        location.longitude,
+      );
 
       // Datos del usuario para guardar
       const userInfo = {
         fcmToken: fcmToken,
         ubicacion: {
           latitude: location.latitude,
-          longitude: location.longitude
+          longitude: location.longitude,
         },
         geohash: geohash,
         ultimaActualizacion: database.ServerValue.TIMESTAMP,
         activo: true,
         nombre: userData.nombre || 'Usuario',
-        ...userData // Otros datos del usuario que se pasen
+        ...userData, // Otros datos del usuario que se pasen
       };
 
       // Guardar en Realtime Database
       const userRef = database().ref(`usuarios/${userId}`);
       await userRef.set(userInfo);
 
-      console.log('Usuario inicializado correctamente:', userId);
-      console.log('Geohash:', geohash);
-      console.log('Ubicación:', location);
-
       return {
         success: true,
         userId,
         location,
         fcmToken,
-        geohash
+        geohash,
       };
     } catch (error) {
-      console.error('Error inicializando usuario:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -162,13 +153,13 @@ export class FirebaseNotificationService {
     return new Promise((resolve, reject) => {
       if (Platform.OS === 'android') {
         PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        ).then((granted) => {
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ).then(granted => {
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
             reject(new Error('Permiso de ubicación denegado'));
             return;
           }
-          
+
           // Geolocation.getCurrentPosition(
           //   (position) => {
           //     resolve({
@@ -207,7 +198,7 @@ export class FirebaseNotificationService {
       // Solicitar permisos de ubicación
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           throw new Error('Permiso de ubicación denegado');
@@ -220,10 +211,8 @@ export class FirebaseNotificationService {
         //     try {
         //       const { latitude, longitude } = position.coords;
         //       const fcmToken = await this.getFCMToken();
-
         //       // Calcular geohash para consultas eficientes
         //       const geohash = this.calculateGeohash(latitude, longitude);
-
         //       // Guardar en Realtime Database
         //       const userRef = database().ref(`usuarios/${userId}`);
         //       await userRef.set({
@@ -236,16 +225,15 @@ export class FirebaseNotificationService {
         //         ultimaActualizacion: database.ServerValue.TIMESTAMP,
         //         activo: true
         //       });
-
-        //       console.log('Usuario actualizado en Realtime Database:', userId);
+        //
         //       resolve({ latitude, longitude });
         //     } catch (error) {
-        //       console.error('Error actualizando usuario:', error);
+        //
         //       reject(error);
         //     }
         //   },
         //   (error) => {
-        //     console.error('Error obteniendo ubicación:', error);
+        //
         //     reject(error);
         //   },
         //   {
@@ -256,7 +244,6 @@ export class FirebaseNotificationService {
         // );
       });
     } catch (error) {
-      console.error('Error actualizando ubicación:', error);
       throw error;
     }
   }
@@ -275,7 +262,7 @@ export class FirebaseNotificationService {
       if (even) {
         const mid = (lngRange[0] + lngRange[1]) / 2;
         if (longitude >= mid) {
-          ch |= (1 << (4 - bit));
+          ch |= 1 << (4 - bit);
           lngRange[0] = mid;
         } else {
           lngRange[1] = mid;
@@ -283,7 +270,7 @@ export class FirebaseNotificationService {
       } else {
         const mid = (latRange[0] + latRange[1]) / 2;
         if (latitude >= mid) {
-          ch |= (1 << (4 - bit));
+          ch |= 1 << (4 - bit);
           latRange[0] = mid;
         } else {
           latRange[1] = mid;
@@ -306,32 +293,32 @@ export class FirebaseNotificationService {
   // Calcular distancia entre dos puntos (fórmula de Haversine)
   calculateDistance(lat1, lng1, lat2, lng2) {
     const R = 6371000; // Radio de la Tierra en metros
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distancia en metros
   }
 
   // Anunciar conteo a usuarios cercanos
   async announceCountToNearbyUsers(userId, mesaData, locationData) {
     try {
-      console.log('🚀 Iniciando anuncio de conteo para usuarios cercanos...');
-      
       // Obtener ubicación actual del usuario que anuncia
       const currentLocation = await this.getCurrentLocation();
-      
+
       // Llamar a Cloud Function para procesar y enviar notificaciones
       const announceCount = functions().httpsCallable('announceCountToNearby');
-      
+
       const result = await announceCount({
         emisorId: userId,
         ubicacionEmisor: {
           latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude
+          longitude: currentLocation.longitude,
         },
         mesaData: {
           numero: mesaData.numero || mesaData.nombre,
@@ -340,15 +327,13 @@ export class FirebaseNotificationService {
           colegio: mesaData.colegio || locationData?.name,
           provincia: mesaData.provincia || locationData?.address || 'La Paz',
           zona: mesaData.zona || locationData?.zone,
-          distrito: mesaData.distrito || locationData?.district
+          distrito: mesaData.distrito || locationData?.district,
         },
-        radio: 300 // 300 metros
+        radio: 300, // 300 metros
       });
 
-      console.log('✅ Resultado del anuncio:', result.data);
       return result.data;
     } catch (error) {
-      console.error('❌ Error anunciando conteo:', error);
       throw error;
     }
   }

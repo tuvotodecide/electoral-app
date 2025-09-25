@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   FlatList,
@@ -8,22 +8,22 @@ import {
   Platform,
   Dimensions,
   Linking,
-  TextInput
+  TextInput,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 
-import { BACKEND_RESULT } from '@env';
+import {BACKEND_RESULT} from '@env';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -39,7 +39,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const ElectoralLocations = ({ navigation, route }) => {
+const ElectoralLocations = ({navigation, route}) => {
   const colors = useSelector(state => state.theme.theme);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +61,9 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [filteredLocations, setFilteredLocations] = useState([]);
 
   // Get navigation target from route params
-  const { targetScreen } = route.params || {};
+  const {targetScreen} = route.params || {};
 
-  const filterLocations = (text) => {
+  const filterLocations = text => {
     setSearchTerm(text);
 
     if (!text) {
@@ -81,9 +81,15 @@ const ElectoralLocations = ({ navigation, route }) => {
         location.zone?.toLowerCase().includes(lowerText) ||
         location.district?.toLowerCase().includes(lowerText) ||
         location.electoralSeat?.name?.toLowerCase().includes(lowerText) ||
-        location.electoralSeat?.municipality?.name?.toLowerCase().includes(lowerText) ||
-        location.electoralSeat?.municipality?.province?.name?.toLowerCase().includes(lowerText) ||
-        location.electoralSeat?.municipality?.province?.department?.name?.toLowerCase().includes(lowerText)
+        location.electoralSeat?.municipality?.name
+          ?.toLowerCase()
+          .includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.name
+          ?.toLowerCase()
+          .includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.department?.name
+          ?.toLowerCase()
+          .includes(lowerText)
       );
     });
 
@@ -105,12 +111,16 @@ const ElectoralLocations = ({ navigation, route }) => {
           onPress={() => {
             setSearchTerm('');
             setFilteredLocations(locations);
-          }}
-        >
+          }}>
           <Ionicons name="close-circle" size={20} color="#888" />
         </TouchableOpacity>
       ) : (
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <Ionicons
+          name="search"
+          size={20}
+          color="#888"
+          style={styles.searchIcon}
+        />
       )}
     </View>
   );
@@ -121,9 +131,13 @@ const ElectoralLocations = ({ navigation, route }) => {
     const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
 
     return parts.map((part, index) =>
-      part.toLowerCase() === highlight.toLowerCase()
-        ? <CText key={index} style={styles.highlightedText}>{part}</CText>
-        : part
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <CText key={index} style={styles.highlightedText}>
+          {part}
+        </CText>
+      ) : (
+        part
+      ),
     );
   };
 
@@ -132,7 +146,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setLoading(true);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=5000`,
-        { timeout: 15000 } // 10 segundos timeout
+        {timeout: 15000}, // 10 segundos timeout
       );
       // const response = await axios.get(
       //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
@@ -144,7 +158,6 @@ const ElectoralLocations = ({ navigation, route }) => {
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
-      console.error('Error fetching locations:', error);
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
         errorMessage = i18nString.connectionTimeout;
@@ -158,12 +171,12 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   }, []);
 
-  const formatIsoNoT = (iso) => {
+  const formatIsoNoT = iso => {
     if (!iso) return '';
     return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
   };
 
-  const formatDate = (isoDate) => {
+  const formatDate = isoDate => {
     if (!isoDate) return '';
     const date = new Date(isoDate);
     const year = date.getFullYear();
@@ -172,7 +185,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     return `${year}/${month}/${day}`;
   };
 
-  const formatTime = (isoDate) => {
+  const formatTime = isoDate => {
     if (!isoDate) return '';
     const date = new Date(isoDate);
     const hours = String(date.getHours()).padStart(2, '0');
@@ -183,117 +196,121 @@ const ElectoralLocations = ({ navigation, route }) => {
   const openLocationSettings = () => {
     if (Platform.OS === 'android') {
       // Intenta abrir configuración de ubicación del sistema
-      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
-        // Fallback si falla
-        Linking.openSettings();
-      });
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(
+        () => {
+          // Fallback si falla
+          Linking.openSettings();
+        },
+      );
     } else {
       // Para iOS
       Linking.openURL('App-Prefs:Privacy&path=LOCATION');
     }
   };
 
-  const getCurrentLocation = useCallback(async (retryCount = 0, useHighAccuracy = true) => {
-    try {
-      setLoadingLocation(true);
+  const getCurrentLocation = useCallback(
+    async (retryCount = 0, useHighAccuracy = true) => {
+      try {
+        setLoadingLocation(true);
 
-      // Mostrar mensaje de reintento si corresponde
-      if (retryCount > 0) {
-        console.log(`Retry attempt ${retryCount} for location (highAccuracy=${useHighAccuracy})`);
-      }
-
-      // Pedir permisos en Android
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: i18nString.locationPermissionTitle || 'Permiso de ubicación',
-            message:
-              i18nString.locationPermissionMessage ||
-              'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-            buttonNeutral: i18nString.askMeLater || 'Preguntar después',
-            buttonNegative: i18nString.cancel || 'Cancelar',
-            buttonPositive: i18nString.ok || 'OK',
-          }
-        );
-
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.log('Location permission denied');
-          showModal(
-            'settings',
-            i18nString.locationPermissionRequired,
-            i18nString.locationPermissionDeniedMessage,
-            i18nString.openSettings,
-            () => Linking.openSettings(),
-            i18nString.cancel,
-            closeModal
-          );
-          setLoadingLocation(false);
-          return;
+        // Mostrar mensaje de reintento si corresponde
+        if (retryCount > 0) {
         }
-      }
 
-      // Obtener ubicación
-      Geolocation.getCurrentPosition(
-        position => {
-          const { latitude, longitude } = position.coords;
-          console.log('Location obtained:', latitude, longitude);
-          setUserLocation({ latitude, longitude });
-          fetchNearbyLocations(latitude, longitude);
-        },
-        error => {
-          console.error('Location error:', error);
+        // Pedir permisos en Android
+        if (Platform.OS === 'android') {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title:
+                i18nString.locationPermissionTitle || 'Permiso de ubicación',
+              message:
+                i18nString.locationPermissionMessage ||
+                'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+              buttonNeutral: i18nString.askMeLater || 'Preguntar después',
+              buttonNegative: i18nString.cancel || 'Cancelar',
+              buttonPositive: i18nString.ok || 'OK',
+            },
+          );
 
-          // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
-          if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
-            console.log('Retrying with low accuracy...');
-            getCurrentLocation(retryCount + 1, false);
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            showModal(
+              'settings',
+              i18nString.locationPermissionRequired,
+              i18nString.locationPermissionDeniedMessage,
+              i18nString.openSettings,
+              () => Linking.openSettings(),
+              i18nString.cancel,
+              closeModal,
+            );
+            setLoadingLocation(false);
             return;
           }
-
-          // Manejo de errores final
-          let errorMessage = i18nString.locationError;
-          let modalTitle = i18nString.error;
-          let action = null;
-
-          if (error.code === 1) { // PERMISSION_DENIED
-            errorMessage = i18nString.locationPermissionDeniedMessage;
-            modalTitle = i18nString.locationPermissionRequired;
-            action = () => Linking.openSettings();
-          } else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
-            errorMessage = i18nString.locationDisabledMessage;
-            modalTitle = i18nString.locationRequired;
-            action = openLocationSettings;
-          }
-
-          showModal(
-            'settings',
-            modalTitle,
-            errorMessage,
-            i18nString.openSettings,
-            action,
-            i18nString.cancel,
-            closeModal
-          );
-
-          setLoadingLocation(false);
-          setLoading(false);
-        },
-        {
-          enableHighAccuracy: useHighAccuracy,
-          timeout: useHighAccuracy ? 15000 : 30000,   // menos estricto en fallback
-          maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
         }
-      );
 
-    } catch (error) {
-      console.error('Permission error:', error);
-      showModal('error', i18nString.error, i18nString.locationPermissionError);
-      setLoadingLocation(false);
-      setLoading(false);
-    }
-  }, [fetchNearbyLocations]);
+        // Obtener ubicación
+        Geolocation.getCurrentPosition(
+          position => {
+            const {latitude, longitude} = position.coords;
 
+            setUserLocation({latitude, longitude});
+            fetchNearbyLocations(latitude, longitude);
+          },
+          error => {
+            // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
+            if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+              getCurrentLocation(retryCount + 1, false);
+              return;
+            }
+
+            // Manejo de errores final
+            let errorMessage = i18nString.locationError;
+            let modalTitle = i18nString.error;
+            let action = null;
+
+            if (error.code === 1) {
+              // PERMISSION_DENIED
+              errorMessage = i18nString.locationPermissionDeniedMessage;
+              modalTitle = i18nString.locationPermissionRequired;
+              action = () => Linking.openSettings();
+            } else if (error.code === 2 || error.code === 3) {
+              // POSITION_UNAVAILABLE o TIMEOUT
+              errorMessage = i18nString.locationDisabledMessage;
+              modalTitle = i18nString.locationRequired;
+              action = openLocationSettings;
+            }
+
+            showModal(
+              'settings',
+              modalTitle,
+              errorMessage,
+              i18nString.openSettings,
+              action,
+              i18nString.cancel,
+              closeModal,
+            );
+
+            setLoadingLocation(false);
+            setLoading(false);
+          },
+          {
+            enableHighAccuracy: useHighAccuracy,
+            timeout: useHighAccuracy ? 15000 : 30000, // menos estricto en fallback
+            maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
+          },
+        );
+      } catch (error) {
+        showModal(
+          'error',
+          i18nString.error,
+          i18nString.locationPermissionError,
+        );
+        setLoadingLocation(false);
+        setLoading(false);
+      }
+    },
+    [fetchNearbyLocations],
+  );
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -301,7 +318,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setConfigError(false);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 } // 10 segundos timeout
+        {timeout: 15000}, // 10 segundos timeout
       );
       if (response.data) {
         setElectionStatus(response.data);
@@ -312,11 +329,10 @@ const ElectoralLocations = ({ navigation, route }) => {
           i18nString.error,
           i18nString.electionConfigError,
           i18nString.accept,
-          () => navigation.goBack()
-        )
+          () => navigation.goBack(),
+        );
       }
     } catch (error) {
-      console.error('Error fetching election config:', error);
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
@@ -329,23 +345,24 @@ const ElectoralLocations = ({ navigation, route }) => {
         i18nString.error,
         errorMessage,
         i18nString.accept,
-        () => navigation.goBack()
-      )
+        () => navigation.goBack(),
+      );
     } finally {
       setConfigLoading(false);
     }
-  }, [navigation])
+  }, [navigation]);
 
   useEffect(() => {
     fetchElectionStatus();
   }, [fetchElectionStatus]);
 
-
   useEffect(() => {
-    if (electionStatus &&
+    if (
+      electionStatus &&
       electionStatus.hasActiveConfig &&
       electionStatus.config.isActive &&
-      electionStatus.isVotingPeriod) {
+      electionStatus.isVotingPeriod
+    ) {
       getCurrentLocation();
     }
   }, [electionStatus, getCurrentLocation]);
@@ -360,7 +377,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     primaryButtonText = i18nString.accept,
     onPrimaryAction = null,
     secondaryButtonText = null,
-    onSecondaryAction = null
+    onSecondaryAction = null,
   ) => {
     setModalConfig({
       type,
@@ -369,7 +386,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       primaryButtonText,
       onPrimaryAction,
       secondaryButtonText,
-      onSecondaryAction
+      onSecondaryAction,
     });
     setModalVisible(true);
   };
@@ -388,11 +405,12 @@ const ElectoralLocations = ({ navigation, route }) => {
 
   const handleLocationPress = location => {
     // Solo permitir navegar si estamos en periodo de votación activo
-    if (electionStatus &&
+    if (
+      electionStatus &&
       electionStatus.hasActiveConfig &&
       electionStatus.config.isActive &&
-      electionStatus.isVotingPeriod) {
-
+      electionStatus.isVotingPeriod
+    ) {
       if (targetScreen === 'AnnounceCount') {
         navigation.navigate(StackNav.SearchCountTable, {
           locationId: location._id,
@@ -415,17 +433,16 @@ const ElectoralLocations = ({ navigation, route }) => {
         'error',
         i18nString.error,
         i18nString.votingNotActive,
-        i18nString.accept
+        i18nString.accept,
       );
     }
   };
 
-  const renderLocationItem = ({ item }) => (
+  const renderLocationItem = ({item}) => (
     <TouchableOpacity
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
       activeOpacity={0.8}>
-
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
           <CText style={styles.locationName} numberOfLines={2}>
@@ -447,7 +464,8 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       <View style={styles.locationDetails}>
         <CText style={styles.locationZone}>
-          {highlightText(item.zone, searchTerm)} - {highlightText(item.district, searchTerm)}
+          {highlightText(item.zone, searchTerm)} -{' '}
+          {highlightText(item.district, searchTerm)}
         </CText>
         <View style={styles.tablesContainer}>
           <Ionicons name="grid-outline" size={16} color="#4F9858" />
@@ -459,9 +477,17 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       <View style={styles.hierarchyContainer}>
         <CText style={styles.hierarchyText}>
-          {highlightText(item.electoralSeat?.municipality?.province?.department?.name, searchTerm)} →{' '}
-          {highlightText(item.electoralSeat?.municipality?.province?.name, searchTerm)} →{' '}
-          {highlightText(item.electoralSeat?.municipality?.name, searchTerm)} → {highlightText(item.electoralSeat?.name, searchTerm)}
+          {highlightText(
+            item.electoralSeat?.municipality?.province?.department?.name,
+            searchTerm,
+          )}{' '}
+          →{' '}
+          {highlightText(
+            item.electoralSeat?.municipality?.province?.name,
+            searchTerm,
+          )}{' '}
+          → {highlightText(item.electoralSeat?.municipality?.name, searchTerm)}{' '}
+          → {highlightText(item.electoralSeat?.name, searchTerm)}
         </CText>
       </View>
     </TouchableOpacity>
@@ -474,7 +500,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       <CText style={styles.emptySubtitle}>
         {i18nString.noLocationsFoundSubtitle}
       </CText>
-      <TouchableOpacity style={styles.retryButton} onPress={handleRetryLocation}>
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={handleRetryLocation}>
         <CText style={styles.retryButtonText}>{i18nString.retry}</CText>
       </TouchableOpacity>
     </View>
@@ -510,17 +538,23 @@ const ElectoralLocations = ({ navigation, route }) => {
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.date}:</CText>
-          <CText style={styles.votingDetailValue}>{formatDate(electionStatus.config.votingStartDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatDate(electionStatus.config.votingStartDateBolivia)}
+          </CText>
         </View>
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.from}:</CText>
-          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingStartDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatTime(electionStatus.config.votingStartDateBolivia)}
+          </CText>
         </View>
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.to}:</CText>
-          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingEndDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatTime(electionStatus.config.votingEndDateBolivia)}
+          </CText>
         </View>
 
         <CText style={styles.votingPeriodSubtitle}>{subtitle}</CText>
@@ -549,7 +583,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.noActiveElection}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.noActiveElection}
+          </CText>
           <CText style={styles.inactiveSubtitle}>
             {i18nString.noActiveElectionSubtitle}
           </CText>
@@ -562,7 +598,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.electionInactive}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.electionInactive}
+          </CText>
           <CText style={styles.inactiveSubtitle}>
             {i18nString.electionInactiveSubtitle}
           </CText>
@@ -575,12 +613,15 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="time-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.outOfVotingPeriod}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.outOfVotingPeriod}
+          </CText>
 
           <View style={styles.timeContainer}>
             <Ionicons name="time" size={24} color="#666" />
             <CText style={styles.timeText}>
-              {i18nString.currentTime}: {formatIsoNoT(electionStatus.currentTimeBolivia)}
+              {i18nString.currentTime}:{' '}
+              {formatIsoNoT(electionStatus.currentTimeBolivia)}
             </CText>
           </View>
 
@@ -641,7 +682,6 @@ const ElectoralLocations = ({ navigation, route }) => {
       </>
     );
   };
-
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -731,7 +771,7 @@ const styles = {
     padding: getResponsiveSize(16, 18, 20),
     marginBottom: getResponsiveSize(12, 16, 20),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -929,7 +969,7 @@ const styles = {
     paddingHorizontal: getResponsiveSize(12, 16, 20),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },

@@ -18,23 +18,19 @@ export const useSearchTableLogic = navigationTarget => {
       ? tableOrParams
       : {table: tableOrParams, mesa: tableOrParams}; // Add mesa parameter for consistency
 
-    console.log('useSearchTableLogic: Navigating with params:', params);
     navigation.navigate(navigationTarget, params);
   };
 
   const handleNotificationPress = () => {
     // Implement notification logic if needed
-    console.log('Notification pressed');
   };
 
   const handleHomePress = () => {
     // Implement home navigation
-    console.log('Home pressed');
   };
 
   const handleProfilePress = () => {
     // Implement profile navigation
-    console.log('Profile pressed');
   };
 
   return {

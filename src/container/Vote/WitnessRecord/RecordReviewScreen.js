@@ -17,17 +17,8 @@ const RecordReviewScreen = () => {
     voteSummaryResults: routeVoteSummaryResults,
   } = route.params || {};
 
-  console.log('RecordReviewScreen - Received params:', route.params);
-  console.log('RecordReviewScreen - tableData:', tableData);
-  console.log(
-    'RecordReviewScreen - tableData keys:',
-    Object.keys(tableData || {}),
-  );
-  console.log('RecordReviewScreen - tableNumber fields:', {
-    tableNumber: tableData?.tableNumber,
-    numero: tableData?.numero,
-    number: tableData?.number,
-  });
+
+
 
   // Use dynamic data if available, otherwise fallback to static data
   const partyResults = routePartyResults || [
@@ -54,19 +45,7 @@ const RecordReviewScreen = () => {
   };
 
   const handleCorrectData = () => {
-    console.log(
-      'RecordReviewScreen - handleCorrectData: Passing tableData:',
-      tableData,
-    );
-    console.log(
-      'RecordReviewScreen - tableData keys:',
-      Object.keys(tableData || {}),
-    );
-    console.log('RecordReviewScreen - tableNumber fields:', {
-      tableNumber: tableData?.tableNumber,
-      numero: tableData?.numero,
-      number: tableData?.number,
-    });
+
 
     navigation.navigate('RecordCertificationScreen', {
       recordId,

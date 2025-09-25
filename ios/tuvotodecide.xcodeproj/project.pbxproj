@@ -7,28 +7,33 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		36497135929242199DEDC711 /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64A7A067EB444C519B11D940 /* Colors.xcassets */; };
+		1BD4D08BC2564990A819F05A /* Pods_tuvotodecide.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63DE5186FE32221CD1FDB8AC /* Pods_tuvotodecide.framework */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		8F04CB5109B04E40BA1A6DC4 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F6E480497497472EA2F0C01A /* BootSplash.storyboard */; };
-		9AD6A4AD2E5599C20076B8E9 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9AD6A4AC2E5599C20076B8E9 /* GoogleService-Info.plist */; };
-		9E9E097F378A7769098E8D92 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
-		A9396A257D19C28AE753B9EB /* Pods_wirawallet.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E5BCD8EB903720F93187D258 /* Pods_wirawallet.framework */; };
+		E8F419EF2E5AEB8000F214E7 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9AD6A4AC2E5599C20076B8E9 /* GoogleService-Info.plist */; };
+		E8F419F42E5AEBB000F214E7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		E8F419F52E5AEBB900F214E7 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		E8F419F62E5AEBC300F214E7 /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64A7A067EB444C519B11D940 /* Colors.xcassets */; };
+		E8F419F72E5AEBC900F214E7 /* AppDelegate.swift in Resources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		E8F419F82E5AEBCE00F214E7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		E8F419F92E5AEBD300F214E7 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F6E480497497472EA2F0C01A /* BootSplash.storyboard */; };
+		E8F419FC2E5AEC6D00F214E7 /* Ionicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E8F419FB2E5AEC6C00F214E7 /* Ionicons.ttf */; };
+		E8F419FE2E5AEC7D00F214E7 /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E8F419FD2E5AEC7D00F214E7 /* MaterialCommunityIcons.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* wirawallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wirawallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07F961A680F5B00A75B9A /* tuvotodecide.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tuvotodecide.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = wirawallet/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = wirawallet/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = wirawallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4F6DA55B7DF90C986488A29F /* Pods-tuvotodecide.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tuvotodecide.release.xcconfig"; path = "Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide.release.xcconfig"; sourceTree = "<group>"; };
+		63DE5186FE32221CD1FDB8AC /* Pods_tuvotodecide.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_tuvotodecide.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		64A7A067EB444C519B11D940 /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = wirawallet/Colors.xcassets; sourceTree = "<group>"; };
-		6E881B7BE2590A30E2921555 /* Pods-wirawallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wirawallet.debug.xcconfig"; path = "Target Support Files/Pods-wirawallet/Pods-wirawallet.debug.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = wirawallet/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = wirawallet/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		8F447CE3CC99A1821547C049 /* Pods-wirawallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-wirawallet.release.xcconfig"; path = "Target Support Files/Pods-wirawallet/Pods-wirawallet.release.xcconfig"; sourceTree = "<group>"; };
 		9AD6A4AC2E5599C20076B8E9 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		E5BCD8EB903720F93187D258 /* Pods_wirawallet.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_wirawallet.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A44502EA51D3641934825199 /* Pods-tuvotodecide.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tuvotodecide.debug.xcconfig"; path = "Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide.debug.xcconfig"; sourceTree = "<group>"; };
+		E8F419FB2E5AEC6C00F214E7 /* Ionicons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Ionicons.ttf; sourceTree = "<group>"; };
+		E8F419FD2E5AEC7D00F214E7 /* MaterialCommunityIcons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = MaterialCommunityIcons.ttf; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F6E480497497472EA2F0C01A /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = wirawallet/BootSplash.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -38,7 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A9396A257D19C28AE753B9EB /* Pods_wirawallet.framework in Frameworks */,
+				1BD4D08BC2564990A819F05A /* Pods_tuvotodecide.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -63,7 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E5BCD8EB903720F93187D258 /* Pods_wirawallet.framework */,
+				63DE5186FE32221CD1FDB8AC /* Pods_tuvotodecide.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -78,6 +83,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				E8F419FD2E5AEC7D00F214E7 /* MaterialCommunityIcons.ttf */,
+				E8F419FB2E5AEC6C00F214E7 /* Ionicons.ttf */,
 				13B07FAE1A68108700A75B9A /* wirawallet */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -93,7 +100,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* wirawallet.app */,
+				13B07F961A680F5B00A75B9A /* tuvotodecide.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,8 +108,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				6E881B7BE2590A30E2921555 /* Pods-wirawallet.debug.xcconfig */,
-				8F447CE3CC99A1821547C049 /* Pods-wirawallet.release.xcconfig */,
+				A44502EA51D3641934825199 /* Pods-tuvotodecide.debug.xcconfig */,
+				4F6DA55B7DF90C986488A29F /* Pods-tuvotodecide.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -110,26 +117,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* wirawallet */ = {
+		13B07F861A680F5B00A75B9A /* tuvotodecide */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "wirawallet" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "tuvotodecide" */;
 			buildPhases = (
-				67195900729D33402C51E7C4 /* [CP] Check Pods Manifest.lock */,
+				83A6E3E02C4B0D0F8637F209 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
-				13B07F8E1A680F5B00A75B9A /* Resources */,
 				9A0D6EF02E54CFE6001EBD41 /* react-native-config */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				B41EE5D7EC9BEFAC9DD2747E /* [CP] Embed Pods Frameworks */,
-				7E2A5DA7E41CB94AC7B6AAD9 /* [CP] Copy Pods Resources */,
+				E8F419EE2E5AEB4500F214E7 /* Resources */,
+				F09E34BBB23F00C754B24F87 /* [CP] Embed Pods Frameworks */,
+				514F8A685C7DC09759101CA9 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = wirawallet;
+			name = tuvotodecide;
 			productName = wirawallet;
-			productReference = 13B07F961A680F5B00A75B9A /* wirawallet.app */;
+			productReference = 13B07F961A680F5B00A75B9A /* tuvotodecide.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -145,7 +152,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "wirawallet" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "tuvotodecide" */;
 			compatibilityVersion = "Xcode 12.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -158,22 +165,25 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* wirawallet */,
+				13B07F861A680F5B00A75B9A /* tuvotodecide */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		13B07F8E1A680F5B00A75B9A /* Resources */ = {
+		E8F419EE2E5AEB4500F214E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
-				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
-				8F04CB5109B04E40BA1A6DC4 /* BootSplash.storyboard in Resources */,
-				36497135929242199DEDC711 /* Colors.xcassets in Resources */,
-				9E9E097F378A7769098E8D92 /* PrivacyInfo.xcprivacy in Resources */,
-				9AD6A4AD2E5599C20076B8E9 /* GoogleService-Info.plist in Resources */,
+				E8F419F92E5AEBD300F214E7 /* BootSplash.storyboard in Resources */,
+				E8F419F82E5AEBCE00F214E7 /* PrivacyInfo.xcprivacy in Resources */,
+				E8F419FC2E5AEC6D00F214E7 /* Ionicons.ttf in Resources */,
+				E8F419F72E5AEBC900F214E7 /* AppDelegate.swift in Resources */,
+				E8F419F62E5AEBC300F214E7 /* Colors.xcassets in Resources */,
+				E8F419F52E5AEBB900F214E7 /* Images.xcassets in Resources */,
+				E8F419F42E5AEBB000F214E7 /* LaunchScreen.storyboard in Resources */,
+				E8F419FE2E5AEC7D00F214E7 /* MaterialCommunityIcons.ttf in Resources */,
+				E8F419EF2E5AEB8000F214E7 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -197,7 +207,28 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		67195900729D33402C51E7C4 /* [CP] Check Pods Manifest.lock */ = {
+		514F8A685C7DC09759101CA9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		83A6E3E02C4B0D0F8637F209 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -212,28 +243,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-wirawallet-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-tuvotodecide-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		7E2A5DA7E41CB94AC7B6AAD9 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		9A0D6EF02E54CFE6001EBD41 /* react-native-config */ = {
@@ -255,21 +269,25 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nexport ENVFILE=\"${ENVFILE:-.env}\"\nexport PROJECT_ROOT=\"${SRCROOT}/..\"\nexport RNC_ROOT=\"${PROJECT_ROOT}/node_modules/react-native-config\"\nexport OUTPUT_PATH=\"${RNC_ROOT}/ios/ReactNativeConfig\"\n\necho \"Project root: $PROJECT_ROOT\"\necho \"ENVFILE: $ENVFILE\"\necho \"Output path: $OUTPUT_PATH\"\n\nruby \"${OUTPUT_PATH}/BuildDotenvConfig.rb\" \"$PROJECT_ROOT\" \"$OUTPUT_PATH\"\n";
 		};
-		B41EE5D7EC9BEFAC9DD2747E /* [CP] Embed Pods Frameworks */ = {
+		F09E34BBB23F00C754B24F87 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-wirawallet/Pods-wirawallet-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-tuvotodecide/Pods-tuvotodecide-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -288,15 +306,16 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 6E881B7BE2590A30E2921555 /* Pods-wirawallet.debug.xcconfig */;
+			baseConfigurationReference = A44502EA51D3641934825199 /* Pods-tuvotodecide.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PUXLGBM98A;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = U63JS7RZD3;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = wirawallet/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tu voto decide";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -307,8 +326,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pabloandres.tuvotodecide.dev;
-				PRODUCT_NAME = wirawallet;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tuvotodecide;
+				PRODUCT_NAME = tuvotodecide;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -317,14 +336,15 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8F447CE3CC99A1821547C049 /* Pods-wirawallet.release.xcconfig */;
+			baseConfigurationReference = 4F6DA55B7DF90C986488A29F /* Pods-tuvotodecide.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PUXLGBM98A;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = U63JS7RZD3;
 				INFOPLIST_FILE = wirawallet/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tu voto decide";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -335,8 +355,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pabloandres.tuvotodecide.dev;
-				PRODUCT_NAME = wirawallet;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tuvotodecide;
+				PRODUCT_NAME = tuvotodecide;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -403,7 +423,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -423,10 +443,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -488,7 +505,7 @@
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
 					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -507,10 +524,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
@@ -521,7 +535,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "wirawallet" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "tuvotodecide" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -530,7 +544,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "wirawallet" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "tuvotodecide" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

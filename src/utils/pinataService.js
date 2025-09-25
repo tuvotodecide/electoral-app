@@ -1,12 +1,17 @@
 import axios from 'axios';
 import RNFS from 'react-native-fs';
-import { PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND_RESULT } from "@env"
+import {
+  PINATA_API_KEY,
+  PINATA_API_SECRET,
+  PINATA_JWT,
+  BACKEND_RESULT,
+} from '@env';
 
 class PinataService {
   constructor() {
     this.apiKey = PINATA_API_KEY;
-    this.apiSecret = PINATA_API_SECRET
-    this.jwt = PINATA_JWT
+    this.apiSecret = PINATA_API_SECRET;
+    this.jwt = PINATA_JWT;
 
     this.baseURL = 'https://api.pinata.cloud';
   }
@@ -15,24 +20,17 @@ class PinataService {
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
-      console.log("Verificando duplicados para mesa:", tableNumber);
 
       // Hacer la petición al backend
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
-        { timeout: 10000 } // 10 segundos timeout
+        {timeout: 10000}, // 10 segundos timeout
       );
 
       const data = response.data;
 
       // Normalizar para siempre tener un array
-      const existingBallots = Array.isArray(data)
-        ? data
-        : data
-          ? [data]
-          : [];
-
-      console.log('Actas existentes encontradas:', existingBallots.length);
+      const existingBallots = Array.isArray(data) ? data : data ? [data] : [];
 
       // Comparar datos de votación (recibe directamente los objetos .votes)
       const isEqual = (votes1, votes2) => {
@@ -44,10 +42,12 @@ class PinataService {
             votes1.parties.totalVotes === votes2.parties.totalVotes &&
             Array.isArray(votes1.parties.partyVotes) &&
             Array.isArray(votes2.parties.partyVotes) &&
-            votes1.parties.partyVotes.length === votes2.parties.partyVotes.length &&
-            votes1.parties.partyVotes.every((p, i) =>
-              p.partyId === votes2.parties.partyVotes[i].partyId &&
-              p.votes === votes2.parties.partyVotes[i].votes
+            votes1.parties.partyVotes.length ===
+              votes2.parties.partyVotes.length &&
+            votes1.parties.partyVotes.every(
+              (p, i) =>
+                p.partyId === votes2.parties.partyVotes[i].partyId &&
+                p.votes === votes2.parties.partyVotes[i].votes,
             );
 
           const deputiesEqual =
@@ -57,10 +57,12 @@ class PinataService {
             votes1.deputies.totalVotes === votes2.deputies.totalVotes &&
             Array.isArray(votes1.deputies.partyVotes) &&
             Array.isArray(votes2.deputies.partyVotes) &&
-            votes1.deputies.partyVotes.length === votes2.deputies.partyVotes.length &&
-            votes1.deputies.partyVotes.every((p, i) =>
-              p.partyId === votes2.deputies.partyVotes[i].partyId &&
-              p.votes === votes2.deputies.partyVotes[i].votes
+            votes1.deputies.partyVotes.length ===
+              votes2.deputies.partyVotes.length &&
+            votes1.deputies.partyVotes.every(
+              (p, i) =>
+                p.partyId === votes2.deputies.partyVotes[i].partyId &&
+                p.votes === votes2.deputies.partyVotes[i].votes,
             );
 
           return partiesEqual && deputiesEqual;
@@ -69,39 +71,32 @@ class PinataService {
         }
       };
 
-
-      console.log("EXISTING BALLOTS", existingBallots);
-      console.log("VOTEDATA", voteData);
-
       // Buscar duplicado
       const duplicate = existingBallots.find(ballot =>
-        isEqual(ballot.votes, voteData.votes)
+        isEqual(ballot.votes, voteData.votes),
       );
 
       return {
         exists: Boolean(duplicate),
-        ballot: duplicate || null
+        ballot: duplicate || null,
       };
     } catch (error) {
       // Manejar específicamente el error 404 (no encontrado)
       if (error.response?.status === 404) {
-        console.log('No se encontraron actas para esta mesa - Continuando...');
         return {
           exists: false,
-          ballot: null
+          ballot: null,
         };
       }
 
       // Para otros errores, loguear pero continuar
-      console.error('Error verificando duplicados:', error);
+
       return {
         exists: false,
-        ballot: null
+        ballot: null,
       };
     }
   }
-
-
 
   /**
    * Sube una imagen a IPFS usando Pinata
@@ -111,8 +106,6 @@ class PinataService {
    */
   async uploadImageToIPFS(filePath, fileName = 'electoral-act.jpg') {
     try {
-      console.log('📤 Subiendo imagen a IPFS:', filePath);
-
       // Verificar que el archivo existe
       const fileExists = await RNFS.exists(filePath);
       if (!fileExists) {
@@ -162,8 +155,6 @@ class PinataService {
         },
       );
 
-      console.log('✅ Imagen subida exitosamente:', response.data);
-
       return {
         success: true,
         data: {
@@ -174,7 +165,6 @@ class PinataService {
         },
       };
     } catch (error) {
-      console.error('❌ Error subiendo imagen a IPFS:', error);
       return {
         success: false,
         error:
@@ -191,8 +181,6 @@ class PinataService {
    */
   async uploadJSONToIPFS(jsonData, name = 'electoral-act-data.json') {
     try {
-      console.log('📤 Subiendo JSON a IPFS:', name);
-
       // Metadatos para el JSON
       const pinataMetadata = {
         name: name,
@@ -227,8 +215,6 @@ class PinataService {
         },
       );
 
-      console.log('✅ JSON subido exitosamente:', response.data);
-
       return {
         success: true,
         data: {
@@ -239,7 +225,6 @@ class PinataService {
         },
       };
     } catch (error) {
-      console.error('❌ Error subiendo JSON a IPFS:', error);
       return {
         success: false,
         error:
@@ -262,13 +247,6 @@ class PinataService {
     additionalData = {},
   ) {
     try {
-      console.log('🚀 Iniciando subida completa del acta electoral');
-      console.log('📊 Datos recibidos:', {
-        analysisData,
-        electoralData,
-        additionalData
-      });
-
       // 1. Subir imagen
       const imageResult = await this.uploadImageToIPFS(imagePath);
       if (!imageResult.success) {
@@ -277,30 +255,34 @@ class PinataService {
 
       // 2. Extraer datos base
       const timestamp = new Date().toISOString();
-      const tableNumber = additionalData.tableNumber || analysisData?.table_number || 'N/A';
+      const tableNumber =
+        additionalData.tableNumber || analysisData?.table_number || 'N/A';
       const tableCode = additionalData.tableCode || 'N/A';
-      const time = additionalData.time || analysisData?.time || new Date().toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const time =
+        additionalData.time ||
+        analysisData?.time ||
+        new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
 
       // 3. Construir attributes
       const attributes = [
-        { trait_type: 'Table Number', value: tableNumber },
-        { trait_type: 'Table Code', value: tableCode },
-        { trait_type: 'Time', value: time },
+        {trait_type: 'Table Number', value: tableNumber},
+        {trait_type: 'Table Code', value: tableCode},
+        {trait_type: 'Time', value: time},
       ];
 
       // Agregar votos por partido
       electoralData.partyResults.forEach(party => {
         attributes.push({
           trait_type: `Presidente - ${party.partido}`,
-          value: parseInt(party.presidente, 10) || 0
+          value: parseInt(party.presidente, 10) || 0,
         });
 
         attributes.push({
           trait_type: `Diputado - ${party.partido}`,
-          value: parseInt(party.diputado, 10) || 0
+          value: parseInt(party.diputado, 10) || 0,
         });
       });
 
@@ -309,38 +291,40 @@ class PinataService {
         if (summary.label === 'Votos Válidos') {
           attributes.push({
             trait_type: 'Presidente - Votos Válidos',
-            value: parseInt(summary.value1, 10) || 0
+            value: parseInt(summary.value1, 10) || 0,
           });
           attributes.push({
             trait_type: 'Diputado - Votos Válidos',
-            value: parseInt(summary.value2, 10) || 0
+            value: parseInt(summary.value2, 10) || 0,
           });
         } else if (summary.label === 'Votos en Blanco') {
           attributes.push({
             trait_type: 'Presidente - Votos en Blanco',
-            value: parseInt(summary.value1, 10) || 0
+            value: parseInt(summary.value1, 10) || 0,
           });
           attributes.push({
             trait_type: 'Diputado - Votos en Blanco',
-            value: parseInt(summary.value2, 10) || 0
+            value: parseInt(summary.value2, 10) || 0,
           });
         } else if (summary.label === 'Votos Nulos') {
           attributes.push({
             trait_type: 'Presidente - Votos Nulos',
-            value: parseInt(summary.value1, 10) || 0
+            value: parseInt(summary.value1, 10) || 0,
           });
           attributes.push({
             trait_type: 'Diputado - Votos Nulos',
-            value: parseInt(summary.value2, 10) || 0
+            value: parseInt(summary.value2, 10) || 0,
           });
         }
       });
 
       // 4. Construir campo DATA requerido
-      const buildVoteData = (type) => {
+      const buildVoteData = type => {
         // Función auxiliar para obtener valores de forma segura
         const getValue = (label, defaultValue = 0) => {
-          const item = electoralData.voteSummaryResults.find(s => s.label === label);
+          const item = electoralData.voteSummaryResults.find(
+            s => s.label === label,
+          );
           if (!item) return defaultValue;
 
           const value = type === 'presidente' ? item.value1 : item.value2;
@@ -353,9 +337,16 @@ class PinataService {
           blankVotes: getValue('Votos en Blanco'),
           partyVotes: electoralData.partyResults.map(party => ({
             partyId: party.partido,
-            votes: parseInt(type === 'presidente' ? party.presidente : party.diputado, 10) || 0
+            votes:
+              parseInt(
+                type === 'presidente' ? party.presidente : party.diputado,
+                10,
+              ) || 0,
           })),
-          totalVotes: getValue('Votos Válidos') + getValue('Votos Nulos') + getValue('Votos en Blanco')
+          totalVotes:
+            getValue('Votos Válidos') +
+            getValue('Votos Nulos') +
+            getValue('Votos en Blanco'),
         };
       };
 
@@ -365,8 +356,8 @@ class PinataService {
         locationId: additionalData.idRecinto,
         votes: {
           parties: buildVoteData('presidente'),
-          deputies: buildVoteData('diputado')
-        }
+          deputies: buildVoteData('diputado'),
+        },
       };
 
       // 5. Construir metadata final
@@ -384,18 +375,14 @@ class PinataService {
           imageCID: imageResult.data.ipfsHash,
           analysisData: analysisData,
         },
-        data: dataField
+        data: dataField,
       };
-
-      console.log('📝 Metadata completa:', JSON.stringify(metadata, null, 2));
 
       // 6. Subir metadata
       const jsonResult = await this.uploadJSONToIPFS(
         metadata,
-        `electoral-act-${tableCode}-${tableNumber}.json`
+        `electoral-act-${tableCode}-${tableNumber}.json`,
       );
-
-      console.log('✅ JSON subido con CID:', jsonResult.data.ipfsHash);
 
       return {
         success: true,
@@ -405,14 +392,13 @@ class PinataService {
           imageUrl: imageResult.data.gatewayUrl,
           jsonUrl: jsonResult.data.gatewayUrl,
           metadata: metadata,
-          timestamp: timestamp
-        }
+          timestamp: timestamp,
+        },
       };
     } catch (error) {
-      console.error('❌ Error en subida completa:', error);
       return {
         success: false,
-        error: error.message || 'Error desconocido'
+        error: error.message || 'Error desconocido',
       };
     }
   }
@@ -431,7 +417,7 @@ class PinataService {
 
       const response = await axios.get(
         `${this.baseURL}/data/pinList?hashContains=${ipfsHash}`,
-        { headers },
+        {headers},
       );
 
       return {
@@ -439,7 +425,6 @@ class PinataService {
         data: response.data,
       };
     } catch (error) {
-      console.error('❌ Error verificando estado IPFS:', error);
       return {
         success: false,
         error: error.response?.data?.error || error.message,

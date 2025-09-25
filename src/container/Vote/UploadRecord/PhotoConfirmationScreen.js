@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,21 +8,21 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import { executeOperation } from "../../../api/account"
-import { BACKEND_RESULT, CHAIN, BACKEND_SECRET } from "@env"
+import {executeOperation} from '../../../api/account';
+import {BACKEND_RESULT, CHAIN, BACKEND_SECRET} from '@env';
 import axios from 'axios';
-import { oracleCalls, oracleReads } from '../../../api/oracle';
-import { availableNetworks } from '../../../api/params';
+import {oracleCalls, oracleReads} from '../../../api/oracle';
+import {availableNetworks} from '../../../api/params';
 import InfoModal from '../../../components/modal/InfoModal';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -52,37 +52,12 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
+  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
     route.params || {}; // Destructure all needed data
 
   // Also try to get data from alternative parameter names
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
-
-
-  console.log('PhotoConfirmationScreen - Received data:', {
-    tableData,
-    photoUri,
-    partyResults,
-    voteSummaryResults,
-    aiAnalysis,
-  });
-  console.log('PhotoConfirmationScreen - Alternative data sources:', {
-    mesaData,
-    mesa,
-    allRouteParams: route.params,
-  });
-  console.log('PhotoConfirmationScreen - tableData debug:', {
-    tableData,
-    tableNumber: tableData?.tableNumber,
-    numero: tableData?.numero,
-    number: tableData?.number,
-    allKeys: tableData ? Object.keys(tableData) : 'no tableData',
-  });
-  console.log(
-    'PhotoConfirmationScreen - tableData is empty?',
-    !tableData || Object.keys(tableData || {}).length === 0,
-  );
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
@@ -93,8 +68,8 @@ const PhotoConfirmationScreen = () => {
   const [uploadError, setUploadError] = useState('');
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
-    title: "",
-    message: "",
+    title: '',
+    message: '',
   });
 
   // Obtener nombre real del usuario desde Redux
@@ -110,7 +85,6 @@ const PhotoConfirmationScreen = () => {
     navigation.goBack();
   };
 
-
   const verifyAndUpload = async () => {
     try {
       // Construir datos para verificación
@@ -118,11 +92,13 @@ const PhotoConfirmationScreen = () => {
         tableNumber: tableData?.codigo || 'N/A',
         votes: {
           parties: buildVoteData('presidente'),
-          deputies: buildVoteData('diputado')
-        }
+          deputies: buildVoteData('diputado'),
+        },
       };
       // Verificar duplicados
-      const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+      const duplicateCheck = await pinataService.checkDuplicateBallot(
+        verificationData,
+      );
 
       if (duplicateCheck.exists) {
         setDuplicateBallot(duplicateCheck.ballot);
@@ -132,12 +108,11 @@ const PhotoConfirmationScreen = () => {
         handlePublishAndCertify();
       }
     } catch (error) {
-      console.error('Error en verificación:', error);
       setUploadError('Error verificando duplicados');
     }
   };
 
-  const buildVoteData = (type) => {
+  const buildVoteData = type => {
     const getValue = (label, defaultValue = 0) => {
       const item = voteSummaryResults.find(s => s.label === label);
       if (!item) return defaultValue;
@@ -152,93 +127,90 @@ const PhotoConfirmationScreen = () => {
       blankVotes: getValue('Votos en Blanco'),
       partyVotes: partyResults.map(party => ({
         partyId: party.partido,
-        votes: parseInt(type === 'presidente' ? party.presidente : party.diputado, 10) || 0
+        votes:
+          parseInt(
+            type === 'presidente' ? party.presidente : party.diputado,
+            10,
+          ) || 0,
       })),
-      totalVotes: getValue('Votos Válidos') +
+      totalVotes:
+        getValue('Votos Válidos') +
         getValue('Votos Nulos') +
-        getValue('Votos en Blanco')
+        getValue('Votos en Blanco'),
     };
   };
 
   // Funcion para subir al Backend
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
-      const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`
+      const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`;
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
-        tableIdIpfs: "String"
+        tableIdIpfs: 'String',
       };
-      console.log('📤 Subiendo metadata al backend:', payload);
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000, // 30 segundos timeout
       });
 
-      console.log('✅ Metadata subida al backend:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error subiendo metadata al backend:', error);
       throw error;
     }
-  }
+  };
 
   // Función para subir el atestiguamiento al backend
-  const uploadAttestation = async (ballotId) => {
+  const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
       const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
 
       const payload = {
-        attestations: [{
-          ballotId,
-          support: true,
-          isJury,
-          dni: String(userData.dni)
-        }]
+        attestations: [
+          {
+            ballotId,
+            support: true,
+            isJury,
+            dni: String(userData.dni),
+          },
+        ],
       };
-
-      console.log('Subiendo attestation:', payload);
 
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000, // 30 segundos timeout
       });
 
-      console.log('Attestation subida exitosamente:', response.data);
       return true;
     } catch (error) {
-      console.error('Error subiendo attestation:', error);
       return false;
     }
   };
 
-  const validateWithBackend = async (ipfsJsonUrl) => {
+  const validateWithBackend = async ipfsJsonUrl => {
     try {
       const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
       const payload = {
         ipfsUri: ipfsJsonUrl,
-        recordId: "String",
-        tableIdIpfs: "String",
+        recordId: 'String',
+        tableIdIpfs: 'String',
       };
-      console.log('🔍 Validando con el backend:', payload);
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000, // 30 segundos timeout
       });
-
-      console.log('✅ Respuesta de validación:', response.data);
 
       // Manejar diferentes tipos de respuestas
       if (response.data === true) {
@@ -250,14 +222,13 @@ const PhotoConfirmationScreen = () => {
       }
 
       // Manejar respuestas con mensajes de error específicos
-      const errorMessage = response.data?.message ||
+      const errorMessage =
+        response.data?.message ||
         response.data?.error ||
         I18nStrings.validationFailed;
 
       throw new Error(errorMessage);
     } catch (error) {
-      console.error('❌ Error en validación:', error);
-
       // Manejar diferentes tipos de errores de Axios
       if (error.response) {
         // El servidor respondió con un código de estado fuera del rango 2xx
@@ -285,38 +256,32 @@ const PhotoConfirmationScreen = () => {
         }
 
         // Intentar obtener mensaje detallado del servidor
-        const serverMessage = error.response.data?.message ||
-          error.response.data?.error ||
-          '';
+        const serverMessage =
+          error.response.data?.message || error.response.data?.error || '';
 
         throw new Error(`${statusMessage} ${serverMessage}`.trim());
-      }
-      else if (error.request) {
+      } else if (error.request) {
         // La solicitud fue hecha pero no se recibió respuesta
         if (error.code === 'ECONNABORTED') {
           throw new Error(I18nStrings.validationTimeout);
         }
         throw new Error(I18nStrings.validationNoResponse);
-      }
-      else {
+      } else {
         // Error al configurar la solicitud
         throw new Error(error.message || I18nStrings.validationFailed);
       }
     }
   };
 
-
   // Función para subir a IPFS
   const uploadToIPFS = async () => {
     if (!photoUri) {
-      console.log('No photo to upload');
       return null;
     }
 
     setUploadingToIPFS(true);
 
     try {
-      console.log('🚀 Iniciando subida a IPFS...');
       // Preparar datos adicionales
       const additionalData = {
         idRecinto: tableData?.idRecinto || tableData.locationId,
@@ -345,9 +310,6 @@ const PhotoConfirmationScreen = () => {
         ? photoUri.substring(7)
         : photoUri;
 
-      console.log('🖼️ Ruta de la imagen:', imagePath);
-      console.log('📊 voteSummaryResults:', JSON.stringify(voteSummaryResults, null, 2));
-
       // Subir imagen y crear metadata completa
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
@@ -357,16 +319,11 @@ const PhotoConfirmationScreen = () => {
       );
 
       if (result.success) {
-        console.log('✅ Subida a IPFS exitosa:', result.data);
-        console.log('🔗 Enlace de imagen:', result.data.imageUrl);
-        console.log('📄 Enlace de metadata:', result.data.jsonUrl);
         return result.data;
       } else {
-        console.error('❌ Error en subida a IPFS:', result.error);
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('❌ Error inesperado en subida a IPFS:', error);
       throw error;
     } finally {
       setUploadingToIPFS(false);
@@ -396,7 +353,7 @@ const PhotoConfirmationScreen = () => {
       const isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
-        1
+        1,
       );
 
       if (!isRegistered) {
@@ -404,13 +361,13 @@ const PhotoConfirmationScreen = () => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl)
+          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
         );
 
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
-          20
+          20,
         );
 
         if (!isRegistered) {
@@ -425,30 +382,37 @@ const PhotoConfirmationScreen = () => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsResult.jsonUrl),
+          oracleCalls.createAttestation(
+            CHAIN,
+            tableData.codigo,
+            ipfsResult.jsonUrl,
+          ),
           oracleReads.waitForOracleEvent,
-          'AttestationCreated'
+          'AttestationCreated',
         );
-
       } catch (error) {
         const message = error.message;
         //check if attestation is already created
         if (message.indexOf('416c72656164792063726561746564') >= 0) {
-          console.log('Attestation already created, attesting instead')
           response = await executeOperation(
             privateKey,
             userData.account,
             CHAIN,
-            oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), ipfsResult.jsonUrl),
+            oracleCalls.attest(
+              CHAIN,
+              tableData.codigo,
+              BigInt(0),
+              ipfsResult.jsonUrl,
+            ),
             oracleReads.waitForOracleEvent,
-            'Attested'
+            'Attested',
           );
         } else {
           throw error;
         }
       }
 
-      const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
+      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
 
       const nftResult = {
@@ -456,32 +420,31 @@ const PhotoConfirmationScreen = () => {
         nftId,
         txUrl: explorer + 'tx/' + response.receipt.transactionHash,
         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
-      }
+      };
 
-      console.log("CODIGO DE MESA", tableData)
       // 5. Subir Metadata al backend
       const uploadedBackendData = await uploadMetadataToBackend(
         ipfsResult.jsonUrl,
         nftResult.nftId,
-        String(tableData.idRecinto)
+        String(tableData.idRecinto),
       );
 
       if (uploadedBackendData._id) {
-        const attestationSuccess = await uploadAttestation(uploadedBackendData._id);
+        const attestationSuccess = await uploadAttestation(
+          uploadedBackendData._id,
+        );
 
         if (!attestationSuccess) {
-          // Mostrar advertencia pero continuar
-          console.warn('Falló la subida de attestation al backend, pero continuamos');
         }
       } else {
-        console.warn('No se encontró _id en tableData para subir attestation');
+
       }
 
       // 6. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {
         ipfsData: ipfsResult,
         nftData: nftResult,
-        tableData: tableData
+        tableData: tableData,
       });
     } catch (error) {
       let message = error.message;
@@ -489,13 +452,13 @@ const PhotoConfirmationScreen = () => {
         message = I18nStrings.validationError;
       } else if (message.includes('Invalid data')) {
         message = I18nStrings.invalidActaData;
-      } else if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+      } else if (
+        error.message.indexOf('616c7265616479206174746573746564') >= 0
+      ) {
         message = I18nStrings.alreadyAttested;
-      }
-      else if (error.message.indexOf("416c72656164792063726561746564") >= 0) {
+      } else if (error.message.indexOf('416c72656164792063726561746564') >= 0) {
         message = I18nStrings.alreadyCreated;
       }
-      console.error('Error en el proceso:', error);
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
@@ -515,7 +478,6 @@ const PhotoConfirmationScreen = () => {
     //    navigation.navigate('SuccessScreen');
     //  }, 2000);
     //} catch (error) {
-    //  console.error('Error en confirmPublishAndCertify:', error);
     //  // Navegar a SuccessScreen incluso en caso de error
     //  setTimeout(() => {
     //    setShowConfirmModal(false);
@@ -534,9 +496,9 @@ const PhotoConfirmationScreen = () => {
     setInfoModalData({
       visible: false,
       title: '',
-      message: ''
-    })
-  }
+      message: '',
+    });
+  };
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -544,7 +506,8 @@ const PhotoConfirmationScreen = () => {
       <UniversalHeader
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${tableData?.tableNumber ||
+        title={`Mesa ${
+          tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           tableData?.id ||
@@ -559,7 +522,7 @@ const PhotoConfirmationScreen = () => {
             ? tableData.numero.replace('Mesa ', '')
             : '') ||
           'DEBUG-EMPTY' // Changed to make it clear data is missing
-          }`}
+        }`}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -591,32 +554,32 @@ const PhotoConfirmationScreen = () => {
             .replace(
               '{tableNumber}',
               tableData?.tableNumber ||
-              tableData?.numero ||
-              tableData?.number ||
-              tableData?.id ||
-              tableData?.tableId ||
-              mesaData?.tableNumber ||
-              mesaData?.numero ||
-              mesaData?.number ||
-              mesa?.tableNumber ||
-              mesa?.numero ||
-              mesa?.number ||
-              (typeof tableData?.numero === 'string'
-                ? tableData.numero.replace('Mesa ', '')
-                : '') ||
-              'DEBUG-EMPTY', // Changed to make it clear data is missing
+                tableData?.numero ||
+                tableData?.number ||
+                tableData?.id ||
+                tableData?.tableId ||
+                mesaData?.tableNumber ||
+                mesaData?.numero ||
+                mesaData?.number ||
+                mesa?.tableNumber ||
+                mesa?.numero ||
+                mesa?.number ||
+                (typeof tableData?.numero === 'string'
+                  ? tableData.numero.replace('Mesa ', '')
+                  : '') ||
+                'DEBUG-EMPTY', // Changed to make it clear data is missing
             )
             .replace(
               '{location}',
               tableData?.recinto ||
-              tableData?.ubicacion ||
-              tableData?.location ||
-              tableData?.venue ||
-              mesaData?.recinto ||
-              mesaData?.ubicacion ||
-              mesa?.recinto ||
-              mesa?.ubicacion ||
-              I18nStrings.locationNotAvailable,
+                tableData?.ubicacion ||
+                tableData?.location ||
+                tableData?.venue ||
+                mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                mesa?.recinto ||
+                mesa?.ubicacion ||
+                I18nStrings.locationNotAvailable,
             )}
         </CText>
       </View>
@@ -702,7 +665,7 @@ const PhotoConfirmationScreen = () => {
 
             <View style={modalStyles.buttonContainer}>
               <TouchableOpacity
-                style={[modalStyles.cancelButton, { flex: 1 }]}
+                style={[modalStyles.cancelButton, {flex: 1}]}
                 onPress={() => setShowDuplicateModal(false)}>
                 <CText style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
@@ -713,10 +676,7 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
 
-      <InfoModal
-        {...infoModalData}
-        onClose={closeInfoModal}
-      />
+      <InfoModal {...infoModalData} onClose={closeInfoModal} />
     </CSafeAreaView>
   );
 };
@@ -736,7 +696,7 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     width: getResponsiveModalWidth(),
@@ -802,7 +762,7 @@ const modalStyles = StyleSheet.create({
   },
   loading: {
     marginBottom: getResponsiveSize(12, 16, 20),
-    transform: [{ scale: getResponsiveSize(0.8, 1, 1.2) }],
+    transform: [{scale: getResponsiveSize(0.8, 1, 1.2)}],
   },
   loadingTitle: {
     fontSize: getResponsiveSize(18, 20, 24),
@@ -883,7 +843,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(16, 20, 28),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     minWidth: getResponsiveSize(200, 250, 300), // Minimum button width

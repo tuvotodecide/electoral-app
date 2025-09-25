@@ -10,25 +10,25 @@ import {
   Image,
   ImageBackground,
 } from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearAuth } from '../../../redux/slices/authSlice';
-import { clearWallet } from '../../../redux/action/walletAction';
+import React, {useState, useRef, useEffect} from 'react';
+import {useDispatch} from 'react-redux';
+import {clearAuth} from '../../../redux/slices/authSlice';
+import {clearWallet} from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
-import { useSelector } from 'react-redux';
-import { store } from '../../../redux/store';
-import { clearSession } from '../../../utils/Session';
+import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
+import {useSelector} from 'react-redux';
+import {store} from '../../../redux/store';
+import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { JWT_KEY } from '../../../common/constants';
+import {JWT_KEY} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -53,42 +53,44 @@ const getCardLayout = () => {
     }
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
   } else {
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
   }
 };
 
-const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
+const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
 
 // Carousel Item Component
-const CarouselItem = ({ item }) => (
+const CarouselItem = ({item}) => (
   <View style={stylesx.carouselItem}>
-    <View style={stylesx.carouselContent}>
-      <View style={stylesx.carouselMainContent}>
-        {/* Imagen específica para cada elemento del carrusel */}
+    <View style={stylesx.carouselGrid}>
+      <View style={stylesx.carouselLeft}>
         <Image
           source={item.image}
           style={stylesx.bcLogoImage}
           resizeMode="contain"
         />
-
-        <View style={stylesx.carouselTextContainer}>
-          <CText style={stylesx.carouselTitle}>{item.title}</CText>
-          <CText style={stylesx.carouselSubtitle}>{item.subtitle}</CText>
-        </View>
       </View>
 
-      {/* Botón en la esquina inferior derecha */}
-      <TouchableOpacity
-        style={stylesx.carouselButton}
-        onPress={item.onPress}
-        activeOpacity={0.8}>
-        <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
-      </TouchableOpacity>
+      <View style={stylesx.carouselRight}>
+        <View style={stylesx.carouselTextContainer}>
+          <CText style={stylesx.carouselTitle}>{item.title}</CText>
+          <CText style={stylesx.carouselSubtitle} numberOfLines={3}>
+            {item.subtitle}
+          </CText>
+        </View>
+
+        <TouchableOpacity
+          style={stylesx.carouselButtonInline}
+          onPress={item.onPress}
+          activeOpacity={0.8}>
+          <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
+        </TouchableOpacity>
+      </View>
     </View>
   </View>
 );
@@ -119,7 +121,7 @@ const MiVotoLogo = () => (
       />
       <View style={stylesx.flagCheckOutline} />
     </View> */}
-    <View style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
+    <View style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
       <CText style={stylesx.logoTitle}>Tu Voto Decide</CText>
       <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
     </View>
@@ -129,8 +131,8 @@ const MiVotoLogo = () => (
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View style={stylesx.bannerBC}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-      <View style={{ marginLeft: 10, flex: 1 }}>
+    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+      <View style={{marginLeft: 10, flex: 1}}>
         <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
         <CText style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
@@ -145,8 +147,12 @@ const BlockchainConsultoraBanner = () => (
     </TouchableOpacity>
   </View>
 );
+const CTA_HEIGHT = getResponsiveSize(44, 48, 56);
+const CTA_WIDTH = getResponsiveSize(120, 140, 160);
+const CTA_MARGIN = getResponsiveSize(16, 20, 24);
+const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
@@ -158,7 +164,7 @@ export default function HomeScreen({ navigation }) {
   const carouselData = [
     {
       id: 1,
-      title: '¿Necesita un app blockchain?',
+      title: '¿Necesita una app blockchain?',
       subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
       buttonText: 'Más Info',
       backgroundColor: '#e8f5e8',
@@ -174,24 +180,6 @@ export default function HomeScreen({ navigation }) {
       image: require('../../../assets/images/block-aso.png'),
       onPress: () => Linking.openURL('https://asoblockchainbolivia.org/'),
     },
-    // {
-    //   id: 3,
-    //   title: 'Transparencia y confianza',
-    //   subtitle: 'Tecnología blockchain para procesos electorales seguros',
-    //   buttonText: 'Descubrir',
-    //   backgroundColor: '#fff5e8',
-    //   image: require('../../../assets/images/block-con.png'),
-    //   onPress: () => console.log('Blockchain info pressed'),
-    // },
-    // {
-    //   id: 4,
-    //   title: 'Seguridad garantizada',
-    //   subtitle: 'Protegemos la integridad de cada voto con tecnología avanzada',
-    //   buttonText: 'Ver más',
-    //   backgroundColor: '#f0f8ff',
-    //   image: require('../../../assets/images/block-con.png'),
-    //   onPress: () => console.log('Security info pressed'),
-    // },
   ];
 
   // Auto-scroll del carrusel
@@ -220,11 +208,9 @@ export default function HomeScreen({ navigation }) {
 
       navigation.reset({
         index: 0,
-        routes: [{ name: StackNav.AuthNavigation }],
+        routes: [{name: StackNav.AuthNavigation}],
       });
-    } catch (err) {
-      console.error('Logout error', err);
-    }
+    } catch (err) {}
   };
 
   const userData = useSelector(state => state.wallet.payload);
@@ -292,11 +278,11 @@ export default function HomeScreen({ navigation }) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+            <CText style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
+            <View style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
               <TouchableOpacity
                 style={{
                   backgroundColor: '#f5f5f5',
@@ -306,7 +292,7 @@ export default function HomeScreen({ navigation }) {
                   marginRight: 8,
                 }}
                 onPress={() => setLogoutModalVisible(false)}>
-                <CText style={{ color: '#222', fontWeight: '600' }}>
+                <CText style={{color: '#222', fontWeight: '600'}}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
@@ -318,7 +304,7 @@ export default function HomeScreen({ navigation }) {
                   borderRadius: 8,
                 }}
                 onPress={handleLogout}>
-                <CText style={{ color: '#fff', fontWeight: '600' }}>
+                <CText style={{color: '#fff', fontWeight: '600'}}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -335,9 +321,7 @@ export default function HomeScreen({ navigation }) {
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
-                <TouchableOpacity
-                  disabled={true}
-                  style={stylesx.disabledIcon}>
+                <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
@@ -368,7 +352,7 @@ export default function HomeScreen({ navigation }) {
               <FlatList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({ item }) => <CarouselItem item={item} />}
+                renderItem={({item}) => <CarouselItem item={item} />}
                 keyExtractor={item => item.id.toString()}
                 horizontal
                 pagingEnabled
@@ -387,7 +371,7 @@ export default function HomeScreen({ navigation }) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                        stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -408,7 +392,7 @@ export default function HomeScreen({ navigation }) {
                   name: menuItems[0].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
 
                 <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
@@ -427,10 +411,13 @@ export default function HomeScreen({ navigation }) {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#cccccc',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
-                  <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
+                    {menuItems[1].title}
+                  </CText>
+                  <CText
+                    style={[stylesx.cardDescription, stylesx.disabledText]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -443,7 +430,7 @@ export default function HomeScreen({ navigation }) {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#41A44D',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
                   <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
@@ -460,9 +447,7 @@ export default function HomeScreen({ navigation }) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity
-                disabled={true}
-                style={stylesx.disabledIcon}>
+              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
@@ -492,7 +477,7 @@ export default function HomeScreen({ navigation }) {
             <FlatList
               ref={carouselRef}
               data={carouselData}
-              renderItem={({ item }) => <CarouselItem item={item} />}
+              renderItem={({item}) => <CarouselItem item={item} />}
               keyExtractor={item => item.id.toString()}
               horizontal
               pagingEnabled
@@ -511,7 +496,7 @@ export default function HomeScreen({ navigation }) {
                   style={[
                     stylesx.pageIndicator,
                     index === currentCarouselIndex &&
-                    stylesx.activePageIndicator,
+                      stylesx.activePageIndicator,
                   ]}
                 />
               ))}
@@ -528,7 +513,7 @@ export default function HomeScreen({ navigation }) {
                 name: menuItems[0].icon,
                 size: getResponsiveSize(30, 36, 42),
                 color: '#41A44D',
-                style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                style: {marginBottom: getResponsiveSize(6, 8, 10)},
               })}
               <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
               <CText style={stylesx.cardDescription}>
@@ -545,9 +530,11 @@ export default function HomeScreen({ navigation }) {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#cccccc',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
+                  {menuItems[1].title}
+                </CText>
                 <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
                   {menuItems[1].description}
                 </CText>
@@ -561,7 +548,7 @@ export default function HomeScreen({ navigation }) {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
                 <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
@@ -682,9 +669,9 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(40, 50, 60),
-      marginBottom: getResponsiveSize(20, 25, 30),
-    }),
+        marginTop: getResponsiveSize(40, 50, 60),
+        marginBottom: getResponsiveSize(20, 25, 30),
+      }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -694,8 +681,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -705,8 +692,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -720,7 +707,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     elevation: 1,
   },
   bcLogoCircle: {
@@ -778,8 +765,8 @@ const stylesx = StyleSheet.create({
       CARDS_PER_ROW === 4
         ? 'space-around'
         : isTablet
-          ? 'flex-start'
-          : 'space-between',
+        ? 'flex-start'
+        : 'space-between',
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -790,9 +777,9 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(20, 25, 30),
-      paddingHorizontal: getResponsiveSize(12, 16, 20),
-    }),
+        marginTop: getResponsiveSize(20, 25, 30),
+        paddingHorizontal: getResponsiveSize(12, 16, 20),
+      }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
@@ -804,12 +791,12 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-      marginRight: getResponsiveSize(8, 12, 16),
-    }),
+        marginRight: getResponsiveSize(8, 12, 16),
+      }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
@@ -873,10 +860,24 @@ const stylesx = StyleSheet.create({
     width: screenWidth - getResponsiveSize(32, 40, 48),
     marginHorizontal: getResponsiveSize(16, 20, 24),
     borderRadius: getResponsiveSize(12, 16, 20),
-    minHeight: getResponsiveSize(130, 160, 170),
-    backgroundColor: '#E8F5E9', // Fondo verde claro como en la imagen
-    padding: getResponsiveSize(16, 20, 24),
-    position: 'relative', // Para permitir posicionamiento absoluto del botón
+    minHeight: getResponsiveSize(110, 130, 140),
+    backgroundColor: '#E8F5E9',
+    padding: getResponsiveSize(12, 18, 18),
+    // position: 'relative',
+    // paddingBottom: CTA_HEIGHT + CTA_MARGIN, // espacio para el botón
+  },
+  carouselGrid: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+
+  // Columna izquierda (logo)
+  carouselLeft: {
+    width: LEFT_COL_WIDTH,
+    marginRight: getResponsiveSize(12, 16, 20),
+    justifyContent: 'flex-start', // ← antes estaba 'center'
+    alignItems: 'center',
+    paddingTop: getResponsiveSize(2, 4, 6),
   },
   carouselContent: {
     flex: 1,
@@ -887,9 +888,11 @@ const stylesx = StyleSheet.create({
     flex: 1,
   },
   carouselTextContainer: {
-    flex: 1,
-    marginLeft: getResponsiveSize(12, 16, 20),
-    marginRight: getResponsiveSize(8, 12, 16),
+    // flex: 1,
+    // flexShrink: 1,
+    // marginLeft: getResponsiveSize(0, 0, 0),
+    // marginRight: 0,
+    // paddingRight: CTA_WIDTH + CTA_MARGIN,
   },
   carouselArrow: {
     justifyContent: 'center',
@@ -897,12 +900,9 @@ const stylesx = StyleSheet.create({
     width: getResponsiveSize(28, 32, 36),
     height: getResponsiveSize(28, 32, 36),
   },
-  carouselContent: {
+  carouselRight: {
     flex: 1,
     justifyContent: 'space-between',
-  },
-  carouselTextContainer: {
-    flex: 1,
   },
   carouselTitle: {
     fontSize: getResponsiveSize(16, 18, 22),
@@ -918,16 +918,29 @@ const stylesx = StyleSheet.create({
     opacity: 0.87,
   },
   carouselButton: {
-    backgroundColor: '#4CA950', // Verde como en la imagen
+    position: 'absolute',
+    right: CTA_MARGIN,
+    bottom: CTA_MARGIN,
+    backgroundColor: '#4CA950',
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingVertical: getResponsiveSize(8, 10, 12),
     borderRadius: getResponsiveSize(8, 10, 12),
-    position: 'absolute',
-    bottom: getResponsiveSize(16, 20, 24),
-    right: getResponsiveSize(16, 20, 24),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  carouselButtonInline: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#4CA950',
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    paddingVertical: getResponsiveSize(8, 10, 12),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    // Sombra opcional:
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },

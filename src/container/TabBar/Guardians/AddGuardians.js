@@ -56,7 +56,6 @@ export default function AddGuardians({navigation}) {
             setMsg(data.message || 'Persona no encontrada');
             return;
           }
-          console.log(data);
 
           setCandidate({
             did: data.did,
@@ -71,15 +70,13 @@ export default function AddGuardians({navigation}) {
   };
   const onPressInvitation = async () => {
     if (!candidate) return;
-    console.log('candidate', candidate);
+
     const {payloadQr} = await getSecrets();
-    console.log('secrets', payloadQr);
 
     setMsg('');
     const invitateAddress = guardianHashFrom(candidate.accountAddress);
     const ownerPk = payloadQr.privKey;
     const guardianCt = payloadQr.guardian;
-    console.log(guardianCt);
 
     try {
       // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
@@ -96,8 +93,6 @@ export default function AddGuardians({navigation}) {
       setCandidate(null);
       setNick('');
     } catch (err) {
-      console.log(err);
-
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
@@ -107,7 +102,7 @@ export default function AddGuardians({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.addGuardian} />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <CText type={'B16'} align={'center'} marginTop={15}>

@@ -137,7 +137,7 @@ export default function RecuperationQR() {
   }
 
   return (
-    <CSafeAreaView>
+    <CSafeAreaView addTabPadding={false}>
       <CHeader title={String.qrRecoveryTitle} />
 
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
