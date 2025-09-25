@@ -1118,6 +1118,7 @@ export default {
   seeMoreDetails: 'Ver más detalles',
   dataNotCorrect: 'Estos datos no son correctos',
   correctData: 'Datos Correctos',
+  itsData: 'Están Correctos',
   reviewActaData: 'Revise los datos del acta',
   actaCertification: 'Certificación del Acta',
   certificationText:

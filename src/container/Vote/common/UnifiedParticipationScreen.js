@@ -37,15 +37,29 @@ const UnifiedParticipationScreen = ({navigation, route}) => {
   // Automáticamente navegar a subir acta (temporalmente)
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.replace(StackNav.UnifiedTableScreen, {
-        locationId,
-        locationData,
-        targetScreen: 'SearchTable',
-      });
-    }, 100); // Pequeño delay para evitar warning de navegación
-
+      const {locationId, locationData, tableData, fromCache, offline} =
+        route.params || {};
+      if (tableData) {
+        // Ir directo al detalle de mesa (subir/ver acta) sin pasar por la lista
+        navigation.replace(StackNav.TableDetail, {
+          tableData,
+          mesa: tableData,
+          locationData: {...locationData, locationId},
+          isFromUnifiedFlow: true,
+          fromCache,
+          offline,
+        });
+      } else {
+        // Flujo normal (lista de mesas)
+        navigation.replace(StackNav.UnifiedTableScreen, {
+          locationId,
+          locationData,
+          targetScreen: 'SearchTable',
+        });
+      }
+    }, 100);
     return () => clearTimeout(timer);
-  }, [navigation, locationId, locationData]);
+  }, [navigation, route?.params]);
 
   const handleBack = () => {
     navigation.goBack();
@@ -83,8 +97,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    justifyContent: 'center', 
-    marginBottom: 0, 
+    justifyContent: 'center',
+    marginBottom: 0,
   },
   title: {
     fontSize: getResponsiveSize(22, 26, 30),

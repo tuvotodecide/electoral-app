@@ -9,6 +9,7 @@ import {
   FlatList,
   Image,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {useDispatch} from 'react-redux';
@@ -31,11 +32,14 @@ import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   getAll as getOfflineQueue,
+  getVotePlace,
   processQueue,
+  saveVotePlace,
 } from '../../../utils/offlineQueue';
 import {ActivityIndicator} from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import {publishActaHandler} from '../../../utils/offlineQueueHandler';
+import CustomModal from '../../../components/common/CustomModal';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -200,6 +204,13 @@ export default function HomeScreen({navigation}) {
 
   const userData = useSelector(state => state.wallet.payload);
 
+  const [infoModal, setInfoModal] = useState({
+    visible: false,
+    type: 'warning',
+    title: '',
+    message: '',
+  });
+
   const runOfflineQueueOnce = useCallback(async () => {
     if (processingRef.current) return;
     // Solo si hay sesión y llaves listas
@@ -210,17 +221,61 @@ export default function HomeScreen({navigation}) {
     if (!online) return;
     processingRef.current = true;
     try {
-      await processQueue(async item => {
-        const res = await publishActaHandler(item, userData);
-        // Si llega aquí, processQueue igual borrará ese item.
-        // La notificación ya se dispara dentro de publishActaHandler.
+      const result = await processQueue(async item => {
+        await publishActaHandler(item, userData);
       });
+      if (typeof result?.remaining === 'number') {
+        setHasPendingActa(result.remaining > 0);
+      } else {
+        const listAfter = await getOfflineQueue();
+        const pendingAfter = (listAfter || []).some(
+          i => i.task?.type === 'publishActa',
+        );
+        setHasPendingActa(pendingAfter);
+      }
     } catch (e) {
       // no-op: los que fallen se quedan en cola
     } finally {
       processingRef.current = false;
     }
   }, [auth?.isAuthenticated, userData]);
+
+  const handleParticiparPress = async () => {
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (online) {
+      navigation.navigate(StackNav.ElectoralLocations, {
+        targetScreen: 'UnifiedParticipation',
+      });
+      return;
+    }
+    if (!dni) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'No se pudo detectar tu DNI para cargar tu recinto.',
+      });
+      return;
+    }
+    const cached = await getVotePlace(dni);
+    if (cached?.location?._id) {
+      navigation.navigate(StackNav.UnifiedParticipationScreen, {
+        locationId: cached.location._id,
+        locationData: cached.location,
+        ...(cached.table ? {tableData: cached.table} : {}),
+        fromCache: true,
+        offline: true,
+      });
+    } else {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión para escoger tu recinto por primera vez.',
+      });
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -342,11 +397,23 @@ export default function HomeScreen({navigation}) {
           headers: {'x-api-key': BACKEND_SECRET},
         },
       );
-      const hasLocation = !!res?.data?.location;
-      setShouldShowRegisterAlert(!hasLocation);
+      console.log(res?.data);
+
+      if (res?.data) {
+        await saveVotePlace(dni, {
+          dni,
+          userId: res.data.userId,
+          location: res.data.location,
+          table: res.data.table,
+        });
+      }
+      // Requiere ambos: location y table
+      const hasBoth = !!res?.data?.location && !!res?.data?.table;
+      setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
-      // Si falla el GET, mostramos el aviso para que el usuario pueda registrar
-      setShouldShowRegisterAlert(true);
+      const cached = await getVotePlace(dni);
+      const hasBothCached = !!cached?.location && !!cached?.table;
+      setShouldShowRegisterAlert(!hasBothCached);
     } finally {
       setCheckingVotePlace(false);
     }
@@ -366,10 +433,7 @@ export default function HomeScreen({navigation}) {
       icon: 'people-outline',
       title: String.sendAct,
       description: String.sendActDescription,
-      onPress: () =>
-        navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'UnifiedParticipation',
-        }),
+      onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
@@ -729,6 +793,14 @@ export default function HomeScreen({navigation}) {
           </View>
         </View>
       )}
+      <CustomModal
+        visible={!!infoModal.visible}
+        onClose={() => setInfoModal(m => ({...m, visible: false}))}
+        type={infoModal.type}
+        title={infoModal.title}
+        message={infoModal.message}
+        buttonText={'Aceptar'}
+      />
     </CSafeAreaView>
   );
 }

@@ -165,7 +165,7 @@ const ActaDetailScreen = () => {
   // Action buttons for BaseRecordReviewScreen
   const actionButtons = [
     {
-      text: String.correctData,
+      text: String.itsData,
       onPress: handleThisIsCorrect,
       style: {
         backgroundColor: colors.primary || '#4F9858',
@@ -176,10 +176,10 @@ const ActaDetailScreen = () => {
       icon: 'check-circle',
     },
     {
-      text: 'Subir foto de acta correcta',
+      text: 'Subir acta',
       onPress: handleUploadCorrectActa,
       style: {
-        backgroundColor: colors.secondary || '#2196F3',
+        backgroundColor: colors.secondary || '#ff0000ff',
       },
       textStyle: {
         color: '#FFFFFF',
@@ -211,7 +211,7 @@ const ActaDetailScreen = () => {
   }`;
 
   // Instructions text
-  const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;
+  const instructionsText = `Revise la foto del acta`;
 
   // Custom photo component that uses our IPFS handler
   const PhotoComponent = () => <IPFSImageComponent />;

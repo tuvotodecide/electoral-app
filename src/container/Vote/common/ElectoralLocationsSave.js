@@ -288,7 +288,6 @@ const ElectoralLocationsSave = ({navigation, route}) => {
             fetchNearbyLocations(latitude, longitude);
           },
           error => {
-            // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
             if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
               getCurrentLocation(retryCount + 1, false);
               return;

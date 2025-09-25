@@ -237,26 +237,6 @@ const BaseRecordReviewScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* Table Info - only for PhotoReviewScreen */}
-      {showTableInfo && (
-        <View style={styles.tableInfoContainer}>
-          <View style={styles.tableTitle}>
-            <CText style={styles.tableTitleText}>
-              Mesa{' '}
-              {tableData?.tableNumber ||
-                tableData?.numero ||
-                tableData?.number ||
-                'N/A'}
-            </CText>
-          </View>
-          <View style={styles.tableSubtitle}>
-            <CText style={styles.tableSubtitleText}>
-              {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
-            </CText>
-          </View>
-        </View>
-      )}
-
       {/* Photo - Static (doesn't move with scroll) */}
       {!isPhotoCollapsed && (
         <View style={styles.photoSection}>
