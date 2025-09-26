@@ -23,6 +23,7 @@ export default function CameraPermissionTest({navigation}) {
     try {
       const status = await Camera.getCameraPermissionStatus();
 
+      
       setPermissionStatus(status);
     } catch (error) {
 
