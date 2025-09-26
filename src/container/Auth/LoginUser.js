@@ -5,6 +5,7 @@ import {
   View,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -92,6 +93,38 @@ export default function LoginUser({navigation}) {
         }),
       );
     }
+    try {
+      const bioEnabled = await getBioFlag();
+      if (bioEnabled && payload?.account) {
+        const storedPayload = {
+          dni: payload?.dni,
+          salt: payload?.salt,
+          privKey: payload?.privKey,
+          account: payload?.account,
+          guardian: payload?.guardian,
+          did: payload?.did,
+          vcCipher: payload?.vcCipher,
+          vc: payload?.vc,
+        };
+        await Keychain.setGenericPassword(
+          'bundle',
+          JSON.stringify({stored: storedPayload}),
+          {
+            service: 'walletBundle',
+            accessible:
+              Platform.OS === 'ios'
+                ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY
+                : Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            accessControl:
+              Platform.OS === 'ios'
+                ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
+                : Keychain.ACCESS_CONTROL.BIOMETRY_STRONG,
+            securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+          },
+        );
+      }
+    } catch {}
+
     navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
   }
 
@@ -287,19 +320,32 @@ export default function LoginUser({navigation}) {
           service: 'finline.wallet.vc',
         });
         const payloadQr = main ? JSON.parse(main.password) : {};
-
         const merged = {...stored, ...payloadQr};
 
-        if (!merged.vcCipher) {
+        if (merged?.vc?.vc && !merged?.vc?.credentialSubject) {
+          merged.vc = merged.vc.vc;
+        }
+        if (merged?.vc?.credentialSubject) {
+          await unlock(merged, null, '');
+          return;
+        }
+
+        if (!merged?.vc && merged?.vcCipher) {
           setLoading(false);
           setModal({
             visible: true,
-            msg: 'Necesitamos tu PIN una sola vez para migrar tu credencial y completar el inicio de sesión.',
+            msg: 'Necesitamos tu PIN una sola vez para descifrar tu credencial y completar el inicio de sesión con huella.',
             onClose: hideModal,
           });
           return;
         }
-        await unlock(merged, null, '');
+
+        setLoading(false);
+        setModal({
+          visible: true,
+          msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
+          onClose: hideModal,
+        });
       } catch {
         setLoading(false);
       }

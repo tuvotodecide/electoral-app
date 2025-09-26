@@ -46,6 +46,7 @@ import {
   waitForVC,
 } from '../../utils/issuerClient';
 import {encryptVCWithPin} from '../../utils/vcCrypto';
+import {setBioFlag} from '../../utils/BioFlag';
 
 export default function RegisterUser10({navigation, route}) {
   const {ocrData, dni, originalPin: pin, useBiometry} = route.params;
@@ -114,6 +115,8 @@ export default function RegisterUser10({navigation, route}) {
         setStage('predict');
         await yieldUI();
 
+        let workingPin = pin;
+
         await saveDraft({
           step: 'predict',
           dni,
@@ -122,10 +125,7 @@ export default function RegisterUser10({navigation, route}) {
         });
         let bundle = await getTmpRegister();
         if (!bundle) {
-          let workingPin = pin;
-          if (!workingPin) {
-            workingPin = await getTmpPin();
-          }
+          if (!workingPin) workingPin = await getTmpPin();
           if (!workingPin || `${workingPin}`.length === 0) {
             throw new Error('PIN no disponible para iniciar registro');
           }
@@ -142,12 +142,14 @@ export default function RegisterUser10({navigation, route}) {
           await clearTmpPin();
         } else if (!bundle.pinHash) {
           if (pin && `${pin}`.length) {
-            bundle.pinHash = SHA256(pin.trim()).toString();
+            workingPin = pin;
+            bundle.pinHash = SHA256(workingPin.trim()).toString();
             await setTmpRegister({...bundle});
           } else {
-            const workingPin = await getTmpPin();
-            if (workingPin && `${workingPin}`.length) {
-              bundle.pinHash = SHA256(workingPin.trim()).toString();
+            const tmpPin = await getTmpPin();
+            if (tmpPin && `${tmpPin}`.length) {
+              workingPin = tmpPin;
+              bundle.pinHash = SHA256(tmpPin.trim()).toString();
               await setTmpRegister({...bundle});
               await clearTmpPin();
             } else {
@@ -174,7 +176,7 @@ export default function RegisterUser10({navigation, route}) {
           throw new Error('El VC devuelto no corresponde al DID del usuario.');
         }
 
-        const vcCipher = await encryptVCWithPin(vc, pin || '');
+        const vcCipher = await encryptVCWithPin(vc, (workingPin || '').trim());
 
         const predictedGuardian = await getPredictedGuardian(
           CHAIN,
@@ -201,7 +203,7 @@ export default function RegisterUser10({navigation, route}) {
         await yieldUI();
 
         await saveSecrets(
-          pin || '',
+          (workingPin || '').trim(),
           {
             dni,
             salt: walletData.salt.toString(),
@@ -224,7 +226,8 @@ export default function RegisterUser10({navigation, route}) {
             account: walletData.address,
             guardian: guardianAddress,
             did: subjectDid,
-            vcCipher, // importante: así el login con huella no pide pin
+            vcCipher,
+            vc,
           };
 
           await Keychain.setGenericPassword(
@@ -232,7 +235,10 @@ export default function RegisterUser10({navigation, route}) {
             JSON.stringify({stored: storedPayload}),
             {
               service: 'walletBundle',
-              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+              accessible:
+                Platform.OS === 'ios'
+                  ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY 
+                  : Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
               accessControl:
                 Platform.OS === 'ios'
                   ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET

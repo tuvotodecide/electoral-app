@@ -6,6 +6,7 @@ import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
 import {executeOperation} from '../api/account';
 import { displayLocalActaPublished } from '../notifications';
+import { requestPushPermissionExplicit } from '../services/pushPermission';
 
 export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
@@ -72,8 +73,7 @@ export const publishActaHandler = async (item, userData) => {
       return data;
     },
   );
-  console.log(normalizedVoteSummary);
-  
+
   const ipfs = await pinataService.uploadElectoralActComplete(
     imagePath,
     aiAnalysis || {},
@@ -125,6 +125,7 @@ export const publishActaHandler = async (item, userData) => {
       oracleReads.waitForOracleEvent,
       'AttestationCreated',
     );
+    console.log(response)
   } catch (e) {
     const msg = e.message || '';
     if (msg.indexOf('416c72656164792063726561746564') >= 0) {
@@ -147,13 +148,18 @@ export const publishActaHandler = async (item, userData) => {
   }
 
   const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+  console.log(explorer)
+  console.log(nftExplorer)
+  console.log(attestationNft)
   const nftId = response.returnData.recordId.toString();
+  console.log(nftId)
   const nftResult = {
     txHash: response.receipt.transactionHash,
     nftId,
     txUrl: explorer + 'tx/' + response.receipt.transactionHash,
     nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
   };
+  console.log(nftResult)
 
   await axios.post(
     `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
@@ -171,6 +177,7 @@ export const publishActaHandler = async (item, userData) => {
     },
   );
   await removePersistedImage(imageUri);
+    await requestPushPermissionExplicit();
   await displayLocalActaPublished({ ipfsData, nftData: nftResult, tableData });
   return {success: true, ipfsData, nftData: nftResult, tableData};
 };

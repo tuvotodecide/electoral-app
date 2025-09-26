@@ -397,7 +397,6 @@ export default function HomeScreen({navigation}) {
           headers: {'x-api-key': BACKEND_SECRET},
         },
       );
-      console.log(res?.data);
 
       if (res?.data) {
         await saveVotePlace(dni, {
@@ -407,7 +406,6 @@ export default function HomeScreen({navigation}) {
           table: res.data.table,
         });
       }
-      // Requiere ambos: location y table
       const hasBoth = !!res?.data?.location && !!res?.data?.table;
       setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
@@ -521,11 +519,12 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
-                <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate(StackNav.Notification)}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#cccccc'}
+                    color={'#41A44D'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
@@ -612,20 +611,20 @@ export default function HomeScreen({navigation}) {
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                  activeOpacity={1}
-                  disabled={true}>
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  // activeOpacity={1}
+                  // disabled={true}
+                  onPress={menuItems[1].onPress}>
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#cccccc',
+                    color: '#41A44D',
                     style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardTitle]}>
                     {menuItems[1].title}
                   </CText>
-                  <CText
-                    style={[stylesx.cardDescription, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -660,11 +659,12 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate(StackNav.Notification)}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#cccccc'}
+                  color={'#41A44D'}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout}>
@@ -752,19 +752,18 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                activeOpacity={1}
-                disabled={true}>
+                style={[stylesx.gridDiv2, stylesx.card]}
+                // activeOpacity={1}
+                // disabled={true}
+                onPress={menuItems[1].onPress}>
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
-                  color: '#cccccc',
+                  color: '#41A44D',
                   style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
-                  {menuItems[1].title}
-                </CText>
-                <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardDescription]}>
                   {menuItems[1].description}
                 </CText>
               </TouchableOpacity>

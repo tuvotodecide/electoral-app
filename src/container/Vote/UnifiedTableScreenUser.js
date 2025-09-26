@@ -8,9 +8,15 @@ import {useSearchTableLogic} from '../../hooks/useSearchTableLogic';
 import {createSearchTableStyles} from '../../styles/searchTableStyles';
 import {fetchMesas} from '../../data/mockMesas';
 import {StackNav} from '../../navigation/NavigationKey';
-import String from '../../i18n/String';
+import Strings from '../../i18n/String';
 import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 import BaseSearchTableScreenUser from '../../components/common/BaseSearchTableScreenUser';
+import {
+  subscribeToLocationTopic,
+  unsubscribeFromLocationTopic,
+} from '../../services/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {LAST_TOPIC_KEY} from '../../common/constants';
 import { saveVotePlace } from '../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -34,7 +40,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: String.accept,
+    buttonText: Strings.accept,
     onButtonPress: null,
     secondaryButtonText: null,
     onSecondaryPress: null,
@@ -80,10 +86,10 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
       if (response.success) {
         setMesas(response.data);
       } else {
-        showModal('error', String.error, String.couldNotLoadTables);
+        showModal('error', Strings.error, Strings.couldNotLoadTables);
       }
     } catch (error) {
-      showModal('error', String.error, String.errorLoadingTables);
+      showModal('error', Strings.error, Strings.errorLoadingTables);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +99,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
     type,
     title,
     message,
-    buttonText = String.accept,
+    buttonText = Strings.accept,
     onButtonPress = null,
     secondaryButtonText = null,
     onSecondaryPress = null,
@@ -116,11 +122,11 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
 
   const saveSelectedMesa = async mesa => {
     if (!dni) {
-      showModal('error', String.error, 'DNI no disponible.');
+      showModal('error', Strings.error, 'DNI no disponible.');
       return;
     }
     if (!locationData?.locationId) {
-      showModal('error', String.error, 'Recinto no disponible.');
+      showModal('error', Strings.error, 'Recinto no disponible.');
       return;
     }
     const payload = {
@@ -141,6 +147,16 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
           },
         },
       );
+      const newTopic = `loc_${locationData.locationId}`;
+      try {
+        const prevTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);
+        if (prevTopic && prevTopic !== newTopic) {
+          await unsubscribeFromLocationTopic(prevTopic.replace('loc_', '')); 
+        }
+        await subscribeToLocationTopic(locationData.locationId);
+        await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
+      } catch (e) {
+      }
       const cachePayload = {
         dni,
         location: {
@@ -169,7 +185,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         'success',
         'Guardado',
         'Tu lugar de votación fue guardado correctamente.',
-        String.accept,
+        Strings.accept,
         () => {
           setModalVisible(false);
           handleHomePress();
@@ -182,7 +198,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
             ? error.response.data.message.join('\n')
             : error.response.data.message)) ||
         'No se pudo guardar tu lugar de votación.';
-      showModal('error', String.error, msg);
+      showModal('error', Strings.error, msg);
     } finally {
       setSaving(false);
     }
@@ -233,7 +249,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
       `Te llegarán notificaciones del conteo para el recinto`,
       'Confirmar',
       () => saveSelectedMesa(processedMesa),
-      String.cancel || 'Cancelar',
+      Strings.cancel || 'Cancelar',
       () => setModalVisible(false),
     );
   };
@@ -260,7 +276,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
             textAlign: 'center',
             paddingHorizontal: getResponsiveSize(20, 30, 40),
           }}>
-          {String.loadingTables}
+          {Strings.loadingTables}
         </CText>
       </View>
     );
@@ -272,17 +288,17 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         // Header props
         colors={colors}
         onBack={handleBack}
-        title={locationData?.name || String.searchTable}
+        title={locationData?.name || Strings.searchTable}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         // Choose table text props
-        chooseTableText={String.chooseTablePlease}
+        chooseTableText={Strings.chooseTablePlease}
         // Search input props
-        searchPlaceholder={String.searchTablePlaceholder}
+        searchPlaceholder={Strings.searchTablePlaceholder}
         searchValue={searchText}
         onSearchChange={setSearchText}
         // Location info props
-        locationText={String.listBasedOnLocation}
+        locationText={Strings.listBasedOnLocation}
         locationIconColor="#0C5460"
         locationData={locationData}
         // Table list props

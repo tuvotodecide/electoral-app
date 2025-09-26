@@ -29,7 +29,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 import store, { persistor } from './src/redux/store';
 import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-
+import {registerBackgroundHandler} from './src/services/notifications';
+registerBackgroundHandler();
 const RNRoot = () => {
   return (
     <Provider store={store}>

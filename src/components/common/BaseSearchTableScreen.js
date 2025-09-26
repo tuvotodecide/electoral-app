@@ -78,7 +78,7 @@ const getTableNumber = table => {
     table.name ??
     table.id ??
     '0';
-  const n = parseInt(String(raw).replace(/\D+/g, ''), 10);
+  const n = parseInt(global.String(raw).replace(/\D+/g, ''), 10);
   return Number.isNaN(n) ? 0 : n;
 };
 

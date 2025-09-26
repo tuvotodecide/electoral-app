@@ -66,5 +66,9 @@ export const FLAGS_KEY = 'FINLINE_FLAGS';
 export const BIO_KEY = 'BIO_ENABLED';
 export const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
 export const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+export const KEY_OFFLINE = '@offline_queue_v1';
 export const STORAGE_KEY = 'PROVISION_V1';
+export const LAST_TOPIC_KEY = 'LAST_LOCATION_TOPIC';
+export const SERVICE_TMP = 'tmpRegister';
+export const SERVICE_PIN = 'tmpRegisterPin';
 

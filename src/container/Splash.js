@@ -13,7 +13,7 @@ import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
+import {KEY_OFFLINE, moderateScale, PENDINGRECOVERY} from '../common/constants';
 import {isSessionValid} from '../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
