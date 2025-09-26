@@ -16,7 +16,12 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Vote Summary Row Component
-export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
+export const VoteSummaryRow = ({
+  item,
+  isEditing,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
   <View style={styles.voteSummaryTableRow}>
     <CText style={styles.voteSummaryLabel}>{item.label}</CText>
     <View style={styles.voteSummaryValueContainer}>
@@ -28,7 +33,7 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
             onUpdate(
               item.id,
               'value1',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -36,7 +41,9 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
         />
       ) : (
         <CText style={styles.voteSummaryValue}>
-          {item.value1 === '' || item.value1 == null ? '0' : String(item.value1)}
+          {item.value1 === '' || item.value1 == null
+            ? emptyDisplayWhenReadOnly
+            : String(item.value1)}
         </CText>
       )}
     </View>
@@ -49,7 +56,7 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
             onUpdate(
               item.id,
               'value2',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
             )
           }
           keyboardType="numeric"
@@ -57,7 +64,9 @@ export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
         />
       ) : (
         <CText style={styles.voteSummaryValue}>
-          {item.value2 === '' || item.value2 == null ? '0' : String(item.value2)}
+          {item.value2 === '' || item.value2 == null
+            ? emptyDisplayWhenReadOnly
+            : String(item.value2)}
         </CText>
       )}
     </View>
@@ -69,6 +78,7 @@ export const VoteSummaryTable = ({
   voteSummaryResults,
   isEditing = false,
   onUpdate,
+  emptyDisplayWhenReadOnly = '0',
 }) => (
   <View style={styles.voteSummaryTableContainer}>
     <CText style={styles.voteSummaryTableTitle}>Votos</CText>
@@ -78,6 +88,7 @@ export const VoteSummaryTable = ({
         item={item}
         isEditing={isEditing}
         onUpdate={onUpdate}
+        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
       />
     ))}
   </View>

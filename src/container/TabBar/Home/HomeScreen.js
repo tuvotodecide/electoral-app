@@ -9,8 +9,9 @@ import {
   FlatList,
   Image,
   ImageBackground,
+  Alert,
 } from 'react-native';
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {useDispatch} from 'react-redux';
 import {clearAuth} from '../../../redux/slices/authSlice';
 import {clearWallet} from '../../../redux/action/walletAction';
@@ -24,9 +25,21 @@ import {useSelector} from 'react-redux';
 import {store} from '../../../redux/store';
 import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY} from '../../../common/constants';
+import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import {useFocusEffect} from '@react-navigation/native';
+import {
+  getAll as getOfflineQueue,
+  getVotePlace,
+  processQueue,
+  saveVotePlace,
+} from '../../../utils/offlineQueue';
+import {ActivityIndicator} from 'react-native-paper';
+import NetInfo from '@react-native-community/netinfo';
+import {publishActaHandler} from '../../../utils/offlineQueueHandler';
+import CustomModal from '../../../components/common/CustomModal';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -128,6 +141,30 @@ const MiVotoLogo = () => (
   </View>
 );
 
+const RegisterAlertCard = ({onPress}) => (
+  <View style={stylesx.registerAlertCard}>
+    <View style={{flex: 1}}>
+      <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
+      <CText style={stylesx.registerAlertSubtitle}>
+        Registra tu recinto y mesa para recibir avisos.
+      </CText>
+    </View>
+
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={stylesx.registerAlertCta}
+      accessibilityRole="button"
+      accessibilityLabel="Registrar recinto">
+      <Ionicons
+        name="arrow-forward"
+        size={getResponsiveSize(16, 18, 20)}
+        color="#fff"
+      />
+    </TouchableOpacity>
+  </View>
+);
+
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View style={stylesx.bannerBC}>
@@ -156,9 +193,133 @@ export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
+  const auth = useSelector(s => s.auth);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
+  const [hasPendingActa, setHasPendingActa] = useState(false);
+  const processingRef = useRef(false);
+  const [checkingVotePlace, setCheckingVotePlace] = useState(true);
+  const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
+
+  const userData = useSelector(state => state.wallet.payload);
+
+  const [infoModal, setInfoModal] = useState({
+    visible: false,
+    type: 'warning',
+    title: '',
+    message: '',
+  });
+
+  const runOfflineQueueOnce = useCallback(async () => {
+    if (processingRef.current) return;
+    // Solo si hay sesión y llaves listas
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
+      return;
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (!online) return;
+    processingRef.current = true;
+    try {
+      const result = await processQueue(async item => {
+        await publishActaHandler(item, userData);
+      });
+      if (typeof result?.remaining === 'number') {
+        setHasPendingActa(result.remaining > 0);
+      } else {
+        const listAfter = await getOfflineQueue();
+        const pendingAfter = (listAfter || []).some(
+          i => i.task?.type === 'publishActa',
+        );
+        setHasPendingActa(pendingAfter);
+      }
+    } catch (e) {
+      // no-op: los que fallen se quedan en cola
+    } finally {
+      processingRef.current = false;
+    }
+  }, [auth?.isAuthenticated, userData]);
+
+  const handleParticiparPress = async () => {
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (online) {
+      navigation.navigate(StackNav.ElectoralLocations, {
+        targetScreen: 'UnifiedParticipation',
+      });
+      return;
+    }
+    if (!dni) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'No se pudo detectar tu DNI para cargar tu recinto.',
+      });
+      return;
+    }
+    const cached = await getVotePlace(dni);
+    if (cached?.location?._id) {
+      navigation.navigate(StackNav.UnifiedParticipationScreen, {
+        locationId: cached.location._id,
+        locationData: cached.location,
+        ...(cached.table ? {tableData: cached.table} : {}),
+        fromCache: true,
+        offline: true,
+      });
+    } else {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión para escoger tu recinto por primera vez.',
+      });
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const checkQueue = async () => {
+        try {
+          const list = await getOfflineQueue();
+
+          const pending = (list || []).some(
+            i => i.task?.type === 'publishActa',
+          );
+
+          if (isActive) setHasPendingActa(pending);
+        } catch {}
+      };
+      checkQueue();
+      const t = setInterval(checkQueue, 4000); // refresca cada 4s mientras está enfocada
+      return () => {
+        isActive = false;
+        clearInterval(t);
+      };
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      checkUserVotePlace();
+      let alive = true;
+      // intenta una vez al enfocar
+      runOfflineQueueOnce();
+      // escucha cambios de red mientras esta pantalla está activa
+      const unsubNet = NetInfo.addEventListener(state => {
+        const online = !!(
+          state.isConnected &&
+          (state.isInternetReachable ?? true)
+        );
+        if (online && alive) runOfflineQueueOnce();
+      });
+      return () => {
+        alive = false;
+        unsubNet && unsubNet();
+      };
+    }, [runOfflineQueueOnce]),
+  );
 
   // Datos del carrusel
   const carouselData = [
@@ -213,14 +374,54 @@ export default function HomeScreen({navigation}) {
     } catch (err) {}
   };
 
-  const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni;
+
+  const checkUserVotePlace = useCallback(async () => {
+    if (!dni) {
+      setShouldShowRegisterAlert(false);
+      setCheckingVotePlace(false);
+      return;
+    }
+    try {
+      setCheckingVotePlace(true);
+      const res = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+        {
+          timeout: 12000,
+          headers: {'x-api-key': BACKEND_SECRET},
+        },
+      );
+
+      if (res?.data) {
+        await saveVotePlace(dni, {
+          dni,
+          userId: res.data.userId,
+          location: res.data.location,
+          table: res.data.table,
+        });
+      }
+      const hasBoth = !!res?.data?.location && !!res?.data?.table;
+      setShouldShowRegisterAlert(!hasBoth);
+    } catch (e) {
+      const cached = await getVotePlace(dni);
+      const hasBothCached = !!cached?.location && !!cached?.table;
+      setShouldShowRegisterAlert(!hasBothCached);
+    } finally {
+      setCheckingVotePlace(false);
+    }
+  }, [dni]);
+
   const data = {
     name: subject.fullName || '(sin nombre)',
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
-  const userFullName = data.name || '(sin nombre)';
+  const userFullName = data.name || '(sin nolombre)';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -228,12 +429,9 @@ export default function HomeScreen({navigation}) {
   const menuItems = [
     {
       icon: 'people-outline',
-      title: String.participate,
-      description: String.participateDescription,
-      onPress: () =>
-        navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'UnifiedParticipation',
-        }),
+      title: String.sendAct,
+      description: String.sendActDescription,
+      onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
@@ -321,11 +519,12 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
-                <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate(StackNav.Notification)}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#cccccc'}
+                    color={'#41A44D'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
@@ -378,8 +577,16 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni,
+                })
+              }
+            />
+          )}
 
-          {/* Right Column: Menu Cards */}
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
             <View style={stylesx.gridParent}>
@@ -404,20 +611,20 @@ export default function HomeScreen({navigation}) {
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                  activeOpacity={1}
-                  disabled={true}>
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  // activeOpacity={1}
+                  // disabled={true}
+                  onPress={menuItems[1].onPress}>
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#cccccc',
                     style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardTitle]}>
                     {menuItems[1].title}
                   </CText>
-                  <CText
-                    style={[stylesx.cardDescription, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -426,13 +633,18 @@ export default function HomeScreen({navigation}) {
                   style={[stylesx.gridDiv3, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[2].onPress}>
+                  {hasPendingActa && (
+                    <View style={stylesx.cardBadge}>
+                      <ActivityIndicator size="small" color="#41A44D" />
+                    </View>
+                  )}
                   {React.createElement(menuItems[2].iconComponent, {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#41A44D',
+                    color: '#fff',
                     style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                  <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
                     {menuItems[2].description}
                   </CText>
@@ -447,11 +659,12 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate(StackNav.Notification)}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#cccccc'}
+                  color={'#41A44D'}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout}>
@@ -502,40 +715,55 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni,
+                })
+              }
+            />
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
             <TouchableOpacity
-              style={[stylesx.gridDiv1, stylesx.card]}
+              style={[
+                stylesx.gridDiv1,
+                stylesx.card,
+                {flexDirection: 'row', alignItems: 'center'},
+              ]}
               activeOpacity={0.87}
               onPress={menuItems[0].onPress}>
               {React.createElement(menuItems[0].iconComponent, {
                 name: menuItems[0].icon,
-                size: getResponsiveSize(30, 36, 42),
+                size: getResponsiveSize(40, 50, 60),
                 color: '#41A44D',
-                style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                style: {marginRight: getResponsiveSize(6, 8, 10)},
               })}
-              <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-              <CText style={stylesx.cardDescription}>
-                {menuItems[0].description}
-              </CText>
+
+              <View style={{flex: 1}}>
+                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {menuItems[0].description}
+                </CText>
+              </View>
             </TouchableOpacity>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                activeOpacity={1}
-                disabled={true}>
+                style={[stylesx.gridDiv2, stylesx.card]}
+                // activeOpacity={1}
+                // disabled={true}
+                onPress={menuItems[1].onPress}>
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#cccccc',
                   style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
-                  {menuItems[1].title}
-                </CText>
-                <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardDescription]}>
                   {menuItems[1].description}
                 </CText>
               </TouchableOpacity>
@@ -544,13 +772,18 @@ export default function HomeScreen({navigation}) {
                 style={[stylesx.gridDiv3, stylesx.card]}
                 activeOpacity={0.87}
                 onPress={menuItems[2].onPress}>
+                {hasPendingActa && (
+                  <View style={stylesx.cardBadge}>
+                    <ActivityIndicator size="small" color="#ff0000ff" />
+                  </View>
+                )}
                 {React.createElement(menuItems[2].iconComponent, {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
                   style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
                   {menuItems[2].description}
                 </CText>
@@ -559,6 +792,14 @@ export default function HomeScreen({navigation}) {
           </View>
         </View>
       )}
+      <CustomModal
+        visible={!!infoModal.visible}
+        onClose={() => setInfoModal(m => ({...m, visible: false}))}
+        type={infoModal.type}
+        title={infoModal.title}
+        message={infoModal.message}
+        buttonText={'Aceptar'}
+      />
     </CSafeAreaView>
   );
 }
@@ -804,6 +1045,12 @@ const stylesx = StyleSheet.create({
     color: '#232323',
     marginBottom: getResponsiveSize(1, 2, 3),
   },
+  cardTitle1: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#232323',
+    marginBottom: getResponsiveSize(1, 2, 3),
+  },
   cardDescription: {
     fontSize: getResponsiveSize(12, 14, 16),
     color: '#282828',
@@ -854,7 +1101,7 @@ const stylesx = StyleSheet.create({
   // Carousel Styles
   carouselContainer: {
     marginVertical: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(50, 24, 28),
+    marginBottom: getResponsiveSize(30, 24, 28),
   },
   carouselItem: {
     width: screenWidth - getResponsiveSize(32, 40, 48),
@@ -978,5 +1225,55 @@ const stylesx = StyleSheet.create({
   },
   disabledIcon: {
     opacity: 0.6,
+  },
+  registerAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2', // rojo claro
+    borderColor: '#FCA5A5', // borde rojo suave
+    borderWidth: 1,
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(14, 16, 20),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    // marginTop: getResponsiveSize(10, 12, 16),
+    marginBottom: getResponsiveSize(8, 10, 12),
+    // sombra sutil
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 1,
+  },
+  registerAlertTitle: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    color: '#7F1D1D',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  registerAlertSubtitle: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#7F1D1D',
+    opacity: 0.9,
+  },
+  registerAlertCta: {
+    width: getResponsiveSize(36, 40, 44),
+    height: getResponsiveSize(36, 40, 44),
+    borderRadius: 999,
+    backgroundColor: '#E72F2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: getResponsiveSize(10, 12, 16),
+  },
+  cardBadge: {
+    position: 'absolute',
+    top: getResponsiveSize(10, 12, 14),
+    right: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#f8a1a1ff',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
 });

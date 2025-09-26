@@ -1,11 +1,23 @@
 import {GoogleGenAI} from '@google/genai';
+import {getProvision} from './provisionClient';
 import RNFS from 'react-native-fs';
 import {API_GEMINI} from '@env';
-console.log(API_GEMINI);
 
 class ElectoralActAnalyzer {
   constructor() {
-    this.genAI = new GoogleGenAI({apiKey: API_GEMINI});
+    // this.genAI = new GoogleGenAI({apiKey: API_GEMINI});
+    this.genAI = null;
+  }
+
+  async ensureClient() {
+    if (this.genAI) return this.genAI;
+    const prov = await getProvision();
+    const key =
+      prov?.gemini?.mode === 'apiKey' && prov?.gemini?.apiKey
+        ? prov.gemini.apiKey
+        : API_GEMINI;
+    this.genAI = new GoogleGenAI({apiKey: key});
+    return this.genAI;
   }
 
   /**
@@ -52,7 +64,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       { "candidate_id": "APBSUMATE", "votes": "<n o 0>" },
       { "candidate_id": "LIBRE",      "votes": "<n o 0>" },
       { "candidate_id": "FP",      "votes": "<n o 0>" },
-      { "candidate_id": "MAS-IPSP",  "votes": "<n o 0>" }
+      { "candidate_id": "MAS-IPSP",  "votes": "<n o 0>" },
       { "candidate_id": "MORENA",      "votes": "<n o 0>" },
       { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
@@ -81,6 +93,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
    */
   async analyzeElectoralAct(imagePath) {
     try {
+      const genAI = await this.ensureClient();
       // Convertir imagen a base64
       const base64Image = await this.imageToBase64(imagePath);
 
@@ -88,7 +101,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       const prompt = this.getAnalysisPrompt();
 
       // Usar la nueva API de genai:
-      const response = await this.genAI.models.generateContent({
+      const response = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
           {

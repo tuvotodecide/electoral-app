@@ -17,10 +17,10 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
-import { setTmpPin } from '../../utils/TempRegister';
+import {setTmpPin} from '../../utils/TempRegister';
 
 export default function RegisterUser9({navigation, route}) {
-  const {originalPin, vc, offerUrl, useBiometry, dni} = route.params;
+  const {originalPin, ocrData, useBiometry, dni} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
@@ -40,8 +40,8 @@ export default function RegisterUser9({navigation, route}) {
       await setTmpPin(otp);
       navigation.navigate(AuthNav.RegisterUser10, {
         originalPin: otp,
-        vc,
-        offerUrl,
+        ocrData,
+
         useBiometry,
         dni,
       });

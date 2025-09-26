@@ -988,7 +988,7 @@ export default {
   witnessActaDescription: 'Valida un acta ya subida en una mesa.',
   announceCount: 'Anunciar Conteo',
   announceCountDescription: 'Avisar el inicio del conteo.',
-  myWitnesses: 'Mis atestiguamientos',
+  myWitnesses: `Mis${"\n"}atestiguamientos`,
   myWitnessesDescription: 'Revisa tu historial',
 
   // Buscar Mesa Screen
@@ -1007,7 +1007,7 @@ export default {
   couldNotLoadNearbyTables: 'No se pudieron cargar las mesas cercanas',
   errorSearchingNearbyTables: 'Error al buscar mesas cercanas',
   foundNearbyTables: 'Se encontraron {count} mesas cercanas',
-  tableCode: 'Código de mesa:',
+  tableCode: 'Código de mesa',
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: 'Mis Atestiguamientos',
@@ -1071,7 +1071,7 @@ export default {
 
   // Announce Count
   tableInformation: 'Información de la mesa',
-  precinct: 'Recinto:',
+  precinct: 'Recinto',
   tableCodeLabel: 'Código de Mesa:',
   announceCountButton: 'Anunciar Conteo',
   processing: 'Procesando...',
@@ -1115,9 +1115,10 @@ export default {
   table: 'Mesa',
   whichIsCorrect: '¿Cuál de estas es la correcta?',
   loadingActas: 'Cargando actas de la mesa...',
-  seeMoreDetails: 'Ver mas detalles',
+  seeMoreDetails: 'Ver más detalles',
   dataNotCorrect: 'Estos datos no son correctos',
   correctData: 'Datos Correctos',
+  itsData: 'Están Correctos',
   reviewActaData: 'Revise los datos del acta',
   actaCertification: 'Certificación del Acta',
   certificationText:
@@ -1130,7 +1131,7 @@ export default {
   alreadyAttested: 'Ya atestiguó en esta mesa',
 
   // UploadRecord
-  ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',
+  ensureAssignedTable: 'Asegúrate que esta es la mesa correcta',
   edit: 'Editar',
   next: 'Siguiente',
   save: 'Guardar',
@@ -1260,7 +1261,6 @@ export default {
   nftCertificate: 'Certificado NFT',
   obtain: 'obtenido!',
   viewMyNFT: 'Ver mi NFT',
-  electoralLocations: 'Recintos Electorales',
   gettingLocation: 'Obteniendo ubicación...',
   loadingNearbyLocations: 'Cargando recintos cercanos...',
   showingNearbyLocations: 'Mostrando recintos cercanos a ti',
@@ -1293,6 +1293,8 @@ export default {
 
   // Home Screen
   participate: 'Participar',
+  sendAct: 'Enviar Acta',
+  sendActDescription: 'Revisa o sube un acta',
   participateDescription:
     'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
 
@@ -1307,6 +1309,7 @@ export default {
 
   // Electoral period
   loadingElectionConfig: "Verificando estado electoral...",
+  findingEstablishment: "Buscando recintos cercanos...",
   electionConfigError: "Error al obtener configuración electoral",
   noActiveElection: "No hay elección activa",
   noActiveElectionSubtitle: "Actualmente no hay ninguna elección configurada",

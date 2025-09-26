@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, {useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 import {
   RecordHeader,
   InstructionsContainer,
@@ -12,15 +18,14 @@ import {
   VoteSummaryTable,
   ActionButtons,
 } from './RecordReviewComponents';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375; // Increased from 350 to catch more small devices
 const isLandscape = screenWidth > screenHeight;
-
-
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -53,9 +58,11 @@ const BaseRecordReviewScreen = ({
   onBack,
   showTableInfo = false,
   tableData,
+  emptyDisplayWhenReadOnly = '0',
 }) => {
   const insets = useSafeAreaInsets();
-
+  const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
+  const togglePhoto = () => setIsPhotoCollapsed(prev => !prev);
 
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
@@ -66,10 +73,31 @@ const BaseRecordReviewScreen = ({
 
         {/* Instructions - Compact for tablet */}
         <View style={styles.tabletInstructionsContainer}>
-          <InstructionsContainer
+          {/* <InstructionsContainer
             text={instructionsText}
             style={[instructionsStyle, styles.tabletInstructionsText]}
-          />
+          /> */}
+          <View style={styles.instructionsRow}>
+            <View style={styles.instructionsTextWrap}>
+              <InstructionsContainer
+                text={instructionsText}
+                style={instructionsStyle}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.instructionsToggleBtn}
+              onPress={togglePhoto}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+              }>
+              <Ionicons
+                name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+                size={getResponsiveSize(14, 18, 20)}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* Table Info inline with instructions */}
           {showTableInfo && (
@@ -96,26 +124,29 @@ const BaseRecordReviewScreen = ({
               : styles.tabletMainContentVertical
           }>
           {/* Photo Section */}
-          <View
-            style={
-              isLandscape
-                ? styles.tabletPhotoSectionHorizontal
-                : styles.tabletPhotoSectionVertical
-            }>
-            <PhotoContainer
-              photoUri={photoUri}
-              enableZoom={true}
-              useAspectRatio={true}
-            />
-          </View>
+          {!isPhotoCollapsed && (
+            <View
+              style={
+                isLandscape
+                  ? styles.tabletPhotoSectionHorizontal
+                  : styles.tabletPhotoSectionVertical
+              }>
+              <PhotoContainer
+                photoUri={photoUri}
+                enableZoom={true}
+                useAspectRatio={true}
+              />
+            </View>
+          )}
 
           {/* Tables and Actions Section */}
           <View
-            style={
+            style={[
               isLandscape
                 ? styles.tabletTablesSectionHorizontal
-                : styles.tabletTablesSectionVertical
-            }>
+                : styles.tabletTablesSectionVertical,
+              isPhotoCollapsed && {flex: 1, minWidth: undefined},
+            ]}>
             <ScrollView
               style={styles.tabletTablesScrollView}
               contentContainerStyle={[
@@ -145,6 +176,7 @@ const BaseRecordReviewScreen = ({
                     partyResults={partyResults}
                     isEditing={isEditing}
                     onUpdate={onPartyUpdate}
+                    emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
                   />
                 </View>
 
@@ -159,6 +191,7 @@ const BaseRecordReviewScreen = ({
                     voteSummaryResults={voteSummaryResults}
                     isEditing={isEditing}
                     onUpdate={onVoteSummaryUpdate}
+                    emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
                   />
                 </View>
               </View>
@@ -182,40 +215,38 @@ const BaseRecordReviewScreen = ({
       {/* Header */}
       <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
 
-      {/* Instructions */}
-      <InstructionsContainer
-        text={instructionsText}
-        style={instructionsStyle}
-      />
-
-      {/* Table Info - only for PhotoReviewScreen */}
-      {showTableInfo && (
-        <View style={styles.tableInfoContainer}>
-          <View style={styles.tableTitle}>
-            <CText style={styles.tableTitleText}>
-              Mesa{' '}
-              {tableData?.tableNumber ||
-                tableData?.numero ||
-                tableData?.number ||
-                'N/A'}
-            </CText>
-          </View>
-          <View style={styles.tableSubtitle}>
-            <CText style={styles.tableSubtitleText}>
-              {tableData?.recinto || tableData?.escuela || 'Precinct N/A'}
-            </CText>
-          </View>
+      <View style={styles.instructionsRow}>
+        <View style={styles.instructionsTextWrap}>
+          <InstructionsContainer
+            text={instructionsText}
+            style={instructionsStyle}
+          />
         </View>
-      )}
+        <TouchableOpacity
+          style={styles.instructionsToggleBtn}
+          onPress={togglePhoto}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+          }>
+          <Ionicons
+            name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+            size={getResponsiveSize(14, 18, 20)}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Photo - Static (doesn't move with scroll) */}
-      <View style={styles.photoSection}>
-        <PhotoContainer
-          photoUri={photoUri}
-          enableZoom={true}
-          useAspectRatio={true}
-        />
-      </View>
+      {!isPhotoCollapsed && (
+        <View style={styles.photoSection}>
+          <PhotoContainer
+            photoUri={photoUri}
+            enableZoom={true}
+            useAspectRatio={true}
+          />
+        </View>
+      )}
 
       {/* Scrollable content below photo */}
       <ScrollView
@@ -233,6 +264,7 @@ const BaseRecordReviewScreen = ({
           partyResults={partyResults}
           isEditing={isEditing}
           onUpdate={onPartyUpdate}
+          emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
         />
 
         {/* Vote Summary Table */}
@@ -240,6 +272,7 @@ const BaseRecordReviewScreen = ({
           voteSummaryResults={voteSummaryResults}
           isEditing={isEditing}
           onUpdate={onVoteSummaryUpdate}
+          emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
         />
 
         {/* Action Buttons */}
@@ -405,7 +438,7 @@ const styles = StyleSheet.create({
     marginVertical: 0,
     elevation: 0,
     shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     shadowRadius: 0,
     paddingHorizontal: getResponsiveSize(6, 16, 24),
@@ -420,6 +453,35 @@ const styles = StyleSheet.create({
   tableSubtitleText: {
     fontSize: 12,
     color: '#868686',
+  },
+  instructionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    paddingHorizontal: getResponsiveSize(8, 12, 16),
+  },
+  instructionsTextWrap: {
+    flex: 1,
+  },
+  instructionsToggleBtn: {
+    width: getResponsiveSize(32, 38, 44),
+    height: getResponsiveSize(32, 38, 44),
+    borderRadius: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#22C55E',
+    marginLeft: getResponsiveSize(8, 10, 12),
+    marginBottom: getResponsiveSize(8, 10, 12),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabletInstructionsLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 

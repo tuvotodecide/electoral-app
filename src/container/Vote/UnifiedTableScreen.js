@@ -46,22 +46,44 @@ const UnifiedTableScreen = ({navigation, route}) => {
   } = useSearchTableLogic();
 
   const styles = createSearchTableStyles();
-
+  async function loadTablesFromApi(locationId) {
+    try {
+      setIsLoading(true);
+      const {data} = await axios.get(
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`,
+        {timeout: 15000},
+      );
+      const list = data?.tables || data?.data?.tables || [];
+      setMesas(list);
+    } catch (e) {
+      // si estás offline o falla, simplemente deja la lista como está (vacía)
+    } finally {
+      setIsLoading(false);
+    }
+  }
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);
+      const loc = route.params.locationData || {};
       setLocationData({
-        locationId: route?.params?.locationId,
-        name: route?.params?.locationData.name,
-        address: route?.params?.locationData.address,
-        code: route?.params?.locationData.code,
+        locationId: route.params.locationId,
+        name: loc.name,
+        address: loc.address,
+        code: loc.code,
+        zone: loc.zone,
+        district: loc.district,
       });
-      setMesas(route?.params?.locationData.tables);
-      //loadTablesFromApi(route.params.locationId);
-      //setLocationData(route.params.locationData);
-      setIsLoading(false);
+
+      const initial = Array.isArray(loc.tables) ? loc.tables : [];
+      setMesas(initial);
+
+      if (initial.length === 0) {
+        loadTablesFromApi(route.params.locationId);
+      } else {
+        setIsLoading(false);
+      }
     } else {
-      loadTables();
+      setIsLoading(false);
     }
   }, [route?.params?.locationId]);
 

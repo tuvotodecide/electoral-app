@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -14,22 +14,23 @@ import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import { THEME, getHeight, moderateScale } from '../../../common/constants';
-import { styles } from '../../../themes';
-import { useDispatch, useSelector } from 'react-redux';
+import {THEME, getHeight, moderateScale} from '../../../common/constants';
+import {styles} from '../../../themes';
+import {useDispatch, useSelector} from 'react-redux';
 import CHeader from '../../../components/common/CHeader';
 import images from '../../../assets/images';
 import CText from '../../../components/common/CText';
-import { ProfileDataV2 } from '../../../api/constant';
-import { StackNav } from '../../../navigation/NavigationKey';
-import { colors } from '../../../themes/colors';
-import { changeThemeAction } from '../../../redux/action/themeAction';
-import { setAsyncStorageData } from '../../../utils/AsyncStorage';
+import {ProfileDataV2} from '../../../api/constant';
+import {StackNav} from '../../../navigation/NavigationKey';
+import {colors} from '../../../themes/colors';
+import {changeThemeAction} from '../../../redux/action/themeAction';
+import {setAsyncStorageData} from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
-export default function Profile({ navigation }) {
+export default function Profile({navigation}) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -37,11 +38,12 @@ export default function Profile({ navigation }) {
   const dispatch = useDispatch();
 
   const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
+
+const subject = getCredentialSubjectFromPayload(userData) || {};
+  const addr = userData?.account ?? '';
   const data = {
-    name: subject.fullName || '(sin nombre)',
-    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+    name: subject?.fullName || '(sin nombre)',
+    hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
 
   // Datos de reputación y NFTs
@@ -70,13 +72,13 @@ export default function Profile({ navigation }) {
   // Sección adicional (ProfileDataV2)
   const onPressItem = item => {
     if (!!item.route) {
-      navigation.navigate(item.route, { item: item });
+      navigation.navigate(item.route, {item: item});
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }
   };
 
-  const RenderSectionHeader = ({ section: { section } }) => {
+  const RenderSectionHeader = ({section: {section}}) => {
     return (
       <CText type={'B16'} style={styles.mv10}>
         {section}
@@ -113,7 +115,7 @@ export default function Profile({ navigation }) {
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{ name: StackNav.AuthNavigation }],
+          routes: [{name: StackNav.AuthNavigation}],
         });
       }, 500);
       return true;
@@ -122,10 +124,11 @@ export default function Profile({ navigation }) {
     }
   };
 
-  const RenderItem = ({ item, index }) => {
+  const RenderItem = ({item, index}) => {
     return (
       <TouchableOpacity
-        disabled={item === 'darkMode'} s
+        disabled={item === 'darkMode'}
+        s
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
         onPress={() => onPressItem(item)}
@@ -134,8 +137,7 @@ export default function Profile({ navigation }) {
           {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
-        ]}
-      >
+        ]}>
         <View style={styles.rowCenter}>
           <View
             style={[
@@ -146,8 +148,7 @@ export default function Profile({ navigation }) {
                     ? color.primary
                     : color.inputBackground,
               },
-            ]}
-          >
+            ]}>
             {item.icon ? (
               <Entypo
                 name={item.icon}
@@ -192,11 +193,10 @@ export default function Profile({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         {/* Header perfil */}
         <LinearGradient
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 2.1 }}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 2.1}}
           style={localStyle.activityHeader}
-          colors={['#4A5568', '#2D3748', '#1A202C']}
-        >
+          colors={['#4A5568', '#2D3748', '#1A202C']}>
           <CHeader color={color.white} />
           <Image
             source={images.PersonCircleImage}
@@ -206,7 +206,11 @@ export default function Profile({ navigation }) {
             <CText type={'B20'} color={color.white} align={'center'}>
               {data.name}
             </CText>
-            <CHash text={data.hash} title={userData?.account} textColor={'#fff'} />
+            <CHash
+              text={data.hash}
+              title={userData?.account}
+              textColor={'#fff'}
+            />
           </View>
         </LinearGradient>
 

@@ -20,12 +20,14 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
+import ImageViewing from 'react-native-image-viewing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 import {launchImageLibrary} from 'react-native-image-picker';
+import NetInfo from '@react-native-community/netinfo';
 
 const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -129,12 +131,29 @@ export default function CameraScreen({navigation, route}) {
   const [lastScale, setLastScale] = useState(1);
   const [lastTranslateX, setLastTranslateX] = useState(0);
   const [lastTranslateY, setLastTranslateY] = useState(0);
-
+  const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
   const initialScale = useRef(1);
   const isZooming = useRef(false);
 
-  // Configurar StatusBar para mantener orientación consistente
+  let NetInfoSafe = null;
+  try {
+    NetInfoSafe = require('@react-native-community/netinfo').default;
+  } catch (e) {
+    NetInfoSafe = null;
+  }
+
+  useEffect(() => {
+    if (!NetInfoSafe) {
+      setIsOnline(true);
+      return;
+    }
+    const sub = NetInfoSafe.addEventListener(state => {
+      const ok = !!state.isConnected && (state.isInternetReachable ?? true);
+      setIsOnline(ok);
+    });
+    return () => sub && sub();
+  }, []);
 
   useEffect(() => {
     if (photo) {
@@ -225,6 +244,22 @@ export default function CameraScreen({navigation, route}) {
     }
   };
 
+  const getMaxOffsets = (scale, containerW, containerH, imgW, imgH) => {
+    const draw = getContainedSize(imgW, imgH, containerW, containerH);
+    const effectiveW = draw.width * scale;
+    const effectiveH = draw.height * scale;
+    const maxX = Math.max(0, (effectiveW - containerW) / 2);
+    const maxY = Math.max(0, (effectiveH - containerH) / 2);
+    return {maxX, maxY};
+  };
+
+  const getFocalPoint = touches => {
+    if (!touches || touches.length < 2) return {fx: 0, fy: 0};
+    const fx = (touches[0].pageX + touches[1].pageX) / 2;
+    const fy = (touches[0].pageY + touches[1].pageY) / 2;
+    return {fx, fy};
+  };
+
   // Funciones para manejar zoom y navegación de imagen
   const resetImageTransform = () => {
     Animated.parallel([
@@ -254,118 +289,129 @@ export default function CameraScreen({navigation, route}) {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+
       onPanResponderGrant: evt => {
-        // Inicializar solo para pan (un dedo)
-        if (evt.nativeEvent.touches.length === 1) {
-          imageScale.setOffset(lastScale);
-          imageTranslateX.setOffset(lastTranslateX);
-          imageTranslateY.setOffset(lastTranslateY);
-        }
+        // guardamos offsets actuales
+        imageScale.setOffset(lastScale);
+        imageTranslateX.setOffset(lastTranslateX);
+        imageTranslateY.setOffset(lastTranslateY);
+
+        isZooming.current = evt.nativeEvent.touches.length === 2;
+        initialDistance.current = null;
+        initialScale.current = lastScale;
       },
+
       onPanResponderMove: (evt, gestureState) => {
         const touches = evt.nativeEvent.touches;
+        const containerW = screenData.width;
+        const containerH = screenData.height;
 
-        // Manejar zoom con dos dedos
+        // tamaño "contain" para límites
+        const draw = getContainedSize(
+          photoMeta.width,
+          photoMeta.height,
+          containerW,
+          containerH,
+        );
+
+        // === PINCH (2 dedos) ===
         if (touches.length === 2) {
           isZooming.current = true;
 
-          const touch1 = touches[0];
-          const touch2 = touches[1];
-
-          const dx = touch2.pageX - touch1.pageX;
-          const dy = touch2.pageY - touch1.pageY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+          const {fx, fy} = getFocalPoint(touches);
+          const dx = touches[1].pageX - touches[0].pageX;
+          const dy = touches[1].pageY - touches[0].pageY;
+          const distance = Math.hypot(dx, dy);
 
           if (!initialDistance.current) {
             initialDistance.current = distance;
             initialScale.current = lastScale;
           }
 
-          let scale =
+          let nextScale =
             (distance / initialDistance.current) * initialScale.current;
-          scale = Math.max(0.5, Math.min(3, scale));
+          nextScale = clamp(nextScale, 1, 4); // rango de zoom (ajusta a gusto)
 
-          imageScale.setValue(scale);
-        }
-        // Manejar pan con un dedo (solo si no estamos en medio de un zoom)
-        // else if (touches.length === 1 && !isZooming.current) {
-        //   // Calcular límites de traslación en función de la escala actual
-        //   const maxTranslateX = (screenData.width * (lastScale - 1)) / 2;
-        //   const maxTranslateY = (screenData.height * (lastScale - 1)) / 2;
+          // anclar el zoom al foco del pellizco
+          const s0 = lastScale;
+          const s1 = nextScale;
 
-        //   const dx = Math.max(
-        //     -maxTranslateX,
-        //     Math.min(maxTranslateX, gestureState.dx),
-        //   );
-        //   const dy = Math.max(
-        //     -maxTranslateY,
-        //     Math.min(maxTranslateY, gestureState.dy),
-        //   );
+          // translate actuales (con offset)
+          const tx0 = lastTranslateX;
+          const ty0 = lastTranslateY;
 
-        //   imageTranslateX.setValue(dx);
-        //   imageTranslateY.setValue(dy);
-        // }
-        else if (touches.length === 1 && !isZooming.current) {
-          const containerW = screenData.width;
-          const containerH = screenData.height;
+          // nueva traslación para mantener el punto focal en pantalla
+          let tx1 = fx - (fx - tx0) * (s1 / s0);
+          let ty1 = fy - (fy - ty0) * (s1 / s0);
 
-          // Tamaño real con el que se DIBUJA la imagen en 'contain'
-          const draw = getContainedSize(
-            photoMeta.width,
-            photoMeta.height,
+          // límites según escala
+          const {maxX, maxY} = getMaxOffsets(
+            s1,
             containerW,
             containerH,
+            photoMeta.width,
+            photoMeta.height,
           );
+          tx1 = clamp(tx1, -maxX, maxX);
+          ty1 = clamp(ty1, -maxY, maxY);
 
-          // Usamos la escala "actual" para limitar (cuando no hay pinch en curso)
-          const currentScale = lastScale;
-
-          const maxX = Math.max(
-            0,
-            (draw.width * currentScale - containerW) / 2,
-          );
-          const maxY = Math.max(
-            0,
-            (draw.height * currentScale - containerH) / 2,
-          );
-
-          const dx = clamp(gestureState.dx, -maxX, maxX);
-          const dy = clamp(gestureState.dy, -maxY, maxY);
-
-          imageTranslateX.setValue(dx);
-          imageTranslateY.setValue(dy);
+          imageScale.setValue(s1);
+          imageTranslateX.setValue(tx1);
+          imageTranslateY.setValue(ty1);
+          return;
         }
+
+        // === PAN (1 dedo) ===
+        const currentScale = imageScale.__getValue
+          ? imageScale.__getValue()
+          : lastScale;
+        const {maxX, maxY} = getMaxOffsets(
+          currentScale,
+          containerW,
+          containerH,
+          photoMeta.width,
+          photoMeta.height,
+        );
+
+        let tx = lastTranslateX + gestureState.dx;
+        let ty = lastTranslateY + gestureState.dy;
+
+        tx = clamp(tx, -maxX, maxX);
+        ty = clamp(ty, -maxY, maxY);
+
+        imageTranslateX.setValue(tx);
+        imageTranslateY.setValue(ty);
       },
-      onPanResponderRelease: evt => {
-        const touches = evt.nativeEvent.touches;
 
-        // Finalizar zoom si había dos dedos
-        if (touches.length < 2) {
-          isZooming.current = false;
-        }
+      onPanResponderRelease: () => {
+        // consolidar offsets
+        imageScale.flattenOffset();
+        imageTranslateX.flattenOffset();
+        imageTranslateY.flattenOffset();
 
-        // Solo procesar si no hay dedos restantes
-        if (touches.length === 0) {
-          const finalScale = imageScale._value;
-          const finalTranslateX = imageTranslateX._value;
-          const finalTranslateY = imageTranslateY._value;
+        setLastScale(
+          imageScale.__getValue ? imageScale.__getValue() : lastScale,
+        );
+        setLastTranslateX(
+          imageTranslateX.__getValue
+            ? imageTranslateX.__getValue()
+            : lastTranslateX,
+        );
+        setLastTranslateY(
+          imageTranslateY.__getValue
+            ? imageTranslateY.__getValue()
+            : lastTranslateY,
+        );
 
-          imageScale.flattenOffset();
-          imageTranslateX.flattenOffset();
-          imageTranslateY.flattenOffset();
-
-          setLastScale(finalScale);
-          setLastTranslateX(finalTranslateX);
-          setLastTranslateY(finalTranslateY);
-
-          // Resetear valores de zoom
-          initialDistance.current = null;
-          initialScale.current = finalScale;
-        }
+        isZooming.current = false;
+        initialDistance.current = null;
       },
       onPanResponderTerminate: () => {
         isZooming.current = false;
         initialDistance.current = null;
+        imageScale.flattenOffset();
+        imageTranslateX.flattenOffset();
+        imageTranslateY.flattenOffset();
       },
     }),
   ).current;
@@ -583,9 +629,16 @@ export default function CameraScreen({navigation, route}) {
     if (!photo) {
       return;
     }
-
-    setAnalyzing(true);
     const mesaInfo = route.params?.tableData || {};
+    if (!isOnline) {
+      navigation.navigate(StackNav.PhotoReviewScreen, {
+        photoUri: `file://${photo.path}`,
+        tableData: mesaInfo,
+        offline: true,
+      });
+      return;
+    }
+    setAnalyzing(true);
 
     try {
       // Analizar la imagen con Gemini AI
@@ -656,6 +709,20 @@ export default function CameraScreen({navigation, route}) {
         mappedData: mappedData,
       });
     } catch (error) {
+      const isNetworkError =
+        !isOnline ||
+        /network|timeout|ENET|ECONN|ECONNABORTED|ECONNRESET|EAI_AGAIN/i.test(
+          String(error?.message || ''),
+        );
+
+      if (isNetworkError) {
+        navigation.navigate(StackNav.PhotoReviewScreen, {
+          photoUri: `file://${photo.path}`,
+          tableData: mesaInfo,
+          offline: true,
+        });
+        return;
+      }
       showModal(
         'Error',
         'Ocurrió un error al analizar la imagen. ¿Desea continuar sin análisis automático?',
@@ -729,24 +796,98 @@ export default function CameraScreen({navigation, route}) {
                 </CText>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[styles.actionButton, styles.galleryButtonPreview]}
               onPress={openGallery}>
               <Ionicons name="image-outline" size={20} color="#fff" />
               <CText style={styles.actionButtonText}>Galería</CText>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </>
       ) : (
         <View style={styles.fullContainer}>
           {/* Header con controles */}
-          <View style={styles.photoHeaderContainer}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={resetImageTransform}>
-              <Ionicons name="refresh" size={24} color="#fff" />
-              <CText style={styles.headerButtonText}>Reset Zoom</CText>
-            </TouchableOpacity>
+          <View style={styles.fullContainer}>
+            <ImageViewing
+              images={[{uri: 'file://' + photo.path}]}
+              visible={true}
+              onRequestClose={() => {
+                /* no cerramos, controlas tú el flujo */
+              }}
+              swipeToCloseEnabled={false}
+              doubleTapToZoomEnabled
+              backgroundColor="#000"
+              imageIndex={0}
+              FooterComponent={() => (
+                <View style={styles.photoActionsContainer}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.retakeButton]}
+                    onPress={takeNewPhoto}>
+                    <Ionicons name="camera-outline" size={20} color="#fff" />
+                    <CText style={styles.actionButtonText}>Tomar Nueva</CText>
+                  </TouchableOpacity>
+
+                  {isOnline ? (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.analyzeButton]}
+                      onPress={handleNext}
+                      disabled={analyzing}>
+                      {analyzing ? (
+                        <View style={styles.analyzingContainer}>
+                          <ActivityIndicator
+                            color="#fff"
+                            size="small"
+                            style={styles.analyzingIcon}
+                          />
+                          <CText style={styles.actionButtonText}>
+                            Analizando...
+                          </CText>
+                        </View>
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="analytics-outline"
+                            size={20}
+                            color="#fff"
+                          />
+                          <CText style={styles.actionButtonText}>
+                            Analizar
+                          </CText>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.analyzeButton]}
+                      onPress={() => {
+                        const mesaInfo = route.params?.tableData || {};
+                        navigation.navigate(StackNav.PhotoReviewScreen, {
+                          photoUri: `file://${photo.path}`,
+                          tableData: mesaInfo,
+                          offline: true,
+                        });
+                      }}>
+                      <Ionicons
+                        name="arrow-forward-circle-outline"
+                        size={20}
+                        color="#fff"
+                      />
+                      <CText style={styles.actionButtonText}>Continuar</CText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+              // (Opcional) Si quieres ver el marco rojo también aquí:
+              HeaderComponent={() => (
+                <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                  <RenderFrame
+                    color={'#D32F2F'}
+                    screenWidth={screenData.width}
+                    screenHeight={screenData.height}
+                  />
+                </View>
+              )}
+            />
           </View>
 
           {/* Contenedor de imagen con zoom y pan */}
@@ -765,26 +906,6 @@ export default function CameraScreen({navigation, route}) {
                   ],
                 },
               ]}>
-              {/* <Image
-                source={{uri: 'file://' + photo.path}}
-                style={[
-                  styles.zoomableImage,
-                  {
-                    width: screenData.width,
-                    height: screenData.height,
-                    // Aplicar recorte visual
-                    marginLeft: photo.cropData
-                      ? -photo.cropData.x *
-                        (screenData.width / photo.cropData.width)
-                      : 0,
-                    marginTop: photo.cropData
-                      ? -photo.cropData.y *
-                        (screenData.height / photo.cropData.height)
-                      : 0,
-                  },
-                ]}
-                resizeMode="contain"
-              /> */}
               {(() => {
                 const containerW = screenData.width;
                 const containerH = screenData.height;
@@ -817,26 +938,47 @@ export default function CameraScreen({navigation, route}) {
               <CText style={styles.actionButtonText}>Tomar Nueva</CText>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionButton, styles.analyzeButton]}
-              onPress={handleNext}
-              disabled={analyzing}>
-              {analyzing ? (
-                <View style={styles.analyzingContainer}>
-                  <ActivityIndicator
-                    color="#fff"
-                    size="small"
-                    style={styles.analyzingIcon}
-                  />
-                  <CText style={styles.actionButtonText}>Analizando...</CText>
-                </View>
-              ) : (
-                <>
-                  <Ionicons name="analytics-outline" size={20} color="#fff" />
-                  <CText style={styles.actionButtonText}>Analizar</CText>
-                </>
-              )}
-            </TouchableOpacity>
+            {isOnline ? (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.analyzeButton]}
+                onPress={handleNext}
+                disabled={analyzing}>
+                {analyzing ? (
+                  <View style={styles.analyzingContainer}>
+                    <ActivityIndicator
+                      color="#fff"
+                      size="small"
+                      style={styles.analyzingIcon}
+                    />
+                    <CText style={styles.actionButtonText}>Analizando...</CText>
+                  </View>
+                ) : (
+                  <>
+                    <Ionicons name="analytics-outline" size={20} color="#fff" />
+                    <CText style={styles.actionButtonText}>Analizar</CText>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.analyzeButton]}
+                onPress={() => {
+                  const mesaInfo = route.params?.tableData || {};
+                  navigation.navigate(StackNav.PhotoReviewScreen, {
+                    photoUri: `file://${photo.path}`,
+                    tableData: mesaInfo,
+                    // flag opcional por si quieres mostrar un banner “modo offline”
+                    offline: true,
+                  });
+                }}>
+                <Ionicons
+                  name="arrow-forward-circle-outline"
+                  size={20}
+                  color="#fff"
+                />
+                <CText style={styles.actionButtonText}>Continuar</CText>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}

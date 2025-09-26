@@ -20,7 +20,7 @@ import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
 
 export default function RegisterUser7({navigation, route}) {
-  const {vc, offerUrl, dni} = route.params;
+  const {ocrData, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onPressNext = () => {
@@ -57,8 +57,7 @@ export default function RegisterUser7({navigation, route}) {
     }
 
     navigation.navigate(AuthNav.RegisterUser8, {
-      vc,
-      offerUrl,
+      ocrData,
       useBiometry: true,
       dni,
     });
@@ -66,8 +65,7 @@ export default function RegisterUser7({navigation, route}) {
 
   const handleLater = () =>
     navigation.navigate(AuthNav.RegisterUser8, {
-      vc,
-      offerUrl,
+      ocrData,
       useBiometry: false,
       dni,
     });

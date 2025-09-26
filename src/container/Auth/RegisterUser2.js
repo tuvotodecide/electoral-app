@@ -15,21 +15,25 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import UploadCardImage from '../../components/common/UploadCardImage';
 import String from '../../i18n/String';
 import DniExistsModal from '../../components/modal/DniExistsModal';
-import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
+import {useCheckDni} from '../../data/registry';
 
-export default function RegisterUser2({navigation}) {
+export default function RegisterUser2({navigation, route}) {
+  const isRecovery = route.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [idNumber, setIdNumber] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [isModalVisible, setModalVisible] = useState({
+    visible: false,
+    message: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
 
-  const {mutate: findDni, isLoading} = useKycFindQuery();
+  const {mutate: checkDni} = useCheckDni();
   const dispatch = useDispatch();
   const isFormValid = () => {
     return idNumber.trim() !== '' && frontImage && backImage;
@@ -39,7 +43,7 @@ export default function RegisterUser2({navigation}) {
 
   useEffect(() => {
     const trimmed = idNumber.trim();
-    if (!hasRedirectedRef.current && trimmed == REVIEW_DNI) {
+    if (!hasRedirectedRef.current && trimmed === REVIEW_DNI) {
       hasRedirectedRef.current = true;
       dispatch(setSecrets(DEMO_SECRETS));
       navigation.reset({
@@ -55,31 +59,46 @@ export default function RegisterUser2({navigation}) {
 
       if (idNumber.trim() === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));
+
         navigation.reset({
           index: 0,
           routes: [{name: StackNav.TabNavigation}],
         });
+
         return;
       }
       if (!isFormValid()) return;
 
-      findDni(
+      checkDni(
         {identifier: idNumber.trim()},
         {
           onMutate: () => {
             setSubmitting(true);
-            setModalVisible(false);
+            setModalVisible({
+              visible: false,
+              message: '',
+            });
           },
           onSuccess: response => {
             setSubmitting(false);
 
-            if (response.ok) {
-              setModalVisible(true);
-            } else {
+            if (response.ok && !isRecovery) {
+              setModalVisible({
+                visible: true,
+                message: String.DniExists,
+              });
+            }
+            /*else if (!response.ok && isRecovery) {
+            setModalVisible({
+              visible: true,
+              message: String.DniNotFound
+            });
+          } else*/ {
               navigation.navigate(AuthNav.RegisterUser3, {
                 dni: idNumber.trim(),
                 frontImage,
                 backImage,
+                isRecovery,
               });
             }
           },
@@ -93,10 +112,8 @@ export default function RegisterUser2({navigation}) {
         },
       );
     }, 500),
-
     [idNumber, frontImage, backImage],
   );
-
   return (
     <CSafeAreaViewAuth>
       <StepIndicator step={2} />
@@ -150,14 +167,18 @@ export default function RegisterUser2({navigation}) {
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CButton
-          disabled={!isFormValid() || isLoading || submitting}
-          title={isLoading ? String.checking : String.continueButton}
+          disabled={!isFormValid() ||   submitting}
+          title={submitting ? String.checking : String.continueButton}
           onPress={handleCheckAndNext}
           type="B16"
           containerStyle={localStyle.btnStyle}
         />
       </View>
-      <DniExistsModal visible={isModalVisible} onClose={closeModal} />
+      <DniExistsModal
+        visible={isModalVisible.visible}
+        message={isModalVisible.message}
+        onClose={closeModal}
+      />
     </CSafeAreaViewAuth>
   );
 }

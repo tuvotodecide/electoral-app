@@ -7,7 +7,7 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,9 +16,9 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -40,21 +40,19 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function TableDetail({ navigation, route }) {
+export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData;
   // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
+  const shouldCenter = !(existingRecords && existingRecords.length > 0);
   const mesaInfo = route.params?.mesaInfo || null;
   const totalRecords = route.params?.totalRecords || 0;
 
-
-
   // Normalize mesa data structure
   const mesa = {
-    idRecinto:
-      rawMesa.locationId,
+    idRecinto: rawMesa.locationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
@@ -109,8 +107,6 @@ export default function TableDetail({ navigation, route }) {
       'Zona no especificada',
   };
 
-
-
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = React.useState(
     route.params?.capturedImage || null,
@@ -121,9 +117,6 @@ export default function TableDetail({ navigation, route }) {
 
   // Navega a la cámara interna
   const handleTakePhoto = () => {
-
-
-
     const finalTableData = {
       ...mesa,
       ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
@@ -133,7 +126,6 @@ export default function TableDetail({ navigation, route }) {
       number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
     };
 
-  
     try {
       navigation.navigate(StackNav.CameraScreen, {
         tableData: finalTableData,
@@ -186,28 +178,39 @@ export default function TableDetail({ navigation, route }) {
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title={String.tableInformation}
-        showNotification={false}
+        title={
+          /*  mesa ? mesa.colegio : String.tableInformation*/
+          'Revisa'
+        }
+        showNotification={true}
       />
 
       {/* SCROLLABLE CONTENT */}
-      <View style={stylesx.scrollableContent}>
+      <View
+        style={[
+          stylesx.scrollableContent,
+          shouldCenter && stylesx.centerVertically,
+        ]}>
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
             {/* Left Column: Instructions and Table Data */}
             <View style={stylesx.leftColumn}>
-              <View style={stylesx.instructionContainer}>
-                <CText style={[stylesx.bigBold, { color: 'black' }]}>
+              <View
+                style={[
+                  stylesx.instructionContainer,
+                  shouldCenter && {marginTop: 0},
+                ]}>
+                <CText style={[stylesx.bigBold, {color: 'black'}]}>
                   {String.ensureAssignedTable}
                 </CText>
-                <CText
+                {/* <CText
                   style={[
                     stylesx.subtitle,
-                    { color: colors.grayScale500 || '#8B9399' },
+                    {color: colors.grayScale500 || '#8B9399'},
                   ]}>
                   {String.verifyTableInformation}
-                </CText>
+                </CText> */}
               </View>
 
               <View style={stylesx.tableCard}>
@@ -216,10 +219,6 @@ export default function TableDetail({ navigation, route }) {
                     <CText style={stylesx.tableCardTitle}>
                       Mesa {mesa.numero}
                     </CText>
-                    <CText style={stylesx.tableCardDetail}>
-                      Recinto: {mesa.recinto}
-                    </CText>
-                    <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
                     <CText style={stylesx.tableCardDetail}>
                       Código de Mesa: {mesa.codigo}
                     </CText>
@@ -253,7 +252,7 @@ export default function TableDetail({ navigation, route }) {
                         navigation.navigate(StackNav.PhotoReviewScreen, {
                           mesa: mesa,
                           existingRecord: record,
-                          isViewOnly: true
+                          isViewOnly: true,
                         });
                       }}>
                       <View style={stylesx.recordHeader}>
@@ -265,7 +264,7 @@ export default function TableDetail({ navigation, route }) {
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
-                            source={{ uri: record.actaImage }}
+                            source={{uri: record.actaImage}}
                             style={stylesx.actaImage}
                             resizeMode="cover"
                           />
@@ -315,39 +314,42 @@ export default function TableDetail({ navigation, route }) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View style={stylesx.instructionContainer}>
-              <CText style={[stylesx.bigBold, { color: 'black' }]}>
+            <View
+              style={[
+                stylesx.instructionContainer,
+                shouldCenter && {marginTop: 0},
+              ]}>
+              <CText style={[stylesx.bigBold, {color: 'black'}]}>
                 {String.ensureAssignedTable}
               </CText>
-              <CText
+              {/* <CText
                 style={[
                   stylesx.subtitle,
-                  { color: colors.grayScale500 || '#8B9399' },
+                  {color: colors.grayScale500 || '#8B9399'},
                 ]}>
                 {String.verifyTableInformation}
-              </CText>
+              </CText> */}
             </View>
 
             <View style={stylesx.tableCard}>
               <View style={stylesx.tableCardHeader}>
-                <View style={stylesx.tableCardContent}>
-                  <CText style={stylesx.tableCardTitle}>
-                    Mesa {mesa.numero}
-                  </CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    Recinto: {mesa.recinto}
-                  </CText>
-                  <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    Código de Mesa: {mesa.codigo}
-                  </CText>
-                </View>
                 <MaterialIcons
                   name="how-to-vote"
                   size={getResponsiveSize(40, 48, 56)}
                   color="#000"
                   style={stylesx.downloadIcon}
                 />
+                <View style={stylesx.tableCardContent}>
+                  <CText style={stylesx.tableCardTitle}>
+                    {String.table} {mesa.numero}
+                  </CText>
+                  <CText style={stylesx.tableCardDetail}>
+                    {String.tableCode}{':'} {mesa.codigo}
+                  </CText>
+                  <CText style={stylesx.tableCardDetail}>
+                    {String.precinct}{':'} {mesa.colegio}
+                  </CText>
+                </View>
               </View>
             </View>
 
@@ -370,7 +372,7 @@ export default function TableDetail({ navigation, route }) {
                       navigation.navigate(StackNav.PhotoReviewScreen, {
                         mesa: mesa,
                         existingRecord: record,
-                        isViewOnly: true
+                        isViewOnly: true,
                       });
                     }}>
                     <View style={stylesx.recordHeader}>
@@ -378,23 +380,21 @@ export default function TableDetail({ navigation, route }) {
                         Acta #{index + 1}
                       </CText>
                       <CText style={stylesx.recordId}>
-                        ID: {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}...
+                        ID:{' '}
+                        {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}
+                        ...
                       </CText>
                     </View>
 
                     {record.actaImage && (
                       <View style={stylesx.actaImageContainer}>
                         <Image
-                          source={{ uri: record.actaImage }}
+                          source={{uri: record.actaImage}}
                           style={stylesx.actaImage}
                           resizeMode="cover"
                         />
                         <View style={stylesx.imageOverlay}>
-                          <Ionicons
-                            name="eye"
-                            size={24}
-                            color="#fff"
-                          />
+                          <Ionicons name="eye" size={24} color="#fff" />
                           <CText style={stylesx.viewImageText}>Ver Acta</CText>
                         </View>
                       </View>
@@ -445,7 +445,9 @@ export default function TableDetail({ navigation, route }) {
                   style={stylesx.takePhotoBtn}
                   activeOpacity={0.85}
                   onPress={handleTakePhoto}>
-                  <CText style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
+                  <CText style={stylesx.takePhotoBtnText}>
+                    {String.takePhoto}
+                  </CText>
                 </TouchableOpacity>
               </>
             )}
@@ -464,7 +466,7 @@ export default function TableDetail({ navigation, route }) {
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
-                source={{ uri: capturedImage.uri }}
+                source={{uri: capturedImage.uri}}
                 style={stylesx.previewImage}
                 resizeMode="contain"
               />
@@ -481,7 +483,7 @@ export default function TableDetail({ navigation, route }) {
             <TouchableOpacity
               style={[
                 stylesx.confirmButton,
-                { backgroundColor: colors.primary || '#4F9858' },
+                {backgroundColor: colors.primary || '#4F9858'},
               ]}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
@@ -531,6 +533,7 @@ const stylesx = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: getResponsiveSize(6, 8, 10),
     color: '#222',
+    textAlign: 'center',
     lineHeight: getResponsiveSize(24, 26, 30),
   },
   subtitle: {
@@ -546,7 +549,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 20, 25),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -662,7 +665,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -670,6 +673,7 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
   },
   tableCardContent: {
     flex: 1,
@@ -721,7 +725,7 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(12, 16, 18),
     marginBottom: getResponsiveSize(12, 15, 18),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -799,5 +803,8 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(15, 16, 17),
     fontWeight: '600',
     color: '#4F9858',
+  },
+  centerVertically: {
+    justifyContent: 'center',
   },
 });

@@ -30,6 +30,14 @@ export default function StackNavigation() {
         component={StackRoute.ElectoralLocations}
       />
       <Stack.Screen
+        name={StackNav.ElectoralLocationsSave}
+        component={StackRoute.ElectoralLocationsSave}
+      />
+      <Stack.Screen
+        name={StackNav.OfflinePendingScreen}
+        component={StackRoute.OfflinePendingScreen}
+      />
+      <Stack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />

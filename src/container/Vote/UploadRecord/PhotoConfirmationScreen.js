@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -21,6 +21,11 @@ import axios from 'axios';
 import {oracleCalls, oracleReads} from '../../../api/oracle';
 import {availableNetworks} from '../../../api/params';
 import InfoModal from '../../../components/modal/InfoModal';
+import NetInfo from '@react-native-community/netinfo';
+import {enqueue} from '../../../utils/offlineQueue';
+import {persistLocalImage} from '../../../utils/persistLocalImage';
+import {validateBallotLocally} from '../../../utils/ballotValidation';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -72,13 +77,23 @@ const PhotoConfirmationScreen = () => {
     message: '',
   });
 
+  const didAutoOpenRef = useRef(false);
+  useEffect(() => {
+    if (didAutoOpenRef.current) return;
+    didAutoOpenRef.current = true;
+    const t = setTimeout(() => {
+      verifyAndUpload();
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
+
+
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-  };
+  const subject = getCredentialSubjectFromPayload(userData) || {};
+  const data = {name: subject?.fullName || '(sin nombre)'};
   const userFullName = data.name || '(sin nombre)';
 
   const handleBack = () => {
@@ -87,6 +102,18 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
       // Construir datos para verificación
       const verificationData = {
         tableNumber: tableData?.codigo || 'N/A',
@@ -112,19 +139,58 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
-  const buildVoteData = type => {
-    const getValue = (label, defaultValue = 0) => {
-      const item = voteSummaryResults.find(s => s.label === label);
-      if (!item) return defaultValue;
+  // const buildVoteData = type => {
+  //   const getValue = (label, defaultValue = 0) => {
+  //     const item = (voteSummaryResults || []).find(s => s.label === label);
+  //     if (!item) return defaultValue;
 
-      const value = type === 'presidente' ? item.value1 : item.value2;
-      return parseInt(value, 10) || defaultValue;
+  //     const value = type === 'presidente' ? item.value1 : item.value2;
+  //     return parseInt(value, 10) || defaultValue;
+  //   };
+
+  //   return {
+  //     validVotes: getValue('Votos Válidos'),
+  //     nullVotes: getValue('Votos Nulos'),
+  //     blankVotes: getValue('Votos en Blanco'),
+  //     partyVotes: partyResults.map(party => ({
+  //       partyId: party.partido,
+  //       votes:
+  //         parseInt(
+  //           type === 'presidente' ? party.presidente : party.diputado,
+  //           10,
+  //         ) || 0,
+  //     })),
+  //     totalVotes:
+  //       getValue('Votos Válidos') +
+  //       getValue('Votos Nulos') +
+  //       getValue('Votos en Blanco'),
+  //   };
+  // };
+  const buildVoteData = type => {
+    const norm = s =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
+    const aliases = {
+      validos: ['validos', 'válidos', 'votos válidos'],
+      nulos: ['nulos', 'votos nulos'],
+      blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    };
+    const pickRow = key =>
+      (voteSummaryResults || []).find(
+        r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      );
+    const getValue = key => {
+      const row = pickRow(key);
+      const raw = type === 'presidente' ? row?.value1 : row?.value2;
+      const n = parseInt(String(raw ?? '0'), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
     };
 
     return {
-      validVotes: getValue('Votos Válidos'),
-      nullVotes: getValue('Votos Nulos'),
-      blankVotes: getValue('Votos en Blanco'),
+      validVotes: getValue('validos'),
+      nullVotes: getValue('nulos'),
+      blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
         partyId: party.partido,
         votes:
@@ -133,10 +199,7 @@ const PhotoConfirmationScreen = () => {
             10,
           ) || 0,
       })),
-      totalVotes:
-        getValue('Votos Válidos') +
-        getValue('Votos Nulos') +
-        getValue('Votos en Blanco'),
+      totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
   };
 
@@ -209,7 +272,7 @@ const PhotoConfirmationScreen = () => {
           'Content-Type': 'application/json',
           'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000, // 30 segundos timeout
+        timeout: 30000,
       });
 
       // Manejar diferentes tipos de respuestas
@@ -305,6 +368,15 @@ const PhotoConfirmationScreen = () => {
         voteSummaryResults: voteSummaryResults || [],
       };
 
+      const normalizedVoteSummary = (
+        electoralData.voteSummaryResults || []
+      ).map(r => {
+        if (r.id === 'validos') return {...r, label: 'Votos Válidos'};
+        if (r.id === 'nulos') return {...r, label: 'Votos Nulos'};
+        if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
+        return r;
+      });
+
       // Convertir URI a path
       const imagePath = photoUri.startsWith('file://')
         ? photoUri.substring(7)
@@ -314,7 +386,7 @@ const PhotoConfirmationScreen = () => {
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        electoralData,
+        {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
       );
 
@@ -336,6 +408,55 @@ const PhotoConfirmationScreen = () => {
   };
 
   const confirmPublishAndCertify = async () => {
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (!online) {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
+
+      const persistedUri = await persistLocalImage(photoUri);
+      const additionalData = {
+        idRecinto: tableData?.idRecinto || tableData.locationId,
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
+        location: tableData?.location || 'Bolivia',
+        userId: userData?.id || 'unknown',
+        userName: userFullName,
+        role: 'witness',
+      };
+      const electoralData = {
+        partyResults: partyResults || [],
+        voteSummaryResults: voteSummaryResults || [],
+      };
+
+      await enqueue({
+        type: 'publishActa',
+        payload: {
+          imageUri: persistedUri,
+          aiAnalysis: aiAnalysis || {},
+          electoralData,
+          additionalData,
+          tableData: {
+            codigo: tableData?.codigo,
+            idRecinto: tableData?.idRecinto,
+          },
+        },
+      });
+      setShowConfirmModal(false);
+      setStep(0);
+      navigation.replace('OfflinePendingScreen');
+      return;
+    }
     setStep(1);
 
     try {
@@ -350,7 +471,7 @@ const PhotoConfirmationScreen = () => {
       const privateKey = userData?.privKey;
 
       // 4. Crear NFT en blockchain
-      const isRegistered = await oracleReads.isRegistered(
+      let isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
         1,
@@ -364,7 +485,7 @@ const PhotoConfirmationScreen = () => {
           oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
         );
 
-        const isRegistered = await oracleReads.isRegistered(
+        isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
           20,
@@ -437,7 +558,6 @@ const PhotoConfirmationScreen = () => {
         if (!attestationSuccess) {
         }
       } else {
-
       }
 
       // 6. Navegar a pantalla de éxito con datos de IPFS
@@ -487,11 +607,11 @@ const PhotoConfirmationScreen = () => {
     //}
   };
 
-  const closeModal = () => {
+  const closeModal = (goBack = false) => {
     setShowConfirmModal(false);
     setStep(0);
+    if (goBack) navigation.goBack();
   };
-
   const closeInfoModal = () => {
     setInfoModalData({
       visible: false,
@@ -499,6 +619,8 @@ const PhotoConfirmationScreen = () => {
       message: '',
     });
   };
+
+
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -536,19 +658,22 @@ const PhotoConfirmationScreen = () => {
 
       {/* Main Content */}
       <View style={styles.content}>
-        <CText style={styles.mainText}>
-          {I18nStrings.i}
-          <CText style={styles.mainTextBold}> {userFullName}</CText>
-        </CText>
+        {!showConfirmModal && !showDuplicateModal && (
+          <>
+            <CText style={styles.mainText}>
+              {I18nStrings.i}
+              <CText style={styles.mainTextBold}> {userFullName}</CText>
+            </CText>
 
-        <TouchableOpacity
-          style={styles.publishButton}
-          onPress={verifyAndUpload}>
-          <CText style={styles.publishButtonText}>
-            {I18nStrings.publishAndCertify}
-          </CText>
-        </TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.publishButton}
+              onPress={verifyAndUpload}>
+              <CText style={styles.publishButtonText}>
+                {I18nStrings.publishAndCertify}
+              </CText>
+            </TouchableOpacity>
+          </>
+        )}
         <CText style={styles.confirmationText}>
           {I18nStrings.actaCorrectConfirmation
             .replace(
@@ -588,7 +713,7 @@ const PhotoConfirmationScreen = () => {
         visible={showConfirmModal}
         transparent
         animationType="fade"
-        onRequestClose={closeModal}>
+        onRequestClose={() => closeModal(true)}>
         <View style={modalStyles.modalOverlay}>
           <View style={modalStyles.modalContainer}>
             {step === 0 && (
@@ -600,14 +725,21 @@ const PhotoConfirmationScreen = () => {
                     color="#da2a2a"
                   />
                 </View>
-                <View style={modalStyles.spacer} />
-                <CText style={modalStyles.confirmTitle}>
-                  {I18nStrings.publishAndCertifyConfirmation}
+
+                <CText style={modalStyles.confirmBody}>
+                  <CText style={modalStyles.boldText}>Yo {userFullName}</CText>
+                  {'\n'}
+                  Certifico que los datos que ingreso coinciden con la foto del
+                  acta de la mesa y declaro que no he{' '}
+                  <CText style={modalStyles.boldText}>
+                    inventado ni modificado
+                  </CText>{' '}
+                  información.
                 </CText>
                 <View style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     style={modalStyles.cancelButton}
-                    onPress={closeModal}>
+                    onPress={() => closeModal(true)}>
                     <CText style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
@@ -688,6 +820,19 @@ const modalStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: getResponsiveSize(16, 20, 32),
+  },
+  confirmBody: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4F4F4F',
+    textAlign: 'justify',
+    lineHeight: getResponsiveSize(20, 24, 28),
+    marginBottom: getResponsiveSize(14, 18, 22),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    alignSelf: 'stretch',
+  },
+  boldText: {
+    fontWeight: '700',
+    color: '#2F2F2F',
   },
   modalContainer: {
     backgroundColor: '#fff',
