@@ -239,7 +239,7 @@ describe('Tests de Estados y Props', () => {
       await waitFor(() => {
         expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
         // El modal se muestra pero con el testID del CustomModal, no específico
-        expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+        expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
       });
     });
     test('debe mantener consistencia en re-renders', async () => {

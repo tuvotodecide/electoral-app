@@ -73,10 +73,45 @@ jest.mock('react-native', () => ({
   },
 }));
 
-// Mock TurboModuleRegistry to prevent DevMenu errors
+// Shared mock for Native Animated module operations
+const mockNativeAnimatedModule = {
+  startOperationBatch: jest.fn(),
+  finishOperationBatch: jest.fn(),
+  createAnimatedNode: jest.fn(),
+  updateAnimatedNodeConfig: jest.fn(),
+  getValue: jest.fn(),
+  startListeningToAnimatedNodeValue: jest.fn(),
+  stopListeningToAnimatedNodeValue: jest.fn(),
+  connectAnimatedNodes: jest.fn(),
+  disconnectAnimatedNodes: jest.fn(),
+  startAnimatingNode: jest.fn(),
+  stopAnimation: jest.fn(),
+  setAnimatedNodeValue: jest.fn(),
+  setAnimatedNodeOffset: jest.fn(),
+  flattenAnimatedNodeOffset: jest.fn(),
+  extractAnimatedNodeOffset: jest.fn(),
+  connectAnimatedNodeToView: jest.fn(),
+  disconnectAnimatedNodeFromView: jest.fn(),
+  restoreDefaultValues: jest.fn(),
+  dropAnimatedNode: jest.fn(),
+  addAnimatedEventToView: jest.fn(),
+  removeAnimatedEventFromView: jest.fn(),
+  addListener: jest.fn(),
+  removeListeners: jest.fn(),
+  queueAndExecuteBatchedOperations: jest.fn(),
+};
+
+// Mock TurboModuleRegistry to prevent DevMenu errors and provide animated module
 jest.mock('react-native/Libraries/TurboModule/TurboModuleRegistry', () => ({
   getEnforcing: jest.fn(() => ({})),
-  get: jest.fn(() => null),
+  get: jest.fn(() => mockNativeAnimatedModule),
+}));
+
+// Ensure legacy animated module resolves to our mock
+jest.mock('react-native/Libraries/Animated/shouldUseTurboAnimatedModule', () => jest.fn(() => false));
+jest.mock('react-native/src/private/specs_DEPRECATED/modules/NativeAnimatedModule', () => ({
+  __esModule: true,
+  default: mockNativeAnimatedModule,
 }));
 
 // Mock DevMenu specifically

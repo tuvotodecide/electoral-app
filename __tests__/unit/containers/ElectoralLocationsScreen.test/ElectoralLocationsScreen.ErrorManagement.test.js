@@ -192,7 +192,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -202,7 +202,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -214,7 +214,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -226,7 +226,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
     });
@@ -241,7 +241,7 @@ describe('4. Tests de Manejo de Errores', () => {
         
         await waitFor(() => {
           // Los datos corruptos se tratan como datos vacíos y muestran el modal de permisos
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -253,7 +253,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -265,7 +265,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
     });
@@ -280,7 +280,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
 
@@ -293,7 +293,7 @@ describe('4. Tests de Manejo de Errores', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          expect(getByTestId('customModalPrimaryButton')).toBeTruthy();
+          expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
         });
       });
     });

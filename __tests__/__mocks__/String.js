@@ -1,5 +1,5 @@
 // Mock para los strings de i18n
-const strings = {
+const baseStrings = {
   // Electoral Locations
   electoralLocations: 'Recintos Electorales',
   gettingLocation: 'Obteniendo ubicación...',
@@ -35,6 +35,46 @@ const strings = {
   delete: 'Eliminar',
   confirm: 'Confirmar',
   continueButton: 'Continuar',
+  table: 'Mesa',
+  reviewPhotoPlease: 'Revisa la fotografía del acta electoral',
+  reviewActaData: 'Revisa los datos del acta electoral',
+  saved: 'Guardado',
+  changesSavedSuccessfully: 'Los cambios se guardaron correctamente',
+  valid: 'Válidos',
+  blank: 'Blancos',
+  null: 'Nulos',
+  unidad: 'Unidad Cívica',
+  pdc: 'PDC',
+  morena: 'Morena',
+  partyUnit: 'Unidad Cívica',
+  partyMasIpsp: 'MAS-IPSP',
+  partyPdc: 'PDC',
+  partyMorena: 'Morena',
+  takePhoto: 'Tomar Foto',
+  preparingCamera: 'Preparando cámara...',
+  cameraErrorTitle: 'Error de cámara',
+  cameraErrorMessage: 'No se pudo acceder a la cámara',
+  cameraNotAvailable: 'Cámara no disponible',
+  
+  // UnifiedTableScreen strings
+  searchTable: 'Buscar Mesa',
+  chooseTableText: 'Por favor, elige una mesa',
+  chooseTablePlease: 'Por favor, elige una mesa',
+  tableCodePlaceholder: 'Buscar mesa por número o código...',
+  searchTablePlaceholder: 'Buscar mesa por número o código...',
+  listBasedOnLocation: 'Lista basada en ubicación',
+  loadingTables: 'Cargando mesas...',
+  couldNotLoadTables: 'No se pudieron cargar las mesas',
+  errorLoadingTables: 'Error al cargar las mesas',
+  goBack: 'Atrás',
+  correctData: 'Corregir datos',
+  validVotes: 'Votos válidos',
+  blankVotes: 'Votos blancos',
+  nullVotes: 'Votos nulos',
 };
+
+const strings = value => global.String(value);
+
+Object.assign(strings, baseStrings);
 
 export default strings;

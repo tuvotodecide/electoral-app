@@ -248,7 +248,7 @@ describe('ElectoralLocationsScreen - Tests de Interacción del Usuario', () => {
         
         await waitFor(() => {
           // El modal se muestra cuando hay un error
-          const modalButton = getByTestId('customModalPrimaryButton');
+          const modalButton = getByTestId('electoralLocationsModalCloseButton');
           expect(modalButton).toBeTruthy();
           fireEvent.press(modalButton);
         });
@@ -260,7 +260,7 @@ describe('ElectoralLocationsScreen - Tests de Interacción del Usuario', () => {
         
         await waitFor(() => {
           // El modal de permisos se muestra automáticamente al negar permisos en Android
-          const modalButton = getByTestId('customModalPrimaryButton');
+          const modalButton = getByTestId('electoralLocationsModalCloseButton');
           expect(modalButton).toBeTruthy();
         });
       });
