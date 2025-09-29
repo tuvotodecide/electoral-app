@@ -75,7 +75,7 @@ export const PartyTableRow = ({
 
 // Party Table Component
 export const PartyTable = ({
-  partyResults,
+  partyResults = [],
   isEditing = false,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',

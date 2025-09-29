@@ -272,7 +272,7 @@ const WhichIsCorrectScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView style={styles.container} addTabPadding={false}>
       <UniversalHeader
         colors={colors}
         onBack={handleBack}

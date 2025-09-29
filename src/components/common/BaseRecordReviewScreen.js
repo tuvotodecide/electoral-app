@@ -67,7 +67,7 @@ const BaseRecordReviewScreen = ({
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
     return (
-      <CSafeAreaView style={styles.container}>
+      <CSafeAreaView style={styles.container} addTabPadding={false}>
         {/* Header */}
         <RecordHeader onBack={onBack} title={headerTitle} colors={colors} />
 
@@ -173,7 +173,9 @@ const BaseRecordReviewScreen = ({
                       : styles.tabletTableColumnVertical
                   }>
                   <PartyTable
-                    partyResults={partyResults}
+                    partyResults={
+                      Array.isArray(partyResults) ? partyResults : []
+                    }
                     isEditing={isEditing}
                     onUpdate={onPartyUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
@@ -188,7 +190,11 @@ const BaseRecordReviewScreen = ({
                       : styles.tabletTableColumnVertical
                   }>
                   <VoteSummaryTable
-                    voteSummaryResults={voteSummaryResults}
+                    voteSummaryResults={
+                      Array.isArray(voteSummaryResults)
+                        ? voteSummaryResults
+                        : []
+                    }
                     isEditing={isEditing}
                     onUpdate={onVoteSummaryUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}

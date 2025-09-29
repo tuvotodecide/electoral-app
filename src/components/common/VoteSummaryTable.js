@@ -75,7 +75,7 @@ export const VoteSummaryRow = ({
 
 // Vote Summary Table Component
 export const VoteSummaryTable = ({
-  voteSummaryResults,
+  voteSummaryResults=[],
   isEditing = false,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',

@@ -67,7 +67,7 @@ export const PhotoContainer = ({
           : styles.photoContainer
       }>
       <Image
-        source={{uri: photoUri}}
+        source={{uri: normalizeUri(photoUri)}}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
       />
@@ -90,17 +90,29 @@ const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
     setBox({w: Math.round(width), h: Math.round(height)});
   }, []);
 
+  const normalizeUri = u => {
+    if (!u) return '';
+    if (u.startsWith('ipfs://')) {
+      return `https://ipfs.io/ipfs/${u.replace('ipfs://', '')}`;
+    }
+    if (u.startsWith('file://')) return u;
+    if (u.startsWith('content://')) return u;
+    if (/^https?:\/\//i.test(u)) return u;
+
+    if (u[0] === '/' || /^[A-Za-z]:\\/.test(u)) return `file://${u}`;
+    return u;
+  };
+
+  const normalizedUri = normalizeUri(photoUri);
+
   useEffect(() => {
-    if (!photoUri) return;
-    const uri = photoUri.startsWith('file://')
-      ? photoUri
-      : `file://${photoUri}`;
+    if (!normalizedUri) return;
     Image.getSize(
-      uri,
+      normalizedUri,
       (w, h) => setImg({w, h}),
-      () => setImg({w: 0, h: 0}),
+      () => setImg({w: 1, h: 1}),
     );
-  }, [photoUri]);
+  }, [normalizedUri]);
   const isRotated = rotation % 180 !== 0;
   const baseIw = isRotated ? img.h : img.w;
   const baseIh = isRotated ? img.w : img.h;
@@ -175,7 +187,7 @@ const ZoomablePhotoContainer = ({photoUri, useAspectRatio = false}) => {
           panToMove
           enableDoubleClickZoom>
           <Image
-            source={{uri: photoUri}}
+            source={{uri: normalizedUri}}
             style={{
               width: isRotated ? contentH : contentW,
               height: isRotated ? contentW : contentH,

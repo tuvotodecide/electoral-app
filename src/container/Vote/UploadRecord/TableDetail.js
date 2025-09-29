@@ -16,6 +16,7 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
+import CAlert from '../../../components/common/CAlert';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -49,6 +50,13 @@ export default function TableDetail({navigation, route}) {
   const shouldCenter = !(existingRecords && existingRecords.length > 0);
   const mesaInfo = route.params?.mesaInfo || null;
   const totalRecords = route.params?.totalRecords || 0;
+  const hasRecords =
+    Array.isArray(existingRecords) && existingRecords.length > 0;
+
+  const recordsCount = hasRecords ? existingRecords.length : 0;
+  const recordsMsg = `La mesa ya tiene ${recordsCount} acta${
+    recordsCount === 1 ? '' : 's'
+  } publicada${recordsCount === 1 ? '' : 's'}`;
 
   // Normalize mesa data structure
   const mesa = {
@@ -115,29 +123,77 @@ export default function TableDetail({navigation, route}) {
     !!route.params?.capturedImage,
   );
 
-  // Navega a la cámara interna
   const handleTakePhoto = () => {
     const finalTableData = {
       ...mesa,
       ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      // Ensure multiple ways to access mesa number
+      // claves redundantes para compatibilidad
       tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
       numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
       number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
     };
 
+    const count = Array.isArray(existingRecords) ? existingRecords.length : 0;
+
+    if (count === 0) {
+      try {
+        navigation.navigate(StackNav.CameraScreen, {
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          mesa: finalTableData,
+        });
+      } catch {
+        navigation.navigate('CameraScreen', {
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          mesa: finalTableData,
+        });
+      }
+      return;
+    }
+
+    if (count === 1) {
+      const record = existingRecords[0];
+      try {
+        navigation.navigate(StackNav.PhotoReviewScreen, {
+          mesa: finalTableData,
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          existingRecord: record,
+          isViewOnly: true,
+          photoUri: record?.actaImage,
+        });
+      } catch {
+        navigation.navigate('PhotoReviewScreen', {
+          mesa: finalTableData,
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          existingRecord: record,
+          isViewOnly: true,
+          photoUri: record?.actaImage,
+        });
+      }
+      return;
+    }
+
+    // >1 actas -> WhichIsCorrectScreen
     try {
-      navigation.navigate(StackNav.CameraScreen, {
+      navigation.navigate(StackNav.WhichIsCorrectScreen, {
+        mesa: finalTableData,
         tableData: finalTableData,
         mesaData: finalTableData,
-        mesa: finalTableData,
+        existingRecords,
+        totalRecords,
+        fromTableDetail: true,
       });
-    } catch (error) {
-      // Fallback navigation
-      navigation.navigate('CameraScreen', {
+    } catch {
+      navigation.navigate('WhichIsCorrectScreen', {
+        mesa: finalTableData,
         tableData: finalTableData,
         mesaData: finalTableData,
-        mesa: finalTableData,
+        existingRecords,
+        totalRecords,
+        fromTableDetail: true,
       });
     }
   };
@@ -235,54 +291,17 @@ export default function TableDetail({navigation, route}) {
 
             {/* Right Column: AI Info and Photo Button OR Existing Records */}
             <View style={stylesx.rightColumn}>
-              {existingRecords && existingRecords.length > 0 ? (
+              {recordsCount > 0 ? (
                 <View style={stylesx.existingRecordsContainer}>
-                  <CText style={stylesx.existingRecordsTitle}>
-                    Actas Ya Atestiguadas ({totalRecords})
-                  </CText>
-                  <CText style={stylesx.existingRecordsSubtitle}>
+                  {/* <CText style={stylesx.existingRecordsSubtitle}>
                     Esta mesa ya tiene actas registradas
-                  </CText>
-
-                  {existingRecords.map((record, index) => (
-                    <TouchableOpacity
-                      key={`${record.recordId}-${index}`}
-                      style={stylesx.recordCard}
-                      onPress={() => {
-                        navigation.navigate(StackNav.PhotoReviewScreen, {
-                          mesa: mesa,
-                          existingRecord: record,
-                          isViewOnly: true,
-                        });
-                      }}>
-                      <View style={stylesx.recordHeader}>
-                        <CText style={stylesx.recordTitle}>
-                          Acta #{index + 1}
-                        </CText>
-                      </View>
-
-                      {record.actaImage && (
-                        <View style={stylesx.actaImageContainer}>
-                          <Image
-                            source={{uri: record.actaImage}}
-                            style={stylesx.actaImage}
-                            resizeMode="cover"
-                          />
-                          <View style={stylesx.imageOverlay}>
-                            <Ionicons name="eye" size={20} color="#fff" />
-                          </View>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                  </CText> */}
+                  <CAlert status="success" message={recordsMsg} />
 
                   <TouchableOpacity
                     style={stylesx.addNewRecordBtn}
                     onPress={handleTakePhoto}>
-                    <Ionicons name="add-circle" size={20} color="#4F9858" />
-                    <CText style={stylesx.addNewRecordText}>
-                      Agregar Nueva
-                    </CText>
+                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -314,143 +333,90 @@ export default function TableDetail({navigation, route}) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View
-              style={[
-                stylesx.instructionContainer,
-                shouldCenter && {marginTop: 0},
-              ]}>
-              <CText style={[stylesx.bigBold, {color: 'black'}]}>
-                {String.ensureAssignedTable}
-              </CText>
-              {/* <CText
+            <View style={stylesx.middleWrap}>
+              <View
+                style={[
+                  stylesx.instructionContainer,
+                  shouldCenter && {marginTop: 0},
+                ]}>
+                <CText style={[stylesx.bigBold, {color: 'black'}]}>
+                  {String.ensureAssignedTable}
+                </CText>
+                {/* <CText
                 style={[
                   stylesx.subtitle,
                   {color: colors.grayScale500 || '#8B9399'},
                 ]}>
                 {String.verifyTableInformation}
               </CText> */}
-            </View>
+              </View>
 
-            <View style={stylesx.tableCard}>
-              <View style={stylesx.tableCardHeader}>
-                <MaterialIcons
-                  name="how-to-vote"
-                  size={getResponsiveSize(40, 48, 56)}
-                  color="#000"
-                  style={stylesx.downloadIcon}
-                />
-                <View style={stylesx.tableCardContent}>
-                  <CText style={stylesx.tableCardTitle}>
-                    {String.table} {mesa.numero}
-                  </CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    {String.tableCode}{':'} {mesa.codigo}
-                  </CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    {String.precinct}{':'} {mesa.colegio}
-                  </CText>
+              <View style={stylesx.tableCard}>
+                <View style={stylesx.tableCardHeader}>
+                  <MaterialIcons
+                    name="how-to-vote"
+                    size={getResponsiveSize(40, 48, 56)}
+                    color="#000"
+                    style={stylesx.downloadIcon}
+                  />
+                  <View style={stylesx.tableCardContent}>
+                    <CText style={stylesx.tableCardTitle}>
+                      {String.table} {mesa.numero}
+                    </CText>
+                    <CText style={stylesx.tableCardDetail}>
+                      {String.tableCode}
+                      {':'} {mesa.codigo}
+                    </CText>
+                    <CText style={stylesx.tableCardDetail}>
+                      {String.precinct}
+                      {':'} {mesa.colegio}
+                    </CText>
+                  </View>
                 </View>
               </View>
-            </View>
 
-            {/* Show existing attestations if available */}
-            {existingRecords && existingRecords.length > 0 && (
-              <View style={stylesx.existingRecordsContainer}>
-                <CText style={stylesx.existingRecordsTitle}>
-                  Actas Ya Atestiguadas ({totalRecords})
-                </CText>
-                <CText style={stylesx.existingRecordsSubtitle}>
+              {/* Show existing attestations if available */}
+              {recordsCount > 0 && (
+                <View style={stylesx.existingRecordsContainer}>
+                  {/* <CText style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
-                </CText>
+                </CText> */}
 
-                {existingRecords.map((record, index) => (
+                  <CAlert status="success" message={recordsMsg} />
                   <TouchableOpacity
-                    key={`${record.recordId}-${index}`}
-                    style={stylesx.recordCard}
-                    onPress={() => {
-                      // Navigate to detail view or show full image
-                      navigation.navigate(StackNav.PhotoReviewScreen, {
-                        mesa: mesa,
-                        existingRecord: record,
-                        isViewOnly: true,
-                      });
-                    }}>
-                    <View style={stylesx.recordHeader}>
-                      <CText style={stylesx.recordTitle}>
-                        Acta #{index + 1}
-                      </CText>
-                      <CText style={stylesx.recordId}>
-                        ID:{' '}
-                        {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}
-                        ...
-                      </CText>
-                    </View>
-
-                    {record.actaImage && (
-                      <View style={stylesx.actaImageContainer}>
-                        <Image
-                          source={{uri: record.actaImage}}
-                          style={stylesx.actaImage}
-                          resizeMode="cover"
-                        />
-                        <View style={stylesx.imageOverlay}>
-                          <Ionicons name="eye" size={24} color="#fff" />
-                          <CText style={stylesx.viewImageText}>Ver Acta</CText>
-                        </View>
-                      </View>
-                    )}
-
-                    {record.partyResults && record.partyResults.length > 0 && (
-                      <View style={stylesx.recordSummary}>
-                        <CText style={stylesx.recordSummaryText}>
-                          {record.partyResults.length} partidos registrados
-                        </CText>
-                      </View>
-                    )}
+                    style={stylesx.addNewRecordBtn}
+                    onPress={handleTakePhoto}>
+                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
                   </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity
-                  style={stylesx.addNewRecordBtn}
-                  onPress={handleTakePhoto}>
-                  <Ionicons
-                    name="add-circle"
-                    size={24}
-                    color="#4F9858"
-                    style={stylesx.addIcon}
-                  />
-                  <CText style={stylesx.addNewRecordText}>
-                    Agregar Nueva Acta
-                  </CText>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Show photo taking section only if no existing records */}
-            {(!existingRecords || existingRecords.length === 0) && (
-              <>
-                <View style={stylesx.infoAI}>
-                  <Ionicons
-                    name="sparkles"
-                    size={getResponsiveSize(16, 19, 22)}
-                    color={'#226678'}
-                    style={stylesx.aiIcon}
-                  />
-                  <CText style={stylesx.iaText}>
-                    {String.aiWillSelectClearestPhoto}
-                  </CText>
                 </View>
+              )}
 
-                <TouchableOpacity
-                  style={stylesx.takePhotoBtn}
-                  activeOpacity={0.85}
-                  onPress={handleTakePhoto}>
-                  <CText style={stylesx.takePhotoBtnText}>
-                    {String.takePhoto}
-                  </CText>
-                </TouchableOpacity>
-              </>
-            )}
+              {/* Show photo taking section only if no existing records */}
+              {(!existingRecords || existingRecords.length === 0) && (
+                <>
+                  <View style={stylesx.infoAI}>
+                    <Ionicons
+                      name="sparkles"
+                      size={getResponsiveSize(16, 19, 22)}
+                      color={'#226678'}
+                      style={stylesx.aiIcon}
+                    />
+                    <CText style={stylesx.iaText}>
+                      {String.aiWillSelectClearestPhoto}
+                    </CText>
+                  </View>
+
+                  <TouchableOpacity
+                    style={stylesx.takePhotoBtn}
+                    activeOpacity={0.85}
+                    onPress={handleTakePhoto}>
+                    <CText style={stylesx.takePhotoBtnText}>
+                      {String.takePhoto}
+                    </CText>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </>
         )}
       </View>
@@ -502,6 +468,10 @@ const stylesx = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  middleWrap: {
+    flex: 1,
+    justifyContent: 'center', // centra vertical
   },
   scrollableContent: {
     flex: 1,
@@ -788,11 +758,8 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#4F9858',
     borderRadius: getResponsiveSize(8, 10, 12),
-    borderWidth: 2,
-    borderColor: '#4F9858',
-    borderStyle: 'dashed',
     padding: getResponsiveSize(12, 16, 18),
     marginTop: getResponsiveSize(8, 10, 12),
   },
@@ -802,7 +769,7 @@ const stylesx = StyleSheet.create({
   addNewRecordText: {
     fontSize: getResponsiveSize(15, 16, 17),
     fontWeight: '600',
-    color: '#4F9858',
+    color: '#fff',
   },
   centerVertically: {
     justifyContent: 'center',

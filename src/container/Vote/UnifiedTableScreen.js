@@ -87,71 +87,6 @@ const UnifiedTableScreen = ({navigation, route}) => {
     }
   }, [route?.params?.locationId]);
 
-  //const loadTablesFromApi = async (locationId) => {
-  //  try {
-  //    setIsLoading(true);
-  //
-  //
-  //    const response = await axios.get(
-  //      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`
-  //    );
-  //    //const response = await axios.get(
-  //    //  `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
-  //    //);
-  //
-  //
-  //    if (response.data && response.data.tables) {
-  //
-  //
-  //      // Store location data for TableCard components
-  //      setLocationData({
-  //        name: response.data.name,
-  //        address: response.data.address,
-  //        code: response.data.code,
-  //      });
-  //
-  //      setMesas(response.data.tables);
-  //    } else if (response.data && response.data.data && response.data.data.tables) {
-  //
-  //
-  //      // Store location data for TableCard components
-  //      setLocationData({
-  //        name: response.data.data.name,
-  //        address: response.data.data.address,
-  //        code: response.data.data.code,
-  //      });
-  //
-  //      setMesas(response.data.data.tables);
-  //    } else {
-  //
-  //      showModal('info', String.info, String.couldNotLoadTables);
-  //    }
-  //  } catch (error) {
-  //
-  //    showModal('error', String.error, String.errorLoadingTables);
-  //  } finally {
-  //    setIsLoading(false);
-  //  }
-  //};
-
-  const loadTables = async () => {
-    try {
-      setIsLoading(true);
-
-      const response = await fetchMesas();
-
-      if (response.success) {
-        setMesas(response.data);
-      } else {
-        showModal('error', String.error, String.couldNotLoadTables);
-      }
-    } catch (error) {
-      showModal('error', String.error, String.errorLoadingTables);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
@@ -200,15 +135,11 @@ const UnifiedTableScreen = ({navigation, route}) => {
     };
 
     try {
-      // Check if this table has any actas
       const mesaId = processedMesa.id || processedMesa.numero;
 
-      // Try to get actas for this table
       const hasActas = await checkTableHasActas(mesaId);
 
       if (hasActas) {
-        // Table has actas, go to witness/attestation flow
-
         navigation.navigate(StackNav.WhichIsCorrectScreen, {
           tableData: processedMesa,
           mesa: processedMesa,
@@ -219,8 +150,6 @@ const UnifiedTableScreen = ({navigation, route}) => {
           isFromUnifiedFlow: true,
         });
       } else {
-        // Table has no actas, go to upload flow
-
         navigation.navigate(StackNav.TableDetail, {
           tableData: processedMesa,
           mesa: processedMesa,
