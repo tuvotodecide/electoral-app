@@ -1,8 +1,9 @@
 // Mock para CText
-import React from 'react';
+const React = require('react');
+const {Text} = require('react-native');
 
-const CText = ({ children, testID, style, ...props }) => {
-  return React.createElement('Text', { testID, style, ...props }, children);
+const CText = ({children, testID, style, ...props}) => {
+  return React.createElement(Text, {testID, style, ...props}, children);
 };
 
-export default CText;
+module.exports = CText;

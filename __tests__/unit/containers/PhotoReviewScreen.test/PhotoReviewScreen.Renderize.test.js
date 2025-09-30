@@ -2,14 +2,16 @@ import React from 'react';
 import {render} from '@testing-library/react-native';
 import PhotoReviewScreen from '../../../../src/container/Vote/UploadRecord/PhotoReviewScreen';
 
-jest.mock('react-redux', () => ({
-  useSelector: jest.fn(),
-}));
-
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: jest.fn(),
-  useRoute: jest.fn(),
-}));
+jest.mock(
+  'react-redux',
+  () => jest.requireActual('../../../__mocks__/react-redux'),
+  {virtual: true},
+);
+jest.mock(
+  '@react-navigation/native',
+  () => jest.requireActual('../../../__mocks__/@react-navigation/native'),
+  {virtual: true},
+);
 
 jest.mock(
   '../../../../src/components/common/BaseRecordReviewScreen',
@@ -26,48 +28,12 @@ jest.mock(
   () => require('../../../__mocks__/String').default,
 );
 
-const {useSelector} = require('react-redux');
-const {useNavigation, useRoute} = require('@react-navigation/native');
-
-const buildMockRoute = (overrides = {}) => ({
-  params: {
-    photoUri: 'file:///test/photo.jpg',
-    tableData: {
-      tableNumber: '45',
-      numero: '45',
-      number: '45',
-      recinto: 'Colegio Central',
-    },
-    ...overrides,
-  },
-});
-
-const themeState = {
-  theme: {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#888888',
-    primary: '#4F9858',
-  },
-};
-
-const mockNavigation = {
-  navigate: jest.fn(),
-  goBack: jest.fn(),
-};
+const {setupPhotoReviewBaseMocks} = require('./testUtils');
 
 describe('PhotoReviewScreen - Renderizado', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-
-    useSelector.mockImplementation(selector =>
-      selector({
-        theme: themeState,
-      }),
-    );
-
-    useNavigation.mockReturnValue(mockNavigation);
-    useRoute.mockReturnValue(buildMockRoute());
+    setupPhotoReviewBaseMocks();
   });
 
   test('debe renderizar BaseRecordReviewScreen con encabezado correcto', () => {

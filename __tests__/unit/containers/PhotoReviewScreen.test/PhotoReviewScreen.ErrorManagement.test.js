@@ -3,14 +3,16 @@ import {render, fireEvent, act} from '@testing-library/react-native';
 import PhotoReviewScreen from '../../../../src/container/Vote/UploadRecord/PhotoReviewScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
-jest.mock('react-redux', () => ({
-  useSelector: jest.fn(),
-}));
-
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: jest.fn(),
-  useRoute: jest.fn(),
-}));
+jest.mock(
+  'react-redux',
+  () => jest.requireActual('../../../__mocks__/react-redux'),
+  {virtual: true},
+);
+jest.mock(
+  '@react-navigation/native',
+  () => jest.requireActual('../../../__mocks__/@react-navigation/native'),
+  {virtual: true},
+);
 
 jest.mock(
   '../../../../src/components/common/BaseRecordReviewScreen',
@@ -27,39 +29,24 @@ jest.mock(
   () => require('../../../__mocks__/String').default,
 );
 
-const {useSelector} = require('react-redux');
-const {useNavigation, useRoute} = require('@react-navigation/native');
-
-const themeState = {
-  theme: {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#888888',
-    primary: '#4F9858',
-  },
-};
-
-let mockNavigation;
+const {
+  setupPhotoReviewBaseMocks,
+  createMockNavigation,
+  buildMockRoute,
+} = require('./testUtils');
 
 describe('PhotoReviewScreen - Manejo de Errores y Casos Límite', () => {
+  let mockNavigation;
+
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockNavigation = {
-      navigate: jest.fn(),
-      goBack: jest.fn(),
-    };
-
-    useSelector.mockImplementation(selector =>
-      selector({
-        theme: themeState,
-      }),
-    );
+    mockNavigation = createMockNavigation();
   });
 
   test('debe manejar ausencia total de route params sin fallar', () => {
+    setupPhotoReviewBaseMocks({navigation: mockNavigation});
+    const {useRoute} = require('@react-navigation/native');
     useRoute.mockReturnValue({});
-    useNavigation.mockReturnValue(mockNavigation);
 
     const {getByTestId} = render(<PhotoReviewScreen />);
     const base = getByTestId('photoReviewScreenBase');
@@ -70,8 +57,9 @@ describe('PhotoReviewScreen - Manejo de Errores y Casos Límite', () => {
   });
 
   test('debe manejar route con params vacíos y navegar con valores por defecto', () => {
+    setupPhotoReviewBaseMocks({navigation: mockNavigation});
+    const {useRoute} = require('@react-navigation/native');
     useRoute.mockReturnValue({params: {}});
-    useNavigation.mockReturnValue(mockNavigation);
 
     const {getByTestId} = render(<PhotoReviewScreen />);
 
@@ -89,8 +77,9 @@ describe('PhotoReviewScreen - Manejo de Errores y Casos Límite', () => {
   });
 
   test('debe permitir cerrar modal sin importar el estado', () => {
-    useRoute.mockReturnValue({params: {}});
-    useNavigation.mockReturnValue(mockNavigation);
+    setupPhotoReviewBaseMocks({navigation: mockNavigation});
+    const {useRoute} = require('@react-navigation/native');
+    useRoute.mockReturnValue(buildMockRoute({photoUri: undefined}));
 
     const {getByTestId} = render(<PhotoReviewScreen />);
 

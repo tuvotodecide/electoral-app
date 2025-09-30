@@ -3,14 +3,16 @@ import {render, fireEvent, act} from '@testing-library/react-native';
 import PhotoReviewScreen from '../../../../src/container/Vote/UploadRecord/PhotoReviewScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
-jest.mock('react-redux', () => ({
-  useSelector: jest.fn(),
-}));
-
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: jest.fn(),
-  useRoute: jest.fn(),
-}));
+jest.mock(
+  'react-redux',
+  () => jest.requireActual('../../../__mocks__/react-redux'),
+  {virtual: true},
+);
+jest.mock(
+  '@react-navigation/native',
+  () => jest.requireActual('../../../__mocks__/@react-navigation/native'),
+  {virtual: true},
+);
 
 jest.mock(
   '../../../../src/components/common/BaseRecordReviewScreen',
@@ -27,61 +29,24 @@ jest.mock(
   () => require('../../../__mocks__/String').default,
 );
 
-const {useSelector} = require('react-redux');
-const {useNavigation, useRoute} = require('@react-navigation/native');
-
-const buildMockRoute = (overrides = {}) => ({
-  params: {
-    photoUri: 'file:///test/photo.jpg',
-    tableData: {
-      tableNumber: '45',
-      numero: '45',
-      number: '45',
-      recinto: 'Colegio Central',
-    },
-    ...overrides,
-  },
-});
-
-const themeState = {
-  theme: {
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#888888',
-    primary: '#4F9858',
-  },
-};
-
-let mockNavigation;
+const {setupPhotoReviewBaseMocks, createMockNavigation} = require('./testUtils');
 
 describe('PhotoReviewScreen - Interacciones de Usuario', () => {
+  let mockNavigation;
+
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockNavigation = {
-      navigate: jest.fn(),
-      goBack: jest.fn(),
-    };
-
-    useSelector.mockImplementation(selector =>
-      selector({
-        theme: themeState,
-      }),
-    );
-
-    useNavigation.mockReturnValue(mockNavigation);
-    useRoute.mockReturnValue(buildMockRoute());
+    mockNavigation = createMockNavigation();
+    setupPhotoReviewBaseMocks({navigation: mockNavigation});
   });
 
   test('debe mostrar modal al guardar cambios', () => {
     const {getByTestId} = render(<PhotoReviewScreen />);
 
-    // Activar edición
     act(() => {
       fireEvent.press(getByTestId('photoReviewScreenBaseActionButton_0'));
     });
 
-    // Guardar cambios
     act(() => {
       fireEvent.press(getByTestId('photoReviewScreenBaseActionButton_0'));
     });

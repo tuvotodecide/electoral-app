@@ -1,5 +1,5 @@
 // Mock para @react-navigation/native
-export const useNavigation = () => ({
+const createNavigation = () => ({
   navigate: jest.fn(),
   goBack: jest.fn(),
   setOptions: jest.fn(),
@@ -17,21 +17,28 @@ export const useNavigation = () => ({
   getParent: jest.fn(),
 });
 
-export const NavigationContainer = ({ children }) => children;
+const useNavigation = jest.fn(() => createNavigation());
 
-export const useFocusEffect = (callback) => {
-  // Mock implementation for useFocusEffect
-};
+const NavigationContainer = ({children}) => children;
 
-export const useRoute = () => ({
+const useFocusEffect = jest.fn();
+
+const useRoute = jest.fn(() => ({
   params: {},
   key: 'mockKey',
   name: 'MockScreen',
-});
+}));
 
-export default {
+module.exports = {
+  __esModule: true,
   useNavigation,
   NavigationContainer,
   useFocusEffect,
   useRoute,
+  default: {
+    useNavigation,
+    NavigationContainer,
+    useFocusEffect,
+    useRoute,
+  },
 };

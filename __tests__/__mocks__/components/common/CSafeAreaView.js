@@ -1,8 +1,9 @@
 // Mock para CSafeAreaView
-import React from 'react';
+const React = require('react');
+const {View} = require('react-native');
 
-const CSafeAreaView = ({ children, testID, style, ...props }) => {
-  return React.createElement('SafeAreaView', { testID, style, ...props }, children);
+const CSafeAreaView = ({children, testID = 'SafeAreaView', style, ...props}) => {
+  return React.createElement(View, {testID, style, ...props}, children);
 };
 
-export default CSafeAreaView;
+module.exports = CSafeAreaView;

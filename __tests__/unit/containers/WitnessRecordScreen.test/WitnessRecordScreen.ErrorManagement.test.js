@@ -1,109 +1,116 @@
+import './jestMocks';
+
 import React from 'react';
-import {render, waitFor} from '@testing-library/react-native';
-import axios from 'axios';
+import {render, waitFor, act} from '@testing-library/react-native';
 import WitnessRecordScreen from '../../../../src/container/Vote/WitnessRecord/WitnessRecord';
 
-jest.mock('axios');
-
-jest.mock(
-  '../../../../src/components/common/BaseSearchTableScreen',
-  () => require('../../../__mocks__/components/common/BaseSearchTableScreen').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CustomModal',
-  () => require('../../../__mocks__/components/common/CustomModal').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CText',
-  () => require('../../../__mocks__/components/common/CText').default,
-);
-
-jest.mock(
-  '../../../../src/hooks/useSearchTableLogic',
-  () => require('../../../__mocks__/hooks/useSearchTableLogic'),
-);
-
-jest.mock(
-  '../../../../src/data/mockMesas',
-  () => require('../../../__mocks__/data/mockMesas'),
-);
-
-jest.mock(
-  '../../../../src/i18n/String',
-  () => require('../../../__mocks__/String').default,
-);
-
-const {fetchMesas} = require('../../../../src/data/mockMesas');
-const {useSearchTableLogic} = require('../../../../src/hooks/useSearchTableLogic');
-
-const buildHookState = overrides => ({
-  colors: {
-    primary: '#4F9858',
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#666666',
-    primaryLight: '#E8F5E8',
-  },
-  searchText: '',
-  setSearchText: jest.fn(),
-  handleBack: jest.fn(),
-  handleNotificationPress: jest.fn(),
-  handleHomePress: jest.fn(),
-  handleProfilePress: jest.fn(),
-  ...overrides,
-});
+const {
+  buildNavigation,
+  buildRoute,
+  mockSearchLogic,
+  mockFetchMesasSuccess,
+  mockFetchMesasFailure,
+  mockAxiosTablesResponse,
+  mockAxiosTablesFailure,
+  flushPromises,
+} = require('./testUtils');
 
 describe('WitnessRecordScreen - Manejo de Errores', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useSearchTableLogic.mockReturnValue(buildHookState());
-    axios.get.mockResolvedValue({data: {tables: []}});
+    mockSearchLogic();
+    mockFetchMesasSuccess();
+    mockAxiosTablesResponse({data: {tables: []}});
   });
 
-  test('muestra modal informativo cuando fetchMesas no es exitoso', async () => {
-    fetchMesas.mockResolvedValue({success: false});
+  const renderScreen = ({navigation, route} = {}) => {
+    const navMock = navigation ?? buildNavigation();
+    const routeMock = route ?? buildRoute();
 
-    const {getByTestId} = render(
-      <WitnessRecordScreen navigation={{navigate: jest.fn(), goBack: jest.fn()}} route={{}} />,
-    );
+    return {
+      navigation: navMock,
+      route: routeMock,
+      ...render(<WitnessRecordScreen navigation={navMock} route={routeMock} />),
+    };
+  };
 
-    await waitFor(() => expect(getByTestId('witnessRecordModal').props.visible).toBe(true));
+  const waitForModalVisible = async getByTestId => {
+    const modal = await waitFor(() => getByTestId('witnessRecordModal'));
+    await waitFor(() => expect(modal.props.visible).toBe(true));
+    return modal;
+  };
 
-    const modal = getByTestId('witnessRecordModal');
+  test('muestra modal de error cuando fetchMesas responde con success=false', async () => {
+    mockFetchMesasSuccess([], false);
+
+    const {getByTestId} = renderScreen();
+    const modal = await waitForModalVisible(getByTestId);
+
     expect(modal.props.type).toBe('error');
     expect(modal.props.message).toBe('No se pudieron cargar las mesas');
   });
 
-  test('muestra mensaje de error cuando fetchMesas lanza una excepción', async () => {
-    fetchMesas.mockRejectedValue(new Error('network'));
+  test('muestra modal de error cuando fetchMesas lanza una excepción', async () => {
+    mockFetchMesasFailure(new Error('network'));
 
-    const {getByTestId} = render(
-      <WitnessRecordScreen navigation={{navigate: jest.fn(), goBack: jest.fn()}} route={{}} />,
-    );
+    const {getByTestId} = renderScreen();
+    const modal = await waitForModalVisible(getByTestId);
 
-    await waitFor(() => expect(getByTestId('witnessRecordModal').props.visible).toBe(true));
-
-    const modal = getByTestId('witnessRecordModal');
+    expect(modal.props.type).toBe('error');
     expect(modal.props.message).toBe('Error al cargar las mesas');
   });
 
-  test('gestiona errores al cargar mesas remotas mostrando modal de error', async () => {
-    fetchMesas.mockResolvedValue({success: true, data: []});
-    axios.get.mockRejectedValue(new Error('api down'));
+  test('presenta modal informativo cuando la respuesta remota no incluye tablas', async () => {
+    mockAxiosTablesResponse({
+      data: {
+        name: 'Escuela Sin Mesas',
+        address: 'Av. Vacía 0',
+        code: 'ESM-00',
+      },
+    });
 
-    const {getByTestId} = render(
-      <WitnessRecordScreen
-        navigation={{navigate: jest.fn(), goBack: jest.fn()}}
-        route={{params: {locationId: 'fail-remote'}}}
-      />,
-    );
+    const {getByTestId} = renderScreen({route: buildRoute({locationId: 'no-tables'})});
+    const modal = await waitForModalVisible(getByTestId);
 
-    await waitFor(() => expect(getByTestId('witnessRecordModal').props.visible).toBe(true));
+    expect(modal.props.type).toBe('info');
+    expect(modal.props.message).toBe('No se pudieron cargar las mesas');
+  });
 
-    const modal = getByTestId('witnessRecordModal');
-    expect(modal.props.message).toBe('Error al cargar las mesas');
+  test('mantiene la pantalla sin modal cuando la respuesta remota contiene tablas vacías', async () => {
+    mockAxiosTablesResponse({
+      data: {
+        tables: [],
+      },
+    });
+
+    const {getByTestId} = renderScreen({route: buildRoute({locationId: 'empty-tables'})});
+
+    const baseScreen = await waitFor(() => getByTestId('witnessRecordBaseScreen'));
+    expect(baseScreen.props.tables).toEqual([]);
+    expect(getByTestId('witnessRecordModal').props.visible).toBe(false);
+  });
+
+  test('gestiona errores en la carga remota mostrando modal de tipo error', async () => {
+    mockAxiosTablesFailure(new Error('api down'));
+
+    const {getByTestId} = renderScreen({route: buildRoute({locationId: 'fail-remote'})});
+    const modal = await waitForModalVisible(getByTestId);
+
     expect(modal.props.type).toBe('error');
+    expect(modal.props.message).toBe('Error al cargar las mesas');
+  });
+
+  test('cierra el modal cuando se invoca onClose', async () => {
+    mockFetchMesasSuccess([], false);
+
+    const {getByTestId} = renderScreen();
+    const modal = await waitForModalVisible(getByTestId);
+
+    await act(async () => {
+      modal.props.onClose?.();
+      await flushPromises();
+    });
+
+    expect(getByTestId('witnessRecordModal').props.visible).toBe(false);
   });
 });

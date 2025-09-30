@@ -1,75 +1,44 @@
+import './jestMocks';
+
 import React from 'react';
 import {render, waitFor, fireEvent} from '@testing-library/react-native';
-import axios from 'axios';
 import WitnessRecordScreen from '../../../../src/container/Vote/WitnessRecord/WitnessRecord';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
-jest.mock('axios');
-
-jest.mock(
-  '../../../../src/components/common/BaseSearchTableScreen',
-  () => require('../../../__mocks__/components/common/BaseSearchTableScreen').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CustomModal',
-  () => require('../../../__mocks__/components/common/CustomModal').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CText',
-  () => require('../../../__mocks__/components/common/CText').default,
-);
-
-jest.mock(
-  '../../../../src/hooks/useSearchTableLogic',
-  () => require('../../../__mocks__/hooks/useSearchTableLogic'),
-);
-
-jest.mock(
-  '../../../../src/data/mockMesas',
-  () => require('../../../__mocks__/data/mockMesas'),
-);
-
-jest.mock(
-  '../../../../src/i18n/String',
-  () => require('../../../__mocks__/String').default,
-);
-
-const {fetchMesas, mockMesasData} = require('../../../../src/data/mockMesas');
-const {useSearchTableLogic} = require('../../../../src/hooks/useSearchTableLogic');
-
-const buildHookState = overrides => ({
-  colors: {
-    primary: '#4F9858',
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#666666',
-    primaryLight: '#E8F5E8',
-  },
-  searchText: '',
-  setSearchText: jest.fn(),
-  handleBack: jest.fn(),
-  handleNotificationPress: jest.fn(),
-  handleHomePress: jest.fn(),
-  handleProfilePress: jest.fn(),
-  ...overrides,
-});
+const {
+  axios,
+  defaultTables,
+  buildNavigation,
+  buildRoute,
+  mockSearchLogic,
+  mockFetchMesasSuccess,
+  mockAxiosTablesResponse,
+} = require('./testUtils');
 
 describe('WitnessRecordScreen - Interacciones de Usuario', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    fetchMesas.mockResolvedValue({success: true, data: mockMesasData});
-    axios.get.mockResolvedValue({data: {tables: mockMesasData}});
+    mockFetchMesasSuccess();
+    mockAxiosTablesResponse({data: {tables: defaultTables}});
   });
 
-  test('navega a la pantalla WhichIsCorrectScreen al seleccionar una mesa', async () => {
-    const navigation = {navigate: jest.fn(), goBack: jest.fn()};
-    useSearchTableLogic.mockReturnValue(buildHookState());
+  const renderScreen = ({navigation, route, hookOverrides, skipMockHook} = {}) => {
+    const navMock = navigation ?? buildNavigation();
+    const routeMock = route ?? buildRoute();
+    if (!skipMockHook) {
+      mockSearchLogic(hookOverrides);
+    }
 
-    const {getByTestId} = render(
-      <WitnessRecordScreen navigation={navigation} route={{}} />,
-    );
+    return {
+      navigation: navMock,
+      route: routeMock,
+      ...render(<WitnessRecordScreen navigation={navMock} route={routeMock} />),
+    };
+  };
+
+  test('navega a WhichIsCorrectScreen con la mesa seleccionada formateada', async () => {
+    const navigation = buildNavigation();
+    const {getByTestId} = renderScreen({navigation});
 
     await waitFor(() => getByTestId('witnessRecordBaseScreen'));
 
@@ -79,39 +48,36 @@ describe('WitnessRecordScreen - Interacciones de Usuario', () => {
       StackNav.WhichIsCorrectScreen,
       expect.objectContaining({
         tableData: expect.objectContaining({
-          numero: expect.any(String),
-          codigo: expect.any(String),
+          numero: defaultTables[0].numero,
+          codigo: defaultTables[0].codigo,
           recinto: 'Recinto Test',
+          colegio: 'Colegio Test',
           provincia: 'Provincia Test',
-          originalTableData: mockMesasData[0],
+          originalTableData: defaultTables[0],
+          locationData: null,
         }),
-        originalTable: mockMesasData[0],
+        originalTable: defaultTables[0],
       }),
     );
   });
 
-  test('utiliza la información de ubicación para enriquecer la navegación', async () => {
-    const navigation = {navigate: jest.fn(), goBack: jest.fn()};
-    useSearchTableLogic.mockReturnValue(buildHookState());
+  test('enriquece la navegación con datos de ubicación remotos cuando están disponibles', async () => {
+    const remoteLocation = {
+      name: 'Escuela Modelo',
+      address: 'Av. Libertad 456',
+      code: 'EM-22',
+      tables: defaultTables,
+    };
 
-    axios.get.mockResolvedValue({
-      data: {
-        name: 'Escuela Modelo',
-        address: 'Av. Libertad 456',
-        code: 'EM-22',
-        tables: mockMesasData,
-      },
+    mockAxiosTablesResponse({data: remoteLocation});
+
+    const navigation = buildNavigation();
+    const {getByTestId} = renderScreen({
+      navigation,
+      route: buildRoute({locationId: 'escuela-modelo'}),
     });
 
-    const {getByTestId} = render(
-      <WitnessRecordScreen
-        navigation={navigation}
-        route={{params: {locationId: 'escuela-modelo'}}}
-      />,
-    );
-
     await waitFor(() => getByTestId('witnessRecordBaseScreen'));
-
     fireEvent.press(getByTestId('baseSearchTableScreenTableItem_1'));
 
     expect(navigation.navigate).toHaveBeenLastCalledWith(
@@ -131,19 +97,38 @@ describe('WitnessRecordScreen - Interacciones de Usuario', () => {
     );
   });
 
-  test('dispara los manejadores del header y navegación inferior', async () => {
-    const hookHandlers = buildHookState({
+  test('usa valores alternativos basados en el id cuando faltan campos en la mesa', async () => {
+    const minimalMesa = {id: 'x-1'};
+    mockFetchMesasSuccess([minimalMesa]);
+
+    const navigation = buildNavigation();
+    const {getByTestId} = renderScreen({navigation});
+
+    await waitFor(() => getByTestId('witnessRecordBaseScreen'));
+    fireEvent.press(getByTestId('baseSearchTableScreenTableItem_0'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      StackNav.WhichIsCorrectScreen,
+      expect.objectContaining({
+        tableData: expect.objectContaining({
+          numero: 'x-1',
+          codigo: 'x-1',
+          recinto: 'N/A',
+          provincia: 'N/A',
+        }),
+      }),
+    );
+  });
+
+  test('dispara los manejadores de navegación del header y footer', async () => {
+    const handlers = mockSearchLogic({
       handleBack: jest.fn(),
       handleNotificationPress: jest.fn(),
       handleHomePress: jest.fn(),
       handleProfilePress: jest.fn(),
     });
 
-    useSearchTableLogic.mockReturnValue(hookHandlers);
-
-    const {getByTestId} = render(
-      <WitnessRecordScreen navigation={{navigate: jest.fn(), goBack: jest.fn()}} route={{}} />,
-    );
+    const {getByTestId} = renderScreen({skipMockHook: true});
 
     const backButton = await waitFor(() => getByTestId('baseSearchTableScreenBackButton'));
     fireEvent.press(backButton);
@@ -151,9 +136,9 @@ describe('WitnessRecordScreen - Interacciones de Usuario', () => {
     fireEvent.press(getByTestId('baseSearchTableScreenHomeButton'));
     fireEvent.press(getByTestId('baseSearchTableScreenProfileButton'));
 
-    expect(hookHandlers.handleBack).toHaveBeenCalled();
-    expect(hookHandlers.handleNotificationPress).toHaveBeenCalled();
-    expect(hookHandlers.handleHomePress).toHaveBeenCalled();
-    expect(hookHandlers.handleProfilePress).toHaveBeenCalled();
+    expect(handlers.handleBack).toHaveBeenCalledTimes(1);
+    expect(handlers.handleNotificationPress).toHaveBeenCalledTimes(1);
+    expect(handlers.handleHomePress).toHaveBeenCalledTimes(1);
+    expect(handlers.handleProfilePress).toHaveBeenCalledTimes(1);
   });
 });

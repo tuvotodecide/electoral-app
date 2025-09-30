@@ -1,109 +1,110 @@
+import './jestMocks';
+
 import React from 'react';
 import {render, waitFor, fireEvent} from '@testing-library/react-native';
-import axios from 'axios';
 import WitnessRecordScreen from '../../../../src/container/Vote/WitnessRecord/WitnessRecord';
 
-jest.mock('axios');
-
-jest.mock(
-  '../../../../src/components/common/BaseSearchTableScreen',
-  () => require('../../../__mocks__/components/common/BaseSearchTableScreen').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CustomModal',
-  () => require('../../../__mocks__/components/common/CustomModal').default,
-);
-
-jest.mock(
-  '../../../../src/components/common/CText',
-  () => require('../../../__mocks__/components/common/CText').default,
-);
-
-jest.mock(
-  '../../../../src/hooks/useSearchTableLogic',
-  () => require('../../../__mocks__/hooks/useSearchTableLogic'),
-);
-
-jest.mock(
-  '../../../../src/data/mockMesas',
-  () => require('../../../__mocks__/data/mockMesas'),
-);
-
-jest.mock(
-  '../../../../src/i18n/String',
-  () => require('../../../__mocks__/String').default,
-);
-
-const {fetchMesas, mockMesasData} = require('../../../../src/data/mockMesas');
-const {useSearchTableLogic} = require('../../../../src/hooks/useSearchTableLogic');
-
-const buildHookState = overrides => ({
-  colors: {
-    primary: '#4F9858',
-    background: '#FFFFFF',
-    text: '#000000',
-    textSecondary: '#666666',
-    primaryLight: '#E8F5E8',
-  },
-  searchText: '',
-  setSearchText: jest.fn(),
-  handleBack: jest.fn(),
-  handleNotificationPress: jest.fn(),
-  handleHomePress: jest.fn(),
-  handleProfilePress: jest.fn(),
-  ...overrides,
-});
+const stylesModule = require('../../../../src/styles/searchTableStyles');
+const {
+  defaultTables,
+  buildNavigation,
+  buildRoute,
+  mockSearchLogic,
+  mockFetchMesasSuccess,
+  mockAxiosTablesResponse,
+} = require('./testUtils');
 
 describe('WitnessRecordScreen - Estados y Props', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    fetchMesas.mockResolvedValue({success: true, data: mockMesasData});
-    axios.get.mockResolvedValue({data: {tables: mockMesasData}});
+    mockSearchLogic();
+    mockFetchMesasSuccess();
+    mockAxiosTablesResponse({data: {tables: defaultTables}});
   });
 
-  const renderComponent = (hookOverrides = {}, route = {}) => {
-    useSearchTableLogic.mockReturnValue(buildHookState(hookOverrides));
+  const renderComponent = ({navigation, route, hookOverrides, skipMockHook} = {}) => {
+    const navMock = navigation ?? buildNavigation();
+    const routeMock = route ?? buildRoute();
+    if (!skipMockHook) {
+      mockSearchLogic(hookOverrides);
+    }
 
-    return render(
-      <WitnessRecordScreen
-        navigation={{navigate: jest.fn(), goBack: jest.fn()}}
-        route={route}
-      />,
-    );
+    return {
+      navigation: navMock,
+      route: routeMock,
+      ...render(<WitnessRecordScreen navigation={navMock} route={routeMock} />),
+    };
   };
 
-  test('sincroniza el texto de búsqueda del hook con el componente base', async () => {
-    const {getByTestId} = renderComponent({searchText: 'mesa 1'});
+  test('sincroniza el valor de búsqueda con el hook useSearchTableLogic', async () => {
+    const {getByTestId} = renderComponent({hookOverrides: {searchText: 'Mesa Central'}});
 
     const baseScreen = await waitFor(() => getByTestId('witnessRecordBaseScreen'));
-    expect(baseScreen.props.searchValue).toBe('mesa 1');
+    expect(baseScreen.props.searchValue).toBe('Mesa Central');
   });
 
-  test('actualiza el estado del hook cuando cambia el texto de búsqueda', async () => {
+  test('invoca setSearchText al modificar el campo de búsqueda', async () => {
     const setSearchText = jest.fn();
-    const {getByTestId} = renderComponent({setSearchText});
+    const {getByTestId} = renderComponent({hookOverrides: {setSearchText}});
 
     const searchInput = await waitFor(() => getByTestId('baseSearchTableScreenSearchInput'));
 
-    fireEvent.changeText(searchInput, 'Nueva Mesa');
+    fireEvent.changeText(searchInput, 'Mesa Nueva');
 
-    expect(setSearchText).toHaveBeenCalledWith('Nueva Mesa');
+    expect(setSearchText).toHaveBeenCalledWith('Mesa Nueva');
   });
 
-  test('almacena y expone la información de ubicación obtenida desde la API', async () => {
-    axios.get.mockResolvedValue({
-      data: {
-        data: {
-          name: 'Colegio San Martín',
-          address: 'Calle Falsa 123',
-          code: 'CSM-09',
-          tables: mockMesasData,
-        },
+  test('propaga los colores del tema y callbacks del hook al componente base', async () => {
+    const handlers = mockSearchLogic({
+      colors: {
+        primary: '#003366',
+        background: '#F0F0F0',
+        text: '#101010',
+        textSecondary: '#303030',
+        primaryLight: '#AACCEE',
       },
+      handleBack: jest.fn(),
+      handleNotificationPress: jest.fn(),
+      handleHomePress: jest.fn(),
+      handleProfilePress: jest.fn(),
     });
 
-  const {getByTestId} = renderComponent({}, {params: {locationId: 'remote-001'}});
+    const {getByTestId} = renderComponent({skipMockHook: true});
+    const baseScreen = await waitFor(() => getByTestId('witnessRecordBaseScreen'));
+
+    expect(baseScreen.props.colors).toEqual(handlers.colors);
+    expect(baseScreen.props.onBack).toBe(handlers.handleBack);
+    expect(baseScreen.props.onNotificationPress).toBe(
+      handlers.handleNotificationPress,
+    );
+    expect(baseScreen.props.onHomePress).toBe(handlers.handleHomePress);
+    expect(baseScreen.props.onProfilePress).toBe(handlers.handleProfilePress);
+  });
+
+  test('genera estilos mediante createSearchTableStyles y los entrega al componente base', async () => {
+  const styles = {container: {backgroundColor: 'yellow'}};
+    stylesModule.createSearchTableStyles.mockReturnValue(styles);
+
+  const {getByTestId} = renderComponent();
+    const baseScreen = await waitFor(() => getByTestId('witnessRecordBaseScreen'));
+
+  expect(stylesModule.createSearchTableStyles).toHaveBeenCalled();
+    expect(baseScreen.props.styles).toBe(styles);
+  });
+
+  test('expone la información de ubicación almacenada en el estado cuando proviene de la API', async () => {
+    const remoteInfo = {
+      data: {
+        name: 'Colegio San Martín',
+        address: 'Calle Falsa 123',
+        code: 'CSM-09',
+        tables: defaultTables,
+      },
+    };
+
+    mockAxiosTablesResponse(remoteInfo);
+
+    const {getByTestId} = renderComponent({route: buildRoute({locationId: 'remote-001'})});
 
     const baseScreen = await waitFor(() => getByTestId('witnessRecordBaseScreen'));
 
@@ -112,6 +113,6 @@ describe('WitnessRecordScreen - Estados y Props', () => {
       address: 'Calle Falsa 123',
       code: 'CSM-09',
     });
-    expect(baseScreen.props.tables).toEqual(mockMesasData);
+    expect(baseScreen.props.tables).toEqual(defaultTables);
   });
 });
