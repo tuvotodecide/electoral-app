@@ -1,4 +1,4 @@
-import React from 'react';
+const React = require('react');
 
 // Mock para BaseSearchTableScreen
 const BaseSearchTableScreen = (props) => {
@@ -121,11 +121,22 @@ const BaseSearchTableScreen = (props) => {
       'View',
       { testID: 'baseSearchTableScreenTablesList' },
       // Renderizar cada tabla como un elemento individual
-      ...(tables || []).map((item, index) =>
-        React.createElement(
+      ...(tables || []).map((item, index) => {
+        const rawKey =
+          item?.id ??
+          item?._id ??
+          item?.codigo ??
+          item?.tableCode ??
+          item?.code ??
+          item?.numero ??
+          item?.tableNumber ??
+          item?.number;
+        const key = rawKey != null ? `table-item-${rawKey}` : `table-index-${index}`;
+
+        return React.createElement(
           'TouchableOpacity',
           {
-            key: item?.id?.toString() || index.toString(),
+            key,
             testID: `baseSearchTableScreenTableItem_${index}`,
             onPress: () => handleTablePress(item, index),
           },
@@ -137,8 +148,8 @@ const BaseSearchTableScreen = (props) => {
             testID: `baseSearchTableScreenTableItemCode_${index}`,
             children: item?.codigo || item?.tableCode || item?.code || 'N/A',
           })
-        )
-      )
+        );
+      })
     ),
     // Bottom navigation
     React.createElement(
@@ -156,4 +167,6 @@ const BaseSearchTableScreen = (props) => {
   );
 };
 
-export default BaseSearchTableScreen;
+module.exports = BaseSearchTableScreen;
+module.exports.default = BaseSearchTableScreen;
+module.exports.__esModule = true;

@@ -1,5 +1,5 @@
 // Mock para CustomModal
-import React from 'react';
+const React = require('react');
 
 const CustomModal = ({ visible, onClose, type, title, message, buttonText, testID, ...props }) => {
   return React.createElement('View', {
@@ -17,18 +17,18 @@ const CustomModal = ({ visible, onClose, type, title, message, buttonText, testI
         React.createElement('View', { key: 'icon' }, [
           React.createElement('MockedIonicons', { key: 'modalIcon' })
         ]),
-        React.createElement('Text', { 
+        React.createElement('Text', {
           key: 'title',
           testID: `${testID || 'customModal'}Title`,
           children: title
         }),
-        React.createElement('Text', { 
+        React.createElement('Text', {
           key: 'message',
           testID: `${testID || 'customModal'}Message`,
           children: message
         }),
         React.createElement('View', { key: 'buttons' }, [
-          React.createElement('TouchableOpacity', { 
+          React.createElement('TouchableOpacity', {
             testID: `${testID || 'customModal'}CloseButton`,
             onPress: onClose,
             key: 'primaryButton'
@@ -41,4 +41,6 @@ const CustomModal = ({ visible, onClose, type, title, message, buttonText, testI
   ]);
 };
 
-export default CustomModal;
+module.exports = CustomModal;
+module.exports.default = CustomModal;
+module.exports.__esModule = true;

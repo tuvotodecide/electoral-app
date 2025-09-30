@@ -30,8 +30,12 @@ export default function CreatePin({navigation}) {
   };
 
   const onPressContinue = () => {
-    logNavigation('UploadDocument');
-    navigation.navigate(AuthNav.UploadDocument);
+    try {
+      logNavigation('UploadDocument');
+      navigation.navigate(AuthNav.UploadDocument);
+    } catch (error) {
+      console.warn('[CreatePin] Navigation failed', error);
+    }
   };
   return (
     <CSafeAreaViewAuth testID="createPinContainer">

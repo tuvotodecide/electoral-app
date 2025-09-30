@@ -24,18 +24,15 @@ jest.mock('@react-navigation/native');
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
 jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
 
-// Mock react-redux
-jest.mock('react-redux');
-
 // Mock custom components
 jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => 
-  require('../../../__mocks__/components/common/BaseSearchTableScreen').default
+  require('../../../__mocks__/components/common/BaseSearchTableScreen')
 );
 jest.mock('../../../../src/components/common/CText', () => 
-  require('../../../__mocks__/components/common/CText').default
+  require('../../../__mocks__/components/common/CText')
 );
 jest.mock('../../../../src/components/common/CustomModal', () => 
-  require('../../../__mocks__/components/common/CustomModal').default
+  require('../../../__mocks__/components/common/CustomModal')
 );
 
 // Mock hooks
@@ -172,21 +169,6 @@ describe('UnifiedTableScreen - Tests de Renderizado', () => {
 
     // Mock navigation
     require('@react-navigation/native').useNavigation = jest.fn(() => mockNavigation);
-
-    // Mock useSelector
-    require('react-redux').useSelector = jest.fn((selector) => 
-      selector({
-        theme: {
-          theme: {
-            background: '#FFFFFF',
-            text: '#000000',
-            textSecondary: '#666666',
-            primary: '#4F9858',
-            primaryLight: '#E8F5E8',
-          }
-        }
-      })
-    );
 
     // Mock useSearchTableLogic
     const { useSearchTableLogic } = require('../../../../src/hooks/useSearchTableLogic');
@@ -431,8 +413,8 @@ describe('UnifiedTableScreen - Tests de Renderizado', () => {
         const mockHandleBack = jest.fn();
         const mockHandleNotificationPress = jest.fn();
         
-        const { useSearchTableLogic } = require('../../../../src/hooks/useSearchTableLogic');
-        useSearchTableLogic.mockReturnValue({
+  const { useSearchTableLogic } = require('../../../../src/hooks/useSearchTableLogic');
+  useSearchTableLogic.mockReturnValue({
           colors: { primary: '#4F9858' },
           searchText: 'test search',
           setSearchText: jest.fn(),

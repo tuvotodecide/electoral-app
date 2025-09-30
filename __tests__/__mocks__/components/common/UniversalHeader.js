@@ -33,3 +33,5 @@ const UniversalHeader = ({title, onBack, testID = 'UniversalHeader'}) => {
 };
 
 module.exports = UniversalHeader;
+module.exports.default = UniversalHeader;
+module.exports.__esModule = true;

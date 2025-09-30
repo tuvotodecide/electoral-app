@@ -7,3 +7,5 @@ const CSafeAreaView = ({children, testID = 'SafeAreaView', style, ...props}) => 
 };
 
 module.exports = CSafeAreaView;
+module.exports.default = CSafeAreaView;
+module.exports.__esModule = true;

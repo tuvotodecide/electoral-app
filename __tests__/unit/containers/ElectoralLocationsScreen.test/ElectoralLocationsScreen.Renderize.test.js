@@ -24,24 +24,21 @@ jest.mock('@react-navigation/native');
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
 jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
 
-// Mock react-redux
-jest.mock('react-redux');
-
 // Mock Geolocation
 jest.mock('@react-native-community/geolocation');
 
 // Mock custom components
 jest.mock('../../../../src/components/common/CSafeAreaView', () => 
-  require('../../../__mocks__/components/common/CSafeAreaView').default
+  require('../../../__mocks__/components/common/CSafeAreaView')
 );
 jest.mock('../../../../src/components/common/UniversalHeader', () => 
-  require('../../../__mocks__/components/common/UniversalHeader').default
+  require('../../../__mocks__/components/common/UniversalHeader')
 );
 jest.mock('../../../../src/components/common/CText', () => 
-  require('../../../__mocks__/components/common/CText').default
+  require('../../../__mocks__/components/common/CText')
 );
 jest.mock('../../../../src/components/common/CustomModal', () => 
-  require('../../../__mocks__/components/common/CustomModal').default
+  require('../../../__mocks__/components/common/CustomModal')
 );
 
 // Mock FlatList

@@ -7,3 +7,5 @@ const CText = ({children, testID, style, ...props}) => {
 };
 
 module.exports = CText;
+module.exports.default = CText;
+module.exports.__esModule = true;

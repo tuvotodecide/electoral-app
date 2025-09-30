@@ -5,12 +5,59 @@
 
 import React from 'react';
 import { fireEvent, waitFor } from '@testing-library/react-native';
-import CreatePin from '../../../../src/container/Auth/CreatePin';
-import { renderWithProviders, mockNavigation } from '../../../setup/test-utils';
-import { AuthNav } from '../../../../src/navigation/NavigationKey';
+import CreatePin from '../../../src/container/Auth/CreatePin';
+import { renderWithProviders, mockNavigation } from '../../setup/test-utils';
+import { AuthNav } from '../../../src/navigation/NavigationKey';
+
+if (!CreatePin) {
+  throw new Error('CreatePin component failed to import');
+}
+
+// Simplified UI mocks to stabilize integration rendering in Jest
+jest.mock('../../../src/components/common/CSafeAreaViewAuth', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return ({ children, ...props }) => React.createElement(View, { ...props, testID: props.testID || 'mockCSafeAreaViewAuth' }, children);
+});
+
+jest.mock('../../../src/components/common/CHeader', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return ({ children, ...props }) => React.createElement(View, { ...props, testID: props.testID || 'mockCHeader' }, children);
+});
+
+jest.mock('../../../src/components/common/CText', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return ({ children, ...props }) => React.createElement(Text, props, children);
+});
+
+jest.mock('../../../src/components/common/CButton', () => {
+  const React = require('react');
+  const { TouchableOpacity, Text } = require('react-native');
+  return ({ title, onPress, children, ...props }) =>
+    React.createElement(
+      TouchableOpacity,
+      { ...props, onPress },
+      title ? React.createElement(Text, null, title) : null,
+      children,
+    );
+});
+
+jest.mock('../../../src/components/common/KeyBoardAvoidWrapper', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return ({ children, ...props }) => React.createElement(View, { ...props, testID: props.testID || 'mockKeyboardWrapper' }, children);
+});
+
+jest.mock('../../../src/components/authComponents/StepIndicator', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return ({ children, ...props }) => React.createElement(View, props, children);
+});
 
 // Mock real del hook con implementación básica
-jest.mock('../../../../src/hooks/useNavigationLogger', () => ({
+jest.mock('../../../src/hooks/useNavigationLogger', () => ({
   useNavigationLogger: jest.fn((screenName, autoLog = false) => {
     const mockLogAction = jest.fn((action, details) => {
       console.log(`[ACTION] ${screenName} - ${action}${details ? `: ${details}` : ''}`);

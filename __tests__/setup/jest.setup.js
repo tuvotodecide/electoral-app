@@ -47,12 +47,15 @@ jest.mock('react-native', () => ({
     flatten: jest.fn(styles => styles),
   },
   Text: 'Text',
+  TextInput: 'TextInput',
   View: 'View',
+  SafeAreaView: 'SafeAreaView',
   TouchableOpacity: 'TouchableOpacity',
   Image: 'Image',
   ActivityIndicator: 'ActivityIndicator',
   FlatList: 'FlatList',
   ScrollView: 'ScrollView',
+  KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
   Alert: {
     alert: jest.fn(),
@@ -73,6 +76,18 @@ jest.mock('react-native', () => ({
     },
   },
 }));
+
+// Mock safe area context to avoid undefined component types
+jest.mock('react-native-safe-area-context', () => {
+  const React = require('react');
+  const SafeAreaView = ({children, ...props}) => React.createElement('View', props, children);
+
+  return {
+    SafeAreaView,
+    SafeAreaProvider: ({children}) => React.createElement(React.Fragment, null, children),
+    useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  };
+});
 
 // Shared mock for Native Animated module operations
 const mockNativeAnimatedModule = {
@@ -141,6 +156,7 @@ jest.mock('@react-navigation/native', () => ({
     goBack: jest.fn(),
     reset: jest.fn(),
     setParams: jest.fn(),
+    canGoBack: jest.fn(() => true),
   }),
   useRoute: () => ({
     params: {},
@@ -259,19 +275,32 @@ const originalConsoleWarn = console.warn;
 
 beforeAll(() => {
   console.error = (...args) => {
+    const message = typeof args[0] === 'string' ? args[0] : '';
+
+    if (message.includes('Warning: ReactDOM.render is no longer supported')) {
+      return;
+    }
+
     if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
+      message.includes('An update to') &&
+      message.includes('was not wrapped in act')
     ) {
+      return;
+    }
+
+    if (message.includes('Encountered two children with the same key')) {
       return;
     }
     originalConsoleError.call(console, ...args);
   };
   
   console.warn = (...args) => {
+    const message = typeof args[0] === 'string' ? args[0] : '';
+
     if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning:') || args[0].includes('[WARN]'))
+      message.includes('Warning:') ||
+      message.includes('[WARN]') ||
+      message.includes('[NavigationLogger]')
     ) {
       return;
     }

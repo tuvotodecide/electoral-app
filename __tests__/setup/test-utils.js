@@ -19,11 +19,13 @@ export function createMockStore(initialState = {}) {
   // Default theme state to prevent errors
   const defaultTheme = {
     theme: {
-      primary: '#007AFF',
-      grayScale500: '#9E9E9E',
-      textColor: '#000000',
-      inputBackground: '#F5F5F5',
-      primary50: '#E3F2FD',
+      primary: '#459151',
+      grayScale50: '#F8F9FA',
+      grayScale500: '#6B7280',
+      colorText: '#2F2F2F',
+      textColor: '#2F2F2F',
+      inputBackground: '#FFFFFF',
+      primary50: '#EAF8F1',
       dark: false,
     }
   };
@@ -120,6 +122,7 @@ export const mockNavigation = {
   dispatch: jest.fn(),
   setOptions: jest.fn(),
   isFocused: jest.fn(() => true),
+  canGoBack: jest.fn(() => true),
   addListener: jest.fn(),
   removeListener: jest.fn(),
 };
