@@ -5,6 +5,8 @@ import {styles} from './themes';
 import {useDispatch, useSelector} from 'react-redux';
 import {QueryClient, QueryClientProvider} from 'react-query';
 import {migrateIfNeeded} from './utils/migrateBundle';
+import {navigate} from './navigation/RootNavigation';
+import {setPendingNav} from './redux/slices/authSlice';
 import {
   initNotifications,
   ensureFCMSetup,
