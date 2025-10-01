@@ -5,6 +5,7 @@ import {
   View,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -15,85 +16,132 @@ import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
-import {JWT_KEY, moderateScale} from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 import typography from '../../themes/typography';
 import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
-import RNFS from 'react-native-fs';
 
 import String from '../../i18n/String';
 import {checkPin, getSecrets} from '../../utils/Cifrate';
 import {clearWallet, setSecrets} from '../../redux/action/walletAction';
-import {clearSession, startSession} from '../../utils/Session';
 import InfoModal from '../../components/modal/InfoModal';
 import {incAttempts, isLocked, resetAttempts} from '../../utils/PinAttempts';
-import {buildSiweAuthSig} from '../../utils/siweRn';
-import {BACKEND} from '@env';
-import messaging from '@react-native-firebase/messaging';
-import axios from 'axios';
 import {setAddresses} from '../../redux/slices/addressSlice';
-import {
-  clearAuth,
-  setAuthenticated,
-  setPendingNav,
-} from '../../redux/slices/authSlice';
-import store from '../../redux/store';
-import {navigate} from '../../navigation/RootNavigation';
+import {clearAuth, setAuthenticated} from '../../redux/slices/authSlice';
 import {SHA256} from 'crypto-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import {getBioFlag} from '../../utils/BioFlag';
 import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
-import {registerDeviceToken} from '../../utils/registerDeviceToken';
 import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import {decryptVCWithPin} from '../../utils/vcCrypto';
+import {migrateFromBackendIfNeeded} from '../../utils/migrateLegacy';
+import {
+  BACKEND,
+  BACKEND_BLOCKCHAIN,
+  BACKEND_IDENTITY,
+  BACKEND_RESULT,
+  GATEWAY_BASE,
+  BUNDLER,
+  BUNDLER_MAIN,
+} from '@env';
 
-function classifyKycError(error, resp) {
-  const code = error?.code || '';
-  const msg = resp?.data?.error || error?.message || '';
-  const msgLower = (msg || '').toString().toLowerCase();
+const EXTERNAL_ENDPOINTS = Object.fromEntries(
+  Object.entries({
+    BACKEND,
+    BACKEND_BLOCKCHAIN,
+    BACKEND_IDENTITY,
+    BACKEND_RESULT,
+    GATEWAY_BASE,
+    BUNDLER,
+    BUNDLER_MAIN,
+  }).filter(([, value]) => typeof value === 'string' && value.trim().length),
+);
 
-  if (code === 'ERR_NETWORK' || msgLower.includes('network error')) {
-    return {kind: 'server_down', detail: msg};
+const buildNetworkDebug = error => {
+  if (!error) {
+    return {};
   }
 
-  if (
-    msgLower.includes('timeout error while loading cid') ||
-    msgLower.includes('context deadline exceeded') ||
-    msgLower.includes('timeout error while loading') ||
-    msgLower.includes('loading cid') ||
-    msgLower.includes('ipfs') ||
-    (resp && resp.data && resp.data.ok === false && msgLower.includes('cid'))
-  ) {
-    return {kind: 'vc_missing', detail: msg};
+  const apiDebug = error.apiDebug || {};
+  const constructedUrl = (() => {
+    if (apiDebug.url) return apiDebug.url;
+    if (apiDebug.requestUrl) return apiDebug.requestUrl;
+    if (apiDebug.failingUrl) return apiDebug.failingUrl;
+    const cfg = error.config;
+    if (cfg?.url) {
+      if (cfg.baseURL) {
+        const combined = `${cfg.baseURL}${cfg.url}`;
+        return combined || cfg.url || cfg.baseURL;
+      }
+      return cfg.url;
+    }
+    if (cfg?.baseURL) {
+      return cfg.baseURL;
+    }
+    return null;
+  })();
+
+  return {
+    errorMessage: error.message,
+    errorName: error.name,
+    failingUrl: constructedUrl,
+    method: apiDebug.method ?? error.config?.method ?? null,
+    status: apiDebug.status ?? error.response?.status ?? null,
+    statusText: apiDebug.statusText ?? error.response?.statusText ?? null,
+    requestData:
+      apiDebug.requestData ??
+      (typeof error.config?.data === 'string'
+        ? error.config?.data
+        : error.config?.data ?? null),
+    responseData:
+      apiDebug.responseData ??
+      (typeof error.response?.data === 'string'
+        ? error.response?.data
+        : error.response?.data ?? null),
+    stack: error.stack,
+  };
+};
+
+const logNetworkIssue = (label, error, extra = {}) => {
+  if (!__DEV__) {
+    return;
   }
 
-  if (resp && resp.data && resp.data.ok === false) {
-    return {kind: 'server_error', detail: msg};
-  }
+  const network = buildNetworkDebug(error);
+  const failingUrl =
+    network.failingUrl || extra.endpoint || extra.failingUrl || '(URL no disponible)';
 
-  return {kind: 'unknown', detail: msg};
-}
+  console.warn('[LoginUser] Error de red detectado', {
+    label,
+    failingUrl,
+    externalEndpoints: EXTERNAL_ENDPOINTS,
+    ...extra,
+    network,
+  });
+};
 
 export default function LoginUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
-  const [skipBiometricsOnce, setSkipBiometricsOnce] = useState(false);
   const dispatch = useDispatch();
   const bioUnlocked = useRef(false);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: '', onClose: null});
   const hideModal = () => setModal({visible: false, msg: '', onClose: null});
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('LoginUser', true);
 
   const otpRef = useRef(null);
 
   const toastError = msg => setModal({visible: true, msg});
 
-  async function unlock(payload, jwt, pin) {
+  async function unlock(payload, _jwt, pin) {
+    try {
+      if (payload?.vc?.vc && !payload?.vc?.credentialSubject) {
+        payload.vc = payload.vc.vc;
+      }
+    } catch {}
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -104,12 +152,18 @@ export default function LoginUser({navigation}) {
     );
     dispatch(setAuthenticated(true));
     await resetAttempts();
-    await startSession(jwt);
-    await registerDeviceToken();
-    messaging().onTokenRefresh(registerDeviceToken);
-
     try {
-      await writeBundleAtomic(JSON.stringify({...payload, jwt}));
+      const safe = {
+        cipherHex: payload.cipherHex,
+        saltHex: payload.saltHex,
+        account: payload.account,
+        guardian: payload.guardian,
+        salt: payload.salt,
+      };
+      if (payload.streamId) safe.streamId = payload.streamId;
+      if (safe.cipherHex && safe.saltHex) {
+        await writeBundleAtomic(JSON.stringify(safe));
+      }
     } catch (e) {}
 
     const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
@@ -123,13 +177,39 @@ export default function LoginUser({navigation}) {
         }),
       );
     }
-    const pending = store.getState().auth.pendingNav;
-    if (!pending) {
-      navigation.reset({
-        index: 0,
-        routes: [{name: StackNav.TabNavigation}],
-      });
-    }
+    try {
+      const bioEnabled = await getBioFlag();
+      if (bioEnabled && payload?.account) {
+        const storedPayload = {
+          dni: payload?.dni,
+          salt: payload?.salt,
+          privKey: payload?.privKey,
+          account: payload?.account,
+          guardian: payload?.guardian,
+          did: payload?.did,
+          vcCipher: payload?.vcCipher,
+          vc: payload?.vc,
+        };
+        await Keychain.setGenericPassword(
+          'bundle',
+          JSON.stringify({stored: storedPayload}),
+          {
+            service: 'walletBundle',
+            accessible:
+              Platform.OS === 'ios'
+                ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY
+                : Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            accessControl:
+              Platform.OS === 'ios'
+                ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
+                : Keychain.ACCESS_CONTROL.BIOMETRY_STRONG,
+            securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+          },
+        );
+      }
+    } catch {}
+
+    navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
   }
 
   const onPressLoginUser1 = () => {
@@ -140,82 +220,44 @@ export default function LoginUser({navigation}) {
     await ensureBundle();
     try {
       const pinOk = await checkPin(code);
-
       if (!pinOk) return {ok: false, type: 'bad_pin'};
+
       const stored = await getSecrets();
       if (!stored) return {ok: false, type: 'no_local_secrets'};
 
-      const {streamId, privKey, dni} = stored.payloadQr;
-
-      try {
-        const clean = (dni || '').toString().replace(/\D/g, '');
-        const exists = await axios.post(
-          `${BACKEND}kyc/find`,
-          {identifier: clean},
-          {withCredentials: true},
-        );
-
-        if (!exists.data?.ok) {
-          return {ok: false, type: 'dni_not_found'};
-        }
-      } catch (err) {
-        return {
-          ok: false,
-          type: 'server',
-          kind: 'server_down',
-          detail: 'find_failed',
-        };
+      const localCipher = stored.payloadQr?.vcCipher;
+      if (localCipher) {
+        const vc = await decryptVCWithPin(localCipher, code.trim());
+        return {ok: true, payload: {...stored.payloadQr, vc}, jwt: null};
       }
 
-      let load;
-      try {
-        load = await axios.post(
-          `${BACKEND}kyc/load`,
-          {streamId},
-          {withCredentials: true},
-        );
-      } catch (err) {
-        const classified = classifyKycError(err, null);
-
-        return {ok: false, type: 'server', ...classified};
+      const mig = await migrateFromBackendIfNeeded(stored, code.trim());
+      if (mig.ok) {
+        const vc = await decryptVCWithPin(mig.payload.vcCipher, code.trim());
+        return {ok: true, payload: {...mig.payload, vc}, jwt: null};
       }
 
-      if (!load.data?.ok) {
-        const classified = classifyKycError(null, load);
+      logNetworkIssue('migrateFromBackendIfNeeded', mig.error ?? null, {
+        stage: 'verifyPin',
+        reason: mig.reason || 'unknown',
+        endpoint: mig.endpoint ?? null,
+        response: mig.response ?? null,
+      });
 
-        const result = {ok: false, type: 'server', ...classified};
-
-        return result;
-      }
-
-      const {dataHash} = load.data.data;
-
-      let dec;
-      try {
-        const authSig = await buildSiweAuthSig(privKey, dataHash);
-        dec = await axios.post(
-          `${BACKEND}kyc/decrypt`,
-          {streamId, authSig},
-          {withCredentials: true},
-        );
-      } catch (e) {
-        const classified = classifyKycError(e, null);
-
-        return {ok: false, type: 'server', ...classified};
-      }
-
-      if (!dec.data?.ok) {
-        const classified = classifyKycError(null, dec);
-
-        return {ok: false, type: 'server', ...classified};
-      }
-
-      const {vc, jwt} = dec.data;
-      return {ok: true, payload: {...stored.payloadQr, vc}, jwt};
+      return {
+        ok: false,
+        type: 'migrate_failed',
+        reason: mig.reason || 'unknown',
+        error: mig.error ?? null,
+        endpoint: mig.endpoint ?? null,
+        response: mig.response ?? null,
+      };
     } catch (err) {
-      const classified = classifyKycError(err, null);
-
-      return {ok: false, type: 'server', ...classified};
+      logNetworkIssue('verifyPin', err, {
+        stage: 'verifyPin',
+        attemptCode: code,
+      });
+      return {ok: false, type: 'unexpected', error: err};
     }
   }
 
@@ -252,70 +294,53 @@ export default function LoginUser({navigation}) {
           onClose: hideModal,
         });
         if (n >= 5) {
-          await clearSession();
           dispatch(clearWallet());
           dispatch(clearAuth());
         }
         return;
       }
 
-      if (res.kind === 'vc_missing') {
-        setModal({
-          visible: true,
-          msg:
-            'No pudimos cargar tu credencial (VC).\n' +
-            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
-            'Actualiza la aplicación. Necesitas volver a registrarte para emitir una nueva credencial.',
-          onClose: () => {
-            hideModal();
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: StackNav.AuthNavigation,
-                  params: {screen: AuthNav.RegisterUser2},
-                },
-              ],
-            });
-          },
+      // if (res.type === 'dni_not_found') {
+      //   setModal({
+      //     visible: true,
+      //     msg:
+      //       'No encontramos tu registro.\n' +
+      //       'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
+      //       'Debes volver a registrarte para emitir una nueva credencial.',
+      //     onClose: () => {
+      //       hideModal();
+      //       navigation.reset({
+      //         index: 0,
+      //         routes: [
+      //           {
+      //             name: StackNav.AuthNavigation,
+      //             params: {screen: AuthNav.RegisterUser2},
+      //           },
+      //         ],
+      //       });
+      //     },
+      //   });
+      //   return;
+      // }
+      if (res.type === 'migrate_failed') {
+        logNetworkIssue('migrate_failed', res.error ?? null, {
+          reason: res.reason,
+          endpoint: res.endpoint ?? null,
+          response: res.response ?? null,
         });
-        return;
-      }
-
-      if (res.type === 'dni_not_found') {
         setModal({
           visible: true,
           msg:
-            'No encontramos tu registro.\n' +
-            'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
-            'Debes volver a registrarte para emitir una nueva credencial.',
-          onClose: () => {
-            hideModal();
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: StackNav.AuthNavigation,
-                  params: {screen: AuthNav.RegisterUser2},
-                },
-              ],
-            });
-          },
-        });
-        return;
-      }
-      if (res.kind === 'server_down' || res.kind === 'server_error') {
-        setModal({
-          visible: true,
-          msg:
-            'No se pudo conectar al servidor.\n' +
-            'Revisa tu conexión o intenta más tarde.\n\n' +
-            '(Tu PIN no fue contado como intento fallido.)',
+            'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
+            'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
           onClose: hideModal,
         });
         return;
       }
       if (res.type === 'no_local_secrets') {
+        logNetworkIssue('no_local_secrets', null, {
+          message: 'No se encontraron datos locales de billetera.',
+        });
         setModal({
           visible: true,
           msg:
@@ -337,6 +362,9 @@ export default function LoginUser({navigation}) {
         return;
       }
 
+      logNetworkIssue('unexpected_verify_result', res.error ?? null, {
+        resultType: res.type,
+      });
       setModal({
         visible: true,
         msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
@@ -382,11 +410,9 @@ export default function LoginUser({navigation}) {
       );
 
       if (!ok) {
-        setSkipBiometricsOnce(true);
         return;
       }
       setLoading(true);
-
       bioUnlocked.current = true;
       try {
         const creds = await Keychain.getGenericPassword({
@@ -399,157 +425,36 @@ export default function LoginUser({navigation}) {
         }
 
         const {stored} = JSON.parse(creds.password);
-        const {dni} = stored;
+        const main = await Keychain.getGenericPassword({
+          service: 'finline.wallet.vc',
+        });
+        const payloadQr = main ? JSON.parse(main.password) : {};
+        const merged = {...stored, ...payloadQr};
 
-        try {
-          const clean = (dni || '').toString().replace(/\D/g, '');
-          const exists = await axios.post(
-            `${BACKEND}kyc/find`,
-            {identifier: clean},
-            {withCredentials: true},
-          );
+        if (merged?.vc?.vc && !merged?.vc?.credentialSubject) {
+          merged.vc = merged.vc.vc;
+        }
+        if (merged?.vc?.credentialSubject) {
+          await unlock(merged, null, '');
+          return;
+        }
 
-          if (!exists.data?.ok) {
-            setModal({
-              visible: true,
-              msg:
-                'No encontramos tu registro.\n' +
-                'Es probable que el servidor se haya reiniciado.\n\n' +
-                'Debes volver a registrarte para emitir una nueva credencial.',
-              onClose: () => {
-                hideModal();
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: StackNav.AuthNavigation,
-                      params: {screen: AuthNav.RegisterUser2},
-                    },
-                  ],
-                });
-              },
-            });
-            return;
-          }
-        } catch (err) {
+        if (!merged?.vc && merged?.vcCipher) {
+          setLoading(false);
           setModal({
             visible: true,
-            msg:
-              'No se pudo conectar al servidor.\n' +
-              'Revisa tu conexión o intenta más tarde.\n\n' +
-              '(Tu intento biométrico no fue contado como fallo.)',
+            msg: 'Necesitamos tu PIN una sola vez para descifrar tu credencial y completar el inicio de sesión con huella.',
             onClose: hideModal,
           });
           return;
         }
 
-        let load;
-        try {
-          load = await axios.post(
-            `${BACKEND}kyc/load`,
-            {streamId: stored.streamId},
-            {withCredentials: true},
-          );
-        } catch (e) {
-          const klass = classifyKycError(e, null);
-          if (klass.kind === 'server_down') {
-            setModal({
-              visible: true,
-              msg: 'No se pudo conectar al servidor. Intenta más tarde.',
-            });
-          }
-          setLoading(false);
-          return;
-        }
-
-        if (!load.data?.ok) {
-          const klass = classifyKycError(null, load);
-          if (klass.kind === 'vc_missing') {
-            setModal({
-              visible: true,
-              msg:
-                'No pudimos cargar tu credencial (VC).\n' +
-                'Parece que el servidor se reinició. Debes volver a registrarte.',
-            });
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: StackNav.AuthNavigation,
-                  params: {screen: AuthNav.RegisterUser2},
-                },
-              ],
-            });
-            setLoading(false);
-            return;
-          }
-          setLoading(false);
-          return;
-        }
-
-        const {dataHash} = load.data.data;
-        const authSig = await buildSiweAuthSig(stored.privKey, dataHash);
-
-        let dec;
-        try {
-          dec = await axios.post(
-            `${BACKEND}kyc/decrypt`,
-            {streamId: stored.streamId, authSig},
-            {withCredentials: true},
-          );
-        } catch (e) {
-          const klass = classifyKycError(e, null);
-          if (klass.kind === 'server_down') {
-            setModal({
-              visible: true,
-              msg: 'No se pudo conectar al servidor. Intenta más tarde.',
-              onClose: hideModal,
-            });
-          }
-          setLoading(false);
-          return;
-        }
-
-        if (!dec.data?.ok) {
-          const klass = classifyKycError(null, dec);
-          if (klass.kind === 'vc_missing') {
-            setModal({
-              visible: true,
-              msg:
-                'No pudimos descifrar tu credencial.\n' +
-                'Parece que el servidor se reinició. Debes volver a registrarte.',
-              onClose: () => {
-                hideModal();
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: StackNav.AuthNavigation,
-                      params: {screen: AuthNav.RegisterUser2},
-                    },
-                  ],
-                });
-              },
-            });
-
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: StackNav.AuthNavigation,
-                  params: {screen: AuthNav.RegisterUser2},
-                },
-              ],
-            });
-            setLoading(false);
-            return;
-          }
-          setLoading(false);
-          return;
-        }
-
-        const {vc: newVc, jwt: newJwt} = dec.data;
-        await unlock({...stored, vc: newVc}, newJwt);
+        setLoading(false);
+        setModal({
+          visible: true,
+          msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
+          onClose: hideModal,
+        });
       } catch {
         setLoading(false);
       }
@@ -565,21 +470,19 @@ export default function LoginUser({navigation}) {
   }
 
   return (
-    <CSafeAreaViewAuth testID="loginUserContainer">
+    <CSafeAreaViewAuth>
       <View
-        testID="loginUserOvalBackground"
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader testID="loginUserHeader" color={colors.white} isHideBack />
-      <View testID="loginUserImageContainer" style={localStyle.imageContainer}>
-        <Image testID="loginUserLogo" source={images.logoImg} style={localStyle.imageStyle} />
+      <CHeader color={colors.white} isHideBack />
+      <View style={localStyle.imageContainer}>
+        <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
-      <KeyBoardAvoidWrapper testID="loginUserKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
-        <View testID="loginUserMainContainer" style={localStyle.mainContainer}>
-          <View testID="loginUserContentContainer">
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+        <View style={localStyle.mainContainer}>
+          <View>
             <CText
-              testID="loginUserTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
@@ -587,11 +490,10 @@ export default function LoginUser({navigation}) {
             </CText>
 
             <OTPInputView
-              testID="loginUserPinInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
-              keyboardType="number-pad" 
+              keyboardType="number-pad"
               onCodeChanged={setOtp}
               onCodeFilled={onCodeFilled}
               secureTextEntry={true}
@@ -613,9 +515,8 @@ export default function LoginUser({navigation}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View testID="loginUserBottomButtons" style={localStyle.bottomButtons}>
+      <View style={localStyle.bottomButtons}>
         <CButton
-          testID="loginUserForgotPasswordButton"
           onPress={onPressLoginUser1}
           title={String.connectBtnForgot}
           type={'B16'}
@@ -625,15 +526,14 @@ export default function LoginUser({navigation}) {
         />
       </View>
       {loading && (
-        <View testID="loginUserLoadingOverlay" style={localStyle.loadingOverlay}>
-          <ActivityIndicator testID="loginUserLoadingIndicator" size="large" color={colors.white} />
-          <CText testID="loginUserLoadingText" type="B16" color={colors.white} style={styles.mt10}>
+        <View style={localStyle.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.white} />
+          <CText type="B16" color={colors.white} style={styles.mt10}>
             {String.loading}
           </CText>
         </View>
       )}
       <InfoModal
-        testID="loginUserInfoModal"
         visible={modal.visible}
         title={String.walletAccess}
         message={modal.msg}
