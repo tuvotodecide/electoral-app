@@ -45,8 +45,20 @@ const ASPECT_HEIGHT = getResponsiveSize(170, 190, 220);
 
 const ROTATE_BTN = getResponsiveSize(32, 38, 44);
 
+const normalizeUri = uri => {
+  if (!uri) return '';
+  if (uri.startsWith('ipfs://')) {
+    return `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
+  }
+  if (uri.startsWith('file://')) return uri;
+  if (uri.startsWith('content://')) return uri;
+  if (/^https?:\/\//i.test(uri)) return uri;
+  if (uri[0] === '/' || /^[A-Za-z]:\\/.test(uri)) return `file://${uri}`;
+  return uri;
+};
+
 export const PhotoContainer = ({
-  testID = "photoContainer",
+  testID = 'photoContainer',
   photoUri,
   enableZoom = false,
   useAspectRatio = false,
@@ -61,6 +73,8 @@ export const PhotoContainer = ({
     );
   }
 
+  const normalizedUri = normalizeUri(photoUri);
+
   return (
     <View
       testID={testID}
@@ -71,7 +85,7 @@ export const PhotoContainer = ({
       }>
       <Image
         testID={`${testID}Image`}
-        source={{uri: photoUri}}
+        source={{uri: normalizedUri}}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
       />
@@ -83,7 +97,11 @@ export const PhotoContainer = ({
   );
 };
 
-const ZoomablePhotoContainer = ({testID = "zoomablePhotoContainer", photoUri, useAspectRatio = false}) => {
+const ZoomablePhotoContainer = ({
+  testID = 'zoomablePhotoContainer',
+  photoUri,
+  useAspectRatio = false,
+}) => {
   const [box, setBox] = useState({w: 0, h: 0});
   const [img, setImg] = useState({w: 0, h: 0});
   const [rotation, setRotation] = useState(0);
@@ -94,17 +112,16 @@ const ZoomablePhotoContainer = ({testID = "zoomablePhotoContainer", photoUri, us
     setBox({w: Math.round(width), h: Math.round(height)});
   }, []);
 
+  const normalizedUri = normalizeUri(photoUri);
+
   useEffect(() => {
-    if (!photoUri) return;
-    const uri = photoUri.startsWith('file://')
-      ? photoUri
-      : `file://${photoUri}`;
+    if (!normalizedUri) return;
     Image.getSize(
-      uri,
+      normalizedUri,
       (w, h) => setImg({w, h}),
-      () => setImg({w: 0, h: 0}),
+      () => setImg({w: 1, h: 1}),
     );
-  }, [photoUri]);
+  }, [normalizedUri]);
   const isRotated = rotation % 180 !== 0;
   const baseIw = isRotated ? img.h : img.w;
   const baseIh = isRotated ? img.w : img.h;
@@ -181,7 +198,7 @@ const ZoomablePhotoContainer = ({testID = "zoomablePhotoContainer", photoUri, us
           enableDoubleClickZoom>
           <Image
             testID={`${testID}Image`}
-            source={{uri: photoUri}}
+            source={{uri: normalizedUri}}
             style={{
               width: isRotated ? contentH : contentW,
               height: isRotated ? contentW : contentH,

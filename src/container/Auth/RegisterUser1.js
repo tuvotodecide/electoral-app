@@ -33,9 +33,6 @@ export default function RegisterUser1({navigation}) {
   const onPressConditions = () =>
     navigation.navigate(StackNav.TermsAndCondition);
 
-  const getDid = () => {
-    console.log(didFromEthAddress(bytesToHex(randomBytes(20))))
-  }
 
   return (
     <CSafeAreaViewAuth testID="registerUser1Container">

@@ -73,7 +73,11 @@ const BaseRecordReviewScreen = ({
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
     return (
-      <CSafeAreaView testID={`${testID}Container`} style={styles.container}>
+      <CSafeAreaView
+        testID={`${testID}Container`}
+        style={styles.container}
+        addTabPadding={false}
+      >
         {/* Header */}
         <RecordHeader testID={`${testID}Header`} onBack={onBack} title={headerTitle} colors={colors} />
 
@@ -184,7 +188,9 @@ const BaseRecordReviewScreen = ({
                   }>
                   <PartyTable
                     testID={`${testID}PartyTable`}
-                    partyResults={partyResults}
+                    partyResults={
+                      Array.isArray(partyResults) ? partyResults : []
+                    }
                     isEditing={isEditing}
                     onUpdate={onPartyUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
@@ -201,7 +207,11 @@ const BaseRecordReviewScreen = ({
                   }>
                   <VoteSummaryTable
                     testID={`${testID}VoteSummaryTable`}
-                    voteSummaryResults={voteSummaryResults}
+                    voteSummaryResults={
+                      Array.isArray(voteSummaryResults)
+                        ? voteSummaryResults
+                        : []
+                    }
                     isEditing={isEditing}
                     onUpdate={onVoteSummaryUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
@@ -271,7 +281,6 @@ const BaseRecordReviewScreen = ({
           </View>
         </View>
       )}
-
       {/* Photo - Static (doesn't move with scroll) */}
       {!isPhotoCollapsed && (
         <View testID={`${testID}PhotoSection`} style={styles.photoSection}>

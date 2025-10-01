@@ -43,7 +43,6 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const ElectoralLocationsSave = ({navigation, route}) => {
-
   const colors = useSelector(state => state.theme.theme);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
@@ -66,7 +65,6 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredLocations, setFilteredLocations] = useState([]);
   const pendingPermissionFromSettings = useRef(false);
-
   // Get navigation target from route params
   const {targetScreen} = route.params || {};
   const filterLocations = text => {
@@ -473,17 +471,12 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   };
 
   const handleLocationPress = location => {
-    if (targetScreen === 'AnnounceCount') {
-      navigation.navigate(StackNav.SearchCountTable, {
-        locationId: location._id,
-        locationData: location,
-      });
-    } else {
+    {
       navigation.navigate(StackNav.UnifiedTableScreenUser, {
         locationId: location._id,
         locationData: location,
         targetScreen: targetScreen,
-        dni
+        dni,
       });
     }
   };

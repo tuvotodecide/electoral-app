@@ -1,24 +1,20 @@
-import {
-  PermissionsAndroid,
-  Platform,
-  StatusBar,
-  View,
-  AppState,
-  ReactNative,
-} from 'react-native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {StatusBar, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
 import {useDispatch, useSelector} from 'react-redux';
-import messaging from '@react-native-firebase/messaging';
 import {QueryClient, QueryClientProvider} from 'react-query';
-import {registerNotifications} from './notifications';
-import {registerDeviceToken} from './utils/registerDeviceToken';
-import {useFirebaseUserSetup} from './hooks/useFirebaseUserSetup';
-import {initializeFirebase} from './config/firebase';
 import {migrateIfNeeded} from './utils/migrateBundle';
-
+import {
+  initNotifications,
+  ensureFCMSetup,
+  subscribeToLocationTopic,
+  showLocalNotification,
+} from './services/notifications';
+import messaging from '@react-native-firebase/messaging';
+import {LAST_TOPIC_KEY} from './common/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -31,7 +27,59 @@ const App = () => {
   const dispatch = useDispatch();
   const processingRef = useRef(false);
 
+  useEffect(() => {
+    let cleanup;
 
+    (async () => {
+      cleanup = await initNotifications({
+        onForegroundMessage: async msg => {
+          try {
+            await showLocalNotification({
+              title: msg?.notification?.title ?? msg?.data?.title,
+              body: msg?.notification?.body ?? msg?.data?.body,
+              data: msg?.data,
+            });
+          } catch (e) {
+            console.log('FG handler error', e, msg);
+          }
+        },
+        onOpenedFromNotification: _msg => {},
+      });
+    })();
+
+    return () => {
+      cleanup && cleanup();
+    };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+     
+      await ensureFCMSetup();
+
+      
+      const last = await AsyncStorage.getItem(LAST_TOPIC_KEY); 
+      if (last) {
+        const rawId = last.replace('loc_', '');
+        try {
+          await subscribeToLocationTopic(rawId);
+        } catch (e) {}
+      }
+    })();
+
+    const unsub = messaging().onTokenRefresh(async () => {
+      const last = await AsyncStorage.getItem(LAST_TOPIC_KEY);
+      if (last) {
+        const rawId = last.replace('loc_', '');
+        try {
+          await subscribeToLocationTopic(rawId);
+        } catch (e) {
+        }
+      }
+    });
+
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (auth.isAuthenticated && auth.pendingNav) {
@@ -39,72 +87,10 @@ const App = () => {
       dispatch(setPendingNav(null));
     }
   }, [auth.isAuthenticated, auth.pendingNav]);
+
   useEffect(() => {
     migrateIfNeeded();
   }, []);
-  // Configurar Firebase y usuario automáticamente
-  const {isInitialized, initializationError} = useFirebaseUserSetup();
-
-  // Mostrar estado de inicialización en logs
-  useEffect(() => {
-    if (isInitialized) {
-    }
-    if (initializationError) {
-    }
-  }, [isInitialized, initializationError]);
-
-  async function requestNotificationPermission() {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      const authStatus = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-      );
-
-      if (authStatus === PermissionsAndroid.RESULTS.GRANTED) {
-      }
-    }
-  }
-  useEffect(() => {
-    registerNotifications();
-    requestNotificationPermission();
-
-    // Inicializar Firebase
-    initializeFirebase().then(success => {
-      if (success) {
-      } else {
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    registerDeviceToken().catch(console.error);
-
-    const unsub = messaging().onTokenRefresh(() => {
-      registerDeviceToken().catch(console.error);
-    });
-    return unsub;
-  }, []);
-
-  // useEffect(() => {
-  //   const fetchToken = async () => {
-  //     const token = await messaging().getToken();
-  //
-  //
-  //     if (!!token) {
-  //       setAsyncStorageData(DEVICE_TOKEN, token);
-  //     }
-  //     axios
-  //       .post(`${BACKEND}device-token`, {token, platform: 'ANDROID'})
-  //       .catch(console.error);
-  //   };
-  //   fetchToken();
-  // }, []);
-
-  // 1 al montar (por si ya hay internet),
-  // 2 cuando vuelve el internet,
-  // 3 cuando la app vuelve a primer plano.
 
   return (
     <QueryClientProvider client={queryClient}>

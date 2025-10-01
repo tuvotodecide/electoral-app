@@ -1,4 +1,4 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -17,18 +17,20 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
-import { setTmpPin } from '../../utils/TempRegister';
+import {setTmpPin} from '../../utils/TempRegister';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser9({navigation, route}) {
-  const {originalPin, vc, offerUrl, useBiometry, dni} = route.params;
+  const {originalPin, ocrData, useBiometry, dni} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser9Pin', true);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser9Pin',
+    true,
+  );
   const otpRef = useRef(null);
 
   useEffect(() => {
@@ -39,12 +41,18 @@ export default function RegisterUser9({navigation, route}) {
   }, []);
 
   const handleConfirmPin = async () => {
+    const matchesOriginal = otp === originalPin;
+    logAction('confirm_pin_attempt', {
+      matchesOriginal,
+      length: otp.length,
+    });
     if (otp === originalPin) {
       await setTmpPin(otp);
+      logNavigation('go_to_register_user10');
       navigation.navigate(AuthNav.RegisterUser10, {
         originalPin: otp,
-        vc,
-        offerUrl,
+        ocrData,
+
         useBiometry,
         dni,
       });

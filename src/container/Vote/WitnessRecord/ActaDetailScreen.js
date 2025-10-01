@@ -28,6 +28,8 @@ const getResponsiveSize = (small, medium, large) => {
 const ActaDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  console.log(route);
+  
   const colors = useSelector(state => state.theme.theme);
 
   const {
@@ -167,7 +169,7 @@ const ActaDetailScreen = () => {
   // Action buttons for BaseRecordReviewScreen
   const actionButtons = [
     {
-      text: String.correctData,
+      text: String.itsData,
       onPress: handleThisIsCorrect,
       testID: 'actaDetailCorrectDataButton',
       style: {
@@ -179,11 +181,11 @@ const ActaDetailScreen = () => {
       icon: 'check-circle',
     },
     {
-      text: 'Subir foto de acta correcta',
+      text: 'Subir acta',
       onPress: handleUploadCorrectActa,
       testID: 'actaDetailUploadCorrectActaButton',
       style: {
-        backgroundColor: colors.secondary || '#2196F3',
+        backgroundColor: colors.secondary || '#ff0000ff',
       },
       textStyle: {
         color: '#FFFFFF',
@@ -216,7 +218,7 @@ const ActaDetailScreen = () => {
   }`;
 
   // Instructions text
-  const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;
+  const instructionsText = `Revise la foto del acta`;
 
   // Custom photo component that uses our IPFS handler
   const PhotoComponent = () => <IPFSImageComponent />;

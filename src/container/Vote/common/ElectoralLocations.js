@@ -157,10 +157,6 @@ const ElectoralLocations = ({navigation, route}) => {
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
         {timeout: 15000}, // 10 segundos timeout
       );
-      // const response = await axios.get(
-      //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
-      // );
-
       if (response.data && response.data.data) {
         setLocations(response.data.data);
       } else {
@@ -427,6 +423,7 @@ const ElectoralLocations = ({navigation, route}) => {
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
         {timeout: 15000}, // 10 segundos timeout
       );
+
       if (response.data) {
         setElectionStatus(response.data);
       } else {
@@ -606,7 +603,6 @@ const ElectoralLocations = ({navigation, route}) => {
     const endDate = new Date(electionStatus.config.votingEndDateBolivia);
 
     let title, subtitle, statusText;
-
     if (currentTime < startDate) {
       // La votación aún no ha comenzado
       title = i18nString.votingUpcoming;
@@ -676,6 +672,25 @@ const ElectoralLocations = ({navigation, route}) => {
     inputRange: [0, 1],
     outputRange: ['0deg', '-360deg'],
   });
+
+  if (offline && !cachedVotePlace) {
+    return (
+      <View style={styles.inactiveContainer}>
+        <Ionicons name="cloud-offline" size={64} color="#ccc" />
+        <CText style={styles.inactiveTitle}>
+          {i18nString.offlineNoCacheTitle}
+        </CText>
+        <CText style={styles.inactiveSubtitle}>
+          {i18nString.offlineNoCacheSubtitle}
+        </CText>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={handleRetryLocation}>
+          <CText style={styles.retryButtonText}>{i18nString.retry}</CText>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const renderContent = () => {
     if (configLoading) {

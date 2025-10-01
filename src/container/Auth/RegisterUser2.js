@@ -15,30 +15,40 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import UploadCardImage from '../../components/common/UploadCardImage';
 import String from '../../i18n/String';
 import DniExistsModal from '../../components/modal/DniExistsModal';
-import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
+import {useCheckDni} from '../../data/registry';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
-export default function RegisterUser2({navigation}) {
+export default function RegisterUser2({navigation, route}) {
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser2',
+    true,
+  );
+  const isRecovery = route?.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [idNumber, setIdNumber] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [isModalVisible, setModalVisible] = useState({
+    visible: false,
+    message: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
 
-  const {mutate: findDni, isLoading} = useKycFindQuery();
+  const {mutate: checkDni} = useCheckDni();
   const dispatch = useDispatch();
-  const isFormValid = () => {
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser2', true);
-    return idNumber.trim() !== '' && frontImage && backImage;
-  };
 
-  const closeModal = () => setModalVisible(false);
+  const isFormValid = () =>
+    idNumber.trim() !== '' && frontImage && backImage;
+
+  const closeModal = () =>
+    setModalVisible({
+      visible: false,
+      message: '',
+    });
 
   useEffect(() => {
     const trimmed = idNumber.trim();
@@ -54,7 +64,14 @@ export default function RegisterUser2({navigation}) {
 
   const handleCheckAndNext = useCallback(
     debounce(() => {
-      if (idNumber.trim() === REVIEW_DNI) {
+      logAction('submit_attempt', {
+        isRecovery: !!isRecovery,
+        hasFrontImage: !!frontImage,
+        hasBackImage: !!backImage,
+      });
+
+      const trimmedId = idNumber.trim();
+      if (trimmedId === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));
         navigation.reset({
           index: 0,
@@ -62,40 +79,62 @@ export default function RegisterUser2({navigation}) {
         });
         return;
       }
-      if (!isFormValid()) return;
 
-      findDni(
-        {identifier: idNumber.trim()},
+      if (!isFormValid()) {
+        return;
+      }
+
+      checkDni(
+        {identifier: trimmedId},
         {
           onMutate: () => {
             setSubmitting(true);
-            setModalVisible(false);
+            setModalVisible({visible: false, message: ''});
           },
           onSuccess: response => {
             setSubmitting(false);
-
-            if (response.ok) {
-              setModalVisible(true);
-            } else {
-              navigation.navigate(AuthNav.RegisterUser3, {
-                dni: idNumber.trim(),
-                frontImage,
-                backImage,
+            if (response.ok && !isRecovery) {
+              setModalVisible({
+                visible: true,
+                message: String.DniExists,
               });
+              logAction('dni_exists_modal_shown', {isRecovery: !!isRecovery});
+              return;
             }
+
+            navigation.navigate(AuthNav.RegisterUser3, {
+              dni: trimmedId,
+              frontImage,
+              backImage,
+              isRecovery,
+            });
+            logNavigation('go_to_register_step_3');
           },
           onError: err => {
             setSubmitting(false);
             const msg =
               err?.response?.data?.message || err.message || String.unknowerror;
+            logAction('dni_check_error', {
+              message: msg,
+              name: err?.name,
+            });
             Alert.alert(String.errorCi, msg);
           },
           onSettled: () => setSubmitting(false),
         },
       );
     }, 500),
-
-    [idNumber, frontImage, backImage],
+    [
+      idNumber,
+      frontImage,
+      backImage,
+      checkDni,
+      dispatch,
+      navigation,
+      logAction,
+      logNavigation,
+      isRecovery,
+    ],
   );
 
   return (
@@ -110,11 +149,18 @@ export default function RegisterUser2({navigation}) {
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText testID="idVerificationTitle" type={'B20'} style={styles.boldText} align={'center'}>
+          <CText
+            testID="idVerificationTitle"
+            type={'B20'}
+            style={styles.boldText}
+            align={'center'}>
             {String.idVerificationTitle}
           </CText>
 
-          <CText testID="idVerificationSubtitle" type={'B16'} align={'center'}>
+          <CText
+            testID="idVerificationSubtitle"
+            type={'B16'}
+            align={'center'}>
             {String.idVerificationSubtitle}
           </CText>
 
@@ -153,17 +199,24 @@ export default function RegisterUser2({navigation}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
-      <View testID="registerUser2BottomContainer" style={localStyle.bottomTextContainer}>
+      <View
+        testID="registerUser2BottomContainer"
+        style={localStyle.bottomTextContainer}>
         <CButton
           testID="continueVerificationButton"
-          disabled={!isFormValid() || isLoading || submitting}
-          title={isLoading ? String.checking : String.continueButton}
+          disabled={!isFormValid() || submitting}
+          title={submitting ? String.checking : String.continueButton}
           onPress={handleCheckAndNext}
           type="B16"
           containerStyle={localStyle.btnStyle}
         />
       </View>
-      <DniExistsModal testID="registerUser2DniExistsModal" visible={isModalVisible} onClose={closeModal} />
+      <DniExistsModal
+        testID="registerUser2DniExistsModal"
+        visible={isModalVisible.visible}
+        message={isModalVisible.message}
+        onClose={closeModal}
+      />
     </CSafeAreaViewAuth>
   );
 }

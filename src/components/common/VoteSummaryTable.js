@@ -78,14 +78,14 @@ export const VoteSummaryRow = ({
 // Vote Summary Table Component
 export const VoteSummaryTable = ({
   testID = "voteSummaryTable",
-  voteSummaryResults,
+  voteSummaryResults = [],
   isEditing = false,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
 }) => (
   <View testID={testID} style={styles.voteSummaryTableContainer}>
     <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>Votos</CText>
-    {voteSummaryResults.map((item, index) => (
+    {(Array.isArray(voteSummaryResults) ? voteSummaryResults : []).map((item, index) => (
       <VoteSummaryRow
         key={index}
         testID={`${testID}Row_${index}`}

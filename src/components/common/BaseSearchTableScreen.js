@@ -78,7 +78,7 @@ const getTableNumber = table => {
     table.name ??
     table.id ??
     '0';
-  const n = parseInt(String(raw).replace(/\D+/g, ''), 10);
+  const n = parseInt(global.String(raw).replace(/\D+/g, ''), 10);
   return Number.isNaN(n) ? 0 : n;
 };
 
@@ -395,74 +395,66 @@ const BaseSearchTableScreen = ({
         records = [response.data];
       }
 
-      if (records.length > 0) {
-        const actaImages = records.map(record => {
-          const imageCid = record.image?.replace('ipfs://', '') || '';
-          const imageUrl = `https://ipfs.io/ipfs/${imageCid}`;
+      const enrichedRecords = Array.isArray(records)
+        ? records.map(record => {
+            const cidFromImage = record.image?.startsWith('ipfs://')
+              ? record.image.replace('ipfs://', '')
+              : null;
+            const actaImagePrimary = cidFromImage
+              ? `https://ipfs.io/ipfs/${cidFromImage}`
+              : record.ipfsCid
+              ? `https://ipfs.io/ipfs/${record.ipfsCid}`
+              : record.image && record.image.startsWith('http')
+              ? record.image
+              : record.ipfsUri || null;
+            const actaImage = actaImagePrimary;
+            const presidentialParties = record.votes?.parties?.partyVotes || [];
+            const deputyParties = record.votes?.deputies?.partyVotes || [];
 
-          // Extraer datos de partidos presidenciales
-          const presidentialParties = record.votes?.parties?.partyVotes || [];
-          // Extraer datos de partidos para diputados
-          const deputyParties = record.votes?.deputies?.partyVotes || [];
+            const partyResults = presidentialParties.map(presParty => {
+              const deputyParty = deputyParties.find(
+                d => d.partyId === presParty.partyId,
+              ) || {
+                votes: 0,
+              };
+              return {
+                partyId: presParty.partyId,
+                presidente: presParty.votes,
+                diputado: deputyParty.votes,
+              };
+            });
 
-          // Combinar ambos tipos de votos
-          const combinedPartyResults = presidentialParties.map(presParty => {
-            const deputyParty = deputyParties.find(
-              d => d.partyId === presParty.partyId,
-            ) || {votes: 0};
+            const presVoteSummary = record.votes?.parties || {};
+            const depVoteSummary = record.votes?.deputies || {};
+
             return {
-              partyId: presParty.partyId,
-              presidente: presParty.votes,
-              diputado: deputyParty.votes,
+              ...record,
+              actaImage, // <- TableDetail ya lo usa
+              partyResults,
+              voteSummaryResults: {
+                // Presidente
+                presValidVotes: presVoteSummary.validVotes || 0,
+                presBlankVotes: presVoteSummary.blankVotes || 0,
+                presNullVotes: presVoteSummary.nullVotes || 0,
+                presTotalVotes: presVoteSummary.totalVotes || 0,
+                // Diputados
+                depValidVotes: depVoteSummary.validVotes || 0,
+                depBlankVotes: depVoteSummary.blankVotes || 0,
+                depNullVotes: depVoteSummary.nullVotes || 0,
+                depTotalVotes: depVoteSummary.totalVotes || 0,
+              },
             };
-          });
+          })
+        : [];
 
-          // Extraer resumen de votos para presidente
-          const presVoteSummary = record.votes?.parties || {};
-          // Extraer resumen de votos para diputados
-          const depVoteSummary = record.votes?.deputies || {};
-
-          return {
-            id: record._id,
-            uri: imageUrl,
-            recordId: record.recordId,
-            tableCode: record.tableCode,
-            tableNumber: record.tableNumber,
-            partyResults: combinedPartyResults,
-            voteSummaryResults: {
-              // Presidente
-              presValidVotes: presVoteSummary.validVotes || 0,
-              presBlankVotes: presVoteSummary.blankVotes || 0,
-              presNullVotes: presVoteSummary.nullVotes || 0,
-              presTotalVotes: presVoteSummary.totalVotes || 0,
-              // Diputados
-              depValidVotes: depVoteSummary.validVotes || 0,
-              depBlankVotes: depVoteSummary.blankVotes || 0,
-              depNullVotes: depVoteSummary.nullVotes || 0,
-              depTotalVotes: depVoteSummary.totalVotes || 0,
-            },
-            rawData: record,
-          };
-        });
-
-        navigation.navigate(StackNav.WhichIsCorrectScreen, {
-          tableData: enrichedMesa,
-          actaImages: actaImages,
-          existingRecords: records,
-          mesaInfo: records[0],
-          totalRecords: records.length,
-          isFromAPI: true,
-        });
-      } else {
-        // No hay registros, ir a TableDetail
-
-        navigation.navigate(StackNav.TableDetail, {
-          tableData: enrichedMesa,
-          mesa: enrichedMesa,
-          mesaData: enrichedMesa,
-          isFromUnifiedFlow: true,
-        });
-      }
+      navigation.navigate(StackNav.TableDetail, {
+        tableData: enrichedMesa,
+        mesa: enrichedMesa,
+        mesaData: enrichedMesa,
+        existingRecords: enrichedRecords,
+        totalRecords: enrichedRecords.length,
+        isFromUnifiedFlow: true,
+      });
     } catch (error) {
       // Check if it's a 404 or mesa not found error
       if (error.response && error.response.status === 404) {
@@ -471,6 +463,8 @@ const BaseSearchTableScreen = ({
           tableData: enrichedMesa,
           mesa: enrichedMesa,
           mesaData: enrichedMesa,
+          existingRecords: [],
+          totalRecords: 0,
           isFromUnifiedFlow: true,
         });
       } else if (
@@ -487,6 +481,8 @@ const BaseSearchTableScreen = ({
             tableData: enrichedMesa,
             mesa: enrichedMesa,
             mesaData: enrichedMesa,
+            existingRecords: [],
+            totalRecords: 0,
             isFromUnifiedFlow: true,
           });
         } else {

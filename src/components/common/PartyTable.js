@@ -1,13 +1,12 @@
 import React from 'react';
 import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
 
 const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375; // Increased from 350
+const isSmallPhone = screenWidth < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -15,11 +14,22 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-// Party Table Row Component
-export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex, emptyDisplayWhenReadOnly = '0' }) => (
+export const PartyTableRow = ({
+  party,
+  isEditing,
+  onUpdate,
+  rowIndex,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
   <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
-    <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>{party.id || party.partyId}</CText>
-    <View testID={`partyVotePresidenteContainer_${rowIndex}`} style={styles.partyVoteContainer}>
+    <CText
+      testID={`partyNameText_${rowIndex}`}
+      style={styles.partyNameText}>
+      {party.id || party.partyId}
+    </CText>
+    <View
+      testID={`partyVotePresidenteContainer_${rowIndex}`}
+      style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
@@ -36,14 +46,18 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex, emptyDispl
           testID={`partyInputPresidente_${rowIndex}`}
         />
       ) : (
-        <CText testID={`partyVotePresidenteText_${rowIndex}`} style={styles.partyVoteText}>
+        <CText
+          testID={`partyVotePresidenteText_${rowIndex}`}
+          style={styles.partyVoteText}>
           {party.presidente === '' || party.presidente == null
             ? emptyDisplayWhenReadOnly
             : String(party.presidente)}
         </CText>
       )}
     </View>
-    <View testID={`partyVoteDiputadoContainer_${rowIndex}`} style={styles.partyVoteContainer}>
+    <View
+      testID={`partyVoteDiputadoContainer_${rowIndex}`}
+      style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
@@ -60,7 +74,9 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex, emptyDispl
           testID={`partyInputDiputado_${rowIndex}`}
         />
       ) : (
-        <CText testID={`partyVoteDiputadoText_${rowIndex}`} style={styles.partyVoteText}>
+        <CText
+          testID={`partyVoteDiputadoText_${rowIndex}`}
+          style={styles.partyVoteText}>
           {party.diputado === '' || party.diputado == null
             ? emptyDisplayWhenReadOnly
             : String(party.diputado)}
@@ -70,21 +86,36 @@ export const PartyTableRow = ({ party, isEditing, onUpdate, rowIndex, emptyDispl
   </View>
 );
 
-// Party Table Component
-export const PartyTable = ({ partyResults, isEditing = false, onUpdate, emptyDisplayWhenReadOnly = '0' }) => (
+export const PartyTable = ({
+  partyResults = [],
+  isEditing = false,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+}) => (
   <View testID="partyTableContainer" style={styles.partyTableContainer}>
     <View testID="partyTableHeader" style={styles.partyTableHeader}>
-      <CText testID="partyTableHeaderPartido" style={styles.partyTableHeaderLeft}>Partido</CText>
-      <CText testID="partyTableHeaderPresidente" style={styles.partyTableHeaderCenter}>PRESIDENTE/A</CText>
-      <CText testID="partyTableHeaderDiputado" style={styles.partyTableHeaderCenter}>DIPUTADO/A</CText>
+      <CText
+        testID="partyTableHeaderPartido"
+        style={styles.partyTableHeaderLeft}>
+        Partido
+      </CText>
+      <CText
+        testID="partyTableHeaderPresidente"
+        style={styles.partyTableHeaderCenter}>
+        PRESIDENTE/A
+      </CText>
+      <CText
+        testID="partyTableHeaderDiputado"
+        style={styles.partyTableHeaderCenter}>
+        DIPUTADO/A
+      </CText>
     </View>
 
-    {partyResults.map((party, index) => (
+    {(Array.isArray(partyResults) ? partyResults : []).map((party, index) => (
       <PartyTableRow
         key={party.id || index}
         party={{
           ...party,
-          // Mantener valores en edición sin forzar "0"
           presidente: party.presidente,
           diputado: party.diputado,
         }}

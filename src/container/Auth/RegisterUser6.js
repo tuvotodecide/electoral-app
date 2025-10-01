@@ -21,14 +21,14 @@ import String from '../../i18n/String';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser6({navigation, route}) {
-  const {vc, offerUrl, dni} = route.params;
+  const {dni, ocrData} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
   // Hook para logging de navegación
   const { logAction, logNavigation } = useNavigationLogger('RegisterUser6', true);
   const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser7, {vc, offerUrl, dni});
+    navigation.navigate(AuthNav.RegisterUser7, {ocrData, dni});
   };
   const onPressReturn = () => {
     navigation.reset({
@@ -43,16 +43,10 @@ export default function RegisterUser6({navigation, route}) {
   const onPressRememberMe = () => {
     setCheck(!check);
   };
-
-  const {
-    fullName,
-    governmentIdentifier,
-    dateOfBirth,
-    documentExpirationDate,
-    governmentIdentifierType,
-  } = vc.credentialSubject;
+  const {fullName, governmentIdentifier, dateOfBirth} = ocrData;
 
   const fmtDate = epoch => {
+    if (typeof epoch !== 'number' || !Number.isFinite(epoch)) return '-';
     const d = new Date(epoch * 1000);
     return `${d.getUTCDate().toString().padStart(2, '0')}/${(
       d.getUTCMonth() + 1

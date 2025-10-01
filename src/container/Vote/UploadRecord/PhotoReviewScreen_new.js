@@ -4,16 +4,25 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import {moderateScale} from '../../../common/constants';
-import String from '../../../i18n/String';
+import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
+import { StackNav } from '../../../navigation/NavigationKey';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {photoUri, tableData, mesaData, aiAnalysis, mappedData, offline} =
-    route.params || {};
+  const {
+    photoUri,
+    tableData,
+    mesaData,
+    aiAnalysis,
+    mappedData,
+    offline,
+    existingRecord,
+    isViewOnly,
+  } = route.params || {};
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -27,6 +36,7 @@ const PhotoReviewScreen = () => {
 
   // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
   const getInitialPartyResults = () => {
+    if (existingRecord?.partyResults) return existingRecord.partyResults;
     if (mappedData?.partyResults) {
       return mappedData.partyResults;
     }
@@ -46,14 +56,42 @@ const PhotoReviewScreen = () => {
   };
 
   const getInitialVoteSummary = () => {
-    if (mappedData?.voteSummaryResults) {
-      return mappedData.voteSummaryResults;
-    }
     const seed = offline ? '' : '0';
+    const toArray = src => [
+      {
+        id: 'validos',
+        label: Strings.validVotes,
+        value1: String(src.presValidVotes ?? src.validVotes ?? seed),
+        value2: String(src.depValidVotes ?? src.validVotes ?? seed),
+      },
+      {
+        id: 'blancos',
+        label: Strings.blankVotes,
+        value1: String(src.presBlankVotes ?? src.blankVotes ?? seed),
+        value2: String(src.depBlankVotes ?? src.blankVotes ?? seed),
+      },
+      {
+        id: 'nulos',
+        label: Strings.nullVotes,
+        value1: String(src.presNullVotes ?? src.nullVotes ?? seed),
+        value2: String(src.depNullVotes ?? src.nullVotes ?? seed),
+      },
+    ];
+
+    const fromExisting = existingRecord?.voteSummaryResults;
+    if (Array.isArray(fromExisting)) return fromExisting;
+    if (fromExisting && typeof fromExisting === 'object')
+      return toArray(fromExisting);
+
+    const fromMapped = mappedData?.voteSummaryResults;
+    if (Array.isArray(fromMapped)) return fromMapped;
+    if (fromMapped && typeof fromMapped === 'object')
+      return toArray(fromMapped);
+
     return [
-      {id: 'validos', label: String.validVotes, value1: seed, value2: seed},
-      {id: 'blancos', label: String.blankVotes, value1: seed, value2: seed},
-      {id: 'nulos', label: String.nullVotes, value1: seed, value2: seed},
+      {id: 'validos', label: Strings.validVotes, value1: seed, value2: seed},
+      {id: 'blancos', label: Strings.blankVotes, value1: seed, value2: seed},
+      {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: seed},
     ];
   };
 
@@ -88,8 +126,8 @@ const PhotoReviewScreen = () => {
     setIsEditing(false);
     setInfoModalData({
       visible: true,
-      title: String.saved,
-      message: String.changesSavedSuccessfully,
+      title: Strings.saved,
+      message: Strings.changesSavedSuccessfully,
     });
   };
 
@@ -109,17 +147,19 @@ const PhotoReviewScreen = () => {
       value2: v.value2 === '' ? '0' : v.value2,
     }));
 
-    const check = validateBallotLocally(
-      normalizedPartyResults,
-      normalizedVoteSummaryResults,
-    );
-    if (!check.ok) {
-      setInfoModalData({
-        visible: true,
-        title: 'Datos inconsistentes',
-        message: check.errors.join('\n'),
-      });
-      return; // NO avanzar
+    if (!isViewOnly) {
+      const check = validateBallotLocally(
+        normalizedPartyResults,
+        normalizedVoteSummaryResults,
+      );
+      if (!check.ok) {
+        setInfoModalData({
+          visible: true,
+          title: 'Datos inconsistentes',
+          message: check.errors.join('\n'),
+        });
+        return; // NO avanzar
+      }
     }
 
     navigation.navigate('PhotoConfirmationScreen', {
@@ -155,10 +195,34 @@ const PhotoReviewScreen = () => {
   };
 
   // Action buttons for PhotoReviewScreen
-  const actionButtons = !isEditing
+  const goToCamera = () => {
+    const mesaInfo = getMesaInfo();
+    navigation.navigate(StackNav.CameraScreen, {
+      tableData: mesaInfo,
+      mesaData: mesaInfo,
+      mesa: mesaInfo,
+    });
+  };
+
+  const actionButtons = isViewOnly
     ? [
         {
-          text: String.edit,
+          text: 'Están correctos',
+          onPress: handleNext,
+          style: {backgroundColor: colors.primary},
+          textStyle: {color: '#fff'},
+        },
+        {
+          text: 'Subir acta',
+          onPress: goToCamera,
+          style: {backgroundColor: '#DC2626'}, // rojo
+          textStyle: {color: '#fff'},
+        },
+      ]
+    : !isEditing
+    ? [
+        {
+          text: Strings.edit,
           onPress: handleEdit,
           style: {
             backgroundColor: '#fff',
@@ -170,7 +234,7 @@ const PhotoReviewScreen = () => {
           },
         },
         {
-          text: String.next,
+          text: Strings.next,
           onPress: handleNext,
           style: {
             backgroundColor: colors.primary,
@@ -182,7 +246,7 @@ const PhotoReviewScreen = () => {
       ]
     : [
         {
-          text: String.save,
+          text: Strings.save,
           onPress: handleSave,
           style: {
             backgroundColor: colors.primary,
@@ -197,13 +261,13 @@ const PhotoReviewScreen = () => {
     <>
       <BaseRecordReviewScreen
         colors={colors}
-        headerTitle={`${String.table} ${tableData.numero}`}
+        headerTitle={`${Strings.table} ${tableData.numero}`}
         instructionsText={
           offline
             ? 'Completar los datos por favor'
             : aiAnalysis
             ? 'Revise los votos de la pizarra'
-            : String.reviewPhotoPlease
+            : Strings.reviewPhotoPlease
         }
         instructionsStyle={{
           fontSize: moderateScale(20),
@@ -218,8 +282,8 @@ const PhotoReviewScreen = () => {
         onVoteSummaryUpdate={updateVoteSummaryResult}
         actionButtons={actionButtons}
         onBack={handleBack}
-        showMesaInfo={true}
-        mesaData={getMesaInfo()}
+        showTableInfo={true}
+        tableData={getMesaInfo()}
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
       />
       <InfoModal {...infoModalData} onClose={closeInfoModal} />

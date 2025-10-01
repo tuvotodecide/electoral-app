@@ -31,6 +31,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getJwt} from '../../../utils/Session';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
+const isUserCancellation = err => {
+  const msg = String(err?.message || err || '');
+  return (
+    msg.includes('Canceled') ||
+    msg.includes('cancel') ||
+    msg.includes('LAErrorUserCancel') ||
+    msg.includes('ERR_KEYCHAIN_USER_CANCELED')
+  );
+};
+
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
   const [bioEnabled, setBioEnabled] = useState(false);
@@ -54,8 +64,7 @@ export default function Security({navigation}) {
 
         const secrets = await getSecrets();
 
-        const jwt = await getJwt();
-        if (!secrets || !jwt) {
+        if (!secrets) {
           Alert.alert(
             'Sin datos',
             'Crea tu cuenta/PIN antes de activar la biometría',
@@ -64,25 +73,30 @@ export default function Security({navigation}) {
         }
 
         const storedPayload = secrets.payloadQr;
+
         await Keychain.setGenericPassword(
-          'walletBundle',
+          'bundle',
           JSON.stringify({stored: storedPayload, jwt}),
           {
             service: 'walletBundle',
             accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
             accessControl:
               Platform.OS === 'ios'
-                ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
-                : Keychain.ACCESS_CONTROL.BIOMETRY_ANY,
+                ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
+                : Keychain.ACCESS_CONTROL.BIOMETRY_STRONG,
+            securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
           },
         );
+
+        await setBioFlag(true);
+        setBioEnabled(true);
       } else {
         await Keychain.resetGenericPassword({service: 'walletBundle'});
 
         const secrets = await getSecrets();
         if (secrets) {
           await Keychain.setGenericPassword(
-            'finline.wallet.vc',
+            'vc',
             JSON.stringify(secrets.payloadQr),
             {
               service: 'finline.wallet.vc',

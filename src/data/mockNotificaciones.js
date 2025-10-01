@@ -49,19 +49,3 @@ export const getNotificaciones = () => {
 };
 
 // Función para formatear tiempo relativo
-export const formatTiempoRelativo = timestamp => {
-  const ahora = Date.now();
-  const diferencia = ahora - timestamp;
-
-  const minutos = Math.floor(diferencia / (1000 * 60));
-  const horas = Math.floor(diferencia / (1000 * 60 * 60));
-  const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-
-  if (minutos < 60) {
-    return `${minutos} min atrás`;
-  } else if (horas < 24) {
-    return `${horas} hora${horas > 1 ? 's' : ''} atrás`;
-  } else {
-    return `${dias} día${dias > 1 ? 's' : ''} atrás`;
-  }
-};

@@ -1,73 +1,4 @@
-// // src/notifications.js
-// // import messaging from '@react-native-firebase/messaging';
-// import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
-// import {navigate} from './navigation/RootNavigation';
-// import store from './redux/store';
-// import {setPendingNav} from './redux/slices/authSlice';
-
-
-// export async function registerNotifications() {
-//   await notifee.createChannel({
-//     id: 'high_prio',
-//     name: 'High priority',
-//     importance: AndroidImportance.HIGH,
-//   });
-
-//   messaging().onMessage(async msg => {
-//     maybeStorePendingNav(msg);
-//     display(msg);
-//   });
-
-//   messaging().setBackgroundMessageHandler(display);
-//   notifee.onForegroundEvent(({type, detail}) => {
-//     if (type === EventType.PRESS) handleNotificationPress(detail.notification);
-//   });
-//   notifee.onBackgroundEvent(async ({type, detail}) => {
-//     if (type === EventType.PRESS) handleNotificationPress(detail.notification);
-//   });
-// }
-
-// function maybeStorePendingNav(remoteMessage) {
-//   const scr = remoteMessage.data?.screen;
-//   const auth = store.getState().auth;
-//   if (!scr || !StackNav[scr] || auth.isAuthenticated) return;
-//   store.dispatch(setPendingNav({name: scr, params: remoteMessage.data}));
-// }
-
-// async function display(remoteMessage) {
-//   await notifee.displayNotification({
-//     title: remoteMessage.notification?.title ?? 'Tu Voto decide',
-//     body: remoteMessage.notification?.body ?? 'Mensaje nuevo',
-//     android: {
-//       channelId: 'high_prio',
-//       smallIcon: 'ic_launcher',
-//       importance: AndroidImportance.HIGH,
-//       pressAction: {id: 'PRESS'},
-//     },
-//     data: remoteMessage.data,
-//   });
-// }
-// export function handleNotificationPress(notification) {
-//   const d = notification.data ?? {};
-
- 
-//   const route =
-//     d.screen && StackNav[d.screen]
-//       ? {name: d.screen, params: d}
-//       : {name: 'Splash'};
-
-//   const {isAuthenticated} = store.getState().auth;
-
-//   if (isAuthenticated) {
-//     navigate(route.name, route.params);
-//   } else {
-//     store.dispatch(setPendingNav(route));
-//     navigate('LoginUser');
-//   }
-// }
-
-
-// import messaging from '@react-native-firebase/messaging';
+// C:\apps\electoralmobile\src\notifications.js
 
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { navigate } from './navigation/RootNavigation';
@@ -75,20 +6,27 @@ import store from './redux/store';
 import { setPendingNav } from './redux/slices/authSlice';
 import { StackNav } from './navigation/NavigationKey';
 
-// -------------------------------------------------------------------------------------------------
-// Registro / permisos / listeners
-// -------------------------------------------------------------------------------------------------
-export async function registerNotifications() {
-  try {
-    // iOS (y no molesta en Android): permiso de alertas/badges/sounds
-    await notifee.requestPermission();
+export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 
-    // Canal Android
+
+export async function ensureNotificationChannel() {
+  try {
     await notifee.createChannel({
-      id: 'high_prio',
+      id: HIGH_PRIO_CHANNEL_ID,
       name: 'High priority',
       importance: AndroidImportance.HIGH,
     });
+  } catch {}
+}
+
+export async function registerNotifications({ askPermissionOnInit = false } = {}) {
+  try {
+    if (askPermissionOnInit) {
+      // Si quieres que pida permiso aquí (similar a iOS).
+      await notifee.requestPermission();
+    }
+
+    await ensureNotificationChannel();
 
     // Tap con app en foreground
     notifee.onForegroundEvent(({ type, detail }) => {
@@ -99,23 +37,23 @@ export async function registerNotifications() {
     notifee.onBackgroundEvent(async ({ type, detail }) => {
       if (type === EventType.PRESS) handleNotificationPress(detail.notification);
     });
-
-
   } catch {}
 }
 
-// -------------------------------------------------------------------------------------------------
-// Helpers de notificaciones locales
-// -------------------------------------------------------------------------------------------------
-async function displayLocal({ title, body, data }) {
+/**
+ * Muestra una notificación local genérica.
+ */
+export async function showLocalNotification({ title, body, data, android = {} }) {
+  await ensureNotificationChannel();
   await notifee.displayNotification({
     title: title ?? 'Tu Voto Decide',
     body: body ?? 'Mensaje nuevo',
     android: {
-      channelId: 'high_prio',
+      channelId: HIGH_PRIO_CHANNEL_ID,
       smallIcon: 'ic_launcher',
       importance: AndroidImportance.HIGH,
       pressAction: { id: 'PRESS' },
+      ...android,
     },
     data: data ?? {},
   });
@@ -123,11 +61,11 @@ async function displayLocal({ title, body, data }) {
 
 /**
  * Notificación local específica para “Acta publicada”.
- * Navega a SuccessScreen con params serializados.
+ * Navega a SuccessScreen con params serializados en data.routeParams.
  */
 export async function showActaPublishedNotification({ ipfsData, nftData, tableData }) {
   try {
-    await displayLocal({
+    await showLocalNotification({
       title: 'Acta publicada',
       body: 'Tu acta fue publicada correctamente. Toca para ver y compartir.',
       data: {
@@ -138,18 +76,20 @@ export async function showActaPublishedNotification({ ipfsData, nftData, tableDa
   } catch {}
 }
 
-/** Alias para compatibilidad con llamadas existentes (p.ej. displayLocalActaPublished). */
+/** Alias de compatibilidad con llamadas existentes. */
 export const displayLocalActaPublished = showActaPublishedNotification;
 
-// -------------------------------------------------------------------------------------------------
-// Compatibilidad FCM (si luego lo reactivas)
-// -------------------------------------------------------------------------------------------------
-async function display(remoteMessage) {
+/**
+ * (Opcional) Puente para FCM si más adelante lo reactivas.
+ * Llama esto desde tu handler de onMessage/onBackgroundMessage para mostrar el push.
+ */
+export async function displayRemoteMessage(remoteMessage) {
+  await ensureNotificationChannel();
   await notifee.displayNotification({
-    title: remoteMessage?.notification?.title ?? 'Tu Voto decide',
+    title: remoteMessage?.notification?.title ?? 'Tu Voto Decide',
     body: remoteMessage?.notification?.body ?? 'Mensaje nuevo',
     android: {
-      channelId: 'high_prio',
+      channelId: HIGH_PRIO_CHANNEL_ID,
       smallIcon: 'ic_launcher',
       importance: AndroidImportance.HIGH,
       pressAction: { id: 'PRESS' },
@@ -158,7 +98,10 @@ async function display(remoteMessage) {
   });
 }
 
-function maybeStorePendingNav(remoteMessage) {
+/**
+ * (Opcional) Guardar navegación pendiente cuando llega push y el usuario no está logueado.
+ */
+export function maybeStorePendingNavFromRemote(remoteMessage) {
   const d = remoteMessage?.data ?? {};
   const scr = d.screen;
   const auth = store.getState().auth;
@@ -170,9 +113,10 @@ function maybeStorePendingNav(remoteMessage) {
   store.dispatch(setPendingNav({ name: scr, params: d }));
 }
 
-// -------------------------------------------------------------------------------------------------
-// Handler de taps
-// -------------------------------------------------------------------------------------------------
+/**
+ * Handler de taps en notificaciones (locales o remotas a través de notifee).
+ * Soporta data.routeParams (JSON) para pantallas que necesiten objetos complejos.
+ */
 export function handleNotificationPress(notification) {
   const d = notification?.data ?? {};
 

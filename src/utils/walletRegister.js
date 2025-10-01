@@ -126,7 +126,7 @@ export async function registerStreamAndGuardian(
   salt,
   privateKey,
   dni,
-  streamId,
+  streamId='',
 ) {
   try {
     if (!availableNetworks[chainId]) {

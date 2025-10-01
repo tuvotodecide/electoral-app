@@ -15,7 +15,6 @@ import {
 import {randomBytes} from 'react-native-quick-crypto';
 import {aesGcmEncrypt, aesGcmDecrypt} from './aesGcm';
 import {getBioFlag, setBioFlag} from './BioFlag';
-import {getJwt} from './Session';
 import {readBundleFile, writeBundleAtomic} from './ensureBundle';
 import {FLAGS_KEY, KEYCHAIN_ID} from '../common/constants';
 
@@ -97,18 +96,15 @@ export async function saveSecrets(
       HAS_WALLET: true,
     }),
   );
-  const jwt = await getJwt();
-  await writeBundleAtomic(
-    JSON.stringify({
-      cipherHex: bundle.cipherHex,
-      saltHex: bundle.saltHex,
-      streamId: payloadQr.streamId,
-      account: payloadQr.account,
-      guardian: payloadQr.guardian,
-      salt: payloadQr.salt,
-      jwt,
-    }),
-  );
+  const safe = {
+    cipherHex: bundle.cipherHex,
+    saltHex: bundle.saltHex,
+    account: payloadQr.account,
+    guardian: payloadQr.guardian,
+    salt: payloadQr.salt,
+  };
+  if (payloadQr.streamId) safe.streamId = payloadQr.streamId;
+  await writeBundleAtomic(JSON.stringify(safe));
 }
 
 export async function getSecrets(allowNoFlags = false) {
@@ -162,9 +158,15 @@ export async function checkPin(pin) {
         BIO_ENABLED: await getBioFlag(),
         HAS_WALLET: true,
       });
-      await AsyncStorage.setItem(FLAGS_KEY, flags);
-      const jwt = await getJwt();
-      await writeBundleAtomic(JSON.stringify({...stored.payloadQr, jwt}));
+      const safe = {
+        cipherHex: stored.payloadQr.cipherHex,
+        saltHex: stored.payloadQr.saltHex,
+        account: stored.payloadQr.account,
+        guardian: stored.payloadQr.guardian,
+        salt: stored.payloadQr.salt,
+      };
+      if (stored.payloadQr.streamId) safe.streamId = stored.payloadQr.streamId;
+      await writeBundleAtomic(JSON.stringify(safe));
     } catch {
       return false;
     }
@@ -186,4 +188,8 @@ export async function decryptRecoveryPayload(encryptedHex, pin) {
 
   const plainBytes = await aesGcmDecrypt(cipher, key);
   return JSON.parse(plainBytes.toString());
+}
+export function getCredentialSubjectFromPayload(payload) {
+  const vc = payload?.vc?.vc || payload?.vc;
+  return vc?.credentialSubject ?? null;
 }

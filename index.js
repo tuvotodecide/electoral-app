@@ -1,4 +1,6 @@
-
+/**
+ * @format
+ */
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import 'text-encoding-polyfill';
@@ -27,7 +29,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 import store, { persistor } from './src/redux/store';
 import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-
+import {registerBackgroundHandler} from './src/services/notifications';
+registerBackgroundHandler();
 // Debug de configuración de ambiente en desarrollo
 if (__DEV__) {
   const { debugEnvironmentConfig } = require('./src/utils/debugNetwork');

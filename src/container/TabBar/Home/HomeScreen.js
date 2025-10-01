@@ -383,8 +383,12 @@ export default function HomeScreen({navigation}) {
   };
 
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const dni = subject?.governmentIdentifier;
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni;
 
   const checkUserVotePlace = useCallback(async () => {
     if (!dni) {
@@ -401,7 +405,6 @@ export default function HomeScreen({navigation}) {
           headers: {'x-api-key': BACKEND_SECRET},
         },
       );
-      console.log(res?.data);
 
       if (res?.data) {
         await saveVotePlace(dni, {
@@ -411,7 +414,6 @@ export default function HomeScreen({navigation}) {
           table: res.data.table,
         });
       }
-      // Requiere ambos: location y table
       const hasBoth = !!res?.data?.location && !!res?.data?.table;
       setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
@@ -427,7 +429,7 @@ export default function HomeScreen({navigation}) {
     name: subject.fullName || '(sin nombre)',
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
-  const userFullName = data.name || '(sin nombre)';
+  const userFullName = data.name || '(sin nolombre)';
 
   const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -530,11 +532,12 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.headerRow}>
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
-                <TouchableOpacity disabled={true} style={stylesx.disabledIcon}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate(StackNav.Notification)}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#cccccc'}
+                    color={'#41A44D'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
@@ -591,7 +594,7 @@ export default function HomeScreen({navigation}) {
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni: subject?.governmentIdentifier,
+                  dni,
                 })
               }
             />
@@ -622,21 +625,20 @@ export default function HomeScreen({navigation}) {
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                  activeOpacity={1}
-                  disabled={true}
-                  testID="announceCountButtonDisabled">
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[1].onPress}
+                  testID="announceCountButtonTablet">
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#cccccc',
+                    color: '#41A44D',
                     style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardTitle]}>
                     {menuItems[1].title}
                   </CText>
-                  <CText
-                    style={[stylesx.cardDescription, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -672,12 +674,13 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.headerRow}>
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
-              <TouchableOpacity disabled={true} style={stylesx.disabledIcon}
-                testID="notificationsButtonDisabled">
+              <TouchableOpacity
+                testID="notificationsButton"
+                onPress={() => navigation.navigate(StackNav.Notification)}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#cccccc'}
+                  color={'#41A44D'}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout}
@@ -733,7 +736,7 @@ export default function HomeScreen({navigation}) {
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni: subject?.governmentIdentifier,
+                  dni,
                 })
               }
             />
@@ -767,20 +770,18 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                activeOpacity={1}
-                disabled={true}
-                testID="announceCountButtonRegularDisabled">
+                style={[stylesx.gridDiv2, stylesx.card]}
+                activeOpacity={0.87}
+                onPress={menuItems[1].onPress}
+                testID="announceCountButtonRegular">
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
-                  color: '#cccccc',
+                  color: '#41A44D',
                   style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>
-                  {menuItems[1].title}
-                </CText>
-                <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardDescription]}>
                   {menuItems[1].description}
                 </CText>
               </TouchableOpacity>

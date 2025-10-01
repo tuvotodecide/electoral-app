@@ -13,12 +13,13 @@ import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
+import {KEY_OFFLINE, moderateScale, PENDINGRECOVERY} from '../common/constants';
 import {isSessionValid} from '../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
+import {ensureProvisioned} from '../utils/provisionClient';
 import {useNavigationLogger} from '../hooks/useNavigationLogger';
 
 export default function Splash({navigation}) {
@@ -29,17 +30,19 @@ export default function Splash({navigation}) {
 
   const dispatch = useDispatch();
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('Splash', true);
+  const {logAction, logNavigation} = useNavigationLogger('Splash', true);
 
   useEffect(() => {
     const asyncProcess = async () => {
       try {
+        logAction('boot_started');
+        await ensureProvisioned({mock: true});
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;
         const draft = await getDraft();
         if (draft) {
+          logNavigation('resume_register_draft');
           navigation.replace(StackNav.AuthNavigation, {
             screen: AuthNav.RegisterUser10,
             params: draft,
@@ -60,6 +63,7 @@ export default function Splash({navigation}) {
           const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
           if (pending === 'true') {
+            logNavigation('open_pending_recovery');
             navigation.navigate(StackNav.AuthNavigation, {
               screen: AuthNav.MyGuardiansStatus,
             });
@@ -67,18 +71,28 @@ export default function Splash({navigation}) {
           }
 
           const bundleReady = await ensureBundle();
+          logAction('bundle_checked', {bundleReady});
 
-          const alive = await isSessionValid();
+          // const alive = await isSessionValid();
 
-          if (alive) {
-            navigation.replace(StackNav.TabNavigation);
-            return;
-          }
+          // if (alive) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
+
+          // const isAuth = store.getState().auth?.isAuthenticated;
+          // if (isAuth) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
+          logNavigation('go_to_auth_flow');
           navigation.replace(StackNav.AuthNavigation);
         } else {
+          logNavigation('go_to_auth_flow_empty');
           navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
+        logAction('boot_error', {message: e?.message, name: e?.name});
         navigation.replace(StackNav.AuthNavigation);
       }
     };
