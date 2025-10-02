@@ -1,5 +1,4 @@
 import React, {useState} from 'react';
-import {Alert} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
@@ -7,7 +6,8 @@ import {moderateScale} from '../../../common/constants';
 import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
+import {normalizeUri} from '../../../utils/normalizedUri';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -22,7 +22,20 @@ const PhotoReviewScreen = () => {
     offline,
     existingRecord,
     isViewOnly,
+
+    fromWhichIsCorrect,
+
+    actaCount,
   } = route.params || {};
+
+  const effectivePhotoUri = React.useMemo(() => {
+    const fromRecord =
+      existingRecord?.actaImage ||
+      existingRecord?.image ||
+      existingRecord?.photo ||
+      existingRecord?.imageUrl;
+    return normalizeUri(photoUri || fromRecord);
+  }, [photoUri, existingRecord]);
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -213,8 +226,14 @@ const PhotoReviewScreen = () => {
           textStyle: {color: '#fff'},
         },
         {
-          text: 'Subir acta',
-          onPress: goToCamera,
+          text:
+            fromWhichIsCorrect && (actaCount ?? 0) > 1
+              ? 'Regresar'
+              : 'Subir acta',
+          onPress:
+            fromWhichIsCorrect && (actaCount ?? 0) > 1
+              ? () => navigation.goBack()
+              : goToCamera,
           style: {backgroundColor: '#DC2626'}, // rojo
           textStyle: {color: '#fff'},
         },
@@ -274,7 +293,7 @@ const PhotoReviewScreen = () => {
           fontWeight: '800',
           color: colors.text || '#000000',
         }}
-        photoUri={photoUri}
+        photoUri={effectivePhotoUri}
         partyResults={partyResults}
         voteSummaryResults={voteSummaryResults}
         isEditing={isEditing}

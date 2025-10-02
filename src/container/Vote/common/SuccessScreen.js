@@ -14,12 +14,12 @@ import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {StackNav} from '../../../navigation/NavigationKey';
+import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {title} from 'process';
 import {url} from 'inspector';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -40,10 +40,11 @@ const SuccessScreen = () => {
   const {nftData, ipfsData} = route.params;
 
   const handleBack = () => {
-    try {
-      navigation.popToTop();
-    } catch {
-      navigation.navigate(StackNav.TabNavigation);
+    const parent = navigation.getParent();
+    if (parent?.navigate) {
+      parent.navigate(TabNav.HomeScreen, {screen: 'HomeMain'});
+    } else {
+      navigation.navigate('HomeMain');
     }
   };
 
@@ -100,7 +101,7 @@ const SuccessScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-const subject = getCredentialSubjectFromPayload(userData) || {};
+  const subject = getCredentialSubjectFromPayload(userData) || {};
   const nombre = subject?.fullName || '(sin nombre)';
 
   return (

@@ -18,6 +18,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
 import {StackNav} from '../../../navigation/NavigationKey';
+import { normalizeUri } from '../../../utils/normalizedUri';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -161,7 +162,7 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: record?.actaImage,
+          photoUri: normalizeUri(record?.actaImage || record?.image || record?.photo || record?.imageUrl),
         });
       } catch {
         navigation.navigate('PhotoReviewScreen', {
@@ -170,7 +171,7 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: record?.actaImage,
+          photoUri: normalizeUri(record?.actaImage || record?.image || record?.photo || record?.imageUrl),
         });
       }
       return;
@@ -203,7 +204,7 @@ export default function TableDetail({navigation, route}) {
     navigation.navigate(StackNav.SuccessScreen, {
       title: String.photoSentTitle,
       message: String.photoSentMessage,
-      returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
+      returnRoute: 'HomeMain',
     });
   };
 

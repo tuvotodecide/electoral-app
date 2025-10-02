@@ -423,7 +423,7 @@ export default function HomeScreen({navigation}) {
   };
   const userFullName = data.name || '(sin nolombre)';
 
-  const onPressNotification = () => navigation.navigate(StackNav.Notification);
+
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [

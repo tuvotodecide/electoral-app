@@ -19,6 +19,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import {normalizeUri} from '../../../utils/normalizedUri';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -62,6 +63,16 @@ const WhichIsCorrectScreen = () => {
   const [actaImages, setActaImages] = useState([]);
   const [partyResults, setPartyResults] = useState([]);
   const [voteSummaryResults, setVoteSummaryResults] = useState([]);
+
+  const handleSubirMiActa = () => {
+    navigation.navigate(StackNav.CameraScreen, {
+      tableData,
+      mesa: tableData,
+      mesaData: tableData,
+      existingActas: actaImages,
+      isAddingToExisting: actaImages.length > 0,
+    });
+  };
 
   // Component for handling IPFS images
   const IPFSImage = ({
@@ -138,7 +149,12 @@ const WhichIsCorrectScreen = () => {
   useEffect(() => {
     // If we have preloaded acta images from API, use them directly
     if (isFromAPI && preloadedActaImages && preloadedActaImages.length > 0) {
-      setActaImages(preloadedActaImages);
+      setActaImages(
+        preloadedActaImages.map(a => ({
+          ...a,
+          uri: normalizeUri(a.uri || a.image || a.imageUrl),
+        })),
+      );
       setIsLoadingActas(false);
       return;
     }
@@ -148,7 +164,7 @@ const WhichIsCorrectScreen = () => {
       setActaImages([
         {
           id: '1',
-          uri: photoUri,
+          uri: normalizeUri(photoUri),
         },
       ]);
       setIsLoadingActas(false);
@@ -178,18 +194,28 @@ const WhichIsCorrectScreen = () => {
     const selectedImage = actaImages.find(img => img.id === imageId);
     if (!selectedImage) return;
 
-    navigation.navigate('ActaDetailScreen', {
-      selectedActa: selectedImage,
-      tableData: tableData,
-      partyResults: selectedImage.partyResults || [],
-      voteSummaryResults: selectedImage.voteSummaryResults || [],
-      actaImages: actaImages,
-      allActas: actaImages,
-      onCorrectActaSelected: handleCorrectActaSelected,
-      onUploadNewActa: handleUploadNewActa,
+    navigation.navigate(StackNav.PhotoReviewScreen, {
+      // Foto seleccionada
+      photoUri: selectedImage.uri,
+
+      // Contexto mesa
+      tableData,
+      mesaData: tableData,
+
+      // Datos detectados (puede ser array u objeto; PhotoReview los normaliza)
+      mappedData: {
+        partyResults: selectedImage.partyResults || [],
+        voteSummaryResults: selectedImage.voteSummaryResults || {},
+      },
+
+      // Solo lectura (no editar antes de confirmar)
+      isViewOnly: true,
+
+      // Para customizar botones en PhotoReview
+      fromWhichIsCorrect: true,
+      actaCount: actaImages.length,
     });
   };
-
 
   const handleCorrectActaSelected = actaId => {
     // Clear any previous selection and set the new one
@@ -350,14 +376,11 @@ const WhichIsCorrectScreen = () => {
             <TouchableOpacity
               style={[
                 styles.changeOpinionButton,
-                  {backgroundColor: '#ff0000ff'},
+                {backgroundColor: '#ff0000ff'},
               ]}
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
-              <CText
-                style={[
-                  styles.changeOpinionButtonText,
-                ]}>
+              <CText style={[styles.changeOpinionButtonText]}>
                 Cambiar de opinión
               </CText>
             </TouchableOpacity>
@@ -440,6 +463,11 @@ const WhichIsCorrectScreen = () => {
                       />
                     </TouchableOpacity>
                   ))}
+              <TouchableOpacity
+                style={styles.subirActaBtn}
+                onPress={handleSubirMiActa}>
+                <CText style={styles.subirActaBtnText}>Subir mi acta</CText>
+              </TouchableOpacity>
             </ScrollView>
           )}
 
@@ -726,6 +754,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: getResponsiveSize(3, 4, 6),
+  },
+  subirActaBtn: {
+    backgroundColor: '#4F9858',
+    borderRadius: getResponsiveSize(6, 8, 10),
+    paddingVertical: getResponsiveSize(12, 14, 18),
+    alignItems: 'center',
+    marginTop: getResponsiveSize(8, 10, 12),
+    marginHorizontal: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 16, 20),
+  },
+  subirActaBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: getResponsiveSize(14, 16, 18),
   },
 });
 

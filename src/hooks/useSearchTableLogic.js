@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
+import { TabNav } from '../navigation/NavigationKey';
 
 export const useSearchTableLogic = navigationTarget => {
   const navigation = useNavigation();
@@ -26,7 +27,12 @@ export const useSearchTableLogic = navigationTarget => {
   };
 
   const handleHomePress = () => {
-    // Implement home navigation
+    const parent = navigation.getParent(); // Tab navigator (si existe)
+    if (parent?.navigate) {
+      parent.navigate(TabNav.HomeScreen, {screen: 'HomeMain'});
+    } else {
+      navigation.navigate('HomeMain'); // fallback si ya estás dentro del HomeStack
+    }
   };
 
   const handleProfilePress = () => {
