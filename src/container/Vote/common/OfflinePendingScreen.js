@@ -5,7 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {CommonActions} from '@react-navigation/native';
-import { TabNav } from '../../../navigation/NavigationKey';
+import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 
 const {width} = Dimensions.get('window');
 
@@ -22,7 +22,22 @@ export default function OfflinePendingScreen({navigation}) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>navigation.navigate(TabNav.Profile)}>
+          onPress={() =>
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: StackNav.TabNavigation,
+                    params: {
+                      screen: TabNav.HomeScreen,
+                      params: {screen: 'HomeMain'},
+                    },
+                  },
+                ],
+              }),
+            )
+          }>
           <CText style={styles.buttonText}>Volver al inicio</CText>
         </TouchableOpacity>
       </View>

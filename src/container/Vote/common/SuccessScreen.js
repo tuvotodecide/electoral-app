@@ -9,7 +9,7 @@ import {
   Share,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
@@ -17,8 +17,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
-import {title} from 'process';
-import {url} from 'inspector';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -40,12 +38,25 @@ const SuccessScreen = () => {
   const {nftData, ipfsData} = route.params;
 
   const handleBack = () => {
-    const parent = navigation.getParent();
-    if (parent?.navigate) {
-      parent.navigate(TabNav.HomeScreen, {screen: 'HomeMain'});
-    } else {
-      navigation.navigate('HomeMain');
+    let rootNav = navigation;
+    while (rootNav.getParent && rootNav.getParent()) {
+      rootNav = rootNav.getParent();
     }
+
+    rootNav.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: StackNav.TabNavigation,
+            params: {
+              screen: TabNav.HomeScreen,
+              params: {screen: 'HomeMain'},
+            },
+          },
+        ],
+      }),
+    );
   };
 
   const handleViewNFT = async () => {

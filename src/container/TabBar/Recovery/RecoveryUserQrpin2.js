@@ -25,6 +25,7 @@ import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
+import { resetAttempts } from '../../../utils/PinAttempts';
 
 export default function RecoveryUserQrPin2({navigation, route}) {
   const {originalPin, payload} = route.params;
@@ -45,14 +46,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       const bundle = await createBundleFromPrivKey(otp, payload.privKey);
       const pinHash = SHA256(otp.trim()).toString();
 
-      
-      await saveSecrets(
-        otp,
-        payload,
-        false, 
-        bundle, 
-        pinHash, 
-      );
+      await saveSecrets(otp, payload, false, bundle, pinHash);
 
       dispatch(setSecrets(payload));
       dispatch(
@@ -63,6 +57,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       );
       dispatch(setAuthenticated(true));
       await startSession(null);
+      await resetAttempts();
 
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
     } catch (err) {
