@@ -103,7 +103,8 @@
     "victory": "^37.3.6",
     "victory-native": "^41.17.4",
     "viem": "^2.31.3",
-    "vm-browserify": "^1.1.2"
+    "vm-browserify": "^1.1.2",
+    "wira-sdk": "file:../../wirawallet/wira-sdk/wira-sdk"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

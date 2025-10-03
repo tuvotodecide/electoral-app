@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -17,9 +17,6 @@ import Icono from '../../components/common/Icono';
 import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
-import { didFromEthAddress } from '../../api/did';
-import { bytesToHex } from '@noble/hashes/utils';
-import { randomBytes } from 'react-native-quick-crypto';
 
 export default function RegisterUser1({navigation}) {
   const colors = useSelector(state => state.theme.theme);

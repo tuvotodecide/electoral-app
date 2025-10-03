@@ -14,6 +14,7 @@ const extraNodeModules = {
   buffer: path.resolve(__dirname, 'node_modules/buffer/'),
   'react-native-fs': path.resolve(__dirname, 'node_modules/react-native-fs'),
   '@identity/ssi-sdk': path.resolve(__dirname, '../packages/ssi-sdk'),
+  'react-native': path.resolve(__dirname, 'node_modules/react-native'),
 };
 
 /**
@@ -30,8 +31,9 @@ const config = {
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg', 'cjs', 'ts', 'tsx'],
     extraNodeModules,
+    blockList: [/wira-sdk\/node_modules\/react-native\//],
   },
-  //watchFolders: [path.resolve(__dirname, '../packages')],
+  watchFolders: [path.resolve(__dirname, '../../wirawallet/wira-sdk/wira-sdk')],
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

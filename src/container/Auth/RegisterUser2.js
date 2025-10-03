@@ -18,7 +18,8 @@ import DniExistsModal from '../../components/modal/DniExistsModal';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
-import {useCheckDni} from '../../data/registry';
+import wira from 'wira-sdk';
+import {BACKEND_IDENTITY} from '@env';
 
 export default function RegisterUser2({navigation, route}) {
   const isRecovery = route.params?.isRecovery;
@@ -33,13 +34,12 @@ export default function RegisterUser2({navigation, route}) {
   const [submitting, setSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
 
-  const {mutate: checkDni} = useCheckDni();
   const dispatch = useDispatch();
   const isFormValid = () => {
     return idNumber.trim() !== '' && frontImage && backImage;
   };
 
-  const closeModal = () => setModalVisible(false);
+  const closeModal = () => setModalVisible({visible: false, message: ''});
 
   useEffect(() => {
     const trimmed = idNumber.trim();
@@ -66,49 +66,36 @@ export default function RegisterUser2({navigation, route}) {
         return;
       }
       if (!isFormValid()) return;
+      const api = new wira.RegistryApi(BACKEND_IDENTITY);
 
-      checkDni(
-        {identifier: idNumber.trim()},
-        {
-          onMutate: () => {
-            setSubmitting(true);
+      api.registryCheckByDni(idNumber.trim())
+        .then(({ exists }) => {
+          setSubmitting(false);
+
+          /*if (exists && !isRecovery) {
             setModalVisible({
-              visible: false,
-              message: '',
+              visible: true,
+              message: String.DniExists,
             });
-          },
-          onSuccess: response => {
-            setSubmitting(false);
-
-            if (response.ok && !isRecovery) {
-              setModalVisible({
-                visible: true,
-                message: String.DniExists,
-              });
-            }
-            /*else if (!response.ok && isRecovery) {
+          } else*/ if (!exists && isRecovery) {
             setModalVisible({
               visible: true,
               message: String.DniNotFound
             });
-          } else*/ {
-              navigation.navigate(AuthNav.RegisterUser3, {
-                dni: idNumber.trim(),
-                frontImage,
-                backImage,
-                isRecovery,
-              });
-            }
-          },
-          onError: err => {
-            setSubmitting(false);
+          } else {
+            navigation.navigate(AuthNav.RegisterUser3, {
+              dni: idNumber.trim(),
+              frontImage,
+              backImage,
+              isRecovery,
+            });
+          }
+        }).catch(err => {
+          setSubmitting(false);
             const msg =
               err?.response?.data?.message || err.message || String.unknowerror;
-            Alert.alert(String.errorCi, msg);
-          },
-          onSettled: () => setSubmitting(false),
-        },
-      );
+            Alert.alert(String.error, msg);
+        });
     }, 500),
     [idNumber, frontImage, backImage],
   );

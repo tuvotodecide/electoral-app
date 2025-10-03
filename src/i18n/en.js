@@ -1254,6 +1254,7 @@ export default {
   locationError: 'Error al obtener la ubicación',
   locationPermissionError: 'Error al solicitar permisos de ubicación',
   askMeLater: 'Preguntar después',
+  notRegistered: 'Aún no estas registrado, registrarse?',
   ok: 'OK',
   tables: 'mesas',
   code: 'Código',
