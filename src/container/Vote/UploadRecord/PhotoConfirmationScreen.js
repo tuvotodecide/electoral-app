@@ -402,12 +402,30 @@ const PhotoConfirmationScreen = () => {
         });
         return;
       }
+      const locationId =
+        tableData?.idRecinto ||
+        tableData?.locationId ||
+        mesaData?.idRecinto ||
+        mesa?.idRecinto ||
+        tableData?.location?._id ||
+        null;
+
+      const tableCode = String(tableData?.codigo || tableData?.tableCode || '');
+
+      const tableNumber = String(
+        tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          aiAnalysis?.table_number ||
+          '',
+      );
 
       const persistedUri = await persistLocalImage(photoUri);
       const additionalData = {
-        idRecinto: tableData?.idRecinto || tableData.locationId,
-        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.codigo || 'N/A',
+        idRecinto: locationId,
+        locationId,
+        tableNumber,
+        tableCode,
         location: tableData?.location || 'Bolivia',
         userId: userData?.id || 'unknown',
         userName: userFullName,
