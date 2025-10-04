@@ -16,6 +16,27 @@ class PinataService {
     this.baseURL = 'https://api.pinata.cloud';
   }
 
+  // --- Helpers para manejar URLs remotas / IPFS ---
+  isHttpUrl(u) {
+    return /^https?:\/\//i.test(String(u || ''));
+  }
+  isIpfsUrl(u) {
+    return /^ipfs:\/\//i.test(String(u || ''));
+  }
+  toHttpFromIpfs(u) {
+    return String(u || '').replace(
+      /^ipfs:\/\//i,
+      'https://gateway.pinata.cloud/ipfs/',
+    );
+  }
+  async downloadToCache(url, preferredName = 'electoral-act.jpg') {
+    const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
+    const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
+    const res = await RNFS.downloadFile({fromUrl: src, toFile: target}).promise;
+    if (res.statusCode >= 200 && res.statusCode < 300) return target;
+    throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
+  }
+
   async checkDuplicateBallot(voteData) {
     try {
       // Extraer número de mesa
@@ -100,25 +121,33 @@ class PinataService {
 
   /**
    * Sube una imagen a IPFS usando Pinata
-   * @param {string} filePath - Ruta del archivo de imagen
+   * @param {string} filePathOrUrl - Ruta local (file:// o absoluta) o URL http(s)/ipfs://
    * @param {string} fileName - Nombre del archivo
    * @returns {Promise<{success: boolean, data?: any, error?: string}>}
    */
-  async uploadImageToIPFS(filePath, fileName = 'electoral-act.jpg') {
+  async uploadImageToIPFS(filePathOrUrl, fileName = 'electoral-act.jpg') {
     try {
-      // Verificar que el archivo existe
-      const fileExists = await RNFS.exists(filePath);
-      if (!fileExists) {
-        throw new Error('El archivo no existe');
+      // 1) Si es URL (http/https/ipfs), descargar a cache
+      let localPath = filePathOrUrl;
+      if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
+        localPath = await this.downloadToCache(filePathOrUrl, fileName);
       }
 
+      // 2) Normalizar ruta para RNFS/stat
+      const fsPath = localPath.startsWith('file://')
+        ? localPath.slice(7)
+        : localPath;
+
+      const fileExists = await RNFS.exists(fsPath);
+      if (!fileExists) throw new Error('El archivo no existe');
+
       // Obtener información del archivo
-      const fileInfo = await RNFS.stat(filePath);
+      const fileInfo = await RNFS.stat(fsPath);
 
       // Crear FormData para React Native
       const formData = new FormData();
       formData.append('file', {
-        uri: filePath.startsWith('file://') ? filePath : `file://${filePath}`,
+        uri: localPath.startsWith('file://') ? localPath : `file://${fsPath}`,
         type: 'image/jpeg',
         name: fileName,
         size: fileInfo.size,
@@ -155,7 +184,7 @@ class PinataService {
         },
       );
 
-      return {
+      const out = {
         success: true,
         data: {
           ipfsHash: response.data.IpfsHash,
@@ -164,6 +193,11 @@ class PinataService {
           gatewayUrl: `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`,
         },
       };
+      if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
+        RNFS.unlink(fsPath).catch(() => {});
+      }
+
+      return out;
     } catch (error) {
       return {
         success: false,

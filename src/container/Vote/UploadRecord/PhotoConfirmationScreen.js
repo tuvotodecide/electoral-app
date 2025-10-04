@@ -375,15 +375,9 @@ const PhotoConfirmationScreen = () => {
         if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
         return r;
       });
-
-      // Convertir URI a path
-      const imagePath = photoUri.startsWith('file://')
-        ? photoUri.substring(7)
-        : photoUri;
-
       // Subir imagen y crear metadata completa
       const result = await pinataService.uploadElectoralActComplete(
-        imagePath,
+        photoUri,
         aiAnalysis || {},
         {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
