@@ -289,9 +289,18 @@ class PinataService {
 
       // 2. Extraer datos base
       const timestamp = new Date().toISOString();
-      const tableNumber =
-        additionalData.tableNumber || analysisData?.table_number || 'N/A';
-      const tableCode = additionalData.tableCode || 'N/A';
+      const tableNumber = String(
+        additionalData.tableNumber ?? analysisData?.table_number ?? '',
+      );
+      const tableCode = String(additionalData.tableCode ?? '');
+      const locationId =
+        additionalData.idRecinto ?? additionalData.locationId ?? null;
+
+      if (!tableCode || !tableNumber || !locationId) {
+        throw new Error(
+          'Offline payload sin campos básicos (tableCode, tableNumber o locationId).',
+        );
+      }
       const time =
         additionalData.time ||
         analysisData?.time ||
@@ -385,9 +394,9 @@ class PinataService {
       };
 
       const dataField = {
-        tableCode: tableCode,
-        tableNumber: tableNumber,
-        locationId: additionalData.idRecinto,
+        tableCode,
+        tableNumber,
+        locationId,
         votes: {
           parties: buildVoteData('presidente'),
           deputies: buildVoteData('diputado'),

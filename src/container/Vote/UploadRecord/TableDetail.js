@@ -18,7 +18,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
 import {StackNav} from '../../../navigation/NavigationKey';
-import { normalizeUri } from '../../../utils/normalizedUri';
+import {normalizeUri} from '../../../utils/normalizedUri';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -61,7 +61,8 @@ export default function TableDetail({navigation, route}) {
 
   // Normalize mesa data structure
   const mesa = {
-    idRecinto: rawMesa.locationId,
+    idRecinto:
+      rawMesa.idRecinto || rawMesa.locationId || route.params?.locationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
@@ -162,7 +163,12 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: normalizeUri(record?.actaImage || record?.image || record?.photo || record?.imageUrl),
+          photoUri: normalizeUri(
+            record?.actaImage ||
+              record?.image ||
+              record?.photo ||
+              record?.imageUrl,
+          ),
         });
       } catch {
         navigation.navigate('PhotoReviewScreen', {
@@ -171,7 +177,12 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: normalizeUri(record?.actaImage || record?.image || record?.photo || record?.imageUrl),
+          photoUri: normalizeUri(
+            record?.actaImage ||
+              record?.image ||
+              record?.photo ||
+              record?.imageUrl,
+          ),
         });
       }
       return;

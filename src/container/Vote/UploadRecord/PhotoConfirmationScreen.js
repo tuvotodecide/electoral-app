@@ -138,33 +138,6 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
-  // const buildVoteData = type => {
-  //   const getValue = (label, defaultValue = 0) => {
-  //     const item = (voteSummaryResults || []).find(s => s.label === label);
-  //     if (!item) return defaultValue;
-
-  //     const value = type === 'presidente' ? item.value1 : item.value2;
-  //     return parseInt(value, 10) || defaultValue;
-  //   };
-
-  //   return {
-  //     validVotes: getValue('Votos Válidos'),
-  //     nullVotes: getValue('Votos Nulos'),
-  //     blankVotes: getValue('Votos en Blanco'),
-  //     partyVotes: partyResults.map(party => ({
-  //       partyId: party.partido,
-  //       votes:
-  //         parseInt(
-  //           type === 'presidente' ? party.presidente : party.diputado,
-  //           10,
-  //         ) || 0,
-  //     })),
-  //     totalVotes:
-  //       getValue('Votos Válidos') +
-  //       getValue('Votos Nulos') +
-  //       getValue('Votos en Blanco'),
-  //   };
-  // };
   const buildVoteData = type => {
     const norm = s =>
       String(s ?? '')
@@ -345,17 +318,30 @@ const PhotoConfirmationScreen = () => {
 
     try {
       // Preparar datos adicionales
+      const locationId =
+        tableData?.idRecinto ||
+        tableData?.locationId ||
+        route.params?.locationId ||
+        mesaData?.idRecinto ||
+        mesa?.idRecinto ||
+        tableData?.location?._id ||
+        null;
+
+      const tableCode = tableData?.codigo || tableData?.tableCode || '';
+
+      const tableNumber =
+        tableData?.tableNumber ||
+        tableData?.numero ||
+        tableData?.number ||
+        aiAnalysis?.table_number ||
+        '';
+
       const additionalData = {
-        idRecinto: tableData?.idRecinto || tableData.locationId,
-        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.codigo || 'N/A',
+        idRecinto: locationId,
+        locationId,
+        tableNumber: String(tableNumber),
+        tableCode: String(tableCode),
         location: tableData?.location || 'Bolivia',
-        time: new Date().toLocaleTimeString('es-ES', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        // userId: 'current-user-id', // Obtener del estado global
-        // userName: 'Usuario Actual', // Obtener del estado global
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
@@ -440,8 +426,10 @@ const PhotoConfirmationScreen = () => {
           electoralData,
           additionalData,
           tableData: {
-            codigo: tableData?.codigo,
-            idRecinto: tableData?.idRecinto,
+            codigo: String(tableCode),
+            idRecinto: locationId,
+            tableNumber: String(tableNumber),
+            numero: String(tableNumber),
           },
         },
       });
@@ -581,23 +569,6 @@ const PhotoConfirmationScreen = () => {
       setShowConfirmModal(false);
       setStep(0);
     }
-
-    //try {
-    //  // Simular procesamiento
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
-    //    navigation.navigate('SuccessScreen');
-    //  }, 2000);
-    //} catch (error) {
-    //  // Navegar a SuccessScreen incluso en caso de error
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    navigation.navigate('SuccessScreen');
-    //  }, 1000);
-    //}
   };
 
   const closeModal = (goBack = false) => {
