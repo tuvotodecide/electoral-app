@@ -23,7 +23,8 @@ describe('TableDetailScreen - Estados y Props', () => {
       },
     });
 
-    expect(getByText('Actas Ya Atestiguadas (5)')).toBeTruthy();
+    // El componente muestra el conteo de actas existentes basado en el array, no en totalRecords
+    expect(getByText(/La mesa ya tiene 1 acta publicada/)).toBeTruthy();
   });
 
   test('abre el modal de previsualización cuando la ruta incluye una imagen capturada', () => {

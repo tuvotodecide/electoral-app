@@ -1,0 +1,633 @@
+import React from 'react';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Provider } from 'react-redux';
+import { PermissionsAndroid, Platform } from 'react-native';
+import axios from 'axios';
+
+import ElectoralLocationsScreen from '../../../src/container/Vote/ElectoralLocationsScreen';
+import { StackNav } from '../../../src/navigation/NavigationKey';
+
+// Mock axios
+jest.mock('axios', () => ({
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
+}));
+const mockedAxios = axios;
+
+// Mock strings
+jest.mock('../../../src/i18n/String', () => require('../../__mocks__/String').default);
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: 'SafeAreaView',
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }) => children,
+}));
+
+// Mock navigation
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  setOptions: jest.fn(),
+};
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => mockNavigation,
+  NavigationContainer: ({ children }) => children,
+}));
+
+// Mock vector icons
+jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
+jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
+
+// Create a simple mock store using Redux Toolkit
+const createMockStore = () => {
+  const { configureStore } = require('@reduxjs/toolkit');
+  
+  return configureStore({
+    reducer: {
+      theme: (state = { 
+        theme: {
+          background: '#FFFFFF',
+          text: '#000000',
+          primary: '#4F9858',
+        } 
+      }) => state,
+    },
+    preloadedState: {
+      theme: {
+        theme: {
+          background: '#FFFFFF',
+          text: '#000000',
+          primary: '#4F9858',
+        }
+      }
+    }
+  });
+};
+
+// Mock data
+const mockLocationsData = [
+  {
+    id: '1',
+    name: 'Escuela Primaria Central',
+    address: 'Av. Principal 123, Centro',
+    tablesCount: 8,
+    code: 'EP001',
+    coordinates: { lat: -12.0464, lng: -77.0428 }
+  },
+  {
+    id: '2', 
+    name: 'Centro Comunitario Norte',
+    address: 'Calle Los Pinos 456, Norte',
+    tablesCount: 5,
+    code: 'CC002',
+    coordinates: { lat: -12.0564, lng: -77.0528 }
+  },
+  {
+    id: '3',
+    name: 'Instituto Tecnológico Sur',
+    address: 'Av. Universitaria 789, Sur',
+    tablesCount: 12,
+    code: 'ITS003',
+    coordinates: { lat: -12.0364, lng: -77.0328 }
+  }
+];
+
+describe('ElectoralLocationsScreen - Tests Comprehensivos', () => {
+  let mockStore;
+
+  // Helper function to render component
+  const renderComponent = () => {
+    return render(
+      <Provider store={mockStore}>
+        <ElectoralLocationsScreen />
+      </Provider>
+    );
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Platform.OS = 'android'; // IMPORTANTE: Usar Android para forzar flujo de permisos
+    mockStore = createMockStore();
+    
+    // Mock PermissionsAndroid para negar permisos y forzar loadAllLocations
+    PermissionsAndroid.request.mockResolvedValue(PermissionsAndroid.RESULTS.DENIED);
+  });
+
+  // 1. TESTS DE RENDERIZADO INICIAL
+  describe('1. Tests de Renderizado Inicial', () => {
+    describe('1.1 Estado de Carga', () => {
+      test('debe mostrar loading indicator al inicio', () => {
+        mockedAxios.get.mockImplementation(() => new Promise(() => {})); // Never resolves
+        
+        const { getByTestId } = renderComponent();
+        
+        expect(getByTestId('electoralLocationsLoadingIndicator')).toBeTruthy();
+      });
+
+      test('debe mostrar texto de carga apropiado', () => {
+        mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+        
+        const { getByTestId } = renderComponent();
+        
+        const loadingText = getByTestId('electoralLocationsLoadingText');
+        expect(loadingText.props.children).toBe('Obteniendo ubicación...');
+      });
+
+      test('debe mostrar header durante carga', () => {
+        mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+        
+        const { getByTestId } = renderComponent();
+        
+        expect(getByTestId('electoralLocationsLoadingHeader')).toBeTruthy();
+      });
+    });
+
+    describe('1.2 Renderizado con Datos', () => {
+      test('debe renderizar la lista de ubicaciones correctamente', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsList')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar nombres de ubicaciones', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationName_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationName_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationName_3')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar direcciones de ubicaciones', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationAddress_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationAddress_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationAddress_3')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar conteo de mesas cuando está disponible', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationTablesCount_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationTablesCount_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationTablesCount_3')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar el código cuando está disponible', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationCode_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationCode_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationCode_3')).toBeTruthy();
+        });
+      });
+
+      test('debe aplicar testIDs únicos para cada elemento', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationItem_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationItem_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationItem_3')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar iconos apropiados para cada ubicación', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationIcon_1')).toBeTruthy();
+          expect(getByTestId('electoralLocationIcon_2')).toBeTruthy();
+          expect(getByTestId('electoralLocationIcon_3')).toBeTruthy();
+        });
+      });
+    });
+
+    describe('1.3 Renderizado con Estado Vacío', () => {
+      test('debe mostrar el estado vacío cuando locations está vacío', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: []
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsEmptyContainer')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar el icono "location-off" en estado vacío', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: []
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsEmptyIcon')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar título apropiado en estado vacío', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: []
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsEmptyTitle')).toBeTruthy();
+        });
+      });
+
+      test('debe mostrar subtítulo en estado vacío', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: []
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsEmptySubtitle')).toBeTruthy();
+        });
+      });
+    });
+  });
+
+  describe('2. Tests de Estados y Props', () => {
+    describe('2.1 Estado Inicial', () => {
+      test('debe tener estado inicial correcto', () => {
+        mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+        
+        const { getByTestId } = renderComponent();
+        
+        // Debe estar en estado de carga inicialmente
+        expect(getByTestId('electoralLocationsLoadingIndicator')).toBeTruthy();
+      });
+
+      test('debe validar store de Redux disponible', () => {
+        const { getByTestId } = renderComponent();
+        
+        // Debe renderizar sin errores con store mock
+        expect(getByTestId('electoralLocationsLoadingContainer')).toBeTruthy();
+      });
+    });
+
+    describe('2.2 Cambios de Estado', () => {
+      test('debe transicionar de loading a datos correctamente', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId, queryByTestId } = renderComponent();
+        
+        // Inicialmente debe mostrar loading
+        expect(getByTestId('electoralLocationsLoadingIndicator')).toBeTruthy();
+        
+        // Después de cargar debe mostrar la lista
+        await waitFor(() => {
+          expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+          expect(getByTestId('electoralLocationsList')).toBeTruthy();
+        });
+      });
+
+      test('debe transicionar de loading a estado vacío', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: []
+        });
+        
+        const { getByTestId, queryByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+          expect(getByTestId('electoralLocationsEmptyContainer')).toBeTruthy();
+        });
+      });
+
+      test('debe transicionar de loading a modal de error', async () => {
+        mockedAxios.get.mockRejectedValue(new Error('Network error'));
+        
+        const { getByTestId, queryByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe mantener consistencia en re-renders', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId, rerender } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsList')).toBeTruthy();
+        });
+        
+        // Re-render no debe cambiar el estado
+        rerender(
+          <Provider store={mockStore}>
+            <ElectoralLocationsScreen />
+          </Provider>
+        );
+        
+        expect(getByTestId('electoralLocationsList')).toBeTruthy();
+      });
+    });
+  });
+
+  // 3. TESTS DE INTERACCIÓN DEL USUARIO
+  describe('3. Tests de Interacción del Usuario', () => {
+    describe('3.1 Navegación', () => {
+      test('debe navegar hacia atrás al presionar el botón back', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const backButton = getByTestId('electoralLocationsHeaderBackButton');
+          fireEvent.press(backButton);
+          expect(mockNavigation.goBack).toHaveBeenCalled();
+        });
+      });
+
+      test('debe abrir notificaciones al presionar el botón de notificaciones', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const notificationButton = getByTestId('electoralLocationsHeaderNotificationButton');
+          fireEvent.press(notificationButton);
+          expect(mockNavigation.navigate).toHaveBeenCalledWith(StackNav.Notification);
+        });
+      });
+
+      test('debe navegar a detalles al presionar una ubicación', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const locationItem = getByTestId('electoralLocationItem_1');
+          fireEvent.press(locationItem);
+          expect(mockNavigation.navigate).toHaveBeenCalledWith(
+            StackNav.ElectoralLocationDetail,
+            expect.objectContaining({
+              location: expect.objectContaining({
+                id: '1',
+                name: 'Escuela Primaria Central'
+              })
+            })
+          );
+        });
+      });
+    });
+
+    describe('3.2 Interacciones con Modal', () => {
+      test('debe cerrar modal al presionar el botón primario', async () => {
+        mockedAxios.get.mockRejectedValue(new Error('Network error'));
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+          
+          const modalButton = getByTestId('customModalPrimaryButton');
+          fireEvent.press(modalButton);
+        });
+      });
+
+      test('debe manejar modal de permisos correctamente', async () => {
+        // Test modal que aparece cuando se niegan permisos
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+    });
+
+    describe('3.3 Gestos y Acciones Táctiles', () => {
+      test('debe responder correctamente al refresh de pull-to-refresh', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const flatList = getByTestId('electoralLocationsList');
+          fireEvent(flatList, 'refresh');
+          
+          // Debe llamar axios nuevamente
+          expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+        });
+      });
+
+      test('debe manejar scroll en la lista correctamente', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const flatList = getByTestId('electoralLocationsList');
+          
+          fireEvent.scroll(flatList, {
+            nativeEvent: {
+              contentOffset: { y: 100 },
+              contentSize: { height: 1000 },
+              layoutMeasurement: { height: 800 },
+            },
+          });
+          
+          expect(flatList).toBeTruthy();
+        });
+      });
+
+      test('debe permitir selección múltiple de ubicaciones si está habilitada', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          const firstLocation = getByTestId('electoralLocationItem_1');
+          const secondLocation = getByTestId('electoralLocationItem_2');
+          
+          fireEvent.press(firstLocation);
+          fireEvent.press(secondLocation);
+          
+          expect(mockNavigation.navigate).toHaveBeenCalledTimes(2);
+        });
+      });
+    });
+  });
+
+  // 4. TESTS DE MANEJO DE ERRORES
+  describe('4. Tests de Manejo de Errores', () => {
+    describe('4.1 Errores de Red', () => {
+      test('debe manejar error de conexión de red', async () => {
+        mockedAxios.get.mockRejectedValue(new Error('Network Error'));
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar timeout de solicitud', async () => {
+        mockedAxios.get.mockRejectedValue(new Error('timeout of 5000ms exceeded'));
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar error de servidor 500', async () => {
+        mockedAxios.get.mockRejectedValue({
+          response: { status: 500, data: 'Internal Server Error' }
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar error 404 - recurso no encontrado', async () => {
+        mockedAxios.get.mockRejectedValue({
+          response: { status: 404, data: 'Not Found' }
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+    });
+
+    describe('4.2 Errores de Datos', () => {
+      test('debe manejar respuesta con datos corruptos', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: { invalid: 'structure' }
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsEmptyContainer')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar respuesta null', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: null
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar respuesta undefined', async () => {
+        mockedAxios.get.mockResolvedValue({
+          data: undefined
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+    });
+
+    describe('4.3 Errores de Permisos', () => {
+      test('debe manejar permisos denegados permanentemente', async () => {
+        PermissionsAndroid.request.mockResolvedValue(PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN);
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+
+      test('debe manejar error en la solicitud de permisos', async () => {
+        PermissionsAndroid.request.mockRejectedValue(new Error('Permission Error'));
+        mockedAxios.get.mockResolvedValue({
+          data: mockLocationsData
+        });
+        
+        const { getByTestId } = renderComponent();
+        
+        await waitFor(() => {
+          expect(getByTestId('electoralLocationsModal')).toBeTruthy();
+        });
+      });
+    });
+  });
+});

@@ -70,8 +70,8 @@ describe('TableDetailScreen - Interacciones de Usuario', () => {
     });
   });
 
-  test('el botón Agregar Nueva Acta utiliza la navegación estándar', () => {
-    const existingRecords = [{recordId: 'rec-1'}];
+  test('el botón Atestiguar utiliza la navegación estándar cuando hay una acta', () => {
+    const existingRecords = [{recordId: 'rec-1', actaImage: 'https://image/1.jpg'}];
     const {getByText, navigation} = renderTableDetail({
       routeParams: {
         existingRecords,
@@ -80,16 +80,18 @@ describe('TableDetailScreen - Interacciones de Usuario', () => {
     });
 
     act(() => {
-      fireEvent.press(getByText(/Agregar Nueva/));
+      fireEvent.press(getByText('Atestiguar'));
     });
 
+    // Cuando hay exactamente 1 acta, navega a PhotoReviewScreen
     expect(navigation.navigate).toHaveBeenCalled();
     const lastCall =
       navigation.navigate.mock.calls[navigation.navigate.mock.calls.length - 1];
     const [routeName, params] = lastCall;
-    expect(routeName).toBe(StackNav.CameraScreen);
+    expect(routeName).toBe(StackNav.PhotoReviewScreen);
     expect(params).toBeDefined();
     expect(params.mesa).toBeDefined();
-    expect(typeof params.mesa.numero).toBe('string');
+    expect(params.existingRecord).toEqual(existingRecords[0]);
+    expect(params.isViewOnly).toBe(true);
   });
 });

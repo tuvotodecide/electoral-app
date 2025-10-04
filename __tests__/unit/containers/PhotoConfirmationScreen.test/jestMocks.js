@@ -103,3 +103,66 @@ jest.mock('../../../../src/utils/ballotValidation', () => ({
 jest.mock('@react-native-community/netinfo', () => ({
   fetch: jest.fn(),
 }));
+
+jest.mock('react-native-quick-crypto', () => ({
+  randomBytes: jest.fn((size) => {
+    const bytes = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+    return bytes;
+  }),
+  QuickCrypto: {
+    randomBytes: jest.fn((size) => new Uint8Array(size)),
+    pbkdf2: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+  },
+  createHash: jest.fn(() => ({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn(() => new Uint8Array(32)),
+  })),
+  createHmac: jest.fn(() => ({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn(() => new Uint8Array(32)),
+  })),
+  pbkdf2: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+}));
+
+jest.mock('../../../../src/utils/Cifrate', () => ({
+  createBundleFromPrivKey: jest.fn(() => Promise.resolve({
+    seedHex: 'mock-seed-hex',
+    cipherHex: 'mock-cipher-hex',
+    saltHex: 'mock-salt-hex',
+  })),
+  createSeedBundle: jest.fn(() => Promise.resolve({
+    seedHex: 'mock-seed-hex',
+    cipherHex: 'mock-cipher-hex',
+    saltHex: 'mock-salt-hex',
+  })),
+  signWithKey: jest.fn(() => Promise.resolve('mock-signature')),
+  unlockSeed: jest.fn(() => Promise.resolve('mock-seed')),
+  saveBundleFile: jest.fn(() => Promise.resolve()),
+  loadBundleFile: jest.fn(() => Promise.resolve({
+    cipherHex: 'mock-cipher-hex',
+    saltHex: 'mock-salt-hex',
+  })),
+  getCredentialSubjectFromPayload: jest.fn((payload) => ({
+    fullName: payload?.vc?.credentialSubject?.fullName || 'Test User',
+    email: payload?.vc?.credentialSubject?.email || 'test@example.com',
+    did: payload?.vc?.credentialSubject?.did || 'did:test:123',
+  })),
+}));
+
+jest.mock('../../../../src/utils/aesGcm', () => ({
+  aesGcmEncrypt: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+  aesGcmDecrypt: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+}));
+
+jest.mock('../../../../src/utils/BioFlag', () => ({
+  getBioFlag: jest.fn(() => Promise.resolve(false)),
+  setBioFlag: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('../../../../src/utils/ensureBundle', () => ({
+  readBundleFile: jest.fn(() => Promise.resolve('{}')),
+  writeBundleAtomic: jest.fn(() => Promise.resolve()),
+}));

@@ -212,6 +212,46 @@ jest.mock('react-native-keychain', () => ({
 // Mock Vector Icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('react-native-vector-icons/FontAwesome', () => 'Icon');
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+  const React = require('react');
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{ fontSize: size, color }, style],
+      onPress,
+      children: name,
+    });
+  };
+  MockIcon.loadFont = jest.fn(() => Promise.resolve());
+  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
+  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
+  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
+  return MockIcon;
+});
+
+// Mock react-native-quick-crypto
+jest.mock('react-native-quick-crypto', () => ({
+  randomBytes: jest.fn((size) => {
+    const bytes = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+    return bytes;
+  }),
+  QuickCrypto: {
+    randomBytes: jest.fn((size) => new Uint8Array(size)),
+    pbkdf2: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+  },
+  createHash: jest.fn(() => ({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn(() => new Uint8Array(32)),
+  })),
+  createHmac: jest.fn(() => ({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn(() => new Uint8Array(32)),
+  })),
+  pbkdf2: jest.fn(() => Promise.resolve(new Uint8Array(32))),
+}));
 
 // Mock Camera
 jest.mock('react-native-vision-camera', () => ({

@@ -46,19 +46,23 @@ describe('TableDetailScreen - Renderizado', () => {
       },
     });
 
+    // El componente muestra el mensaje de alerta con el conteo de actas
     expect(
-      getByText(`Actas Ya Atestiguadas (${existingRecords.length})`),
+      getByText(/La mesa ya tiene 2 actas publicadas/),
     ).toBeTruthy();
-    expect(getByText('Acta #1')).toBeTruthy();
+    
+    // No muestra actas individuales cuando hay más de 1, solo el botón de atestiguar
     expect(queryByText(String.aiWillSelectClearestPhoto)).toBeNull();
+    expect(getByText('Atestiguar')).toBeTruthy();
 
-    fireEvent.press(getByText('Acta #1'));
+    // Cuando hay más de 1 acta, el botón navega a WhichIsCorrectScreen
+    fireEvent.press(getByText('Atestiguar'));
 
     expect(navigation.navigate).toHaveBeenCalledWith(
-      StackNav.PhotoReviewScreen,
+      StackNav.WhichIsCorrectScreen,
       expect.objectContaining({
-        existingRecord: existingRecords[0],
-        isViewOnly: true,
+        existingRecords,
+        totalRecords: existingRecords.length,
       }),
     );
   });

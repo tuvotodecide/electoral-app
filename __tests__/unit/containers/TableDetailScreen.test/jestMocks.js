@@ -47,3 +47,25 @@ jest.mock(
   '../../../../src/container/Vote/UploadRecord/CameraScreen',
   () => 'CameraScreen',
 );
+
+jest.mock(
+  '../../../../src/components/common/CAlert',
+  () => require('../../../__mocks__/components/common/CAlert').default,
+);
+
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+  const React = require('react');
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{ fontSize: size, color }, style],
+      onPress,
+      children: name,
+    });
+  };
+  MockIcon.loadFont = jest.fn(() => Promise.resolve());
+  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
+  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
+  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
+  return MockIcon;
+});
