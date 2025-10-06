@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -18,12 +18,12 @@ import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
 
-export default function RegisterUser1({navigation}) {
+export default function RegisterUser1({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
   const onPressRememberMe = () => setCheck(!check);
-  const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2);
+  const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2, route.params);
   const onPressConditions = () =>
     navigation.navigate(StackNav.TermsAndCondition);
 
@@ -39,7 +39,9 @@ export default function RegisterUser1({navigation}) {
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B20'}>{String.titleReg}</CText>
+          <CText type={'B20'}>
+            {String.titleReg + (route.params?.isRecovery ? ' ' + String.recoveryCIIntro : '')}
+          </CText>
 
           <CIconText
             icon={
@@ -54,6 +56,12 @@ export default function RegisterUser1({navigation}) {
             icon={<Icono name="camera-outline" color={colors.primary} />}
             text={<CText type={'B16'}>{String.connectItem2Reg}</CText>}
           />
+          {route.params?.isRecovery && (
+            <CIconText
+              icon={<Icono name="form-textbox-password" color={colors.primary} />}
+              text={<CText type={'B16'}>{String.pin}</CText>}
+            />
+          )}
         </View>
       </KeyBoardAvoidWrapper>
 

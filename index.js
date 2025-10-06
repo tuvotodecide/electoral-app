@@ -7,15 +7,17 @@ import 'text-encoding-polyfill';
 import 'react-native-gesture-handler';
 
 import crypto from 'react-native-quick-crypto';
+import {Buffer} from 'buffer';
+import process from 'process';
+import { WebAssembly } from 'polywasm';
+
 global.crypto = {
   ...global.crypto,
   ...crypto.webcrypto
 };
-import {Buffer} from 'buffer';
 global.Buffer = Buffer;
-
-import process from 'process';
 global.process = process;
+globalThis.WebAssembly = WebAssembly;
 
 if (__DEV__) {
   require('./ReactotronConfig');

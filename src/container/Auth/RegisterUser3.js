@@ -21,12 +21,7 @@ import String from '../../i18n/String';
 export default function RegisterUser3({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const onPressNext = () => {
-    const {dni, frontImage, backImage} = route.params;
-    navigation.navigate(AuthNav.RegisterUser4, {
-      dni,
-      frontImage,
-      backImage,
-    });
+    navigation.navigate(AuthNav.RegisterUser4, route.params);
   };
 
   return (

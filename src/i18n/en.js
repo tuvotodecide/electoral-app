@@ -42,8 +42,9 @@ export default {
   continueButton: 'Continuar',
   // page 2
   idVerificationTitle: 'Verificación de identidad',
+  toContinue: 'Para continuar, ',
   idVerificationSubtitle:
-    'Para continuar, necesitamos que subas fotos claras de tu carnet de identidad:',
+    'necesitamos que subas fotos claras de tu carnet de identidad:',
   idLabel: 'Carnet de identidad',
   idPlaceholder: 'Escribe tu número de CI',
   frontLabel: 'Anverso',
@@ -238,6 +239,11 @@ export default {
   recoverymethod: 'Selecciona método para recuperar cuenta',
   recoverymethodGuardians: 'Recuperar con guardianes',
   recoverymethodQR: 'Recuperar con QR',
+  recoveryWithCI: 'Recuperar con Carnet y PIN',
+  recoveryCIIntro: 'También debes tener el PIN de acceso a tu cuenta.',
+  pin: 'PIN de acceso',
+  retryRecovery: 'Reintentar',
+  recoveringData: 'Recuperando datos...',
 
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto Decide',

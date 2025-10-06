@@ -10,12 +10,17 @@ import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import {AuthNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import CButton from '../../components/common/CButton';
 import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
 
 export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  const initCIrecovery = () => {
+    navigation.navigate(AuthNav.RegisterUser1, {
+      isRecovery: true,
+    });
+  }
+
   return (
     <CSafeAreaViewAuth>
       <CHeader
@@ -34,6 +39,38 @@ export default function SelectRecuperation({navigation}) {
             {String.recoverymethod}
           </CText>
         </View>
+        <TouchableOpacity
+          style={[
+            localStyle.optionContainer,
+            {
+              backgroundColor: colors.backgroundColor,
+              borderColor: colors.dark
+                ? colors.grayScale700
+                : colors.grayScale200,
+
+              elevation: 5,
+            },
+          ]}
+          onPress={initCIrecovery}>
+          <View style={styles.rowCenter}>
+            <View
+              style={[
+                localStyle.iconBg,
+                {
+                  borderColor: colors.dark
+                    ? colors.stepBackgroundColor
+                    : colors.grayScale200,
+                },
+              ]}>
+              <Icono name="card-account-details" size={moderateScale(24)} />
+            </View>
+            <View style={styles.ml10}>
+              <View style={styles.rowCenter}>
+                <CText type="B16">{String.recoveryWithCI}</CText>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[
             localStyle.optionContainer,

@@ -21,11 +21,20 @@ import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
+import wira from 'wira-sdk';
+import LoadingModal from '../../components/modal/LoadingModal';
+import {PROVIDER_NAME} from '@env';
 
 export default function RegisterUser4({navigation, route}) {
-  const {dni = '', frontImage, backImage} = route.params;
+  const {dni = '', frontImage, backImage, isRecovery} = route.params;
   const [selfie, setSelfie] = useState(null);
   const colors = useSelector(state => state.theme.theme);
+  const [modal, setModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    isLoading: false,
+  });
 
   useEffect(() => {
     const openCamera = async () => {
@@ -82,12 +91,62 @@ export default function RegisterUser4({navigation, route}) {
       Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
       return;
     }
-    navigation.navigate(AuthNav.RegisterUser5, {
-      dni,
-      frontImage,
-      backImage,
-      selfie,
+
+    if (isRecovery) {
+      recoveryData();
+      setModal({
+        visible: true,
+        message: String.recoveringData,
+        isLoading: true,
+      });
+    } else {
+      navigation.navigate(AuthNav.RegisterUser5, {
+        dni,
+        frontImage,
+        backImage,
+        selfie,
+      });
+    }
+  };
+
+  const yieldUI = () => new Promise(r => setTimeout(r, 50));
+
+  const recoveryData = async () => {
+    setModal({
+      visible: true,
+      message: String.recoveringData,
+      isLoading: true,
     });
+    await yieldUI();
+
+    try {
+      const recoveryService = new wira.RecoveryService();
+      await recoveryService.recoveryAndSave(
+        frontImage,
+        backImage,
+        selfie,
+        dni,
+        PROVIDER_NAME,
+      );
+
+      setModal({
+        visible: false,
+        message: '',
+        isLoading: false,
+      });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: AuthNav.LoginUser }],
+      });
+    } catch (error) {
+      setModal({
+        visible: true,
+        message: String.recoveryError,
+        isLoading: false,
+      });
+      console.error('Recovery failed:', error);
+      return;
+    }
   };
 
   return (
@@ -125,6 +184,15 @@ export default function RegisterUser4({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
+      <LoadingModal
+        {...modal}
+        buttonText={String.retryRecovery}
+        onClose={recoveryData}
+        secondBtn={modal.isLoading ? undefined : String.btnCheckData}
+        onSecondPress={() => navigation.navigate(AuthNav.RegisterUser1, {
+          isRecovery: true,
+        })}
+      />
     </CSafeAreaViewAuth>
   );
 }

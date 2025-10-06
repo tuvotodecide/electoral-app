@@ -133,17 +133,17 @@ export default function RegisterUser10({navigation, route}) {
 
         setStage('save');
         await yieldUI();
+        await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
+        if(useBiometry) {
+          await setBioFlag(true);
+        }
+
         try {
           await registerer.storeDataOnServer();
         } catch (e) {
           // Si el backend responde 400 con “discoverableHash ya utilizado” puedes:
           // - Permitir continuar (usuario ya estaba registrado)
           // - O mostrar modal. Por ahora, dejamos continuar.
-        }
-
-        await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
-        if(useBiometry) {
-          await setBioFlag(true);
         }
         
         await clearDraft();

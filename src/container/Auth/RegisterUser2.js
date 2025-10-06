@@ -72,12 +72,12 @@ export default function RegisterUser2({navigation, route}) {
         .then(({ exists }) => {
           setSubmitting(false);
 
-          /*if (exists && !isRecovery) {
+          if (exists && !isRecovery) {
             setModalVisible({
               visible: true,
               message: String.DniExists,
             });
-          } else*/ if (!exists && isRecovery) {
+          } else if (!exists && isRecovery) {
             setModalVisible({
               visible: true,
               message: String.DniNotFound
@@ -112,6 +112,11 @@ export default function RegisterUser2({navigation, route}) {
         <View style={localStyle.mainContainer}>
           <CText type={'B20'} style={styles.boldText} align={'center'}>
             {String.idVerificationTitle}
+          </CText>
+
+          <CText type={'B16'} align={'center'}>
+            {isRecovery ? String.toRecovery : String.toContinue}
+            {String.idVerificationSubtitle}
           </CText>
 
           <CText type={'B16'} align={'center'}>
