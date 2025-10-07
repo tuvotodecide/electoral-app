@@ -61,6 +61,10 @@ const PhotoConfirmationScreen = () => {
     route.params || {}; // Destructure all needed data
 
   // Also try to get data from alternative parameter names
+  console.log('[TABLE-DATA]', tableData);
+
+  console.log('[TABLE-DATA]', tableData);
+
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
 
@@ -146,6 +150,33 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
+  // const buildVoteData = type => {
+  //   const getValue = (label, defaultValue = 0) => {
+  //     const item = (voteSummaryResults || []).find(s => s.label === label);
+  //     if (!item) return defaultValue;
+
+  //     const value = type === 'presidente' ? item.value1 : item.value2;
+  //     return parseInt(value, 10) || defaultValue;
+  //   };
+
+  //   return {
+  //     validVotes: getValue('Votos Válidos'),
+  //     nullVotes: getValue('Votos Nulos'),
+  //     blankVotes: getValue('Votos en Blanco'),
+  //     partyVotes: partyResults.map(party => ({
+  //       partyId: party.partido,
+  //       votes:
+  //         parseInt(
+  //           type === 'presidente' ? party.presidente : party.diputado,
+  //           10,
+  //         ) || 0,
+  //     })),
+  //     totalVotes:
+  //       getValue('Votos Válidos') +
+  //       getValue('Votos Nulos') +
+  //       getValue('Votos en Blanco'),
+  //   };
+  // };
   const buildVoteData = type => {
     const norm = s =>
       String(s ?? '')
@@ -326,30 +357,17 @@ const PhotoConfirmationScreen = () => {
 
     try {
       // Preparar datos adicionales
-      const locationId =
-        tableData?.idRecinto ||
-        tableData?.locationId ||
-        route.params?.locationId ||
-        mesaData?.idRecinto ||
-        mesa?.idRecinto ||
-        tableData?.location?._id ||
-        null;
-
-      const tableCode = tableData?.codigo || tableData?.tableCode || '';
-
-      const tableNumber =
-        tableData?.tableNumber ||
-        tableData?.numero ||
-        tableData?.number ||
-        aiAnalysis?.table_number ||
-        '';
-
       const additionalData = {
-        idRecinto: locationId,
-        locationId,
-        tableNumber: String(tableNumber),
-        tableCode: String(tableCode),
+        idRecinto: tableData?.idRecinto || tableData.locationId,
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        // userId: 'current-user-id', // Obtener del estado global
+        // userName: 'Usuario Actual', // Obtener del estado global
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
@@ -369,9 +387,15 @@ const PhotoConfirmationScreen = () => {
         if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
         return r;
       });
+
+      // Convertir URI a path
+      const imagePath = photoUri.startsWith('file://')
+        ? photoUri.substring(7)
+        : photoUri;
+
       // Subir imagen y crear metadata completa
       const result = await pinataService.uploadElectoralActComplete(
-        photoUri,
+        imagePath,
         aiAnalysis || {},
         {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
@@ -460,6 +484,13 @@ const PhotoConfirmationScreen = () => {
       };
       console.log(tableData);
 
+      console.log('[TABLE-DATA]');
+
+      console.log(locationId);
+      console.log(tableNumber);
+      console.log(electoralData);
+      console.log(additionalData);
+
       await enqueue({
         type: 'publishActa',
         payload: {
@@ -469,9 +500,7 @@ const PhotoConfirmationScreen = () => {
           additionalData,
           tableData: {
             codigo: String(tableCode),
-            tableCode: String(tableCode),
-            idRecinto: String(locationId ?? ''),
-            locationId: String(locationId ?? ''),
+            idRecinto: locationId,
             tableNumber: String(tableNumber),
             numero: String(tableNumber),
           },
@@ -617,6 +646,23 @@ const PhotoConfirmationScreen = () => {
       setShowConfirmModal(false);
       setStep(0);
     }
+
+    //try {
+    //  // Simular procesamiento
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
+    //    navigation.navigate('SuccessScreen');
+    //  }, 2000);
+    //} catch (error) {
+    //  // Navegar a SuccessScreen incluso en caso de error
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    navigation.navigate('SuccessScreen');
+    //  }, 1000);
+    //}
   };
 
   const closeModal = (goBack = false) => {

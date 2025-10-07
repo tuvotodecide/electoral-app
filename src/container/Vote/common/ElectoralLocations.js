@@ -154,7 +154,8 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
+        //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
         {timeout: 15000}, // 10 segundos timeout
       );
       if (response.data && response.data.data) {
@@ -348,7 +349,9 @@ const ElectoralLocations = ({navigation, route}) => {
       if (!online) {
         setConfigLoading(false);
         if (dni) {
+          console.log('[ELECTORAL-LOCATIONS] init offline - reading cached vote place', { dni });
           const cached = await getVotePlace(dni);
+          console.log('[ELECTORAL-LOCATIONS] cached vote place', { dni, cached });
           setCachedVotePlace(cached);
           if (
             route?.params?.targetScreen === 'UnifiedParticipation' &&

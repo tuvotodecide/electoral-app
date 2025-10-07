@@ -9,9 +9,13 @@ import {displayLocalActaPublished} from '../notifications';
 import {requestPushPermissionExplicit} from '../services/pushPermission';
 
 export const publishActaHandler = async (item, userData) => {
-  const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
-    item.task.payload;
+  console.log('[OFFLINE-QUEUE] publishActaHandler inicio', { itemId: item.id });
+  try {
+    const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
+      item.task.payload;
+    console.log('[OFFLINE-QUEUE] payload recibido', { imageUri, tableData: { codigo: tableData?.codigo } });
 
+    
   const normalizedAdditional = (() => {
     const idRecinto =
       additionalData?.idRecinto ||
@@ -42,6 +46,7 @@ export const publishActaHandler = async (item, userData) => {
       tableNumber: String(tableNumber),
     };
   })();
+  console.log('[OFFLINE-QUEUE] normalizedAdditional', normalizedAdditional);
 
   const buildFromPayload = type => {
     const norm = s =>
@@ -83,12 +88,21 @@ export const publishActaHandler = async (item, userData) => {
     },
   };
 
-  const duplicateCheck = await pinataService.checkDuplicateBallot(
-    verificationData,
-  );
-  if (duplicateCheck?.exists) {
-    await removePersistedImage(imageUri);
-    return true;
+  let duplicateCheck;
+  try {
+    console.log('[OFFLINE-QUEUE] verificando duplicados en backend', { verificationData });
+    duplicateCheck = await pinataService.checkDuplicateBallot(
+      verificationData,
+    );
+    console.log('[OFFLINE-QUEUE] resultado duplicateCheck', duplicateCheck);
+    if (duplicateCheck?.exists) {
+      console.warn('[OFFLINE-QUEUE] duplicado detectado, eliminando imagen local', { imageUri });
+      await removePersistedImage(imageUri);
+      return true;
+    }
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
+    // continuar el flujo si el check falla
   }
 
   const imagePath = imageUri.startsWith('file://')
@@ -104,37 +118,55 @@ export const publishActaHandler = async (item, userData) => {
     },
   );
 
-  const ipfs = await pinataService.uploadElectoralActComplete(
-    imagePath,
-    aiAnalysis || {},
-    {...electoralData, voteSummaryResults: normalizedVoteSummary},
-    normalizedAdditional,
-  );
-
-  if (!ipfs.success) throw new Error(ipfs.error);
+  let ipfs;
+  try {
+    console.log('[OFFLINE-QUEUE] subiendo acta a IPFS', { imagePath });
+    ipfs = await pinataService.uploadElectoralActComplete(
+      imagePath,
+      aiAnalysis || {},
+      {...electoralData, voteSummaryResults: normalizedVoteSummary},
+      normalizedAdditional,
+    );
+    console.log('[OFFLINE-QUEUE] resultado IPFS', { success: ipfs?.success });
+    if (!ipfs.success) {
+      console.error('[OFFLINE-QUEUE] fallo uploadElectoralActComplete', ipfs.error);
+      throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
+    }
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error subiendo a IPFS', err);
+    throw err;
+  }
   const ipfsData = ipfs.data;
 
   const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
 
-  await axios.post(
-    backendUrl,
-    {
-      ipfsUri: ipfsData.jsonUrl,
-      recordId: 'String',
-      tableIdIpfs: 'String',
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': BACKEND_SECRET,
+  try {
+    console.log('[OFFLINE-QUEUE] validando datos del acta en backend', { backendUrl, jsonUrl: ipfsData.jsonUrl });
+    await axios.post(
+      backendUrl,
+      {
+        ipfsUri: ipfsData.jsonUrl,
+        recordId: 'String',
+        tableIdIpfs: 'String',
       },
-      timeout: 30000,
-    },
-  );
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET,
+        },
+        timeout: 30000,
+      },
+    );
+    console.log('[OFFLINE-QUEUE] backend validation success');
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error en backend validation', err);
+    throw err;
+  }
 
   const privateKey = userData?.privKey;
   let isRegistered = await oracleReads.isRegistered(CHAIN, userData.account, 1);
   if (!isRegistered) {
+    console.log('[OFFLINE-QUEUE] usuario no registrado en oracle, solicitando registro');
     await executeOperation(
       privateKey,
       userData.account,
@@ -142,11 +174,18 @@ export const publishActaHandler = async (item, userData) => {
       oracleCalls.requestRegister(CHAIN, ipfsData.imageUrl),
     );
     isRegistered = await oracleReads.isRegistered(CHAIN, userData.account, 20);
-    if (!isRegistered) throw Error('Failed to register user on oracle');
+    console.log('[OFFLINE-QUEUE] estado registro despues de requestRegister', { isRegistered });
+    if (!isRegistered) {
+      console.error('[OFFLINE-QUEUE] registro en oracle fallido');
+      throw Error('Failed to register user on oracle');
+    }
+  } else {
+    console.log('[OFFLINE-QUEUE] usuario ya registrado en oracle');
   }
 
   let response;
   try {
+    console.log('[OFFLINE-QUEUE] creando attestation en oracle', { tableCode: tableData?.codigo });
     response = await executeOperation(
       privateKey,
       userData.account,
@@ -155,10 +194,12 @@ export const publishActaHandler = async (item, userData) => {
       oracleReads.waitForOracleEvent,
       'AttestationCreated',
     );
-    console.log(response);
+    console.log('[OFFLINE-QUEUE] createAttestation response', response);
   } catch (e) {
+    console.error('[OFFLINE-QUEUE] error createAttestation', e);
     const msg = e.message || '';
     if (msg.indexOf('416c72656164792063726561746564') >= 0) {
+      console.log('[OFFLINE-QUEUE] intentando fallback attest');
       response = await executeOperation(
         privateKey,
         userData.account,
@@ -172,7 +213,9 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'Attested',
       );
+      console.log('[OFFLINE-QUEUE] attest response', response);
     } else {
+      console.error('[OFFLINE-QUEUE] error no recuperable en attestation', e);
       throw e;
     }
   }
@@ -191,23 +234,52 @@ export const publishActaHandler = async (item, userData) => {
   };
   console.log(nftResult);
 
-  await axios.post(
-    `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
-    {
-      ipfsUri: String(ipfsData.jsonUrl),
-      recordId: String(nftId),
-      tableIdIpfs: 'String',
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': BACKEND_SECRET,
+  try {
+    console.log('[OFFLINE-QUEUE] notificando backend desde IPFS', { nftId });
+    await axios.post(
+      `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
+      {
+        ipfsUri: String(ipfsData.jsonUrl),
+        recordId: String(nftId),
+        tableIdIpfs: 'String',
       },
-      timeout: 30000,
-    },
-  );
-  await removePersistedImage(imageUri);
-  await requestPushPermissionExplicit();
-  await displayLocalActaPublished({ipfsData, nftData: nftResult, tableData});
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET,
+        },
+        timeout: 30000,
+      },
+    );
+    console.log('[OFFLINE-QUEUE] backend from-ipfs success');
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error notificando backend from-ipfs', err);
+    // continuar para limpiar recursos locales
+  }
+
+  try {
+    await removePersistedImage(imageUri);
+    console.log('[OFFLINE-QUEUE] imagen local eliminada', { imageUri });
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
+  }
+
+  try {
+    await requestPushPermissionExplicit();
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
+  }
+
+  try {
+    await displayLocalActaPublished({ipfsData, nftData: nftResult, tableData});
+  } catch (err) {
+    console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
+  }
+
+  console.log('[OFFLINE-QUEUE] publishActaHandler finalizado con exito', { nftId });
   return {success: true, ipfsData, nftData: nftResult, tableData};
+  } catch (fatalErr) {
+    console.error('[OFFLINE-QUEUE] publishActaHandler fallo fatal', fatalErr);
+    throw fatalErr;
+  }
 };

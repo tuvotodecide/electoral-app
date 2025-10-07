@@ -10,6 +10,7 @@ import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 const {width} = Dimensions.get('window');
 
 export default function OfflinePendingScreen({navigation}) {
+  console.log('[OFFLINE-PENDING] 📴 OfflinePendingScreen montado - Usuario en modo offline');
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>

@@ -8,8 +8,9 @@
         <domain includeSubdomains="true">192.168.1.200</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">192.168.0.4</domain>
+        <domain includeSubdomains="true">192.168.0.16</domain>
         <domain includeSubdomains="true">18.234.62.97</domain>
-
+        <domain includeSubdomains="true">https://unobligative-angle-interspinal.ngrok-free.dev</domain>
     </domain-config>
     
     <!-- Allow all HTTPS traffic for IPFS -->
