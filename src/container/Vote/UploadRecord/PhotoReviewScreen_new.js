@@ -174,6 +174,7 @@ const PhotoReviewScreen = () => {
         return; // NO avanzar
       }
     }
+    console.log('[MESA-INFO]', mesaInfo);
 
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri,

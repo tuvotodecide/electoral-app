@@ -12,6 +12,7 @@ export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
+    
   const normalizedAdditional = (() => {
     const idRecinto =
       additionalData?.idRecinto ||
