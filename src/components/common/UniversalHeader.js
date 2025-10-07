@@ -4,6 +4,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
+import {useNavigation} from '@react-navigation/native';
+import {StackNav} from '../../navigation/NavigationKey';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -17,6 +19,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+
 const UniversalHeader = ({
   testID = "universalHeader",
   colors,
@@ -26,6 +29,7 @@ const UniversalHeader = ({
   onNotificationPress,
   customStyles = {},
 }) => {
+  const navigation = useNavigation();
   const SIDE_W = getResponsiveSize(48, 56, 64);
   const TITLE_SIZE = getResponsiveSize(16, 20, 26);
   return (
@@ -79,18 +83,21 @@ const UniversalHeader = ({
           <TouchableOpacity
             testID={`${testID}NotificationButton`}
             style={[
-              styles.disabledIcon,
+              // styles.disabledIcon,
               styles.bellIcon,
               customStyles.bellIcon,
               {
                 padding: getResponsiveSize(6, 8, 12),
               },
             ]}
-            disabled={true}>
+            onPress={
+              onNotificationPress ??
+              (() => navigation.navigate(StackNav.Notification))
+            }>
             <Ionicons
               name="notifications-outline"
               size={getResponsiveSize(28, 32, 40)}
-              color={colors?.text || '#cccccc'}
+              color={colors?.text || '#4F9858'}
             />
           </TouchableOpacity>
         )}
@@ -121,7 +128,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    
   },
   headerTitle: {
     fontWeight: '600',

@@ -5,13 +5,44 @@ import {oracleCalls, oracleReads} from '../api/oracle';
 import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
 import {executeOperation} from '../api/account';
-import { displayLocalActaPublished } from '../notifications';
-import { requestPushPermissionExplicit } from '../services/pushPermission';
+import {displayLocalActaPublished} from '../notifications';
+import {requestPushPermissionExplicit} from '../services/pushPermission';
 
 export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
+    
+  const normalizedAdditional = (() => {
+    const idRecinto =
+      additionalData?.idRecinto ||
+      additionalData?.locationId ||
+      tableData?.idRecinto ||
+      tableData?.locationId ||
+      tableData?.location?._id ||
+      null;
+
+    const tableCode =
+      additionalData?.tableCode ||
+      tableData?.codigo ||
+      tableData?.tableCode ||
+      '';
+
+    const tableNumber =
+      additionalData?.tableNumber ||
+      tableData?.tableNumber ||
+      tableData?.numero ||
+      tableData?.number ||
+      '';
+
+    return {
+      ...additionalData,
+      idRecinto,
+      locationId: idRecinto,
+      tableCode: String(tableCode),
+      tableNumber: String(tableNumber),
+    };
+  })();
 
   const buildFromPayload = type => {
     const norm = s =>
@@ -46,7 +77,7 @@ export const publishActaHandler = async (item, userData) => {
     };
   };
   const verificationData = {
-    tableNumber: tableData?.codigo || 'N/A',
+    tableNumber: normalizedAdditional.tableCode || tableData?.codigo || 'N/A',
     votes: {
       parties: buildFromPayload('presidente'),
       deputies: buildFromPayload('diputado'),
@@ -78,7 +109,7 @@ export const publishActaHandler = async (item, userData) => {
     imagePath,
     aiAnalysis || {},
     {...electoralData, voteSummaryResults: normalizedVoteSummary},
-    additionalData,
+    normalizedAdditional,
   );
 
   if (!ipfs.success) throw new Error(ipfs.error);
@@ -125,7 +156,7 @@ export const publishActaHandler = async (item, userData) => {
       oracleReads.waitForOracleEvent,
       'AttestationCreated',
     );
-    console.log(response)
+    console.log(response);
   } catch (e) {
     const msg = e.message || '';
     if (msg.indexOf('416c72656164792063726561746564') >= 0) {
@@ -148,18 +179,18 @@ export const publishActaHandler = async (item, userData) => {
   }
 
   const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
-  console.log(explorer)
-  console.log(nftExplorer)
-  console.log(attestationNft)
+  console.log(explorer);
+  console.log(nftExplorer);
+  console.log(attestationNft);
   const nftId = response.returnData.recordId.toString();
-  console.log(nftId)
+  console.log(nftId);
   const nftResult = {
     txHash: response.receipt.transactionHash,
     nftId,
     txUrl: explorer + 'tx/' + response.receipt.transactionHash,
     nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
   };
-  console.log(nftResult)
+  console.log(nftResult);
 
   await axios.post(
     `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
@@ -177,7 +208,7 @@ export const publishActaHandler = async (item, userData) => {
     },
   );
   await removePersistedImage(imageUri);
-    await requestPushPermissionExplicit();
-  await displayLocalActaPublished({ ipfsData, nftData: nftResult, tableData });
+  await requestPushPermissionExplicit();
+  await displayLocalActaPublished({ipfsData, nftData: nftResult, tableData});
   return {success: true, ipfsData, nftData: nftResult, tableData};
 };

@@ -41,8 +41,7 @@ const CORNER_BORDER_WIDTH = 2;
 const BORDER_RADIUS = getResponsiveSize(2, 4, 6);
 const CONTAINER_BORDER_RADIUS = getResponsiveSize(4, 8, 10);
 const MARGIN_BOTTOM = getResponsiveSize(4, 16, 20);
-const ASPECT_HEIGHT = getResponsiveSize(170, 190, 220);
-
+const ASPECT_HEIGHT = getResponsiveSize(200, 230, 260);
 const ROTATE_BTN = getResponsiveSize(32, 38, 44);
 
 const normalizeUri = uri => {
@@ -150,12 +149,13 @@ const ZoomablePhotoContainer = ({
       (box.w || 1) / (fit.width || 1),
       (box.h || 1) / (fit.height || 1),
     ) || 1;
-  const initialZoom = Math.max(1, coverScale);
 
-  const contentW = Math.round((fit.width || box.w) * initialZoom);
-  const contentH = Math.round((fit.height || box.h) * initialZoom);
+  const contentW = Math.round((fit.width || box.w) * coverScale);
+  const contentH = Math.round((fit.height || box.h) * coverScale);
 
-  const minScale = 1 / initialZoom;
+  const minScale = 1 / coverScale;
+  const initialScale = 1;
+
   const pixelScaleLimit = Math.max(
     1,
     Math.min(
@@ -163,15 +163,20 @@ const ZoomablePhotoContainer = ({
       img.h && contentH ? img.h / contentH : 1,
     ),
   );
-  const maxScale = Math.min(6, pixelScaleLimit);
+  const maxScale = Math.min(8, Math.max(3, pixelScaleLimit));
 
   useEffect(() => {
-    // pequeño timeout para asegurar layout previo
     const id = setTimeout(() => {
-      zoomRef.current?.centerOn?.({x: 0, y: 0, scale: minScale, duration: 0});
+      // arrancar SIEMPRE en COVER
+      zoomRef.current?.centerOn?.({
+        x: 0,
+        y: 0,
+        scale: initialScale,
+        duration: 0,
+      });
     }, 0);
     return () => clearTimeout(id);
-  }, [rotation, minScale]);
+  }, [rotation, box.w, box.h, img.w, img.h]);
 
   return (
     <View
@@ -185,27 +190,36 @@ const ZoomablePhotoContainer = ({
       ]}>
       {box.w > 0 && box.h > 0 && img.w > 0 && img.h > 0 ? (
         <ImageZoom
+          key={`${isRotated}-${box.w}x${box.h}-${img.w}x${img.h}`}
           ref={zoomRef}
           cropWidth={box.w}
           cropHeight={box.h}
-          imageWidth={isRotated ? contentH : contentW}
-          imageHeight={isRotated ? contentW : contentH}
+          imageWidth={contentW}
+          imageHeight={contentH}
           minScale={minScale}
           maxScale={maxScale || 3}
           enableCenterFocus={false}
           pinchToZoom
           panToMove
           enableDoubleClickZoom>
-          <Image
-            testID={`${testID}Image`}
-            source={{uri: normalizedUri}}
+          <View
             style={{
-              width: isRotated ? contentH : contentW,
-              height: isRotated ? contentW : contentH,
-              transform: [{rotate: `${rotation}deg`}],
+              width: contentW,
+              height: contentH,
             }}
-            resizeMode="contain"
-          />
+            onStartShouldSetResponder={() => false}
+            onMoveShouldSetResponder={() => false}
+            collapsable={false}>
+            <Image
+              source={{uri: normalizedUri}}
+              style={{
+                width: '100%',
+                height: '100%',
+                transform: [{rotate: `${rotation}deg`}],
+              }}
+              resizeMode="contain"
+            />
+          </View>
         </ImageZoom>
       ) : (
         // Render vacío mientras medimos: sin “salto”

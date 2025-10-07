@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  
   Image,
   Modal,
   Dimensions,
@@ -18,7 +19,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {normalizeUri} from '../../../utils/normalizedUri';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -45,11 +46,6 @@ const mockMesa = {
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
 
-  const {logAction, logNavigation} = useNavigationLogger(
-    'TableDetail',
-    true,
-  );
-
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData;
   // Get existing records if they exist
@@ -67,7 +63,8 @@ export default function TableDetail({navigation, route}) {
 
   // Normalize mesa data structure
   const mesa = {
-    idRecinto: rawMesa.locationId,
+    idRecinto:
+      rawMesa.idRecinto || rawMesa.locationId || route.params?.locationId,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
@@ -178,7 +175,12 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: record?.actaImage,
+          photoUri: normalizeUri(
+            record?.actaImage ||
+              record?.image ||
+              record?.photo ||
+              record?.imageUrl,
+          ),
         });
       } catch {
         navigation.navigate('PhotoReviewScreen', {
@@ -187,7 +189,12 @@ export default function TableDetail({navigation, route}) {
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
-          photoUri: record?.actaImage,
+          photoUri: normalizeUri(
+            record?.actaImage ||
+              record?.image ||
+              record?.photo ||
+              record?.imageUrl,
+          ),
         });
       }
       return;
@@ -224,7 +231,7 @@ export default function TableDetail({navigation, route}) {
     navigation.navigate(StackNav.SuccessScreen, {
       title: String.photoSentTitle,
       message: String.photoSentMessage,
-      returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
+      returnRoute: 'HomeMain',
     });
   };
 

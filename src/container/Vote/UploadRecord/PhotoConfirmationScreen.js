@@ -25,7 +25,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {enqueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -61,6 +61,8 @@ const PhotoConfirmationScreen = () => {
     route.params || {}; // Destructure all needed data
 
   // Also try to get data from alternative parameter names
+  console.log('[TABLE-DATA]', tableData);
+
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
 
@@ -89,7 +91,6 @@ const PhotoConfirmationScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-
 
   const vc = userData?.vc;
   const subject = getCredentialSubjectFromPayload(userData) || {};
@@ -423,13 +424,32 @@ const PhotoConfirmationScreen = () => {
         });
         return;
       }
+      const locationId =
+        tableData?.idRecinto ||
+        tableData?.locationId ||
+        mesaData?.idRecinto ||
+        mesa?.idRecinto ||
+        tableData?.location?._id ||
+        null;
+
+      const tableCode = String(tableData?.codigo || tableData?.tableCode || '');
+
+      const tableNumber = String(
+        tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          aiAnalysis?.table_number ||
+          '',
+      );
 
       const persistedUri = await persistLocalImage(photoUri);
       const additionalData = {
-        idRecinto: tableData?.idRecinto || tableData.locationId,
-        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.codigo || 'N/A',
+        idRecinto: locationId,
+        locationId,
+        tableNumber,
+        tableCode,
         location: tableData?.location || 'Bolivia',
+        
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
@@ -620,6 +640,10 @@ const PhotoConfirmationScreen = () => {
     });
   };
 
+  const editAndRetry = () => {
+    setShowDuplicateModal(false);
+    navigation.goBack();
+  };
   return (
     <CSafeAreaView style={styles.container}>
       {/* Header */}
@@ -774,7 +798,7 @@ const PhotoConfirmationScreen = () => {
         visible={showDuplicateModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowDuplicateModal(false)}>
+        onRequestClose={editAndRetry}>
         <View style={modalStyles.modalOverlay}>
           <View style={modalStyles.modalContainer}>
             <View style={modalStyles.iconCircleWarning}>
@@ -795,10 +819,10 @@ const PhotoConfirmationScreen = () => {
 
             <View style={modalStyles.buttonContainer}>
               <TouchableOpacity
-                style={[modalStyles.cancelButton, {flex: 1}]}
-                onPress={() => setShowDuplicateModal(false)}>
-                <CText style={modalStyles.cancelButtonText}>
-                  {I18nStrings.goBack}
+                style={[modalStyles.confirmButton, {flex: 1}]}
+                onPress={editAndRetry}>
+                <CText style={modalStyles.confirmButtonText}>
+                  {I18nStrings.editAndRetry ?? 'Editar y reintentar'}
                 </CText>
               </TouchableOpacity>
             </View>

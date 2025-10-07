@@ -12,7 +12,7 @@ import CSafeAreaView from './CSafeAreaView';
 import CustomModal from './CustomModal';
 import CText from './CText';
 import {StackNav} from '../../navigation/NavigationKey';
-import String from '../../i18n/String';
+import Strings from '../../i18n/String';
 import {
   SearchTableHeader,
   ChooseTableText,
@@ -238,7 +238,7 @@ const BaseSearchTableScreenUser = ({
     type: 'info',
     title: '',
     message: '',
-    buttonText: String.accept,
+    buttonText: Strings.accept,
   });
   const [sortOrder, setSortOrder] = React.useState('asc');
 
@@ -327,7 +327,7 @@ const BaseSearchTableScreenUser = ({
     [filteredTables, sortOrder],
   );
 
-  const showModal = (type, title, message, buttonText = String.accept) => {
+  const showModal = (type, title, message, buttonText = Strings.accept) => {
     setModalConfig({type, title, message, buttonText});
     setModalVisible(true);
   };
@@ -370,7 +370,7 @@ const BaseSearchTableScreenUser = ({
     if (!tableCode) {
       showModal(
         'error',
-        String.error,
+        Strings.error,
         'No se pudo encontrar el código de la mesa',
       );
       return;
@@ -493,7 +493,7 @@ const BaseSearchTableScreenUser = ({
           // Other API error
           showModal(
             'error',
-            String.error,
+            Strings.error,
             errorData.message || 'Error al verificar la mesa',
           );
         }
@@ -501,7 +501,7 @@ const BaseSearchTableScreenUser = ({
         // Network or other error
         showModal(
           'error',
-          String.error,
+          Strings.error,
           'Error de conexión al verificar la mesa',
         );
       }

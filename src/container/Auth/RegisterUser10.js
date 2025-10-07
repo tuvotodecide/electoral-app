@@ -47,6 +47,7 @@ import {
 } from '../../utils/issuerClient';
 import {encryptVCWithPin} from '../../utils/vcCrypto';
 import {setBioFlag} from '../../utils/BioFlag';
+import { registryRegister } from '../../api/registry';
 
 export default function RegisterUser10({navigation, route}) {
   const {ocrData, dni, originalPin: pin, useBiometry} = route.params;
@@ -60,12 +61,7 @@ export default function RegisterUser10({navigation, route}) {
   const dispatch = useDispatch();
 
   const startedRef = useRef(false);
-  const stageRef = useRef(stage);
-
-  useEffect(() => {
-    stageRef.current = stage;
-  }, [stage]);
-
+  const DEFAULT_DISCOVERABLE_OPT_IN = true;
   useEffect(() => {
     clearTimeout(watchdogRef.current);
     if (stage === 'done') return;
@@ -197,6 +193,25 @@ export default function RegisterUser10({navigation, route}) {
           'registerStreamAndGuardian',
         );
 
+        setStage('registry');
+        await yieldUI();
+        let streamId = '';
+        try {
+          const regResp = await withTimeout(
+            registryRegister({
+              did: subjectDid,
+              accountAddress: walletData.address,
+              guardianContractAddress: guardianAddress ?? null,
+              displayNamePublic: null,
+              discoverableHashOptIn: DEFAULT_DISCOVERABLE_OPT_IN,
+              dni,
+            }),
+            15000,
+            'registryRegister',
+          );
+          if (regResp?.ok && regResp?.id) streamId = regResp.id;
+        } catch (e) {}
+
         dispatch(
           setAddresses({
             account: walletData.address,
@@ -217,6 +232,7 @@ export default function RegisterUser10({navigation, route}) {
             guardian: guardianAddress,
             did: subjectDid,
             vcCipher,
+            ...(streamId ? {streamId} : {}),
           },
           useBiometry,
           bundle,
@@ -242,7 +258,7 @@ export default function RegisterUser10({navigation, route}) {
               service: 'walletBundle',
               accessible:
                 Platform.OS === 'ios'
-                  ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY 
+                  ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY
                   : Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
               accessControl:
                 Platform.OS === 'ios'
@@ -267,7 +283,7 @@ export default function RegisterUser10({navigation, route}) {
             err?.apiDebug?.url || err?.apiDebug?.requestUrl || null;
           console.warn('[RegisterUser10] Registro fallido', {
             failingUrl: failingUrl || '(URL no disponible)',
-            stage: stageRef.current,
+            stage: stage,
             message: err?.message,
             apiDebug: err?.apiDebug ?? null,
           });
@@ -289,6 +305,7 @@ export default function RegisterUser10({navigation, route}) {
     deposit: String.depositGas,
     issueVC: 'Solicitando credencial…',
     guardian: 'Creando guardian…',
+     registry: 'Registrando…',
     save: String.saveData,
     done: String.doneRegister,
     stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',
