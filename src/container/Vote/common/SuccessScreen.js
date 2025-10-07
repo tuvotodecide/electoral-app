@@ -9,15 +9,17 @@ import {
   Share,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
-import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import {title} from 'process';
+import {url} from 'inspector';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -38,25 +40,11 @@ const SuccessScreen = () => {
   const {nftData, ipfsData} = route.params;
 
   const handleBack = () => {
-    let rootNav = navigation;
-    while (rootNav.getParent && rootNav.getParent()) {
-      rootNav = rootNav.getParent();
+    try {
+      navigation.popToTop();
+    } catch {
+      navigation.navigate(StackNav.TabNavigation);
     }
-
-    rootNav.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [
-          {
-            name: StackNav.TabNavigation,
-            params: {
-              screen: TabNav.HomeScreen,
-              params: {screen: 'HomeMain'},
-            },
-          },
-        ],
-      }),
-    );
   };
 
   const handleViewNFT = async () => {
@@ -112,7 +100,7 @@ const SuccessScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-  const subject = getCredentialSubjectFromPayload(userData) || {};
+const subject = getCredentialSubjectFromPayload(userData) || {};
   const nombre = subject?.fullName || '(sin nombre)';
 
   return (

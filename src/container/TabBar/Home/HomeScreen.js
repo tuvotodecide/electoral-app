@@ -431,7 +431,7 @@ export default function HomeScreen({navigation}) {
   };
   const userFullName = data.name || '(sin nolombre)';
 
-
+  const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [
@@ -590,6 +590,7 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -597,6 +598,7 @@ export default function HomeScreen({navigation}) {
                 })
               }
             />
+          )}
 
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
@@ -730,6 +732,7 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -737,6 +740,7 @@ export default function HomeScreen({navigation}) {
                 })
               }
             />
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}

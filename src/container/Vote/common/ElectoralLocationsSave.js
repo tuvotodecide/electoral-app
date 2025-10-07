@@ -148,7 +148,6 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
-      console.log(`[LOCATION-FETCH] 🌐 ${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
         {timeout: 15000}, // 10 segundos timeout
@@ -163,7 +162,6 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
-      console.error('Error fetching locations:', error);
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
         errorMessage = i18nString.connectionTimeout;

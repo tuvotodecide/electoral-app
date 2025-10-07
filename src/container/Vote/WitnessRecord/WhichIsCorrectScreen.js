@@ -1,54 +1,230 @@
-import React, {useState, useEffect} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
   ActivityIndicator,
   Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import CText from '../../../components/common/CText';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
-import {normalizeUri} from '../../../utils/normalizedUri';
+import {StackNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {fetchActasByMesa} from '../../../data/mockMesas';
 
 const {width: screenWidth} = Dimensions.get('window');
 
-// Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
 
 const getResponsiveSize = (small, medium, large) => {
-  if (isSmallPhone) return small;
-  if (isTablet) return large;
+  if (isSmallPhone) {
+    return small;
+  }
+  if (isTablet) {
+    return large;
+  }
   return medium;
 };
 
-const WhichIsCorrectScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const colors = useSelector(state => state.theme.theme);
-  const {
-    tableData,
-    photoUri,
-    isFromUnifiedFlow,
-    actaImages: preloadedActaImages,
-    existingRecords,
-    mesaInfo,
-    totalRecords,
-    isFromAPI,
-  } = route.params || {};
+const PLACEHOLDER_IMAGE =
+  'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg';
 
-  // State management
+const resolveUriFromActa = (acta, fallbackUri) => {
+  if (!acta) {
+    return fallbackUri || PLACEHOLDER_IMAGE;
+  }
+
+  const candidates = [
+    acta.uri,
+    acta.photoUri,
+    acta.photoURL,
+    acta.photoUrl,
+    acta.photo?.uri,
+    acta.photo?.url,
+    acta.imageUrl,
+    acta.imageURL,
+    acta.image_uri,
+    acta.image,
+    acta.actaImage,
+    fallbackUri,
+    PLACEHOLDER_IMAGE,
+  ];
+
+  return candidates.find(
+    value => typeof value === 'string' && value.trim().length > 0,
+  );
+};
+
+const normalizeActaImage = (acta, index, fallbackUri) => {
+  const uri = resolveUriFromActa(acta, fallbackUri);
+
+  const idCandidates = [
+    acta?.id,
+    acta?.recordId,
+    acta?.actaId,
+    acta?._id,
+    acta?.uuid,
+    acta?.code,
+    acta?.tableId,
+    uri ? `${uri}-${index}` : `acta-${index}`,
+  ];
+
+  const id = idCandidates.find(
+    value => value !== undefined && value !== null && String(value).length > 0,
+  );
+
+  return {
+    id: `${id}`,
+    uri,
+    recordId: acta?.recordId ?? acta?.id ?? acta?.actaId ?? null,
+    partyResults:
+      acta?.partyResults ||
+      acta?.partyResult ||
+      acta?.results ||
+      acta?.parties ||
+      [],
+    voteSummaryResults:
+      acta?.voteSummaryResults || acta?.voteSummary || acta?.summary || {},
+    mesaInfo: acta?.mesaInfo || acta?.tableData || null,
+    raw: acta,
+  };
+};
+
+const normalizeActaList = (actas, fallbackUri) => {
+  if (!Array.isArray(actas)) {
+    return [];
+  }
+
+  const seenIds = new Set();
+
+  return actas
+    .map((item, index) => normalizeActaImage(item, index, fallbackUri))
+    .filter(item => {
+      if (!item.uri) {
+        return false;
+      }
+      if (seenIds.has(item.id)) {
+        return false;
+      }
+      seenIds.add(item.id);
+      return true;
+    });
+};
+
+const parseNumeric = value => {
+  if (value === undefined || value === null) {
+    return 0;
+  }
+  const number = Number(value);
+  return Number.isNaN(number) ? value : number;
+};
+
+const transformVoteSummary = (summary, fallbackArray) => {
+  if (Array.isArray(summary) && summary.length > 0) {
+    return summary;
+  }
+
+  const source = summary && typeof summary === 'object' ? summary : {};
+
+  if (
+    source.presValidVotes !== undefined ||
+    source.depValidVotes !== undefined ||
+    source.presBlankVotes !== undefined ||
+    source.depBlankVotes !== undefined ||
+    source.presNullVotes !== undefined ||
+    source.depNullVotes !== undefined ||
+    source.presTotalVotes !== undefined ||
+    source.depTotalVotes !== undefined
+  ) {
+    return [
+      {
+        label: 'Válidos',
+        value1: parseNumeric(source.presValidVotes),
+        value2: parseNumeric(source.depValidVotes),
+      },
+      {
+        label: 'Blancos',
+        value1: parseNumeric(source.presBlankVotes),
+        value2: parseNumeric(source.depBlankVotes),
+      },
+      {
+        label: 'Nulos',
+        value1: parseNumeric(source.presNullVotes),
+        value2: parseNumeric(source.depNullVotes),
+      },
+      {
+        label: 'Total',
+        value1: parseNumeric(source.presTotalVotes),
+        value2: parseNumeric(source.depTotalVotes),
+      },
+    ];
+  }
+
+  if (Array.isArray(fallbackArray) && fallbackArray.length > 0) {
+    return fallbackArray;
+  }
+
+  return [];
+};
+
+const WhichIsCorrectScreen = ({navigation, route}) => {
+  const colors = useSelector(state => state.theme.theme);
+  const params = route?.params || {};
+
+  const {
+    tableData: routeTableData,
+    mesa,
+    mesaData,
+    existingRecords = [],
+    existingActas = [],
+    actaImages: actaImagesParam = [],
+    preloadedActaImages: preloadedParam = [],
+    photoUri: routePhotoUri,
+    partyResults: routePartyResults = [],
+    voteSummaryResults: routeVoteSummaryResults = [],
+    isFromUnifiedFlow = false,
+    fromTableDetail = false,
+    isFromAPI = false,
+    mesaInfo: routeMesaInfo,
+    totalRecords = 0,
+    locationData,
+    originalTable,
+  } = params;
+
+  const fallbackUri = routePhotoUri || PLACEHOLDER_IMAGE;
+
+  const incomingActas = useMemo(() => {
+    if (Array.isArray(actaImagesParam) && actaImagesParam.length > 0) {
+      return actaImagesParam;
+    }
+    if (Array.isArray(existingRecords) && existingRecords.length > 0) {
+      return existingRecords;
+    }
+    if (Array.isArray(existingActas) && existingActas.length > 0) {
+      return existingActas;
+    }
+    if (Array.isArray(preloadedParam) && preloadedParam.length > 0) {
+      return preloadedParam;
+    }
+    return [];
+  }, [actaImagesParam, existingActas, existingRecords, preloadedParam]);
+
+  const normalizedInitialActas = useMemo(
+    () => normalizeActaList(incomingActas, fallbackUri),
+    [incomingActas, fallbackUri],
+  );
+
+  const [actaImages, setActaImages] = useState(normalizedInitialActas);
+  const [preloadedActaImages] = useState(normalizedInitialActas);
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [confirmedCorrectActa, setConfirmedCorrectActa] = useState(null);
   const [showConfirmationView, setShowConfirmationView] = useState(false);
@@ -59,79 +235,437 @@ const WhichIsCorrectScreen = () => {
     message: '',
     buttonText: String.accept,
   });
-  const [isLoadingActas, setIsLoadingActas] = useState(true);
-  const [actaImages, setActaImages] = useState([]);
-  const [partyResults, setPartyResults] = useState([]);
-  const [voteSummaryResults, setVoteSummaryResults] = useState([]);
+  const [isLoadingActas, setIsLoadingActas] = useState(
+    normalizedInitialActas.length === 0,
+  );
+  const [globalPartyResults, setGlobalPartyResults] = useState(
+    routePartyResults,
+  );
+  const [globalVoteSummaryResults, setGlobalVoteSummaryResults] = useState(
+    routeVoteSummaryResults,
+  );
 
-  const handleSubirMiActa = () => {
-    navigation.navigate(StackNav.CameraScreen, {
-      tableData,
-      mesa: tableData,
-      mesaData: tableData,
+  const mesaInfo = useMemo(
+    () => routeMesaInfo || mesaData || mesa || routeTableData || {},
+    [mesaData, mesa, routeMesaInfo, routeTableData],
+  );
+
+  const allowAddNewActa = useMemo(
+    () =>
+      Boolean(
+        isFromUnifiedFlow ||
+          fromTableDetail ||
+          isFromAPI ||
+          (Array.isArray(existingRecords) && existingRecords.length > 0) ||
+          (Array.isArray(existingActas) && existingActas.length > 0),
+      ),
+    [
+      existingActas,
+      existingRecords,
+      fromTableDetail,
+      isFromAPI,
+      isFromUnifiedFlow,
+    ],
+  );
+
+  const {logAction, logNavigation} = useNavigationLogger(
+    'WhichIsCorrectScreen',
+    true,
+  );
+
+  const showModal = useCallback(
+    (type, title, message, buttonText = String.accept) => {
+      setModalConfig({type, title, message, buttonText});
+      setModalVisible(true);
+      logAction('which_correct_modal_show', {type, title});
+    },
+    [logAction],
+  );
+
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    logAction('which_correct_modal_close');
+  }, [logAction]);
+
+  const loadActasByMesa = useCallback(async () => {
+    const mesaIdentifier =
+      mesaInfo?.id ||
+      mesaInfo?.tableId ||
+      mesaInfo?.tableNumber ||
+      mesaInfo?.numero ||
+      mesaInfo?.number;
+
+    if (!mesaIdentifier) {
+      setIsLoadingActas(false);
+      return;
+    }
+
+    setIsLoadingActas(true);
+
+    try {
+      let numericId = mesaIdentifier;
+      if (typeof mesaIdentifier === 'string') {
+        const match = mesaIdentifier.match(/\d+/);
+        if (match) {
+          numericId = parseInt(match[0], 10);
+        }
+      }
+
+      const response = await fetchActasByMesa(numericId);
+
+      if (response?.success && Array.isArray(response?.data?.images)) {
+        const normalized = normalizeActaList(
+          response.data.images,
+          fallbackUri,
+        );
+        setActaImages(normalized);
+        setGlobalPartyResults(response.data.partyResults || []);
+        setGlobalVoteSummaryResults(response.data.voteSummaryResults || []);
+        logAction('which_correct_load_actas_success', {
+          actaCount: normalized.length,
+        });
+      } else if (normalizedInitialActas.length === 0) {
+        logAction('which_correct_load_actas_empty', {
+          mesaIdentifier,
+        });
+        showModal('error', String.error, String.couldNotLoadActas);
+      }
+    } catch (error) {
+      logAction('which_correct_load_actas_error', {
+        message: error?.message,
+      });
+      if (normalizedInitialActas.length === 0) {
+        showModal('error', String.error, String.errorLoadingActas);
+      }
+    } finally {
+      setIsLoadingActas(false);
+    }
+  }, [
+    fallbackUri,
+    logAction,
+    mesaInfo,
+    normalizedInitialActas.length,
+    showModal,
+  ]);
+
+  useEffect(() => {
+    if (normalizedInitialActas.length === 0 || isFromUnifiedFlow || isFromAPI) {
+      loadActasByMesa();
+    } else {
+      setIsLoadingActas(false);
+    }
+  }, [isFromAPI, isFromUnifiedFlow, loadActasByMesa, normalizedInitialActas.length]);
+
+  useEffect(() => {
+    logNavigation('which_correct_view', {
+      actaCount: actaImages.length,
+      allowAddNewActa,
+      fromUnifiedFlow: isFromUnifiedFlow,
+      fromTableDetail,
+      fromApi: isFromAPI,
+      totalRecords,
+    });
+  }, [
+    actaImages.length,
+    allowAddNewActa,
+    fromTableDetail,
+    isFromAPI,
+    isFromUnifiedFlow,
+    logNavigation,
+    totalRecords,
+  ]);
+
+  useEffect(() => {
+    if (
+      selectedImageId &&
+      !actaImages.some(image => image.id === selectedImageId)
+    ) {
+      setSelectedImageId(null);
+    }
+  }, [actaImages, selectedImageId]);
+
+  const handleImagePress = useCallback(
+    imageId => {
+      setSelectedImageId(imageId);
+      setShowConfirmationView(false);
+      setConfirmedCorrectActa(null);
+      logAction('which_correct_select_acta', {actaId: imageId});
+    },
+    [logAction],
+  );
+
+  const handleCorrectActaSelected = useCallback(
+    actaId => {
+      setConfirmedCorrectActa(actaId);
+      setShowConfirmationView(true);
+      logAction('which_correct_confirm', {actaId});
+    },
+    [logAction],
+  );
+
+  const handleUploadNewActa = useCallback(() => {
+    const basePayload = {
+      tableData: mesaInfo,
+      mesa: mesaInfo,
+      mesaData: mesaInfo,
+      existingRecords: actaImages,
+      existingActas: actaImages,
+      totalRecords: actaImages.length,
+      locationData,
+      originalTable,
+    };
+
+    if (isFromUnifiedFlow && !fromTableDetail && !isFromAPI) {
+      logNavigation('which_correct_add_new_via_table_detail', {
+        actaCount: actaImages.length,
+      });
+      try {
+        navigation.navigate(StackNav.TableDetail, basePayload);
+      } catch {
+        navigation.navigate('TableDetail', basePayload);
+      }
+      return;
+    }
+
+    logNavigation('which_correct_add_new_acta', {
+      actaCount: actaImages.length,
+      fromApi: isFromAPI,
+    });
+
+    const cameraPayload = {
+      ...basePayload,
       existingActas: actaImages,
       isAddingToExisting: actaImages.length > 0,
-    });
-  };
+    };
 
-  // Component for handling IPFS images
-  const IPFSImage = ({
-    image,
-    style,
-    resizeMode = 'contain',
-    onError,
-    onLoad,
-  }) => {
-    const [isLoading, setIsLoading] = useState(true);
+    try {
+      navigation.navigate(StackNav.CameraScreen, cameraPayload);
+    } catch {
+      navigation.navigate('CameraScreen', cameraPayload);
+    }
+  }, [
+    actaImages,
+    fromTableDetail,
+    isFromAPI,
+    isFromUnifiedFlow,
+    locationData,
+    logNavigation,
+    mesaInfo,
+    navigation,
+    originalTable,
+  ]);
+
+  const handleDatosNoCorrectos = useCallback(() => {
+    if (allowAddNewActa) {
+      handleUploadNewActa();
+      return;
+    }
+    logAction('which_correct_report_incorrect');
+    showModal('info', String.information, String.dataReportedAsIncorrect);
+  }, [allowAddNewActa, handleUploadNewActa, logAction, showModal]);
+
+  const handleViewMoreDetails = useCallback(
+    imageIdParam => {
+      const targetId = imageIdParam || selectedImageId;
+
+      if (!targetId) {
+        showModal(
+          'warning',
+          String.selectionRequired,
+          String.pleaseSelectImageFirst,
+        );
+        return;
+      }
+
+      if (imageIdParam && imageIdParam !== selectedImageId) {
+        setSelectedImageId(imageIdParam);
+      }
+
+      const selectedImage = actaImages.find(img => img.id === targetId);
+
+      if (!selectedImage) {
+        showModal('error', String.error, String.couldNotLoadActas);
+        return;
+      }
+
+      const voteSummary = transformVoteSummary(
+        selectedImage.voteSummaryResults,
+        globalVoteSummaryResults,
+      );
+      const partyResults =
+        (Array.isArray(selectedImage.partyResults) &&
+        selectedImage.partyResults.length > 0
+          ? selectedImage.partyResults
+          : globalPartyResults) || [];
+
+      logNavigation('which_correct_view_details', {
+        actaId: targetId,
+        voteSummaryLength: voteSummary.length,
+      });
+
+      const payload = {
+        selectedActa: selectedImage,
+        tableData: mesaInfo,
+        partyResults,
+        voteSummaryResults: voteSummary,
+        allActas: actaImages,
+        onCorrectActaSelected: handleCorrectActaSelected,
+        onUploadNewActa: handleUploadNewActa,
+      };
+
+      try {
+        navigation.navigate(StackNav.ActaDetailScreen, payload);
+      } catch {
+        navigation.navigate('ActaDetailScreen', payload);
+      }
+    },
+    [
+      actaImages,
+      globalPartyResults,
+      globalVoteSummaryResults,
+      handleCorrectActaSelected,
+      handleUploadNewActa,
+      logNavigation,
+      mesaInfo,
+      navigation,
+      selectedImageId,
+      showModal,
+    ],
+  );
+
+  const handleContinueWithSelectedActa = useCallback(() => {
+    const actaId = confirmedCorrectActa || selectedImageId;
+
+    if (!actaId) {
+      showModal(
+        'warning',
+        String.selectionRequired,
+        String.pleaseSelectImageFirst,
+      );
+      return;
+    }
+
+    const selectedImage = actaImages.find(img => img.id === actaId);
+
+    if (!selectedImage) {
+      showModal('error', String.error, String.couldNotLoadActas);
+      return;
+    }
+
+    const voteSummary = transformVoteSummary(
+      selectedImage.voteSummaryResults,
+      globalVoteSummaryResults,
+    );
+    const partyResults =
+      (Array.isArray(selectedImage.partyResults) &&
+      selectedImage.partyResults.length > 0
+        ? selectedImage.partyResults
+        : globalPartyResults) || [];
+
+    logAction('which_correct_continue', {
+      actaId,
+      hasPartyResults: partyResults.length > 0,
+      voteSummaryLength: voteSummary.length,
+    });
+
+    const payload = {
+      recordId: selectedImage.recordId,
+      photoUri: selectedImage.uri,
+      tableData: mesaInfo,
+      mesaInfo,
+      partyResults,
+      voteSummaryResults: voteSummary,
+    };
+
+    try {
+      navigation.navigate(StackNav.RecordReviewScreen, payload);
+    } catch {
+      navigation.navigate('RecordReviewScreen', payload);
+    }
+
+    setShowConfirmationView(false);
+    setConfirmedCorrectActa(null);
+  }, [
+    actaImages,
+    confirmedCorrectActa,
+    globalPartyResults,
+    globalVoteSummaryResults,
+    logAction,
+    mesaInfo,
+    navigation,
+    selectedImageId,
+    showModal,
+  ]);
+
+  const handleChangeOpinion = useCallback(() => {
+    setConfirmedCorrectActa(null);
+    setShowConfirmationView(false);
+    logAction('which_correct_change_opinion');
+  }, [logAction]);
+
+  const handleBack = useCallback(() => {
+    if (showConfirmationView) {
+      setShowConfirmationView(false);
+      setConfirmedCorrectActa(null);
+      logAction('which_correct_back_from_confirmation');
+      return;
+    }
+    navigation.goBack();
+  }, [logAction, navigation, showConfirmationView]);
+
+  const IPFSImageComponent = ({image, testID}) => {
+    const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const handleImageError = error => {
-      setHasError(true);
-      setIsLoading(false);
-      if (onError) onError(error);
-    };
+    const uri = useMemo(
+      () => resolveUriFromActa(image, fallbackUri),
+      [image],
+    );
 
-    const handleImageLoad = () => {
-      setIsLoading(false);
+    useEffect(() => {
       setHasError(false);
-      if (onLoad) onLoad();
-    };
+      setIsLoadingImage(true);
+    }, [uri]);
 
-    const handleLoadStart = () => {
-      setIsLoading(true);
-      setHasError(false);
-    };
-
-    if (hasError) {
+    if (!uri || hasError) {
       return (
-        <View style={[style, styles.imageError]}>
-          <MaterialIcons name="broken-image" size={40} color="#999" />
-          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
+        <View
+          testID={testID ? `${testID}_error` : undefined}
+          style={[styles.imageDisplay, styles.imageError]}>
+          <MaterialIcons
+            name="broken-image"
+            size={isTablet ? 60 : 48}
+            color="#999"
+          />
+          <CText style={styles.imageErrorText}>
+            Error cargando imagen
+          </CText>
           <CText style={styles.imageErrorSubtext}>
-            URL: {image.uri?.substring(0, 50)}...
+            Verifica tu conexión a internet
           </CText>
         </View>
       );
     }
 
     return (
-      <View style={style}>
+      <View>
         <Image
-          source={{
-            uri: image.uri,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (compatible; ReactNative)',
-              Accept: 'image/*',
-            },
+          testID={testID}
+          source={{uri}}
+          style={[styles.imageDisplay, isLoadingImage && styles.imageLoading]}
+          resizeMode="contain"
+          onLoadStart={() => {
+            setIsLoadingImage(true);
+            setHasError(false);
           }}
-          style={[style, isLoading && styles.imageLoading]}
-          resizeMode={resizeMode}
-          onLoadStart={handleLoadStart}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
+          onLoad={() => setIsLoadingImage(false)}
+          onError={() => {
+            setHasError(true);
+            setIsLoadingImage(false);
+          }}
         />
-        {isLoading && (
-          <View style={[style, styles.imageLoadingOverlay]}>
+        {isLoadingImage && (
+          <View style={styles.imageLoadingOverlay}>
             <ActivityIndicator
               size="small"
               color={colors.primary || '#4F9858'}
@@ -145,209 +679,69 @@ const WhichIsCorrectScreen = () => {
     );
   };
 
-  // Load actas when component mounts
-  useEffect(() => {
-    // If we have preloaded acta images from API, use them directly
-    if (isFromAPI && preloadedActaImages && preloadedActaImages.length > 0) {
-      setActaImages(
-        preloadedActaImages.map(a => ({
-          ...a,
-          uri: normalizeUri(a.uri || a.image || a.imageUrl),
-        })),
-      );
-      setIsLoadingActas(false);
-      return;
-    }
-
-    // If we don't have API data and have a photoUri, create a single acta image
-    if (photoUri) {
-      setActaImages([
-        {
-          id: '1',
-          uri: normalizeUri(photoUri),
-        },
-      ]);
-      setIsLoadingActas(false);
-      return;
-    }
-
-    setActaImages([]);
-    setPartyResults([]);
-    setVoteSummaryResults([]);
-    setIsLoadingActas(false);
-  }, [tableData, photoUri, isFromAPI, preloadedActaImages, existingRecords]);
-
-  const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-  };
-
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
-  const handleImagePress = imageId => {
-    const selectedImage = actaImages.find(img => img.id === imageId);
-    if (!selectedImage) return;
-
-    navigation.navigate(StackNav.PhotoReviewScreen, {
-      // Foto seleccionada
-      photoUri: selectedImage.uri,
-
-      // Contexto mesa
-      tableData,
-      mesaData: tableData,
-
-      // Datos detectados (puede ser array u objeto; PhotoReview los normaliza)
-      mappedData: {
-        partyResults: selectedImage.partyResults || [],
-        voteSummaryResults: selectedImage.voteSummaryResults || {},
-      },
-
-      // Solo lectura (no editar antes de confirmar)
-      isViewOnly: true,
-
-      // Para customizar botones en PhotoReview
-      fromWhichIsCorrect: true,
-      actaCount: actaImages.length,
-    });
-  };
-
-  const handleCorrectActaSelected = actaId => {
-    // Clear any previous selection and set the new one
-    setSelectedImageId(null);
-    setConfirmedCorrectActa(actaId);
-    setShowConfirmationView(true);
-  };
-
-  const handleUploadNewActa = () => {
-    navigation.navigate(StackNav.TableDetail, {
-      tableData: tableData,
-      isFromUnifiedFlow: true,
-      existingActas: actaImages,
-    });
-  };
-
-  const handleContinueWithSelectedActa = () => {
-    if (confirmedCorrectActa) {
-      const selectedImage = actaImages.find(
-        img => img.id === confirmedCorrectActa,
-      );
-      if (selectedImage) {
-        // Transformar voteSummaryResults a array aquí
-        const transformedVoteSummary = [
-          {
-            label: 'Válidos',
-            value1: selectedImage.voteSummaryResults?.presValidVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depValidVotes || 0,
-          },
-          {
-            label: 'Blancos',
-            value1: selectedImage.voteSummaryResults?.presBlankVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depBlankVotes || 0,
-          },
-          {
-            label: 'Nulos',
-            value1: selectedImage.voteSummaryResults?.presNullVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depNullVotes || 0,
-          },
-          {
-            label: 'Total',
-            value1: selectedImage.voteSummaryResults?.presTotalVotes || 0,
-            value2: selectedImage.voteSummaryResults?.depTotalVotes || 0,
-          },
-        ];
-
-        navigation.navigate('RecordReviewScreen', {
-          recordId: selectedImage.recordId,
-          photoUri: selectedImage.uri,
-          tableData: tableData,
-          mesaInfo: mesaInfo,
-          partyResults: selectedImage.partyResults || [],
-          voteSummaryResults: transformedVoteSummary,
-        });
-      }
-    }
-  };
-
-  const handleChangeOpinion = () => {
-    setConfirmedCorrectActa(null);
-    setShowConfirmationView(false);
-    setSelectedImageId(null);
-  };
-
-  const handleDatosNoCorrectos = () => {
-    if (isFromAPI) {
-      // If we came from API, go to camera to add new acta
-
-      navigation.navigate(StackNav.CameraScreen, {
-        tableData: tableData,
-        mesa: tableData,
-        mesaData: tableData,
-        existingActas: actaImages,
-        isAddingToExisting: actaImages.length > 0,
-      });
-    } else {
-      // For legacy cases without API data, show info modal
-      showModal('info', String.information, String.dataReportedAsIncorrect);
-    }
-  };
-
   return (
-    <CSafeAreaView style={styles.container} addTabPadding={false}>
+    <CSafeAreaView
+      testID="whichIsCorrectContainer"
+      style={styles.container}
+      addTabPadding={false}>
       <UniversalHeader
+        testID="whichIsCorrectHeader"
         colors={colors}
         onBack={handleBack}
         title={`${String.table} ${
-          tableData?.tableNumber ||
-          tableData?.numero ||
-          tableData?.number ||
+          mesaInfo?.tableNumber ||
+          mesaInfo?.numero ||
+          mesaInfo?.number ||
           'N/A'
         }`}
         showNotification={true}
       />
 
       {showConfirmationView ? (
-        // Confirmation view showing selected acta with icons
         <>
-          <View style={styles.questionContainer}>
-            <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
+          <View
+            testID="whichIsCorrectQuestionContainer"
+            style={styles.questionContainer}>
+            <CText
+              testID="whichIsCorrectQuestionText"
+              style={styles.questionText}>
+              {String.whichIsCorrect}
+            </CText>
           </View>
 
           <ScrollView
+            testID="whichIsCorrectConfirmationImageList"
             style={styles.imageList}
             showsVerticalScrollIndicator={false}>
-            {actaImages.map(image => {
+            {actaImages.map((image, index) => {
               const isCorrect = image.id === confirmedCorrectActa;
 
               return (
                 <View
                   key={`confirmation-${image.id}`}
+                  testID={`whichIsCorrectConfirmationImageContainer_${index}`}
                   style={styles.confirmationImageContainer}>
                   <View
+                    testID={`whichIsCorrectImageCard_${index}`}
                     style={[
                       styles.imageCard,
                       isCorrect
                         ? styles.imageCardCorrect
                         : styles.imageCardIncorrect,
                     ]}>
-                    <IPFSImage
+                    <IPFSImageComponent
+                      testID={`whichIsCorrectImage_${index}`}
                       image={image}
-                      style={styles.imageDisplay}
-                      resizeMode="contain"
                     />
 
-                    {/* Status Icon - Check for correct, X for incorrect */}
                     <View
+                      testID={`whichIsCorrectStatusIcon_${index}`}
                       style={[
                         styles.statusIcon,
                         isCorrect ? styles.correctIcon : styles.incorrectIcon,
                       ]}>
                       <MaterialIcons
+                        testID={`whichIsCorrectStatusIconSvg_${index}`}
                         name={isCorrect ? 'check-circle' : 'cancel'}
                         size={24}
                         color="#FFFFFF"
@@ -359,41 +753,60 @@ const WhichIsCorrectScreen = () => {
             })}
           </ScrollView>
 
-          {/* Confirmation Buttons */}
-          <View style={styles.confirmationButtonsContainer}>
+          <View
+            testID="whichIsCorrectConfirmationButtonsContainer"
+            style={styles.confirmationButtonsContainer}>
             <TouchableOpacity
+              testID="whichIsCorrectContinueButton"
               style={[
                 styles.continueButton,
                 {backgroundColor: colors.primary || '#4F9858'},
               ]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
-              <CText style={styles.continueButtonText}>
+              <CText
+                testID="whichIsCorrectContinueButtonText"
+                style={styles.continueButtonText}>
                 {String.continueButton}
               </CText>
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="whichIsCorrectChangeOpinionButton"
               style={[
                 styles.changeOpinionButton,
-                {backgroundColor: '#ff0000ff'},
+                {borderColor: colors.textSecondary || '#4F9858'},
               ]}
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
-              <CText style={[styles.changeOpinionButtonText]}>
+              <CText
+                testID="whichIsCorrectChangeOpinionButtonText"
+                style={[
+                  styles.changeOpinionButtonText,
+                  {color: colors.textSecondary || '#4F9858'},
+                ]}>
                 Cambiar de opinión
               </CText>
             </TouchableOpacity>
           </View>
         </>
       ) : (
-        // Original selection view
         <>
-          <View style={styles.questionContainer}>
-            <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
+          <View
+            testID="whichIsCorrectQuestionContainer"
+            style={styles.questionContainer}>
+            <CText
+              testID="whichIsCorrect_questionText"
+              style={styles.questionText}>
+              {String.whichIsCorrect}
+            </CText>
             {isFromAPI && actaImages.length > 0 && (
-              <View style={styles.apiInfoContainer}>
-                <CText style={styles.apiInfoText}>
+              <View
+                testID="whichIsCorrect_apiInfoContainer"
+                style={styles.apiInfoContainer}>
+                <CText
+                  testID="whichIsCorrect_apiInfoText"
+                  style={styles.apiInfoText}>
                   Se encontraron {actaImages.length} acta
                   {actaImages.length > 1 ? 's' : ''} atestiguada
                   {actaImages.length > 1 ? 's' : ''} para esta mesa
@@ -403,25 +816,39 @@ const WhichIsCorrectScreen = () => {
           </View>
 
           {isLoadingActas ? (
-            <View style={styles.loadingContainer}>
+            <View
+              testID="whichIsCorrect_loadingContainer"
+              style={styles.loadingContainer}>
               <ActivityIndicator
+                testID="whichIsCorrect_loadingIndicator"
                 size="large"
                 color={colors.primary || '#4F9858'}
               />
-              <CText style={styles.loadingText}>{String.loadingActas}</CText>
+              <CText
+                testID="whichIsCorrect_loadingText"
+                style={styles.loadingText}>
+                {String.loadingActas}
+              </CText>
             </View>
           ) : actaImages.length === 0 ? (
-            <View style={styles.loadingContainer}>
-              <CText style={styles.noImagesText}>
+            <View
+              testID="whichIsCorrect_noImagesContainer"
+              style={styles.loadingContainer}>
+              <CText
+                testID="whichIsCorrect_noImagesText"
+                style={styles.noImagesText}>
                 No se encontraron imágenes para mostrar
               </CText>
-              <CText style={styles.debugText}>
+              <CText
+                testID="whichIsCorrect_debugText"
+                style={styles.debugText}>
                 Debug: isFromAPI={String(isFromAPI)}, preloadedLength=
                 {preloadedActaImages?.length || 0}
               </CText>
             </View>
           ) : (
             <ScrollView
+              testID="whichIsCorrect_imageList"
               style={styles.imageList}
               showsVerticalScrollIndicator={false}>
               {isTablet
@@ -431,64 +858,161 @@ const WhichIsCorrectScreen = () => {
                       pairs.push(actaImages.slice(i, i + 2));
                     }
                     return pairs.map((pair, pairIndex) => (
-                      <View key={pairIndex} style={styles.tabletRow}>
-                        {pair.map(image => (
-                          <View key={image.id} style={styles.tabletColumn}>
-                            <TouchableOpacity
-                              style={styles.imageCard}
-                              onPress={() => handleImagePress(image.id)}>
-                              <IPFSImage
-                                image={image}
-                                style={styles.imageDisplay}
-                                resizeMode="contain"
-                              />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
+                      <View
+                        key={pairIndex}
+                        testID={`whichIsCorrect_tabletRow_${pairIndex}`}
+                        style={styles.tabletRow}>
+                        {pair.map((image, imageIndex) => {
+                          const globalIndex = pairIndex * 2 + imageIndex;
+                          const isSelected = selectedImageId === image.id;
+                          return (
+                            <View
+                              key={image.id}
+                              testID={`whichIsCorrect_tabletColumn_${globalIndex}`}
+                              style={styles.tabletColumn}>
+                              <TouchableOpacity
+                                testID={`whichIsCorrect_imageCard_${globalIndex}`}
+                                style={[
+                                  styles.imageCard,
+                                  isSelected && styles.imageCardSelected,
+                                ]}
+                                onPress={() => handleImagePress(image.id)}>
+                                <IPFSImageComponent
+                                  testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
+                                  image={image}
+                                />
+                                {isSelected && (
+                                  <>
+                                    <View
+                                      testID={`whichIsCorrect_topLeftCorner_${globalIndex}`}
+                                      style={[
+                                        styles.cornerBorder,
+                                        styles.topLeftCorner,
+                                      ]}
+                                    />
+                                    <View
+                                      testID={`whichIsCorrect_topRightCorner_${globalIndex}`}
+                                      style={[
+                                        styles.cornerBorder,
+                                        styles.topRightCorner,
+                                      ]}
+                                    />
+                                    <View
+                                      testID={`whichIsCorrect_bottomLeftCorner_${globalIndex}`}
+                                      style={[
+                                        styles.cornerBorder,
+                                        styles.bottomLeftCorner,
+                                      ]}
+                                    />
+                                    <View
+                                      testID={`whichIsCorrect_bottomRightCorner_${globalIndex}`}
+                                      style={[
+                                        styles.cornerBorder,
+                                        styles.bottomRightCorner,
+                                      ]}
+                                    />
+                                  </>
+                                )}
+                              </TouchableOpacity>
+                              {isSelected && (
+                                <TouchableOpacity
+                                  testID={`whichIsCorrect_detailsButton_${globalIndex}`}
+                                  style={styles.detailsButton}
+                                  onPress={() => handleViewMoreDetails(image.id)}>
+                                  <CText
+                                    testID={`whichIsCorrect_detailsButtonText_${globalIndex}`}
+                                    style={styles.detailsButtonText}>
+                                    {String.seeMoreDetails}
+                                  </CText>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          );
+                        })}
                         {pair.length === 1 && (
-                          <View style={styles.tabletColumn} />
+                          <View
+                            testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`}
+                            style={styles.tabletColumn}
+                          />
                         )}
                       </View>
                     ));
                   })()
-                : actaImages.map(image => (
-                    <TouchableOpacity
-                      key={image.id}
-                      style={styles.imageCard}
-                      onPress={() => handleImagePress(image.id)}>
-                      <IPFSImage
-                        image={image}
-                        style={styles.imageDisplay}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                  ))}
-              <TouchableOpacity
-                style={styles.subirActaBtn}
-                onPress={handleSubirMiActa}>
-                <CText style={styles.subirActaBtnText}>Subir mi acta</CText>
-              </TouchableOpacity>
+                : actaImages.map((image, index) => {
+                    const isSelected = selectedImageId === image.id;
+                    return (
+                      <React.Fragment key={image.id}>
+                        <TouchableOpacity
+                          testID={`whichIsCorrect_phoneImageCard_${index}`}
+                          style={[
+                            styles.imageCard,
+                            isSelected && styles.imageCardSelected,
+                          ]}
+                          onPress={() => handleImagePress(image.id)}>
+                          <IPFSImageComponent
+                            testID={`whichIsCorrect_phoneIPFSImage_${index}`}
+                            image={image}
+                          />
+                          {isSelected && (
+                            <>
+                              <View
+                                testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
+                                style={[styles.cornerBorder, styles.topLeftCorner]}
+                              />
+                              <View
+                                testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
+                                style={[styles.cornerBorder, styles.topRightCorner]}
+                              />
+                              <View
+                                testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
+                                style={[styles.cornerBorder, styles.bottomLeftCorner]}
+                              />
+                              <View
+                                testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
+                                style={[styles.cornerBorder, styles.bottomRightCorner]}
+                              />
+                            </>
+                          )}
+                        </TouchableOpacity>
+                        {isSelected && (
+                          <TouchableOpacity
+                            testID={`whichIsCorrect_phoneDetailsButton_${index}`}
+                            style={styles.detailsButton}
+                            onPress={() => handleViewMoreDetails(image.id)}>
+                            <CText
+                              testID={`whichIsCorrect_phoneDetailsButtonText_${index}`}
+                              style={styles.detailsButtonText}>
+                              {String.seeMoreDetails}
+                            </CText>
+                          </TouchableOpacity>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
             </ScrollView>
           )}
 
           <TouchableOpacity
+            testID="whichIsCorrect_datosNoCorrectosButton"
             style={[
               styles.datosNoCorrectosButton,
-              isFromAPI && styles.addNewActaButton,
+              allowAddNewActa && styles.addNewActaButton,
             ]}
             onPress={handleDatosNoCorrectos}>
             <CText
+              testID="addNewRecordText"
               style={[
                 styles.datosNoCorrectosButtonText,
-                isFromAPI && styles.addNewActaButtonText,
+                allowAddNewActa && styles.addNewActaButtonText,
               ]}>
-              {isFromAPI ? 'Agregar Nueva Acta' : String.dataNotCorrect}
+              {allowAddNewActa ? 'Agregar Nueva Acta' : String.dataNotCorrect}
             </CText>
           </TouchableOpacity>
         </>
       )}
 
       <CustomModal
+        testID="whichIsCorrectModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}
@@ -678,7 +1202,6 @@ const styles = StyleSheet.create({
   changeOpinionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   detailsButton: {
     backgroundColor: '#459151',
@@ -754,20 +1277,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: getResponsiveSize(3, 4, 6),
-  },
-  subirActaBtn: {
-    backgroundColor: '#4F9858',
-    borderRadius: getResponsiveSize(6, 8, 10),
-    paddingVertical: getResponsiveSize(12, 14, 18),
-    alignItems: 'center',
-    marginTop: getResponsiveSize(8, 10, 12),
-    marginHorizontal: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(12, 16, 20),
-  },
-  subirActaBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: getResponsiveSize(14, 16, 18),
   },
 });
 

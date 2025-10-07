@@ -4,7 +4,6 @@ import {
   PINATA_API_KEY,
   PINATA_API_SECRET,
   PINATA_JWT,
-  
   BACKEND_RESULT,
 } from '@env';
 
@@ -17,39 +16,12 @@ class PinataService {
     this.baseURL = 'https://api.pinata.cloud';
   }
 
-  // --- Helpers para manejar URLs remotas / IPFS ---
-  isHttpUrl(u) {
-    return /^https?:\/\//i.test(String(u || ''));
-  }
-  isIpfsUrl(u) {
-    return /^ipfs:\/\//i.test(String(u || ''));
-  }
-  toHttpFromIpfs(u) {
-    return String(u || '').replace(
-      /^ipfs:\/\//i,
-      'https://gateway.pinata.cloud/ipfs/',
-    );
-  }
-  async downloadToCache(url, preferredName = 'electoral-act.jpg') {
-    const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
-    const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
-    const res = await RNFS.downloadFile({fromUrl: src, toFile: target}).promise;
-    if (res.statusCode >= 200 && res.statusCode < 300) return target;
-    throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
-  }
-
   async checkDuplicateBallot(voteData) {
-    console.log('[PINATA-SERVICE] 🔍 checkDuplicateBallot iniciado');
-    console.log('[PINATA-SERVICE] 📋 Datos de verificación:', {
-      tableNumber: voteData.tableNumber,
-      hasVotes: !!voteData.votes,
-    });
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
-      console.log('[PINATA-SERVICE] 🌐 Consultando backend:', `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
         {timeout: 10000}, // 10 segundos timeout
@@ -104,12 +76,6 @@ class PinataService {
         isEqual(ballot.votes, voteData.votes),
       );
 
-      console.log('[PINATA-SERVICE] 📊 Resultado checkDuplicateBallot:', {
-        exists: Boolean(duplicate),
-        ballotId: duplicate?.id,
-        existingBallotsCount: existingBallots.length,
-      });
-
       return {
         exists: Boolean(duplicate),
         ballot: duplicate || null,
@@ -134,40 +100,25 @@ class PinataService {
 
   /**
    * Sube una imagen a IPFS usando Pinata
-   * @param {string} filePathOrUrl - Ruta local (file:// o absoluta) o URL http(s)/ipfs://
+   * @param {string} filePath - Ruta del archivo de imagen
    * @param {string} fileName - Nombre del archivo
    * @returns {Promise<{success: boolean, data?: any, error?: string}>}
    */
-  async uploadImageToIPFS(filePathOrUrl, fileName = 'electoral-act.jpg') {
-    console.log('[PINATA-SERVICE] 📤 uploadImageToIPFS iniciado');
-    console.log('[PINATA-SERVICE] 📁 Archivo:', {
-      pathPreview: filePathOrUrl?.substring(0, 60) + '...',
-      fileName,
-      isHttp: this.isHttpUrl(filePathOrUrl),
-      isIpfs: this.isIpfsUrl(filePathOrUrl),
-    });
+  async uploadImageToIPFS(filePath, fileName = 'electoral-act.jpg') {
     try {
-      // 1) Si es URL (http/https/ipfs), descargar a cache
-      let localPath = filePathOrUrl;
-      if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        localPath = await this.downloadToCache(filePathOrUrl, fileName);
+      // Verificar que el archivo existe
+      const fileExists = await RNFS.exists(filePath);
+      if (!fileExists) {
+        throw new Error('El archivo no existe');
       }
 
-      // 2) Normalizar ruta para RNFS/stat
-      const fsPath = localPath.startsWith('file://')
-        ? localPath.slice(7)
-        : localPath;
-
-      const fileExists = await RNFS.exists(fsPath);
-      if (!fileExists) throw new Error('El archivo no existe');
-
       // Obtener información del archivo
-      const fileInfo = await RNFS.stat(fsPath);
+      const fileInfo = await RNFS.stat(filePath);
 
       // Crear FormData para React Native
       const formData = new FormData();
       formData.append('file', {
-        uri: localPath.startsWith('file://') ? localPath : `file://${fsPath}`,
+        uri: filePath.startsWith('file://') ? filePath : `file://${filePath}`,
         type: 'image/jpeg',
         name: fileName,
         size: fileInfo.size,
@@ -204,7 +155,7 @@ class PinataService {
         },
       );
 
-      const out = {
+      return {
         success: true,
         data: {
           ipfsHash: response.data.IpfsHash,
@@ -213,16 +164,6 @@ class PinataService {
           gatewayUrl: `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`,
         },
       };
-      console.log('[PINATA-SERVICE] ✅ Imagen subida a IPFS exitosamente:', {
-        ipfsHash: response.data.IpfsHash,
-        size: response.data.PinSize,
-        gatewayUrl: out.data.gatewayUrl?.substring(0, 60) + '...',
-      });
-      if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        RNFS.unlink(fsPath).catch(() => {});
-      }
-
-      return out;
     } catch (error) {
       return {
         success: false,
@@ -239,8 +180,6 @@ class PinataService {
    * @returns {Promise<{success: boolean, data?: any, error?: string}>}
    */
   async uploadJSONToIPFS(jsonData, name = 'electoral-act-data.json') {
-    console.log('[PINATA-SERVICE] 📤 uploadJSONToIPFS iniciado');
-    console.log('[PINATA-SERVICE] 📋 JSON name:', name);
     try {
       // Metadatos para el JSON
       const pinataMetadata = {
@@ -276,10 +215,6 @@ class PinataService {
         },
       );
 
-      console.log('[PINATA-SERVICE] ✅ JSON subido a IPFS exitosamente:', {
-        ipfsHash: response.data.IpfsHash,
-        size: response.data.PinSize,
-      });
       return {
         success: true,
         data: {
@@ -290,7 +225,6 @@ class PinataService {
         },
       };
     } catch (error) {
-      console.error('[PINATA-SERVICE] ❌ Error subiendo JSON:', error.message);
       return {
         success: false,
         error:
@@ -312,18 +246,8 @@ class PinataService {
     electoralData,
     additionalData = {},
   ) {
-    console.log('[PINATA-SERVICE] 🚀 uploadElectoralActComplete iniciado');
-    console.log('[PINATA-SERVICE] 📋 Datos recibidos:', {
-      imagePathPreview: imagePath?.substring(0, 60) + '...',
-      hasAnalysisData: !!analysisData,
-      hasElectoralData: !!electoralData,
-      partyResultsCount: electoralData?.partyResults?.length,
-      tableNumber: additionalData?.tableNumber,
-      tableCode: additionalData?.tableCode,
-    });
     try {
       // 1. Subir imagen
-      console.log('[PINATA-SERVICE] 📤 Paso 1: Subiendo imagen...');
       const imageResult = await this.uploadImageToIPFS(imagePath);
       if (!imageResult.success) {
         throw new Error(`Error subiendo imagen: ${imageResult.error}`);
@@ -331,18 +255,9 @@ class PinataService {
 
       // 2. Extraer datos base
       const timestamp = new Date().toISOString();
-      const tableNumber = String(
-        additionalData.tableNumber ?? analysisData?.table_number ?? '',
-      );
-      const tableCode = String(additionalData.tableCode ?? '');
-      const locationId =
-        additionalData.idRecinto ?? additionalData.locationId ?? null;
-
-      if (!tableCode || !tableNumber || !locationId) {
-        throw new Error(
-          'Offline payload sin campos básicos (tableCode, tableNumber o locationId).',
-        );
-      }
+      const tableNumber =
+        additionalData.tableNumber || analysisData?.table_number || 'N/A';
+      const tableCode = additionalData.tableCode || 'N/A';
       const time =
         additionalData.time ||
         analysisData?.time ||
@@ -436,9 +351,9 @@ class PinataService {
       };
 
       const dataField = {
-        tableCode,
-        tableNumber,
-        locationId,
+        tableCode: tableCode,
+        tableNumber: tableNumber,
+        locationId: additionalData.idRecinto,
         votes: {
           parties: buildVoteData('presidente'),
           deputies: buildVoteData('diputado'),

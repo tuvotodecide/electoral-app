@@ -1,7 +1,6 @@
 import {useState} from 'react';
-import {CommonActions, useNavigation} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
-import {StackNav, TabNav} from '../navigation/NavigationKey';
 
 export const useSearchTableLogic = navigationTarget => {
   const navigation = useNavigation();
@@ -25,26 +24,9 @@ export const useSearchTableLogic = navigationTarget => {
   const handleNotificationPress = () => {
     // Implement notification logic if needed
   };
-  const handleHomePress = () => {
-    let rootNav = navigation;
-    while (rootNav.getParent && rootNav.getParent()) {
-      rootNav = rootNav.getParent();
-    }
 
-    rootNav.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [
-          {
-            name: StackNav.TabNavigation,
-            params: {
-              screen: TabNav.HomeScreen,
-              params: {screen: 'HomeMain'},
-            },
-          },
-        ],
-      }),
-    );
+  const handleHomePress = () => {
+    // Implement home navigation
   };
 
   const handleProfilePress = () => {

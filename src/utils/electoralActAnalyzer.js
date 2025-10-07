@@ -92,21 +92,13 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
    * Analiza una imagen de acta electoral
    */
   async analyzeElectoralAct(imagePath) {
-    console.log('[🤖 AI-ANALYZER] 📸 Iniciando análisis de acta electoral', {
-      imagePath,
-      timestamp: new Date().toISOString(),
-    });
     try {
       const genAI = await this.ensureClient();
       // Convertir imagen a base64
       const base64Image = await this.imageToBase64(imagePath);
-      console.log('[🤖 AI-ANALYZER] ✅ Imagen convertida a base64', {
-        base64Length: base64Image?.length,
-      });
 
       // Preparar el contenido para Gemini
       const prompt = this.getAnalysisPrompt();
-      console.log('[🤖 AI-ANALYZER] 📝 Prompt preparado, enviando a Gemini API...');
 
       // Usar la nueva API de genai:
       const response = await genAI.models.generateContent({
@@ -124,21 +116,10 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
 
       // La respuesta es ahora response.text (no .text())
       const text = response.text.trim();
-      console.log('[🤖 AI-ANALYZER] 📥 Respuesta recibida de Gemini', {
-        responseLength: text?.length,
-        preview: text?.substring(0, 100),
-      });
 
       // Intentar parsear como JSON
       try {
         const analysisResult = JSON.parse(text);
-        console.log('[🤖 AI-ANALYZER] ✅ JSON parseado exitosamente', {
-          if_electoral_act: analysisResult.if_electoral_act,
-          image_not_clear: analysisResult.image_not_clear,
-          table_number: analysisResult.table_number,
-          hasPresidentData: !!analysisResult.president_vote_counts,
-          hasDeputyData: !!analysisResult.deputy_vote_counts,
-        });
 
         return {
           success: true,
@@ -146,10 +127,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
           rawResponse: text,
         };
       } catch (parseError) {
-        console.log('[🤖 AI-ANALYZER] ❌ Error al parsear JSON', {
-          error: parseError.message,
-          rawResponse: text,
-        });
         return {
           success: false,
           error: 'La respuesta de la IA no es un JSON válido',
@@ -157,10 +134,6 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
         };
       }
     } catch (error) {
-      console.log('[🤖 AI-ANALYZER] ❌ Error general en análisis', {
-        error: error.message,
-        stack: error.stack,
-      });
       return {
         success: false,
         error: error.message || 'Error al analizar la imagen',
@@ -172,12 +145,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
    * Mapea los datos de la IA al formato esperado por la app
    */
   mapToAppFormat(aiData) {
-    console.log('[🤖 AI-ANALYZER] 🗺️ Mapeando datos de IA a formato de app', {
-      if_electoral_act: aiData.if_electoral_act,
-      table_number: aiData.table_number,
-    });
     if (!aiData.if_electoral_act) {
-      console.log('[🤖 AI-ANALYZER] ⚠️ No es acta electoral, retornando null');
       return null;
     }
 
@@ -230,19 +198,13 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       },
     ];
 
-    const mappedResult = {
+    return {
       tableNumber: aiData.table_number,
       tableCode: aiData.table_code,
       time: aiData.time,
       partyResults,
       voteSummaryResults,
     };
-    console.log('[🤖 AI-ANALYZER] ✅ Mapeo completado', {
-      tableNumber: mappedResult.tableNumber,
-      partyResultsCount: partyResults.length,
-      voteSummaryCount: voteSummaryResults.length,
-    });
-    return mappedResult;
   }
 }
 

@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Alert} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
@@ -6,8 +7,7 @@ import {moderateScale} from '../../../common/constants';
 import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {normalizeUri} from '../../../utils/normalizedUri';
+import { StackNav } from '../../../navigation/NavigationKey';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -22,20 +22,7 @@ const PhotoReviewScreen = () => {
     offline,
     existingRecord,
     isViewOnly,
-
-    fromWhichIsCorrect,
-
-    actaCount,
   } = route.params || {};
-
-  const effectivePhotoUri = React.useMemo(() => {
-    const fromRecord =
-      existingRecord?.actaImage ||
-      existingRecord?.image ||
-      existingRecord?.photo ||
-      existingRecord?.imageUrl;
-    return normalizeUri(photoUri || fromRecord);
-  }, [photoUri, existingRecord]);
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -174,7 +161,6 @@ const PhotoReviewScreen = () => {
         return; // NO avanzar
       }
     }
-    console.log('[MESA-INFO]', mesaInfo);
 
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri,
@@ -227,14 +213,8 @@ const PhotoReviewScreen = () => {
           textStyle: {color: '#fff'},
         },
         {
-          text:
-            fromWhichIsCorrect && (actaCount ?? 0) > 1
-              ? 'Regresar'
-              : 'Subir acta',
-          onPress:
-            fromWhichIsCorrect && (actaCount ?? 0) > 1
-              ? () => navigation.goBack()
-              : goToCamera,
+          text: 'Subir acta',
+          onPress: goToCamera,
           style: {backgroundColor: '#DC2626'}, // rojo
           textStyle: {color: '#fff'},
         },
@@ -294,7 +274,7 @@ const PhotoReviewScreen = () => {
           fontWeight: '800',
           color: colors.text || '#000000',
         }}
-        photoUri={effectivePhotoUri}
+        photoUri={photoUri}
         partyResults={partyResults}
         voteSummaryResults={voteSummaryResults}
         isEditing={isEditing}

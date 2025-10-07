@@ -5,12 +5,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {CommonActions} from '@react-navigation/native';
-import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import { TabNav } from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width} = Dimensions.get('window');
 
 export default function OfflinePendingScreen({navigation}) {
-  console.log('[OFFLINE-PENDING] 📴 OfflinePendingScreen montado - Usuario en modo offline');
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('OfflinePendingScreen', true);
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>
@@ -23,22 +25,7 @@ export default function OfflinePendingScreen({navigation}) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: StackNav.TabNavigation,
-                    params: {
-                      screen: TabNav.HomeScreen,
-                      params: {screen: 'HomeMain'},
-                    },
-                  },
-                ],
-              }),
-            )
-          }>
+          onPress={() =>navigation.navigate(TabNav.Profile)}>
           <CText style={styles.buttonText}>Volver al inicio</CText>
         </TouchableOpacity>
       </View>
