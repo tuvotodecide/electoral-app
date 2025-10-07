@@ -27,7 +27,8 @@ const PhotoReviewScreen = () => {
 
     actaCount,
   } = route.params || {};
-
+  console.log(photoUri)
+  console.log(tableData)
   const effectivePhotoUri = React.useMemo(() => {
     const fromRecord =
       existingRecord?.actaImage ||

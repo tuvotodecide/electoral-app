@@ -64,6 +64,8 @@ const PhotoConfirmationScreen = () => {
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
 
+  console.log(tableData);
+  console.log(mesaData);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
@@ -101,6 +103,12 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      if (!online) {
+        handlePublishAndCertify();
+        return;
+      }
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
@@ -403,29 +411,44 @@ const PhotoConfirmationScreen = () => {
         return;
       }
       const locationId =
+        route.params?.locationId ||
+        tableData?.location?._id ||
         tableData?.idRecinto ||
         tableData?.locationId ||
         mesaData?.idRecinto ||
         mesa?.idRecinto ||
-        tableData?.location?._id ||
         null;
 
-      const tableCode = String(tableData?.codigo || tableData?.tableCode || '');
+      const tableCode = String(
+        tableData?.tableCode ||
+          tableData?.codigo ||
+          mesaData?.tableCode ||
+          mesaData?.codigo ||
+          mesa?.tableCode ||
+          mesa?.codigo ||
+          '',
+      );
 
       const tableNumber = String(
         tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
+          mesaData?.tableNumber ||
+          mesaData?.numero ||
+          mesaData?.number ||
+          mesa?.tableNumber ||
+          mesa?.numero ||
+          mesa?.number ||
           aiAnalysis?.table_number ||
           '',
       );
 
       const persistedUri = await persistLocalImage(photoUri);
       const additionalData = {
-        idRecinto: locationId,
-        locationId,
-        tableNumber,
-        tableCode,
+        idRecinto: String(locationId ?? ''),
+        locationId: String(locationId ?? ''),
+        tableNumber: String(tableNumber),
+        tableCode: String(tableCode),
         location: tableData?.location || 'Bolivia',
         userId: userData?.id || 'unknown',
         userName: userFullName,
@@ -435,6 +458,7 @@ const PhotoConfirmationScreen = () => {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
       };
+      console.log(tableData);
 
       await enqueue({
         type: 'publishActa',
@@ -445,10 +469,16 @@ const PhotoConfirmationScreen = () => {
           additionalData,
           tableData: {
             codigo: String(tableCode),
-            idRecinto: locationId,
+            tableCode: String(tableCode),
+            idRecinto: String(locationId ?? ''),
+            locationId: String(locationId ?? ''),
             tableNumber: String(tableNumber),
             numero: String(tableNumber),
           },
+          tableCode: String(tableCode),
+          tableNumber: String(tableNumber),
+          locationId: String(locationId ?? ''),
+          createdAt: Date.now(),
         },
       });
       setShowConfirmModal(false);
