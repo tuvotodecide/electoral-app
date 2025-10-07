@@ -13,10 +13,16 @@ onFlowStart:
         ELECTORAL_LOCATION: ${MAESTRO_ELECTORAL_RECORD_LOCATION}
         ELECTORAL_TABLE: ${MAESTRO_ELECTORAL_RECORD_TABLE_1}
 
+# Esperar a que aparezca el modal de certificación completada
 - extendedWaitUntil:
     visible:
       id: recordCertificationInfoModalTitle
     timeout: 10000
 
+# Verificar que el contenido del modal esté visible
 - assertVisible:
     id: recordCertificationInfoModalScrollView
+    
+# Verificar elementos clave del proceso de certificación
+- assertVisible:
+    id: recordCertificationInfoModalTitle

@@ -1,8 +1,16 @@
 appId: com.tuvotodecide
 ---
+# Paso 1: Navegar a la pantalla de participación
 - tapOn:
     id: participateButtonRegular
 
+# Esperar a que se cargue la lista de ubicaciones
+- extendedWaitUntil:
+    visible:
+      id: ${ELECTORAL_LOCATION}
+    timeout: 5000
+
+# Paso 2: Desplazarse hasta ver la ubicación electoral
 - scrollUntilVisible:
     element:
       id: ${ELECTORAL_LOCATION}
@@ -10,6 +18,13 @@ appId: com.tuvotodecide
 - tapOn:
     id: ${ELECTORAL_LOCATION}
 
+# Esperar a que se cargue la lista de mesas
+- extendedWaitUntil:
+    visible:
+      id: ${ELECTORAL_TABLE}
+    timeout: 5000
+
+# Paso 3: Desplazarse hasta ver la mesa electoral
 - scrollUntilVisible:
     element:
       id: ${ELECTORAL_TABLE}
@@ -17,31 +32,82 @@ appId: com.tuvotodecide
 - tapOn:
     id: ${ELECTORAL_TABLE}
 
+# Esperar a que se cargue la lista de actas
+- extendedWaitUntil:
+    visible:
+      id: whichIsCorrect_phoneIPFSImage_0_container
+    timeout: 5000
+
+# Paso 4: Seleccionar el acta a certificar
 - tapOn:
     id: whichIsCorrect_phoneIPFSImage_0_container
+
+# Esperar a que se cargue el botón de detalles
+- extendedWaitUntil:
+    visible:
+      id: whichIsCorrect_phoneDetailsButtonText_0
+    timeout: 3000
 
 - tapOn:
     id: whichIsCorrect_phoneDetailsButtonText_0
 
+# Paso 5: Verificar datos del acta
 - scrollUntilVisible:
     element:
       id: actaDetailCorrectDataButton
       
+- assertVisible:
+    id: actaDetailCorrectDataButton
+
 - tapOn:
     id: actaDetailCorrectDataButton
+
+# Esperar y continuar con el proceso
+- extendedWaitUntil:
+    visible:
+      id: whichIsCorrectContinueButton
+    timeout: 3000
 
 - tapOn:
     id: whichIsCorrectContinueButton
 
+# Paso 6: Revisar datos antes de certificar
 - scrollUntilVisible:
     element:
       id: recordReviewCorrectDataButtonText
 
-- tapOn:
+- assertVisible:
     id: recordReviewCorrectDataButton
 
 - tapOn:
+    id: recordReviewCorrectDataButton
+
+# Paso 7: Iniciar proceso de certificación
+- extendedWaitUntil:
+    visible:
+      id: certifyButton
+    timeout: 5000
+
+- assertVisible:
     id: certifyButton
     
 - tapOn:
+    id: certifyButton
+
+# Paso 8: Confirmar la certificación
+- extendedWaitUntil:
+    visible:
+      id: confirmCertificationButton
+    timeout: 3000
+    
+- assertVisible:
     id: confirmCertificationButton
+    
+- tapOn:
+    id: confirmCertificationButton
+
+# Esperar a que se procese la certificación
+- extendedWaitUntil:
+    visible:
+      id: recordCertificationInfoModalTitle
+    timeout: 30000

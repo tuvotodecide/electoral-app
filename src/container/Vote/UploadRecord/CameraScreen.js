@@ -805,11 +805,12 @@ export default function CameraScreen({navigation, route}) {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View testID="cameraScreenMainContainer" style={styles.mainContainer}>
       {!photo ? (
         <>
           {isActive && (
             <Camera
+              testID="cameraScreenCamera"
               key={cameraKey}
               ref={camera}
               style={StyleSheet.absoluteFill}
@@ -826,13 +827,15 @@ export default function CameraScreen({navigation, route}) {
             />
           )}
           <RenderFrame
+            testID="cameraScreenRenderFrame"
             color={'#D32F2F'}
             isLandscape={orientation === 'landscape'}
             screenWidth={screenData.width}
             screenHeight={screenData.height}
           />
-          <View style={styles.bottomContainer}>
+          <View testID="cameraScreenBottomContainer" style={styles.bottomContainer}>
             <TouchableOpacity
+              testID="cameraScreenCaptureButton"
               style={[
                 orientation === 'landscape'
                   ? styles.captureButtonCircular
@@ -842,9 +845,9 @@ export default function CameraScreen({navigation, route}) {
               onPress={takePhoto}
               disabled={loading || !isActive}>
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator testID="cameraScreenCaptureLoading" color="#fff" />
               ) : (
-                <CText style={styles.buttonText}>
+                <CText testID="cameraScreenCaptureButtonText" style={styles.buttonText}>
                   {isActive ? String.takePhoto : String.preparingCamera}
                 </CText>
               )}
@@ -872,27 +875,30 @@ export default function CameraScreen({navigation, route}) {
               backgroundColor="#000"
               imageIndex={0}
               FooterComponent={() => (
-                <View style={styles.photoActionsContainer}>
+                <View testID="cameraScreenFooterActions" style={styles.photoActionsContainer}>
                   <TouchableOpacity
+                    testID="cameraScreenFooterRetakeButton"
                     style={[styles.actionButton, styles.retakeButton]}
                     onPress={takeNewPhoto}>
                     <Ionicons name="camera-outline" size={20} color="#fff" />
-                    <CText style={styles.actionButtonText}>Tomar Nueva</CText>
+                    <CText testID="cameraScreenFooterRetakeText" style={styles.actionButtonText}>Tomar Nueva</CText>
                   </TouchableOpacity>
 
                   {isOnline ? (
                     <TouchableOpacity
+                      testID="cameraScreenFooterAnalyzeButton"
                       style={[styles.actionButton, styles.analyzeButton]}
                       onPress={handleNext}
                       disabled={analyzing}>
                       {analyzing ? (
-                        <View style={styles.analyzingContainer}>
+                        <View testID="cameraScreenFooterAnalyzingContainer" style={styles.analyzingContainer}>
                           <ActivityIndicator
+                            testID="cameraScreenFooterAnalyzingIndicator"
                             color="#fff"
                             size="small"
                             style={styles.analyzingIcon}
                           />
-                          <CText style={styles.actionButtonText}>
+                          <CText testID="cameraScreenFooterAnalyzingText" style={styles.actionButtonText}>
                             Analizando...
                           </CText>
                         </View>
@@ -903,7 +909,7 @@ export default function CameraScreen({navigation, route}) {
                             size={20}
                             color="#fff"
                           />
-                          <CText style={styles.actionButtonText}>
+                          <CText testID="cameraScreenFooterAnalyzeText" style={styles.actionButtonText}>
                             Analizar
                           </CText>
                         </>
@@ -911,6 +917,7 @@ export default function CameraScreen({navigation, route}) {
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
+                      testID="cameraScreenFooterContinueButton"
                       style={[styles.actionButton, styles.analyzeButton]}
                       onPress={() => {
                         const mesaInfo = route.params?.tableData || {};
@@ -925,7 +932,7 @@ export default function CameraScreen({navigation, route}) {
                         size={20}
                         color="#fff"
                       />
-                      <CText style={styles.actionButtonText}>Continuar</CText>
+                      <CText testID="cameraScreenFooterContinueText" style={styles.actionButtonText}>Continuar</CText>
                     </TouchableOpacity>
                   )}
                 </View>

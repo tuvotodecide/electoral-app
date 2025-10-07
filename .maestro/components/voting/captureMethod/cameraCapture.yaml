@@ -1,7 +1,25 @@
 appId: com.tuvotodecide
 ---
-- assertVisible:
-    id: cameraShutterButtonText
+# Esperar a que la cámara esté lista
+- extendedWaitUntil:
+    visible:
+      id: cameraScreenCaptureButton
+    timeout: 5000
 
+# Verificar que el botón de captura esté visible y activo
+- assertVisible:
+    id: cameraScreenCaptureButton
+
+# Tomar la fotografía
 - tapOn:
-    id: cameraShutterButtonText
+    id: cameraScreenCaptureButton
+
+# Esperar a que se procese la foto y aparezcan los botones de acción
+- extendedWaitUntil:
+    visible:
+      id: cameraScreenFooterActions
+    timeout: 5000
+
+# Verificar que la imagen capturada se muestre correctamente
+- assertVisible:
+    id: cameraScreenFooterRetakeButton

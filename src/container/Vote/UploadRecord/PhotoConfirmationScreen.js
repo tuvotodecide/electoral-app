@@ -732,9 +732,10 @@ const PhotoConfirmationScreen = () => {
   };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="photoConfirmationContainer" style={styles.container}>
       {/* Header */}
       <UniversalHeader
+        testID="photoConfirmationHeader"
         colors={colors}
         onBack={handleBack}
         title={`Mesa ${
@@ -761,29 +762,30 @@ const PhotoConfirmationScreen = () => {
       />
 
       {/* Information Ready to Load Text */}
-      <View style={styles.infoContainer}>
-        <CText style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
+      <View testID="photoConfirmationInfoContainer" style={styles.infoContainer}>
+        <CText testID="photoConfirmationInfoText" style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
       </View>
 
       {/* Main Content */}
-      <View style={styles.content}>
+      <View testID="photoConfirmationContent" style={styles.content}>
         {!showConfirmModal && !showDuplicateModal && (
           <>
-            <CText style={styles.mainText}>
+            <CText testID="photoConfirmationMainText" style={styles.mainText}>
               {I18nStrings.i}
-              <CText style={styles.mainTextBold}> {userFullName}</CText>
+              <CText testID="photoConfirmationUserName" style={styles.mainTextBold}> {userFullName}</CText>
             </CText>
 
             <TouchableOpacity
+              testID="photoConfirmationPublishButton"
               style={styles.publishButton}
               onPress={verifyAndUpload}>
-              <CText style={styles.publishButtonText}>
+              <CText testID="photoConfirmationPublishButtonText" style={styles.publishButtonText}>
                 {I18nStrings.publishAndCertify}
               </CText>
             </TouchableOpacity>
           </>
         )}
-        <CText style={styles.confirmationText}>
+        <CText testID="photoConfirmationText" style={styles.confirmationText}>
           {I18nStrings.actaCorrectConfirmation
             .replace(
               '{tableNumber}',
@@ -819,15 +821,16 @@ const PhotoConfirmationScreen = () => {
       </View>
 
       <Modal
+        testID="photoConfirmationModal"
         visible={showConfirmModal}
         transparent
         animationType="fade"
         onRequestClose={() => closeModal(true)}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
+        <View testID="photoConfirmationModalOverlay" style={modalStyles.modalOverlay}>
+          <View testID="photoConfirmationModalContainer" style={modalStyles.modalContainer}>
             {step === 0 && (
               <>
-                <View style={modalStyles.iconCircleWarning}>
+                <View testID="photoConfirmationModalWarningIcon" style={modalStyles.iconCircleWarning}>
                   <Ionicons
                     name="alert-outline"
                     size={getResponsiveSize(36, 48, 60)}
@@ -835,8 +838,8 @@ const PhotoConfirmationScreen = () => {
                   />
                 </View>
 
-                <CText style={modalStyles.confirmBody}>
-                  <CText style={modalStyles.boldText}>Yo {userFullName}</CText>
+                <CText testID="photoConfirmationModalBody" style={modalStyles.confirmBody}>
+                  <CText testID="photoConfirmationModalUserName" style={modalStyles.boldText}>Yo {userFullName}</CText>
                   {'\n'}
                   Certifico que los datos que ingreso coinciden con la foto del
                   acta de la mesa y declaro que no he{' '}
@@ -845,18 +848,20 @@ const PhotoConfirmationScreen = () => {
                   </CText>{' '}
                   información.
                 </CText>
-                <View style={modalStyles.buttonContainer}>
+                <View testID="photoConfirmationModalButtonContainer" style={modalStyles.buttonContainer}>
                   <TouchableOpacity
+                    testID="photoConfirmationModalCancelButton"
                     style={modalStyles.cancelButton}
                     onPress={() => closeModal(true)}>
-                    <CText style={modalStyles.cancelButtonText}>
+                    <CText testID="photoConfirmationModalCancelText" style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    testID="photoConfirmationModalConfirmButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
-                    <CText style={modalStyles.confirmButtonText}>
+                    <CText testID="photoConfirmationModalConfirmText" style={modalStyles.confirmButtonText}>
                       {I18nStrings.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
@@ -866,14 +871,15 @@ const PhotoConfirmationScreen = () => {
             {step === 1 && (
               <>
                 <ActivityIndicator
+                  testID="photoConfirmationModalLoading"
                   size="large"
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <CText style={modalStyles.loadingTitle}>
+                <CText testID="photoConfirmationModalLoadingTitle" style={modalStyles.loadingTitle}>
                   {I18nStrings.pleaseWait}
                 </CText>
-                <CText style={modalStyles.loadingSubtext}>
+                <CText testID="photoConfirmationModalLoadingSubtext" style={modalStyles.loadingSubtext}>
                   {I18nStrings.savingToBlockchain}
                 </CText>
               </>
@@ -882,13 +888,14 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
       <Modal
+        testID="photoConfirmationDuplicateModal"
         visible={showDuplicateModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowDuplicateModal(false)}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
-            <View style={modalStyles.iconCircleWarning}>
+        <View testID="photoConfirmationDuplicateModalOverlay" style={modalStyles.modalOverlay}>
+          <View testID="photoConfirmationDuplicateModalContainer" style={modalStyles.modalContainer}>
+            <View testID="photoConfirmationDuplicateModalWarningIcon" style={modalStyles.iconCircleWarning}>
               <Ionicons
                 name="warning-outline"
                 size={getResponsiveSize(36, 48, 60)}
@@ -896,19 +903,20 @@ const PhotoConfirmationScreen = () => {
               />
             </View>
             <View style={modalStyles.spacer} />
-            <CText style={modalStyles.confirmTitle}>
+            <CText testID="photoConfirmationDuplicateModalTitle" style={modalStyles.confirmTitle}>
               {I18nStrings.duplicateBallotTitle}
             </CText>
 
-            <CText style={modalStyles.duplicateMessage}>
+            <CText testID="photoConfirmationDuplicateModalMessage" style={modalStyles.duplicateMessage}>
               {I18nStrings.duplicateBallotMessage}
             </CText>
 
-            <View style={modalStyles.buttonContainer}>
+            <View testID="photoConfirmationDuplicateModalButtonContainer" style={modalStyles.buttonContainer}>
               <TouchableOpacity
+                testID="photoConfirmationDuplicateModalGoBackButton"
                 style={[modalStyles.cancelButton, {flex: 1}]}
                 onPress={() => setShowDuplicateModal(false)}>
-                <CText style={modalStyles.cancelButtonText}>
+                <CText testID="photoConfirmationDuplicateModalGoBackText" style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
                 </CText>
               </TouchableOpacity>
@@ -917,7 +925,7 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
 
-      <InfoModal {...infoModalData} onClose={closeInfoModal} />
+      <InfoModal testID="photoConfirmationInfoModal" {...infoModalData} onClose={closeInfoModal} />
     </CSafeAreaView>
   );
 };
