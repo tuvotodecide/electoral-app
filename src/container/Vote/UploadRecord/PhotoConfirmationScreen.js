@@ -66,6 +66,8 @@ const PhotoConfirmationScreen = () => {
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
 
+  console.log(tableData);
+  console.log(mesaData);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
@@ -104,6 +106,12 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      if (!online) {
+        handlePublishAndCertify();
+        return;
+      }
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
@@ -141,6 +149,33 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
+  // const buildVoteData = type => {
+  //   const getValue = (label, defaultValue = 0) => {
+  //     const item = (voteSummaryResults || []).find(s => s.label === label);
+  //     if (!item) return defaultValue;
+
+  //     const value = type === 'presidente' ? item.value1 : item.value2;
+  //     return parseInt(value, 10) || defaultValue;
+  //   };
+
+  //   return {
+  //     validVotes: getValue('Votos Válidos'),
+  //     nullVotes: getValue('Votos Nulos'),
+  //     blankVotes: getValue('Votos en Blanco'),
+  //     partyVotes: partyResults.map(party => ({
+  //       partyId: party.partido,
+  //       votes:
+  //         parseInt(
+  //           type === 'presidente' ? party.presidente : party.diputado,
+  //           10,
+  //         ) || 0,
+  //     })),
+  //     totalVotes:
+  //       getValue('Votos Válidos') +
+  //       getValue('Votos Nulos') +
+  //       getValue('Votos en Blanco'),
+  //   };
+  // };
   // const buildVoteData = type => {
   //   const getValue = (label, defaultValue = 0) => {
   //     const item = (voteSummaryResults || []).find(s => s.label === label);
@@ -352,7 +387,16 @@ const PhotoConfirmationScreen = () => {
         idRecinto: tableData?.idRecinto || tableData.locationId,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
         tableCode: tableData?.codigo || 'N/A',
+        idRecinto: tableData?.idRecinto || tableData.locationId,
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        // userId: 'current-user-id', // Obtener del estado global
+        // userName: 'Usuario Actual', // Obtener del estado global
         time: new Date().toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit',
@@ -425,12 +469,45 @@ const PhotoConfirmationScreen = () => {
         });
         return;
       }
+      const locationId =
+        route.params?.locationId ||
+        tableData?.location?._id ||
+        tableData?.idRecinto ||
+        tableData?.locationId ||
+        mesaData?.idRecinto ||
+        mesa?.idRecinto ||
+        null;
+
+      const tableCode = String(
+        tableData?.tableCode ||
+          tableData?.codigo ||
+          mesaData?.tableCode ||
+          mesaData?.codigo ||
+          mesa?.tableCode ||
+          mesa?.codigo ||
+          '',
+      );
+
+      const tableNumber = String(
+        tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          mesaData?.tableNumber ||
+          mesaData?.numero ||
+          mesaData?.number ||
+          mesa?.tableNumber ||
+          mesa?.numero ||
+          mesa?.number ||
+          aiAnalysis?.table_number ||
+          '',
+      );
 
       const persistedUri = await persistLocalImage(photoUri);
       const additionalData = {
-        idRecinto: tableData?.idRecinto || tableData.locationId,
-        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.codigo || 'N/A',
+        idRecinto: String(locationId ?? ''),
+        locationId: String(locationId ?? ''),
+        tableNumber: String(tableNumber),
+        tableCode: String(tableCode),
         location: tableData?.location || 'Bolivia',
         
         userId: userData?.id || 'unknown',
@@ -441,6 +518,14 @@ const PhotoConfirmationScreen = () => {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
       };
+      console.log(tableData);
+
+      console.log('[TABLE-DATA]');
+
+      console.log(locationId);
+      console.log(tableNumber);
+      console.log(electoralData);
+      console.log(additionalData);
 
       await enqueue({
         type: 'publishActa',
@@ -450,9 +535,15 @@ const PhotoConfirmationScreen = () => {
           electoralData,
           additionalData,
           tableData: {
-            codigo: tableData?.codigo,
-            idRecinto: tableData?.idRecinto,
+            codigo: String(tableCode),
+            idRecinto: locationId,
+            tableNumber: String(tableNumber),
+            numero: String(tableNumber),
           },
+          tableCode: String(tableCode),
+          tableNumber: String(tableNumber),
+          locationId: String(locationId ?? ''),
+          createdAt: Date.now(),
         },
       });
       setShowConfirmModal(false);
@@ -591,6 +682,23 @@ const PhotoConfirmationScreen = () => {
       setShowConfirmModal(false);
       setStep(0);
     }
+
+    //try {
+    //  // Simular procesamiento
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
+    //    navigation.navigate('SuccessScreen');
+    //  }, 2000);
+    //} catch (error) {
+    //  // Navegar a SuccessScreen incluso en caso de error
+    //  setTimeout(() => {
+    //    setShowConfirmModal(false);
+    //    setStep(0);
+    //    navigation.navigate('SuccessScreen');
+    //  }, 1000);
+    //}
 
     //try {
     //  // Simular procesamiento

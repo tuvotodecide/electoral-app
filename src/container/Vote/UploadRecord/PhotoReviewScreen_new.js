@@ -23,6 +23,16 @@ const PhotoReviewScreen = () => {
     existingRecord,
     isViewOnly,
   } = route.params || {};
+  console.log(photoUri)
+  console.log(tableData)
+  const effectivePhotoUri = React.useMemo(() => {
+    const fromRecord =
+      existingRecord?.actaImage ||
+      existingRecord?.image ||
+      existingRecord?.photo ||
+      existingRecord?.imageUrl;
+    return normalizeUri(photoUri || fromRecord);
+  }, [photoUri, existingRecord]);
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);

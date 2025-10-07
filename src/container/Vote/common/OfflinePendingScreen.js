@@ -15,6 +15,7 @@ export default function OfflinePendingScreen({navigation}) {
   const { logAction, logNavigation } = useNavigationLogger('OfflinePendingScreen', true);
   
   console.log('[OFFLINE-PENDING] 📴 OfflinePendingScreen montado - Usuario en modo offline');
+  console.log('[OFFLINE-PENDING] 📴 OfflinePendingScreen montado - Usuario en modo offline');
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>

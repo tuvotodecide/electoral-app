@@ -215,13 +215,11 @@ class PinataService {
           gatewayUrl: `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`,
         },
       };
-      
       console.log('[PINATA-SERVICE] ✅ Imagen subida a IPFS exitosamente:', {
         ipfsHash: response.data.IpfsHash,
         size: response.data.PinSize,
         gatewayUrl: out.data.gatewayUrl?.substring(0, 60) + '...',
       });
-      
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
         RNFS.unlink(fsPath).catch(() => {});
       }
@@ -335,9 +333,19 @@ class PinataService {
 
       // 2. Extraer datos base
       const timestamp = new Date().toISOString();
-      const tableNumber =
-        additionalData.tableNumber || analysisData?.table_number || 'N/A';
-      const tableCode = additionalData.tableCode || 'N/A';
+      const tableNumber = String(
+        additionalData.tableNumber ?? analysisData?.table_number ?? '',
+      );
+      console.log('[ADITIONAL DATA]', additionalData);
+      const tableCode = String(additionalData.tableCode ?? '');
+      const locationId =
+        additionalData.idRecinto ?? additionalData.locationId ?? null;
+
+      if (!tableCode || !tableNumber || !locationId) {
+        throw new Error(
+          'Offline payload sin campos básicos (tableCode, tableNumber o locationId).',
+        );
+      }
       const time =
         additionalData.time ||
         analysisData?.time ||
