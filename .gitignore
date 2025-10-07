@@ -77,3 +77,6 @@ yarn-error.log
 .env
 .env.dev
 .env.prod
+
+# Build outputs
+android/app/src/main/assets/

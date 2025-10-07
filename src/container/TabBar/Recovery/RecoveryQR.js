@@ -20,9 +20,9 @@ import {styles} from '../../../themes';
 import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
+import wira from 'wira-sdk';
 
-const decompress = b64 =>
-  JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
+const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryQr({navigation}) {
   const [imageUri, setImageUri] = useState(null);
@@ -39,34 +39,14 @@ export default function RecoveryQr({navigation}) {
     setImageUri(asset.uri);
     setLoading(true);
     try {
-      // RNQRGenerator acepta content:// y file:// en Android
-      const { values } = await RNQRGenerator.detect({ uri: asset.uri });
-
-      if (!values?.length) {
-        throw new Error('No pude leer un QR válido');
-      }
-
-      const data = decompress(values[0]);
-
-      const required = [
-        'streamId',
-        'dni',
-        'salt',
-        'privKey',
-        'account',
-        'guardian',
-        'did',
-      ];
-      const missing = required.filter(f => !data[f]);
-      if (missing.length) {
-        throw new Error(`Faltan campos: ${missing.join(', ')}`);
-      }
+      const data = await recoveryService.recoveryFromQr(asset.uri);
 
       setPayload(data);
       if (Platform.OS === 'android') {
         ToastAndroid.show('QR válido', ToastAndroid.SHORT);
       }
     } catch (err) {
+      console.log(err);
       setPayload(null);
       setImageUri(null);
       Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');

@@ -1,25 +1,28 @@
 import {useMutation, useQuery, useQueryClient} from 'react-query';
-import {API_ENDPOINTS} from './client/api-endpoints';
 import {guardianClient} from './client/guardians';
 import axios from 'axios';
+import wira from 'wira-sdk';
+import {BACKEND_IDENTITY} from '@env';
+
+export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY);
 
 export const useGuardiansInviteQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.postGuardiansInvite, {
+  return useMutation(guardianApi.invite, {
     onSuccess: data => {
       return data;
     },
 
     onSettled: () => {
       queryClient.invalidateQueries(
-        `${API_ENDPOINTS.GUARDIANS}${API_ENDPOINTS.INVITE}`,
+        guardianApi.inviteUrl,
       );
     },
   });
 };
 export const useGuardiansRecoveryRequestQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.postRecoveryRequest, {
+  return useMutation(guardianApi.requestRecovery, {
     onSuccess: data => {
       return data;
     },
@@ -30,31 +33,18 @@ export const useGuardiansRecoveryRequestQuery = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries(
-        `${API_ENDPOINTS.GUARDIANS}${API_ENDPOINTS.RECOVERY}`,
+        guardianApi.requestRecoveryUrl,
       );
-    },
-  });
-};
-export const useCheckHasGuardiansQuery = () => {
-  const queryClient = useQueryClient();
-  return useMutation(guardianClient.postHasGuardians, {
-    onSuccess: data => {
-      return data;
-    },
-
-    onError: error => {
-      if (axios.isAxiosError(error)) {
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(`${API_ENDPOINTS.HASGUARDIANS}`);
     },
   });
 };
 
 export const useGuardianDeleteQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.deleteGuardian, {
+  return useMutation((input) => guardianApi.removeGuardian(
+    input.invId,
+    input.ownerDid
+  ), {
     onSuccess: data => {
       return data;
     },
@@ -70,7 +60,13 @@ export const useGuardianDeleteQuery = () => {
 };
 export const useGuardianPatchQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.patchGuardian, {
+  return useMutation((input) => guardianApi.updateGuardianNickname(
+    input.invId,
+    {
+      ownerDid: input.ownerDid,
+      nickname: input.nickname
+    }
+  ), {
     onSuccess: data => {
       return data;
     },
@@ -86,7 +82,11 @@ export const useGuardianPatchQuery = () => {
 };
 export const useGuardianInvitationActionQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.patchActionGuardian, {
+  return useMutation((input) => guardianApi.respondInvitation(
+    input.id,
+    input.did,
+    input.action
+  ), {
     onSuccess: data => {
       return data;
     },
@@ -102,7 +102,13 @@ export const useGuardianInvitationActionQuery = () => {
 };
 export const useRecoveryActionQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianClient.patchRecoveryGuardian, {
+  return useMutation((input) => guardianApi.respondRecovery(
+    input.id,
+    input.action,
+    {
+      guardianDid: input.did
+    }
+  ), {
     onSuccess: data => {
       return data;
     },
@@ -117,26 +123,10 @@ export const useRecoveryActionQuery = () => {
   });
 };
 
-export const useMyGuardiansListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.MYGUARDIANS, options],
-    ({queryKey}) =>
-      guardianClient.getMyGuardians(Object.assign({}, queryKey[1])),
-    {
-      keepPreviousData: true,
-    },
-  );
-
-  return {
-    data: data?.edges,
-    error,
-    isLoading,
-  };
-};
 export function useHasGuardiansQuery(carnet, enabled) {
   const {data, isLoading, refetch} = useQuery(
     ['guardians', 'has', carnet],
-    () => guardianClient.getHasGuardians({carnet}),
+    () => guardianApi.hasGuardians(carnet),
     {
       enabled,
       select: res => res.has,
@@ -148,7 +138,7 @@ export function useHasGuardiansQuery(carnet, enabled) {
 export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
   const {data, isLoading, remove} = useQuery(
     ['recovery-detail', deviceId],
-    () => guardianClient.getRecoveryGuardiansDetail({deviceId}),
+    () => guardianApi.recoveryDetail(deviceId),
     {
       enabled: !!deviceId && enabled,
       refetchInterval: 5000,
@@ -160,7 +150,7 @@ export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
 export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
   const {data, isLoading} = useQuery(
     ['recovery-detail', deviceId],
-    () => guardianClient.getRecoveryStatus({deviceId}),
+    () => guardianApi.recoveryStatus(deviceId),
     {
       enabled: !!deviceId && enabled,
       refetchInterval: 5000,
@@ -169,21 +159,11 @@ export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
   );
   return {data: data, loading: isLoading};
 }
-export function useGuardiansPayloadQuery(deviceId, enabled = false) {
-  const {data, isLoading} = useQuery(
-    ['recovery-payload', deviceId],
-    () => guardianClient.getRecoveryPayload({deviceId}),
-    {
-      enabled: !!deviceId && enabled,
-    },
-  );
-  return {data: data, loading: isLoading};
-}
 
 export const useMyGuardiansAllListQuery = options => {
   const {data, error, isLoading} = useQuery(
     ['myGuardiansAll'],
-    () => guardianClient.getMyGuardiansAll(),
+    () => guardianApi.myGuardians(options.did),
     {
       keepPreviousData: true,
       staleTime: 0,
@@ -193,7 +173,7 @@ export const useMyGuardiansAllListQuery = options => {
   );
 
   return {
-    data: data?.edges,
+    data: data?.guardians,
     error,
     isLoading,
   };
@@ -201,7 +181,9 @@ export const useMyGuardiansAllListQuery = options => {
 export const useMyGuardianInvitationsListQuery = options => {
   const {data, error, isLoading} = useQuery(
     ['myGuardiansAll'],
-    () => guardianClient.getGuardiansInvitationsList(),
+    () => {
+      return guardianApi.listInvitations(options.did)
+    },
     {
       keepPreviousData: true,
       staleTime: 0,
@@ -211,7 +193,7 @@ export const useMyGuardianInvitationsListQuery = options => {
   );
 
   return {
-    data: data?.edges,
+    data: data?.invitations,
     error,
     isLoading,
   };
@@ -219,7 +201,7 @@ export const useMyGuardianInvitationsListQuery = options => {
 export const useMyGuardianRecoveryListQuery = options => {
   const {data, error, isLoading} = useQuery(
     ['guardiansRecovery'],
-    () => guardianClient.getGuardiansRecoveryList(),
+    () => guardianApi.listRecoveries(options.did, options.status),
     {
       keepPreviousData: true,
       staleTime: 0,
@@ -229,60 +211,8 @@ export const useMyGuardianRecoveryListQuery = options => {
   );
 
   return {
-    data: data?.edges,
+    data: data?.requests,
     error,
     isLoading,
   };
 };
-export const useGuardianAcceptedListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    ['my-guardians'],
-    () => guardianClient.getGuardiansAcceptedList(),
-    {
-      keepPreviousData: true,
-      staleTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-    },
-  );
-
-  return {
-    data: data?.edges,
-    error,
-    isLoading,
-  };
-};
-
-export const useMyGuardiansInvitationsListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    [`${API_ENDPOINTS.MYGUARDIANSALL}${API_ENDPOINTS.INVITATION}`, options],
-    ({queryKey}) =>
-      guardianClient.getMyGuardiansAll(Object.assign({}, queryKey[1])),
-    {
-      keepPreviousData: true,
-    },
-  );
-
-  return {
-    data: data?.edges,
-    error,
-    isLoading,
-  };
-};
-export const useMyGuardiansAdminListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.MYGUARDIANS, options],
-    ({queryKey}) =>
-      guardianClient.getMyGuardiansAll(Object.assign({}, queryKey[1])),
-    {
-      keepPreviousData: true,
-    },
-  );
-
-  return {
-    data: data?.edges,
-    error,
-    isLoading,
-  };
-};
-

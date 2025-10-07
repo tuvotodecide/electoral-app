@@ -6,7 +6,6 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {CHAIN} from '@env';
 import {
   getHeight,
   moderateScale,
@@ -29,7 +28,6 @@ import {
 } from '../../../data/guardians';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClose';
-import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -42,7 +40,6 @@ export default function FindMyUser({navigation}) {
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [hasGuardians, setHasGuardians] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
@@ -94,10 +91,10 @@ export default function FindMyUser({navigation}) {
     if (!candidate) {
       return;
     }
-    const deviceId = await getDeviceId();
+    const deviceId = await wira.DeviceId.getDeviceId();
 
     sendRequest(
-      {dni: carnet.trim(), deviceId},
+      {targetDid: candidate.did, deviceId},
       {
         onSuccess: async data => {
           await AsyncStorage.setItem(PENDINGRECOVERY, 'true');

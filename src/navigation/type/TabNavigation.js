@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import React, {useEffect} from 'react';
+import {useSelector} from 'react-redux';
 import {
   AppState,
   StyleSheet,
@@ -8,7 +8,6 @@ import {
   Dimensions,
 } from 'react-native';
 
-import {moderateScale} from '../../common/constants';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
@@ -17,9 +16,7 @@ import {TabRoute} from '../NavigationRoute';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
-import {clearSession, isSessionValid, startSession} from '../../utils/Session';
-import {clearWallet} from '../../redux/action/walletAction';
-import {clearAuth} from '../../redux/slices/authSlice';
+import {isSessionValid, startSession} from '../../utils/Session';
 
 const {width: screenWidth} = Dimensions.get('window');
 

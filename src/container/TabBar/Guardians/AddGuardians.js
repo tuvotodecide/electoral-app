@@ -17,18 +17,15 @@ import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {useGuardiansInviteQuery} from '../../../data/guardians';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
-import {CHAIN} from '@env';
 import axios from 'axios';
 import {
   guardianHashFrom,
-  inviteGuardianOnChain,
 } from '../../../api/guardianOnChain';
 import {getSecrets} from '../../../utils/Cifrate';
 
-export default function AddGuardians({navigation}) {
+export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
   const {
@@ -37,15 +34,14 @@ export default function AddGuardians({navigation}) {
     error,
   } = useGuardiansInviteQuery();
   const [carnet, setCarnet] = useState('');
+  const payloadQr = useSelector(state => state.wallet.payload);
 
-  const [dni, setDni] = useState('');
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [msg, setMsg] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
-  const onPressNext = () => {};
   const onPressSearch = () => {
     setMsg('');
     findPublicDni(
@@ -70,17 +66,12 @@ export default function AddGuardians({navigation}) {
   };
   const onPressInvitation = async () => {
     if (!candidate) return;
-
-    const {payloadQr} = await getSecrets();
-
     setMsg('');
-    const invitateAddress = guardianHashFrom(candidate.accountAddress);
-    const ownerPk = payloadQr.privKey;
-    const guardianCt = payloadQr.guardian;
 
     try {
       // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
       const data = await sendInvitation({
+        inviterDid: payloadQr.did,
         guardianId: candidate.did,
         nickname: nick,
       });

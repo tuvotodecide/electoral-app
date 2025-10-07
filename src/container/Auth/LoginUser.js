@@ -37,6 +37,7 @@ import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
 import {migrateIfNeeded} from '../../utils/migrateLegacy';
 import wira from 'wira-sdk';
 import {PROVIDER_NAME} from '@env';
+import { guardianApi } from '../../data/guardians';
 
 export default function LoginUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -138,6 +139,12 @@ export default function LoginUser({navigation}) {
           response,
           code.trim(),
         );
+
+        await guardianApi.deviceToken({
+          token: await wira.DeviceId.getDeviceId(),
+          platform: Platform.OS.toUpperCase(),
+          userDid: userData.did,
+        });
         return {ok: true, payload: userData, jwt: null};
       } else {
         const mig = await migrateIfNeeded(code.trim());

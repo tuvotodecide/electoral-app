@@ -9,27 +9,18 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {
   useGuardianDeleteQuery,
   useGuardianPatchQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
-import {CHAIN} from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
-import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
-import {
-  guardianHashFrom,
-  removeGuardianOnChain,
-} from '../../../api/guardianOnChain';
-import {getSecrets} from '../../../utils/Cifrate';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -48,11 +39,9 @@ const baseColors = {
 export default function Guardians({navigation}) {
   const status = 'info';
   const colors = useSelector(state => state.theme.theme);
-  const theme = useSelector(state => state.theme.theme);
-  const isDark = theme.dark;
   const [modalVisible, setModalVisible] = useState(false);
-  const [optionsVisible, setOptionsVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
+  const {did} = useSelector(state => state.wallet.payload);
 
   const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
   const {mutate: deleteGuardianId, isLoading: loading} =
@@ -66,7 +55,6 @@ export default function Guardians({navigation}) {
       guardians.filter(g => g.status === 'ACCEPTED' || g.status === 'PENDING'),
     [guardians],
   );
-  const mainColor = baseColors[status] || baseColors.info;
 
   const statusLabel = {
     ACCEPTED: String.active,
@@ -97,26 +85,15 @@ export default function Guardians({navigation}) {
 
   const deleteGuardian = async () => {
     try {
-      const {payloadQr} = await getSecrets();
-      const ownerPrivKey = payloadQr.privKey;
-      const ownerAccount = payloadQr.account;
-      const ownerGuardianCt = payloadQr.guardian;
-      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress);
-
-      // await removeGuardianOnChain(
-      //   CHAIN,
-      //   ownerPrivKey,
-      //   ownerAccount,
-      //   ownerGuardianCt,
-      //   guardianHash,
-      // );
-
-      deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
+      deleteGuardianId({
+        invId: selectedGuardian.id,
+        ownerDid: did,
+      }, {onSuccess: () => closeModal()});
     } catch (e) {}
   };
   const saveGuardian = newNick => {
     patchGuardianId(
-      {id: selectedGuardian.id, nickname: newNick},
+      {invId: selectedGuardian.id, ownerDid: did, nickname: newNick},
       {
         onSuccess: () => {
           closeModal();

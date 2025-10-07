@@ -2,24 +2,16 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
-  Platform,
   Alert,
-  PermissionsAndroid,
   ToastAndroid,
   ActivityIndicator,
   StyleSheet,
   Linking,
 } from 'react-native';
 
-import ViewShot, {captureRef} from 'react-native-view-shot';
 import QRCodeSVG from 'react-native-qrcode-svg';
-import RNFS from 'react-native-fs';
-import {check, request, RESULTS, openSettings} from 'react-native-permissions';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
-import pako from 'pako';
-import {Buffer} from 'buffer';
+import {openSettings} from 'react-native-permissions';
 
-import {getSecrets} from '../../../utils/Cifrate';
 import {getBioFlag} from '../../../utils/BioFlag';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -32,62 +24,25 @@ import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
 import {styles} from '../../../themes';
 import {getHeight, moderateScale} from '../../../common/constants';
+import { useSelector } from 'react-redux';
+import wira from 'wira-sdk';
 
-const compress = obj =>
-  Buffer.from(pako.deflate(JSON.stringify(obj))).toString('base64');
-
-const requestGalleryPermission = async () => {
-  if (Platform.OS !== 'android') return true;
-
-  const perm =
-    Platform.Version >= 33
-      ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-      : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-
-  const status = await check(perm);
-  if (status === RESULTS.GRANTED) return true;
-
-  const res = await request(perm);
-  if (res === RESULTS.GRANTED) return true;
-
-  if (res === RESULTS.NEVER_ASK_AGAIN) {
-    Alert.alert(
-      'Permiso denegado',
-      'Actívalo manualmente en Ajustes > Permisos',
-      [{text: 'Abrir ajustes', onPress: openSettings}, {text: 'OK'}],
-    );
-  }
-  return false;
-};
-
-const saveToGallery = async (base64Data, fileName = `QR_${Date.now()}.png`) => {
-  const tmpPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
-
-  await RNFS.writeFile(tmpPath, base64Data, 'base64');
-
-  await CameraRoll.save(`file://${tmpPath}`, {type: 'photo'});
-
-  try {
-    await RNFS.unlink(tmpPath);
-  } catch (_) {}
-
-  return true;
-};
+const recoveryService = new wira.RecoveryService();
 
 export default function RecuperationQR() {
   const [qrData, setQrData] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const viewShotRef = useRef(null);
+  const userData = useSelector(state => state.wallet.payload);
 
   useEffect(() => {
     (async () => {
       try {
-        const {payloadQr} = await getSecrets();
-        if (!payloadQr) throw new Error('No se encontró la identidad');
+        if (!userData) throw new Error('No se encontró la identidad');
 
         const bioEnabled = await getBioFlag();
-        setQrData(compress({...payloadQr, bioEnabled}));
+        setQrData(recoveryService.prepareQrData({...userData, bioEnabled}));
       } catch (err) {
         Alert.alert('Error', err.message);
       } finally {
@@ -103,23 +58,60 @@ export default function RecuperationQR() {
 
     setSaving(true);
     try {
-      if (!(await requestGalleryPermission())) return setSaving(false);
+      const hasPermission = await recoveryService.requestGalleryPermission();
+      if (!hasPermission) {
+        setSaving(false);
+        return;
+      }
 
-      const b64 = await captureRef(viewShotRef, {
-        format: 'png',
-        quality: 1,
-        result: 'base64',
-      });
+      const {savedOn, path, fileName} = await recoveryService.saveQr(viewShotRef);
 
-      await saveToGallery(b64);
-      ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
-      Alert.alert('¡Listo!', 'El QR se guardó correctamente.');
+      if(savedOn === 'gallery') {
+        ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
+
+        Alert.alert('QR guardado', 'El código QR se guardó exitosamente ', [
+          { text: 'OK', style: 'default' },
+        ]);
+      } else if (savedOn === 'downloads') {
+        ToastAndroid.show('QR guardado en Descargas', ToastAndroid.LONG);
+        Alert.alert(
+          'QR guardado',
+          `No se pudo guardar en la galería, pero se guardó en Descargas.\n\nArchivo: ${fileName}`,
+          [
+            { text: 'OK', style: 'default' },
+            {
+              text: 'Abrir descargas',
+              onPress: () => {
+                Linking.openURL(
+                  'content://com.android.externalstorage.documents/root/primary:Download'
+                ).catch(() => openSettings());
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'QR guardado',
+          `Se guardó en el directorio de la app:\n${path}`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (err) {
-      Alert.alert(
-        'Error',
-        'No se pudo guardar el QR. Comprueba los permisos de almacenamiento.',
-        [{text: 'OK'}, {text: 'Ajustes', onPress: openSettings}],
-      );
+      console.error('Error saving QR:', err);
+
+      let errorMessage = 'No se pudo guardar la imagen';
+      if (err.message.includes('EACCES')) {
+        errorMessage =
+          'Sin permisos para escribir. Verifica los permisos de la app.';
+      } else if (err.message.includes('ENOENT')) {
+        errorMessage =
+          'Error de directorio. Verifica los permisos de almacenamiento.';
+      }
+
+      Alert.alert('Error', errorMessage, [
+        {text: 'OK', style: 'default'},
+        {text: 'Abrir configuración', onPress: () => openSettings()},
+      ]);
     } finally {
       setSaving(false);
     }
@@ -141,7 +133,7 @@ export default function RecuperationQR() {
       <CHeader title={String.qrRecoveryTitle} />
 
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <ViewShot
+        <wira.ViewShot
           ref={viewShotRef}
           style={local.qrBox}
           options={{format: 'png', quality: 1}}>
@@ -151,7 +143,7 @@ export default function RecuperationQR() {
             backgroundColor="#fff"
             color="#000"
           />
-        </ViewShot>
+        </wira.ViewShot>
 
         <CText type="B16" align="center" marginTop={20}>
           {String.qrRecoveryDescription}
