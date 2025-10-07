@@ -101,7 +101,7 @@ const ElectoralLocations = ({navigation, route}) => {
           .includes(lowerText)
       );
     });
-    console.log(results)
+
     setFilteredLocations(results);
   };
 
@@ -482,7 +482,6 @@ const ElectoralLocations = ({navigation, route}) => {
     }
   }, [electionStatus, getCurrentLocation, offline]);
   useEffect(() => {
-    console.log(locations)
     setFilteredLocations(locations);
   }, [locations]);
 

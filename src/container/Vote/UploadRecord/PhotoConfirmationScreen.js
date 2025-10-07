@@ -59,13 +59,9 @@ const PhotoConfirmationScreen = () => {
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
   const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
     route.params || {}; // Destructure all needed data
-
   // Also try to get data from alternative parameter names
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
-
-  console.log(tableData);
-  console.log(mesaData);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
@@ -458,8 +454,6 @@ const PhotoConfirmationScreen = () => {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
       };
-      console.log(tableData);
-
       await enqueue({
         type: 'publishActa',
         payload: {

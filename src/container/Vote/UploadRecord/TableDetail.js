@@ -45,9 +45,10 @@ const mockMesa = {
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Use real table data from navigation, with mockMesa as fallback
-  const rawMesa = route.params?.mesa || route.params?.tableData;
-  console.log(rawMesa)
-  // Get existing records if they exist
+  const rawMesa = route.params?.mesa || route.params?.tableData || {};
+  const locationFromParams = route.params?.locationData || {};
+  const mesaId =
+    rawMesa.tableId || rawMesa.id || rawMesa._id || route.params?.tableId; // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
   const shouldCenter = !(existingRecords && existingRecords.length > 0);
   const mesaInfo = route.params?.mesaInfo || null;
@@ -62,51 +63,53 @@ export default function TableDetail({navigation, route}) {
 
   // Normalize mesa data structure
   const mesa = {
+    id: mesaId,
+    tableId: mesaId,
     idRecinto:
-      rawMesa.idRecinto || rawMesa.locationId || route.params?.locationId,
+      rawMesa.idRecinto ||
+      rawMesa.locationId ||
+      route.params?.locationId ||
+      locationFromParams?._id,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
       rawMesa.number ||
-      rawMesa.id ||
-      rawMesa.tableId ||
-      'FALLBACK-NUMERO',
+      mesaId ||
+      'N/A',
     tableNumber:
       rawMesa.tableNumber ||
       rawMesa.numero ||
       rawMesa.number ||
-      rawMesa.id ||
-      rawMesa.tableId ||
-      'FALLBACK-TABLENUMBER',
-    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || '2352',
+      mesaId ||
+      'N/A',
+    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || 'N/A',
     colegio:
       rawMesa.name ||
       rawMesa.recinto ||
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
-      rawMesa.school ||
-      'N/A',
-    provincia:
-      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
-      rawMesa.provincia ||
-      rawMesa.province ||
-      rawMesa.location?.province ||
+      locationFromParams?.name ||
       'N/A',
     recinto:
-      rawMesa.name ||
       rawMesa.recinto ||
-      rawMesa.venue ||
-      rawMesa.location?.venue ||
+      rawMesa.name ||
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
-      rawMesa.school ||
+      locationFromParams?.name || 
       'N/A',
     direccion:
       rawMesa.address ||
       rawMesa.direccion ||
       rawMesa.location?.address ||
+      locationFromParams?.address ||
+      'N/A',
+    provincia:
+      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
+      rawMesa.provincia ||
+      rawMesa.province ||
+      locationFromParams?.electoralSeat?.municipality?.province?.name ||
       'N/A',
     zone:
       rawMesa.zone ||
@@ -114,7 +117,8 @@ export default function TableDetail({navigation, route}) {
       rawMesa.zona ||
       rawMesa.electoralZone ||
       rawMesa.location?.zone ||
-      rawMesa.location?.district ||
+      locationFromParams?.zone ||
+      locationFromParams?.district ||
       'Zona no especificada',
   };
 

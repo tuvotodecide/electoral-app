@@ -68,7 +68,6 @@ export default function Notification({navigation}) {
           `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
           {headers: {'x-api-key': BACKEND_SECRET}, timeout: 12000},
         );
-        console.log(response?.data?.data);
         const list = response?.data?.data || response?.data || [];
         setItems(
           list.map(mapServerToUi).sort((a, b) => b.timestamp - a.timestamp),

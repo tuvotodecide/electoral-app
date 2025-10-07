@@ -174,7 +174,6 @@ const SearchCountTable = ({navigation, route}) => {
       });
       setModalVisible(true);
     } catch (e) {
-      console.log(e);
       setConfirmVisible(false);
       setModalConfig({
         type: 'error',

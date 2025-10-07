@@ -65,8 +65,6 @@ const UnifiedTableScreen = ({navigation, route}) => {
     if (route?.params) {
       setIsLoading(true);
       const loc = route.params.locationData || {};
-      console.log(loc)
-      console.log(route.params.locationId)
       setLocationData({
         locationId: route.params.locationId,
         name: loc.name,
