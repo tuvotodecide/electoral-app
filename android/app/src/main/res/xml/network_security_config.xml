@@ -20,6 +20,8 @@
         <domain includeSubdomains="true">backocr.tuvotodecide.com</domain>
         <domain includeSubdomains="true">dbackresultados.tuvotodecide.com</domain>
         <domain includeSubdomains="true">tuvotodecide.com</domain>
+        <domain includeSubdomains="true">https://unobligative-angle-interspinal.ngrok-free.dev</domain>
+        <domain includeSubdomains="true">https://dot-revealable-telescopically.ngrok-free.dev</domain>
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>
