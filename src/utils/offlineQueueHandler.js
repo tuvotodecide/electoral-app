@@ -12,6 +12,36 @@ export const publishActaHandler = async (item, userData) => {
   const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
     item.task.payload;
 
+  const normalizedAdditional = (() => {
+    const idRecinto =
+      additionalData?.idRecinto ||
+      additionalData?.locationId ||
+      tableData?.idRecinto ||
+      tableData?.locationId ||
+      tableData?.location?._id ||
+      null;
+
+    const tableCode =
+      additionalData?.tableCode ||
+      tableData?.codigo ||
+      tableData?.tableCode ||
+      '';
+
+    const tableNumber =
+      additionalData?.tableNumber ||
+      tableData?.tableNumber ||
+      tableData?.numero ||
+      tableData?.number ||
+      '';
+
+    return {
+      ...additionalData,
+      idRecinto,
+      locationId: idRecinto,
+      tableCode: String(tableCode),
+      tableNumber: String(tableNumber),
+    };
+  })();
 
   const buildFromPayload = type => {
     const norm = s =>
