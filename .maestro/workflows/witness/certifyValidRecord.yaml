@@ -20,6 +20,10 @@ onFlowStart:
       id: nftCertificate
     timeout: 20000
 
+- extendedWaitUntil:
+    visible:
+      id: nftMedalContainer
+    timeout: 20000
 - assertVisible:
     id: nftMedalContainer
 

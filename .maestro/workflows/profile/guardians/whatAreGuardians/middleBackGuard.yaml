@@ -3,8 +3,14 @@ name: middleBackGuard
 onFlowStart:
   - runFlow: ../../../../components/guardians/navigateTo.yaml
 ---
+- extendedWaitUntil:
+    visible:
+      id: guardiansRightIcons
+    timeout: 15000
 - tapOn:
     id: guardiansRightIcons
+- waitForAnimationToEnd:
+    timeout: 1000
 # La info card de guardianes no es visible una vez eliminado un guardian y quedarse sin guardianes
 #- tapOn:
 #    id: guardiansInfoCard
@@ -13,26 +19,48 @@ onFlowStart:
 - assertVisible:
     id: onboardingGuardiansTextContainer_0
 
+- extendedWaitUntil:
+    visible:
+      id: onboardingGuardiansGetStartedButton
+    timeout: 12000
 - tapOn:
     id: onboardingGuardiansGetStartedButton
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingGuardiansImage_1
 - assertVisible:
     id: onboardingGuardiansTextContainer_1
 
+- extendedWaitUntil:
+    visible:
+      id: onboardingGuardiansGetStartedButton
+    timeout: 12000
 - tapOn:
     id: onboardingGuardiansGetStartedButton
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingGuardiansImage_2
 - assertVisible:
     id: onboardingGuardiansTextContainer_2
 
+- waitForAnimationToEnd:
+        timeout: 1000
 - back
+- extendedWaitUntil:
+        notVisible:
+            id: onboardingGuardiansImage_2
+        timeout: 12000
 
 - assertNotVisible:
     id: onboardingGuardiansImage_2
 - assertNotVisible:
     id: onboardingGuardiansTextContainer_2
 
+- extendedWaitUntil:
+    visible:
+      id: guardiansHeaderTitle
+    timeout: 12000
 - assertVisible:
     id: guardiansHeaderTitle

@@ -4,15 +4,35 @@ onFlowStart:
   - runFlow: ../../../components/setup/skipDebuger.yaml
 ---
 
+- extendedWaitUntil:
+    visible:
+      id: connectLoginButton
+    timeout: 15000
 - tapOn:
     id: connectLoginButton
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: accountLockImage
+    timeout: 12000
 - assertVisible:
     id: accountLockImage
+- extendedWaitUntil:
+    visible:
+      id: accountLockDescription
+    timeout: 12000
 - assertVisible:
     id: accountLockDescription
 
+- extendedWaitUntil:
+    visible:
+      id: accountLockRecoveryButton
+    timeout: 12000
 - tapOn:
     id: accountLockRecoveryButton
+- waitForAnimationToEnd:
+    timeout: 1000
 
 - runFlow: 
     file: ../../../components/recovery/recoveryQR.yaml

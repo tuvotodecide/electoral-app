@@ -470,7 +470,7 @@ export default function LoginUser({navigation}) {
   }
 
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth testID="loginUserSafeArea">
       <View
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
@@ -479,17 +479,23 @@ export default function LoginUser({navigation}) {
       <View style={localStyle.imageContainer}>
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
+      <KeyBoardAvoidWrapper
+        contentContainerStyle={styles.flexGrow1}
+        testID="loginUserKeyboardContainer">
+        <View
+          style={localStyle.mainContainer}
+          testID="loginUserContentContainer">
           <View>
             <CText
               type={'B24'}
               style={localStyle.headerTextStyle}
-              align={'center'}>
+              align={'center'}
+              testID="loginUserTitle">
               {String.login}
             </CText>
 
             <OTPInputView
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -515,7 +521,7 @@ export default function LoginUser({navigation}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomButtons}>
+      <View style={localStyle.bottomButtons} testID="loginUserActions">
         <CButton
           onPress={onPressLoginUser1}
           title={String.connectBtnForgot}
@@ -523,6 +529,7 @@ export default function LoginUser({navigation}) {
           containerStyle={localStyle.btnStyle}
           color={colors.white}
           bgColor={commonColor.gradient2}
+          testID="loginUserForgotPasswordButton"
         />
       </View>
       {loading && (
@@ -534,6 +541,7 @@ export default function LoginUser({navigation}) {
         </View>
       )}
       <InfoModal
+        testID="loginUserInfoModal"
         visible={modal.visible}
         title={String.walletAccess}
         message={modal.msg}

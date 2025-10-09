@@ -7,16 +7,47 @@ onFlowStart:
 #    when:
 #        true: ${MAESTRO_WALKTHROUGH != 'true'}
 #    file: ../initialSetup.yaml
+- extendedWaitUntil:
+    visible:
+      id: tabButton_Profile
+    timeout: 15000
 - tapOn:
     id: tabButton_Profile
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: profileMenuItem_2
+    timeout: 12000
 - tapOn:
     id: profileMenuItem_2
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: recuperationQrCode
+    timeout: 12000
 - assertVisible:
     id: recuperationQrCode
+- extendedWaitUntil:
+    visible:
+      id: recuperationQrSaveButton
+    timeout: 12000
 - tapOn:
     id: recuperationQrSaveButton
-
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: alert_title
+    timeout: 12000
 - assertVisible:
     id: alert_title
+- extendedWaitUntil:
+    visible:
+      id: button1
+    timeout: 12000
 - tapOn:
     id: button1
+- waitForAnimationToEnd:
+    timeout: 1000

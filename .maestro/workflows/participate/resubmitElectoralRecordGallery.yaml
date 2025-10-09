@@ -16,4 +16,7 @@ onFlowStart:
         RECORD_FILE: 'electoralRecord1'
         ASSERTION_TYPE: 'pass'
 
+- extendedWaitUntil:
+    visible: Acta ya existe
+    timeout: 20000
 - assertVisible: Acta ya existe

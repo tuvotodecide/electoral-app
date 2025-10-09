@@ -51,7 +51,7 @@ export default function CreatePin({navigation}) {
               {String.createPINDescription}
             </CText>
             <OTPInputView
-              testID="pinCreationInput"
+              testID="textInput"
               pinCount={5}
               style={localStyle.otpInputViewStyle}
               code={otp}

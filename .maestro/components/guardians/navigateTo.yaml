@@ -8,7 +8,19 @@ onFlowStart:
 #        visible: 
 #            id: MiVotoLogoImage
 #    file: ../../initialSetup.yaml
+- extendedWaitUntil:
+    visible:
+      id: tabButton_Profile
+    timeout: 15000
 - tapOn:
     id: tabButton_Profile
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: profileMenuItem_3
+    timeout: 12000
 - tapOn:
     id: profileMenuItem_3
+- waitForAnimationToEnd:
+    timeout: 1000

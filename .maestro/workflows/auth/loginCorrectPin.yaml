@@ -6,5 +6,9 @@ onFlowStart:
         env:
             PIN: ${MAESTRO_CORRECT_PIN}
 ---
+- extendedWaitUntil:
+    visible:
+      id: homeMiVotoLogoTitle
+    timeout: 15000
 - assertVisible:
     id: homeMiVotoLogoTitle

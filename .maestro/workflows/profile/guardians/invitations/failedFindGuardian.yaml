@@ -12,5 +12,9 @@ onFlowStart:
     env:
       GUARDIAN_ID: '99999'
 
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansErrorAlert
+    timeout: 12000
 - assertVisible:
     id: addGuardiansErrorAlert

@@ -6,12 +6,18 @@ appId: com.tuvotodecide
             id: loginUserContentContainer
     file: ./simpleActions/pressLogin.yaml
 
+- extendedWaitUntil:
+    visible:
+      id: textInput
+    timeout: 12000
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: textInput
     
 - inputText: ${PIN}
 
 - extendedWaitUntil:
-    visible:
-      id: homeMiVotoLogoTitle
-    timeout: 10000
+        visible:
+            id: homeMiVotoLogoTitle
+        timeout: 15000

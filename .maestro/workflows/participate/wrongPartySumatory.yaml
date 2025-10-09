@@ -15,7 +15,15 @@ onFlowStart:
         #ASSERTION_TYPE: 'sumatory'
         RECORD_FILE: 'wrongElectoralRecord'
   
+- extendedWaitUntil:
+    visible:
+      id: photoConfirmationInfoModalTitle
+    timeout: 20000
 - assertVisible:
     id: photoConfirmationInfoModalTitle
+- extendedWaitUntil:
+    visible:
+      id: photoConfirmationInfoModalContainer
+    timeout: 20000
 - assertVisible:
     id: photoConfirmationInfoModalContainer

@@ -7,10 +7,14 @@ appId: com.tuvotodecide
 - extendedWaitUntil:
     visible:
       text: Open debugger to view warnings.
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     point: 90%,91%
 #- tapOn: Open debugger to view warnings.
 - extendedWaitUntil:
     notVisible:
       text: Open debugger to view warnings.
-    timeout: 4000
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000

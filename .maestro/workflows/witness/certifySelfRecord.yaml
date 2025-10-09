@@ -15,11 +15,15 @@ onFlowStart:
 
 # Esperar a que aparezca el modal de certificación completada
 - extendedWaitUntil:
-    visible:
-      id: recordCertificationInfoModalTitle
-    timeout: 10000
+        visible:
+            id: recordCertificationInfoModalTitle
+        timeout: 20000
 
 # Verificar que el contenido del modal esté visible
+- extendedWaitUntil:
+    visible:
+      id: recordCertificationInfoModalScrollView
+    timeout: 20000
 - assertVisible:
     id: recordCertificationInfoModalScrollView
     

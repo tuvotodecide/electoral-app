@@ -1,12 +1,28 @@
 appId: com.tuvotodecide
 ---
+- extendedWaitUntil:
+    visible:
+      id: guardiansAddButton
+    timeout: 15000
 - tapOn:
     id: guardiansAddButton
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansCarnetInput
+    timeout: 12000
 - tapOn:
     id: addGuardiansCarnetInput
 - inputText: ${GUARDIAN_ID}
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansSearchButton
+    timeout: 12000
 - doubleTapOn:
     id: addGuardiansSearchButton
+- waitForAnimationToEnd:
+    timeout: 1000
 
 #- runFlow:
 #    when:

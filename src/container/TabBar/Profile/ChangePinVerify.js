@@ -69,7 +69,7 @@ export default function ChangePinVerify({navigation, route}) {
               {String.pinChange}
             </CText>
             <OTPInputView
-              testID="changePinVerifyOtpInput"
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}

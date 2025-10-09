@@ -57,7 +57,7 @@ export default function ChangePinNew({navigation, route}) {
               {String.pinAccessDescription}
             </CText>
             <OTPInputView
-              testID="changePinNewOtpInput"
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}

@@ -8,7 +8,14 @@ onFlowStart:
     env:
       GUARDIAN_ID: ${MAESTRO_GUARDIAN_ID}
 
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansNameInput
+    timeout: 12000
 - assertVisible:
     id: addGuardiansNameInput
     
+- extendedWaitUntil:
+    visible: ${MAESTRO_GUARDIAN_NAME}
+    timeout: 12000
 - assertVisible: ${MAESTRO_GUARDIAN_NAME}

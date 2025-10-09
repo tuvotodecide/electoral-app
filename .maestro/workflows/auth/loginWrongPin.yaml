@@ -3,9 +3,25 @@ name: loginWrongPin
 onFlowStart:
   - runFlow: ../../components/setup/skipDebuger.yaml
 ---
+- extendedWaitUntil:
+    visible:
+      id: connectLoginButton
+    timeout: 15000
 - tapOn:
     id: connectLoginButton
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: textInput
+    timeout: 12000
 - inputText: '9999'
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 12000
 - assertVisible:
     id: loginUserInfoModalButton
 - assertVisible:

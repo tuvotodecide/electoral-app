@@ -86,7 +86,7 @@ export default function ChangePinNewConfirm({navigation, route}) {
               {String.pinAccessDescription1}
             </CText>
             <OTPInputView
-              testID="changePinNewConfirmOtpInput"
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}

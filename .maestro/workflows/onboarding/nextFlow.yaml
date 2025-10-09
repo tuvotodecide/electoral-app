@@ -3,9 +3,20 @@ name: onboardingNextFlow
 onFlowStart:
   - runFlow: ../../components/setup/skipDebuger.yaml
 ---
-
+- extendedWaitUntil:
+    visible:
+      id: connectInfoButton
+    timeout: 12000
 - tapOn:
     id: connectInfoButton
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_0
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingSlideImage_0
 - assertVisible:
@@ -13,6 +24,19 @@ onFlowStart:
 - tapOn:
     id: onboardingGetStartedButton
 
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_1
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: onboardingSlideImage_1
+    direction: LEFT
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingSlideImage_1
 - assertVisible:
@@ -20,6 +44,19 @@ onFlowStart:
 - tapOn:
     id: onboardingGetStartedButton
 
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_2
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: onboardingSlideImage_2
+    direction: LEFT
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingSlideImage_2
 - assertVisible:
@@ -27,6 +64,19 @@ onFlowStart:
 - tapOn:
     id: onboardingGetStartedButton
 
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_3
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: onboardingSlideImage_3
+    direction: LEFT
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingSlideImage_3
 - assertVisible:
@@ -34,6 +84,19 @@ onFlowStart:
 - tapOn:
     id: onboardingGetStartedButton
 
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_4
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: onboardingSlideImage_4
+    direction: LEFT
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: onboardingSlideImage_4
 - assertVisible:
@@ -41,11 +104,21 @@ onFlowStart:
 - tapOn:
     id: onboardingGetStartedButton
 
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    notVisible:
+      id: onboardingSlideImage_4
+    timeout: 8000
 - assertNotVisible:
     id: onboardingSlideImage_4
 - assertNotVisible:
     id: onboardingSlideTextContainer_4
 
+- extendedWaitUntil:
+    visible:
+      id: MiVotoLogoImage
+    timeout: 8000
 - assertVisible:
     id: MiVotoLogoImage
 
