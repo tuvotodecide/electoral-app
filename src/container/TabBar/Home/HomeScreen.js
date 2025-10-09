@@ -276,6 +276,7 @@ export default function HomeScreen({navigation}) {
     console.log('[HOME-SCREEN] handleParticiparPress cache result', { dni, cached });
     if (cached?.location?._id) {
       navigation.navigate(StackNav.UnifiedParticipationScreen, {
+        dni,
         locationId: cached.location._id,
         locationData: cached.location,
         ...(cached.table ? {tableData: cached.table} : {}),
@@ -397,6 +398,30 @@ export default function HomeScreen({navigation}) {
     subject?.governmentIdentifier ??
     userData?.dni;
 
+  const normalizeVotePlace = srv => {
+    const loc = srv?.location || {};
+    const tab = srv?.table || {};
+    return {
+      location: {
+        ...loc,
+        _id: loc._id || loc.id,
+        id: loc.id || loc._id,
+      },
+      table:
+        tab && Object.keys(tab).length
+          ? {
+              ...tab,
+              _id: tab._id || tab.id,
+              id: tab.id || tab._id,
+              tableId: tab.tableId || tab._id || tab.id,
+              tableCode: tab.tableCode || tab.code || tab.codigo,
+              tableNumber: String(
+                tab.tableNumber || tab.numero || tab.number || '',
+              ),
+            }
+          : undefined,
+    };
+  };
   const checkUserVotePlace = useCallback(async () => {
     if (!dni) {
       setShouldShowRegisterAlert(false);
@@ -416,11 +441,12 @@ export default function HomeScreen({navigation}) {
 
       if (res?.data) {
         console.log('[HOME-SCREEN] checkUserVotePlace backend returned', { dni, data: res.data });
+        const {location, table} = normalizeVotePlace(res.data);
         await saveVotePlace(dni, {
           dni,
           userId: res.data.userId,
-          location: res.data.location,
-          table: res.data.table,
+          location,
+          table,
         });
         console.log('[HOME-SCREEN] saveVotePlace completed', { dni });
       }
@@ -444,7 +470,7 @@ export default function HomeScreen({navigation}) {
   };
   const userFullName = data.name || '(sin nolombre)';
 
-  const onPressNotification = () => navigation.navigate(StackNav.Notification);
+
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [

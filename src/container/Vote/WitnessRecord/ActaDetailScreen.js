@@ -28,7 +28,6 @@ const getResponsiveSize = (small, medium, large) => {
 const ActaDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  console.log(route);
   
   const colors = useSelector(state => state.theme.theme);
 

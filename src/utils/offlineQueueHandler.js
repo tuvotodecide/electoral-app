@@ -232,7 +232,7 @@ export const publishActaHandler = async (item, userData) => {
     txUrl: explorer + 'tx/' + response.receipt.transactionHash,
     nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
   };
-  console.log(nftResult)
+  console.log(nftResult);
 
   try {
     console.log('[OFFLINE-QUEUE] notificando backend desde IPFS', { nftId });

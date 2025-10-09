@@ -73,8 +73,7 @@ export async function unsubscribeFromLocationTopic(locationKey) {
 export function registerBackgroundHandler() {
   // Se ejecuta cuando el app está en background/quit y llega un mensaje data-only o para procesar info
   messaging().setBackgroundMessageHandler(async remoteMessage => {
-    // opcional: log/analytics
-    console.log('BG message', remoteMessage);
+
   });
 }
 

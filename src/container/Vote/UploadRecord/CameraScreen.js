@@ -560,46 +560,6 @@ export default function CameraScreen({navigation, route}) {
         enableShutterSound: false,
       });
 
-      // const photoInfo = await new Promise((resolve, reject) => {
-      //   Image.getSize(
-      //     `file://${result.path}`,
-      //     (width, height) => {
-      //       resolve({width, height});
-      //     },
-      //     reject,
-      //   );
-      // });
-
-      // // Calcular relación de aspecto
-      // const screenRatio = screenData.width / screenData.height;
-      // const photoRatio = photoInfo.width / photoInfo.height;
-
-      // // Determinar si la foto está en landscape
-      // const isLandscapePhoto = photoRatio > 1;
-
-      // // Calcular el área visible de la foto que coincide con la vista previa
-      // let visibleWidth, visibleHeight;
-      // if (isLandscapePhoto) {
-      //   visibleHeight = photoInfo.height;
-      //   visibleWidth = visibleHeight * screenRatio;
-      // } else {
-      //   visibleWidth = photoInfo.width;
-      //   visibleHeight = visibleWidth / screenRatio;
-      // }
-
-      // // Calcular desplazamiento para centrar
-      // const offsetX = (photoInfo.width - visibleWidth) / 2;
-      // const offsetY = (photoInfo.height - visibleHeight) / 2;
-
-      // setPhoto({
-      //   path: result.path,
-      //   cropData: {
-      //     x: offsetX,
-      //     y: offsetY,
-      //     width: visibleWidth,
-      //     height: visibleHeight,
-      //   },
-      // });
       const meta = await new Promise((resolve, reject) => {
         Image.getSize(
           `file://${result.path}`,

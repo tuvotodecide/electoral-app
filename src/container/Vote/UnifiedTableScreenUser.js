@@ -17,7 +17,7 @@ import {
 } from '../../services/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {LAST_TOPIC_KEY} from '../../common/constants';
-import { saveVotePlace } from '../../utils/offlineQueue';
+import {saveVotePlace} from '../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -60,7 +60,6 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
 
   const styles = createSearchTableStyles();
   const dni = route?.params?.dni;
-
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);
@@ -151,34 +150,36 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
       try {
         const prevTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);
         if (prevTopic && prevTopic !== newTopic) {
-          await unsubscribeFromLocationTopic(prevTopic.replace('loc_', '')); 
+          await unsubscribeFromLocationTopic(prevTopic.replace('loc_', ''));
         }
         await subscribeToLocationTopic(locationData.locationId);
         await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
-      } catch (e) {
-      }
+      } catch (e) {}
+      const fullLocation = route?.params?.locationData || {
+        _id: locationData.locationId,
+        name: locationData.name,
+        address: locationData.address,
+        code: locationData.code,
+      };
+
+      // Asegura id/_id y los campos clave de mesa
+      const tablePayload =
+        mesa?.id || mesa?._id || mesa?.codigo || mesa?.numero
+          ? {
+              _id: mesa._id || mesa.id, // importante
+              id: mesa.id || mesa._id, // duplicado para compat
+              tableId: mesa._id || mesa.id, // por si otro flujo lo usa
+              tableCode: mesa.tableCode || mesa.codigo,
+              tableNumber: String(
+                mesa.tableNumber || mesa.numero || mesa.number || '',
+              ),
+            }
+          : undefined;
+
       const cachePayload = {
         dni,
-        location: {
-          _id: locationData.locationId,
-          name: locationData.name,
-          address: locationData.address,
-          code: locationData.code,
-        },
-        table:
-          mesa?.id || mesa?.codigo || mesa?.numero
-            ? {
-                _id: mesa.id && mesa.id !== 'N/A' ? mesa.id : undefined,
-                tableCode:
-                  mesa.codigo && mesa.codigo !== 'N/A'
-                    ? mesa.codigo
-                    : undefined,
-                tableNumber:
-                  mesa.numero && mesa.numero !== 'N/A'
-                    ? String(mesa.numero)
-                    : undefined,
-              }
-            : undefined,
+        location: fullLocation, // guarda todo el objeto
+        table: tablePayload,
       };
       console.log('[UNIFIED-TABLE] saveSelectedMesa saving to cache', { dni, cachePayload });
       await saveVotePlace(dni, cachePayload);

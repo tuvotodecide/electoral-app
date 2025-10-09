@@ -23,8 +23,6 @@ const PhotoReviewScreen = () => {
     existingRecord,
     isViewOnly,
   } = route.params || {};
-  console.log(photoUri)
-  console.log(tableData)
   const effectivePhotoUri = React.useMemo(() => {
     const fromRecord =
       existingRecord?.actaImage ||
