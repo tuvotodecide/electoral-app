@@ -453,7 +453,7 @@ export default function HomeScreen({navigation}) {
       const hasBoth = !!res?.data?.location && !!res?.data?.table;
       setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
-      console.error('[HOME-SCREEN] checkUserVotePlace error, falling back to cache', e);
+      //console.error('[HOME-SCREEN] checkUserVotePlace error, falling back to cache', e);
       const cached = await getVotePlace(dni);
       console.log('[HOME-SCREEN] checkUserVotePlace cache fallback', { dni, cached });
       const hasBothCached = !!cached?.location && !!cached?.table;
@@ -629,6 +629,7 @@ export default function HomeScreen({navigation}) {
               </View>
             </View>
           </View>
+          {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -636,6 +637,7 @@ export default function HomeScreen({navigation}) {
                 })
               }
             />
+          {/*)}*/}
 
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
@@ -769,6 +771,7 @@ export default function HomeScreen({navigation}) {
               ))}
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -776,6 +779,7 @@ export default function HomeScreen({navigation}) {
                 })
               }
             />
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
