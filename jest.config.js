@@ -12,7 +12,8 @@ module.exports = {
     '!**/__mocks__/**',
   ],
   testMatch: [
-    '<rootDir>/__tests__/**/*.test.{js,jsx}',
+    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/__tests__/**/*.spec.{js,jsx,ts,tsx}',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {

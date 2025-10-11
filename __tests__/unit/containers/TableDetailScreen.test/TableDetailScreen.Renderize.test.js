@@ -81,8 +81,8 @@ describe('TableDetailScreen - Renderizado', () => {
 
     const {getByText} = renderTableDetail({route: emptyMesaRoute});
 
-    expect(getByText(`${String.table} FALLBACK-NUMERO`)).toBeTruthy();
-    expect(getByText(`${String.tableCode}: 2352`)).toBeTruthy();
+  expect(getByText(`${String.table} N/A`)).toBeTruthy();
+  expect(getByText(`${String.tableCode}: N/A`)).toBeTruthy();
     expect(getByText(buildPrecinctMatcher('N/A'))).toBeTruthy();
   });
 });

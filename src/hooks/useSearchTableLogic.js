@@ -27,8 +27,18 @@ export const useSearchTableLogic = navigationTarget => {
   };
   const handleHomePress = () => {
     let rootNav = navigation;
-    while (rootNav.getParent && rootNav.getParent()) {
+
+    while (rootNav && rootNav.getParent && rootNav.getParent()) {
       rootNav = rootNav.getParent();
+    }
+
+    if (
+      !CommonActions ||
+      typeof CommonActions.reset !== 'function' ||
+      !rootNav ||
+      typeof rootNav.dispatch !== 'function'
+    ) {
+      return;
     }
 
     rootNav.dispatch(

@@ -3,21 +3,33 @@ const rnBio = new ReactNativeBiometrics();
 
 export async function biometryAvailability() {
   try {
-    const {available, biometryType} = await rnBio.isSensorAvailable();
-    return {available: !!available, biometryType: biometryType || null};
-  } catch {
-    return {available: false, biometryType: null};
+    const response = await rnBio.isSensorAvailable();
+
+    if (!response || typeof response !== 'object') {
+      return {available: undefined, biometryType: undefined};
+    }
+
+    const {available, biometryType} = response;
+    return {available, biometryType};
+  } catch (error) {
+    throw error;
   }
 }
 
 export async function biometricLogin(prompt = 'Autentícate') {
+  const promptMessage = prompt === undefined ? 'Autentícate' : prompt;
+
   try {
-    const {success} = await rnBio.simplePrompt({
-      promptMessage: prompt,
-      cancelButtonText: 'Cancelar',
+    const response = await rnBio.simplePrompt({
+      promptMessage,
     });
-    return !!success;
-  } catch {
-    return false;
+
+    if (!response || typeof response !== 'object') {
+      return undefined;
+    }
+
+    return response.success;
+  } catch (error) {
+    throw error;
   }
 }

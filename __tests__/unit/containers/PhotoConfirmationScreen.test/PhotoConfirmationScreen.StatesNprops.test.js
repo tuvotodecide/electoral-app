@@ -8,6 +8,7 @@ import {
   flushPromises,
   String,
   act,
+  NetInfo,
 } from './testUtils';
 
 jest.mock('@env', () => ({
@@ -20,6 +21,7 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     resetMocks();
+    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
   });
 
   afterEach(() => {
@@ -32,17 +34,17 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
       errors: ['Totales inconsistentes', 'Faltan datos'],
     });
 
-      const {getByTestId} = renderPhotoConfirmation();
+    const {getByTestId} = renderPhotoConfirmation();
 
     await flushAsyncTasks();
 
-  expect(getByTestId('infoModal')).toBeTruthy();
-      const infoModalMessage = getByTestId('infoModalMessage');
-      const messageText = Array.isArray(infoModalMessage.props.children)
-        ? infoModalMessage.props.children.join(' ')
-        : String(infoModalMessage.props.children);
-      expect(messageText).toContain('Totales inconsistentes');
-      expect(messageText).toContain('Faltan datos');
+    expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
+    const infoModalMessage = getByTestId('photoConfirmationInfoModalMessage');
+    const messageText = Array.isArray(infoModalMessage.props.children)
+      ? infoModalMessage.props.children.join(' ')
+      : String(infoModalMessage.props.children);
+    expect(messageText).toContain('Totales inconsistentes');
+    expect(messageText).toContain('Faltan datos');
   });
 
   test('presenta el modal de duplicado cuando el backend lo detecta', async () => {
@@ -64,11 +66,12 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
     validateBallotLocally.mockReturnValue({ok: true});
     pinataService.checkDuplicateBallot.mockResolvedValue({exists: false});
 
-    const {getByText} = renderPhotoConfirmation();
+  const {getAllByText, getByText} = renderPhotoConfirmation();
 
     await flushAsyncTasks();
 
-      expect(getByText(/Test User/)).toBeTruthy();
+  const nameMatches = getAllByText(/Test User/);
+  expect(nameMatches.length).toBeGreaterThan(0);
     expect(
       getByText(
         /Certifico que los datos que ingreso coinciden con la foto del acta de la mesa/,

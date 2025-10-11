@@ -57,6 +57,16 @@ jest.mock('react-native', () => ({
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
+  useColorScheme: jest.fn(() => 'light'),
+  StatusBar: 'StatusBar',
+  InteractionManager: {
+    runAfterInteractions: jest.fn(callback => {
+      if (typeof callback === 'function') {
+        callback();
+      }
+      return {cancel: jest.fn()};
+    }),
+  },
   Alert: {
     alert: jest.fn(),
   },

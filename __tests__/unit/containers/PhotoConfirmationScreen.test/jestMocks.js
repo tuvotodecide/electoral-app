@@ -20,7 +20,7 @@ jest.mock(
 
 jest.mock(
   '../../../../src/components/modal/InfoModal',
-  () => ({visible, title, message, onClose}) => {
+  () => ({visible, title, message, onClose, testID = 'infoModal'}) => {
     if (!visible) {
       return null;
     }
@@ -28,12 +28,12 @@ jest.mock(
     const {View, Text, TouchableOpacity} = require('react-native');
     return React.createElement(
       View,
-      {testID: 'infoModal'},
-      React.createElement(Text, {testID: 'infoModalTitle'}, title),
-      React.createElement(Text, {testID: 'infoModalMessage'}, message),
+      {testID},
+      React.createElement(Text, {testID: `${testID}Title`}, title),
+      React.createElement(Text, {testID: `${testID}Message`}, message),
       React.createElement(
         TouchableOpacity,
-        {testID: 'infoModalCloseButton', onPress: onClose},
+        {testID: `${testID}CloseButton`, onPress: onClose},
         React.createElement(Text, null, 'close'),
       ),
     );

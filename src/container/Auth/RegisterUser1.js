@@ -32,7 +32,11 @@ export default function RegisterUser1({navigation, route}) {
 
   const onPressNext = () => {
     logNavigation(AuthNav.RegisterUser2, route?.params ?? null);
-    navigation.navigate(AuthNav.RegisterUser2, route?.params);
+    if (route?.params) {
+      navigation.navigate(AuthNav.RegisterUser2, route.params);
+    } else {
+      navigation.navigate(AuthNav.RegisterUser2);
+    }
   };
 
   const onPressConditions = () => {

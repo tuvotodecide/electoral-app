@@ -19,6 +19,8 @@ jest.mock('@env', () => ({
   CHAIN: 'test-chain',
 }));
 
+const INFO_MODAL_ID = 'photoConfirmationInfoModal';
+
 describe('PhotoConfirmationScreen - Manejo de Errores', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -46,7 +48,7 @@ describe('PhotoConfirmationScreen - Manejo de Errores', () => {
       await flushPromises();
     });
 
-    expect(getByTestId('infoModal')).toBeTruthy();
+  expect(getByTestId(INFO_MODAL_ID)).toBeTruthy();
     expect(getByText(String.genericError)).toBeTruthy();
     expect(getByText('pinata down')).toBeTruthy();
   });
@@ -81,7 +83,7 @@ describe('PhotoConfirmationScreen - Manejo de Errores', () => {
       await flushPromises();
     });
 
-    expect(getByTestId('infoModal')).toBeTruthy();
+  expect(getByTestId(INFO_MODAL_ID)).toBeTruthy();
     expect(getByText(String.genericError)).toBeTruthy();
     expect(
       getByText(`${String.validationError404} Acta no encontrada`),

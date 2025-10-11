@@ -19,7 +19,8 @@ import String from '../../i18n/String';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser8({navigation, route}) {
-  const {ocrData, useBiometry, dni} = route.params;
+  const routeParams = route?.params ?? {};
+  const {useBiometry, dni, vc, offerUrl} = routeParams;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
@@ -37,7 +38,8 @@ export default function RegisterUser8({navigation, route}) {
     logAction('SubmitPin', {length: otp.length});
     const params = {
       originalPin: otp,
-      ocrData,
+      vc,
+      offerUrl,
       useBiometry,
       dni,
     };
