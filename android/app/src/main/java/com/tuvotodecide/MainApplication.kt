@@ -41,7 +41,7 @@ class MainApplication : Application(), ReactApplication {
   override fun onCreate() {
     super.onCreate()
 
-     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channelId   = "high_prio"            // ⇠ mismo ID que en Manifest
       val channelName = "Notificaciones Tu Voto decide"  // Texto que ve el usuario
       val channel     = NotificationChannel(

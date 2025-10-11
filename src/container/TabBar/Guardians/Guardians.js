@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -9,27 +9,18 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {
   useGuardianDeleteQuery,
   useGuardianPatchQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
-import {CHAIN} from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
-import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
-import {
-  guardianHashFrom,
-  removeGuardianOnChain,
-} from '../../../api/guardianOnChain';
-import {getSecrets} from '../../../utils/Cifrate';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const statusColorKey = {
@@ -39,29 +30,29 @@ const statusColorKey = {
   REMOVED: 'rejectedColor',
 };
 
-const baseColors = {
-  success: '#4caf50',
-  error: '#f44336',
-  warning: '#ff9800',
-  info: '#2196f3',
-};
-
 export default function Guardians({navigation}) {
-  const status = 'info';
   const colors = useSelector(state => state.theme.theme);
-  const theme = useSelector(state => state.theme.theme);
-  const isDark = theme.dark;
   const [modalVisible, setModalVisible] = useState(false);
-  const [optionsVisible, setOptionsVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
+  const walletPayload = useSelector(state => state.wallet.payload);
+  const did = walletPayload?.did;
 
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('Guardians', true);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'Guardians',
+    true,
+  );
   const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
   const {mutate: deleteGuardianId, isLoading: loading} =
     useGuardianDeleteQuery();
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
+
+  useEffect(() => {
+    if (error) {
+      logAction('LoadGuardiansError', {message: error?.message});
+    }
+  }, [error]);
 
   const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
@@ -69,7 +60,6 @@ export default function Guardians({navigation}) {
       guardians.filter(g => g.status === 'ACCEPTED' || g.status === 'PENDING'),
     [guardians],
   );
-  const mainColor = baseColors[status] || baseColors.info;
 
   const statusLabel = {
     ACCEPTED: String.active,
@@ -79,50 +69,61 @@ export default function Guardians({navigation}) {
   };
 
   const onPressAddGuardian = () => {
+    logNavigation(StackNav.AddGuardians);
     navigation.navigate(StackNav.AddGuardians);
   };
   const onPressMyProtected = () => {
+    logNavigation(StackNav.GuardiansAdmin);
     navigation.navigate(StackNav.GuardiansAdmin);
   };
   const onPressWatchInfoGuardian = () => {
+    logNavigation(StackNav.OnBoardingGuardians);
     navigation.navigate(StackNav.OnBoardingGuardians);
   };
 
   const openModal = item => {
+    logAction('OpenGuardianActionModal', {guardianId: item.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
+    logAction('CloseGuardianActionModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };
 
   const deleteGuardian = async () => {
+    if (!selectedGuardian?.id || !did) {
+      logAction('DeleteGuardianMissingData');
+      return;
+    }
     try {
-      const {payloadQr} = await getSecrets();
-      const ownerPrivKey = payloadQr.privKey;
-      const ownerAccount = payloadQr.account;
-      const ownerGuardianCt = payloadQr.guardian;
-      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress);
-
-      // await removeGuardianOnChain(
-      //   CHAIN,
-      //   ownerPrivKey,
-      //   ownerAccount,
-      //   ownerGuardianCt,
-      //   guardianHash,
-      // );
-
-      deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
-    } catch (e) {}
+      deleteGuardianId({
+        invId: selectedGuardian.id,
+        ownerDid: did,
+      }, {onSuccess: () => {
+        logAction('DeleteGuardianSuccess', {guardianId: selectedGuardian.id});
+        closeModal();
+      }});
+    } catch (e) {
+      logAction('DeleteGuardianError', {message: e?.message});
+    }
   };
   const saveGuardian = newNick => {
+    if (!selectedGuardian?.id || !did) {
+      logAction('SaveGuardianMissingData');
+      return;
+    }
     patchGuardianId(
-      {id: selectedGuardian.id, nickname: newNick},
+      {invId: selectedGuardian.id, ownerDid: did, nickname: newNick},
       {
         onSuccess: () => {
+          logAction('SaveGuardianSuccess', {guardianId: selectedGuardian.id});
           closeModal();
+        },
+        onError: err => {
+          logAction('SaveGuardianError', {message: err?.message});
         },
       },
     );
@@ -138,7 +139,7 @@ export default function Guardians({navigation}) {
   const RightIcon = () => (
     <View testID="guardiansRightIcons" style={localStyle.rightIcons}>
       <TouchableOpacity testID="guardiansInfoButton" onPress={onPressWatchInfoGuardian}>
-        {guardians.length != 0 && (
+        {guardians.length !== 0 && (
           <Icono
             testID="guardiansInfoIcon"
             name="message-question"
@@ -147,14 +148,6 @@ export default function Guardians({navigation}) {
           />
         )}
       </TouchableOpacity>
-      {/* <TouchableOpacity onPress={() => setOptionsVisible(true)}>
-        <Icono
-          name="format-list-bulleted"
-          size={moderateScale(28)}
-          color={colors.primaryColor}
-          style={styles.ml10}
-        />
-      </TouchableOpacity> */}
     </View>
   );
 
@@ -190,9 +183,7 @@ export default function Guardians({navigation}) {
 
             elevation: 5,
           },
-        ]}
-
-        >
+        ]}>
         <View testID={`guardiansListItemContent_${item.id}`} style={styles.rowCenter}>
           <View
             testID={`guardiansListItemIcon_${item.id}`}
@@ -256,7 +247,11 @@ export default function Guardians({navigation}) {
         />
       </View>
       <View testID="guardiansInfoCardTextContainer" style={localStyle.infoTextContainer}>
-        <CText testID="guardiansInfoCardText" style={localStyle.infoText}>{String.whatIsGuardians}</CText>
+        <CText
+          testID="guardiansInfoCardText"
+          style={localStyle.infoText}>
+          {String.whatIsGuardians}
+        </CText>
         <Icono testID="guardiansInfoCardArrow" name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
       </View>
     </TouchableOpacity>

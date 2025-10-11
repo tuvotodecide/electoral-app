@@ -6,10 +6,6 @@ import {
   ToastAndroid,
   StyleSheet,
 } from 'react-native';
-import RNQRGenerator from 'rn-qr-generator';
-import pako from 'pako';
-import {Buffer} from 'buffer';
-
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
@@ -21,20 +17,20 @@ import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
 
-const decompress = b64 =>
-  JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
+const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryQr({navigation}) {
   const [imageUri, setImageUri] = useState(null);
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryQR', true);
+  const {logAction, logNavigation} = useNavigationLogger('RecoveryQR', true);
   // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
   const onImageSelected = async (asset) => {
     if (!asset?.uri) {
+      logAction('RecoveryQrImageMissing');
       Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
       return;
     }
@@ -42,34 +38,17 @@ export default function RecoveryQr({navigation}) {
     setImageUri(asset.uri);
     setLoading(true);
     try {
-      // RNQRGenerator acepta content:// y file:// en Android
-      const { values } = await RNQRGenerator.detect({ uri: asset.uri });
-
-      if (!values?.length) {
-        throw new Error('No pude leer un QR válido');
-      }
-
-      const data = decompress(values[0]);
-
-      const required = [
-        'streamId',
-        'dni',
-        'salt',
-        'privKey',
-        'account',
-        'guardian',
-        'did',
-      ];
-      const missing = required.filter(f => !data[f]);
-      if (missing.length) {
-        throw new Error(`Faltan campos: ${missing.join(', ')}`);
-      }
+      logAction('RecoveryQrParseAttempt');
+      const data = await recoveryService.recoveryFromQr(asset.uri);
 
       setPayload(data);
+      logAction('RecoveryQrParseSuccess');
       if (Platform.OS === 'android') {
         ToastAndroid.show('QR válido', ToastAndroid.SHORT);
       }
     } catch (err) {
+      console.log(err);
+      logAction('RecoveryQrParseError', {message: err?.message});
       setPayload(null);
       setImageUri(null);
       Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');
@@ -79,6 +58,11 @@ export default function RecoveryQr({navigation}) {
   };
 
   const goSetPin = () => {
+    if (!payload) {
+      logAction('RecoveryQrContinueWithoutPayload');
+      return;
+    }
+    logNavigation(AuthNav.RecoveryUserQrpin, {payload: true});
     navigation.navigate(AuthNav.RecoveryUserQrpin, { payload });
   };
 

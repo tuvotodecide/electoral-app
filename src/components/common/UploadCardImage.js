@@ -36,7 +36,7 @@ export default function UploadCardImage({label, image, setImage, testID}) {
     launchImageLibrary(
       {
         mediaType: 'photo',
-        quality: 0.8,
+        quality: 1,
       },
       response => {
         if (!response.didCancel && !response.errorCode && response.assets) {

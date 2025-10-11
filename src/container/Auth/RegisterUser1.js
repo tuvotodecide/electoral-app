@@ -17,22 +17,30 @@ import Icono from '../../components/common/Icono';
 import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
-import { didFromEthAddress } from '../../api/did';
-import { bytesToHex } from '@noble/hashes/utils';
-import { randomBytes } from 'react-native-quick-crypto';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
-export default function RegisterUser1({navigation}) {
+export default function RegisterUser1({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser1', true);
-  const onPressRememberMe = () => setCheck(!check);
-  const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2);
-  const onPressConditions = () =>
-    navigation.navigate(StackNav.TermsAndCondition);
+  const {logAction, logNavigation} = useNavigationLogger('RegisterUser1', true);
 
+  const onPressRememberMe = () => {
+    logAction('ToggleTerms', {nextValue: !check});
+    setCheck(!check);
+  };
+
+  const onPressNext = () => {
+    logNavigation(AuthNav.RegisterUser2, route?.params ?? null);
+    navigation.navigate(AuthNav.RegisterUser2, route?.params);
+  };
+
+  const onPressConditions = () => {
+    logNavigation(StackNav.TermsAndCondition);
+    navigation.navigate(StackNav.TermsAndCondition);
+  };
+
+  const isRecoveryFlow = !!route?.params?.isRecovery;
 
   return (
     <CSafeAreaViewAuth testID="registerUser1Container">
@@ -46,23 +54,39 @@ export default function RegisterUser1({navigation}) {
           {top: moderateScale(10)},
         ]}>
         <View testID="registerUser1MainContent" style={localStyle.mainContainer}>
-          <CText testID="registerUser1Title" type={'B20'}>{String.titleReg}</CText>
+          <CText testID="registerUser1Title" type={'B20'}>
+            {String.titleReg + (isRecoveryFlow ? ` ${String.recoveryCIIntro}` : '')}
+          </CText>
 
           <CIconText
             testID="registerUser1Step1Icon"
-            icon={
-              <Icono
-                name="card-account-details-outline"
-                color={colors.primary}
-              />
+            icon={<Icono name="card-account-details-outline" color={colors.primary} />}
+            text={
+              <CText testID="registerUser1Step1Text" type={'B16'}>
+                {String.connectItem1Reg}
+              </CText>
             }
-            text={<CText testID="registerUser1Step1Text" type={'B16'}>{String.connectItem1Reg}</CText>}
           />
           <CIconText
             testID="registerUser1Step2Icon"
             icon={<Icono name="camera-outline" color={colors.primary} />}
-            text={<CText testID="registerUser1Step2Text" type={'B16'}>{String.connectItem2Reg}</CText>}
+            text={
+              <CText testID="registerUser1Step2Text" type={'B16'}>
+                {String.connectItem2Reg}
+              </CText>
+            }
           />
+          {isRecoveryFlow && (
+            <CIconText
+              testID="registerUser1Step3Icon"
+              icon={<Icono name="form-textbox-password" color={colors.primary} />}
+              text={
+                <CText testID="registerUser1Step3Text" type={'B16'}>
+                  {String.pin}
+                </CText>
+              }
+            />
+          )}
         </View>
       </KeyBoardAvoidWrapper>
 

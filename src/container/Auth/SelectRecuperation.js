@@ -10,17 +10,26 @@ import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import {AuthNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import CButton from '../../components/common/CButton';
 import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('SelectRecuperation', true);
-  
+  const {logAction, logNavigation} = useNavigationLogger(
+    'SelectRecuperation',
+    true,
+  );
+
+  const initCIrecovery = () => {
+    logAction('InitCIRecovery');
+    const params = {
+      isRecovery: true,
+    };
+    logNavigation(AuthNav.RegisterUser1, params);
+    navigation.navigate(AuthNav.RegisterUser1, params);
+  };
   return (
     <CSafeAreaViewAuth testID="selectRecuperationContainer">
       <CHeader
@@ -54,7 +63,42 @@ export default function SelectRecuperation({navigation}) {
               elevation: 5,
             },
           ]}
-          onPress={() => navigation.navigate(AuthNav.FindMyUser)}>
+          onPress={initCIrecovery}>
+          <View style={styles.rowCenter}>
+            <View
+              style={[
+                localStyle.iconBg,
+                {
+                  borderColor: colors.dark
+                    ? colors.stepBackgroundColor
+                    : colors.grayScale200,
+                },
+              ]}>
+              <Icono name="card-account-details" size={moderateScale(24)} />
+            </View>
+            <View style={styles.ml10}>
+              <View style={styles.rowCenter}>
+                <CText type="B16">{String.recoveryWithCI}</CText>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            localStyle.optionContainer,
+            {
+              backgroundColor: colors.backgroundColor,
+              borderColor: colors.dark
+                ? colors.grayScale700
+                : colors.grayScale200,
+
+              elevation: 5,
+            },
+          ]}
+          onPress={() => {
+            logNavigation(AuthNav.FindMyUser);
+            navigation.navigate(AuthNav.FindMyUser);
+          }}>
           <View style={styles.rowCenter}>
             <View
               testID="selectRecuperationGuardiansIcon"
@@ -88,7 +132,10 @@ export default function SelectRecuperation({navigation}) {
               elevation: 5,
             },
           ]}
-          onPress={() => navigation.navigate(AuthNav.RecoveryQr)}>
+          onPress={() => {
+            logNavigation(AuthNav.RecoveryQr);
+            navigation.navigate(AuthNav.RecoveryQr);
+          }}>
           <View style={styles.rowCenter}>
             <View
               testID="selectRecuperationQRIcon"

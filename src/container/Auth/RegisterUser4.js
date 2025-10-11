@@ -22,19 +22,29 @@ import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import LoadingModal from '../../components/modal/LoadingModal';
+import {PROVIDER_NAME} from '@env';
 
 export default function RegisterUser4({navigation, route}) {
-  const {dni = '', frontImage, backImage} = route.params;
+  const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
   const [selfie, setSelfie] = useState(null);
   const colors = useSelector(state => state.theme.theme);
+  const [modal, setModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    isLoading: false,
+  });
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser4', true);
+  const {logAction, logNavigation} = useNavigationLogger('RegisterUser4', true);
+
   useEffect(() => {
     const openCamera = async () => {
       const granted = await requestCameraPermission();
       if (!granted) {
         Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
+        logAction('camera_permission_denied');
         return;
       }
 
@@ -47,14 +57,16 @@ export default function RegisterUser4({navigation, route}) {
         response => {
           if (response?.assets) {
             setSelfie(response.assets[0]);
-          } else if (response.errorCode) {
+            logAction('selfie_captured');
+          } else if (response?.errorCode) {
+            logAction('camera_launch_error', {code: response.errorCode});
           }
         },
       );
     };
 
     openCamera();
-  }, []);
+  }, [logAction]);
 
   const requestCameraPermission = async () => {
     if (Platform.OS !== 'android') return true;
@@ -78,19 +90,65 @@ export default function RegisterUser4({navigation, route}) {
     }
     return false;
   };
-  
 
   const onPressNext = () => {
     if (!selfie) {
       Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
+      logAction('selfie_missing');
       return;
     }
+
+    if (isRecovery) {
+      logAction('recovery_flow_start', {dni});
+      triggerRecovery();
+      return;
+    }
+
+    logNavigation(AuthNav.RegisterUser5, {dni});
     navigation.navigate(AuthNav.RegisterUser5, {
       dni,
       frontImage,
       backImage,
       selfie,
     });
+  };
+
+  const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
+
+  const triggerRecovery = async () => {
+    setModal({
+      visible: true,
+      message: String.recoveringData,
+      isLoading: true,
+    });
+    await yieldUI();
+
+    try {
+      const recoveryService = new wira.RecoveryService();
+      await recoveryService.recoveryAndSave(
+        frontImage,
+        backImage,
+        selfie,
+        dni,
+        PROVIDER_NAME,
+      );
+
+      setModal({visible: false, title: '', message: '', isLoading: false});
+      logAction('recovery_success');
+      navigation.reset({
+        index: 0,
+        routes: [{name: AuthNav.LoginUser}],
+      });
+    } catch (error) {
+      setModal({
+        visible: true,
+        title: '',
+        message: String.recoveryError,
+        isLoading: false,
+      });
+      logAction('recovery_error', {message: error?.message});
+      console.error('Recovery failed:', error);
+    }
   };
 
   return (
@@ -105,7 +163,9 @@ export default function RegisterUser4({navigation, route}) {
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText testID="registerUser4Title" type={'B16'}>{String.takePhoto}</CText>
+          <CText testID="registerUser4Title" type={'B16'}>
+            {String.takePhoto}
+          </CText>
           <View
             testID="registerUser4ImageBox"
             style={[
@@ -113,16 +173,25 @@ export default function RegisterUser4({navigation, route}) {
               {backgroundColor: colors.inputBackground},
             ]}>
             {selfie ? (
-              <Image testID="registerUser4SelfieImage" source={{uri: selfie.uri}} style={localStyle.image} />
+              <Image
+                testID="registerUser4SelfieImage"
+                source={{uri: selfie.uri}}
+                style={localStyle.image}
+              />
             ) : (
-              <CText testID="registerUser4LoadingText" type="R14" color={colors.primary}>
+              <CText
+                testID="registerUser4LoadingText"
+                type="R14"
+                color={colors.primary}>
                 {String.loadingCamera}
               </CText>
             )}
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <View testID="registerUser4BottomContainer" style={localStyle.bottomTextContainer}>
+      <View
+        testID="registerUser4BottomContainer"
+        style={localStyle.bottomTextContainer}>
         <CButton
           testID="registerUser4NextButton"
           title={'Siguiente'}
@@ -131,6 +200,15 @@ export default function RegisterUser4({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
+      <LoadingModal
+        {...modal}
+        buttonText={String.retryRecovery}
+        onClose={triggerRecovery}
+        secondBtn={modal.isLoading ? undefined : String.btnCheckData}
+        onSecondPress={() =>
+          navigation.navigate(AuthNav.RegisterUser1, {isRecovery: true})
+        }
+      />
     </CSafeAreaViewAuth>
   );
 }

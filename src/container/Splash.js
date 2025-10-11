@@ -13,14 +13,15 @@ import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {KEY_OFFLINE, moderateScale, PENDINGRECOVERY} from '../common/constants';
-import {isSessionValid} from '../utils/Session';
+import {moderateScale, PENDINGRECOVERY} from '../common/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
 import {ensureProvisioned} from '../utils/provisionClient';
 import {useNavigationLogger} from '../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import {GATEWAY_BASE} from '@env';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -37,6 +38,12 @@ export default function Splash({navigation}) {
       try {
         logAction('boot_started');
         await ensureProvisioned({mock: true});
+        if (wira?.provision?.ensureProvisioned) {
+          await wira.provision.ensureProvisioned({
+            mock: true,
+            gatewayBase: GATEWAY_BASE,
+          });
+        }
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;

@@ -9,47 +9,30 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
-import GuardianActionModal from '../../../components/modal/GuardianActionModal';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {
-  useGuardianAcceptedListQuery,
-  useGuardianDeleteQuery,
   useGuardianInvitationActionQuery,
-  useGuardianPatchQuery,
   useMyGuardianInvitationsListQuery,
   useMyGuardianRecoveryListQuery,
-  useMyGuardiansAllListQuery,
   useRecoveryActionQuery,
 } from '../../../data/guardians';
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
-import {useKycFindPublicQuery} from '../../../data/kyc';
-import {getSecrets} from '../../../utils/Cifrate';
-import {
-  acceptGuardianOnChain,
-  approveRecoveryOnChain,
-} from '../../../api/guardianOnChain';
-import {getDeviceId} from '../../../utils/device-id';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-export default function GuardiansAdmin({navigation}) {
+export default function GuardiansAdmin() {
   const colors = useSelector(state => state.theme.theme);
+
+  const userData = useSelector(state => state.wallet.payload);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('GuardiansAdmin', true);
+  const did = userData?.did;
+  const {logAction} = useNavigationLogger('GuardiansAdmin', true);
+  const {data: invData = []} = useMyGuardianInvitationsListQuery({did});
 
-  const {data: recData = [], isLoading: loadingrecData} =
-    useMyGuardianRecoveryListQuery();
-  const {data: accData = [], isLoading: loadingdataAccepted} =
-    useGuardianAcceptedListQuery();
-  const {mutate: findPublicDni} = useKycFindPublicQuery();
-
+  const {data: recData = []} =
+    useMyGuardianRecoveryListQuery({did});
   const {mutate: mutateInvitation, isLoading: loadingInvitationAction} =
     useGuardianInvitationActionQuery();
   const {mutate: mutateRecovery, isLoading: loadingRecoveryAction} =
@@ -57,64 +40,74 @@ export default function GuardiansAdmin({navigation}) {
 
   const handleAcceptInvitation = async id => {
     const inv = invData.map(e => e.node).find(i => i.id === id);
-    if (!inv) return;
-    const dni = inv.governmentIdentifier;
-    const fp = await new Promise((res, rej) =>
-      findPublicDni(
-        {identifier: dni},
-        {
-          onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error buscando'))),
-          onError: rej,
-        },
-      ),
+    if (!inv || !did) {
+      logAction('AcceptInvitationMissingData', {id, hasDid: !!did});
+      return;
+    }
+    logAction('AcceptInvitationAttempt', {invitationId: id});
+    mutateInvitation(
+      {id, did, action: 'accept'},
+      {
+        onSuccess: () =>
+          logAction('AcceptInvitationSuccess', {invitationId: id}),
+        onError: err =>
+          logAction('AcceptInvitationError', {message: err?.message}),
+      },
     );
-    const ownerGuardianCt = fp.guardianAddress;
-    const {payloadQr} = await getSecrets();
-    // await acceptGuardianOnChain(
-    //   CHAIN,
-    //   payloadQr.privKey,
-    //   payloadQr.account,
-    //   ownerGuardianCt,
-    // );
-
-    mutateInvitation({id, action: 'accept'});
   };
   const handleRejectInvitation = id => {
-    mutateInvitation({id, action: 'reject'});
+    if (!did) {
+      logAction('RejectInvitationMissingDid');
+      return;
+    }
+    logAction('RejectInvitationAttempt', {invitationId: id});
+    mutateInvitation(
+      {id, did, action: 'reject'},
+      {
+        onSuccess: () =>
+          logAction('RejectInvitationSuccess', {invitationId: id}),
+        onError: err =>
+          logAction('RejectInvitationError', {message: err?.message}),
+      },
+    );
   };
 
   const handleApproveRecovery = async id => {
     try {
       const rec = recData.map(e => e.node).find(r => r.id === id);
-      if (!rec) return;
-
-      const dni = rec.governmentIdentifier;
-      const fp = await new Promise((res, rej) =>
-        findPublicDni(
-          {identifier: dni},
-          {
-            onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error'))),
-            onError: rej,
-          },
-        ),
+      if (!rec || !did) {
+        logAction('ApproveRecoveryMissingData', {id, hasDid: !!did});
+        return;
+      }
+      logAction('ApproveRecoveryAttempt', {recoveryId: id});
+      mutateRecovery(
+        {id, action: 'approve', did},
+        {
+          onSuccess: () =>
+            logAction('ApproveRecoverySuccess', {recoveryId: id}),
+          onError: err =>
+            logAction('ApproveRecoveryError', {message: err?.message}),
+        },
       );
-      const ownerAccount = fp.accountAddress;
-      const ownerGuardianCt = fp.guardianAddress;
-
-      const {payloadQr} = await getSecrets();
-      // await approveRecoveryOnChain(
-      //   CHAIN,
-      //   payloadQr.privKey,
-      //   payloadQr.account,
-      //   ownerGuardianCt,
-      //   ownerAccount,
-      // );
-
-      mutateRecovery({id, action: 'approve'});
-    } catch (e) {}
+    } catch (e) {
+      logAction('ApproveRecoveryException', {message: e?.message});
+    }
   };
   const handleRejectRecovery = id => {
-    mutateRecovery({id, action: 'reject'});
+    if (!did) {
+      logAction('RejectRecoveryMissingDid');
+      return;
+    }
+    logAction('RejectRecoveryAttempt', {recoveryId: id});
+    mutateRecovery(
+      {id, action: 'reject', did},
+      {
+        onSuccess: () =>
+          logAction('RejectRecoverySuccess', {recoveryId: id}),
+        onError: err =>
+          logAction('RejectRecoveryError', {message: err?.message}),
+      },
+    );
   };
 
   const invitations = useMemo(
@@ -130,35 +123,16 @@ export default function GuardiansAdmin({navigation}) {
     [invData],
   );
 
-  const handleAccept = id => {};
-  const handleReject = id => {};
-
   const openModal = item => {
+    logAction('GuardiansAdminOpenModal', {id: item?.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
+    logAction('GuardiansAdminCloseModal');
     setModalVisible(false);
     setSelectedGuardian(null);
-  };
-
-  const statusColorKey = {
-    ACCEPTED: 'activeColor',
-    PENDING: 'pendingColor',
-    REJECTED: 'rejectedColor',
-    REMOVED: 'rejectedColor',
-  };
-
-  const statusLabel = {
-    ACCEPTED: String.active,
-    PENDING: String.pending,
-    REJECTED: String.rejected,
-    REMOVED: String.removed ?? 'Removido',
-  };
-
-  const onPressAddGuardian = () => {
-    navigation.navigate(StackNav.AddGuardians);
   };
 
   const renderGuardianOption = ({item}) => {

@@ -17,29 +17,22 @@ import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {useGuardiansInviteQuery} from '../../../data/guardians';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
-import {CHAIN} from '@env';
 import axios from 'axios';
-import {
-  guardianHashFrom,
-  inviteGuardianOnChain,
-} from '../../../api/guardianOnChain';
 import {getSecrets} from '../../../utils/Cifrate';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-export default function AddGuardians({navigation}) {
+export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
   const {
     mutateAsync: sendInvitation,
     isLoading: loading,
-    error,
   } = useGuardiansInviteQuery();
   const [carnet, setCarnet] = useState('');
+  const payloadQr = useSelector(state => state.wallet.payload);
 
-  const [dni, setDni] = useState('');
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [msg, setMsg] = useState('');
@@ -47,15 +40,19 @@ export default function AddGuardians({navigation}) {
   const [modalMessage, setModalMessage] = useState('');
   const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('AddGuardians', true);
-  const onPressNext = () => {};
+  const {logAction, logNavigation} = useNavigationLogger(
+    'AddGuardians',
+    true,
+  );
   const onPressSearch = () => {
+    logAction('SearchGuardianAttempt', {identifier: carnet.trim()});
     setMsg('');
     findPublicDni(
       {identifier: carnet.trim()},
       {
         onSuccess: data => {
           if (!data.ok) {
+            logAction('SearchGuardianFailed', {message: data.message});
             setMsg(data.message || 'Persona no encontrada');
             return;
           }
@@ -66,27 +63,41 @@ export default function AddGuardians({navigation}) {
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });
+          logAction('SearchGuardianSuccess', {did: data.did});
         },
-        onError: err => setMsg(err?.response?.data?.error ?? err.message),
+        onError: err => {
+          const message = err?.response?.data?.error ?? err.message;
+          logAction('SearchGuardianError', {message});
+          setMsg(message);
+        },
       },
     );
   };
   const onPressInvitation = async () => {
     if (!candidate) return;
-
-    const {payloadQr} = await getSecrets();
-
+    logAction('InviteGuardianAttempt', {guardianId: candidate.did});
     setMsg('');
-    const invitateAddress = guardianHashFrom(candidate.accountAddress);
-    const ownerPk = payloadQr.privKey;
-    const guardianCt = payloadQr.guardian;
 
     try {
-      // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
-      const data = await sendInvitation({
+      let inviterPayload = payloadQr;
+      if (!inviterPayload) {
+        const secrets = await getSecrets();
+        inviterPayload = secrets?.payloadQr ?? null;
+      }
+
+      if (!inviterPayload?.did) {
+        logAction('InviteGuardianMissingPayload');
+        setMsg('No se pudo recuperar la información de la cuenta. Intenta nuevamente.');
+        return;
+      }
+
+      const requestPayload = {
+        inviterDid: inviterPayload.did,
         guardianId: candidate.did,
         nickname: nick,
-      });
+      };
+      logAction('InviteGuardianSend', requestPayload);
+      const data = await sendInvitation(requestPayload);
       setModalMessage(
         `Invitación enviada. ${
           candidate.fullName || '(sin nombre)'
@@ -95,18 +106,21 @@ export default function AddGuardians({navigation}) {
       setModalVisible(true);
       setCandidate(null);
       setNick('');
+      logNavigation('GuardiansInvitationSent');
+      logAction('InviteGuardianSuccess', {guardianId: data?.guardianId ?? candidate.did});
     } catch (err) {
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : err.message;
+      logAction('InviteGuardianError', {message});
       setMsg(message);
     }
   };
 
   return (
     <CSafeAreaView testID="addGuardiansContainer" addTabPadding={false}>
-      <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
+  <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
       <KeyBoardAvoidWrapper testID="addGuardiansKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <CText testID="addGuardiansTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.addGuardianSubtitle}{' '}
@@ -197,7 +211,10 @@ export default function AddGuardians({navigation}) {
         visible={modalVisible}
         title="¡Invitación enviada!"
         message={modalMessage}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          logAction('InviteGuardianModalClosed');
+          setModalVisible(false);
+        }}
       />
     </CSafeAreaView>
   );

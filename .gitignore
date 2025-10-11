@@ -5,7 +5,17 @@ node_modules/
 android/
 ios/
 *.log
-.env# OSX
+
+# Entornos locales
+.env
+.env.dev
+.env.prod
+.env_real
+
+# Salidas de pruebas automatizadas
+/.maestro/test_output_directory
+
+# OSX
 #
 .DS_Store
 
@@ -81,8 +91,8 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
-.env
-.env_real
-/.maestro/test_output_directory
-
+# Scripts auxiliares
 .sh
+
+# Build outputs
+android/app/src/main/assets/

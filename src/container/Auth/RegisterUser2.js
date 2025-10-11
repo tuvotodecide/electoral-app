@@ -18,15 +18,13 @@ import DniExistsModal from '../../components/modal/DniExistsModal';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
-import {useCheckDni} from '../../data/registry';
+import wira from 'wira-sdk';
+import {BACKEND_IDENTITY} from '@env';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser2({navigation, route}) {
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RegisterUser2',
-    true,
-  );
-  const isRecovery = route?.params?.isRecovery;
+  const {logAction, logNavigation} = useNavigationLogger('RegisterUser2', true);
+  const isRecovery = !!route?.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
@@ -38,17 +36,10 @@ export default function RegisterUser2({navigation, route}) {
   const [submitting, setSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
 
-  const {mutate: checkDni} = useCheckDni();
   const dispatch = useDispatch();
+  const isFormValid = () => idNumber.trim() !== '' && frontImage && backImage;
 
-  const isFormValid = () =>
-    idNumber.trim() !== '' && frontImage && backImage;
-
-  const closeModal = () =>
-    setModalVisible({
-      visible: false,
-      message: '',
-    });
+  const closeModal = () => setModalVisible({visible: false, message: ''});
 
   useEffect(() => {
     const trimmed = idNumber.trim();
@@ -65,7 +56,7 @@ export default function RegisterUser2({navigation, route}) {
   const handleCheckAndNext = useCallback(
     debounce(() => {
       logAction('submit_attempt', {
-        isRecovery: !!isRecovery,
+        isRecovery,
         hasFrontImage: !!frontImage,
         hasBackImage: !!backImage,
       });
@@ -84,51 +75,59 @@ export default function RegisterUser2({navigation, route}) {
         return;
       }
 
-      checkDni(
-        {identifier: trimmedId},
-        {
-          onMutate: () => {
-            setSubmitting(true);
-            setModalVisible({visible: false, message: ''});
-          },
-          onSuccess: response => {
-            setSubmitting(false);
-            if (response.ok && !isRecovery) {
-              setModalVisible({
-                visible: true,
-                message: String.DniExists,
-              });
-              logAction('dni_exists_modal_shown', {isRecovery: !!isRecovery});
-              return;
-            }
+      setSubmitting(true);
+      setModalVisible({visible: false, message: ''});
 
-            navigation.navigate(AuthNav.RegisterUser3, {
-              dni: trimmedId,
-              frontImage,
-              backImage,
-              isRecovery,
+      const api = new wira.RegistryApi(BACKEND_IDENTITY);
+      api
+        .registryCheckByDni(trimmedId)
+        .then(({exists}) => {
+          setSubmitting(false);
+
+          if (exists && !isRecovery) {
+            setModalVisible({
+              visible: true,
+              message: String.DniExists,
             });
-            logNavigation('go_to_register_step_3');
-          },
-          onError: err => {
-            setSubmitting(false);
-            const msg =
-              err?.response?.data?.message || err.message || String.unknowerror;
-            logAction('dni_check_error', {
-              message: msg,
-              name: err?.name,
+            logAction('dni_exists_modal_shown', {isRecovery});
+            return;
+          }
+
+          if (!exists && isRecovery) {
+            setModalVisible({
+              visible: true,
+              message: String.DniNotFound,
             });
-            Alert.alert(String.errorCi, msg);
-          },
-          onSettled: () => setSubmitting(false),
-        },
-      );
+            logAction('dni_not_found_modal_shown', {isRecovery});
+            return;
+          }
+
+          navigation.navigate(AuthNav.RegisterUser3, {
+            dni: trimmedId,
+            frontImage,
+            backImage,
+            isRecovery,
+          });
+          logNavigation('go_to_register_step_3', {
+            dni: trimmedId,
+            isRecovery,
+          });
+        })
+        .catch(err => {
+          setSubmitting(false);
+          const msg =
+            err?.response?.data?.message || err.message || String.unknowerror;
+          logAction('dni_check_error', {
+            message: msg,
+            name: err?.name,
+          });
+          Alert.alert(String.errorCi, msg);
+        });
     }, 500),
     [
       idNumber,
       frontImage,
       backImage,
-      checkDni,
       dispatch,
       navigation,
       logAction,
@@ -161,10 +160,21 @@ export default function RegisterUser2({navigation, route}) {
             testID="idVerificationSubtitle"
             type={'B16'}
             align={'center'}>
+            {isRecovery ? String.toRecovery : String.toContinue}
             {String.idVerificationSubtitle}
           </CText>
 
-          <CText testID="idLabel" type="B14" style={styles.mt10}>
+          <CText
+            testID="idVerificationSubtitleExtra"
+            type={'B16'}
+            align={'center'}>
+            {String.idVerificationSubtitle}
+          </CText>
+
+          <CText
+            testID="idLabel"
+            type="B14"
+            style={styles.mt10}>
             {String.idLabel}
           </CText>
           <TextInput

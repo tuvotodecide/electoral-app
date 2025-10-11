@@ -13,9 +13,9 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
-import idCardAnalyzer from '../../utils/idCardAnalyzer';
 import {normalizeOcrForUI} from '../../utils/issuerClient';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
 
 function onlyDigits(s = '') {
   return (s || '').replace(/\D/g, '');
@@ -41,6 +41,9 @@ export default function RegisterUser5({navigation, route}) {
     });
     (async () => {
       try {
+        const idCardAnalyzer = wira.idCardAnalyzer;
+        await idCardAnalyzer.ensureClient();
+
         const res = await idCardAnalyzer.analyze(
           frontImage?.uri,
           backImage?.uri,

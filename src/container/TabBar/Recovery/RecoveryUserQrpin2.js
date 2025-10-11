@@ -1,9 +1,8 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin2.js
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
+import {StyleSheet, View, Alert} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
-import {SHA256} from 'crypto-js';
 
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
@@ -20,12 +19,15 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME} from '@env';
+
+const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryUserQrPin2({navigation, route}) {
   const {originalPin, payload} = route.params;
@@ -35,27 +37,21 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const [showError, setShowError] = useState(false);
   const dispatch = useDispatch();
   const otpRef = useRef(null);
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryUserQrpin2', true);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RecoveryUserQrpin2',
+    true,
+  );
 
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    logAction('RecoveryPinScreenLoaded');
     return () => clearTimeout(t);
   }, []);
 
   const finish = async () => {
     try {
-      const bundle = await createBundleFromPrivKey(otp, payload.privKey);
-      const pinHash = SHA256(otp.trim()).toString();
-
-      
-      await saveSecrets(
-        otp,
-        payload,
-        false, 
-        bundle, 
-        pinHash, 
-      );
+      logAction('RecoveryPinFinishAttempt');
+      await recoveryService.saveData(payload, otp.trim(), PROVIDER_NAME);
 
       dispatch(setSecrets(payload));
       dispatch(
@@ -67,17 +63,26 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       dispatch(setAuthenticated(true));
       await startSession(null);
 
+      logNavigation(AuthNav.LoginUser);
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
+      logAction('RecoveryPinFinishSuccess');
     } catch (err) {
+      logAction('RecoveryPinFinishError', {message: err?.message});
       Alert.alert('Error', err.message);
     }
   };
 
   const handleConfirmPin = () => {
-    if (otp === originalPin) finish();
+    const matchesOriginal = otp === originalPin;
+    logAction('RecoveryPinConfirmAttempt', {
+      matchesOriginal,
+      length: otp.length,
+    });
+    if (matchesOriginal) finish();
     else {
       setShowError(true);
       setOtp('');
+      logAction('RecoveryPinMismatch');
     }
   };
 

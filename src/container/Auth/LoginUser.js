@@ -22,7 +22,6 @@ import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
 
 import String from '../../i18n/String';
-import {checkPin, getSecrets} from '../../utils/Cifrate';
 import {clearWallet, setSecrets} from '../../redux/action/walletAction';
 import InfoModal from '../../components/modal/InfoModal';
 import {incAttempts, isLocked, resetAttempts} from '../../utils/PinAttempts';
@@ -35,8 +34,9 @@ import {getBioFlag} from '../../utils/BioFlag';
 import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
 import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
-import {decryptVCWithPin} from '../../utils/vcCrypto';
-import {migrateFromBackendIfNeeded} from '../../utils/migrateLegacy';
+import {migrateIfNeeded} from '../../utils/migrateLegacy';
+import wira from 'wira-sdk';
+import {guardianApi} from '../../data/guardians';
 import {
   BACKEND,
   BACKEND_BLOCKCHAIN,
@@ -45,6 +45,7 @@ import {
   GATEWAY_BASE,
   BUNDLER,
   BUNDLER_MAIN,
+  PROVIDER_NAME,
 } from '@env';
 
 const EXTERNAL_ENDPOINTS = Object.fromEntries(
@@ -64,12 +65,12 @@ const buildNetworkDebug = error => {
     return {};
   }
 
-  const apiDebug = error.apiDebug || {};
+  const apiDebug = error?.apiDebug || {};
   const constructedUrl = (() => {
     if (apiDebug.url) return apiDebug.url;
     if (apiDebug.requestUrl) return apiDebug.requestUrl;
     if (apiDebug.failingUrl) return apiDebug.failingUrl;
-    const cfg = error.config;
+    const cfg = error?.config;
     if (cfg?.url) {
       if (cfg.baseURL) {
         const combined = `${cfg.baseURL}${cfg.url}`;
@@ -84,23 +85,23 @@ const buildNetworkDebug = error => {
   })();
 
   return {
-    errorMessage: error.message,
-    errorName: error.name,
+    errorMessage: error?.message,
+    errorName: error?.name,
     failingUrl: constructedUrl,
-    method: apiDebug.method ?? error.config?.method ?? null,
-    status: apiDebug.status ?? error.response?.status ?? null,
-    statusText: apiDebug.statusText ?? error.response?.statusText ?? null,
+    method: apiDebug.method ?? error?.config?.method ?? null,
+    status: apiDebug.status ?? error?.response?.status ?? null,
+    statusText: apiDebug.statusText ?? error?.response?.statusText ?? null,
     requestData:
       apiDebug.requestData ??
-      (typeof error.config?.data === 'string'
-        ? error.config?.data
-        : error.config?.data ?? null),
+      (typeof error?.config?.data === 'string'
+        ? error?.config?.data
+        : error?.config?.data ?? null),
     responseData:
       apiDebug.responseData ??
-      (typeof error.response?.data === 'string'
-        ? error.response?.data
-        : error.response?.data ?? null),
-    stack: error.stack,
+      (typeof error?.response?.data === 'string'
+        ? error?.response?.data
+        : error?.response?.data ?? null),
+    stack: error?.stack,
   };
 };
 
@@ -129,12 +130,10 @@ export default function LoginUser({navigation}) {
   const dispatch = useDispatch();
   const bioUnlocked = useRef(false);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState({visible: false, msg: '', onClose: null});
-  const hideModal = () => setModal({visible: false, msg: '', onClose: null});
+  const [modal, setModal] = useState({visible: false, msg: '', btn: String.understand, onClose: null});
+  const hideModal = () => setModal({visible: false, msg: '', btn: String.understand, onClose: null});
 
   const otpRef = useRef(null);
-
-  const toastError = msg => setModal({visible: true, msg});
 
   async function unlock(payload, _jwt, pin) {
     try {
@@ -217,46 +216,66 @@ export default function LoginUser({navigation}) {
   };
 
   async function verifyPin(code) {
-    await ensureBundle();
     try {
-      const pinOk = await checkPin(code);
-      if (!pinOk) return {ok: false, type: 'bad_pin'};
+      const response = wira.getWiraData(PROVIDER_NAME);
+      if (response) {
+        const userData = await wira.signIn(response, code.trim());
 
-      const stored = await getSecrets();
-      if (!stored) return {ok: false, type: 'no_local_secrets'};
+        try {
+          await guardianApi.deviceToken({
+            token: await wira.DeviceId.getDeviceId(),
+            platform: Platform.OS.toUpperCase(),
+            userDid: userData.did,
+          });
+        } catch (apiError) {
+          logNetworkIssue('guardianApi.deviceToken', apiError, {
+            stage: 'verifyPin',
+            context: 'deviceToken',
+          });
+        }
 
-      const localCipher = stored.payloadQr?.vcCipher;
-      if (localCipher) {
-        const vc = await decryptVCWithPin(localCipher, code.trim());
-        return {ok: true, payload: {...stored.payloadQr, vc}, jwt: null};
+        return {ok: true, payload: userData, jwt: null};
       }
 
-      const mig = await migrateFromBackendIfNeeded(stored, code.trim());
+      const mig = await migrateIfNeeded(code.trim());
       if (mig.ok) {
-        const vc = await decryptVCWithPin(mig.payload.vcCipher, code.trim());
-        return {ok: true, payload: {...mig.payload, vc}, jwt: null};
+        const userData = await wira.signIn(mig.payload, code.trim());
+        return {ok: true, payload: userData, jwt: null};
       }
 
-      logNetworkIssue('migrateFromBackendIfNeeded', mig.error ?? null, {
+      const reason = mig.reason || 'unknown';
+      if (reason === 'bad_pin') {
+        return {ok: false, type: 'bad_pin'};
+      }
+
+      if (reason === 'no_local_secrets') {
+        logNetworkIssue('migrateIfNeeded:no_local', null, {
+          stage: 'verifyPin',
+          reason,
+        });
+        return {ok: false, type: 'no_local_secrets'};
+      }
+
+      logNetworkIssue('migrateIfNeeded_failed', mig.error ?? null, {
         stage: 'verifyPin',
-        reason: mig.reason || 'unknown',
-        endpoint: mig.endpoint ?? null,
-        response: mig.response ?? null,
+        reason,
       });
 
       return {
         ok: false,
         type: 'migrate_failed',
-        reason: mig.reason || 'unknown',
+        reason,
         error: mig.error ?? null,
-        endpoint: mig.endpoint ?? null,
-        response: mig.response ?? null,
       };
     } catch (err) {
       logNetworkIssue('verifyPin', err, {
         stage: 'verifyPin',
         attemptCode: code,
       });
+      console.log(err);
+      if (err?.message === 'Invalid PIN') {
+        return {ok: false, type: 'bad_pin'};
+      }
       return {ok: false, type: 'unexpected', error: err};
     }
   }
@@ -268,111 +287,93 @@ export default function LoginUser({navigation}) {
       setModal({
         visible: true,
         msg: 'Has agotado tus 5 intentos.\nEspera 15 minutos o recupera tu cuenta con tus guardianes.',
+        btn: String.understand,
       });
       navigation.replace(AuthNav.AccountLock);
       return;
     }
 
     setLoading(true);
-    try {
-      const res = await verifyPin(code.trim());
-
-      if (res.ok) {
-        await unlock(res.payload, res.jwt, code.trim());
-        return;
-      }
-      setOtp('');
-      if (res.type === 'bad_pin') {
-        const n = await incAttempts();
-
-        setModal({
-          visible: true,
-          msg:
-            n >= 5
-              ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
-              : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
-          onClose: hideModal,
-        });
-        if (n >= 5) {
-          dispatch(clearWallet());
-          dispatch(clearAuth());
+    setTimeout(() => {
+      verifyPin(code.trim())
+      .then(async (res) => {
+        if (res.ok) {
+          await unlock(res.payload, res.jwt, code.trim());
+          return;
         }
-        return;
-      }
+        setOtp('');
+        if (res.type === 'bad_pin') {
+          const n = await incAttempts();
 
-      // if (res.type === 'dni_not_found') {
-      //   setModal({
-      //     visible: true,
-      //     msg:
-      //       'No encontramos tu registro.\n' +
-      //       'Es probable que el servidor de credenciales se haya reiniciado .\n\n' +
-      //       'Debes volver a registrarte para emitir una nueva credencial.',
-      //     onClose: () => {
-      //       hideModal();
-      //       navigation.reset({
-      //         index: 0,
-      //         routes: [
-      //           {
-      //             name: StackNav.AuthNavigation,
-      //             params: {screen: AuthNav.RegisterUser2},
-      //           },
-      //         ],
-      //       });
-      //     },
-      //   });
-      //   return;
-      // }
-      if (res.type === 'migrate_failed') {
-        logNetworkIssue('migrate_failed', res.error ?? null, {
-          reason: res.reason,
-          endpoint: res.endpoint ?? null,
-          response: res.response ?? null,
+          setModal({
+            visible: true,
+            msg:
+              n >= 5
+                ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
+                : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+          });
+          if (n >= 5) {
+            dispatch(clearWallet());
+            dispatch(clearAuth());
+          }
+          return;
+        }
+
+        if (res.type === 'migrate_failed') {
+          logNetworkIssue('migrate_failed', res.error ?? null, {
+            reason: res.reason,
+          });
+          setModal({
+            visible: true,
+            msg:
+              'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
+              'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
+            onClose: hideModal,
+          });
+          return;
+        }
+
+        if (res.type === 'no_local_secrets') {
+          logNetworkIssue('no_local_secrets', null, {
+            message: 'No se encontraron datos locales de billetera.',
+          });
+          setModal({
+            visible: true,
+            msg: String.notRegistered,
+            btn: String.ok,
+            onClose: () => {
+              hideModal();
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: StackNav.AuthNavigation,
+                    params: {screen: AuthNav.RegisterUser1},
+                  },
+                ],
+              });
+            },
+          });
+          return;
+        }
+
+        logNetworkIssue('unexpected_verify_result', res.error ?? null, {
+          resultType: res.type,
         });
         setModal({
           visible: true,
-          msg:
-            'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
-            'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
+          msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
           onClose: hideModal,
         });
-        return;
-      }
-      if (res.type === 'no_local_secrets') {
-        logNetworkIssue('no_local_secrets', null, {
-          message: 'No se encontraron datos locales de billetera.',
+      })
+        .catch(err => {
+          logNetworkIssue('verifyPin:catch', err, {stage: 'onCodeFilled'});
+          console.log(err);
+        })
+        .finally(() => {
+          setLoading(false);
         });
-        setModal({
-          visible: true,
-          msg:
-            'No se encontraron datos locales de tu billetera.\n' +
-            'Debes volver a registrarte para emitir una nueva credencial.',
-          onClose: () => {
-            hideModal();
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: StackNav.AuthNavigation,
-                  params: {screen: AuthNav.RegisterUser2},
-                },
-              ],
-            });
-          },
-        });
-        return;
-      }
-
-      logNetworkIssue('unexpected_verify_result', res.error ?? null, {
-        resultType: res.type,
-      });
-      setModal({
-        visible: true,
-        msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
-        onClose: hideModal,
-      });
-    } finally {
-      setLoading(false);
-    }
+    }, 10)
   };
 
   useEffect(() => {
@@ -444,7 +445,7 @@ export default function LoginUser({navigation}) {
           setModal({
             visible: true,
             msg: 'Necesitamos tu PIN una sola vez para descifrar tu credencial y completar el inicio de sesión con huella.',
-            onClose: hideModal,
+            btn: String.understand,
           });
           return;
         }
@@ -453,7 +454,7 @@ export default function LoginUser({navigation}) {
         setModal({
           visible: true,
           msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
-          onClose: hideModal,
+          btn: String.understand,
         });
       } catch {
         setLoading(false);
@@ -472,11 +473,12 @@ export default function LoginUser({navigation}) {
   return (
     <CSafeAreaViewAuth testID="loginUserSafeArea">
       <View
+        testID="loginUserBackground"
         style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
       />
 
-      <CHeader color={colors.white} isHideBack />
-      <View style={localStyle.imageContainer}>
+      <CHeader color={colors.white} isHideBack testID="loginUserHeader" />
+      <View style={localStyle.imageContainer} testID="loginUserLogoContainer">
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
       <KeyBoardAvoidWrapper
@@ -533,7 +535,7 @@ export default function LoginUser({navigation}) {
         />
       </View>
       {loading && (
-        <View style={localStyle.loadingOverlay}>
+        <View style={localStyle.loadingOverlay} testID="loginUserLoading">
           <ActivityIndicator size="large" color={colors.white} />
           <CText type="B16" color={colors.white} style={styles.mt10}>
             {String.loading}
@@ -545,8 +547,10 @@ export default function LoginUser({navigation}) {
         visible={modal.visible}
         title={String.walletAccess}
         message={modal.msg}
-        buttonText={String.understand}
+        buttonText={modal.btn}
+        closeCornerBtn={true}
         onClose={modal.onClose || hideModal}
+        onCloseCorner={hideModal}
       />
     </CSafeAreaViewAuth>
   );
