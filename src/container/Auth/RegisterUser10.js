@@ -25,7 +25,6 @@ import {setAddresses} from '../../redux/slices/addressSlice';
 import {
   normalizeOcrForUI,
 } from '../../utils/issuerClient';
-import {setBioFlag} from '../../utils/BioFlag';
 import wira from 'wira-sdk';
 import {BACKEND_IDENTITY, BUNDLER, SPONSORSHIP_POLICY, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME} from '@env';
 
@@ -135,15 +134,14 @@ export default function RegisterUser10({navigation, route}) {
         await yieldUI();
         await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
         if(useBiometry) {
-          await setBioFlag(true);
+          await wira.Biometric.setBioFlag(true);
         }
 
-        try {
-          await registerer.storeDataOnServer();
-        } catch (e) {
-          // Si el backend responde 400 con “discoverableHash ya utilizado” puedes:
-          // - Permitir continuar (usuario ya estaba registrado)
-          // - O mostrar modal. Por ahora, dejamos continuar.
+        const response = await registerer.storeDataOnServer();
+        if (!response.ok) {
+          throw new Error(
+            `Error al registrar tu cuenta.`,
+          );
         }
         
         await clearDraft();

@@ -65,6 +65,7 @@ export const KEYCHAIN_ID = 'finline.wallet.vc';
 export const FLAGS_KEY = 'FINLINE_FLAGS';
 export const BIO_KEY = 'BIO_ENABLED';
 export const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
+export const GUARDIAN_RECOVERY_DNI = 'GUARDIAN_RECOVERY_DNI';
 export const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 export const KEY_OFFLINE = '@offline_queue_v1';
 export const STORAGE_KEY = 'PROVISION_V1';

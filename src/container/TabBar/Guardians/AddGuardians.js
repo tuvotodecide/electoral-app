@@ -20,10 +20,6 @@ import {useGuardiansInviteQuery} from '../../../data/guardians';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
 import axios from 'axios';
-import {
-  guardianHashFrom,
-} from '../../../api/guardianOnChain';
-import {getSecrets} from '../../../utils/Cifrate';
 
 export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
@@ -72,7 +68,7 @@ export default function AddGuardians() {
       // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
       const data = await sendInvitation({
         inviterDid: payloadQr.did,
-        guardianId: candidate.did,
+        guardianDid: candidate.did,
         nickname: nick,
       });
       setModalMessage(

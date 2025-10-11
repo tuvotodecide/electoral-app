@@ -7,6 +7,7 @@ import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrappe
 import {styles} from '../../../themes';
 import {
   getHeight,
+  GUARDIAN_RECOVERY_DNI,
   moderateScale,
   PENDING_OWNER_ACCOUNT,
   PENDING_OWNER_GUARDIAN_CT,
@@ -27,6 +28,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
+import wira from 'wira-sdk';
+import LoadingModal from '../../../components/modal/LoadingModal';
 
 
 
@@ -37,12 +40,16 @@ const statusColorKey = {
   REMOVED: 'rejectedColor',
 };
 
-export default function MyGuardiansStatus({navigation, route}) {
+export default function MyGuardiansStatus({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  const dni = route.params?.dni;
   const deviceId = useRef();
 
   const [ready, setReady] = useState(false);
+  const [modal, setModal] = useState({
+    visible: false,
+    message: '',
+    isLoading: false,
+  });
 
   // Mantén tu firma original del hook; el segundo arg puede ser "enabled/ready" según tu implementación
   const {
@@ -53,23 +60,17 @@ export default function MyGuardiansStatus({navigation, route}) {
 
   // Normaliza para que siempre existan arrays y evita "map of undefined"
   const safeDetail = useMemo(() => {
-    const d = detailRaw?.data ?? detailRaw ?? {};
+    const d = detailRaw ?? {};
     return {
       ...d,
-      pending: Array.isArray(d?.pending) ? d.pending : [],
-      approved: Array.isArray(d?.approved) ? d.approved : [],
-      rejected: Array.isArray(d?.rejected) ? d.rejected : [],
+      approved: Array.isArray(d?.votes) ? d.votes : [],
+      rejected: Array.isArray(d?.votes) ? d.votes : [],
     };
   }, [detailRaw]);
 
   const guardians = useMemo(() => {
-    return [
-      ...safeDetail.pending.map((g) => ({...g, status: 'PENDING'})),
-      ...safeDetail.approved.map((g) => ({...g, status: 'ACCEPTED'})),
-      ...safeDetail.rejected.map((g) => ({...g, status: 'REJECTED'})),
-    ];
-  }, [safeDetail.pending, safeDetail.approved, safeDetail.rejected]);
-
+    return safeDetail?.votes ?? [];
+  }, [safeDetail]);
  
 
   const statusLabel = {
@@ -82,43 +83,45 @@ export default function MyGuardiansStatus({navigation, route}) {
   useEffect(() => {
     if (!safeDetail?.ok) return;
 
+    const initRecovery = async () => {
+      const recoveryDni = await AsyncStorage.getItem(GUARDIAN_RECOVERY_DNI);
+      if(recoveryDni && recoveryDni.length > 0) {
+        return (new wira.RecoveryService()).recoveryFromGuardians(recoveryDni);
+      }
+
+      setModal({
+        visible: true,
+        message: String.noRecoveryDni,
+        isLoading: false,
+      });
+      throw new Error('No recovery DNI found');
+    }
+
     if (safeDetail.status === 'APPROVED') {
-      navigation.replace(AuthNav.RecoveryUser1Pin, {
-        dni,
-        reqId: safeDetail.id,
+      setModal({
+        visible: true,
+        message: String.guardiansApprovedMessage,
+        isLoading: true,
+      });
+
+      initRecovery()
+      .then((recData) => {
+        setModal({
+          visible: false,
+          title: '',
+          message: '',
+          isLoading: false,
+        })
+        navigation.replace(AuthNav.RecoveryUser1Pin, {recData});
+      }).catch(e => {
+        console.log('Recovery init error:', e);
       });
     } else if (safeDetail.status === 'REJECTED') {
       remove();
       AsyncStorage.setItem(PENDINGRECOVERY, 'false');
       navigation.replace(AuthNav.SelectRecuperation);
     }
-  }, [safeDetail, navigation, dni, remove]);
-
-  useEffect(() => {
-    let t;
-    (async function poll() {
-      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
-      const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
-      if (!ownerAccount || !guardianCt) return;
-
-      try {
-        const {required, current} = await readOnChainApprovals(
-          CHAIN,
-          guardianCt,
-          ownerAccount,
-        );
-        if (current >= required) {
-          navigation.replace(AuthNav.RecoveryUser1Pin, {
-            dni,
-            reqId: safeDetail?.id, // opcional
-          });
-          return;
-        }
-      } catch (_) {}
-      t = setTimeout(poll, 5000);
-    })();
-    return () => clearTimeout(t);
-  }, [dni, navigation, safeDetail?.id]);
+  }, [safeDetail, navigation, remove]);
 
   useEffect(() => {
     getDeviceId().then(id => {
@@ -211,13 +214,17 @@ export default function MyGuardiansStatus({navigation, route}) {
         <CText type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansDescriptionStatus}
         </CText>
-
-        <FlatList
-          data={guardians}
-          keyExtractor={(g, i) => g.guardianId || g.id || String(i)}
-          renderItem={renderGuardianOption}
-          contentContainerStyle={styles.mt20}
-        />
+        <View>
+          { guardians.length > 0 ?
+            <FlatList
+              data={guardians}
+              keyExtractor={(g, i) => g.guardianDid || i}
+              renderItem={renderGuardianOption}
+              contentContainerStyle={styles.mt20}
+            />
+            : <CText align={'center'} marginTop={15}>{String.noGuardians}</CText>
+          }
+        </View>
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomTextContainer}>
         <CButton
@@ -227,6 +234,11 @@ export default function MyGuardiansStatus({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
+      <LoadingModal
+        {...modal}
+        buttonText={String.retryRecovery}
+        onClose={() => navigation.replace(AuthNav.SelectRecuperation)}
+      />
     </CSafeAreaView>
   );
 }

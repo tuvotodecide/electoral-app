@@ -36,7 +36,7 @@ export default function GuardiansAdmin() {
     useRecoveryActionQuery();
 
   const handleAcceptInvitation = async id => {
-    const inv = invData.map(e => e.node).find(i => i.id === id);
+    const inv = invData.find(i => i.id === id);
     if (!inv) return;
     mutateInvitation({id, did: userData.did, action: 'accept'});
   };
@@ -45,26 +45,22 @@ export default function GuardiansAdmin() {
   };
 
   const handleApproveRecovery = async id => {
-    try {
-      const rec = recData.map(e => e.node).find(r => r.id === id);
-      if (!rec) return;
-      mutateRecovery({id, action: 'approve', did: userData.did});
-    } catch (e) {}
+    mutateRecovery({id, action: 'approve', did: userData.did});
   };
   const handleRejectRecovery = id => {
     mutateRecovery({id, action: 'reject', did: userData.did});
   };
 
   const invitations = useMemo(
-    () => invData.map(e => e.node).filter(i => i.status === 'PENDING'),
+    () => invData.filter(i => i.status === 'PENDING'),
     [invData],
   );
   const recoveries = useMemo(
-    () => recData.map(e => e.node).filter(r => r.status === 'PENDING'),
+    () => recData.filter(r => r.status === 'PENDING'),
     [recData],
   );
   const accepted = useMemo(
-    () => invData.map(e => e.node).filter(i => i.status === 'ACCEPTED'),
+    () => invData.filter(i => i.status === 'ACCEPTED'),
     [invData],
   );
 
@@ -87,6 +83,7 @@ export default function GuardiansAdmin() {
     const displayName = secondSegment
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
+    const inviterDid = item.inviterDid.slice(22, 31) + '...' + item.inviterDid.slice(-4);
 
     return (
       <TouchableOpacity
@@ -115,10 +112,10 @@ export default function GuardiansAdmin() {
           </View>
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
-              <CText type="B16">{item.governmentIdentifier}</CText>
+              <CText type="B16">{inviterDid}</CText>
             </View>
             <CText type="R12" color={colors.grayScale500}>
-              {displayName ?? '(sin apodo)'}
+              {displayName === "" ? '(sin apodo)' : displayName}
             </CText>
           </View>
         </View>
@@ -142,6 +139,11 @@ export default function GuardiansAdmin() {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
+    const targetDid = item.targetDid.slice(22, 31) + '...' + item.targetDid.slice(-4);
+    const createDate = new Date(item.createdAt * 1000);
+
+    const createdAt = createDate.toLocaleDateString() + ' ' + createDate.toLocaleTimeString();
+
     return (
       <View
         style={[
@@ -168,11 +170,11 @@ export default function GuardiansAdmin() {
             <Icono name="account" size={moderateScale(24)} />
           </View>
           <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+            <View>
+              <CText type="B16">{displayName === '' ? targetDid : displayName}</CText>
             </View>
             <CText type="R12" color={colors.grayScale500}>
-              {item.governmentIdentifier}
+              {createdAt}
             </CText>
           </View>
         </View>
@@ -182,7 +184,7 @@ export default function GuardiansAdmin() {
             type="B16"
             bgColor={'#4caf50'}
             disabled={loadingRecoveryAction}
-            onPress={() => handleApproveRecovery(item.id)}
+            onPress={() => handleApproveRecovery(item.requestId)}
             containerStyle={[
               localStyle.actionButton,
               {backgroundColor: '#4caf50'},
@@ -192,7 +194,7 @@ export default function GuardiansAdmin() {
             title={String.reject}
             type="B16"
             disabled={loadingRecoveryAction}
-            onPress={() => handleRejectRecovery(item.id)}
+            onPress={() => handleRejectRecovery(item.requestId)}
             containerStyle={[
               localStyle.actionButton,
               {backgroundColor: '#f44336'},
@@ -211,6 +213,8 @@ export default function GuardiansAdmin() {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
+    const inviterDid = item.inviterDid.slice(22, 31) + '...' + item.inviterDid.slice(-4);
+
     return (
       <View
         style={[
@@ -238,10 +242,10 @@ export default function GuardiansAdmin() {
           </View>
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
-              <CText type="B16">{item.governmentIdentifier}</CText>
+              <CText type="B16">{inviterDid}</CText>
             </View>
             <CText type="R12" color={colors.grayScale500}>
-              {displayName ?? '(nombre no visible)'}
+              {displayName === '' ? '(nombre no visible)' : displayName}
             </CText>
           </View>
         </View>

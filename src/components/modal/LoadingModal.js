@@ -38,21 +38,25 @@ export default function LoadingModal({
               {message}
             </CText>
           </ScrollView>
-          <CButton
-            title={buttonText}
-            disabled={isLoading}
-            type="M16"
-            containerStyle={base.button}
-            onPress={onClose}
-          />
-          {secondBtn &&
+          {!isLoading &&
+            <>
             <CButton
-              title={secondBtn}
+              title={buttonText}
+              disabled={isLoading}
               type="M16"
-              containerStyle={[base.button, {backgroundColor: colors.grayScale200}]}
-              textStyle={{color: colors.textColor}}
-              onPress={onSecondPress}
+              containerStyle={base.button}
+              onPress={onClose}
             />
+            { secondBtn &&
+              <CButton
+                title={secondBtn}
+                type="M16"
+                containerStyle={[base.button, {backgroundColor: colors.grayScale200}]}
+                textStyle={{color: colors.textColor}}
+                onPress={onSecondPress}
+              />
+            }
+            </>
           }
         </View>
       </View>

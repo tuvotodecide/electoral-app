@@ -1,84 +1,38 @@
-import axios from 'axios';
-import {BACKEND} from '@env';
-
 import {useDispatch} from 'react-redux';
-import {getDeviceId} from '../../../utils/device-id';
 import {startSession} from '../../../utils/Session';
 import {setSecrets} from '../../../redux/action/walletAction';
 import String from '../../../i18n/String';
 
-import * as Keychain from 'react-native-keychain';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
+import {AuthNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {PENDINGRECOVERY} from '../../../common/constants';
+import {GUARDIAN_RECOVERY_DNI, PENDINGRECOVERY} from '../../../common/constants';
 import {useEffect} from 'react';
 import {ActivityIndicator} from 'react-native-paper';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-import messaging from '@react-native-firebase/messaging';
-import {CHAIN} from '@env';
-const PENDING_REQHASH = 'PENDING_REQHASH';
-const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
-const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
+import {PROVIDER_NAME} from '@env';
+import wira from 'wira-sdk';
 
-import {registerDeviceToken} from '../../../utils/registerDeviceToken';
-import {readOnChainApprovals} from '../../../api/guardianOnChain';
+
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
-  const {originalPin, reqId} = route.params;
+  const {originalPin, recData} = route.params;
   useEffect(() => {
     (async () => {
-      const deviceId = await getDeviceId();
-
-      const ownerAccount = await AsyncStorage.getItem(PENDING_OWNER_ACCOUNT);
-      const guardianCt = await AsyncStorage.getItem(PENDING_OWNER_GUARDIAN_CT);
-      if (!ownerAccount || !guardianCt) return;
-      // const {required, current, executed, expired} = await readOnChainApprovals(
-      //   CHAIN,
-      //   guardianCt,
-      //   ownerAccount,
-      // );
-      // if (current < required) {
-      //   // aún no alcanzó el umbral → volver a status
-      //   navigation.goBack();
-      //   return;
-      // }
-
-      const {data} = await axios.post(
-        `${BACKEND}session/recover/guardian`,
-        {deviceId, newPin: originalPin},
-        {withCredentials: true},
-      );
-      if (!data.ok) {
-        return;
+      try {
+        const data = JSON.parse(recData);
+        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, PROVIDER_NAME)
+        await AsyncStorage.removeItem(GUARDIAN_RECOVERY_DNI);
+        await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+        dispatch(setSecrets(data));
+        await startSession(null);
+        navigation.navigate(AuthNav.LoginUser);
+      } catch (error) {
+        console.log('Recovery finalization error:', error);
+        navigation.replace(AuthNav.SelectRecuperation);
       }
-
-      await Keychain.setGenericPassword(
-        'bundle',
-        JSON.stringify({stored: data.payload, jwt: data.token}),
-        {service: 'walletBundle'},
-      );
-
-      const bundle = await createBundleFromPrivKey(
-        originalPin,
-        data.payload.privKey,
-      );
-
-      await saveSecrets(originalPin, data.payload, false, bundle);
-
-      await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
-
-      dispatch(setSecrets(data.payload));
-
-      await startSession(data.token);
-
-      // await registerDeviceToken();
-      // messaging().onTokenRefresh(registerDeviceToken);
-
-      navigation.navigate(AuthNav.LoginUser);
     })();
   }, []);
 

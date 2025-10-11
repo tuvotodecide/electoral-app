@@ -12,17 +12,22 @@ import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
 import CButton from '../../../components/common/CButton';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import StepIndicator from '../../../components/authComponents/StepIndicator';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
-import {changePin} from '../../../utils/changePin';
-import InfoModal from '../../../components/modal/InfoModal';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+import LoadingModal from '../../../components/modal/LoadingModal';
 
 export default function ChangePinNewConfirm({navigation, route}) {
   const {oldPin, newPin} = route.params;
   const colors = useSelector(state => state.theme.theme);
-  const [modal, setModal] = useState({visible: false, msg: '', title: ''});
+  const [modal, setModal] = useState({
+    visible: false,
+    message: '',
+    isLoading: false,
+    success: false,
+  });
   const [otp, setOtp] = useState('');
 
   const onOtpChange = text => setOtp(text);
@@ -30,28 +35,37 @@ export default function ChangePinNewConfirm({navigation, route}) {
   const finish = async () => {
     if (otp !== newPin) {
       return setModal({
+        ...modal,
         visible: true,
-        msg: 'Los PIN no coinciden',
-        title: 'Error',
+        message: 'Los PIN no coinciden',
       });
     }
     try {
-      await changePin(oldPin, newPin);
+      setModal({
+        ...modal,
+        visible: true,
+        message: String.waitForPinUpdate,
+        isLoading: true,
+      });
+      // Delay to allow modal to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await wira.updatePin(PROVIDER_NAME, BACKEND_IDENTITY, oldPin, newPin);
       setModal({
         visible: true,
-        title: 'Éxito',
-        msg: 'Tu PIN ha sido actualizado correctamente',
+        message: 'Tu PIN ha sido actualizado correctamente',
+        success: true,
+        isLoading: false,
       });
     } catch (err) {
-      setModal({visible: true, title: 'Error', msg: err.message});
+      setModal({visible: true, message: err.message, isLoading: false, success: false});
     }
   };
 
   const closeModal = () => {
-    if (modal.title === 'Éxito') {
+    if (modal.success) {
       navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
     }
-    setModal({visible: false, msg: '', title: ''});
+    setModal({visible: false, message: '', success: false, isLoading: false});
   };
 
   useEffect(() => {
@@ -111,10 +125,9 @@ export default function ChangePinNewConfirm({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <InfoModal
-        visible={modal.visible}
-        title={modal.title}
-        message={modal.msg}
+      <LoadingModal
+        {...modal}
+        buttonText={String.ok}
         onClose={closeModal}
       />
     </CSafeAreaView>

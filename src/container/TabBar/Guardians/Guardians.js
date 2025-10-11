@@ -43,13 +43,12 @@ export default function Guardians({navigation}) {
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const {did} = useSelector(state => state.wallet.payload);
 
-  const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
+  const {data: guardians = [], error, isLoading} = useMyGuardiansAllListQuery({did});
   const {mutate: deleteGuardianId, isLoading: loading} =
     useGuardianDeleteQuery();
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
 
-  const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
     () =>
       guardians.filter(g => g.status === 'ACCEPTED' || g.status === 'PENDING'),
@@ -148,6 +147,7 @@ export default function Guardians({navigation}) {
     const displayName = secondSegment
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
+    const inviterDid = item.guardianDid?.slice(22, 31) + '...' + item.guardianDid?.slice(-4);
 
     const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
@@ -179,7 +179,7 @@ export default function Guardians({navigation}) {
           </View>
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+              <CText type="B16">{displayName === '' ? inviterDid : displayName}</CText>
 
               <View
                 style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>

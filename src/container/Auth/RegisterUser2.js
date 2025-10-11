@@ -119,10 +119,6 @@ export default function RegisterUser2({navigation, route}) {
             {String.idVerificationSubtitle}
           </CText>
 
-          <CText type={'B16'} align={'center'}>
-            {String.idVerificationSubtitle}
-          </CText>
-
           <CText type="B14" style={styles.mt10}>
             {String.idLabel}
           </CText>

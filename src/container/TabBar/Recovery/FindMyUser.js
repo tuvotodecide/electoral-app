@@ -8,6 +8,7 @@ import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrappe
 import {styles} from '../../../themes';
 import {
   getHeight,
+  GUARDIAN_RECOVERY_DNI,
   moderateScale,
   PENDING_OWNER_ACCOUNT,
   PENDING_OWNER_GUARDIAN_CT,
@@ -30,13 +31,13 @@ import {ActivityIndicator} from 'react-native-paper';
 import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClose';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import wira from 'wira-sdk';
 
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
-  const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -97,22 +98,31 @@ export default function FindMyUser({navigation}) {
       {targetDid: candidate.did, deviceId},
       {
         onSuccess: async data => {
-          await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
-          await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
-          await AsyncStorage.setItem(
-            PENDING_OWNER_GUARDIAN_CT,
-            candidate.guardianAddress,
-          );
+          try {
+            await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
+            await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
+            await AsyncStorage.setItem(GUARDIAN_RECOVERY_DNI, carnet.trim());
 
-          setModalMessage(`${String.messagetorecovery}`);
-          setModalVisible(true);
+            if(candidate.guardianAddress) {
+              await AsyncStorage.setItem(
+                PENDING_OWNER_GUARDIAN_CT,
+                candidate.guardianAddress,
+              );
+            }
 
-          setCandidate(null);
-          setNick('');
-          navigation.replace(StackNav.AuthNavigation, {
-            screen: AuthNav.MyGuardiansStatus,
-            params: {dni: carnet.trim()},
-          });
+            setModalMessage(`${String.messagetorecovery}`);
+            setModalVisible(true);
+
+            setCandidate(null);
+            
+            navigation.replace(StackNav.AuthNavigation, {
+              screen: AuthNav.MyGuardiansStatus,
+              params: {dni: carnet.trim()},
+            });
+          } catch (error) {
+            console.log('Error storing data', error);
+          }
+          
         },
       },
     );
