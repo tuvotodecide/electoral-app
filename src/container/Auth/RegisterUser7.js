@@ -24,22 +24,29 @@ export default function RegisterUser7({navigation, route}) {
   const {ocrData, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
-  const onPressNext = () => {
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser7', true);
-    navigation.navigate(AuthNav.RegisterUser8);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser7',
+    true,
+  );
+
+  const navigateToNext = params => {
+    logNavigation(AuthNav.RegisterUser8, params);
+    navigation.navigate(AuthNav.RegisterUser8, params);
   };
 
   const handleActivateBio = async () => {
+    logAction('ActivateBiometryRequest');
     const {available, biometryType} = await biometryAvailability();
 
     if (!available) {
+      logAction('BiometryUnavailable');
       return setModal({
         visible: true,
         msg: 'Este dispositivo no tiene hardware biométrico.',
       });
     }
     if (!biometryType) {
+      logAction('BiometryNotConfigured');
       return setModal({
         visible: true,
         msg: 'No hay huellas ni Face ID registradas. Agrega una en Ajustes del sistema.',
@@ -53,25 +60,34 @@ export default function RegisterUser7({navigation, route}) {
     );
 
     if (!ok) {
+      logAction('BiometryAuthFailed');
       return setModal({
         visible: true,
         msg: 'La autenticación falló. Intenta otra vez o utiliza tu PIN.',
       });
     }
 
-    navigation.navigate(AuthNav.RegisterUser8, {
+    logAction('BiometryAuthSuccess', {biometryType});
+    navigateToNext({
       ocrData,
       useBiometry: true,
       dni,
     });
   };
 
-  const handleLater = () =>
-    navigation.navigate(AuthNav.RegisterUser8, {
+  const handleLater = () => {
+    logAction('SkipBiometrySetup');
+    navigateToNext({
       ocrData,
       useBiometry: false,
       dni,
     });
+  };
+
+  const onCloseModal = () => {
+    logAction('CloseBiometryInfoModal');
+    setModal({visible: false, msg: ''});
+  };
 
   return (
     <CSafeAreaViewAuth testID="registerUser7Container">
@@ -128,7 +144,7 @@ export default function RegisterUser7({navigation, route}) {
         visible={modal.visible}
         title="Atención"
         message={modal.msg}
-        onClose={() => setModal({visible: false, msg: ''})}
+        onClose={onCloseModal}
         testID="registerUser7InfoModal"
       />
     </CSafeAreaViewAuth>

@@ -24,24 +24,33 @@ export default function RegisterUser8({navigation, route}) {
   const [otp, setOtp] = useState('');
 
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser8Pin', true);
-  const onOtpChange = text => setOtp(text);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser8Pin',
+    true,
+  );
+  const onOtpChange = text => {
+    setOtp(text);
+    logAction('PinInputChanged', {length: text.length});
+  };
   const otpRef = useRef(null);
   const onPressContinue = () => {
-    navigation.navigate(AuthNav.RegisterUser9, {
+    logAction('SubmitPin', {length: otp.length});
+    const params = {
       originalPin: otp,
       ocrData,
       useBiometry,
       dni,
-    });
+    };
+    logNavigation(AuthNav.RegisterUser9, params);
+    navigation.navigate(AuthNav.RegisterUser9, params);
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
       otpRef.current?.focusField(0);
-    }, 350);
+    });
 
-    return () => clearTimeout(timeout);
+    return () => task.cancel();
   }, []);
 
   return (

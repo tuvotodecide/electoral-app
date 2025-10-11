@@ -1,5 +1,6 @@
 import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
+import {InteractionManager} from 'react-native';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
@@ -34,10 +35,10 @@ export default function RegisterUser9({navigation, route}) {
   const otpRef = useRef(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
       otpRef.current?.focusField(0);
-    }, 350);
-    return () => clearTimeout(timeout);
+    });
+    return () => task.cancel();
   }, []);
 
   const handleConfirmPin = async () => {
@@ -46,17 +47,19 @@ export default function RegisterUser9({navigation, route}) {
       matchesOriginal,
       length: otp.length,
     });
-    if (otp === originalPin) {
+    if (matchesOriginal) {
       await setTmpPin(otp);
-      logNavigation('go_to_register_user10');
-      navigation.navigate(AuthNav.RegisterUser10, {
+      const params = {
         originalPin: otp,
         ocrData,
 
         useBiometry,
         dni,
-      });
+      };
+      logNavigation(AuthNav.RegisterUser10, params);
+      navigation.navigate(AuthNav.RegisterUser10, params);
     } else {
+      logAction('confirm_pin_failed');
       setShowError(true);
       setOtp('');
     }
@@ -92,7 +95,9 @@ export default function RegisterUser9({navigation, route}) {
               code={otp}
               onCodeChanged={text => {
                 setOtp(text);
+                logAction('confirm_pin_input_change', {length: text.length});
                 if (showError) {
+                  logAction('confirm_pin_error_cleared');
                   setShowError(false);
                 }
               }}

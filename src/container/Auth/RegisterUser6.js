@@ -26,11 +26,19 @@ export default function RegisterUser6({navigation, route}) {
   const [check, setCheck] = useState(false);
 
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser6', true);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser6',
+    true,
+  );
   const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser7, {ocrData, dni});
+    logAction('ConfirmDataNext', {checked: check});
+    const params = {ocrData, dni};
+    logNavigation(AuthNav.RegisterUser7, params);
+    navigation.navigate(AuthNav.RegisterUser7, params);
   };
   const onPressReturn = () => {
+    logAction('ReturnToVerify');
+    logNavigation(AuthNav.RegisterUser2);
     navigation.reset({
       index: 0,
       routes: [
@@ -41,7 +49,13 @@ export default function RegisterUser6({navigation, route}) {
     });
   };
   const onPressRememberMe = () => {
-    setCheck(!check);
+    const nextValue = !check;
+    logAction('ToggleConfirmData', {nextValue});
+    setCheck(nextValue);
+  };
+  const onPressBack = () => {
+    logNavigation(AuthNav.RegisterUser4);
+    navigation.navigate(AuthNav.RegisterUser4);
   };
   const {fullName, governmentIdentifier, dateOfBirth} = ocrData;
 
@@ -57,8 +71,8 @@ export default function RegisterUser6({navigation, route}) {
 
   return (
     <CSafeAreaViewAuth testID="registerUser6Container">
-      <StepIndicator step={6} testID="registerUser6StepIndicator" />
-      <CHeader onPressBack={() => navigation.navigate(AuthNav.RegisterUser4)} testID="registerUser6Header" />
+  <StepIndicator step={6} testID="registerUser6StepIndicator" />
+  <CHeader onPressBack={onPressBack} testID="registerUser6Header" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
