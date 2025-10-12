@@ -35,7 +35,7 @@ const config = {
     extraNodeModules,
     blockList: [/wira-sdk\/node_modules\/react-native\//],
   },
-  watchFolders: [path.resolve(__dirname, '../../wirawallet/wira-sdk/wira-sdk')],
+  watchFolders: [path.resolve(__dirname, '../wira-sdk')],
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

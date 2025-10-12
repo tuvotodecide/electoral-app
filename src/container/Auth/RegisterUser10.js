@@ -99,13 +99,13 @@ export default function RegisterUser10({navigation, route}) {
           step: 'predict',
           dni,
           useBiometry,
+          originalPin: pin,
           ocrData: normalizeOcrForUI(ocrData),
         });
 
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
           BUNDLER,
-          SPONSORSHIP_POLICY,
         );
 
         await registerer.createVC(
