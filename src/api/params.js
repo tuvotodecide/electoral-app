@@ -1,4 +1,4 @@
-import { arbitrum, arbitrumSepolia } from "viem/chains";
+import { arbitrum, arbitrumSepolia, base, baseSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
 import {SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN} from "@env";
@@ -24,6 +24,24 @@ export const availableNetworks = {
     oracle: '0x349E50230C48F245D1707A9250aae97639e2f046',
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x1FEEF5E4302AdE8Ac70Beff5F8bB7270c6a9aba1',
+  },
+  'base-sepolia': {
+    chain: baseSepolia,
+    bundler: BUNDLER,
+    explorer: 'https://sepolia.basescan.org/',
+    nftExplorer: 'https://testnet.routescan.io/nft',
+    oracle: '0x91DB352d9836832364fDa5fFc6d7c8CF6FD78c38',
+    juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
+    attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
+  },
+  'base': {
+    chain: base,
+    bundler: BUNDLER_MAIN,
+    explorer: 'https://basescan.org/',
+    nftExplorer: 'https://routescan.io/nft',
+    oracle: '',
+    juryRole: '',
+    attestationNft: '',
   }
 };
 

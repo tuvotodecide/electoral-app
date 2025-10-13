@@ -165,13 +165,6 @@ export default function RegisterUser2({navigation, route}) {
           </CText>
 
           <CText
-            testID="idVerificationSubtitleExtra"
-            type={'B16'}
-            align={'center'}>
-            {String.idVerificationSubtitle}
-          </CText>
-
-          <CText
             testID="idLabel"
             type="B14"
             style={styles.mt10}>
