@@ -83,7 +83,7 @@ const safeInvokeNavLog = (type, message, data) => {
   try {
     logger(type, message, data ?? null);
   } catch (error) {
-    console.warn('[NavigationLogger] Error al registrar evento', error);
+    //console.warn('[NavigationLogger] Error al registrar evento', error);
   }
 };
 

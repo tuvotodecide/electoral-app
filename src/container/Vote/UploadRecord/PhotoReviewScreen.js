@@ -9,17 +9,17 @@ import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 const PhotoReviewScreen = () => {
-  console.log('[PHOTO-REVIEW] 👁️ PhotoReviewScreen montado');
+  //console.log('[PHOTO-REVIEW] 👁️ PhotoReviewScreen montado');
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {photoUri, tableData} = route.params || {};
-  console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
+/*   console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
     hasPhotoUri: !!photoUri,
     photoUriPreview: photoUri?.substring(0, 50) + '...',
     tableNumber: tableData?.tableNumber || tableData?.numero,
     tableCode: tableData?.codigo,
-  });
+  }); */
 
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
@@ -59,13 +59,13 @@ const PhotoReviewScreen = () => {
 
   // Handler for navigating to the next screen
   const handleNext = () => {
-    console.log('[PHOTO-REVIEW] ➡️ Navegando a PhotoConfirmationScreen');
-    console.log('[PHOTO-REVIEW] 📊 Datos enviados:', {
+    //console.log('[PHOTO-REVIEW] ➡️ Navegando a PhotoConfirmationScreen');
+/*     console.log('[PHOTO-REVIEW] 📊 Datos enviados:', {
       hasPhotoUri: !!photoUri,
       partyResultsCount: partyResults?.length,
       voteSummaryCount: voteSummaryResults?.length,
       tableCode: tableData?.codigo,
-    });
+    }); */
 
     navigation.navigate(StackNav.PhotoConfirmationScreen, {
       photoUri,

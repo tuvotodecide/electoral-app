@@ -349,9 +349,9 @@ const ElectoralLocations = ({navigation, route}) => {
       if (!online) {
         setConfigLoading(false);
         if (dni) {
-          console.log('[ELECTORAL-LOCATIONS] init offline - reading cached vote place', { dni });
+          //console.log('[ELECTORAL-LOCATIONS] init offline - reading cached vote place', { dni });
           const cached = await getVotePlace(dni);
-          console.log('[ELECTORAL-LOCATIONS] cached vote place', { dni, cached });
+          //console.log('[ELECTORAL-LOCATIONS] cached vote place', { dni, cached });
           setCachedVotePlace(cached);
           if (
             route?.params?.targetScreen === 'UnifiedParticipation' &&

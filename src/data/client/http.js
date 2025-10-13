@@ -36,7 +36,7 @@ Axios.interceptors.response.use(
   (error) => {
     const fullUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : 'URL no disponible';
     
-    console.log('Axios Error Details:', {
+    console.error('Axios Error Details:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,
@@ -65,7 +65,7 @@ AxiosMultipart.interceptors.response.use(
   (error) => {
     const fullUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : 'URL no disponible';
     
-    console.log('Axios Multipart Error Details:', {
+    console.error('Axios Multipart Error Details:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,

@@ -123,7 +123,7 @@ export default function FindMyUser({navigation}) {
               params: {dni: carnet.trim()},
             });
           } catch (error) {
-            console.log('Error storing data', error);
+            //console.log('Error storing data', error);
           }
           
         },

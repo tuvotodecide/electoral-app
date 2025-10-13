@@ -41,10 +41,20 @@ export default function RecoveryQr({navigation}) {
     setLoading(true);
     try {
       logAction('RecoveryQrParseAttempt');
+      const start = Date.now();
+      //console.log('[RecoveryQR] recoveryFromQr start', { uri: asset.uri });
       const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
+      const duration = Date.now() - start;
+      const preview = {
+        hasVC: !!dataFromQr?.vc,
+        streamId: dataFromQr?.streamId ?? null,
+        privKeyPresent: !!dataFromQr?.privKey,
+      };
+      //console.log('[RecoveryQR] recoveryFromQr success', { duration, preview });
+
       let newPayload = {
         data: dataFromQr,
-      }
+      };
 
       if(!dataFromQr.vc) {
         if(dataFromQr.streamId && dataFromQr.privKey) {
@@ -58,8 +68,24 @@ export default function RecoveryQr({navigation}) {
         ToastAndroid.show('QR válido', ToastAndroid.SHORT);
       }
     } catch (err) {
-      console.log(err);
-      logAction('RecoveryQrParseError', {message: err?.message});
+      // Detailed error logging for connection / SDK errors
+      const url = err?.config?.url || err?.apiDebug?.url || err?.apiDebug?.requestUrl || err?.request?.uri || null;
+      const status = err?.response?.status ?? null;
+      console.error('[RecoveryQR] recoveryFromQr error', {
+        message: err?.message,
+        code: err?.code ?? null,
+        url,
+        status,
+        responseData: err?.response?.data ?? null,
+        apiDebug: err?.apiDebug ?? null,
+        stack: err?.stack ?? null,
+      });
+      logAction('RecoveryQrParseError', {
+        message: err?.message,
+        code: err?.code ?? null,
+        url,
+        status,
+      });
       setPayload(null);
       setImageUri(null);
       Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');

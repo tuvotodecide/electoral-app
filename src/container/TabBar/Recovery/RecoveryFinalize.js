@@ -33,7 +33,7 @@ export default function RecoveryFinalize({route, navigation}) {
         await startSession(null);
         navigation.navigate(AuthNav.LoginUser);
       } catch (error) {
-        console.log('Recovery finalization error:', error);
+        //console.log('Recovery finalization error:', error);
         navigation.replace(AuthNav.SelectRecuperation);
       }
     })();

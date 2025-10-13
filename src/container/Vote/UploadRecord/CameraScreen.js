@@ -104,12 +104,12 @@ const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
 };
 
 export default function CameraScreen({navigation, route}) {
-  console.log('[CAMERA-SCREEN] 📸 CameraScreen montado');
-  console.log('[CAMERA-SCREEN] 📋 Route params:', {
+  //console.log('[CAMERA-SCREEN] 📸 CameraScreen montado');
+/*   console.log('[CAMERA-SCREEN] 📋 Route params:', {
     hasTableData: !!route.params?.tableData,
     tableNumber: route.params?.tableData?.tableNumber || route.params?.tableData?.numero,
     tableCode: route.params?.tableData?.codigo,
-  });
+  }); */
   
   const camera = useRef(null);
   const backDevice = useCameraDevice('back');
@@ -205,7 +205,7 @@ export default function CameraScreen({navigation, route}) {
   };
 
   const openGallery = async () => {
-    console.log('[CAMERA-SCREEN] 🖼️ Abriendo galería...');
+    //console.log('[CAMERA-SCREEN] 🖼️ Abriendo galería...');
     const options = {
       mediaType: 'photo',
       includeBase64: false,
@@ -538,18 +538,18 @@ export default function CameraScreen({navigation, route}) {
 
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
-    console.log('[CAMERA-SCREEN] 📸 takePhoto iniciado');
+    //console.log('[CAMERA-SCREEN] 📸 takePhoto iniciado');
     if (!camera.current || loading || !isActive) {
-      console.log('[CAMERA-SCREEN] ⚠️ takePhoto bloqueado:', {
+/*       console.log('[CAMERA-SCREEN] ⚠️ takePhoto bloqueado:', {
         hasCamera: !!camera.current,
         loading,
         isActive,
-      });
+      }); */
       return;
     }
 
     setLoading(true);
-    console.log('[CAMERA-SCREEN] 📷 Capturando foto...');
+    //console.log('[CAMERA-SCREEN] 📷 Capturando foto...');
 
     try {
       const result = await camera.current.takePhoto({
@@ -572,15 +572,15 @@ export default function CameraScreen({navigation, route}) {
 
       setPhoto({path: result.path}); // sin cropData
       setPhotoMeta(meta);
-      console.log('[CAMERA-SCREEN] ✅ Foto capturada exitosamente:', {
+/*       console.log('[CAMERA-SCREEN] ✅ Foto capturada exitosamente:', {
         path: result.path?.substring(0, 60) + '...',
         width: meta.width,
         height: meta.height,
-      });
+      }); */
 
       setIsActive(false);
     } catch (err) {
-      console.error('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
+      //console.logerror('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
       // Specific handling for "camera already in use" error
       if (
         err.code === 'device/camera-already-in-use' ||
@@ -610,16 +610,16 @@ export default function CameraScreen({navigation, route}) {
 
   // Analizar acta electoral y navegar a siguiente pantalla
   const handleNext = async () => {
-    console.log('[CAMERA-SCREEN] ➡️ handleNext iniciado');
+    //console.log('[CAMERA-SCREEN] ➡️ handleNext iniciado');
     if (!photo) {
-      console.log('[CAMERA-SCREEN] ⚠️ No hay foto para procesar');
+      //console.log('[CAMERA-SCREEN] ⚠️ No hay foto para procesar');
       return;
     }
     const mesaInfo = route.params?.tableData || {};
-    console.log('[CAMERA-SCREEN] 🌐 Estado de conexión:', {isOnline});
+    //console.log('[CAMERA-SCREEN] 🌐 Estado de conexión:', {isOnline});
     
     if (!isOnline) {
-      console.log('[CAMERA-SCREEN] 📴 Modo offline: navegando sin análisis AI');
+      //console.log('[CAMERA-SCREEN] 📴 Modo offline: navegando sin análisis AI');
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
         tableData: mesaInfo,
@@ -628,23 +628,23 @@ export default function CameraScreen({navigation, route}) {
       return;
     }
     
-    console.log('[CAMERA-SCREEN] 🤖 Iniciando análisis con AI...');
+    //console.log('[CAMERA-SCREEN] 🤖 Iniciando análisis con AI...');
     setAnalyzing(true);
 
     try {
       // Analizar la imagen con Gemini AI
-      console.log('[CAMERA-SCREEN] 📤 Enviando imagen a Gemini AI...');
+      //console.log('[CAMERA-SCREEN] 📤 Enviando imagen a Gemini AI...');
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
         photo.path,
       );
 
-      console.log('[CAMERA-SCREEN] 📊 Resultado de análisis:', {
+/*       console.log('[CAMERA-SCREEN] 📊 Resultado de análisis:', {
         success: analysisResult.success,
         hasData: !!analysisResult.data,
-      });
+      }); */
 
       if (!analysisResult.success) {
-        console.error('[CAMERA-SCREEN] ❌ Error en análisis AI:', analysisResult.error);
+        //console.logerror('[CAMERA-SCREEN] ❌ Error en análisis AI:', analysisResult.error);
         showModal(
           'Error de Análisis',
           analysisResult.error || 'No se pudo analizar la imagen',
@@ -656,14 +656,14 @@ export default function CameraScreen({navigation, route}) {
 
       const aiData = analysisResult.data;
 
-      console.log('[CAMERA-SCREEN] ✔️ Verificando validez del acta:', {
+/*       console.log('[CAMERA-SCREEN] ✔️ Verificando validez del acta:', {
         if_electoral_act: aiData.if_electoral_act,
         image_not_clear: aiData.image_not_clear,
-      });
+      }); */
 
       // Verificar si es una acta electoral válida
       if (!aiData.if_electoral_act) {
-        console.log('[CAMERA-SCREEN] ❌ Imagen no es acta electoral válida');
+        //console.log('[CAMERA-SCREEN] ❌ Imagen no es acta electoral válida');
         showModal(
           'Imagen No Válida',
           'La imagen no corresponde a un acta electoral válida. Por favor, tome otra fotografía del acta.',
@@ -704,13 +704,13 @@ export default function CameraScreen({navigation, route}) {
 
       // Mapear datos de la IA al formato de la app
       const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
-      console.log('[CAMERA-SCREEN] 📋 Datos mapeados:', {
+/*       console.log('[CAMERA-SCREEN] 📋 Datos mapeados:', {
         hasPartyResults: !!mappedData.partyResults,
         hasVoteSummary: !!mappedData.voteSummaryResults,
-      });
+      }); */
 
       // Navegar a la pantalla de revisión con los datos analizados
-      console.log('[CAMERA-SCREEN] ➡️ Navegando a PhotoReviewScreen con datos AI');
+      //console.log('[CAMERA-SCREEN] ➡️ Navegando a PhotoReviewScreen con datos AI');
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
         tableData: mesaInfo,
@@ -718,17 +718,17 @@ export default function CameraScreen({navigation, route}) {
         mappedData: mappedData,
       });
     } catch (error) {
-      console.error('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
+      //console.logerror('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
       const isNetworkError =
         !isOnline ||
         /network|timeout|ENET|ECONN|ECONNABORTED|ECONNRESET|EAI_AGAIN/i.test(
           String(error?.message || ''),
         );
 
-      console.log('[CAMERA-SCREEN] 📊 Es error de red?:', isNetworkError);
+      //console.log('[CAMERA-SCREEN] 📊 Es error de red?:', isNetworkError);
 
       if (isNetworkError) {
-        console.log('[CAMERA-SCREEN] 📴 Error de red: navegando en modo offline');
+        //console.log('[CAMERA-SCREEN] 📴 Error de red: navegando en modo offline');
         navigation.navigate(StackNav.PhotoReviewScreen, {
           photoUri: `file://${photo.path}`,
           tableData: mesaInfo,

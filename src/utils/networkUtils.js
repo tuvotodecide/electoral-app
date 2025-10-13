@@ -10,7 +10,7 @@ export const checkInternetConnection = async () => {
     const state = await NetInfo.fetch();
     return state.isConnected && state.isInternetReachable;
   } catch (error) {
-    console.error('Error checking internet connection:', error);
+    //console.error('Error checking internet connection:', error);
     return false;
   }
 };
@@ -28,7 +28,7 @@ export const validateBackendConnectivity = async () => {
 
   for (const endpoint of endpoints) {
     try {
-      console.log(`Testing connectivity to ${endpoint.name}: ${endpoint.url}`);
+      //console.log(`Testing connectivity to ${endpoint.name}: ${endpoint.url}`);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -52,7 +52,7 @@ export const validateBackendConnectivity = async () => {
       });
 
     } catch (error) {
-      console.error(`Failed to connect to ${endpoint.name}:`, error.message);
+      //console.error(`Failed to connect to ${endpoint.name}:`, error.message);
       results.push({
         name: endpoint.name,
         url: endpoint.url,
@@ -119,7 +119,7 @@ export const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => 
       }
       
       const delay = baseDelay * Math.pow(2, attempt);
-      console.log(`Retry attempt ${attempt + 1} failed, retrying in ${delay}ms:`, error.message);
+      //console.log(`Retry attempt ${attempt + 1} failed, retrying in ${delay}ms:`, error.message);
       
       await new Promise(resolve => setTimeout(resolve, delay));
     }
