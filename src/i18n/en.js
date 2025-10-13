@@ -3,7 +3,11 @@ export default {
   sendInvitation: ' Enviar invitación',
   finishingRecovery: 'Finalizando recuperación',
   return: 'Regresar',
-  guardiansDescriptionStatus: 'Acá verás el estado de aprobación de tu cuenta',
+  guardiansDescriptionStatus: 'Aquí verás el estado de aprobación de tu cuenta',
+  noGuardians: 'Aún no hay votos de tus guardianes',
+  guardiansApprovedTitle: '¡Aprobado!',
+  guardiansApprovedMessage: 'Tus guardianes aprobaron la recuperación de tu cuenta, recuperando datos...',
+  noRecoveryDni: 'No se encontró el DNI de recuperación. Regresa e inténtalo de nuevo.',
   guardiansTitleStatus: 'Estado',
   connectBtnForgot: 'Olvidé mi cuenta',
   messagetorecovery:
@@ -42,6 +46,7 @@ export default {
   continueButton: 'Continuar',
   // page 2
   idVerificationTitle: 'Verificación de identidad',
+  toRecovery: 'Para recuperar tu cuenta, ',
   toContinue: 'Para continuar, ',
   idVerificationSubtitle:
     'necesitamos que subas fotos claras de tu carnet de identidad:',
@@ -51,6 +56,7 @@ export default {
   backLabel: 'Reverso',
   checking: 'Verificando...',
   DniExists: 'Carnet ya registrado',
+  DniNotFound: 'Carnet no encontrado',
   // Page 3
   titleCamera: 'Reconocimiento facial',
   description_camera:
@@ -98,9 +104,12 @@ export default {
   pinAccessDescription1:
     'Confirma el nuevo PIN de acceso. Este PIN protegerá tu acceso a Tu Voto Decide. ',
   pinChange: 'Introduce tu pin actual para confirmar y cambiar tu pin',
+  verifyingPin: 'Verificando PIN...',
+  btnCheckData: 'Verificar datos',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
+  waitForPinUpdate: 'Actualizando PIN, por favor espera...',
   confirmPinDescription:
     'Vuelve a ingresar el mismo PIN para verificar que lo escribiste correctamente.',
   confirmPinButton: 'Confirmar PIN',
@@ -244,6 +253,7 @@ export default {
   pin: 'PIN de acceso',
   retryRecovery: 'Reintentar',
   recoveringData: 'Recuperando datos...',
+  recoveryError: 'Error en la recuperación. Verifica tu CI y PIN.',
 
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto Decide',

@@ -20,7 +20,6 @@ import String from '../../../i18n/String';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUser1Pin({navigation, route}) {
-  const {reqId} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
@@ -31,15 +30,15 @@ export default function RecoveryUser1Pin({navigation, route}) {
 
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUser2Pin, {
+      ...route.params,
       originalPin: otp,
-      reqId
     });
   };
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 300);
+    }, 350);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -70,9 +69,10 @@ export default function RecoveryUser1Pin({navigation, route}) {
               onCodeChanged={onOtpChange}
               secureTextEntry={true}
               editable
+              ref={otpRef}
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

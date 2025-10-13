@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
-import * as Keychain from 'react-native-keychain';
 
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
@@ -29,8 +28,6 @@ import {setAddresses} from '../../redux/slices/addressSlice';
 import {clearAuth, setAuthenticated} from '../../redux/slices/authSlice';
 import {SHA256} from 'crypto-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
-import {getBioFlag} from '../../utils/BioFlag';
 import CButton from '../../components/common/CButton';
 import {commonColor} from '../../themes/colors';
 import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
@@ -128,7 +125,6 @@ export default function LoginUser({navigation}) {
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
   const dispatch = useDispatch();
-  const bioUnlocked = useRef(false);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: '', btn: String.understand, onClose: null});
   const hideModal = () => setModal({visible: false, msg: '', btn: String.understand, onClose: null});
@@ -171,42 +167,11 @@ export default function LoginUser({navigation}) {
         'FINLINE_FLAGS',
         JSON.stringify({
           PIN_HASH: SHA256(pin.trim()).toString(),
-          BIO_ENABLED: await getBioFlag(),
+          BIO_ENABLED: await wira.Biometric.getBioFlag(),
           HAS_WALLET: true,
         }),
       );
     }
-    try {
-      const bioEnabled = await getBioFlag();
-      if (bioEnabled && payload?.account) {
-        const storedPayload = {
-          dni: payload?.dni,
-          salt: payload?.salt,
-          privKey: payload?.privKey,
-          account: payload?.account,
-          guardian: payload?.guardian,
-          did: payload?.did,
-          vcCipher: payload?.vcCipher,
-          vc: payload?.vc,
-        };
-        await Keychain.setGenericPassword(
-          'bundle',
-          JSON.stringify({stored: storedPayload}),
-          {
-            service: 'walletBundle',
-            accessible:
-              Platform.OS === 'ios'
-                ? Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY
-                : Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            accessControl:
-              Platform.OS === 'ios'
-                ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
-                : Keychain.ACCESS_CONTROL.BIOMETRY_STRONG,
-            securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
-          },
-        );
-      }
-    } catch {}
 
     navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
   }
@@ -395,68 +360,30 @@ export default function LoginUser({navigation}) {
 
   useEffect(() => {
     (async () => {
-      const enabled = await getBioFlag();
-      if (!enabled) {
-        return;
-      }
-
-      const {available, biometryType} = await biometryAvailability();
-
-      if (!available || !biometryType) return;
-
-      const ok = await biometricLogin(
-        biometryType === 'FaceID'
-          ? 'Escanea tu rostro'
-          : 'Escanea tu huella dactilar',
-      );
-
-      if (!ok) {
-        return;
-      }
       setLoading(true);
-      bioUnlocked.current = true;
       try {
-        const creds = await Keychain.getGenericPassword({
-          service: 'walletBundle',
-        });
-        if (!creds) {
-          await ensureBundle();
-          setLoading(false);
-          return;
+        const {error, userData} = await wira.checkBiometricAuth();
+
+        if (!userData) {
+          if (error === 'No credentials stored') {
+            await ensureBundle();
+            setLoading(false);
+            setModal({
+              visible: true,
+              msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
+              btn: String.understand,
+            });
+            return;
+          } else {
+            setLoading(false);
+            return;
+          }
         }
 
-        const {stored} = JSON.parse(creds.password);
-        const main = await Keychain.getGenericPassword({
-          service: 'finline.wallet.vc',
-        });
-        const payloadQr = main ? JSON.parse(main.password) : {};
-        const merged = {...stored, ...payloadQr};
-
-        if (merged?.vc?.vc && !merged?.vc?.credentialSubject) {
-          merged.vc = merged.vc.vc;
-        }
-        if (merged?.vc?.credentialSubject) {
-          await unlock(merged, null, '');
-          return;
-        }
-
-        if (!merged?.vc && merged?.vcCipher) {
-          setLoading(false);
-          setModal({
-            visible: true,
-            msg: 'Necesitamos tu PIN una sola vez para descifrar tu credencial y completar el inicio de sesión con huella.',
-            btn: String.understand,
-          });
-          return;
-        }
-
+        await unlock(userData, null, '');
         setLoading(false);
-        setModal({
-          visible: true,
-          msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
-          btn: String.understand,
-        });
-      } catch {
+      } catch (e) {
+        console.log(e);
         setLoading(false);
       }
     })();

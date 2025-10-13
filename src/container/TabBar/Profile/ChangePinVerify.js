@@ -11,33 +11,52 @@ import CText from '../../../components/common/CText';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
-import CButton from '../../../components/common/CButton';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import StepIndicator from '../../../components/authComponents/StepIndicator';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
-import {checkPin} from '../../../utils/Cifrate';
 import InfoModal from '../../../components/modal/InfoModal';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME} from '@env';
+import CLoaderOverlay from '../../../components/common/CLoaderOverlay';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-export default function ChangePinVerify({navigation, route}) {
+export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onOtpChange = text => setOtp(text);
   // Hook para logging de navegación
   const { logAction, logNavigation } = useNavigationLogger('ChangePinVerify', true);
   const otpRef = useRef(null);
 
+  const handleFilled = async (code) => {
+    setVerifying(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    verify(code);
+  }
+
   const verify = async code => {
     if (code.length !== 4) return;
-    if (!(await checkPin(code))) {
+    try {
+      if (!(await wira.checkPin(PROVIDER_NAME, code))) {
+        setOtp('');
+        return setModal({
+          visible: true,
+          msg: 'PIN actual incorrecto',
+        });
+      }
+    } catch (error) {
       setOtp('');
-      return setModal({
+      setModal({
         visible: true,
-        msg: 'PIN actual incorrecto',
+        msg: 'Error al verificar el PIN: ' + error.message,
       });
+      return;
+    } finally {
+      setVerifying(false);
     }
+    
     navigation.replace(StackNav.ChangePinNew, {oldPin: code});
   };
   useEffect(() => {
@@ -74,7 +93,7 @@ export default function ChangePinVerify({navigation, route}) {
               style={localStyle.otpInputViewStyle}
               code={otp}
               onCodeChanged={onOtpChange}
-              onCodeFilled={verify}
+              onCodeFilled={handleFilled}
               secureTextEntry={true}
               editable
               keyboardAppearance={'dark'}
@@ -94,6 +113,7 @@ export default function ChangePinVerify({navigation, route}) {
           <View testID="changePinVerifySpacerContainer"></View>
         </View>
       </KeyBoardAvoidWrapper>
+      {verifying ? <CLoaderOverlay message={String.verifyingPin} /> : null}
       <InfoModal
         testID="changePinVerifyErrorModal"
         visible={modal.visible}

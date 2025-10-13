@@ -79,25 +79,14 @@ export default function AddGuardians() {
     setMsg('');
 
     try {
-      let inviterPayload = payloadQr;
-      if (!inviterPayload) {
-        const secrets = await getSecrets();
-        inviterPayload = secrets?.payloadQr ?? null;
-      }
-
-      if (!inviterPayload?.did) {
-        logAction('InviteGuardianMissingPayload');
-        setMsg('No se pudo recuperar la información de la cuenta. Intenta nuevamente.');
-        return;
-      }
-
-      const requestPayload = {
-        inviterDid: inviterPayload.did,
-        guardianId: candidate.did,
+      // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
+      const data = await sendInvitation({
+        inviterDid: payloadQr.did,
+        guardianDid: candidate.did,
         nickname: nick,
-      };
+      });
       logAction('InviteGuardianSend', requestPayload);
-      const data = await sendInvitation(requestPayload);
+      //const data = await sendInvitation(requestPayload);
       setModalMessage(
         `Invitación enviada. ${
           candidate.fullName || '(sin nombre)'

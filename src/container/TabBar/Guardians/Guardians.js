@@ -37,24 +37,12 @@ export default function Guardians({navigation}) {
   const walletPayload = useSelector(state => state.wallet.payload);
   const did = walletPayload?.did;
 
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger(
-    'Guardians',
-    true,
-  );
-  const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
+  const {data: guardians = [], error, isLoading} = useMyGuardiansAllListQuery({did});
   const {mutate: deleteGuardianId, isLoading: loading} =
     useGuardianDeleteQuery();
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
 
-  useEffect(() => {
-    if (error) {
-      logAction('LoadGuardiansError', {message: error?.message});
-    }
-  }, [error]);
-
-  const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
     () =>
       guardians.filter(g => g.status === 'ACCEPTED' || g.status === 'PENDING'),
@@ -168,6 +156,7 @@ export default function Guardians({navigation}) {
     const displayName = secondSegment
       ? `${firstSegment} ${abbreviated}`
       : firstSegment;
+    const inviterDid = item.guardianDid?.slice(22, 31) + '...' + item.guardianDid?.slice(-4);
 
     const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (

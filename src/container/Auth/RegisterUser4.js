@@ -146,8 +146,8 @@ export default function RegisterUser4({navigation, route}) {
         message: String.recoveryError,
         isLoading: false,
       });
-      logAction('recovery_error', {message: error?.message});
-      console.error('Recovery failed:', error);
+      console.log('Recovery failed:', error);
+      return;
     }
   };
 

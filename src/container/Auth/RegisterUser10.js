@@ -22,8 +22,9 @@ import InfoModal from '../../components/modal/InfoModal';
 import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
 import {CHAIN} from '@env';
 import {setAddresses} from '../../redux/slices/addressSlice';
-import {normalizeOcrForUI} from '../../utils/issuerClient';
-import {setBioFlag} from '../../utils/BioFlag';
+import {
+  normalizeOcrForUI,
+} from '../../utils/issuerClient';
 import wira from 'wira-sdk';
 import {
   BACKEND_IDENTITY,
@@ -110,6 +111,7 @@ export default function RegisterUser10({navigation, route}) {
           step: 'predict',
           dni,
           useBiometry,
+          originalPin: pin,
           ocrData: normalizeOcrForUI(ocrData),
         });
 
@@ -119,10 +121,12 @@ export default function RegisterUser10({navigation, route}) {
           SPONSORSHIP_POLICY,
         );
 
-        setStage('issueVC');
-        await yieldUI();
-
-        await registerer.createVC(CHAIN, ocrData, CRED_TYPE, CRED_EXP_DAYS);
+        await registerer.createVC(
+          CHAIN,
+          ocrData,
+          CRED_TYPE,
+          CRED_EXP_DAYS
+        );
 
         setStage('guardian');
         await yieldUI();
@@ -142,16 +146,15 @@ export default function RegisterUser10({navigation, route}) {
         setStage('save');
         await yieldUI();
         await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
-        if (useBiometry) {
-          await setBioFlag(true);
+        if(useBiometry) {
+          await wira.Biometric.setBioFlag(true);
         }
 
-        try {
-          await registerer.storeDataOnServer();
-        } catch (e) {
-          // Si el backend responde 400 con “discoverableHash ya utilizado” puedes:
-          // - Permitir continuar (usuario ya estaba registrado)
-          // - O mostrar modal. Por ahora, dejamos continuar.
+        const response = await registerer.storeDataOnServer();
+        if (!response.ok) {
+          throw new Error(
+            `Error al registrar tu cuenta.`,
+          );
         }
         
         await clearDraft();

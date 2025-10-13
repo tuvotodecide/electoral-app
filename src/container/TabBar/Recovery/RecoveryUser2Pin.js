@@ -20,7 +20,7 @@ import String from '../../../i18n/String';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUser2Pin({navigation, route}) {
-  const {originalPin,reqId} = route.params;
+  const {originalPin, recData} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
@@ -33,7 +33,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 300);
+    }, 350);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -41,7 +41,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
     if (otp === originalPin) {
       navigation.navigate(AuthNav.RecoveryFinalize, {
         originalPin: otp,
-        reqId
+        recData,
       });
     } else {
       setShowError(true);
@@ -84,7 +84,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {

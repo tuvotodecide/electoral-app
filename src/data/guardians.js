@@ -1,5 +1,4 @@
 import {useMutation, useQuery, useQueryClient} from 'react-query';
-import {guardianClient} from './client/guardians';
 import axios from 'axios';
 import wira from 'wira-sdk';
 import {BACKEND_IDENTITY} from '@env';
@@ -8,7 +7,7 @@ export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY);
 
 export const useGuardiansInviteQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianApi.invite, {
+  return useMutation((input) => guardianApi.invite(input), {
     onSuccess: data => {
       return data;
     },
@@ -22,7 +21,7 @@ export const useGuardiansInviteQuery = () => {
 };
 export const useGuardiansRecoveryRequestQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation(guardianApi.requestRecovery, {
+  return useMutation((input) => guardianApi.requestRecovery(input), {
     onSuccess: data => {
       return data;
     },
@@ -141,7 +140,7 @@ export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
     () => guardianApi.recoveryDetail(deviceId),
     {
       enabled: !!deviceId && enabled,
-      refetchInterval: 5000,
+      refetchInterval: 10000,
       refetchIntervalInBackground: true,
     },
   );
