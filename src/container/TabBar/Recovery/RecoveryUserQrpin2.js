@@ -51,6 +51,20 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const finish = async () => {
     try {
       logAction('RecoveryPinFinishAttempt');
+      if(payload.legacyData) {
+        navigation.navigate(
+          AuthNav.RegisterUser10,
+          {
+            ocrData: payload.legacyData,
+            dni: payload.data.dni,
+            originalPin,
+            useBiometry: false,
+            isMigration: true,
+          }
+        )
+        return;
+      }
+
       await recoveryService.saveData(payload, otp.trim(), PROVIDER_NAME);
 
       dispatch(setSecrets(payload));

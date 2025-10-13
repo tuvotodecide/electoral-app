@@ -18,6 +18,8 @@ import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import wira from 'wira-sdk';
+import { getLegacyData } from '../../../utils/migrateLegacy';
+import CAlert from '../../../components/common/CAlert';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -39,9 +41,18 @@ export default function RecoveryQr({navigation}) {
     setLoading(true);
     try {
       logAction('RecoveryQrParseAttempt');
-      const data = await recoveryService.recoveryFromQr(asset.uri);
+      const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
+      let newPayload = {
+        data: dataFromQr,
+      }
 
-      setPayload(data);
+      if(!dataFromQr.vc) {
+        if(dataFromQr.streamId && dataFromQr.privKey) {
+          newPayload.legacyData = await getLegacyData(dataFromQr);
+        }
+      }
+
+      setPayload(newPayload);
       logAction('RecoveryQrParseSuccess');
       if (Platform.OS === 'android') {
         ToastAndroid.show('QR válido', ToastAndroid.SHORT);
@@ -85,6 +96,7 @@ export default function RecoveryQr({navigation}) {
             setImage={onImageSelected}
             loading={loading}
           />
+          {payload?.legacyData && <CAlert message={String.legacyDataFound} testID="recoveryQrLegacyDataAlert" />}
 
           {payload && (
             <CText testID="recoveryQrValidMessage" type="R14" align="center" style={{marginTop: 10}}>

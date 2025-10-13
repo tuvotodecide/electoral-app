@@ -36,7 +36,7 @@ import {
 } from '@env';
 
 export default function RegisterUser10({navigation, route}) {
-  const {ocrData, dni, originalPin: pin, useBiometry} = route.params;
+  const {ocrData, dni, originalPin: pin, useBiometry, isMigration} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
@@ -104,11 +104,15 @@ export default function RegisterUser10({navigation, route}) {
       await new Promise(r => requestAnimationFrame(() => r()));
       try {
         const yieldUI = () => new Promise(r => setTimeout(r, 50));
-        setStage('predict');
+        if(isMigration) {
+          setStage('migrate');
+        } else {
+          setStage('issueVC');
+        }
         await yieldUI();
 
         await saveDraft({
-          step: 'predict',
+          step: isMigration ? 'migrate' : 'issueVC',
           dni,
           useBiometry,
           originalPin: pin,
@@ -128,7 +132,6 @@ export default function RegisterUser10({navigation, route}) {
           CRED_EXP_DAYS
         );
 
-        setStage('guardian');
         await yieldUI();
         const {guardianAddress} = await withTimeout(
           registerer.createWallet(dni),
@@ -185,12 +188,8 @@ export default function RegisterUser10({navigation, route}) {
   }, [pin, dni, useBiometry, navigation]);
 
   const stageMessage = {
-    init: String.creatingWallet,
-    predict: String.predictSmart,
-    fund: String.fundAccount,
-    deposit: String.depositGas,
-    issueVC: 'Solicitando credencial…',
-    guardian: 'Creando guardian…',
+    issueVC: String.issuingVC,
+    migrate: String.migrating,
     save: String.saveData,
     done: String.doneRegister,
     stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',

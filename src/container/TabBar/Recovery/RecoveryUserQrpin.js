@@ -21,7 +21,7 @@ import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUserQrPin({navigation, route}) {
   // ───── params de navegación
-  const {payload, reqId} = route.params; // ← ahora recibes payload
+  const {payload} = route.params; // ← ahora recibes payload
   const colors = useSelector(state => state.theme.theme);
 
   // ───── estado & refs
@@ -35,7 +35,6 @@ export default function RecoveryUserQrPin({navigation, route}) {
     navigation.navigate(AuthNav.RecoveryUserQrpin2, {
       originalPin: otp,
       payload, // ← lo pasas a la siguiente
-      reqId,
     });
   };
 

@@ -143,3 +143,43 @@ export async function migrateIfNeeded(pin) {
     return {ok: false, reason: 'store_on_device_failed', error};
   }
 }
+
+
+export async function getLegacyData(data) {
+  const load = await axios.post(
+    `${BACKEND}kyc/load`,
+    {streamId: data.streamId},
+    {withCredentials: true},
+  );
+
+  if(!load.data?.ok) {
+    throw new Error('Failed to retrieve legacy data');
+  }
+
+  const {dataHash} = load.data.data || {};
+  if (!dataHash) {
+    throw new Error('Failed to retrieve legacy data hash');
+  };
+
+  const authSig = await buildSiweAuthSig(data.privKey, dataHash);
+  dec = await axios.post(
+    `${BACKEND}kyc/decrypt`,
+    {streamId: data.streamId, authSig},
+    {withCredentials: true},
+  );
+  if (!dec.data?.ok || !dec.data.vc) {
+    throw new Error('Failed to decrypt legacy data');
+  }
+
+  const credData = {
+    fullName: dec.data.vc.credentialSubject.fullName,
+    governmentIdentifier: dec.data.vc.credentialSubject.governmentIdentifier,
+    dateOfBirth: dec.data.vc.credentialSubject.dateOfBirth,
+  }
+
+  if(!credData.fullName || !credData.governmentIdentifier || !credData.dateOfBirth) {
+    throw new Error('Not enough data found for migration')
+  }
+
+  return credData;
+}
