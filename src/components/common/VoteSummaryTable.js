@@ -17,15 +17,20 @@ const getResponsiveSize = (small, medium, large) => {
 
 // Vote Summary Row Component
 export const VoteSummaryRow = ({
-  testID = "voteSummaryRow",
+  testID = 'voteSummaryRow',
   item,
   isEditing,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
+  twoColumns = true,
 }) => (
   <View testID={testID} style={styles.voteSummaryTableRow}>
-    <CText testID={`${testID}Label`} style={styles.voteSummaryLabel}>{item.label}</CText>
-    <View testID={`${testID}ValueContainer`} style={styles.voteSummaryValueContainer}>
+    <CText testID={`${testID}Label`} style={styles.voteSummaryLabel}>
+      {item.label}
+    </CText>
+    <View
+      testID={`${testID}ValueContainer`}
+      style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
           testID={`${testID}Input`}
@@ -49,52 +54,60 @@ export const VoteSummaryRow = ({
         </CText>
       )}
     </View>
-    <View style={styles.voteSummaryValueContainer}>
-      {isEditing ? (
-        <TextInput
-          style={styles.voteSummaryInput}
-          value={String(item.value2 ?? '')}
-          onChangeText={value =>
-            onUpdate(
-              item.id,
-              'value2',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
-            )
-          }
-          keyboardType="numeric"
-          placeholder="0"
-        />
-      ) : (
-        <CText style={styles.voteSummaryValue}>
-          {item.value2 === '' || item.value2 == null
-            ? emptyDisplayWhenReadOnly
-            : String(item.value2)}
-        </CText>
-      )}
-    </View>
+    {twoColumns && (
+      <View style={styles.voteSummaryValueContainer}>
+        {isEditing ? (
+          <TextInput
+            style={styles.voteSummaryInput}
+            value={String(item.value2 ?? '')}
+            onChangeText={value =>
+              onUpdate(
+                item.id,
+                'value2',
+                value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+              )
+            }
+            keyboardType="numeric"
+            placeholder="0"
+          />
+        ) : (
+          <CText style={styles.voteSummaryValue}>
+            {item.value2 === '' || item.value2 == null
+              ? emptyDisplayWhenReadOnly
+              : String(item.value2)}
+          </CText>
+        )}
+      </View>
+    )}
   </View>
 );
 
 // Vote Summary Table Component
 export const VoteSummaryTable = ({
-  testID = "voteSummaryTable",
+  testID = 'voteSummaryTable',
   voteSummaryResults = [],
   isEditing = false,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
+  twoColumns = true,
 }) => (
   <View testID={testID} style={styles.voteSummaryTableContainer}>
-    <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>Votos</CText>
-    {(Array.isArray(voteSummaryResults) ? voteSummaryResults : []).map((item, index) => (
-      <VoteSummaryRow
-        key={index}
-        testID={`${testID}Row_${index}`}
-        item={item}
-        isEditing={isEditing}
-        onUpdate={onUpdate}
-        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
-      />
-    ))}
+    <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>
+      Votos
+    </CText>
+    {(Array.isArray(voteSummaryResults) ? voteSummaryResults : []).map(
+      (item, index) => (
+        <VoteSummaryRow
+          key={index}
+          testID={`${testID}Row_${index}`}
+          item={item}
+          isEditing={isEditing}
+          onUpdate={onUpdate}
+          emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+          twoColumns={twoColumns}
+        />
+      ),
+    )}
   </View>
 );
 

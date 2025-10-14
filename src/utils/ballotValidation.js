@@ -45,16 +45,5 @@ export function validateBallotLocally(
     );
   }
 
-  if (!Number.isNaN(vPres + bPres + nPres) && vPres + bPres + nPres <= 0) {
-    errors.push(
-      'Presidentes: el total (Válidos + Blancos + Nulos) no puede ser 0.',
-    );
-  }
-  if (!Number.isNaN(vDip + bDip + nDip) && vDip + bDip + nDip <= 0) {
-    errors.push(
-      'Diputados: el total (Válidos + Blancos + Nulos) no puede ser 0.',
-    );
-  }
-
   return {ok: errors.length === 0, errors};
 }

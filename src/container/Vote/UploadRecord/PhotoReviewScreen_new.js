@@ -6,7 +6,7 @@ import {moderateScale} from '../../../common/constants';
 import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
 
 const PhotoReviewScreen = () => {
@@ -40,12 +40,12 @@ const PhotoReviewScreen = () => {
     actaCount,
   });
   const effectivePhotoUri = React.useMemo(() => {
-    const fromRecord =
-      existingRecord?.actaImage ||
-      existingRecord?.image ||
-      existingRecord?.photo ||
-      existingRecord?.imageUrl;
-    return normalizeUri(photoUri || fromRecord);
+    // const fromRecord =
+    //   existingRecord?.actaImage ||
+    //   existingRecord?.image ||
+    //   existingRecord?.photo ||
+    //   existingRecord?.imageUrl;
+    return normalizeUri('https://ipfs.io/ipfs/QmPuS73ubqQbTyMwLbZsyKJC5oAVdNtnjHQCgJpom71Vgm' );
   }, [photoUri, existingRecord]);
 
   // State for editable fields
@@ -67,14 +67,7 @@ const PhotoReviewScreen = () => {
     const seed = offline ? '' : '0';
 
     return [
-      {id: 'ap', partido: 'AP', presidente: seed, diputado: seed},
-      {id: 'lyp-adn', partido: 'LYP-ADN', presidente: seed, diputado: seed},
-      {id: 'apbsumate', partido: 'APBSUMATE', presidente: seed, diputado: seed},
       {id: 'libre', partido: 'LIBRE', presidente: seed, diputado: seed},
-      {id: 'fp', partido: 'FP', presidente: seed, diputado: seed},
-      {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: seed, diputado: seed},
-      {id: 'morena', partido: 'MORENA', presidente: seed, diputado: seed},
-      {id: 'unidad', partido: 'UNIDAD', presidente: seed, diputado: seed},
       {id: 'pdc', partido: 'PDC', presidente: seed, diputado: seed},
     ];
   };
@@ -86,19 +79,19 @@ const PhotoReviewScreen = () => {
         id: 'validos',
         label: Strings.validVotes,
         value1: String(src.presValidVotes ?? src.validVotes ?? seed),
-        value2: String(src.depValidVotes ?? src.validVotes ?? seed),
+        value2: '0',
       },
       {
         id: 'blancos',
         label: Strings.blankVotes,
         value1: String(src.presBlankVotes ?? src.blankVotes ?? seed),
-        value2: String(src.depBlankVotes ?? src.blankVotes ?? seed),
+        value2: '0',
       },
       {
         id: 'nulos',
         label: Strings.nullVotes,
         value1: String(src.presNullVotes ?? src.nullVotes ?? seed),
-        value2: String(src.depNullVotes ?? src.nullVotes ?? seed),
+        value2: '0',
       },
     ];
 
@@ -113,12 +106,12 @@ const PhotoReviewScreen = () => {
       return toArray(fromMapped);
 
     return [
-      {id: 'validos', label: Strings.validVotes, value1: seed, value2: seed},
-      {id: 'blancos', label: Strings.blankVotes, value1: seed, value2: seed},
-      {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: seed},
+      {id: 'validos', label: Strings.validVotes, value1: seed, value2: '0'},
+      {id: 'blancos', label: Strings.blankVotes, value1: seed, value2: '0'},
+      {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: '0'},
     ];
   };
-
+    console.log('es', effectivePhotoUri);
   // State for the party results table
   const [partyResults, setPartyResults] = useState(getInitialPartyResults());
 
@@ -162,13 +155,18 @@ const PhotoReviewScreen = () => {
     const normalizedPartyResults = partyResults.map(p => ({
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
-      diputado: p.diputado === '' ? '0' : p.diputado,
     }));
+    const cleanedPartyResults = normalizedPartyResults.map(
+      ({id, partido, presidente}) => ({
+        id,
+        partido,
+        presidente,
+      }),
+    );
 
     const normalizedVoteSummaryResults = voteSummaryResults.map(v => ({
       ...v,
       value1: v.value1 === '' ? '0' : v.value1,
-      value2: v.value2 === '' ? '0' : v.value2,
     }));
 
     if (!isViewOnly) {
@@ -185,14 +183,21 @@ const PhotoReviewScreen = () => {
         return; // NO avanzar
       }
     }
-    console.log('[MESA-INFO]', mesaInfo);
+    // console.log('[MESA-INFO]', mesaInfo);
+
 
     navigation.navigate('PhotoConfirmationScreen', {
-      photoUri,
+      photoUri:effectivePhotoUri,
       tableData: mesaInfo,
       mesaData: mesaInfo,
-      partyResults: normalizedPartyResults,
-      voteSummaryResults: normalizedVoteSummaryResults,
+      partyResults: cleanedPartyResults,
+      voteSummaryResults: normalizedVoteSummaryResults.map(
+        ({id, label, value1}) => ({
+          id,
+          label,
+          value1,
+        }),
+      ),
       aiAnalysis,
       offline,
     });
@@ -305,7 +310,7 @@ const PhotoReviewScreen = () => {
           fontWeight: '800',
           color: colors.text || '#000000',
         }}
-  photoUri={effectivePhotoUri}
+        photoUri={effectivePhotoUri}
         partyResults={partyResults}
         voteSummaryResults={voteSummaryResults}
         isEditing={isEditing}
@@ -316,6 +321,8 @@ const PhotoReviewScreen = () => {
         showTableInfo={true}
         tableData={getMesaInfo()}
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
+        showDeputy={false}
+        twoColumns={false}
       />
       <InfoModal {...infoModalData} onClose={closeInfoModal} />
     </>

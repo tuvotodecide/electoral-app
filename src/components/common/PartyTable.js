@@ -20,11 +20,10 @@ export const PartyTableRow = ({
   onUpdate,
   rowIndex,
   emptyDisplayWhenReadOnly = '0',
+  showDeputy = true,
 }) => (
   <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
-    <CText
-      testID={`partyNameText_${rowIndex}`}
-      style={styles.partyNameText}>
+    <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>
       {party.id || party.partyId}
     </CText>
     <View
@@ -55,34 +54,36 @@ export const PartyTableRow = ({
         </CText>
       )}
     </View>
-    <View
-      testID={`partyVoteDiputadoContainer_${rowIndex}`}
-      style={styles.partyVoteContainer}>
-      {isEditing ? (
-        <TextInput
-          style={styles.partyVoteInput}
-          value={String(party.diputado ?? '')}
-          onChangeText={value =>
-            onUpdate(
-              party.id,
-              'diputado',
-              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
-            )
-          }
-          keyboardType="numeric"
-          placeholder="0"
-          testID={`partyInputDiputado_${rowIndex}`}
-        />
-      ) : (
-        <CText
-          testID={`partyVoteDiputadoText_${rowIndex}`}
-          style={styles.partyVoteText}>
-          {party.diputado === '' || party.diputado == null
-            ? emptyDisplayWhenReadOnly
-            : String(party.diputado)}
-        </CText>
-      )}
-    </View>
+    {showDeputy && (
+      <View
+        testID={`partyVoteDiputadoContainer_${rowIndex}`}
+        style={styles.partyVoteContainer}>
+        {isEditing ? (
+          <TextInput
+            style={styles.partyVoteInput}
+            value={String(party.diputado ?? '')}
+            onChangeText={value =>
+              onUpdate(
+                party.id,
+                'diputado',
+                value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+              )
+            }
+            keyboardType="numeric"
+            placeholder="0"
+            testID={`partyInputDiputado_${rowIndex}`}
+          />
+        ) : (
+          <CText
+            testID={`partyVoteDiputadoText_${rowIndex}`}
+            style={styles.partyVoteText}>
+            {party.diputado === '' || party.diputado == null
+              ? emptyDisplayWhenReadOnly
+              : String(party.diputado)}
+          </CText>
+        )}
+      </View>
+    )}
   </View>
 );
 
@@ -91,6 +92,7 @@ export const PartyTable = ({
   isEditing = false,
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
+  showDeputy = true,
 }) => (
   <View testID="partyTableContainer" style={styles.partyTableContainer}>
     <View testID="partyTableHeader" style={styles.partyTableHeader}>
@@ -104,11 +106,13 @@ export const PartyTable = ({
         style={styles.partyTableHeaderCenter}>
         PRESIDENTE/A
       </CText>
-      <CText
-        testID="partyTableHeaderDiputado"
-        style={styles.partyTableHeaderCenter}>
-        DIPUTADO/A
-      </CText>
+      {showDeputy && (
+        <CText
+          testID="partyTableHeaderDiputado"
+          style={styles.partyTableHeaderCenter}>
+          DIPUTADO/A
+        </CText>
+      )}
     </View>
 
     {(Array.isArray(partyResults) ? partyResults : []).map((party, index) => (
@@ -123,6 +127,7 @@ export const PartyTable = ({
         onUpdate={onUpdate}
         rowIndex={index}
         emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+        showDeputy={showDeputy}
       />
     ))}
   </View>

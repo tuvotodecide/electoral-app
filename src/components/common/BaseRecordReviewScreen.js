@@ -44,7 +44,7 @@ const getTabNavigationHeight = insets => {
 };
 
 const BaseRecordReviewScreen = ({
-  testID = "baseRecordReviewScreen",
+  testID = 'baseRecordReviewScreen',
   colors,
   headerTitle,
   instructionsText,
@@ -62,13 +62,15 @@ const BaseRecordReviewScreen = ({
   showMesaInfo = false,
   mesaData,
   emptyDisplayWhenReadOnly = '0',
+  showDeputy = true,
+  twoColumns = true,
 }) => {
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
   const togglePhoto = () => setIsPhotoCollapsed(prev => !prev);
 
   // Use tableData or mesaData for compatibility
-  const tableInfo = showTableInfo ? tableData : (showMesaInfo ? mesaData : null);
+  const tableInfo = showTableInfo ? tableData : showMesaInfo ? mesaData : null;
 
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
@@ -76,13 +78,19 @@ const BaseRecordReviewScreen = ({
       <CSafeAreaView
         testID={`${testID}Container`}
         style={styles.container}
-        addTabPadding={false}
-      >
+        addTabPadding={false}>
         {/* Header */}
-        <RecordHeader testID={`${testID}Header`} onBack={onBack} title={headerTitle} colors={colors} />
+        <RecordHeader
+          testID={`${testID}Header`}
+          onBack={onBack}
+          title={headerTitle}
+          colors={colors}
+        />
 
         {/* Instructions - Compact for tablet */}
-        <View testID={`${testID}TabletInstructionsContainer`} style={styles.tabletInstructionsContainer}>
+        <View
+          testID={`${testID}TabletInstructionsContainer`}
+          style={styles.tabletInstructionsContainer}>
           <View style={styles.instructionsRow}>
             <View style={styles.instructionsTextWrap}>
               <InstructionsContainer
@@ -108,15 +116,21 @@ const BaseRecordReviewScreen = ({
 
           {/* Table Info inline with instructions */}
           {tableInfo && (
-            <View testID={`${testID}TabletTableInfoInline`} style={styles.tabletTableInfoInline}>
-              <CText testID={`${testID}TabletTableTitle`} style={styles.tabletTableTitleText}>
+            <View
+              testID={`${testID}TabletTableInfoInline`}
+              style={styles.tabletTableInfoInline}>
+              <CText
+                testID={`${testID}TabletTableTitle`}
+                style={styles.tabletTableTitleText}>
                 Mesa{' '}
                 {tableInfo?.tableNumber ||
                   tableInfo?.numero ||
                   tableInfo?.number ||
                   'N/A'}
               </CText>
-              <CText testID={`${testID}TabletTableSubtitle`} style={styles.tabletTableSubtitleText}>
+              <CText
+                testID={`${testID}TabletTableSubtitle`}
+                style={styles.tabletTableSubtitleText}>
                 {tableInfo?.recinto || tableInfo?.escuela || 'Precinct N/A'}
               </CText>
             </View>
@@ -194,6 +208,7 @@ const BaseRecordReviewScreen = ({
                     isEditing={isEditing}
                     onUpdate={onPartyUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+                    showDeputy={showDeputy}
                   />
                 </View>
 
@@ -215,14 +230,20 @@ const BaseRecordReviewScreen = ({
                     isEditing={isEditing}
                     onUpdate={onVoteSummaryUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+                    twoColumns={twoColumns}
                   />
                 </View>
               </View>
 
               {/* Action Buttons */}
               {actionButtons && (
-                <View testID={`${testID}TabletActionButtonsWrapper`} style={styles.tabletActionButtonsWrapper}>
-                  <ActionButtons testID={`${testID}ActionButtons`} buttons={actionButtons} />
+                <View
+                  testID={`${testID}TabletActionButtonsWrapper`}
+                  style={styles.tabletActionButtonsWrapper}>
+                  <ActionButtons
+                    testID={`${testID}ActionButtons`}
+                    buttons={actionButtons}
+                  />
                 </View>
               )}
             </ScrollView>
@@ -234,9 +255,17 @@ const BaseRecordReviewScreen = ({
 
   // Phone layout: vertical stack
   return (
-    <CSafeAreaView testID={`${testID}Container`} style={styles.container} addTabPadding={false}>
+    <CSafeAreaView
+      testID={`${testID}Container`}
+      style={styles.container}
+      addTabPadding={false}>
       {/* Header */}
-      <RecordHeader testID={`${testID}Header`} onBack={onBack} title={headerTitle} colors={colors} />
+      <RecordHeader
+        testID={`${testID}Header`}
+        onBack={onBack}
+        title={headerTitle}
+        colors={colors}
+      />
 
       {/* Instructions */}
       <View style={styles.instructionsRow}>
@@ -264,9 +293,13 @@ const BaseRecordReviewScreen = ({
 
       {/* Table Info - only for PhotoReviewScreen */}
       {tableInfo && (
-        <View testID={`${testID}TableInfoContainer`} style={styles.tableInfoContainer}>
+        <View
+          testID={`${testID}TableInfoContainer`}
+          style={styles.tableInfoContainer}>
           <View testID={`${testID}TableTitle`} style={styles.tableTitle}>
-            <CText testID={`${testID}TableTitleText`} style={styles.tableTitleText}>
+            <CText
+              testID={`${testID}TableTitleText`}
+              style={styles.tableTitleText}>
               Mesa{' '}
               {tableInfo?.tableNumber ||
                 tableInfo?.numero ||
@@ -275,7 +308,9 @@ const BaseRecordReviewScreen = ({
             </CText>
           </View>
           <View testID={`${testID}TableSubtitle`} style={styles.tableSubtitle}>
-            <CText testID={`${testID}TableSubtitleText`} style={styles.tableSubtitleText}>
+            <CText
+              testID={`${testID}TableSubtitleText`}
+              style={styles.tableSubtitleText}>
               {tableInfo?.recinto || tableInfo?.escuela || 'Precinct N/A'}
             </CText>
           </View>
@@ -312,6 +347,7 @@ const BaseRecordReviewScreen = ({
           isEditing={isEditing}
           onUpdate={onPartyUpdate}
           emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+          showDeputy={showDeputy}
         />
 
         {/* Vote Summary Table */}
@@ -321,10 +357,16 @@ const BaseRecordReviewScreen = ({
           isEditing={isEditing}
           onUpdate={onVoteSummaryUpdate}
           emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+          twoColumns={twoColumns}
         />
 
         {/* Action Buttons */}
-        {actionButtons && <ActionButtons testID={`${testID}ActionButtons`} buttons={actionButtons} />}
+        {actionButtons && (
+          <ActionButtons
+            testID={`${testID}ActionButtons`}
+            buttons={actionButtons}
+          />
+        )}
       </ScrollView>
     </CSafeAreaView>
   );

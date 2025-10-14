@@ -2,6 +2,7 @@ const isCid = (s) => /^[A-Za-z0-9]{46,}$/.test((s || '').trim());
 
 export const normalizeUri = (u) => {
   if (!u) return '';
+  console.log(u)
   let s = String(u).trim().replace(/^"+|"+$/g, '');
 
  

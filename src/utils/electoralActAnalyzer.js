@@ -37,12 +37,14 @@ class ElectoralActAnalyzer {
    */
   getAnalysisPrompt() {
     return `Analiza la imagen proporcionada.
-PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana:
+PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana.
+Debe mostrar inequívocamente:
   • Logotipo del OEP (esquina superior izquierda).
   • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CONTEO”.
-  • Leyenda “ELECCIÓN DE AUTORIDADES Y REPRESENTANTES DEL ESTADO PLURINACIONAL 2025” debajo del título.
+  • Leyenda “ELECCIÓN DE PRESIDENTE Y VICEPRESIDENTE DEL ESTADO PLURINACIONAL DE BOLIVIA - SEGUNDA VUELTA” debajo del título.
   • Tabla “CÓDIGO DE MESA” con un número y un código de barras en la parte izquierda.
-  • Cuadros numerados en azul para "candidate_votes" y en amarillo para "deputy_vote_counts"
+  • Cuadro de resultados con solamente dos partidos políticos.
+  • Campos de resumen “VOTOS VÁLIDOS”, “VOTOS BLANCOS” y “VOTOS NULOS”.
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
   {"if_electoral_act": false}
@@ -59,23 +61,9 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
   "table_code": "<código de mesa, parte superior izquierda>",
   "president_vote_counts": {
     "candidate_votes": [
-      { "candidate_id": "AP",     "votes": "<n o 0>" },
-      { "candidate_id": "LYP-ADN",      "votes": "<n o 0>" },
-      { "candidate_id": "APBSUMATE", "votes": "<n o 0>" },
       { "candidate_id": "LIBRE",      "votes": "<n o 0>" },
-      { "candidate_id": "FP",      "votes": "<n o 0>" },
-      { "candidate_id": "MAS-IPSP",  "votes": "<n o 0>" },
-      { "candidate_id": "MORENA",      "votes": "<n o 0>" },
-      { "candidate_id": "UNIDAD",  "votes": "<n o 0>" }
       { "candidate_id": "PDC",      "votes": "<n o 0>" },
     ],
-    "blank_votes":  "<n o 0>",
-    "valid_votes":  "<n o 0>",
-    "null_votes":   "<n o 0>",
-    "total_votes":  "<n o 0>"
-  },
-  "deputy_vote_counts": {
-    "candidate_votes": [ …mismo orden y reglas, excepto por FP que no aparece en la imagen, en ese caso poner como valor 0… ],
     "blank_votes":  "<n o 0>",
     "valid_votes":  "<n o 0>",
     "null_votes":   "<n o 0>",
@@ -182,14 +170,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
     }
 
     const partyMapping = {
-      AP: 'ap',
-      'LYP-ADN': 'lyp-adn',
-      APBSUMATE: 'apbsumate',
       LIBRE: 'libre',
-      FP: 'fp',
-      'MAS-IPSP': 'mas-ipsp',
-      MORENA: 'morena',
-      UNIDAD: 'unidad',
       PDC: 'pdc',
     };
 
@@ -201,10 +182,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
           candidate.candidate_id.toLowerCase(),
         partido: candidate.candidate_id,
         presidente: candidate.votes.toString(),
-        diputado:
-          aiData.deputy_vote_counts.candidate_votes
-            .find(dep => dep.candidate_id === candidate.candidate_id)
-            ?.votes.toString() || '0',
+
       }),
     );
 
@@ -214,19 +192,16 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
         id: 'validos',
         label: 'Votos Válidos',
         value1: aiData.president_vote_counts.valid_votes.toString(),
-        value2: aiData.deputy_vote_counts.valid_votes.toString(),
       },
       {
         id: 'blancos',
         label: 'Votos en Blanco',
         value1: aiData.president_vote_counts.blank_votes.toString(),
-        value2: aiData.deputy_vote_counts.blank_votes.toString(),
       },
       {
         id: 'nulos',
         label: 'Votos Nulos',
         value1: aiData.president_vote_counts.null_votes.toString(),
-        value2: aiData.deputy_vote_counts.null_votes.toString(),
       },
     ];
 

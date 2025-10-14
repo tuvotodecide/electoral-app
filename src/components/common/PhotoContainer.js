@@ -9,6 +9,10 @@ import {
 
 import ImageZoom from 'react-native-image-pan-zoom';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {
+  normalizeUri as normalizeIpfsUri,
+  buildIpfsCandidates,
+} from '../../utils/normalizedUri';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -45,24 +49,13 @@ const ASPECT_HEIGHT = getResponsiveSize(170, 190, 220);
 
 const ROTATE_BTN = getResponsiveSize(32, 38, 44);
 
-const normalizeUri = uri => {
-  if (!uri) return '';
-  if (uri.startsWith('ipfs://')) {
-    return `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`;
-  }
-  if (uri.startsWith('file://')) return uri;
-  if (uri.startsWith('content://')) return uri;
-  if (/^https?:\/\//i.test(uri)) return uri;
-  if (uri[0] === '/' || /^[A-Za-z]:\\/.test(uri)) return `file://${uri}`;
-  return uri;
-};
-
 export const PhotoContainer = ({
   testID = 'photoContainer',
   photoUri,
   enableZoom = false,
   useAspectRatio = false,
 }) => {
+  console.log(photoUri);
   if (enableZoom) {
     return (
       <ZoomablePhotoContainer
@@ -73,7 +66,7 @@ export const PhotoContainer = ({
     );
   }
 
-  const normalizedUri = normalizeUri(photoUri);
+  const normalizedUri = normalizeIpfsUri(photoUri);
 
   return (
     <View
@@ -88,11 +81,27 @@ export const PhotoContainer = ({
         source={{uri: normalizedUri}}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
+        onError={e => {
+          console.log('[PhotoContainer] Image error', e?.nativeEvent);
+          console.log('[PhotoContainer] tried uri =', normalizedUri);
+        }}
       />
-      <View testID={`${testID}TopLeftCorner`} style={[styles.cornerBorder, styles.topLeftCorner]} />
-      <View testID={`${testID}TopRightCorner`} style={[styles.cornerBorder, styles.topRightCorner]} />
-      <View testID={`${testID}BottomLeftCorner`} style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-      <View testID={`${testID}BottomRightCorner`} style={[styles.cornerBorder, styles.bottomRightCorner]} />
+      <View
+        testID={`${testID}TopLeftCorner`}
+        style={[styles.cornerBorder, styles.topLeftCorner]}
+      />
+      <View
+        testID={`${testID}TopRightCorner`}
+        style={[styles.cornerBorder, styles.topRightCorner]}
+      />
+      <View
+        testID={`${testID}BottomLeftCorner`}
+        style={[styles.cornerBorder, styles.bottomLeftCorner]}
+      />
+      <View
+        testID={`${testID}BottomRightCorner`}
+        style={[styles.cornerBorder, styles.bottomRightCorner]}
+      />
     </View>
   );
 };
@@ -112,14 +121,20 @@ const ZoomablePhotoContainer = ({
     setBox({w: Math.round(width), h: Math.round(height)});
   }, []);
 
-  const normalizedUri = normalizeUri(photoUri);
+  const normalizedUri = normalizeIpfsUri(photoUri);
 
   useEffect(() => {
     if (!normalizedUri) return;
     Image.getSize(
       normalizedUri,
       (w, h) => setImg({w, h}),
-      () => setImg({w: 1, h: 1}),
+      () => {
+        console.log(
+          '[ZoomablePhotoContainer] getSize failed for',
+          normalizedUri,
+        );
+        setImg({w: 1, h: 1});
+      },
     );
   }, [normalizedUri]);
   const isRotated = rotation % 180 !== 0;
@@ -209,7 +224,10 @@ const ZoomablePhotoContainer = ({
         </ImageZoom>
       ) : (
         // Render vacío mientras medimos: sin “salto”
-        <View testID={`${testID}PlaceholderView`} style={{width: '100%', height: PHOTO_HEIGHT}} />
+        <View
+          testID={`${testID}PlaceholderView`}
+          style={{width: '100%', height: PHOTO_HEIGHT}}
+        />
       )}
       <TouchableOpacity
         testID={`${testID}RotateLeft`}
@@ -241,10 +259,22 @@ const ZoomablePhotoContainer = ({
       </TouchableOpacity>
 
       {/* Esquinas decorativas */}
-      <View testID={`${testID}TopLeftCorner`} style={[styles.cornerBorder, styles.topLeftCorner]} />
-      <View testID={`${testID}TopRightCorner`} style={[styles.cornerBorder, styles.topRightCorner]} />
-      <View testID={`${testID}BottomLeftCorner`} style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-      <View testID={`${testID}BottomRightCorner`} style={[styles.cornerBorder, styles.bottomRightCorner]} />
+      <View
+        testID={`${testID}TopLeftCorner`}
+        style={[styles.cornerBorder, styles.topLeftCorner]}
+      />
+      <View
+        testID={`${testID}TopRightCorner`}
+        style={[styles.cornerBorder, styles.topRightCorner]}
+      />
+      <View
+        testID={`${testID}BottomLeftCorner`}
+        style={[styles.cornerBorder, styles.bottomLeftCorner]}
+      />
+      <View
+        testID={`${testID}BottomRightCorner`}
+        style={[styles.cornerBorder, styles.bottomRightCorner]}
+      />
     </View>
   );
 };
