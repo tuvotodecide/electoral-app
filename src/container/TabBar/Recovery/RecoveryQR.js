@@ -20,6 +20,7 @@ import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import wira from 'wira-sdk';
 import { getLegacyData } from '../../../utils/migrateLegacy';
 import CAlert from '../../../components/common/CAlert';
+import {BACKEND_IDENTITY} from '@env';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -27,10 +28,12 @@ export default function RecoveryQr({navigation}) {
   const [imageUri, setImageUri] = useState(null);
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const {logAction, logNavigation} = useNavigationLogger('RecoveryQR', true);
   // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
   const onImageSelected = async (asset) => {
+    setErrorMsg(null);
     if (!asset?.uri) {
       logAction('RecoveryQrImageMissing');
       Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
@@ -44,12 +47,6 @@ export default function RecoveryQr({navigation}) {
       const start = Date.now();
       //console.log('[RecoveryQR] recoveryFromQr start', { uri: asset.uri });
       const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
-      const duration = Date.now() - start;
-      const preview = {
-        hasVC: !!dataFromQr?.vc,
-        streamId: dataFromQr?.streamId ?? null,
-        privKeyPresent: !!dataFromQr?.privKey,
-      };
       //console.log('[RecoveryQR] recoveryFromQr success', { duration, preview });
 
       let newPayload = {
@@ -59,6 +56,15 @@ export default function RecoveryQr({navigation}) {
       if(!dataFromQr.vc) {
         if(dataFromQr.streamId && dataFromQr.privKey) {
           newPayload.legacyData = await getLegacyData(dataFromQr);
+          const api = new wira.RegistryApi(BACKEND_IDENTITY);
+          const {exists} = await api.registryCheckByDni(dataFromQr.dni);
+          if(exists) {
+            setErrorMsg(String.alreadyMigrated);
+            return;
+          }
+        } else {
+          setErrorMsg(String.notEnoughLegacyData);
+          return;
         }
       }
 
@@ -123,6 +129,7 @@ export default function RecoveryQr({navigation}) {
             loading={loading}
           />
           {payload?.legacyData && <CAlert message={String.legacyDataFound} testID="recoveryQrLegacyDataAlert" />}
+          {errorMsg && <CAlert status='error' message={errorMsg} testID="recoveryQrLegacyDataError" />}
 
           {payload && (
             <CText testID="recoveryQrValidMessage" type="R14" align="center" style={{marginTop: 10}}>

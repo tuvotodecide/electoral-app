@@ -153,6 +153,8 @@ export default {
   qrimagelabel: 'Suba la imagen QR',
   qrValid: 'Qr válido',
   legacyDataFound: 'Los datos de este QR son antiguos, se realizará un proceso de migración',
+  notEnoughLegacyData: 'Este QR no tiene suficientes datos',
+  alreadyMigrated: 'Esta cuenta ya fué migrada, intente recuperar usando su Carnet y PIN',
   myProtectedInfo: 'Personas de las cuales soy guardián',
   myInvitations: 'Mis invitaciones',
   myRecovery: 'Solicitudes de recuperación',
