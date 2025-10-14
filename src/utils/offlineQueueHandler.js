@@ -177,7 +177,7 @@ export const publishActaHandler = async (item, userData) => {
     console.log('[OFFLINE-QUEUE] estado registro despues de requestRegister', { isRegistered });
     if (!isRegistered) {
       console.error('[OFFLINE-QUEUE] registro en oracle fallido');
-      throw Error('Failed to register user on oracle');
+      throw Error('No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo');
     }
   } else {
     console.log('[OFFLINE-QUEUE] usuario ya registrado en oracle');

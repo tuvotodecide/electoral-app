@@ -1364,6 +1364,7 @@ export default {
   attestationFailed:
     'Certificación completada pero no se pudo registrar en el sistema',
   validationError: 'Error de validación en el servidor',
+  oracleRegisterFail: 'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
   invalidActaData: 'Datos del acta no válidos',
   validationFailed: 'Validación fallida',
   validationError400: 'Datos de solicitud incorrectos',

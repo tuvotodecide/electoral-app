@@ -582,7 +582,7 @@ const PhotoConfirmationScreen = () => {
         );
 
         if (!isRegistered) {
-          throw Error('Failed to register user on oracle');
+          throw Error(I18nStrings.oracleRegisterFail);
         }
       }
 

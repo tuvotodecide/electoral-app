@@ -134,7 +134,7 @@ const RecordCertificationScreen = () => {
         );
 
         if (!isRegistered) {
-          throw Error('Failed to register user on oracle');
+          throw Error(i18nString.oracleRegisterFail);
         }
       }
       const response = await executeOperation(

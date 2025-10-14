@@ -31,6 +31,7 @@ export const availableNetworks = {
     explorer: 'https://sepolia.basescan.org/',
     nftExplorer: 'https://testnet.routescan.io/nft',
     oracle: '0x91DB352d9836832364fDa5fFc6d7c8CF6FD78c38',
+    userRole: '0x2db9fd3d099848027c2383d0a083396f6c41510d7acfd92adc99b6cffcf31e96',
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
   },
@@ -40,6 +41,7 @@ export const availableNetworks = {
     explorer: 'https://basescan.org/',
     nftExplorer: 'https://routescan.io/nft',
     oracle: '',
+    userRole: '',
     juryRole: '',
     attestationNft: '',
   }

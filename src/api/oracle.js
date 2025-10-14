@@ -21,7 +21,7 @@ function createAttestation(chain, tableId, jsonUri) {
     data: encodeFunctionData({
       abi: oracleAbi,
       functionName: 'createAttestation',
-      args: [tableId, jsonUri, ""]
+      args: [tableId, jsonUri]
     })
   }
 }
@@ -33,33 +33,45 @@ function attest(chain, tableId, recordId, newJsonUri = "") {
     data: encodeFunctionData({
       abi: oracleAbi,
       functionName: 'attest',
-      args: [tableId, recordId, true, newJsonUri, ""]
+      args: [tableId, recordId, true, newJsonUri]
     })
   }
 }
 
-async function isRegistered(chain, accountAddress, attemps = 3) {
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));   
+async function isRegistered(chainId, accountAddress, attemps = 3) {
+  const {chain, oracle, userRole, juryRole} = availableNetworks[chainId];
 
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
   const publicClient = createPublicClient({
-    chain: availableNetworks[chain].chain,
+    chain,
     transport: http(),
   });
 
-  for(let i = 0; i < attemps; i++) {
-    const logs = await publicClient.getContractEvents({
-      address: availableNetworks[chain].oracle,
-      abi: oracleAbi,
-      eventName: 'RoleGranted',
-      args: {
-        account: accountAddress,
-      },
-      fromBlock: BigInt(183325055)
-    });
+  const oracleContract = getContract({
+    address: oracle,
+    abi: oracleAbi,
+    client: {public: publicClient},
+  });
 
-    if(logs.length > 0) {
+  for(let i = 0; i < attemps; i++) {
+    const isUser = await oracleContract.read.hasRole([
+      userRole,
+      accountAddress
+    ]);
+
+    if(isUser) {
       return true;
     }
+
+    const isJury = await oracleContract.read.hasRole([
+      juryRole,
+      accountAddress
+    ]);
+
+    if(isJury) {
+      return true;
+    }
+
     await sleep(2000);
   }
 
@@ -88,6 +100,7 @@ async function isUserJury(chainId, address) {
 }
 
 async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
+  console.log('init oracle event')
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));   
 
   const publicClient = createPublicClient({
@@ -96,6 +109,8 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
   });
 
   for(let i = 0; i < attemps; i++) {
+    console.log('iterate: ' + i)
+
     const logs = await publicClient.getContractEvents({
       address: availableNetworks[chain].oracle,
       abi: oracleAbi,
@@ -103,7 +118,8 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
       fromBlock: txBlock,
       toBlock: txBlock
     });
- 
+
+    console.log(logs);
 
     if(logs.length > 0) {
       return logs[0].args;
