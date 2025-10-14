@@ -155,7 +155,7 @@ export default function RecuperationQR() {
           <QRCodeSVG
             testID="recuperationQrCode"
             value={qrData}
-            size={moderateScale(250)}
+            size={moderateScale(290)}
             backgroundColor="#fff"
             color="#000"
           />
