@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
@@ -39,15 +39,14 @@ const PhotoReviewScreen = () => {
     fromWhichIsCorrect,
     actaCount,
   });
-  const effectivePhotoUri = React.useMemo(() => {
-    // const fromRecord =
-    //   existingRecord?.actaImage ||
-    //   existingRecord?.image ||
-    //   existingRecord?.photo ||
-    //   existingRecord?.imageUrl;
-    return normalizeUri('https://ipfs.io/ipfs/QmPuS73ubqQbTyMwLbZsyKJC5oAVdNtnjHQCgJpom71Vgm' );
+  const effectivePhotoUri = useMemo(() => {
+    const fromRecord =
+      existingRecord?.actaImage ||
+      existingRecord?.image ||
+      existingRecord?.photo ||
+      existingRecord?.imageUrl;
+    return normalizeUri(photoUri || fromRecord);
   }, [photoUri, existingRecord]);
-
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
   const [infoModalData, setInfoModalData] = useState({
