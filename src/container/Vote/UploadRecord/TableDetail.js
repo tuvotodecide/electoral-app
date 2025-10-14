@@ -174,6 +174,7 @@ export default function TableDetail({navigation, route}) {
 
     if (count === 1) {
       const record = existingRecords[0];
+      console.log(record);
       try {
           logNavigation('table_detail_existing_record_open', {
             index: 0,
@@ -187,6 +188,7 @@ export default function TableDetail({navigation, route}) {
           isViewOnly: true,
           photoUri: record?.actaImage,
         });
+        
       } catch {
         navigation.navigate('PhotoReviewScreen', {
           mesa: finalTableData,

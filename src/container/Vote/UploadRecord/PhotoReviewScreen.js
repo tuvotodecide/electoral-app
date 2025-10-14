@@ -14,13 +14,13 @@ const PhotoReviewScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {photoUri, tableData} = route.params || {};
-/*   console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
+  console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
     hasPhotoUri: !!photoUri,
-    photoUriPreview: photoUri?.substring(0, 50) + '...',
+    photoUriPreview: photoUri,
     tableNumber: tableData?.tableNumber || tableData?.numero,
     tableCode: tableData?.codigo,
-  }); */
-
+  });
+  
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
 
@@ -34,7 +34,6 @@ const PhotoReviewScreen = () => {
     {id: 'pdc', partido: String.pdc, presidente: '17', diputado: '16'},
     {id: 'morena', partido: String.morena, presidente: '1', diputado: '0'},
   ]);
-
   // New state for the vote summary table (Votos, Blancos, Nulos)
   const [voteSummaryResults, setVoteSummaryResults] = useState([
     {id: 'validos', label: String.valid, value1: '141', value2: '176'},

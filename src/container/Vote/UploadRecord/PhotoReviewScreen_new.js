@@ -27,6 +27,18 @@ const PhotoReviewScreen = () => {
 
     actaCount,
   } = route.params || {};
+  console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
+    photoUri,
+    tableData,
+    mesaData,
+    aiAnalysis,
+    mappedData,
+    offline,
+    existingRecord,
+    isViewOnly,
+    fromWhichIsCorrect,
+    actaCount,
+  });
   const effectivePhotoUri = React.useMemo(() => {
     const fromRecord =
       existingRecord?.actaImage ||
