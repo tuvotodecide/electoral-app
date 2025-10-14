@@ -25,7 +25,8 @@ import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME} from '@env';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+import LoadingModal from '../../../components/modal/LoadingModal';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -41,6 +42,11 @@ export default function RecoveryUserQrPin2({navigation, route}) {
     'RecoveryUserQrpin2',
     true,
   );
+  const [modal, setModal] = useState({
+    visible: false,
+    message: '',
+    isLoading: false,
+  });
 
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);
@@ -48,7 +54,16 @@ export default function RecoveryUserQrPin2({navigation, route}) {
     return () => clearTimeout(t);
   }, []);
 
+  const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
+
   const finish = async () => {
+    setModal({
+      visible: true,
+      message: String.recoveringData,
+      isLoading: true,
+    });
+
+    await yieldUI();
     try {
       logAction('RecoveryPinFinishAttempt');
       if(payload.legacyData) {
@@ -65,7 +80,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
         return;
       }
 
-      await recoveryService.saveData(payload, otp.trim(), PROVIDER_NAME);
+      await recoveryService.saveQrData(payload.data, otp.trim(), PROVIDER_NAME, BACKEND_IDENTITY);
 
       dispatch(setSecrets(payload));
       dispatch(
@@ -77,12 +92,22 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       dispatch(setAuthenticated(true));
       await startSession(null);
 
+      setModal({
+        visible: false,
+        message: '',
+        isLoading: false,
+      })
+
       logNavigation(AuthNav.LoginUser);
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
       logAction('RecoveryPinFinishSuccess');
     } catch (err) {
       logAction('RecoveryPinFinishError', {message: err?.message});
-      Alert.alert('Error', err.message);
+      setModal({
+        visible: true,
+        message: 'Error: ' + err.message,
+        isLoading: false,
+      })
     }
   };
 
@@ -155,6 +180,13 @@ export default function RecoveryUserQrPin2({navigation, route}) {
           />
         </View>
       </KeyBoardAvoidWrapper>
+      <LoadingModal
+        {...modal}
+        buttonText={String.retryRecovery}
+        onClose={() =>
+          navigation.navigate(AuthNav.RecoveryQr)
+        }
+      />
     </CSafeAreaViewAuth>
   );
 }
