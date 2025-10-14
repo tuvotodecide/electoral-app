@@ -409,23 +409,15 @@ const BaseSearchTableScreen = ({
               : record.ipfsUri || null;
             const actaImage = actaImagePrimary;
             const presidentialParties = record.votes?.parties?.partyVotes || [];
-            const deputyParties = record.votes?.deputies?.partyVotes || [];
 
             const partyResults = presidentialParties.map(presParty => {
-              const deputyParty = deputyParties.find(
-                d => d.partyId === presParty.partyId,
-              ) || {
-                votes: 0,
-              };
               return {
-                partyId: presParty.partyId,
+                partyId: String(presParty.partyId ?? '').trim().toLowerCase(),
                 presidente: presParty.votes,
-                diputado: deputyParty.votes,
               };
             });
 
             const presVoteSummary = record.votes?.parties || {};
-            const depVoteSummary = record.votes?.deputies || {};
 
             return {
               ...record,
@@ -437,11 +429,6 @@ const BaseSearchTableScreen = ({
                 presBlankVotes: presVoteSummary.blankVotes || 0,
                 presNullVotes: presVoteSummary.nullVotes || 0,
                 presTotalVotes: presVoteSummary.totalVotes || 0,
-                // Diputados
-                depValidVotes: depVoteSummary.validVotes || 0,
-                depBlankVotes: depVoteSummary.blankVotes || 0,
-                depNullVotes: depVoteSummary.nullVotes || 0,
-                depTotalVotes: depVoteSummary.totalVotes || 0,
               },
             };
           })

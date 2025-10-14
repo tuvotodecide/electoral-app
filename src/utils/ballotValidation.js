@@ -13,24 +13,20 @@ export function validateBallotLocally(
   const vPres = asInt(row('validos').value1);
   const bPres = asInt(row('blancos').value1);
   const nPres = asInt(row('nulos').value1);
-  const vDip = asInt(row('validos').value2);
-  const bDip = asInt(row('blancos').value2);
-  const nDip = asInt(row('nulos').value2);
+  // const vDip = asInt(row('validos').value2);
+  // const bDip = asInt(row('blancos').value2);
+  // const nDip = asInt(row('nulos').value2);
 
-  if ([vPres, bPres, nPres, vDip, bDip, nDip].some(Number.isNaN)) {
+  if ([vPres, bPres, nPres].some(Number.isNaN)) {
     errors.push(
       'Hay valores inválidos en el resumen (usa números enteros ≥ 0).',
     );
   }
 
   const sumPres = partyResults.reduce((acc, p) => acc + asInt(p.presidente), 0);
-  const sumDip = partyResults.reduce((acc, p) => acc + asInt(p.diputado), 0);
+  // const sumDip = partyResults.reduce((acc, p) => acc + asInt(p.diputado), 0);
 
-  if (
-    partyResults.some(
-      p => Number.isNaN(asInt(p.presidente)) || Number.isNaN(asInt(p.diputado)),
-    )
-  ) {
+  if (partyResults.some(p => Number.isNaN(asInt(p.presidente)))) {
     errors.push('Los votos por partido deben ser números enteros ≥ 0.');
   }
 
@@ -39,11 +35,7 @@ export function validateBallotLocally(
       `Presidentes: la suma por partido (${sumPres}) no coincide con Válidos (${vPres}).`,
     );
   }
-  if (!Number.isNaN(sumDip) && !Number.isNaN(vDip) && sumDip !== vDip) {
-    errors.push(
-      `Diputados: la suma por partido (${sumDip}) no coincide con Válidos (${vDip}).`,
-    );
-  }
+
 
   return {ok: errors.length === 0, errors};
 }

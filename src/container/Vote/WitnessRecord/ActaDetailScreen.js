@@ -28,7 +28,7 @@ const getResponsiveSize = (small, medium, large) => {
 const ActaDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  
+
   const colors = useSelector(state => state.theme.theme);
 
   const {
@@ -50,12 +50,16 @@ const ActaDetailScreen = () => {
 
   const partyResultsTransformed = useMemo(() => {
     try {
-      return rawPartyResults.map(party => ({
-        id: party.partyId,
-        party: party.partyId,
-        presidente: party.presidente || 0,
-        diputado: party.diputado || 0,
-      }));
+      return rawPartyResults.map(p => {
+        const pid = String(p.partyId ?? p.party ?? p.partido ?? '')
+          .trim()
+          .toLowerCase();
+        return {
+          id: pid,
+          party: pid,
+          presidente: p.presidente || 0,
+        };
+      });
     } catch (error) {
       return [];
     }
@@ -67,26 +71,25 @@ const ActaDetailScreen = () => {
         {
           label: 'Válidos',
           value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depValidVotes || 0, // Diputados
+
         },
         {
           label: 'Blancos',
           value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depBlankVotes || 0, // Diputados
+      
         },
         {
           label: 'Nulos',
           value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depNullVotes || 0, // Diputados
+
         },
         {
           label: 'Total',
           value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depTotalVotes || 0, // Diputados
+
         },
       ];
     } catch (error) {
-  
       return [];
     }
   }, [rawVoteSummaryResults]);
@@ -97,7 +100,6 @@ const ActaDetailScreen = () => {
     const [hasError, setHasError] = useState(false);
 
     const handleImageError = error => {
-
       setHasError(true);
       setIsLoading(false);
     };
@@ -115,9 +117,20 @@ const ActaDetailScreen = () => {
     if (hasError) {
       return (
         <View testID="actaDetailImageError" style={styles.imageError}>
-          <MaterialIcons testID="actaDetailBrokenImageIcon" name="broken-image" size={60} color="#999" />
-          <CText testID="actaDetailImageErrorText" style={styles.imageErrorText}>Error cargando imagen</CText>
-          <CText testID="actaDetailImageErrorSubtext" style={styles.imageErrorSubtext}>
+          <MaterialIcons
+            testID="actaDetailBrokenImageIcon"
+            name="broken-image"
+            size={60}
+            color="#999"
+          />
+          <CText
+            testID="actaDetailImageErrorText"
+            style={styles.imageErrorText}>
+            Error cargando imagen
+          </CText>
+          <CText
+            testID="actaDetailImageErrorSubtext"
+            style={styles.imageErrorSubtext}>
             Verifica tu conexión a internet
           </CText>
         </View>
@@ -136,13 +149,17 @@ const ActaDetailScreen = () => {
           onError={handleImageError}
         />
         {isLoading && (
-          <View testID="actaDetailImageLoadingOverlay" style={styles.imageLoadingOverlay}>
+          <View
+            testID="actaDetailImageLoadingOverlay"
+            style={styles.imageLoadingOverlay}>
             <ActivityIndicator
               testID="actaDetailLoadingIndicator"
               size="large"
               color={colors.primary || '#4F9858'}
             />
-            <CText testID="actaDetailLoadingIndicatorText" style={styles.loadingIndicatorText}>
+            <CText
+              testID="actaDetailLoadingIndicatorText"
+              style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
           </View>

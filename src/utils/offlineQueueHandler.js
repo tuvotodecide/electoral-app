@@ -84,7 +84,7 @@ export const publishActaHandler = async (item, userData) => {
     tableNumber: tableData?.codigo || 'N/A',
     votes: {
       parties: buildFromPayload('presidente'),
-      deputies: buildFromPayload('diputado'),
+      // deputies: buildFromPayload('diputado'),
     },
   };
 

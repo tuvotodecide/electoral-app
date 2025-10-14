@@ -414,7 +414,6 @@ const BaseSearchTableScreenUser = ({
             return {
               partyId: presParty.partyId,
               presidente: presParty.votes,
-              diputado: deputyParty.votes,
             };
           });
 
@@ -436,11 +435,7 @@ const BaseSearchTableScreenUser = ({
               presBlankVotes: presVoteSummary.blankVotes || 0,
               presNullVotes: presVoteSummary.nullVotes || 0,
               presTotalVotes: presVoteSummary.totalVotes || 0,
-              // Diputados
-              depValidVotes: depVoteSummary.validVotes || 0,
-              depBlankVotes: depVoteSummary.blankVotes || 0,
-              depNullVotes: depVoteSummary.nullVotes || 0,
-              depTotalVotes: depVoteSummary.totalVotes || 0,
+
             },
             rawData: record,
           };

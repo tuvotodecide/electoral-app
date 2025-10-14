@@ -134,7 +134,7 @@ const PhotoConfirmationScreen = () => {
         tableNumber: tableData?.codigo || 'N/A',
         votes: {
           parties: buildVoteData('presidente'),
-          deputies: buildVoteData('diputado'),
+          // deputies: buildVoteData('diputado'),
         },
       };
 /*       console.log('[PhotoConfirmation] verificationData prepared', {
@@ -243,10 +243,10 @@ const PhotoConfirmationScreen = () => {
       nullVotes: getValue('nulos'),
       blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
-        partyId: party.partido,
+        partyId: String(p.partido || '').trim().toLowerCase(),
         votes:
           parseInt(
-            type === 'presidente' ? party.presidente : party.diputado,
+           party.presidente,
             10,
           ) || 0,
       })),

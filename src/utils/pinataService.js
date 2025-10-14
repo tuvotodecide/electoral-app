@@ -4,7 +4,6 @@ import {
   PINATA_API_KEY,
   PINATA_API_SECRET,
   PINATA_JWT,
-  
   BACKEND_RESULT,
 } from '@env';
 
@@ -20,18 +19,18 @@ class PinataService {
   isHttpUrl(u) {
     return /^https?:\/\//i.test(String(u || ''));
   }
-  
+
   isIpfsUrl(u) {
     return /^ipfs:\/\//i.test(String(u || ''));
   }
-  
+
   toHttpFromIpfs(u) {
     return String(u || '').replace(
       /^ipfs:\/\//i,
       'https://gateway.pinata.cloud/ipfs/',
     );
   }
-  
+
   async downloadToCache(url, preferredName = 'electoral-act.jpg') {
     const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
     const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
@@ -42,7 +41,7 @@ class PinataService {
 
   async checkDuplicateBallot(voteData) {
     //console.log('[PINATA-SERVICE] 🔍 checkDuplicateBallot iniciado');
-/*     console.log('[PINATA-SERVICE] 📋 Datos de verificación:', {
+    /*     console.log('[PINATA-SERVICE] 📋 Datos de verificación:', {
       tableNumber: voteData.tableNumber,
       hasVotes: !!voteData.votes,
     }); */
@@ -51,7 +50,7 @@ class PinataService {
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
-/*       console.log('[PINATA-SERVICE] 🌐 Consultando backend:', `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`);
+      /*       console.log('[PINATA-SERVICE] 🌐 Consultando backend:', `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
         {timeout: 10000}, // 10 segundos timeout
@@ -80,22 +79,23 @@ class PinataService {
                 p.votes === votes2.parties.partyVotes[i].votes,
             );
 
-          const deputiesEqual =
-            votes1.deputies.validVotes === votes2.deputies.validVotes &&
-            votes1.deputies.nullVotes === votes2.deputies.nullVotes &&
-            votes1.deputies.blankVotes === votes2.deputies.blankVotes &&
-            votes1.deputies.totalVotes === votes2.deputies.totalVotes &&
-            Array.isArray(votes1.deputies.partyVotes) &&
-            Array.isArray(votes2.deputies.partyVotes) &&
-            votes1.deputies.partyVotes.length ===
-              votes2.deputies.partyVotes.length &&
-            votes1.deputies.partyVotes.every(
-              (p, i) =>
-                p.partyId === votes2.deputies.partyVotes[i].partyId &&
-                p.votes === votes2.deputies.partyVotes[i].votes,
-            );
+          // const deputiesEqual =
+          //   votes1.deputies.validVotes === votes2.deputies.validVotes &&
+          //   votes1.deputies.nullVotes === votes2.deputies.nullVotes &&
+          //   votes1.deputies.blankVotes === votes2.deputies.blankVotes &&
+          //   votes1.deputies.totalVotes === votes2.deputies.totalVotes &&
+          //   Array.isArray(votes1.deputies.partyVotes) &&
+          //   Array.isArray(votes2.deputies.partyVotes) &&
+          //   votes1.deputies.partyVotes.length ===
+          //     votes2.deputies.partyVotes.length &&
+          //   votes1.deputies.partyVotes.every(
+          //     (p, i) =>
+          //       p.partyId === votes2.deputies.partyVotes[i].partyId &&
+          //       p.votes === votes2.deputies.partyVotes[i].votes,
+          //   );
 
-          return partiesEqual && deputiesEqual;
+          return partiesEqual;
+          // && deputiesEqual;
         } catch {
           return false;
         }
@@ -106,7 +106,7 @@ class PinataService {
         isEqual(ballot.votes, voteData.votes),
       );
 
- /*      console.log('[PINATA-SERVICE] 📊 Resultado checkDuplicateBallot:', {
+      /*      console.log('[PINATA-SERVICE] 📊 Resultado checkDuplicateBallot:', {
         exists: Boolean(duplicate),
         ballotId: duplicate?.id,
         existingBallotsCount: existingBallots.length,
@@ -142,7 +142,7 @@ class PinataService {
    */
   async uploadImageToIPFS(filePathOrUrl, fileName = 'electoral-act.jpg') {
     //console.log('[PINATA-SERVICE] 📤 uploadImageToIPFS iniciado');
-/*     console.log('[PINATA-SERVICE] 📁 Archivo:', {
+    /*     console.log('[PINATA-SERVICE] 📁 Archivo:', {
       pathPreview: filePathOrUrl?.substring(0, 60) + '...',
       fileName,
       isHttp: this.isHttpUrl(filePathOrUrl),
@@ -215,7 +215,7 @@ class PinataService {
           gatewayUrl: `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`,
         },
       };
-/*       console.log('[PINATA-SERVICE] ✅ Imagen subida a IPFS exitosamente:', {
+      /*       console.log('[PINATA-SERVICE] ✅ Imagen subida a IPFS exitosamente:', {
         ipfsHash: response.data.IpfsHash,
         size: response.data.PinSize,
         gatewayUrl: out.data.gatewayUrl?.substring(0, 60) + '...',
@@ -278,7 +278,7 @@ class PinataService {
         },
       );
 
-/*       console.log('[PINATA-SERVICE] ✅ JSON subido a IPFS exitosamente:', {
+      /*       console.log('[PINATA-SERVICE] ✅ JSON subido a IPFS exitosamente:', {
         ipfsHash: response.data.IpfsHash,
         size: response.data.PinSize,
       }); */
@@ -315,7 +315,7 @@ class PinataService {
     additionalData = {},
   ) {
     //console.log('[PINATA-SERVICE] 🚀 uploadElectoralActComplete iniciado');
-/*     console.log('[PINATA-SERVICE] 📋 Datos recibidos:', {
+    /*     console.log('[PINATA-SERVICE] 📋 Datos recibidos:', {
       imagePathPreview: imagePath?.substring(0, 60) + '...',
       hasAnalysisData: !!analysisData,
       hasElectoralData: !!electoralData,
@@ -368,10 +368,10 @@ class PinataService {
           value: parseInt(party.presidente, 10) || 0,
         });
 
-        attributes.push({
-          trait_type: `Diputado - ${party.partido}`,
-          value: parseInt(party.diputado, 10) || 0,
-        });
+        // attributes.push({
+        //   trait_type: `Diputado - ${party.partido}`,
+        //   value: parseInt(party.diputado, 10) || 0,
+        // });
       });
 
       // Agregar resumen de votos
@@ -381,28 +381,28 @@ class PinataService {
             trait_type: 'Presidente - Votos Válidos',
             value: parseInt(summary.value1, 10) || 0,
           });
-          attributes.push({
-            trait_type: 'Diputado - Votos Válidos',
-            value: parseInt(summary.value2, 10) || 0,
-          });
+          // attributes.push({
+          //   trait_type: 'Diputado - Votos Válidos',
+          //   value: parseInt(summary.value2, 10) || 0,
+          // });
         } else if (summary.label === 'Votos en Blanco') {
           attributes.push({
             trait_type: 'Presidente - Votos en Blanco',
             value: parseInt(summary.value1, 10) || 0,
           });
-          attributes.push({
-            trait_type: 'Diputado - Votos en Blanco',
-            value: parseInt(summary.value2, 10) || 0,
-          });
+          // attributes.push({
+          //   trait_type: 'Diputado - Votos en Blanco',
+          //   value: parseInt(summary.value2, 10) || 0,
+          // });
         } else if (summary.label === 'Votos Nulos') {
           attributes.push({
             trait_type: 'Presidente - Votos Nulos',
             value: parseInt(summary.value1, 10) || 0,
           });
-          attributes.push({
-            trait_type: 'Diputado - Votos Nulos',
-            value: parseInt(summary.value2, 10) || 0,
-          });
+          // attributes.push({
+          //   trait_type: 'Diputado - Votos Nulos',
+          //   value: parseInt(summary.value2, 10) || 0,
+          // });
         }
       });
 
@@ -410,7 +410,7 @@ class PinataService {
       const buildVoteData = type => {
         // Función auxiliar para obtener valores de forma segura
         const getValue = (label, defaultValue = 0) => {
-          const item = electoralData.voteSummaryResults.find(
+          const item = (electoralData.voteSummaryResults || []).find(
             s => s.label === label,
           );
           if (!item) return defaultValue;
@@ -424,10 +424,12 @@ class PinataService {
           nullVotes: getValue('Votos Nulos'),
           blankVotes: getValue('Votos en Blanco'),
           partyVotes: electoralData.partyResults.map(party => ({
-            partyId: party.partido,
+            partyId: String(p.partido || '')
+              .trim()
+              .toLowerCase(),
             votes:
               parseInt(
-                type === 'presidente' ? party.presidente : party.diputado,
+                 party.presidente,
                 10,
               ) || 0,
           })),
@@ -444,14 +446,14 @@ class PinataService {
         locationId: additionalData.idRecinto,
         votes: {
           parties: buildVoteData('presidente'),
-          deputies: buildVoteData('diputado'),
+          // deputies: buildVoteData('diputado'),
         },
       };
 
       // 5. Construir metadata final
       const metadata = {
         name: `Acta Electoral Mesa ${tableNumber}`,
-        description: `Acta de escrutinio para la mesa ${tableNumber} (${tableCode}), registrada a las ${time}. Incluye resultados de votos para presidente y diputado por candidatura, así como el resumen de votos válidos, blancos, nulos y total.`,
+        description: `Acta de escrutinio para la mesa ${tableNumber} (${tableCode}), registrada a las ${time}. Incluye resultados de votos para presidente por candidatura, así como el resumen de votos válidos, blancos, nulos y total.`,
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/acta/${tableCode}`,
         attributes: attributes,
