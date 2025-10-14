@@ -110,7 +110,7 @@ export default function RecuperationQR() {
         );
       }
     } catch (err) {
-      console.error('Error saving QR:', err);
+      //console.logerror('Error saving QR:', err);
       logAction('SaveQrError', {message: err?.message});
 
       let errorMessage = 'No se pudo guardar la imagen';
