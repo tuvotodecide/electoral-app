@@ -38,6 +38,8 @@ export default function RecuperationQR() {
   const {logAction} = useNavigationLogger('RecuperationQR', true);
   const userData = useSelector(state => state.wallet.payload);
 
+  const qrRef = useRef(null);
+
   useEffect(() => {
     (async () => {
       try {
@@ -59,8 +61,8 @@ export default function RecuperationQR() {
     })();
   }, [userData]);
 
-  const saveQr = async () => {
-    if (!viewShotRef.current)
+  const initSaveQr = async () => {
+    if (!qrRef.current)
       return Alert.alert('QR', 'El código aún no está listo');
     if (saving) return;
 
@@ -74,7 +76,26 @@ export default function RecuperationQR() {
         return;
       }
 
-      const {savedOn, path, fileName} = await recoveryService.saveQr(viewShotRef);
+      qrRef.current.toDataURL((data) => {
+        saveQr(data);
+      });
+      console.log('init finish')
+    } catch (err) {
+      //console.logerror('Error saving QR:', err);
+      logAction('InitSaveError', {message: err?.message});
+
+      Alert.alert('Error', errorMessage, [
+        {text: 'OK', style: 'default'},
+        {text: 'Abrir configuración', onPress: () => openSettings()},
+      ]);
+    } 
+  };
+
+  const saveQr = async (dataUrl) => {
+    console.log('asldknfal;skdfn');
+    try {
+      const {savedOn, path, fileName} = await recoveryService.saveQrOnDevice(dataUrl);
+      console.log('asdasd');
 
       if(savedOn === 'gallery') {
         logAction('SaveQrGallery');
@@ -109,8 +130,7 @@ export default function RecuperationQR() {
           [{ text: 'OK' }]
         );
       }
-    } catch (err) {
-      //console.logerror('Error saving QR:', err);
+    } catch (error) {
       logAction('SaveQrError', {message: err?.message});
 
       let errorMessage = 'No se pudo guardar la imagen';
@@ -129,7 +149,7 @@ export default function RecuperationQR() {
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -147,19 +167,17 @@ export default function RecuperationQR() {
       <CHeader testID="recuperationQrHeader" title={String.qrRecoveryTitle} />
 
       <KeyBoardAvoidWrapper testID="recuperationQrKeyboardWrapper" contentContainerStyle={styles.ph20}>
-        <wira.ViewShot
-          ref={viewShotRef}
-          testID="recuperationQrViewShot"
-          style={local.qrBox}
-          options={{format: 'png', quality: 1}}>
+        <View style={local.qrBox}>
           <QRCodeSVG
             testID="recuperationQrCode"
             value={qrData}
+            getRef={(c) => (qrRef.current = c)}
             size={moderateScale(290)}
             backgroundColor="#fff"
             color="#000"
+            quietZone={10}
           />
-        </wira.ViewShot>
+        </View>
 
         <CText testID="recuperationQrDescription" type="B16" align="center" marginTop={20}>
           {String.qrRecoveryDescription}
@@ -171,7 +189,7 @@ export default function RecuperationQR() {
         <CButton
           testID="recuperationQrSaveButton"
           title={saving ? 'Guardando…' : String.qrRecoveryButton}
-          onPress={saveQr}
+          onPress={initSaveQr}
           disabled={saving}
           frontIcon={
             saving ? (
