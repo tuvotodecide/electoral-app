@@ -412,7 +412,7 @@ const BaseSearchTableScreen = ({
 
             const partyResults = presidentialParties.map(presParty => {
               return {
-                partyId: String(presParty.partyId ?? '').trim().toLowerCase(),
+                partyId: globalThis.String(presParty.partyId ?? '').trim().toLowerCase(),
                 presidente: presParty.votes,
               };
             });

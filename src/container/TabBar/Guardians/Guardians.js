@@ -31,6 +31,7 @@ const statusColorKey = {
 };
 
 export default function Guardians({navigation}) {
+  const {logAction, logNavigation} = useNavigationLogger('Guardians');
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
