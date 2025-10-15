@@ -50,12 +50,14 @@ class PinataService {
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
-      /*       console.log('[PINATA-SERVICE] 🌐 Consultando backend:', `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`);
+      console.log(
+        '[PINATA-SERVICE] 🌐 Consultando backend:',
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
+      );
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
         {timeout: 10000}, // 10 segundos timeout
-      ); */
-
+      );
       const data = response.data;
 
       // Normalizar para siempre tener un array
@@ -427,11 +429,7 @@ class PinataService {
             partyId: String(p.partido || '')
               .trim()
               .toLowerCase(),
-            votes:
-              parseInt(
-                 party.presidente,
-                10,
-              ) || 0,
+            votes: parseInt(party.presidente, 10) || 0,
           })),
           totalVotes:
             getValue('Votos Válidos') +

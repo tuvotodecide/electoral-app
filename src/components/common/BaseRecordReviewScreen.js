@@ -62,7 +62,7 @@ const BaseRecordReviewScreen = ({
   showMesaInfo = false,
   mesaData,
   emptyDisplayWhenReadOnly = '0',
-  showDeputy = true,
+  showDeputy = false,
   twoColumns = true,
 }) => {
   const insets = useSafeAreaInsets();
