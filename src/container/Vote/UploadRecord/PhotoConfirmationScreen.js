@@ -243,7 +243,7 @@ const PhotoConfirmationScreen = () => {
       nullVotes: getValue('nulos'),
       blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
-        partyId: String(p.partido || '').trim().toLowerCase(),
+        partyId: String(party.partido || '').trim().toLowerCase(),
         votes:
           parseInt(
            party.presidente,
