@@ -32,7 +32,6 @@ export default function RegisterUser4({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({
     visible: false,
-    title: '',
     message: '',
     isLoading: false,
   });
@@ -133,12 +132,13 @@ export default function RegisterUser4({navigation, route}) {
         PROVIDER_NAME,
       );
 
-      setModal({visible: false, title: '', message: '', isLoading: false});
-      logAction('recovery_success');
-      navigation.reset({
-        index: 0,
-        routes: [{name: AuthNav.LoginUser}],
+      setModal({
+        visible: true,
+        message: String.recoverySuccess,
+        isLoading: false,
+        success: true,
       });
+      logAction('recovery_success');
     } catch (error) {
       setModal({
         visible: true,
@@ -150,6 +150,13 @@ export default function RegisterUser4({navigation, route}) {
       return;
     }
   };
+
+  const goToLogin = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{name: AuthNav.LoginUser}],
+    });
+  }
 
   return (
     <CSafeAreaViewAuth testID="registerUser4Container">
@@ -202,9 +209,9 @@ export default function RegisterUser4({navigation, route}) {
       </View>
       <LoadingModal
         {...modal}
-        buttonText={String.retryRecovery}
-        onClose={triggerRecovery}
-        secondBtn={modal.isLoading ? undefined : String.btnCheckData}
+        buttonText={modal.success ? String.continue : String.retryRecovery}
+        onClose={modal.success ? goToLogin : triggerRecovery}
+        secondBtn={modal.success ? undefined : String.btnCheckData}
         onSecondPress={() =>
           navigation.navigate(AuthNav.RegisterUser1, {isRecovery: true})
         }

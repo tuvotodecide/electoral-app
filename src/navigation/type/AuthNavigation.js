@@ -2,15 +2,23 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {AuthNav} from '../NavigationKey';
 import {AuthRoute} from '../NavigationRoute';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
 export default function AuthNavigation() {
+  const insets = useSafeAreaInsets();
+
+  const renderLayout = ({children}) => (
+    <View style={{flex: 1, paddingBottom: insets.bottom}}>{children}</View>
+  );
   
   return (
     <Stack.Navigator
       screenOptions={{headerShown: false}}
-      initialRouteName={AuthNav.Connect}>
+      initialRouteName={AuthNav.Connect}
+      screenLayout={renderLayout}>
       <Stack.Screen name={AuthNav.Connect} component={AuthRoute.Connect} />
       <Stack.Screen
         name={AuthNav.OnBoarding}

@@ -20,6 +20,7 @@ import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
 import {setTmpPin} from '../../utils/TempRegister';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import CBigAlert from '../../components/common/CBigAlert';
 
 export default function RegisterUser9({navigation, route}) {
   const {originalPin, ocrData, useBiometry, dni} = route.params;
@@ -35,10 +36,8 @@ export default function RegisterUser9({navigation, route}) {
   const otpRef = useRef(null);
 
   useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
-      otpRef.current?.focusField(0);
-    });
-    return () => task.cancel();
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    return () => clearTimeout(t);
   }, []);
 
   const handleConfirmPin = async () => {
@@ -122,6 +121,12 @@ export default function RegisterUser9({navigation, route}) {
                 <CAlert testID="registerUser9PinErrorAlert" status="error" message={String.incorrectPinError} />
               </View>
             )}
+
+            <CBigAlert
+              icon='information-outline'
+              title='Recomendación'
+              subttle='Al concluir, NO OLVIDE registrar al menos un guardián para poder recuperar su cuenta en caso de olvidar el pin.'
+            />
           </View>
 
           <View testID="registerUser9PinButtonContainer">

@@ -1,4 +1,4 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -47,11 +47,8 @@ export default function RegisterUser8({navigation, route}) {
   };
 
   useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(() => {
-      otpRef.current?.focusField(0);
-    });
-
-    return () => task.cancel();
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    return () => clearTimeout(t);
   }, []);
 
   return (

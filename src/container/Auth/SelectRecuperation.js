@@ -14,7 +14,7 @@ import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
-export default function SelectRecuperation({navigation}) {
+export default function SelectRecuperation({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   // Hook para logging de navegación
   const {logAction, logNavigation} = useNavigationLogger(
@@ -50,39 +50,42 @@ export default function SelectRecuperation({navigation}) {
             {String.recoverymethod}
           </CText>
         </View>
-        <TouchableOpacity
-          testID="selectRecuperationGuardiansOption"
-          style={[
-            localStyle.optionContainer,
-            {
-              backgroundColor: colors.backgroundColor,
-              borderColor: colors.dark
-                ? colors.grayScale700
-                : colors.grayScale200,
+        {!route.params?.disableCI &&
+          <TouchableOpacity
+            testID="selectRecuperationGuardiansOption"
+            style={[
+              localStyle.optionContainer,
+              {
+                backgroundColor: colors.backgroundColor,
+                borderColor: colors.dark
+                  ? colors.grayScale700
+                  : colors.grayScale200,
 
-              elevation: 5,
-            },
-          ]}
-          onPress={initCIrecovery}>
-          <View style={styles.rowCenter}>
-            <View
-              style={[
-                localStyle.iconBg,
-                {
-                  borderColor: colors.dark
-                    ? colors.stepBackgroundColor
-                    : colors.grayScale200,
-                },
-              ]}>
-              <Icono name="card-account-details" size={moderateScale(24)} />
-            </View>
-            <View style={styles.ml10}>
-              <View style={styles.rowCenter}>
-                <CText type="B16">{String.recoveryWithCI}</CText>
+                elevation: 5,
+              },
+            ]}
+            onPress={initCIrecovery}>
+            <View style={styles.rowCenter}>
+              <View
+                style={[
+                  localStyle.iconBg,
+                  {
+                    borderColor: colors.dark
+                      ? colors.stepBackgroundColor
+                      : colors.grayScale200,
+                  },
+                ]}>
+                <Icono name="card-account-details" size={moderateScale(24)} />
+              </View>
+              <View style={styles.ml10}>
+                <View style={styles.rowCenter}>
+                  <CText type="B16">{String.recoveryWithCI}</CText>
+                </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        }
+        
         <TouchableOpacity
           style={[
             localStyle.optionContainer,

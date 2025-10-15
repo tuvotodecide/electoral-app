@@ -259,6 +259,7 @@ export default {
   pin: 'PIN de acceso',
   retryRecovery: 'Reintentar',
   recoveringData: 'Recuperando datos...',
+  recoverySuccess: 'Sus datos fueron recuperados, ingrese su PIN a continuación para iniciar sesión',
   recoveryError: 'Error en la recuperación. Verifica tu CI y PIN.',
 
   connectBtnLogin: 'Tengo una cuenta',
@@ -470,7 +471,7 @@ export default {
   almostDone: 'Almost Done!',
   enterPhoneNumberText:
     'Enter your phone number and we’ll text you a code to activate your account.',
-  continue: 'Continue',
+  continue: 'Continuar',
   mobileNumber: 'Mobile Number',
   authenticationCode: 'Authentication Code',
   otpDescription:

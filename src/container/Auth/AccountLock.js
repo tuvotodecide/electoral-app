@@ -15,16 +15,12 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlertPrimary from '../../components/common/CAlertPrimary';
 import Icono from '../../components/common/Icono';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function AccountLock({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('AccountLock', true);
-  
   const onPressNext = () => {
-    navigation.navigate(AuthNav.SelectRecuperation);
+    navigation.navigate(AuthNav.SelectRecuperation, {disableCI: true});
   };
 
   return (

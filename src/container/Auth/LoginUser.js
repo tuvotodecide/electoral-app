@@ -249,11 +249,6 @@ export default function LoginUser({navigation}) {
     if (code.length !== 4) return;
 
     if (await isLocked()) {
-      setModal({
-        visible: true,
-        msg: 'Has agotado tus 5 intentos.\nEspera 15 minutos o recupera tu cuenta con tus guardianes.',
-        btn: String.understand,
-      });
       navigation.replace(AuthNav.AccountLock);
       return;
     }
@@ -274,8 +269,11 @@ export default function LoginUser({navigation}) {
             visible: true,
             msg:
               n >= 5
-                ? 'Has agotado tus 5 intentos.\nRecupera tu cuenta con tus guardianes.'
+                ? 'Has agotado tus 5 intentos.\n¿Olvidaste tu PIN?, Recupera tu cuenta.'
                 : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+            onClose: n >= 5
+              ? () => navigation.replace(AuthNav.SelectRecuperation, {disableCI: true})
+              : undefined
           });
           if (n >= 5) {
             dispatch(clearWallet());

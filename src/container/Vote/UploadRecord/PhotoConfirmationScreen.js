@@ -654,7 +654,10 @@ const PhotoConfirmationScreen = () => {
       } catch (error) {
         const message = error.message;
         //check if attestation is already created
-        if (message.indexOf('416c72656164792063726561746564') >= 0) {
+        if (
+          message.indexOf('416c72656164792063726561746564') >= 0 ||
+          message.indexOf('Already created') >= 0
+        ) {
           response = await executeOperation(
             privateKey,
             userData.account,

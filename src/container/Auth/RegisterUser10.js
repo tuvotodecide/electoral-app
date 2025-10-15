@@ -20,7 +20,6 @@ import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 
 import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
-import {CHAIN} from '@env';
 import {setAddresses} from '../../redux/slices/addressSlice';
 import {
   normalizeOcrForUI,
@@ -29,7 +28,8 @@ import wira from 'wira-sdk';
 import {
   BACKEND_IDENTITY,
   BUNDLER,
-  SPONSORSHIP_POLICY,
+  BUNDLER_MAIN,
+  CHAIN,
   CRED_TYPE,
   CRED_EXP_DAYS,
   PROVIDER_NAME,
@@ -119,10 +119,12 @@ export default function RegisterUser10({navigation, route}) {
           ocrData: normalizeOcrForUI(ocrData),
         });
 
+        const bundler = CHAIN === 'base' ? BUNDLER_MAIN : BUNDLER;
+        console.log('Using bundler:', bundler);
+
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
-          BUNDLER,
-          SPONSORSHIP_POLICY,
+          bundler,
         );
 
         await registerer.createVC(
