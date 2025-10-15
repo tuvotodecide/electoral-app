@@ -110,7 +110,6 @@ const PhotoReviewScreen = () => {
       {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: '0'},
     ];
   };
-    console.log('es', effectivePhotoUri);
   // State for the party results table
   const [partyResults, setPartyResults] = useState(getInitialPartyResults());
 
@@ -155,14 +154,15 @@ const PhotoReviewScreen = () => {
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
     }));
-    const cleanedPartyResults = normalizedPartyResults.map(
-      ({id, partido, presidente}) => ({
-        id,
-        partido,
-        presidente,
-      }),
-    );
-
+    const cleanedPartyResults = normalizedPartyResults
+      .map(p => ({
+        id:
+          p.id ??
+          p.partyId ??
+          (p.partido ? String(p.partido).trim().toLowerCase() : undefined),
+        partido: p.partido ?? p.party ?? p.name ?? p.sigla ?? p.partyId ?? p.id,
+        presidente: p.presidente,
+      }))
     const normalizedVoteSummaryResults = voteSummaryResults.map(v => ({
       ...v,
       value1: v.value1 === '' ? '0' : v.value1,
@@ -184,9 +184,8 @@ const PhotoReviewScreen = () => {
     }
     // console.log('[MESA-INFO]', mesaInfo);
 
-
     navigation.navigate('PhotoConfirmationScreen', {
-      photoUri:effectivePhotoUri,
+      photoUri: effectivePhotoUri,
       tableData: mesaInfo,
       mesaData: mesaInfo,
       partyResults: cleanedPartyResults,
