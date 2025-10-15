@@ -41,6 +41,7 @@ import {ActivityIndicator} from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import {publishActaHandler} from '../../../utils/offlineQueueHandler';
 import CustomModal from '../../../components/common/CustomModal';
+import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -91,10 +92,21 @@ const CarouselItem = ({item}) => (
         />
       </View>
 
-      <View testID={`homeCarouselRight_${item.id}`} style={stylesx.carouselRight}>
-        <View testID={`homeCarouselTextContainer_${item.id}`} style={stylesx.carouselTextContainer}>
-          <CText testID={`homeCarouselTitle_${item.id}`} style={stylesx.carouselTitle}>{item.title}</CText>
-          <CText testID={`homeCarouselSubtitle_${item.id}`} style={stylesx.carouselSubtitle} numberOfLines={3}>
+      <View
+        testID={`homeCarouselRight_${item.id}`}
+        style={stylesx.carouselRight}>
+        <View
+          testID={`homeCarouselTextContainer_${item.id}`}
+          style={stylesx.carouselTextContainer}>
+          <CText
+            testID={`homeCarouselTitle_${item.id}`}
+            style={stylesx.carouselTitle}>
+            {item.title}
+          </CText>
+          <CText
+            testID={`homeCarouselSubtitle_${item.id}`}
+            style={stylesx.carouselSubtitle}
+            numberOfLines={3}>
             {item.subtitle}
           </CText>
         </View>
@@ -104,7 +116,11 @@ const CarouselItem = ({item}) => (
           style={stylesx.carouselButtonInline}
           onPress={item.onPress}
           activeOpacity={0.8}>
-          <CText testID={`homeCarouselButtonText_${item.id}`} style={stylesx.carouselButtonText}>{item.buttonText}</CText>
+          <CText
+            testID={`homeCarouselButtonText_${item.id}`}
+            style={stylesx.carouselButtonText}>
+            {item.buttonText}
+          </CText>
         </TouchableOpacity>
       </View>
     </View>
@@ -138,9 +154,15 @@ const MiVotoLogo = () => (
       />
       <View style={stylesx.flagCheckOutline} />
     </View> */}
-    <View testID="homeMiVotoLogoText" style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
-      <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>Tu Voto Decide</CText>
-      <CText testID="homeMiVotoLogoSubtitle" style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
+    <View
+      testID="homeMiVotoLogoText"
+      style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+      <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>
+        Tu Voto Decide
+      </CText>
+      <CText testID="homeMiVotoLogoSubtitle" style={stylesx.logoSubtitle}>
+        Control ciudadano del voto
+      </CText>
     </View>
   </View>
 );
@@ -172,10 +194,16 @@ const RegisterAlertCard = ({onPress}) => (
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
-    <View testID="homeBlockchainBannerContent" style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+    <View
+      testID="homeBlockchainBannerContent"
+      style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
       <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
-        <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
-        <CText testID="homeBlockchainBannerSubtitle" style={stylesx.bannerSubtitle}>
+        <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
+          {String.needBlockchainApp}
+        </CText>
+        <CText
+          testID="homeBlockchainBannerSubtitle"
+          style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
         </CText>
       </View>
@@ -185,7 +213,11 @@ const BlockchainConsultoraBanner = () => (
       onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
       style={stylesx.bannerButton}
       activeOpacity={0.8}>
-      <CText testID="homeBlockchainBannerButtonText" style={stylesx.bannerButtonText}>{String.learnMore}</CText>
+      <CText
+        testID="homeBlockchainBannerButtonText"
+        style={stylesx.bannerButtonText}>
+        {String.learnMore}
+      </CText>
     </TouchableOpacity>
   </View>
 );
@@ -208,7 +240,7 @@ export default function HomeScreen({navigation}) {
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
 
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('HomeScreen', true);
+  const {logAction, logNavigation} = useNavigationLogger('HomeScreen', true);
 
   const userData = useSelector(state => state.wallet.payload);
 
@@ -225,7 +257,7 @@ export default function HomeScreen({navigation}) {
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
       return;
     const net = await NetInfo.fetch();
-    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
     if (!online) return;
     //console.log('[HOME-SCREEN] runOfflineQueueOnce starting');
     processingRef.current = true;
@@ -255,7 +287,7 @@ export default function HomeScreen({navigation}) {
 
   const handleParticiparPress = async () => {
     const net = await NetInfo.fetch();
-    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
     if (online) {
       navigation.navigate(StackNav.ElectoralLocations, {
         targetScreen: 'UnifiedParticipation',
@@ -324,10 +356,7 @@ export default function HomeScreen({navigation}) {
       runOfflineQueueOnce();
       // escucha cambios de red mientras esta pantalla está activa
       const unsubNet = NetInfo.addEventListener(state => {
-        const online = !!(
-          state.isConnected &&
-          (state.isInternetReachable ?? true)
-        );
+        const online = isStateEffectivelyOnline(state,NET_POLICIES.balanced);
         if (online && alive) runOfflineQueueOnce();
       });
       return () => {
@@ -470,7 +499,6 @@ export default function HomeScreen({navigation}) {
   };
   const userFullName = data.name || '(sin nolombre)';
 
-
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [
@@ -526,11 +554,15 @@ export default function HomeScreen({navigation}) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText testID="homeLogoutModalTitle" style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+            <CText
+              testID="homeLogoutModalTitle"
+              style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View testID="homeLogoutModalButtons" style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+            <View
+              testID="homeLogoutModalButtons"
+              style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
               <TouchableOpacity
                 testID="homeLogoutModalCancelButton"
                 style={{
@@ -541,7 +573,9 @@ export default function HomeScreen({navigation}) {
                   marginRight: 8,
                 }}
                 onPress={() => setLogoutModalVisible(false)}>
-                <CText testID="homeLogoutModalCancelText" style={{color: '#222', fontWeight: '600'}}>
+                <CText
+                  testID="homeLogoutModalCancelText"
+                  style={{color: '#222', fontWeight: '600'}}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
@@ -554,7 +588,9 @@ export default function HomeScreen({navigation}) {
                   borderRadius: 8,
                 }}
                 onPress={handleLogout}>
-                <CText testID="homeLogoutModalConfirmText" style={{color: '#fff', fontWeight: '600'}}>
+                <CText
+                  testID="homeLogoutModalConfirmText"
+                  style={{color: '#fff', fontWeight: '600'}}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -630,13 +666,13 @@ export default function HomeScreen({navigation}) {
             </View>
           </View>
           {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
-            <RegisterAlertCard
-              onPress={() =>
-                navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni,
-                })
-              }
-            />
+          <RegisterAlertCard
+            onPress={() =>
+              navigation.navigate(StackNav.ElectoralLocationsSave, {
+                dni,
+              })
+            }
+          />
           {/*)}*/}
 
           <View style={stylesx.tabletRightColumn}>
@@ -722,8 +758,7 @@ export default function HomeScreen({navigation}) {
                   color={'#41A44D'}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onPressLogout}
-                testID="logoutButton">
+              <TouchableOpacity onPress={onPressLogout} testID="logoutButton">
                 <Ionicons
                   name="log-out-outline"
                   size={getResponsiveSize(24, 28, 32)}

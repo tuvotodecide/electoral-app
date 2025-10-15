@@ -426,7 +426,7 @@ class PinataService {
           nullVotes: getValue('Votos Nulos'),
           blankVotes: getValue('Votos en Blanco'),
           partyVotes: electoralData.partyResults.map(party => ({
-            partyId: String(p.partido || '')
+            partyId: String(party.partido || '')
               .trim()
               .toLowerCase(),
             votes: parseInt(party.presidente, 10) || 0,

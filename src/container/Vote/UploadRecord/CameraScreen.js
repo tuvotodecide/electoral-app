@@ -29,6 +29,7 @@ import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 import {launchImageLibrary} from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
 
 const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -105,12 +106,12 @@ const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
 
 export default function CameraScreen({navigation, route}) {
   //console.log('[CAMERA-SCREEN] 📸 CameraScreen montado');
-/*   console.log('[CAMERA-SCREEN] 📋 Route params:', {
+  /*   console.log('[CAMERA-SCREEN] 📋 Route params:', {
     hasTableData: !!route.params?.tableData,
     tableNumber: route.params?.tableData?.tableNumber || route.params?.tableData?.numero,
     tableCode: route.params?.tableData?.codigo,
   }); */
-  
+
   const camera = useRef(null);
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
@@ -142,7 +143,7 @@ export default function CameraScreen({navigation, route}) {
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
   // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('CameraScreen', true);
+  const {logAction, logNavigation} = useNavigationLogger('CameraScreen', true);
   const initialScale = useRef(1);
   const isZooming = useRef(false);
 
@@ -155,11 +156,16 @@ export default function CameraScreen({navigation, route}) {
 
   useEffect(() => {
     if (!NetInfoSafe) {
-      setIsOnline(true);
+      setIsOnline(false);
       return;
     }
+    NetInfoSafe.fetch().then(s =>
+      setIsOnline(
+        isStateEffectivelyOnline(s, NET_POLICIES.balanced),
+      ),
+    );
     const sub = NetInfoSafe.addEventListener(state => {
-      const ok = !!state.isConnected && (state.isInternetReachable ?? true);
+      const ok = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
       setIsOnline(ok);
     });
     return () => sub && sub();
@@ -540,7 +546,7 @@ export default function CameraScreen({navigation, route}) {
   const takePhoto = async () => {
     //console.log('[CAMERA-SCREEN] 📸 takePhoto iniciado');
     if (!camera.current || loading || !isActive) {
-/*       console.log('[CAMERA-SCREEN] ⚠️ takePhoto bloqueado:', {
+      /*       console.log('[CAMERA-SCREEN] ⚠️ takePhoto bloqueado:', {
         hasCamera: !!camera.current,
         loading,
         isActive,
@@ -572,7 +578,7 @@ export default function CameraScreen({navigation, route}) {
 
       setPhoto({path: result.path}); // sin cropData
       setPhotoMeta(meta);
-/*       console.log('[CAMERA-SCREEN] ✅ Foto capturada exitosamente:', {
+      /*       console.log('[CAMERA-SCREEN] ✅ Foto capturada exitosamente:', {
         path: result.path?.substring(0, 60) + '...',
         width: meta.width,
         height: meta.height,
@@ -617,7 +623,7 @@ export default function CameraScreen({navigation, route}) {
     }
     const mesaInfo = route.params?.tableData || {};
     //console.log('[CAMERA-SCREEN] 🌐 Estado de conexión:', {isOnline});
-    
+
     if (!isOnline) {
       //console.log('[CAMERA-SCREEN] 📴 Modo offline: navegando sin análisis AI');
       navigation.navigate(StackNav.PhotoReviewScreen, {
@@ -627,7 +633,7 @@ export default function CameraScreen({navigation, route}) {
       });
       return;
     }
-    
+
     //console.log('[CAMERA-SCREEN] 🤖 Iniciando análisis con AI...');
     setAnalyzing(true);
 
@@ -638,7 +644,7 @@ export default function CameraScreen({navigation, route}) {
         photo.path,
       );
 
-/*       console.log('[CAMERA-SCREEN] 📊 Resultado de análisis:', {
+      /*       console.log('[CAMERA-SCREEN] 📊 Resultado de análisis:', {
         success: analysisResult.success,
         hasData: !!analysisResult.data,
       }); */
@@ -656,7 +662,7 @@ export default function CameraScreen({navigation, route}) {
 
       const aiData = analysisResult.data;
 
-/*       console.log('[CAMERA-SCREEN] ✔️ Verificando validez del acta:', {
+      /*       console.log('[CAMERA-SCREEN] ✔️ Verificando validez del acta:', {
         if_electoral_act: aiData.if_electoral_act,
         image_not_clear: aiData.image_not_clear,
       }); */
@@ -704,7 +710,7 @@ export default function CameraScreen({navigation, route}) {
 
       // Mapear datos de la IA al formato de la app
       const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
-/*       console.log('[CAMERA-SCREEN] 📋 Datos mapeados:', {
+      /*       console.log('[CAMERA-SCREEN] 📋 Datos mapeados:', {
         hasPartyResults: !!mappedData.partyResults,
         hasVoteSummary: !!mappedData.voteSummaryResults,
       }); */
@@ -793,7 +799,9 @@ export default function CameraScreen({navigation, route}) {
             screenWidth={screenData.width}
             screenHeight={screenData.height}
           />
-          <View testID="cameraScreenBottomContainer" style={styles.bottomContainer}>
+          <View
+            testID="cameraScreenBottomContainer"
+            style={styles.bottomContainer}>
             <TouchableOpacity
               testID="cameraScreenCaptureButton"
               style={[
@@ -805,9 +813,14 @@ export default function CameraScreen({navigation, route}) {
               onPress={takePhoto}
               disabled={loading || !isActive}>
               {loading ? (
-                <ActivityIndicator testID="cameraScreenCaptureLoading" color="#fff" />
+                <ActivityIndicator
+                  testID="cameraScreenCaptureLoading"
+                  color="#fff"
+                />
               ) : (
-                <CText testID="cameraScreenCaptureButtonText" style={styles.buttonText}>
+                <CText
+                  testID="cameraScreenCaptureButtonText"
+                  style={styles.buttonText}>
                   {isActive ? String.takePhoto : String.preparingCamera}
                 </CText>
               )}
@@ -835,13 +848,19 @@ export default function CameraScreen({navigation, route}) {
               backgroundColor="#000"
               imageIndex={0}
               FooterComponent={() => (
-                <View testID="cameraScreenFooterActions" style={styles.photoActionsContainer}>
+                <View
+                  testID="cameraScreenFooterActions"
+                  style={styles.photoActionsContainer}>
                   <TouchableOpacity
                     testID="cameraScreenFooterRetakeButton"
                     style={[styles.actionButton, styles.retakeButton]}
                     onPress={takeNewPhoto}>
                     <Ionicons name="camera-outline" size={20} color="#fff" />
-                    <CText testID="cameraScreenFooterRetakeText" style={styles.actionButtonText}>Tomar Nueva</CText>
+                    <CText
+                      testID="cameraScreenFooterRetakeText"
+                      style={styles.actionButtonText}>
+                      Tomar Nueva
+                    </CText>
                   </TouchableOpacity>
 
                   {isOnline ? (
@@ -851,14 +870,18 @@ export default function CameraScreen({navigation, route}) {
                       onPress={handleNext}
                       disabled={analyzing}>
                       {analyzing ? (
-                        <View testID="cameraScreenFooterAnalyzingContainer" style={styles.analyzingContainer}>
+                        <View
+                          testID="cameraScreenFooterAnalyzingContainer"
+                          style={styles.analyzingContainer}>
                           <ActivityIndicator
                             testID="cameraScreenFooterAnalyzingIndicator"
                             color="#fff"
                             size="small"
                             style={styles.analyzingIcon}
                           />
-                          <CText testID="cameraScreenFooterAnalyzingText" style={styles.actionButtonText}>
+                          <CText
+                            testID="cameraScreenFooterAnalyzingText"
+                            style={styles.actionButtonText}>
                             Analizando...
                           </CText>
                         </View>
@@ -869,7 +892,9 @@ export default function CameraScreen({navigation, route}) {
                             size={20}
                             color="#fff"
                           />
-                          <CText testID="cameraScreenFooterAnalyzeText" style={styles.actionButtonText}>
+                          <CText
+                            testID="cameraScreenFooterAnalyzeText"
+                            style={styles.actionButtonText}>
                             Analizar
                           </CText>
                         </>
@@ -892,7 +917,11 @@ export default function CameraScreen({navigation, route}) {
                         size={20}
                         color="#fff"
                       />
-                      <CText testID="cameraScreenFooterContinueText" style={styles.actionButtonText}>Continuar</CText>
+                      <CText
+                        testID="cameraScreenFooterContinueText"
+                        style={styles.actionButtonText}>
+                        Continuar
+                      </CText>
                     </TouchableOpacity>
                   )}
                 </View>

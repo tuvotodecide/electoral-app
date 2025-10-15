@@ -25,6 +25,8 @@ import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import NetInfo from '@react-native-community/netinfo';
 import {BACKEND_RESULT} from '@env';
+import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
+
 import {getVotePlace} from '../../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -344,7 +346,7 @@ const ElectoralLocations = ({navigation, route}) => {
   useEffect(() => {
     const init = async () => {
       const net = await NetInfo.fetch();
-      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.tolerant);
       setOffline(!online);
       if (!online) {
         setConfigLoading(false);
@@ -441,7 +443,7 @@ const ElectoralLocations = ({navigation, route}) => {
       }
     } catch (error) {
       const net = await NetInfo.fetch();
-      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      const online = isStateEffectivelyOnline(net,  NET_POLICIES.balanced);
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
