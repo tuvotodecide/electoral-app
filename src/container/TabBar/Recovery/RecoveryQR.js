@@ -45,9 +45,7 @@ export default function RecoveryQr({navigation}) {
     try {
       logAction('RecoveryQrParseAttempt');
       const start = Date.now();
-      //console.log('[RecoveryQR] recoveryFromQr start', { uri: asset.uri });
       const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
-      //console.log('[RecoveryQR] recoveryFromQr success', { duration, preview });
 
       let newPayload = {
         data: dataFromQr,

@@ -55,7 +55,6 @@ export const PhotoContainer = ({
   enableZoom = false,
   useAspectRatio = false,
 }) => {
-  console.log(photoUri);
   if (enableZoom) {
     return (
       <ZoomablePhotoContainer
@@ -82,8 +81,6 @@ export const PhotoContainer = ({
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
         onError={e => {
-          console.log('[PhotoContainer] Image error', e?.nativeEvent);
-          console.log('[PhotoContainer] tried uri =', normalizedUri);
         }}
       />
       <View
@@ -129,10 +126,6 @@ const ZoomablePhotoContainer = ({
       normalizedUri,
       (w, h) => setImg({w, h}),
       () => {
-        console.log(
-          '[ZoomablePhotoContainer] getSize failed for',
-          normalizedUri,
-        );
         setImg({w: 1, h: 1});
       },
     );

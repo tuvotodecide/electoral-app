@@ -181,9 +181,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         location: fullLocation, // guarda todo el objeto
         table: tablePayload,
       };
-      //console.log('[UNIFIED-TABLE] saveSelectedMesa saving to cache', { dni, cachePayload });
       await saveVotePlace(dni, cachePayload);
-      //console.log('[UNIFIED-TABLE] saveSelectedMesa saved to cache', { dni });
       showModal(
         'success',
         'Guardado',
@@ -244,7 +242,6 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
       originalTableData: mesa,
       locationData: locationData,
     };
-    //console.log('[TABLE-PROCESSOR] processedMesa', processedMesa);
     setSelectedMesa(processedMesa);
 
     showModal(

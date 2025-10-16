@@ -1,4 +1,4 @@
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import {KeyboardAvoidingView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -117,7 +117,7 @@ export default function MyGuardiansStatus({navigation}) {
         })
         navigation.replace(AuthNav.RecoveryUser1Pin, {recData});
       }).catch(e => {
-        //console.log('Recovery init error:', e);
+        console.error('Recovery init error:', e);
       });
     } else if (safeDetail.status === 'REJECTED') {
       remove();
@@ -213,7 +213,7 @@ export default function MyGuardiansStatus({navigation}) {
   return (
     <CSafeAreaView testID="myGuardiansStatusContainer">
       <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} />
-      <KeyBoardAvoidWrapper testID="myGuardiansStatusKeyboardWrapper" contentContainerStyle={styles.ph20}>
+      <KeyboardAvoidingView testID="myGuardiansStatusKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <CText testID="myGuardiansStatusDescription" type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansDescriptionStatus}
         </CText>
@@ -229,7 +229,7 @@ export default function MyGuardiansStatus({navigation}) {
             : <CText align={'center'} marginTop={15}>{String.noGuardians}</CText>
           }
         </View>
-      </KeyBoardAvoidWrapper>
+      </KeyboardAvoidingView>
       <View testID="myGuardiansStatusBottomContainer" style={localStyle.bottomTextContainer}>
         <CButton
           testID="myGuardiansStatusReturnButton"

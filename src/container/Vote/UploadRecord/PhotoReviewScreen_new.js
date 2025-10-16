@@ -29,18 +29,6 @@ const PhotoReviewScreen = () => {
   } = route.params || {};
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
-  console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
-    photoUri,
-    tableData,
-    mesaData,
-    aiAnalysis,
-    mappedData,
-    offline,
-    existingRecord,
-    isViewOnly,
-    fromWhichIsCorrect,
-    actaCount,
-  });
   const effectivePhotoUri = useMemo(() => {
     const fromRecord =
       existingRecord?.actaImage ||
@@ -183,7 +171,6 @@ const PhotoReviewScreen = () => {
         return; // NO avanzar
       }
     }
-    // console.log('[MESA-INFO]', mesaInfo);
 
     navigation.navigate('PhotoConfirmationScreen', {
       photoUri: effectivePhotoUri,

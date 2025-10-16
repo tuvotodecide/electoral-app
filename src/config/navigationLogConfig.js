@@ -78,7 +78,6 @@ export const navLog = (type, message, data = null) => {
 
   const prefix = prefixes[type] || prefixes[normalizedType] || '[LOG]';
 
-  console.log(prefix, message, data ?? '');
 };
 
 /**

@@ -20,6 +20,7 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {normalizeUri} from '../../../utils/normalizedUri';
+import {useFocusEffect} from '@react-navigation/native';
 
 const {width: screenWidth} = Dimensions.get('window');
 

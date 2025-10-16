@@ -27,6 +27,7 @@ import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import wira from 'wira-sdk';
 import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import LoadingModal from '../../../components/modal/LoadingModal';
+import { resetAttempts } from '../../../utils/PinAttempts';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -91,6 +92,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       );
       dispatch(setAuthenticated(true));
       await startSession(null);
+      await resetAttempts();
 
       setModal({
         visible: false,

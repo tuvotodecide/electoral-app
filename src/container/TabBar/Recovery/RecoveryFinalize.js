@@ -17,6 +17,7 @@ import wira from 'wira-sdk';
 
 
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { resetAttempts } from '../../../utils/PinAttempts';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, recData} = route.params;
@@ -26,14 +27,15 @@ export default function RecoveryFinalize({route, navigation}) {
     (async () => {
       try {
         const data = JSON.parse(recData);
-        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, PROVIDER_NAME)
+        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, PROVIDER_NAME);
         await AsyncStorage.removeItem(GUARDIAN_RECOVERY_DNI);
         await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
+        await resetAttempts();
         dispatch(setSecrets(data));
         await startSession(null);
         navigation.navigate(AuthNav.LoginUser);
       } catch (error) {
-        //console.log('Recovery finalization error:', error);
+        console.error('Recovery finalization error:', error);
         navigation.replace(AuthNav.SelectRecuperation);
       }
     })();
