@@ -24,9 +24,11 @@ const PhotoReviewScreen = () => {
     isViewOnly,
 
     fromWhichIsCorrect,
-
+    mode: incomingMode,
     actaCount,
   } = route.params || {};
+  const mode =
+    incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   console.log('[PHOTO-REVIEW] 📦 Params recibidos:', {
     photoUri,
     tableData,
@@ -154,15 +156,14 @@ const PhotoReviewScreen = () => {
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
     }));
-    const cleanedPartyResults = normalizedPartyResults
-      .map(p => ({
-        id:
-          p.id ??
-          p.partyId ??
-          (p.partido ? String(p.partido).trim().toLowerCase() : undefined),
-        partido: p.partido ?? p.party ?? p.name ?? p.sigla ?? p.partyId ?? p.id,
-        presidente: p.presidente,
-      }))
+    const cleanedPartyResults = normalizedPartyResults.map(p => ({
+      id:
+        p.id ??
+        p.partyId ??
+        (p.partido ? String(p.partido).trim().toLowerCase() : undefined),
+      partido: p.partido ?? p.party ?? p.name ?? p.sigla ?? p.partyId ?? p.id,
+      presidente: p.presidente,
+    }));
     const normalizedVoteSummaryResults = voteSummaryResults.map(v => ({
       ...v,
       value1: v.value1 === '' ? '0' : v.value1,
@@ -198,6 +199,8 @@ const PhotoReviewScreen = () => {
       ),
       aiAnalysis,
       offline,
+      existingRecord,
+      mode,
     });
   };
 

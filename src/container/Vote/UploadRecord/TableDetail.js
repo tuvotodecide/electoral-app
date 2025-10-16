@@ -187,6 +187,7 @@ export default function TableDetail({navigation, route}) {
           existingRecord: record,
           isViewOnly: true,
           photoUri: record?.actaImage,
+          mode: 'attest',
         });
         
       } catch {
@@ -197,6 +198,7 @@ export default function TableDetail({navigation, route}) {
           existingRecord: record,
           isViewOnly: true,
           photoUri: record?.actaImage,
+          mode: 'attest',
         });
       }
       return;
