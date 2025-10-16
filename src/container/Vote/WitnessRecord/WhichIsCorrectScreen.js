@@ -435,6 +435,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
           partyResults,
           voteSummaryResults: voteSummary,
         },
+        mode: 'attest',
       };
       try {
         navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);

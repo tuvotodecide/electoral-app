@@ -25,7 +25,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {enqueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -61,7 +61,8 @@ const PhotoConfirmationScreen = () => {
     route.params || {}; // Destructure all needed data
   // Also try to get data from alternative parameter names
   //console.log('[TABLE-DATA]', tableData);
-
+  const existingRecord = route.params?.existingRecord || null;
+  const flowMode = route.params?.mode || 'upload';
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -76,7 +77,13 @@ const PhotoConfirmationScreen = () => {
     title: '',
     message: '',
   });
-
+  const extractJsonUrlFromBallot = b =>
+    b?.ipfsUri ||
+    b?.jsonUrl ||
+    b?.ipfsJSON ||
+    b?.ipfs?.json ||
+    b?.ipfs?.jsonUrl ||
+    null;
   const didAutoOpenRef = useRef(false);
   useEffect(() => {
     if (didAutoOpenRef.current) return;
@@ -90,7 +97,6 @@ const PhotoConfirmationScreen = () => {
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
 
-
   const vc = userData?.vc;
   const subject = getCredentialSubjectFromPayload(userData) || {};
   const data = {name: subject?.fullName || '(sin nombre)'};
@@ -102,7 +108,7 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
-/*       console.log('[PhotoConfirmation] verifyAndUpload start', {
+      /*       console.log('[PhotoConfirmation] verifyAndUpload start', {
         tableCode: tableData?.codigo,
         tableNumber: tableData?.tableNumber || tableData?.numero,
       }); */
@@ -116,6 +122,11 @@ const PhotoConfirmationScreen = () => {
         return;
       }
 
+      if (flowMode === 'attest') {
+        // Nada de duplicados: pasamos directo a la confirmación
+        handlePublishAndCertify();
+        return;
+      }
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
@@ -137,7 +148,7 @@ const PhotoConfirmationScreen = () => {
           // deputies: buildVoteData('diputado'),
         },
       };
-/*       console.log('[PhotoConfirmation] verificationData prepared', {
+      /*       console.log('[PhotoConfirmation] verificationData prepared', {
         verificationDataPreview: {
           tableNumber: verificationData.tableNumber,
           partiesCount: verificationData.votes.parties.length,
@@ -148,7 +159,12 @@ const PhotoConfirmationScreen = () => {
       const duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
       );
-      console.log('[PhotoConfirmation] duplicateCheck result', duplicateCheck?.exists ? {exists: true, ballotId: duplicateCheck?.ballot?._id} : {exists: false});
+      console.log(
+        '[PhotoConfirmation] duplicateCheck result',
+        duplicateCheck?.exists
+          ? {exists: true, ballotId: duplicateCheck?.ballot?._id}
+          : {exists: false},
+      );
 
       if (duplicateCheck.exists) {
         setDuplicateBallot(duplicateCheck.ballot);
@@ -243,12 +259,10 @@ const PhotoConfirmationScreen = () => {
       nullVotes: getValue('nulos'),
       blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
-        partyId: String(party.partido || '').trim().toLowerCase(),
-        votes:
-          parseInt(
-           party.presidente,
-            10,
-          ) || 0,
+        partyId: String(party.partido || '')
+          .trim()
+          .toLowerCase(),
+        votes: parseInt(party.presidente, 10) || 0,
       })),
       totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
@@ -273,7 +287,7 @@ const PhotoConfirmationScreen = () => {
         timeout: 30000, // 30 segundos timeout
       });
 
-/*       console.log('[PhotoConfirmation] uploadMetadataToBackend response', {
+      /*       console.log('[PhotoConfirmation] uploadMetadataToBackend response', {
         status: response.status,
         dataPreview: response.data && typeof response.data === 'object' ? { has_id: !!response.data._id } : typeof response.data,
       }); */
@@ -281,7 +295,16 @@ const PhotoConfirmationScreen = () => {
     } catch (error) {
       console.error('[PhotoConfirmation] uploadMetadataToBackend error', {
         message: error?.message,
-        response: error?.response ? {status: error.response.status, dataPreview: error.response.data ? (error.response.data._id ? { _id: error.response.data._id } : null) : null} : null,
+        response: error?.response
+          ? {
+              status: error.response.status,
+              dataPreview: error.response.data
+                ? error.response.data._id
+                  ? {_id: error.response.data._id}
+                  : null
+                : null,
+            }
+          : null,
       });
       throw error;
     }
@@ -461,7 +484,7 @@ const PhotoConfirmationScreen = () => {
         ? photoUri.substring(7)
         : photoUri;
 
-/*       console.log('[PhotoConfirmation] uploadToIPFS start', {
+      /*       console.log('[PhotoConfirmation] uploadToIPFS start', {
         imagePathPreview: imagePath?.slice(-64),
         additionalDataPreview: { idRecinto: additionalData.idRecinto, tableCode: additionalData.tableCode, tableNumber: additionalData.tableNumber, userId: additionalData.userId },
         electoralDataPreview: { partyResults: (electoralData.partyResults || []).length, voteSummaryResults: (electoralData.voteSummaryResults || []).length },
@@ -483,7 +506,10 @@ const PhotoConfirmationScreen = () => {
         //console.log('[PhotoConfirmation] uploadToIPFS returning data preview', { jsonUrl: result.data?.jsonUrl, imageUrl: result.data?.imageUrl });
         return result.data;
       } else {
-        console.error('[PhotoConfirmation] uploadToIPFS failed result:', result);
+        console.error(
+          '[PhotoConfirmation] uploadToIPFS failed result:',
+          result,
+        );
         throw new Error(result.error || 'uploadToIPFS failed');
       }
     } catch (error) {
@@ -555,7 +581,7 @@ const PhotoConfirmationScreen = () => {
         tableNumber: String(tableNumber),
         tableCode: String(tableCode),
         location: tableData?.location || 'Bolivia',
-        
+
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
@@ -600,6 +626,79 @@ const PhotoConfirmationScreen = () => {
     setStep(1);
 
     try {
+      // ✔️ MODO ATESTIGUAR: no subas IPFS, no valides duplicado
+      if (flowMode === 'attest') {
+        const ballot = existingRecord || duplicateBallot;
+        if (!ballot) {
+          throw new Error(
+            I18nStrings.noExistingBallotToAttest ||
+              'No hay un acta previa para atestiguar en esta mesa.',
+          );
+        }
+        const jsonUrl = extractJsonUrlFromBallot(ballot);
+        if (!jsonUrl) {
+          throw new Error('No se encontró el JSON/IPFS del acta existente.');
+        }
+
+        const privateKey = userData?.privKey;
+        // asegurar registro
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
+        }
+
+        // Atestiguar directamente
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+
+        // Guarda la atestación en backend si hay _id
+        if (ballot?._id) {
+          await uploadAttestation(ballot._id);
+        }
+
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+
+        navigation.navigate('SuccessScreen', {
+          ipfsData: {
+            jsonUrl,
+            imageUrl:
+              existingRecord?.imageUrl || existingRecord?.actaImage || null,
+          },
+          nftData: nftResult,
+          tableData: tableData,
+        });
+        return; // 👈 no sigas al flujo de upload
+      }
+
       // 1. Subir a IPFS
       const ipfsResult = await uploadToIPFS();
       setIpfsData(ipfsResult);
@@ -710,7 +809,10 @@ const PhotoConfirmationScreen = () => {
         tableData: tableData,
       });
     } catch (error) {
-      console.error('[PhotoConfirmation] confirmPublishAndCertify error', error);
+      console.error(
+        '[PhotoConfirmation] confirmPublishAndCertify error',
+        error,
+      );
       let message = error.message;
       if (message.includes('Validation Error')) {
         message = I18nStrings.validationError;
@@ -812,8 +914,12 @@ const PhotoConfirmationScreen = () => {
       />
 
       {/* Information Ready to Load Text */}
-      <View testID="photoConfirmationInfoContainer" style={styles.infoContainer}>
-        <CText testID="photoConfirmationInfoText" style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
+      <View
+        testID="photoConfirmationInfoContainer"
+        style={styles.infoContainer}>
+        <CText testID="photoConfirmationInfoText" style={styles.infoText}>
+          {I18nStrings.infoReadyToLoad}
+        </CText>
       </View>
 
       {/* Main Content */}
@@ -822,14 +928,21 @@ const PhotoConfirmationScreen = () => {
           <>
             <CText testID="photoConfirmationMainText" style={styles.mainText}>
               {I18nStrings.i}
-              <CText testID="photoConfirmationUserName" style={styles.mainTextBold}> {userFullName}</CText>
+              <CText
+                testID="photoConfirmationUserName"
+                style={styles.mainTextBold}>
+                {' '}
+                {userFullName}
+              </CText>
             </CText>
 
             <TouchableOpacity
               testID="photoConfirmationPublishButton"
               style={styles.publishButton}
               onPress={verifyAndUpload}>
-              <CText testID="photoConfirmationPublishButtonText" style={styles.publishButtonText}>
+              <CText
+                testID="photoConfirmationPublishButtonText"
+                style={styles.publishButtonText}>
                 {I18nStrings.publishAndCertify}
               </CText>
             </TouchableOpacity>
@@ -876,11 +989,17 @@ const PhotoConfirmationScreen = () => {
         transparent
         animationType="fade"
         onRequestClose={() => closeModal(true)}>
-        <View testID="photoConfirmationModalOverlay" style={modalStyles.modalOverlay}>
-          <View testID="photoConfirmationModalContainer" style={modalStyles.modalContainer}>
+        <View
+          testID="photoConfirmationModalOverlay"
+          style={modalStyles.modalOverlay}>
+          <View
+            testID="photoConfirmationModalContainer"
+            style={modalStyles.modalContainer}>
             {step === 0 && (
               <>
-                <View testID="photoConfirmationModalWarningIcon" style={modalStyles.iconCircleWarning}>
+                <View
+                  testID="photoConfirmationModalWarningIcon"
+                  style={modalStyles.iconCircleWarning}>
                   <Ionicons
                     name="alert-outline"
                     size={getResponsiveSize(36, 48, 60)}
@@ -888,8 +1007,14 @@ const PhotoConfirmationScreen = () => {
                   />
                 </View>
 
-                <CText testID="photoConfirmationModalBody" style={modalStyles.confirmBody}>
-                  <CText testID="photoConfirmationModalUserName" style={modalStyles.boldText}>Yo {userFullName}</CText>
+                <CText
+                  testID="photoConfirmationModalBody"
+                  style={modalStyles.confirmBody}>
+                  <CText
+                    testID="photoConfirmationModalUserName"
+                    style={modalStyles.boldText}>
+                    Yo {userFullName}
+                  </CText>
                   {'\n'}
                   Certifico que los datos que ingreso coinciden con la foto del
                   acta de la mesa y declaro que no he{' '}
@@ -898,12 +1023,16 @@ const PhotoConfirmationScreen = () => {
                   </CText>{' '}
                   información.
                 </CText>
-                <View testID="photoConfirmationModalButtonContainer" style={modalStyles.buttonContainer}>
+                <View
+                  testID="photoConfirmationModalButtonContainer"
+                  style={modalStyles.buttonContainer}>
                   <TouchableOpacity
                     testID="photoConfirmationModalCancelButton"
                     style={modalStyles.cancelButton}
                     onPress={() => closeModal(true)}>
-                    <CText testID="photoConfirmationModalCancelText" style={modalStyles.cancelButtonText}>
+                    <CText
+                      testID="photoConfirmationModalCancelText"
+                      style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
@@ -911,7 +1040,9 @@ const PhotoConfirmationScreen = () => {
                     testID="photoConfirmationModalConfirmButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
-                    <CText testID="photoConfirmationModalConfirmText" style={modalStyles.confirmButtonText}>
+                    <CText
+                      testID="photoConfirmationModalConfirmText"
+                      style={modalStyles.confirmButtonText}>
                       {I18nStrings.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
@@ -926,10 +1057,14 @@ const PhotoConfirmationScreen = () => {
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <CText testID="photoConfirmationModalLoadingTitle" style={modalStyles.loadingTitle}>
+                <CText
+                  testID="photoConfirmationModalLoadingTitle"
+                  style={modalStyles.loadingTitle}>
                   {I18nStrings.pleaseWait}
                 </CText>
-                <CText testID="photoConfirmationModalLoadingSubtext" style={modalStyles.loadingSubtext}>
+                <CText
+                  testID="photoConfirmationModalLoadingSubtext"
+                  style={modalStyles.loadingSubtext}>
                   {I18nStrings.savingToBlockchain}
                 </CText>
               </>
@@ -943,9 +1078,15 @@ const PhotoConfirmationScreen = () => {
         transparent
         animationType="fade"
         onRequestClose={() => setShowDuplicateModal(false)}>
-        <View testID="photoConfirmationDuplicateModalOverlay" style={modalStyles.modalOverlay}>
-          <View testID="photoConfirmationDuplicateModalContainer" style={modalStyles.modalContainer}>
-            <View testID="photoConfirmationDuplicateModalWarningIcon" style={modalStyles.iconCircleWarning}>
+        <View
+          testID="photoConfirmationDuplicateModalOverlay"
+          style={modalStyles.modalOverlay}>
+          <View
+            testID="photoConfirmationDuplicateModalContainer"
+            style={modalStyles.modalContainer}>
+            <View
+              testID="photoConfirmationDuplicateModalWarningIcon"
+              style={modalStyles.iconCircleWarning}>
               <Ionicons
                 name="warning-outline"
                 size={getResponsiveSize(36, 48, 60)}
@@ -953,20 +1094,28 @@ const PhotoConfirmationScreen = () => {
               />
             </View>
             <View style={modalStyles.spacer} />
-            <CText testID="photoConfirmationDuplicateModalTitle" style={modalStyles.confirmTitle}>
+            <CText
+              testID="photoConfirmationDuplicateModalTitle"
+              style={modalStyles.confirmTitle}>
               {I18nStrings.duplicateBallotTitle}
             </CText>
 
-            <CText testID="photoConfirmationDuplicateModalMessage" style={modalStyles.duplicateMessage}>
+            <CText
+              testID="photoConfirmationDuplicateModalMessage"
+              style={modalStyles.duplicateMessage}>
               {I18nStrings.duplicateBallotMessage}
             </CText>
 
-            <View testID="photoConfirmationDuplicateModalButtonContainer" style={modalStyles.buttonContainer}>
+            <View
+              testID="photoConfirmationDuplicateModalButtonContainer"
+              style={modalStyles.buttonContainer}>
               <TouchableOpacity
                 testID="photoConfirmationDuplicateModalGoBackButton"
                 style={[modalStyles.cancelButton, {flex: 1}]}
                 onPress={() => setShowDuplicateModal(false)}>
-                <CText testID="photoConfirmationDuplicateModalGoBackText" style={modalStyles.cancelButtonText}>
+                <CText
+                  testID="photoConfirmationDuplicateModalGoBackText"
+                  style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
                 </CText>
               </TouchableOpacity>
@@ -975,7 +1124,11 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
 
-      <InfoModal testID="photoConfirmationInfoModal" {...infoModalData} onClose={closeInfoModal} />
+      <InfoModal
+        testID="photoConfirmationInfoModal"
+        {...infoModalData}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };
