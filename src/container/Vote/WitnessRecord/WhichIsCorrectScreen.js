@@ -15,7 +15,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import String from '../../../i18n/String';
+import Strings from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {fetchActasByMesa} from '../../../data/mockMesas';
@@ -226,21 +226,19 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
   const [actaImages, setActaImages] = useState(normalizedInitialActas);
   const [preloadedActaImages] = useState(normalizedInitialActas);
   const [selectedImageId, setSelectedImageId] = useState(null);
-  const [confirmedCorrectActa, setConfirmedCorrectActa] = useState(null);
-  const [showConfirmationView, setShowConfirmationView] = useState(false);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     type: 'info',
     title: '',
     message: '',
-    buttonText: String.accept,
+    buttonText: Strings.accept,
   });
   const [isLoadingActas, setIsLoadingActas] = useState(
     normalizedInitialActas.length === 0,
   );
-  const [globalPartyResults, setGlobalPartyResults] = useState(
-    routePartyResults,
-  );
+  const [globalPartyResults, setGlobalPartyResults] =
+    useState(routePartyResults);
   const [globalVoteSummaryResults, setGlobalVoteSummaryResults] = useState(
     routeVoteSummaryResults,
   );
@@ -274,7 +272,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
   );
 
   const showModal = useCallback(
-    (type, title, message, buttonText = String.accept) => {
+    (type, title, message, buttonText = Strings.accept) => {
       setModalConfig({type, title, message, buttonText});
       setModalVisible(true);
       logAction('which_correct_modal_show', {type, title});
@@ -314,10 +312,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       const response = await fetchActasByMesa(numericId);
 
       if (response?.success && Array.isArray(response?.data?.images)) {
-        const normalized = normalizeActaList(
-          response.data.images,
-          fallbackUri,
-        );
+        const normalized = normalizeActaList(response.data.images, fallbackUri);
         setActaImages(normalized);
         setGlobalPartyResults(response.data.partyResults || []);
         setGlobalVoteSummaryResults(response.data.voteSummaryResults || []);
@@ -328,14 +323,14 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         logAction('which_correct_load_actas_empty', {
           mesaIdentifier,
         });
-        showModal('error', String.error, String.couldNotLoadActas);
+        showModal('error', Strings.error, Strings.couldNotLoadActas);
       }
     } catch (error) {
       logAction('which_correct_load_actas_error', {
         message: error?.message,
       });
       if (normalizedInitialActas.length === 0) {
-        showModal('error', String.error, String.errorLoadingActas);
+        showModal('error', Strings.error, Strings.errorLoadingActas);
       }
     } finally {
       setIsLoadingActas(false);
@@ -354,7 +349,12 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     } else {
       setIsLoadingActas(false);
     }
-  }, [isFromAPI, isFromUnifiedFlow, loadActasByMesa, normalizedInitialActas.length]);
+  }, [
+    isFromAPI,
+    isFromUnifiedFlow,
+    loadActasByMesa,
+    normalizedInitialActas.length,
+  ]);
 
   useEffect(() => {
     logNavigation('which_correct_view', {
@@ -384,24 +384,85 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     }
   }, [actaImages, selectedImageId]);
 
-  const handleImagePress = useCallback(
-    imageId => {
-      setSelectedImageId(imageId);
-      setShowConfirmationView(false);
-      setConfirmedCorrectActa(null);
-      logAction('which_correct_select_acta', {actaId: imageId});
+  const handleViewMoreDetails = useCallback(
+    imageIdParam => {
+      const targetId = imageIdParam || selectedImageId;
+
+      if (!targetId) {
+        showModal(
+          'warning',
+          Strings.selectionRequired,
+          Strings.pleaseSelectImageFirst,
+        );
+        return;
+      }
+
+      if (imageIdParam && imageIdParam !== selectedImageId) {
+        setSelectedImageId(imageIdParam);
+      }
+
+      const selectedImage = actaImages.find(img => img.id === targetId);
+
+      if (!selectedImage) {
+        showModal('error', Strings.error, Strings.couldNotLoadActas);
+        return;
+      }
+
+      const voteSummary = transformVoteSummary(
+        selectedImage.voteSummaryResults,
+        globalVoteSummaryResults,
+      );
+      const partyResults =
+        (Array.isArray(selectedImage.partyResults) &&
+        selectedImage.partyResults.length > 0
+          ? selectedImage.partyResults
+          : globalPartyResults) || [];
+
+      logNavigation('which_correct_view_details', {
+        actaId: targetId,
+        voteSummaryLength: voteSummary.length,
+      });
+
+      const payloadForPhotoReview = {
+        photoUri: selectedImage.uri,
+        tableData: mesaInfo,
+        mesaData: mesaInfo,
+        existingRecord: selectedImage.raw ?? null,
+        isViewOnly: true,
+        fromWhichIsCorrect: true,
+        actaCount: actaImages.length,
+        mappedData: {
+          partyResults,
+          voteSummaryResults: voteSummary,
+        },
+      };
+      try {
+        navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);
+      } catch {
+        navigation.navigate('PhotoReviewScreen', payloadForPhotoReview);
+      }
     },
-    [logAction],
+    [
+      actaImages,
+      globalPartyResults,
+      globalVoteSummaryResults,
+      logNavigation,
+      mesaInfo,
+      navigation,
+      selectedImageId,
+      showModal,
+    ],
   );
 
-  const handleCorrectActaSelected = useCallback(
-    actaId => {
-      setConfirmedCorrectActa(actaId);
-      setShowConfirmationView(true);
-      logAction('which_correct_confirm', {actaId});
+  const handleImagePress = useCallback(
+    imageId => {
+      logAction('which_correct_select_acta', {actaId: imageId});
+      handleViewMoreDetails(imageId);
     },
-    [logAction],
+    [logAction, handleViewMoreDetails],
   );
+
+ 
 
   const handleUploadNewActa = useCallback(() => {
     const basePayload = {
@@ -461,166 +522,21 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       return;
     }
     logAction('which_correct_report_incorrect');
-    showModal('info', String.information, String.dataReportedAsIncorrect);
+    showModal('info', Strings.information, Strings.dataReportedAsIncorrect);
   }, [allowAddNewActa, handleUploadNewActa, logAction, showModal]);
 
-  const handleViewMoreDetails = useCallback(
-    imageIdParam => {
-      const targetId = imageIdParam || selectedImageId;
 
-      if (!targetId) {
-        showModal(
-          'warning',
-          String.selectionRequired,
-          String.pleaseSelectImageFirst,
-        );
-        return;
-      }
 
-      if (imageIdParam && imageIdParam !== selectedImageId) {
-        setSelectedImageId(imageIdParam);
-      }
-
-      const selectedImage = actaImages.find(img => img.id === targetId);
-
-      if (!selectedImage) {
-        showModal('error', String.error, String.couldNotLoadActas);
-        return;
-      }
-
-      const voteSummary = transformVoteSummary(
-        selectedImage.voteSummaryResults,
-        globalVoteSummaryResults,
-      );
-      const partyResults =
-        (Array.isArray(selectedImage.partyResults) &&
-        selectedImage.partyResults.length > 0
-          ? selectedImage.partyResults
-          : globalPartyResults) || [];
-
-      logNavigation('which_correct_view_details', {
-        actaId: targetId,
-        voteSummaryLength: voteSummary.length,
-      });
-
-      const payload = {
-        selectedActa: selectedImage,
-        tableData: mesaInfo,
-        partyResults,
-        voteSummaryResults: voteSummary,
-        allActas: actaImages,
-        onCorrectActaSelected: handleCorrectActaSelected,
-        onUploadNewActa: handleUploadNewActa,
-      };
-
-      try {
-        navigation.navigate(StackNav.ActaDetailScreen, payload);
-      } catch {
-        navigation.navigate('ActaDetailScreen', payload);
-      }
-    },
-    [
-      actaImages,
-      globalPartyResults,
-      globalVoteSummaryResults,
-      handleCorrectActaSelected,
-      handleUploadNewActa,
-      logNavigation,
-      mesaInfo,
-      navigation,
-      selectedImageId,
-      showModal,
-    ],
-  );
-
-  const handleContinueWithSelectedActa = useCallback(() => {
-    const actaId = confirmedCorrectActa || selectedImageId;
-
-    if (!actaId) {
-      showModal(
-        'warning',
-        String.selectionRequired,
-        String.pleaseSelectImageFirst,
-      );
-      return;
-    }
-
-    const selectedImage = actaImages.find(img => img.id === actaId);
-
-    if (!selectedImage) {
-      showModal('error', String.error, String.couldNotLoadActas);
-      return;
-    }
-
-    const voteSummary = transformVoteSummary(
-      selectedImage.voteSummaryResults,
-      globalVoteSummaryResults,
-    );
-    const partyResults =
-      (Array.isArray(selectedImage.partyResults) &&
-      selectedImage.partyResults.length > 0
-        ? selectedImage.partyResults
-        : globalPartyResults) || [];
-
-    logAction('which_correct_continue', {
-      actaId,
-      hasPartyResults: partyResults.length > 0,
-      voteSummaryLength: voteSummary.length,
-    });
-
-    const payload = {
-      recordId: selectedImage.recordId,
-      photoUri: selectedImage.uri,
-      tableData: mesaInfo,
-      mesaInfo,
-      partyResults,
-      voteSummaryResults: voteSummary,
-    };
-
-    try {
-      navigation.navigate(StackNav.RecordReviewScreen, payload);
-    } catch {
-      navigation.navigate('RecordReviewScreen', payload);
-    }
-
-    setShowConfirmationView(false);
-    setConfirmedCorrectActa(null);
-  }, [
-    actaImages,
-    confirmedCorrectActa,
-    globalPartyResults,
-    globalVoteSummaryResults,
-    logAction,
-    mesaInfo,
-    navigation,
-    selectedImageId,
-    showModal,
-  ]);
-
-  const handleChangeOpinion = useCallback(() => {
-    setConfirmedCorrectActa(null);
-    setShowConfirmationView(false);
-    logAction('which_correct_change_opinion');
-  }, [logAction]);
 
   const handleBack = useCallback(() => {
-    if (showConfirmationView) {
-      setShowConfirmationView(false);
-      setConfirmedCorrectActa(null);
-      logAction('which_correct_back_from_confirmation');
-      return;
-    }
     navigation.goBack();
-  }, [logAction, navigation, showConfirmationView]);
+  }, [navigation]);
 
   const IPFSImageComponent = ({image, testID}) => {
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const uri = useMemo(
-      () => resolveUriFromActa(image, fallbackUri),
-      [image],
-    );
+    const uri = useMemo(() => resolveUriFromActa(image, fallbackUri), [image]);
 
     useEffect(() => {
       setHasError(false);
@@ -637,9 +553,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
             size={isTablet ? 60 : 48}
             color="#999"
           />
-          <CText style={styles.imageErrorText}>
-            Error cargando imagen
-          </CText>
+          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
           <CText style={styles.imageErrorSubtext}>
             Verifica tu conexión a internet
           </CText>
@@ -688,328 +602,196 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         testID="whichIsCorrectHeader"
         colors={colors}
         onBack={handleBack}
-        title={`${String.table} ${
-          mesaInfo?.tableNumber ||
-          mesaInfo?.numero ||
-          mesaInfo?.number ||
-          'N/A'
+        title={`${Strings.table} ${
+          mesaInfo?.tableNumber || mesaInfo?.numero || mesaInfo?.number || 'N/A'
         }`}
         showNotification={true}
       />
 
-      {showConfirmationView ? (
-        <>
+      <View
+        testID="whichIsCorrectQuestionContainer"
+        style={styles.questionContainer}>
+        <CText testID="whichIsCorrect_questionText" style={styles.questionText}>
+          {Strings.whichIsCorrect}
+        </CText>
+        {isFromAPI && actaImages.length > 0 && (
           <View
-            testID="whichIsCorrectQuestionContainer"
-            style={styles.questionContainer}>
+            testID="whichIsCorrect_apiInfoContainer"
+            style={styles.apiInfoContainer}>
             <CText
-              testID="whichIsCorrectQuestionText"
-              style={styles.questionText}>
-              {String.whichIsCorrect}
+              testID="whichIsCorrect_apiInfoText"
+              style={styles.apiInfoText}>
+              Se encontraron {actaImages.length} acta
+              {actaImages.length > 1 ? 's' : ''} atestiguada
+              {actaImages.length > 1 ? 's' : ''} para esta mesa
             </CText>
           </View>
+        )}
+      </View>
 
-          <ScrollView
-            testID="whichIsCorrectConfirmationImageList"
-            style={styles.imageList}
-            showsVerticalScrollIndicator={false}>
-            {actaImages.map((image, index) => {
-              const isCorrect = image.id === confirmedCorrectActa;
-
-              return (
-                <View
-                  key={`confirmation-${image.id}`}
-                  testID={`whichIsCorrectConfirmationImageContainer_${index}`}
-                  style={styles.confirmationImageContainer}>
-                  <View
-                    testID={`whichIsCorrectImageCard_${index}`}
-                    style={[
-                      styles.imageCard,
-                      isCorrect
-                        ? styles.imageCardCorrect
-                        : styles.imageCardIncorrect,
-                    ]}>
-                    <IPFSImageComponent
-                      testID={`whichIsCorrectImage_${index}`}
-                      image={image}
-                    />
-
-                    <View
-                      testID={`whichIsCorrectStatusIcon_${index}`}
-                      style={[
-                        styles.statusIcon,
-                        isCorrect ? styles.correctIcon : styles.incorrectIcon,
-                      ]}>
-                      <MaterialIcons
-                        testID={`whichIsCorrectStatusIconSvg_${index}`}
-                        name={isCorrect ? 'check-circle' : 'cancel'}
-                        size={24}
-                        color="#FFFFFF"
-                      />
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-
-          <View
-            testID="whichIsCorrectConfirmationButtonsContainer"
-            style={styles.confirmationButtonsContainer}>
-            <TouchableOpacity
-              testID="whichIsCorrectContinueButton"
-              style={[
-                styles.continueButton,
-                {backgroundColor: colors.primary || '#4F9858'},
-              ]}
-              onPress={handleContinueWithSelectedActa}
-              activeOpacity={0.8}>
-              <CText
-                testID="whichIsCorrectContinueButtonText"
-                style={styles.continueButtonText}>
-                {String.continueButton}
-              </CText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="whichIsCorrectChangeOpinionButton"
-              style={[
-                styles.changeOpinionButton,
-                {borderColor: colors.textSecondary || '#4F9858'},
-              ]}
-              onPress={handleChangeOpinion}
-              activeOpacity={0.8}>
-              <CText
-                testID="whichIsCorrectChangeOpinionButtonText"
-                style={[
-                  styles.changeOpinionButtonText,
-                  {color: colors.textSecondary || '#4F9858'},
-                ]}>
-                Cambiar de opinión
-              </CText>
-            </TouchableOpacity>
-          </View>
-        </>
+      {isLoadingActas ? (
+        <View
+          testID="whichIsCorrect_loadingContainer"
+          style={styles.loadingContainer}>
+          <ActivityIndicator
+            testID="whichIsCorrect_loadingIndicator"
+            size="large"
+            color={colors.primary || '#4F9858'}
+          />
+          <CText testID="whichIsCorrect_loadingText" style={styles.loadingText}>
+            {Strings.loadingActas}
+          </CText>
+        </View>
+      ) : actaImages.length === 0 ? (
+        <View
+          testID="whichIsCorrect_noImagesContainer"
+          style={styles.loadingContainer}>
+          <CText
+            testID="whichIsCorrect_noImagesText"
+            style={styles.noImagesText}>
+            No se encontraron imágenes para mostrar
+          </CText>
+          <CText testID="whichIsCorrect_debugText" style={styles.debugText}>
+            Debug: isFromAPI={String(isFromAPI)}, preloadedLength=
+            {preloadedActaImages?.length || 0}
+          </CText>
+        </View>
       ) : (
-        <>
-          <View
-            testID="whichIsCorrectQuestionContainer"
-            style={styles.questionContainer}>
-            <CText
-              testID="whichIsCorrect_questionText"
-              style={styles.questionText}>
-              {String.whichIsCorrect}
-            </CText>
-            {isFromAPI && actaImages.length > 0 && (
-              <View
-                testID="whichIsCorrect_apiInfoContainer"
-                style={styles.apiInfoContainer}>
-                <CText
-                  testID="whichIsCorrect_apiInfoText"
-                  style={styles.apiInfoText}>
-                  Se encontraron {actaImages.length} acta
-                  {actaImages.length > 1 ? 's' : ''} atestiguada
-                  {actaImages.length > 1 ? 's' : ''} para esta mesa
-                </CText>
-              </View>
-            )}
-          </View>
-
-          {isLoadingActas ? (
-            <View
-              testID="whichIsCorrect_loadingContainer"
-              style={styles.loadingContainer}>
-              <ActivityIndicator
-                testID="whichIsCorrect_loadingIndicator"
-                size="large"
-                color={colors.primary || '#4F9858'}
-              />
-              <CText
-                testID="whichIsCorrect_loadingText"
-                style={styles.loadingText}>
-                {String.loadingActas}
-              </CText>
-            </View>
-          ) : actaImages.length === 0 ? (
-            <View
-              testID="whichIsCorrect_noImagesContainer"
-              style={styles.loadingContainer}>
-              <CText
-                testID="whichIsCorrect_noImagesText"
-                style={styles.noImagesText}>
-                No se encontraron imágenes para mostrar
-              </CText>
-              <CText
-                testID="whichIsCorrect_debugText"
-                style={styles.debugText}>
-                Debug: isFromAPI={String(isFromAPI)}, preloadedLength=
-                {preloadedActaImages?.length || 0}
-              </CText>
-            </View>
-          ) : (
-            <ScrollView
-              testID="whichIsCorrect_imageList"
-              style={styles.imageList}
-              showsVerticalScrollIndicator={false}>
-              {isTablet
-                ? (() => {
-                    const pairs = [];
-                    for (let i = 0; i < actaImages.length; i += 2) {
-                      pairs.push(actaImages.slice(i, i + 2));
-                    }
-                    return pairs.map((pair, pairIndex) => (
-                      <View
-                        key={pairIndex}
-                        testID={`whichIsCorrect_tabletRow_${pairIndex}`}
-                        style={styles.tabletRow}>
-                        {pair.map((image, imageIndex) => {
-                          const globalIndex = pairIndex * 2 + imageIndex;
-                          const isSelected = selectedImageId === image.id;
-                          return (
-                            <View
-                              key={image.id}
-                              testID={`whichIsCorrect_tabletColumn_${globalIndex}`}
-                              style={styles.tabletColumn}>
-                              <TouchableOpacity
-                                testID={`whichIsCorrect_imageCard_${globalIndex}`}
-                                style={[
-                                  styles.imageCard,
-                                  isSelected && styles.imageCardSelected,
-                                ]}
-                                onPress={() => handleImagePress(image.id)}>
-                                <IPFSImageComponent
-                                  testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
-                                  image={image}
-                                />
-                                {isSelected && (
-                                  <>
-                                    <View
-                                      testID={`whichIsCorrect_topLeftCorner_${globalIndex}`}
-                                      style={[
-                                        styles.cornerBorder,
-                                        styles.topLeftCorner,
-                                      ]}
-                                    />
-                                    <View
-                                      testID={`whichIsCorrect_topRightCorner_${globalIndex}`}
-                                      style={[
-                                        styles.cornerBorder,
-                                        styles.topRightCorner,
-                                      ]}
-                                    />
-                                    <View
-                                      testID={`whichIsCorrect_bottomLeftCorner_${globalIndex}`}
-                                      style={[
-                                        styles.cornerBorder,
-                                        styles.bottomLeftCorner,
-                                      ]}
-                                    />
-                                    <View
-                                      testID={`whichIsCorrect_bottomRightCorner_${globalIndex}`}
-                                      style={[
-                                        styles.cornerBorder,
-                                        styles.bottomRightCorner,
-                                      ]}
-                                    />
-                                  </>
-                                )}
-                              </TouchableOpacity>
-                              {isSelected && (
-                                <TouchableOpacity
-                                  testID={`whichIsCorrect_detailsButton_${globalIndex}`}
-                                  style={styles.detailsButton}
-                                  onPress={() => handleViewMoreDetails(image.id)}>
-                                  <CText
-                                    testID={`whichIsCorrect_detailsButtonText_${globalIndex}`}
-                                    style={styles.detailsButtonText}>
-                                    {String.seeMoreDetails}
-                                  </CText>
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                          );
-                        })}
-                        {pair.length === 1 && (
-                          <View
-                            testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`}
-                            style={styles.tabletColumn}
-                          />
-                        )}
-                      </View>
-                    ));
-                  })()
-                : actaImages.map((image, index) => {
-                    const isSelected = selectedImageId === image.id;
-                    return (
-                      <React.Fragment key={image.id}>
-                        <TouchableOpacity
-                          testID={`whichIsCorrect_phoneImageCard_${index}`}
-                          style={[
-                            styles.imageCard,
-                            isSelected && styles.imageCardSelected,
-                          ]}
-                          onPress={() => handleImagePress(image.id)}>
-                          <IPFSImageComponent
-                            testID={`whichIsCorrect_phoneIPFSImage_${index}`}
-                            image={image}
-                          />
-                          {isSelected && (
-                            <>
-                              <View
-                                testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
-                                style={[styles.cornerBorder, styles.topLeftCorner]}
-                              />
-                              <View
-                                testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
-                                style={[styles.cornerBorder, styles.topRightCorner]}
-                              />
-                              <View
-                                testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
-                                style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                              />
-                              <View
-                                testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
-                                style={[styles.cornerBorder, styles.bottomRightCorner]}
-                              />
-                            </>
-                          )}
-                        </TouchableOpacity>
-                        {isSelected && (
+        <ScrollView
+          testID="whichIsCorrect_imageList"
+          style={styles.imageList}
+          showsVerticalScrollIndicator={false}>
+          {isTablet
+            ? (() => {
+                const pairs = [];
+                for (let i = 0; i < actaImages.length; i += 2) {
+                  pairs.push(actaImages.slice(i, i + 2));
+                }
+                return pairs.map((pair, pairIndex) => (
+                  <View
+                    key={pairIndex}
+                    testID={`whichIsCorrect_tabletRow_${pairIndex}`}
+                    style={styles.tabletRow}>
+                    {pair.map((image, imageIndex) => {
+                      const globalIndex = pairIndex * 2 + imageIndex;
+                      const isSelected = selectedImageId === image.id;
+                      return (
+                        <View
+                          key={image.id}
+                          testID={`whichIsCorrect_tabletColumn_${globalIndex}`}
+                          style={styles.tabletColumn}>
                           <TouchableOpacity
-                            testID={`whichIsCorrect_phoneDetailsButton_${index}`}
-                            style={styles.detailsButton}
-                            onPress={() => handleViewMoreDetails(image.id)}>
-                            <CText
-                              testID={`whichIsCorrect_phoneDetailsButtonText_${index}`}
-                              style={styles.detailsButtonText}>
-                              {String.seeMoreDetails}
-                            </CText>
+                            testID={`whichIsCorrect_imageCard_${globalIndex}`}
+                            style={[
+                              styles.imageCard,
+                              isSelected && styles.imageCardSelected,
+                            ]}
+                            onPress={() => handleImagePress(image.id)}>
+                            <IPFSImageComponent
+                              testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
+                              image={image}
+                            />
                           </TouchableOpacity>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-            </ScrollView>
-          )}
-
-          <TouchableOpacity
-            testID="whichIsCorrect_datosNoCorrectosButton"
-            style={[
-              styles.datosNoCorrectosButton,
-              allowAddNewActa && styles.addNewActaButton,
-            ]}
-            onPress={handleDatosNoCorrectos}>
-            <CText
-              testID="addNewRecordText"
-              style={[
-                styles.datosNoCorrectosButtonText,
-                allowAddNewActa && styles.addNewActaButtonText,
-              ]}>
-              {allowAddNewActa ? 'Agregar Nueva Acta' : String.dataNotCorrect}
-            </CText>
-          </TouchableOpacity>
-        </>
+                          {isSelected && (
+                            <TouchableOpacity
+                              testID={`whichIsCorrect_detailsButton_${globalIndex}`}
+                              style={styles.detailsButton}
+                              onPress={() => handleViewMoreDetails(image.id)}>
+                              <CText
+                                testID={`whichIsCorrect_detailsButtonText_${globalIndex}`}
+                                style={styles.detailsButtonText}>
+                                {Strings.seeMoreDetails}
+                              </CText>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                    {pair.length === 1 && (
+                      <View
+                        testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`}
+                        style={styles.tabletColumn}
+                      />
+                    )}
+                  </View>
+                ));
+              })()
+            : actaImages.map((image, index) => {
+                const isSelected = selectedImageId === image.id;
+                return (
+                  <React.Fragment key={image.id}>
+                    <TouchableOpacity
+                      testID={`whichIsCorrect_phoneImageCard_${index}`}
+                      style={[
+                        styles.imageCard,
+                        isSelected && styles.imageCardSelected,
+                      ]}
+                      onPress={() => handleImagePress(image.id)}>
+                      <IPFSImageComponent
+                        testID={`whichIsCorrect_phoneIPFSImage_${index}`}
+                        image={image}
+                      />
+                      {isSelected && (
+                        <>
+                          <View
+                            testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
+                            style={[styles.cornerBorder, styles.topLeftCorner]}
+                          />
+                          <View
+                            testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
+                            style={[styles.cornerBorder, styles.topRightCorner]}
+                          />
+                          <View
+                            testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
+                            style={[
+                              styles.cornerBorder,
+                              styles.bottomLeftCorner,
+                            ]}
+                          />
+                          <View
+                            testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
+                            style={[
+                              styles.cornerBorder,
+                              styles.bottomRightCorner,
+                            ]}
+                          />
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    {isSelected && (
+                      <TouchableOpacity
+                        testID={`whichIsCorrect_phoneDetailsButton_${index}`}
+                        style={styles.detailsButton}
+                        onPress={() => handleViewMoreDetails(image.id)}>
+                        <CText
+                          testID={`whichIsCorrect_phoneDetailsButtonText_${index}`}
+                          style={styles.detailsButtonText}>
+                          {Strings.seeMoreDetails}
+                        </CText>
+                      </TouchableOpacity>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+        </ScrollView>
       )}
+
+      <TouchableOpacity
+        testID="whichIsCorrect_datosNoCorrectosButton"
+        style={[
+          styles.datosNoCorrectosButton,
+          allowAddNewActa && styles.addNewActaButton,
+        ]}
+        onPress={handleDatosNoCorrectos}>
+        <CText
+          testID="addNewRecordText"
+          style={[
+            styles.datosNoCorrectosButtonText,
+            allowAddNewActa && styles.addNewActaButtonText,
+          ]}>
+          {allowAddNewActa ? 'Subir mi Acta' : Strings.dataNotCorrect}
+        </CText>
+      </TouchableOpacity>
 
       <CustomModal
         testID="whichIsCorrectModal"
