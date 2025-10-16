@@ -19,6 +19,7 @@ import Strings from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {fetchActasByMesa} from '../../../data/mockMesas';
+import {normalizeUri} from '../../../utils/normalizedUri';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -39,29 +40,34 @@ const PLACEHOLDER_IMAGE =
   'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg';
 
 const resolveUriFromActa = (acta, fallbackUri) => {
-  if (!acta) {
-    return fallbackUri || PLACEHOLDER_IMAGE;
-  }
+  const fallback = fallbackUri || PLACEHOLDER_IMAGE;
+
+  if (!acta) return normalizeUri(fallback);
+  if (typeof acta === 'string') return normalizeUri(acta);
 
   const candidates = [
-    acta.uri,
-    acta.photoUri,
-    acta.photoURL,
-    acta.photoUrl,
-    acta.photo?.uri,
-    acta.photo?.url,
+    acta.actaImage, // suele estar en https ya
+    acta.ipfsUri, // a veces ya es https de gateway
     acta.imageUrl,
     acta.imageURL,
-    acta.image_uri,
-    acta.image,
-    acta.actaImage,
-    fallbackUri,
-    PLACEHOLDER_IMAGE,
-  ];
+    acta.photoUrl,
+    acta.photoURL,
+    acta.photo?.url,
+    acta.uri,
+    acta.photoUri,
+    acta.photo?.uri,
+    acta.image, // suele ser ipfs://...
+    acta.ipfsUrl,
+    acta.ipfsImage,
+    acta.ipfsCid,
+    acta.cid,
+    fallback,
+  ].filter(v => typeof v === 'string' && v.trim().length > 0);
 
-  return candidates.find(
-    value => typeof value === 'string' && value.trim().length > 0,
-  );
+  // prioriza http(s), file://, content://
+  const httpish = candidates.find(v => /^(https?:|file:|content:)/i.test(v));
+  const raw = httpish || candidates[0];
+  return normalizeUri(raw);
 };
 
 const normalizeActaImage = (acta, index, fallbackUri) => {
@@ -397,10 +403,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         return;
       }
 
-      if (imageIdParam && imageIdParam !== selectedImageId) {
-        setSelectedImageId(imageIdParam);
-      }
-
       const selectedImage = actaImages.find(img => img.id === targetId);
 
       if (!selectedImage) {
@@ -457,13 +459,11 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
 
   const handleImagePress = useCallback(
     imageId => {
-      logAction('which_correct_select_acta', {actaId: imageId});
-      handleViewMoreDetails(imageId);
+      logAction('which_correct_tap_navigate', {actaId: imageId});
+      handleViewMoreDetails(imageId); 
     },
     [logAction, handleViewMoreDetails],
   );
-
- 
 
   const handleUploadNewActa = useCallback(() => {
     const basePayload = {
@@ -526,9 +526,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     showModal('info', Strings.information, Strings.dataReportedAsIncorrect);
   }, [allowAddNewActa, handleUploadNewActa, logAction, showModal]);
 
-
-
-
   const handleBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
@@ -538,6 +535,15 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     const [hasError, setHasError] = useState(false);
 
     const uri = useMemo(() => resolveUriFromActa(image, fallbackUri), [image]);
+    useEffect(() => {
+      console.log('[WhichIsCorrect] URI resuelta:', uri);
+    }, [uri]);
+    useFocusEffect(
+      React.useCallback(() => {
+        setSelectedImageId(null);
+        return () => setSelectedImageId(null); // opcional
+      }, []),
+    );
 
     useEffect(() => {
       setHasError(false);
@@ -693,18 +699,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
                               image={image}
                             />
                           </TouchableOpacity>
-                          {isSelected && (
-                            <TouchableOpacity
-                              testID={`whichIsCorrect_detailsButton_${globalIndex}`}
-                              style={styles.detailsButton}
-                              onPress={() => handleViewMoreDetails(image.id)}>
-                              <CText
-                                testID={`whichIsCorrect_detailsButtonText_${globalIndex}`}
-                                style={styles.detailsButtonText}>
-                                {Strings.seeMoreDetails}
-                              </CText>
-                            </TouchableOpacity>
-                          )}
+                       
                         </View>
                       );
                     })}
@@ -759,18 +754,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
                         </>
                       )}
                     </TouchableOpacity>
-                    {isSelected && (
-                      <TouchableOpacity
-                        testID={`whichIsCorrect_phoneDetailsButton_${index}`}
-                        style={styles.detailsButton}
-                        onPress={() => handleViewMoreDetails(image.id)}>
-                        <CText
-                          testID={`whichIsCorrect_phoneDetailsButtonText_${index}`}
-                          style={styles.detailsButtonText}>
-                          {Strings.seeMoreDetails}
-                        </CText>
-                      </TouchableOpacity>
-                    )}
+                   
                   </React.Fragment>
                 );
               })}

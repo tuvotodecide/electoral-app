@@ -626,7 +626,6 @@ const PhotoConfirmationScreen = () => {
     setStep(1);
 
     try {
-      // ✔️ MODO ATESTIGUAR: no subas IPFS, no valides duplicado
       if (flowMode === 'attest') {
         const ballot = existingRecord || duplicateBallot;
         if (!ballot) {
@@ -662,7 +661,7 @@ const PhotoConfirmationScreen = () => {
           if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
         }
 
-        // Atestiguar directamente
+
         const response = await executeOperation(
           privateKey,
           userData.account,
@@ -672,7 +671,7 @@ const PhotoConfirmationScreen = () => {
           'Attested',
         );
 
-        // Guarda la atestación en backend si hay _id
+
         if (ballot?._id) {
           await uploadAttestation(ballot._id);
         }
