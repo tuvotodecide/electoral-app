@@ -20,6 +20,7 @@ import {
 } from '../../../data/guardians';
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { truncateDid } from '../../../utils/Address';
 
 export default function GuardiansAdmin() {
   const colors = useSelector(state => state.theme.theme);
@@ -106,15 +107,14 @@ export default function GuardiansAdmin() {
   };
 
   const renderGuardianOption = ({item}) => {
-    const parts = (item.publicFullName || '').split(' ');
+    const parts = (item.inviter?.displayNamePublic || '').split(' ');
     const firstSegment = parts[0] || '';
     const secondSegment = parts[1] || '';
 
-    const abbreviated = secondSegment.toUpperCase();
     const displayName = secondSegment
-      ? `${firstSegment} ${abbreviated}`
+      ? `${firstSegment} ${secondSegment}`
       : firstSegment;
-    const inviterDid = item.inviterDid.slice(22, 31) + '...' + item.inviterDid.slice(-4);
+    const inviterDid = truncateDid(item.inviterDid);
 
     return (
       <TouchableOpacity
@@ -148,7 +148,7 @@ export default function GuardiansAdmin() {
               <CText testID={`guardiansAdminProtectedItemId_${item.governmentIdentifier}`} type="B16">{inviterDid}</CText>
             </View>
             <CText testID={`guardiansAdminProtectedItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
-              {displayName === "" ? '(sin apodo)' : displayName}
+              {displayName === "" ? '(sin nombre)' : displayName}
             </CText>
           </View>
         </View>
@@ -173,7 +173,7 @@ export default function GuardiansAdmin() {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
-    const targetDid = item.targetDid.slice(22, 31) + '...' + item.targetDid.slice(-4);
+    const targetDid = truncateDid(item.targetDid);
     const createDate = new Date(item.createdAt * 1000);
 
     const createdAt = createDate.toLocaleDateString() + ' ' + createDate.toLocaleTimeString();
@@ -243,7 +243,7 @@ export default function GuardiansAdmin() {
     );
   };
   const renderInvitationOption = ({item}) => {
-    const parts = (item.publicFullName || '').split(' ');
+    const parts = (item.inviter?.displayNamePublic || '').split(' ');
     const firstSegment = parts[0] || '';
     const secondSegment = parts[1] || '';
 
@@ -251,7 +251,7 @@ export default function GuardiansAdmin() {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
-    const inviterDid = item.inviterDid.slice(22, 31) + '...' + item.inviterDid.slice(-4);
+    const inviterDid = truncateDid(item.inviterDid);
 
     return (
       <View
@@ -282,10 +282,12 @@ export default function GuardiansAdmin() {
           </View>
           <View testID={`guardiansAdminInvitationItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
             <View testID={`guardiansAdminInvitationItemIdRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
-              <CText testID={`guardiansAdminInvitationItemId_${item.governmentIdentifier}`} type="B16">{inviterDid}</CText>
+              <CText testID={`guardiansAdminInvitationItemId_${item.governmentIdentifier}`} type="B16">
+                {displayName === '' ? '(nombre no visible)' : displayName}
+              </CText>
             </View>
             <CText testID={`guardiansAdminInvitationItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
-              {displayName === '' ? '(nombre no visible)' : displayName}
+              {inviterDid}
             </CText>
           </View>
         </View>
@@ -328,7 +330,7 @@ export default function GuardiansAdmin() {
         <FlatList
           testID="guardiansAdminInvitationsList"
           data={invitations}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.requestId}
           renderItem={renderInvitationOption}
           contentContainerStyle={styles.mt20}
           scrollEnabled={false} 
