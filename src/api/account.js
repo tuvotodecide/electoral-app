@@ -50,6 +50,7 @@ export async function executeOperation(
   callData,
   waitEvent,
   eventName,
+  sponsorshipPolicyId,
 ) {
   const {account, publicClient} = await getAccount(
     privateKey,
@@ -67,11 +68,21 @@ export async function executeOperation(
     },
   });
 
+  const arbitrumParams = chainId.startsWith('arbitrum') ? {
+    paymasterContext: { sponsorshipPolicyId },
+    userOperation: {
+      estimateFeesPerGas: async () => {
+        return (await pimlicoClient.getUserOperationGasPrice()).standard;
+      },
+    },
+  } : {};
+
   const smartAccountClient = createSmartAccountClient({
     account,
     chain,
     bundlerTransport: http(bundler),
     paymaster: pimlicoClient,
+    ...arbitrumParams,
   });
 
   const txHash = await smartAccountClient.sendTransaction(callData);
