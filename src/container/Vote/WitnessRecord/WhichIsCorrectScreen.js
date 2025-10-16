@@ -37,6 +37,43 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const IPFS_GATEWAYS = [
+  'https://cf-ipfs.com/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://ipfs.io/ipfs/',
+  'https://dweb.link/ipfs/',
+];
+
+const uniq = arr => Array.from(new Set(arr));
+
+const buildIpfsCandidates = raw => {
+  if (!raw) return [];
+  const s = String(raw).trim();
+
+  if (/^(file:|content:)/i.test(s)) return [s];
+
+  if (/^https?:\/\//i.test(s)) {
+    const out = [s];
+    const m = s.match(/^https?:\/\/[^/]+\/ipfs\/(.+)$/i);
+    if (m) {
+      const path = m[1];
+      IPFS_GATEWAYS.forEach(g => out.push(g + path));
+    }
+    return uniq(out);
+  }
+
+  const ipfs = s.replace(/^ipfs:\/\//i, '');
+  const path = ipfs.replace(/^ipfs\//i, '');
+
+  return uniq(IPFS_GATEWAYS.map(g => g + path));
+};
+
+const withCacheBust = (url, idx) => {
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}v=${idx}`;
+};
+
 const PLACEHOLDER_IMAGE =
   'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg';
 
@@ -461,7 +498,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
   const handleImagePress = useCallback(
     imageId => {
       logAction('which_correct_tap_navigate', {actaId: imageId});
-      handleViewMoreDetails(imageId); 
+      handleViewMoreDetails(imageId);
     },
     [logAction, handleViewMoreDetails],
   );
@@ -535,23 +572,37 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const uri = useMemo(() => resolveUriFromActa(image, fallbackUri), [image]);
-    useEffect(() => {
-      console.log('[WhichIsCorrect] URI resuelta:', uri);
-    }, [uri]);
-    useFocusEffect(
-      React.useCallback(() => {
-        setSelectedImageId(null);
-        return () => setSelectedImageId(null); // opcional
-      }, []),
+    // La URI “base” (puede venir ya normalizada por resolveUriFromActa/normalizeUri)
+    const baseUri = useMemo(
+      () => resolveUriFromActa(image, fallbackUri),
+      [image],
+    );
+    const candidates = useMemo(() => buildIpfsCandidates(baseUri), [baseUri]);
+
+    const [tryIndex, setTryIndex] = useState(0);
+    const currentUri = useMemo(
+      () =>
+        candidates[tryIndex]
+          ? withCacheBust(candidates[tryIndex], tryIndex)
+          : null,
+      [candidates, tryIndex],
     );
 
     useEffect(() => {
+      // Cuando cambia la imagen o las candidates, resetea reintentos/estado
+      setTryIndex(0);
       setHasError(false);
       setIsLoadingImage(true);
-    }, [uri]);
+    }, [baseUri]);
 
-    if (!uri || hasError) {
+    useFocusEffect(
+      React.useCallback(() => {
+        setSelectedImageId(null);
+        return () => setSelectedImageId(null);
+      }, []),
+    );
+
+    if (!currentUri || hasError) {
       return (
         <View
           testID={testID ? `${testID}_error` : undefined}
@@ -573,7 +624,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       <View>
         <Image
           testID={testID}
-          source={{uri}}
+          source={{uri: currentUri}}
           style={[styles.imageDisplay, isLoadingImage && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={() => {
@@ -581,9 +632,20 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
             setHasError(false);
           }}
           onLoad={() => setIsLoadingImage(false)}
-          onError={() => {
-            setHasError(true);
-            setIsLoadingImage(false);
+          onError={e => {
+            console.log(
+              '[WhichIsCorrect] Image onError event:',
+              e?.nativeEvent || e,
+            );
+
+            if (tryIndex < candidates.length - 1) {
+              setTryIndex(tryIndex + 1);
+              setIsLoadingImage(true);
+              setHasError(false);
+            } else {
+              setHasError(true);
+              setIsLoadingImage(false);
+            }
           }}
         />
         {isLoadingImage && (
@@ -700,7 +762,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
                               image={image}
                             />
                           </TouchableOpacity>
-                       
                         </View>
                       );
                     })}
@@ -755,7 +816,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
                         </>
                       )}
                     </TouchableOpacity>
-                   
                   </React.Fragment>
                 );
               })}

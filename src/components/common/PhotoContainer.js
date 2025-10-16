@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -65,7 +65,24 @@ export const PhotoContainer = ({
     );
   }
 
-  const normalizedUri = normalizeIpfsUri(photoUri);
+  const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
+  const candidates = useMemo(
+    () => buildIpfsCandidates(baseUri).filter(Boolean),
+    [baseUri],
+  );
+  const [tryIndex, setTryIndex] = useState(0);
+  useEffect(() => {
+    setTryIndex(0);
+  }, [baseUri]);
+  const withCacheBust = (url, idx) =>
+    url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
+  const currentUri = useMemo(
+    () =>
+      candidates[tryIndex]
+        ? withCacheBust(candidates[tryIndex], tryIndex)
+        : null,
+    [candidates, tryIndex],
+  );
 
   return (
     <View
@@ -77,10 +94,11 @@ export const PhotoContainer = ({
       }>
       <Image
         testID={`${testID}Image`}
-        source={{uri: normalizedUri}}
+        source={{uri: currentUri}}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
-        onError={e => {
+        onError={() => {
+          if (tryIndex < candidates.length - 1) setTryIndex(i => i + 1);
         }}
       />
       <View
@@ -118,18 +136,43 @@ const ZoomablePhotoContainer = ({
     setBox({w: Math.round(width), h: Math.round(height)});
   }, []);
 
-  const normalizedUri = normalizeIpfsUri(photoUri);
+  const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
+  const candidates = useMemo(
+    () => buildIpfsCandidates(baseUri).filter(Boolean),
+    [baseUri],
+  );
+  const [tryIndex, setTryIndex] = useState(0);
+  useEffect(() => {
+    setTryIndex(0);
+  }, [baseUri]);
+  const withCacheBust = (url, idx) =>
+    url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
+  const currentUri = useMemo(
+    () =>
+      candidates[tryIndex]
+        ? withCacheBust(candidates[tryIndex], tryIndex)
+        : null,
+    [candidates, tryIndex],
+  );
 
   useEffect(() => {
-    if (!normalizedUri) return;
+    setTryIndex(0);
+  }, [baseUri]);
+
+  useEffect(() => {
+    if (!currentUri) return;
     Image.getSize(
-      normalizedUri,
+      currentUri,
       (w, h) => setImg({w, h}),
       () => {
-        setImg({w: 1, h: 1});
+        if (tryIndex < candidates.length - 1) {
+          setTryIndex(i => i + 1);
+        } else {
+          setImg({w: 1, h: 1});
+        }
       },
     );
-  }, [normalizedUri]);
+  }, [currentUri]);
   const isRotated = rotation % 180 !== 0;
   const baseIw = isRotated ? img.h : img.w;
   const baseIh = isRotated ? img.w : img.h;
@@ -206,13 +249,16 @@ const ZoomablePhotoContainer = ({
           enableDoubleClickZoom>
           <Image
             testID={`${testID}Image`}
-            source={{uri: normalizedUri}}
+            source={{uri: currentUri}}
             style={{
               width: isRotated ? contentH : contentW,
               height: isRotated ? contentW : contentH,
               transform: [{rotate: `${rotation}deg`}],
             }}
             resizeMode="contain"
+            onError={() => {
+              if (tryIndex < candidates.length - 1) setTryIndex(i => i + 1);
+            }}
           />
         </ImageZoom>
       ) : (
