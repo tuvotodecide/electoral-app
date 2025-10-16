@@ -33,6 +33,61 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
 
+const safeStr = v =>
+  String(v ?? '')
+    .trim()
+    .toLowerCase();
+
+const fetchUserAttestations = async dniValue => {
+  if (!dniValue) return [];
+  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data || [];
+};
+
+const hasUserAttestedTable = async (dniValue, tableCode) => {
+  try {
+    if (!dniValue || !tableCode) return false;
+
+    const list = await fetchUserAttestations(dniValue);
+    if (!list?.length) return false;
+
+    const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
+
+    for (const id of ids) {
+      const ballot = await fetchBallotById(id).catch(() => null);
+      if (getBallotTableCode(ballot) === safeStr(tableCode)) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+const fetchBallotById = async ballotId => {
+  if (!ballotId) return null;
+  const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data ?? data;
+};
+
+const hasUserAttestedBallot = async (dniValue, ballotId) => {
+  try {
+    const list = await fetchUserAttestations(dniValue);
+    return list.some(a => String(a.ballotId) === String(ballotId));
+  } catch {
+    return false; // si hay error de red, no bloquees
+  }
+};
+
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
     return small;
@@ -99,6 +154,12 @@ const PhotoConfirmationScreen = () => {
 
   const vc = userData?.vc;
   const subject = getCredentialSubjectFromPayload(userData) || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni ??
+    null;
   const data = {name: subject?.fullName || '(sin nombre)'};
   const userFullName = data.name || '(sin nombre)';
 
@@ -148,14 +209,6 @@ const PhotoConfirmationScreen = () => {
           // deputies: buildVoteData('diputado'),
         },
       };
-      /*       console.log('[PhotoConfirmation] verificationData prepared', {
-        verificationDataPreview: {
-          tableNumber: verificationData.tableNumber,
-          partiesCount: verificationData.votes.parties.length,
-          deputiesCount: verificationData.votes.deputies.length,
-        },
-      }); */
-      // Verificar duplicados
       const duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
       );
@@ -170,69 +223,13 @@ const PhotoConfirmationScreen = () => {
         setDuplicateBallot(duplicateCheck.ballot);
         setShowDuplicateModal(true);
       } else {
-        // No existe duplicado, proceder con la publicación
         handlePublishAndCertify();
       }
     } catch (error) {
-      //console.logerror('[PhotoConfirmation] verifyAndUpload error', error);
       setUploadError('Error verificando duplicados');
     }
   };
 
-  // const buildVoteData = type => {
-  //   const getValue = (label, defaultValue = 0) => {
-  //     const item = (voteSummaryResults || []).find(s => s.label === label);
-  //     if (!item) return defaultValue;
-
-  //     const value = type === 'presidente' ? item.value1 : item.value2;
-  //     return parseInt(value, 10) || defaultValue;
-  //   };
-
-  //   return {
-  //     validVotes: getValue('Votos Válidos'),
-  //     nullVotes: getValue('Votos Nulos'),
-  //     blankVotes: getValue('Votos en Blanco'),
-  //     partyVotes: partyResults.map(party => ({
-  //       partyId: party.partido,
-  //       votes:
-  //         parseInt(
-  //           type === 'presidente' ? party.presidente : party.diputado,
-  //           10,
-  //         ) || 0,
-  //     })),
-  //     totalVotes:
-  //       getValue('Votos Válidos') +
-  //       getValue('Votos Nulos') +
-  //       getValue('Votos en Blanco'),
-  //   };
-  // };
-  // const buildVoteData = type => {
-  //   const getValue = (label, defaultValue = 0) => {
-  //     const item = (voteSummaryResults || []).find(s => s.label === label);
-  //     if (!item) return defaultValue;
-
-  //     const value = type === 'presidente' ? item.value1 : item.value2;
-  //     return parseInt(value, 10) || defaultValue;
-  //   };
-
-  //   return {
-  //     validVotes: getValue('Votos Válidos'),
-  //     nullVotes: getValue('Votos Nulos'),
-  //     blankVotes: getValue('Votos en Blanco'),
-  //     partyVotes: partyResults.map(party => ({
-  //       partyId: party.partido,
-  //       votes:
-  //         parseInt(
-  //           type === 'presidente' ? party.presidente : party.diputado,
-  //           10,
-  //         ) || 0,
-  //     })),
-  //     totalVotes:
-  //       getValue('Votos Válidos') +
-  //       getValue('Votos Nulos') +
-  //       getValue('Votos en Blanco'),
-  //   };
-  // };
   const buildVoteData = type => {
     const norm = s =>
       String(s ?? '')
@@ -268,11 +265,10 @@ const PhotoConfirmationScreen = () => {
     };
   };
 
-  // Funcion para subir al Backend
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
       const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`;
-      //console.log('[PhotoConfirmation] uploadMetadataToBackend start', {backendUrl, jsonUrl, jsonCID, tableCode});
+
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
@@ -284,7 +280,7 @@ const PhotoConfirmationScreen = () => {
           'Content-Type': 'application/json',
           'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000, // 30 segundos timeout
+        timeout: 30000,
       });
 
       /*       console.log('[PhotoConfirmation] uploadMetadataToBackend response', {
@@ -310,7 +306,6 @@ const PhotoConfirmationScreen = () => {
     }
   };
 
-  // Función para subir el atestiguamiento al backend
   const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
@@ -327,21 +322,16 @@ const PhotoConfirmationScreen = () => {
         ],
       };
 
-      //console.log('[PhotoConfirmation] uploadAttestation start', { url, ballotId, isJury });
-
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000, // 30 segundos timeout
+        timeout: 30000,
       });
-
-      //console.log('[PhotoConfirmation] uploadAttestation response', { status: response.status, dataPreview: response.data ? (response.data._id ? { _id: response.data._id } : null) : null });
 
       return true;
     } catch (error) {
-      //console.error('[PhotoConfirmation] uploadAttestation error', error?.message || error);
       return false;
     }
   };
@@ -541,6 +531,29 @@ const PhotoConfirmationScreen = () => {
         });
         return;
       }
+      const tableCodeToCheck = String(
+        tableData?.codigo ||
+          tableData?.tableCode ||
+          mesaData?.codigo ||
+          mesaData?.tableCode ||
+          mesa?.codigo ||
+          mesa?.tableCode ||
+          '',
+      );
+
+      if (dni && tableCodeToCheck) {
+        const alreadyMine = await hasUserAttestedTable(dni, tableCodeToCheck);
+        if (alreadyMine) {
+          setInfoModalData({
+            visible: true,
+            title: I18nStrings.genericInfo || 'Aviso',
+            message:
+              I18nStrings.alreadyAttested ||
+              'Ya atestiguaste esta mesa con tu usuario.',
+          });
+          return;
+        }
+      }
       const locationId =
         route.params?.locationId ||
         tableData?.location?._id ||
@@ -624,10 +637,52 @@ const PhotoConfirmationScreen = () => {
       return;
     }
     setStep(1);
+    const tableCodeForGuard = String(
+      tableData?.codigo ||
+        tableData?.tableCode ||
+        mesaData?.codigo ||
+        mesaData?.tableCode ||
+        mesa?.codigo ||
+        mesa?.tableCode ||
+        '',
+    );
 
+    if (dni && tableCodeForGuard) {
+      const alreadyMine = await hasUserAttestedTable(dni, tableCodeForGuard);
+      if (alreadyMine) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.genericInfo || 'Aviso',
+          message:
+            I18nStrings.alreadyAttested ||
+            'Ya atestiguaste esta mesa con tu usuario.',
+        });
+        setShowConfirmModal(false);
+        setStep(0);
+        return;
+      }
+    }
     try {
       if (flowMode === 'attest') {
         const ballot = existingRecord || duplicateBallot;
+        const ballotIdToCheck = ballot?._id || ballot?.id;
+        if (dni && ballotIdToCheck) {
+          const repeated = await hasUserAttestedBallot(
+            dni,
+            String(ballotIdToCheck),
+          );
+          if (repeated) {
+            setInfoModalData({
+              visible: true,
+              title: I18nStrings.genericInfo || 'Aviso',
+              message:
+                I18nStrings.alreadyAttested || 'Ya atestiguaste este acta.',
+            });
+            setShowConfirmModal(false);
+            setStep(0);
+            return;
+          }
+        }
         if (!ballot) {
           throw new Error(
             I18nStrings.noExistingBallotToAttest ||
@@ -661,7 +716,6 @@ const PhotoConfirmationScreen = () => {
           if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
         }
 
-
         const response = await executeOperation(
           privateKey,
           userData.account,
@@ -670,7 +724,6 @@ const PhotoConfirmationScreen = () => {
           oracleReads.waitForOracleEvent,
           'Attested',
         );
-
 
         if (ballot?._id) {
           await uploadAttestation(ballot._id);
@@ -695,7 +748,7 @@ const PhotoConfirmationScreen = () => {
           nftData: nftResult,
           tableData: tableData,
         });
-        return; // 👈 no sigas al flujo de upload
+        return;
       }
 
       // 1. Subir a IPFS
@@ -833,40 +886,6 @@ const PhotoConfirmationScreen = () => {
       setShowConfirmModal(false);
       setStep(0);
     }
-
-    //try {
-    //  // Simular procesamiento
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
-    //    navigation.navigate('SuccessScreen');
-    //  }, 2000);
-    //} catch (error) {
-    //  // Navegar a SuccessScreen incluso en caso de error
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    navigation.navigate('SuccessScreen');
-    //  }, 1000);
-    //}
-
-    //try {
-    //  // Simular procesamiento
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
-    //    navigation.navigate('SuccessScreen');
-    //  }, 2000);
-    //} catch (error) {
-    //  // Navegar a SuccessScreen incluso en caso de error
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    navigation.navigate('SuccessScreen');
-    //  }, 1000);
-    //}
   };
 
   const closeModal = (goBack = false) => {
