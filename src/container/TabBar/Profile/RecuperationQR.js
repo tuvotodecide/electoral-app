@@ -79,9 +79,7 @@ export default function RecuperationQR() {
       qrRef.current.toDataURL((data) => {
         saveQr(data);
       });
-      console.log('init finish')
     } catch (err) {
-      //console.logerror('Error saving QR:', err);
       logAction('InitSaveError', {message: err?.message});
 
       Alert.alert('Error', errorMessage, [
@@ -92,10 +90,8 @@ export default function RecuperationQR() {
   };
 
   const saveQr = async (dataUrl) => {
-    console.log('asldknfal;skdfn');
     try {
       const {savedOn, path, fileName} = await recoveryService.saveQrOnDevice(dataUrl);
-      console.log('asdasd');
 
       if(savedOn === 'gallery') {
         logAction('SaveQrGallery');

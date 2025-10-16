@@ -40,13 +40,6 @@ const ActaDetailScreen = () => {
     onCorrectActaSelected,
     onUploadNewActa,
   } = route.params || {};
-  console.log('[ACTA-DETAIL] 📦 Params recibidos:', {
-    selectedActa,
-    tableData,
-    partyResults: rawPartyResults,
-    voteSummaryResults: rawVoteSummaryResults,
-    allActas,
-  });
 
   const partyResultsTransformed = useMemo(() => {
     try {

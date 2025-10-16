@@ -60,7 +60,6 @@ const PhotoConfirmationScreen = () => {
   const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
     route.params || {}; // Destructure all needed data
   // Also try to get data from alternative parameter names
-  //console.log('[TABLE-DATA]', tableData);
   const existingRecord = route.params?.existingRecord || null;
   const flowMode = route.params?.mode || 'upload';
   const mesaData = route.params?.mesaData;
@@ -108,16 +107,10 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
-      /*       console.log('[PhotoConfirmation] verifyAndUpload start', {
-        tableCode: tableData?.codigo,
-        tableNumber: tableData?.tableNumber || tableData?.numero,
-      }); */
 
       const net = await NetInfo.fetch();
       const online = !!(net.isConnected && (net.isInternetReachable ?? true));
-      //console.log('[PhotoConfirmation] network status', {online, net});
       if (!online) {
-        //console.log('[PhotoConfirmation] offline -> enqueue flow');
         handlePublishAndCertify();
         return;
       }
@@ -131,7 +124,6 @@ const PhotoConfirmationScreen = () => {
         partyResults || [],
         voteSummaryResults || [],
       );
-      //console.log('[PhotoConfirmation] local validation result', local);
       if (!local.ok) {
         setInfoModalData({
           visible: true,
@@ -148,22 +140,9 @@ const PhotoConfirmationScreen = () => {
           // deputies: buildVoteData('diputado'),
         },
       };
-      /*       console.log('[PhotoConfirmation] verificationData prepared', {
-        verificationDataPreview: {
-          tableNumber: verificationData.tableNumber,
-          partiesCount: verificationData.votes.parties.length,
-          deputiesCount: verificationData.votes.deputies.length,
-        },
-      }); */
       // Verificar duplicados
       const duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
-      );
-      console.log(
-        '[PhotoConfirmation] duplicateCheck result',
-        duplicateCheck?.exists
-          ? {exists: true, ballotId: duplicateCheck?.ballot?._id}
-          : {exists: false},
       );
 
       if (duplicateCheck.exists) {
@@ -174,7 +153,6 @@ const PhotoConfirmationScreen = () => {
         handlePublishAndCertify();
       }
     } catch (error) {
-      //console.logerror('[PhotoConfirmation] verifyAndUpload error', error);
       setUploadError('Error verificando duplicados');
     }
   };
@@ -272,7 +250,6 @@ const PhotoConfirmationScreen = () => {
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
       const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`;
-      //console.log('[PhotoConfirmation] uploadMetadataToBackend start', {backendUrl, jsonUrl, jsonCID, tableCode});
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
@@ -287,10 +264,6 @@ const PhotoConfirmationScreen = () => {
         timeout: 30000, // 30 segundos timeout
       });
 
-      /*       console.log('[PhotoConfirmation] uploadMetadataToBackend response', {
-        status: response.status,
-        dataPreview: response.data && typeof response.data === 'object' ? { has_id: !!response.data._id } : typeof response.data,
-      }); */
       return response.data;
     } catch (error) {
       console.error('[PhotoConfirmation] uploadMetadataToBackend error', {
@@ -327,7 +300,6 @@ const PhotoConfirmationScreen = () => {
         ],
       };
 
-      //console.log('[PhotoConfirmation] uploadAttestation start', { url, ballotId, isJury });
 
       const response = await axios.post(url, payload, {
         headers: {
@@ -337,11 +309,10 @@ const PhotoConfirmationScreen = () => {
         timeout: 30000, // 30 segundos timeout
       });
 
-      //console.log('[PhotoConfirmation] uploadAttestation response', { status: response.status, dataPreview: response.data ? (response.data._id ? { _id: response.data._id } : null) : null });
 
       return true;
     } catch (error) {
-      //console.error('[PhotoConfirmation] uploadAttestation error', error?.message || error);
+      console.error('[PhotoConfirmation] uploadAttestation error', error?.message || error);
       return false;
     }
   };
@@ -354,7 +325,6 @@ const PhotoConfirmationScreen = () => {
         recordId: 'String',
         tableIdIpfs: 'String',
       };
-      //console.log('[PhotoConfirmation] validateWithBackend start', { backendUrl, ipfsJsonUrl });
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
@@ -364,7 +334,6 @@ const PhotoConfirmationScreen = () => {
         timeout: 30000,
       });
 
-      //console.log('[PhotoConfirmation] validateWithBackend response', { status: response.status, dataPreview: response.data && typeof response.data === 'object' ? { success: !!response.data.success } : response.data });
 
       // Manejar diferentes tipos de respuestas
       if (response.data === true) {
@@ -413,7 +382,7 @@ const PhotoConfirmationScreen = () => {
         const serverMessage =
           error.response.data?.message || error.response.data?.error || '';
 
-        //console.error('[PhotoConfirmation] validateWithBackend server error', { status, serverMessage });
+        console.error('[PhotoConfirmation] validateWithBackend server error', { status, serverMessage });
 
         throw new Error(`${statusMessage} ${serverMessage}`.trim());
       } else if (error.request) {
@@ -484,12 +453,6 @@ const PhotoConfirmationScreen = () => {
         ? photoUri.substring(7)
         : photoUri;
 
-      /*       console.log('[PhotoConfirmation] uploadToIPFS start', {
-        imagePathPreview: imagePath?.slice(-64),
-        additionalDataPreview: { idRecinto: additionalData.idRecinto, tableCode: additionalData.tableCode, tableNumber: additionalData.tableNumber, userId: additionalData.userId },
-        electoralDataPreview: { partyResults: (electoralData.partyResults || []).length, voteSummaryResults: (electoralData.voteSummaryResults || []).length },
-      }); */
-
       // Subir imagen y crear metadata completa
       const startIpfs = Date.now();
       const result = await pinataService.uploadElectoralActComplete(
@@ -500,10 +463,7 @@ const PhotoConfirmationScreen = () => {
       );
       const ipfsDuration = Date.now() - startIpfs;
 
-      //console.log('[PhotoConfirmation] uploadToIPFS result', { success: !!result.success, ipfsDuration });
-
       if (result.success) {
-        //console.log('[PhotoConfirmation] uploadToIPFS returning data preview', { jsonUrl: result.data?.jsonUrl, imageUrl: result.data?.imageUrl });
         return result.data;
       } else {
         console.error(
@@ -590,14 +550,6 @@ const PhotoConfirmationScreen = () => {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
       };
-      //console.log(tableData);
-
-      //console.log('[TABLE-DATA]');
-
-      //console.log(locationId);
-      //console.log(tableNumber);
-      //console.log(electoralData);
-      //console.log(additionalData);
 
       await enqueue({
         type: 'publishActa',

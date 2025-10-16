@@ -120,7 +120,6 @@ export default function RegisterUser10({navigation, route}) {
         });
 
         const bundler = CHAIN === 'base' ? BUNDLER_MAIN : BUNDLER;
-        console.log('Using bundler:', bundler);
 
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,

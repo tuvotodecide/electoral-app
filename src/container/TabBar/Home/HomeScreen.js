@@ -259,14 +259,11 @@ export default function HomeScreen({navigation}) {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
     if (!online) return;
-    //console.log('[HOME-SCREEN] runOfflineQueueOnce starting');
     processingRef.current = true;
     try {
       const result = await processQueue(async item => {
-        //console.log('[HOME-SCREEN] processing queue item', { id: item.id, type: item.task?.type });
         await publishActaHandler(item, userData);
       });
-      //console.log('[HOME-SCREEN] processQueue finished', { result });
       if (typeof result?.remaining === 'number') {
         setHasPendingActa(result.remaining > 0);
       } else {
@@ -277,11 +274,9 @@ export default function HomeScreen({navigation}) {
         setHasPendingActa(pendingAfter);
       }
     } catch (e) {
-      //console.logerror('[HOME-SCREEN] runOfflineQueueOnce error', e);
       // no-op: los que fallen se quedan en cola
     } finally {
       processingRef.current = false;
-      //console.log('[HOME-SCREEN] runOfflineQueueOnce finished');
     }
   }, [auth?.isAuthenticated, userData]);
 
@@ -303,9 +298,7 @@ export default function HomeScreen({navigation}) {
       });
       return;
     }
-    //console.log('[HOME-SCREEN] handleParticiparPress checking cache', { dni });
     const cached = await getVotePlace(dni);
-    //console.log('[HOME-SCREEN] handleParticiparPress cache result', { dni, cached });
     if (cached?.location?._id) {
       navigation.navigate(StackNav.UnifiedParticipationScreen, {
         dni,
@@ -458,7 +451,6 @@ export default function HomeScreen({navigation}) {
       return;
     }
     try {
-      //console.log('[HOME-SCREEN] checkUserVotePlace start', { dni });
       setCheckingVotePlace(true);
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
@@ -469,7 +461,6 @@ export default function HomeScreen({navigation}) {
       );
 
       if (res?.data) {
-        //console.log('[HOME-SCREEN] checkUserVotePlace backend returned', { dni, data: res.data });
         const {location, table} = normalizeVotePlace(res.data);
         await saveVotePlace(dni, {
           dni,
@@ -477,19 +468,15 @@ export default function HomeScreen({navigation}) {
           location,
           table,
         });
-        //console.log('[HOME-SCREEN] saveVotePlace completed', { dni });
       }
       const hasBoth = !!res?.data?.location && !!res?.data?.table;
       setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
-      //console.error('[HOME-SCREEN] checkUserVotePlace error, falling back to cache', e);
       const cached = await getVotePlace(dni);
-      //console.log('[HOME-SCREEN] checkUserVotePlace cache fallback', { dni, cached });
       const hasBothCached = !!cached?.location && !!cached?.table;
       setShouldShowRegisterAlert(!hasBothCached);
     } finally {
       setCheckingVotePlace(false);
-      //console.log('[HOME-SCREEN] checkUserVotePlace finished', { dni });
     }
   }, [dni]);
 

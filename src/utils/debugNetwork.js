@@ -5,9 +5,9 @@ import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_RESULT } from '@env';
  */
 export const debugEnvironmentConfig = () => {
   //console.log('=== ENVIRONMENT CONFIGURATION DEBUG ===');
-  //console.log('BACKEND:', BACKEND);
-  //console.log('BACKEND_BLOCKCHAIN:', BACKEND_BLOCKCHAIN);
-  //console.log('BACKEND_RESULT:', BACKEND_RESULT);
+  //console.BACKEND_BLOCKCHAIN:', BACKEND_BLOCKCHAIN);
+  //console.log('BACKEND_RESULT:', BACKEND_RESULT);log('BACKEND:', BACKEND);
+  //console.log('
   
   // Verificar si hay caracteres extraños
   const backendChars = BACKEND ? Array.from(BACKEND).map(char => char.charCodeAt(0)) : [];

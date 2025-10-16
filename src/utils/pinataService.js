@@ -40,20 +40,11 @@ class PinataService {
   }
 
   async checkDuplicateBallot(voteData) {
-    //console.log('[PINATA-SERVICE] 🔍 checkDuplicateBallot iniciado');
-    /*     console.log('[PINATA-SERVICE] 📋 Datos de verificación:', {
-      tableNumber: voteData.tableNumber,
-      hasVotes: !!voteData.votes,
-    }); */
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
-      console.log(
-        '[PINATA-SERVICE] 🌐 Consultando backend:',
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
-      );
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
         {timeout: 10000}, // 10 segundos timeout
@@ -108,12 +99,6 @@ class PinataService {
         isEqual(ballot.votes, voteData.votes),
       );
 
-      /*      console.log('[PINATA-SERVICE] 📊 Resultado checkDuplicateBallot:', {
-        exists: Boolean(duplicate),
-        ballotId: duplicate?.id,
-        existingBallotsCount: existingBallots.length,
-      }); */
-
       return {
         exists: Boolean(duplicate),
         ballot: duplicate || null,
@@ -143,13 +128,6 @@ class PinataService {
    * @returns {Promise<{success: boolean, data?: any, error?: string}>}
    */
   async uploadImageToIPFS(filePathOrUrl, fileName = 'electoral-act.jpg') {
-    //console.log('[PINATA-SERVICE] 📤 uploadImageToIPFS iniciado');
-    /*     console.log('[PINATA-SERVICE] 📁 Archivo:', {
-      pathPreview: filePathOrUrl?.substring(0, 60) + '...',
-      fileName,
-      isHttp: this.isHttpUrl(filePathOrUrl),
-      isIpfs: this.isIpfsUrl(filePathOrUrl),
-    }); */
     try {
       // 1) Si es URL (http/https/ipfs), descargar a cache
       let localPath = filePathOrUrl;
@@ -217,11 +195,6 @@ class PinataService {
           gatewayUrl: `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`,
         },
       };
-      /*       console.log('[PINATA-SERVICE] ✅ Imagen subida a IPFS exitosamente:', {
-        ipfsHash: response.data.IpfsHash,
-        size: response.data.PinSize,
-        gatewayUrl: out.data.gatewayUrl?.substring(0, 60) + '...',
-      }); */
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
         RNFS.unlink(fsPath).catch(() => {});
       }
@@ -243,8 +216,6 @@ class PinataService {
    * @returns {Promise<{success: boolean, data?: any, error?: string}>}
    */
   async uploadJSONToIPFS(jsonData, name = 'electoral-act-data.json') {
-    //console.log('[PINATA-SERVICE] 📤 uploadJSONToIPFS iniciado');
-    //console.log('[PINATA-SERVICE] 📋 JSON name:', name);
     try {
       // Metadatos para el JSON
       const pinataMetadata = {
@@ -280,10 +251,6 @@ class PinataService {
         },
       );
 
-      /*       console.log('[PINATA-SERVICE] ✅ JSON subido a IPFS exitosamente:', {
-        ipfsHash: response.data.IpfsHash,
-        size: response.data.PinSize,
-      }); */
       return {
         success: true,
         data: {
@@ -294,7 +261,7 @@ class PinataService {
         },
       };
     } catch (error) {
-      //console.error('[PINATA-SERVICE] ❌ Error subiendo JSON:', error.message);
+      console.error('[PINATA-SERVICE] ❌ Error subiendo JSON:', error.message);
       return {
         success: false,
         error:
@@ -316,18 +283,8 @@ class PinataService {
     electoralData,
     additionalData = {},
   ) {
-    //console.log('[PINATA-SERVICE] 🚀 uploadElectoralActComplete iniciado');
-    /*     console.log('[PINATA-SERVICE] 📋 Datos recibidos:', {
-      imagePathPreview: imagePath?.substring(0, 60) + '...',
-      hasAnalysisData: !!analysisData,
-      hasElectoralData: !!electoralData,
-      partyResultsCount: electoralData?.partyResults?.length,
-      tableNumber: additionalData?.tableNumber,
-      tableCode: additionalData?.tableCode,
-    }); */
     try {
       // 1. Subir imagen
-      //console.log('[PINATA-SERVICE] 📤 Paso 1: Subiendo imagen...');
       const imageResult = await this.uploadImageToIPFS(imagePath);
       if (!imageResult.success) {
         throw new Error(`Error subiendo imagen: ${imageResult.error}`);
@@ -338,7 +295,6 @@ class PinataService {
       const tableNumber = String(
         additionalData.tableNumber ?? analysisData?.table_number ?? '',
       );
-      //console.log('[ADITIONAL DATA]', additionalData);
       const tableCode = String(additionalData.tableCode ?? '');
       const locationId =
         additionalData.idRecinto ?? additionalData.locationId ?? null;

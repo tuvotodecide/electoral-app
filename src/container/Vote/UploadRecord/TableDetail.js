@@ -174,7 +174,6 @@ export default function TableDetail({navigation, route}) {
 
     if (count === 1) {
       const record = existingRecords[0];
-      console.log(record);
       try {
           logNavigation('table_detail_existing_record_open', {
             index: 0,

@@ -117,7 +117,7 @@ export default function MyGuardiansStatus({navigation}) {
         })
         navigation.replace(AuthNav.RecoveryUser1Pin, {recData});
       }).catch(e => {
-        //console.log('Recovery init error:', e);
+        console.error('Recovery init error:', e);
       });
     } else if (safeDetail.status === 'REJECTED') {
       remove();

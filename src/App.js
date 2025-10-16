@@ -42,7 +42,7 @@ const App = () => {
               data: msg?.data,
             });
           } catch (e) {
-            console.log('FG handler error', e, msg);
+            console.error('FG handler error', e, msg);
           }
         },
         onOpenedFromNotification: _msg => {},

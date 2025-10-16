@@ -100,7 +100,6 @@ async function isUserJury(chainId, address) {
 }
 
 async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
-  console.log('init oracle event')
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));   
 
   const publicClient = createPublicClient({

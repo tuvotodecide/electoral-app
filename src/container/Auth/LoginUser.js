@@ -237,7 +237,7 @@ export default function LoginUser({navigation}) {
         stage: 'verifyPin',
         attemptCode: code,
       });
-      console.log(err);
+      console.error(err);
       if (err?.message === 'Invalid PIN') {
         return {ok: false, type: 'bad_pin'};
       }
@@ -331,7 +331,7 @@ export default function LoginUser({navigation}) {
       })
         .catch(err => {
           logNetworkIssue('verifyPin:catch', err, {stage: 'onCodeFilled'});
-          console.log(err);
+          console.error(err);
         })
         .finally(() => {
           setLoading(false);
@@ -381,7 +381,7 @@ export default function LoginUser({navigation}) {
         await unlock(userData, null, '');
         setLoading(false);
       } catch (e) {
-        console.log(e);
+        console.error(e);
         setLoading(false);
       }
     })();
