@@ -25,6 +25,35 @@ const getBallotTableCode = b =>
       b?.code ||
       '',
   );
+
+const fetchLatestBallotByTable = async code => {
+  try {
+    if (!code) return null;
+    const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+      code,
+    )}`;
+    const {data} = await axios.get(url, {
+      headers: {'x-api-key': BACKEND_SECRET},
+      timeout: 15000,
+    });
+    const list = Array.isArray(data) ? data : [];
+    return (
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
+const extractJsonUrlFromBallot = b =>
+  b?.ipfsUri ||
+  b?.jsonUrl ||
+  b?.ipfsJSON ||
+  b?.ipfs?.json ||
+  b?.ipfs?.jsonUrl ||
+  null;
+
 const fetchUserAttestations = async dniValue => {
   if (!dniValue) return [];
   const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
@@ -127,6 +156,110 @@ export const publishActaHandler = async (item, userData) => {
         return true;
       }
     }
+    const existingByTable = await fetchLatestBallotByTable(tableCodeStrict);
+    if (existingByTable) {
+      const jsonUrl = extractJsonUrlFromBallot(existingByTable);
+      if (jsonUrl) {
+        const privateKey = userData?.privKey;
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered)
+            throw Error('No se pudo verificar registro de jurado');
+        }
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+        try {
+          if (existingByTable._id) {
+            const isJury = await oracleReads.isUserJury(
+              CHAIN,
+              userData.account,
+            );
+            const dniStr =
+              userData?.dni ||
+              userData?.vc?.credentialSubject?.governmentIdentifier ||
+              userData?.vc?.credentialSubject?.documentNumber ||
+              userData?.vc?.credentialSubject?.nationalIdNumber ||
+              '';
+            await axios.post(
+              `${BACKEND_RESULT}/api/v1/attestations`,
+              {
+                attestations: [
+                  {
+                    ballotId: existingByTable._id,
+                    support: true,
+                    isJury,
+                    dni: String(dniStr),
+                  },
+                ],
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-api-key': BACKEND_SECRET,
+                },
+                timeout: 30000,
+              },
+            );
+          }
+        } catch {}
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        try {
+          await requestPushPermissionExplicit();
+        } catch {}
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+        try {
+          await displayLocalActaPublished({
+            ipfsData: {jsonUrl, imageUrl: existingByTable?.image || null},
+            nftData: nftResult,
+            tableData,
+          });
+        } catch {}
+        return {
+          success: true,
+          ipfsData: {jsonUrl},
+          nftData: nftResult,
+          tableData,
+        };
+      }
+      try {
+        await removePersistedImage(imageUri);
+      } catch {}
+      await showActaDuplicateNotification({
+        reason: 'Acta ya creada pero no accesible. Se descartó el envío.',
+      });
+      return true;
+    }
 
     const buildFromPayload = type => {
       const norm = s =>
@@ -153,7 +286,9 @@ export const publishActaHandler = async (item, userData) => {
         nullVotes: getValue('nulos'),
         blankVotes: getValue('blancos'),
         partyVotes: (electoralData?.partyResults || []).map(p => ({
-          partyId: p.partido,
+          partyId: String(p.id ?? p.partyId ?? p.partido ?? p.name ?? '')
+            .trim()
+            .toLowerCase(),
           votes:
             parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) ||
             0,
@@ -178,28 +313,11 @@ export const publishActaHandler = async (item, userData) => {
         tableNumber: verificationData?.tableNumber,
       });
       if (duplicateCheck?.exists) {
-        const fetchByTable = async code => {
-          try {
-            const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
-              code,
-            )}`;
-            const {data} = await axios.get(url, {
-              timeout: 15000,
-            });
-            const list = Array.isArray(data) ? data : [];
-
-            return (
-              list.sort(
-                (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-              )[0] || null
-            );
-          } catch {
-            return null;
-          }
-        };
+        const fetchByTable = fetchLatestBallotByTable;
 
         const existingBallot =
-          duplicateCheck.ballot || (await fetchByTable(tableCodeStrict));
+          duplicateCheck.ballot ||
+          (await fetchLatestBallotByTable(tableCodeStrict));
         if (!existingBallot) {
           await removePersistedImage(imageUri).catch(() => {});
           await showActaDuplicateNotification({
