@@ -59,7 +59,7 @@ export default function AddGuardians() {
 
           setCandidate({
             did: data.did,
-            fullName: data.fullName,
+            fullName: data.displayNamePublic,
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });
@@ -79,14 +79,12 @@ export default function AddGuardians() {
     setMsg('');
 
     try {
-      // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
       const data = await sendInvitation({
         inviterDid: payloadQr.did,
         guardianDid: candidate.did,
         nickname: nick,
       });
-      logAction('InviteGuardianSend', requestPayload);
-      //const data = await sendInvitation(requestPayload);
+
       setModalMessage(
         `Invitación enviada. ${
           candidate.fullName || '(sin nombre)'

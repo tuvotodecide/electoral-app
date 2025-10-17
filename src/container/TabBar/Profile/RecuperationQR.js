@@ -27,6 +27,7 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
+import ViewShot from 'react-native-view-shot';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -37,8 +38,6 @@ export default function RecuperationQR() {
   const viewShotRef = useRef(null);
   const {logAction} = useNavigationLogger('RecuperationQR', true);
   const userData = useSelector(state => state.wallet.payload);
-
-  const qrRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -62,7 +61,7 @@ export default function RecuperationQR() {
   }, [userData]);
 
   const initSaveQr = async () => {
-    if (!qrRef.current)
+    if (!viewShotRef.current)
       return Alert.alert('QR', 'El código aún no está listo');
     if (saving) return;
 
@@ -76,9 +75,8 @@ export default function RecuperationQR() {
         return;
       }
 
-      qrRef.current.toDataURL((data) => {
-        saveQr(data);
-      });
+      const uri = await viewShotRef.current.capture();
+      saveQr(uri);
     } catch (err) {
       logAction('InitSaveError', {message: err?.message});
 
@@ -163,17 +161,26 @@ export default function RecuperationQR() {
       <CHeader testID="recuperationQrHeader" title={String.qrRecoveryTitle} />
 
       <KeyBoardAvoidWrapper testID="recuperationQrKeyboardWrapper" contentContainerStyle={styles.ph20}>
-        <View style={local.qrBox}>
+        <ViewShot
+          ref={viewShotRef}
+          style={local.qrBox}
+          options={{
+            format: 'png',
+            quality: 1.0,
+            width: 1500,
+            height: 1500,
+            result: 'base64',
+          }}
+        >
           <QRCodeSVG
             testID="recuperationQrCode"
             value={qrData}
-            getRef={(c) => (qrRef.current = c)}
             size={moderateScale(290)}
             backgroundColor="#fff"
             color="#000"
             quietZone={10}
           />
-        </View>
+        </ViewShot>
 
         <CText testID="recuperationQrDescription" type="B16" align="center" marginTop={20}>
           {String.qrRecoveryDescription}

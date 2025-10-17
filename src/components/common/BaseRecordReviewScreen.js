@@ -64,6 +64,7 @@ const BaseRecordReviewScreen = ({
   emptyDisplayWhenReadOnly = '0',
   showDeputy = false,
   twoColumns = true,
+  PhotoComponent,
 }) => {
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
@@ -154,12 +155,19 @@ const BaseRecordReviewScreen = ({
                   ? styles.tabletPhotoSectionHorizontal
                   : styles.tabletPhotoSectionVertical
               }>
-              <PhotoContainer
-                testID={`${testID}PhotoContainer`}
-                photoUri={photoUri}
-                enableZoom={true}
-                useAspectRatio={true}
-              />
+              {PhotoComponent ? (
+                <PhotoComponent
+                  testID={`${testID}PhotoContainer`}
+                  photoUri={photoUri}
+                />
+              ) : (
+                <PhotoContainer
+                  testID={`${testID}PhotoContainer`}
+                  photoUri={photoUri}
+                  enableZoom={true}
+                  useAspectRatio={true}
+                />
+              )}
             </View>
           )}
 
@@ -319,12 +327,19 @@ const BaseRecordReviewScreen = ({
       {/* Photo - Static (doesn't move with scroll) */}
       {!isPhotoCollapsed && (
         <View testID={`${testID}PhotoSection`} style={styles.photoSection}>
-          <PhotoContainer
-            testID={`${testID}PhotoContainer`}
-            photoUri={photoUri}
-            enableZoom={true}
-            useAspectRatio={true}
-          />
+          {PhotoComponent ? (
+            <PhotoComponent
+              testID={`${testID}PhotoContainer`}
+              photoUri={photoUri}
+            />
+          ) : (
+            <PhotoContainer
+              testID={`${testID}PhotoContainer`}
+              photoUri={photoUri}
+              enableZoom={true}
+              useAspectRatio={true}
+            />
+          )}
         </View>
       )}
 

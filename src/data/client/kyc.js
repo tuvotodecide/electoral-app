@@ -4,7 +4,7 @@ import {API_ENDPOINTS} from './api-endpoints';
 import wira from 'wira-sdk';
 import {BACKEND_IDENTITY} from '@env';
 
-const registryApi = new wira.RegistryApi(BACKEND_IDENTITY);
+export const registryApi = new wira.RegistryApi(BACKEND_IDENTITY);
 
 export const kycClient = {
   ...crudFactory(API_ENDPOINTS.KYC),

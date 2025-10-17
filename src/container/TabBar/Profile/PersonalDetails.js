@@ -1,5 +1,5 @@
-import {View} from 'react-native';
-import React, {useEffect, useMemo} from 'react';
+import {SectionList, View} from 'react-native';
+import React, {useEffect, useMemo, useState} from 'react';
 
 //custom import
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -14,10 +14,41 @@ import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import Icons from 'react-native-vector-icons/Entypo';
+import COptionItem from '../../../components/common/COptionItem';
+import { registryApi } from '../../../data/client/kyc';
+import CAlert from '../../../components/common/CAlert';
 
-export default function PersonalDetails({navigation, route}) {
+export default function PersonalDetails() {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
+  const [showName, setShowName] = useState({
+    value: false,
+    loading: true,
+    errorMsg: null,
+  });
+
+  useEffect(() => {
+    async function fetchDisplayName() {
+      if (!userData?.did) return;
+      const data = await registryApi.resolveByDid(userData.did);
+      if(!data.ok) {
+        setShowName({
+          value: false,
+          loading: false,
+          errorMsg: String.error + ': ' + data.error,
+        });
+        return;
+      }
+
+      setShowName({
+        value: !!data?.record?.displayNamePublic,
+        loading: false,
+      });
+    }
+    fetchDisplayName();
+  }, []);
+
   const vc = userData?.vc;
 
   const {logNavigation} = useNavigationLogger('PersonalDetails', true);
@@ -47,6 +78,29 @@ export default function PersonalDetails({navigation, route}) {
 
     hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
+
+  const onSwitchShowName = async (_, value) => {
+    setShowName({
+      value: showName.value,
+      loading: true,
+    });
+    const userName = userData?.vc?.credentialSubject?.fullName;
+    if(!userName) {
+      setShowName({
+        value: showName.value,
+        loading: false,
+        errorMsg: String.error + ': ' + String.noNameAvailable,
+      });
+      return;
+    }
+
+    await registryApi.registryUpdateDisplayName(userData.did, value ? userName : null);
+    setShowName({
+      value,
+      loading: false,
+    });
+  };
+
   return (
     <CSafeAreaView testID="personalDetailsContainer">
       <CHeader
@@ -96,11 +150,19 @@ export default function PersonalDetails({navigation, route}) {
           title={String.birthDateTitle}
           text={data.birthDate}
         />
-        {/* <CEtiqueta
-          icon={<Icono name="flag" color={getSecondaryTextColor(colors)} />}
-          title={String.nationalityTitle}
-          text={data.nationality}
-        /> */}
+        <COptionItem
+          item={{
+            id: 1,
+            icon: 'eye',
+            rightIcon: 'switch',
+            title: String.showName,
+            value: String.showNameValue
+          }}
+          switchValue={showName.value}
+          loading={showName.loading}
+          onSwitchValueChange={onSwitchShowName}
+        />
+        {showName.errorMsg && <CAlert status="error" message={showName.errorMsg} testID="personalDetailsErrorAlert" />}
       </KeyBoardAvoidWrapper>
     </CSafeAreaView>
   );

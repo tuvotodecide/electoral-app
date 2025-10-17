@@ -5,8 +5,88 @@ import {oracleCalls, oracleReads} from '../api/oracle';
 import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
 import {executeOperation} from '../api/account';
-import {displayLocalActaPublished} from '../notifications';
+import {
+  displayLocalActaPublished,
+  showActaDuplicateNotification,
+} from '../notifications';
 import {requestPushPermissionExplicit} from '../services/pushPermission';
+
+const safeStr = v =>
+  String(v ?? '')
+    .trim()
+    .toLowerCase();
+const getBallotTableCode = b =>
+  safeStr(
+    b?.table?.tableCode ||
+      b?.tableCode ||
+      b?.table?.code ||
+      b?.table?.codigo ||
+      b?.codigo ||
+      b?.code ||
+      '',
+  );
+
+const fetchLatestBallotByTable = async code => {
+  try {
+    if (!code) return null;
+    const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+      code,
+    )}`;
+    const {data} = await axios.get(url, {
+      headers: {'x-api-key': BACKEND_SECRET},
+      timeout: 15000,
+    });
+    const list = Array.isArray(data) ? data : [];
+    return (
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
+const extractJsonUrlFromBallot = b =>
+  b?.ipfsUri ||
+  b?.jsonUrl ||
+  b?.ipfsJSON ||
+  b?.ipfs?.json ||
+  b?.ipfs?.jsonUrl ||
+  null;
+
+const fetchUserAttestations = async dniValue => {
+  if (!dniValue) return [];
+  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data || [];
+};
+const fetchBallotById = async ballotId => {
+  if (!ballotId) return null;
+  const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data ?? data;
+};
+const hasUserAttestedTable = async (dniValue, tableCode) => {
+  try {
+    if (!dniValue || !tableCode) return false;
+    const list = await fetchUserAttestations(dniValue);
+    if (!list?.length) return false;
+    const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
+    for (const id of ids) {
+      const ballot = await fetchBallotById(id).catch(() => null);
+      if (getBallotTableCode(ballot) === safeStr(tableCode)) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 export const publishActaHandler = async (item, userData) => {
   try {
@@ -44,6 +124,143 @@ export const publishActaHandler = async (item, userData) => {
       };
     })();
 
+    const dniValue =
+      userData?.dni ||
+      userData?.vc?.credentialSubject?.governmentIdentifier ||
+      userData?.vc?.credentialSubject?.documentNumber ||
+      userData?.vc?.credentialSubject?.nationalIdNumber ||
+      '';
+    const tableCodeToCheck =
+      normalizedAdditional?.tableCode ||
+      tableData?.codigo ||
+      tableData?.tableCode ||
+      '';
+
+    console.log(tableCodeToCheck);
+    const tableCodeStrict = String(tableCodeToCheck || '').trim();
+    if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
+      console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
+      throw new Error('RETRY_LATER_MISSING_TABLECODE');
+    }
+    console.log(tableCodeStrict);
+    if (dniValue && tableCodeStrict) {
+      const alreadyMine = await hasUserAttestedTable(dniValue, tableCodeStrict);
+      if (alreadyMine) {
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        await showActaDuplicateNotification({
+          reason: 'Detectamos un acta igual. Se descartó el envío.',
+        });
+
+        return true;
+      }
+    }
+    const existingByTable = await fetchLatestBallotByTable(tableCodeStrict);
+    if (existingByTable) {
+      const jsonUrl = extractJsonUrlFromBallot(existingByTable);
+      if (jsonUrl) {
+        const privateKey = userData?.privKey;
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered)
+            throw Error('No se pudo verificar registro de jurado');
+        }
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+        try {
+          if (existingByTable._id) {
+            const isJury = await oracleReads.isUserJury(
+              CHAIN,
+              userData.account,
+            );
+            const dniStr =
+              userData?.dni ||
+              userData?.vc?.credentialSubject?.governmentIdentifier ||
+              userData?.vc?.credentialSubject?.documentNumber ||
+              userData?.vc?.credentialSubject?.nationalIdNumber ||
+              '';
+            await axios.post(
+              `${BACKEND_RESULT}/api/v1/attestations`,
+              {
+                attestations: [
+                  {
+                    ballotId: existingByTable._id,
+                    support: true,
+                    isJury,
+                    dni: String(dniStr),
+                  },
+                ],
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-api-key': BACKEND_SECRET,
+                },
+                timeout: 30000,
+              },
+            );
+          }
+        } catch {}
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        try {
+          await requestPushPermissionExplicit();
+        } catch {}
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+        try {
+          await displayLocalActaPublished({
+            ipfsData: {jsonUrl, imageUrl: existingByTable?.image || null},
+            nftData: nftResult,
+            tableData,
+          });
+        } catch {}
+        return {
+          success: true,
+          ipfsData: {jsonUrl},
+          nftData: nftResult,
+          tableData,
+        };
+      }
+      try {
+        await removePersistedImage(imageUri);
+      } catch {}
+      await showActaDuplicateNotification({
+        reason: 'Acta ya creada pero no accesible. Se descartó el envío.',
+      });
+      return true;
+    }
+
     const buildFromPayload = type => {
       const norm = s =>
         String(s ?? '')
@@ -69,7 +286,9 @@ export const publishActaHandler = async (item, userData) => {
         nullVotes: getValue('nulos'),
         blankVotes: getValue('blancos'),
         partyVotes: (electoralData?.partyResults || []).map(p => ({
-          partyId: p.partido,
+          partyId: String(p.id ?? p.partyId ?? p.partido ?? p.name ?? '')
+            .trim()
+            .toLowerCase(),
           votes:
             parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) ||
             0,
@@ -79,11 +298,8 @@ export const publishActaHandler = async (item, userData) => {
       };
     };
     const verificationData = {
-      tableNumber: tableData?.codigo || 'N/A',
-      votes: {
-        parties: buildFromPayload('presidente'),
-        // deputies: buildFromPayload('diputado'),
-      },
+      tableNumber: tableCodeStrict,
+      votes: {parties: buildFromPayload('presidente')},
     };
 
     let duplicateCheck;
@@ -91,13 +307,144 @@ export const publishActaHandler = async (item, userData) => {
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
       );
+      console.log('[OFFLINE-QUEUE] duplicateCheck', {
+        exists: !!duplicateCheck?.exists,
+        hasBallot: !!duplicateCheck?.ballot,
+        tableNumber: verificationData?.tableNumber,
+      });
       if (duplicateCheck?.exists) {
-        await removePersistedImage(imageUri);
-        return true;
+        const fetchByTable = fetchLatestBallotByTable;
+
+        const existingBallot =
+          duplicateCheck.ballot ||
+          (await fetchLatestBallotByTable(tableCodeStrict));
+        if (!existingBallot) {
+          await removePersistedImage(imageUri).catch(() => {});
+          await showActaDuplicateNotification({
+            reason:
+              'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
+          });
+          return true;
+        }
+
+        const jsonUrl =
+          existingBallot?.ipfsUri ||
+          existingBallot?.jsonUrl ||
+          existingBallot?.ipfsJSON ||
+          existingBallot?.ipfs?.json ||
+          existingBallot?.ipfs?.jsonUrl ||
+          null;
+        if (!jsonUrl) {
+          await removePersistedImage(imageUri).catch(() => {});
+          await showActaDuplicateNotification({
+            reason:
+              'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
+          });
+          return true;
+        }
+        const privateKey = userData?.privKey;
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered) {
+            throw Error(
+              'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
+            );
+          }
+        }
+
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+
+        try {
+          if (existingBallot && existingBallot._id) {
+            const isJury = await oracleReads.isUserJury(
+              CHAIN,
+              userData.account,
+            );
+            const dniValue =
+              userData?.dni ||
+              userData?.vc?.credentialSubject?.governmentIdentifier ||
+              userData?.vc?.credentialSubject?.documentNumber ||
+              userData?.vc?.credentialSubject?.nationalIdNumber ||
+              '';
+            await axios.post(
+              `${BACKEND_RESULT}/api/v1/attestations`,
+              {
+                attestations: [
+                  {
+                    ballotId: existingBallot._id,
+                    support: true,
+                    isJury,
+                    dni: String(dniValue),
+                  },
+                ],
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-api-key': BACKEND_SECRET,
+                },
+                timeout: 30000,
+              },
+            );
+          }
+        } catch {}
+
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        try {
+          await requestPushPermissionExplicit();
+        } catch {}
+
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+
+        try {
+          await displayLocalActaPublished({
+            ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
+            nftData: nftResult,
+            tableData,
+          });
+        } catch {}
+
+        return {
+          success: true,
+          ipfsData: {jsonUrl},
+          nftData: nftResult,
+          tableData,
+        };
       }
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
-      // continuar el flujo si el check falla
     }
 
     const imagePath = imageUri.startsWith('file://')
@@ -122,7 +469,10 @@ export const publishActaHandler = async (item, userData) => {
         normalizedAdditional,
       );
       if (!ipfs.success) {
-        console.error('[OFFLINE-QUEUE] fallo uploadElectoralActComplete', ipfs.error);
+        console.error(
+          '[OFFLINE-QUEUE] fallo uploadElectoralActComplete',
+          ipfs.error,
+        );
         throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
       }
     } catch (err) {
@@ -280,8 +630,7 @@ export const publishActaHandler = async (item, userData) => {
           },
         );
       }
-    } catch (err) {
-    }
+    } catch (err) {}
 
     try {
       await removePersistedImage(imageUri);

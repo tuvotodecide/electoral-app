@@ -81,7 +81,7 @@ export default function FindMyUser({navigation}) {
           }
           setCandidate({
             did: data.did,
-            fullName: data.fullName,
+            fullName: data.displayNamePublic,
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });

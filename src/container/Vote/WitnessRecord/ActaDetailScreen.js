@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
   View,
   Image,
@@ -12,6 +12,7 @@ import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
+import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -64,22 +65,18 @@ const ActaDetailScreen = () => {
         {
           label: 'Válidos',
           value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
-
         },
         {
           label: 'Blancos',
           value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
-      
         },
         {
           label: 'Nulos',
           value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
-
         },
         {
           label: 'Total',
           value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
-
         },
       ];
     } catch (error) {
@@ -88,14 +85,18 @@ const ActaDetailScreen = () => {
   }, [rawVoteSummaryResults]);
 
   // Component for handling IPFS images
-  const IPFSImageComponent = () => {
+  const IPFSImageComponent = ({photoUri, testID}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
+    const [tryIndex, setTryIndex] = useState(0);
 
     const handleImageError = error => {
       setHasError(true);
       setIsLoading(false);
     };
+
+    const withCacheBust = (url, idx) =>
+      url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
 
     const handleImageLoad = () => {
       setIsLoading(false);
@@ -107,9 +108,27 @@ const ActaDetailScreen = () => {
       setHasError(false);
     };
 
-    if (hasError) {
+    const baseUri = useMemo(() => normalizeUri(photoUri), [photoUri]);
+    const candidates = useMemo(() => buildIpfsCandidates(baseUri), [baseUri]);
+    const currentUri = useMemo(
+      () =>
+        candidates[tryIndex]
+          ? withCacheBust(candidates[tryIndex], tryIndex)
+          : null,
+      [candidates, tryIndex],
+    );
+
+    useEffect(() => {
+      setTryIndex(0);
+      setHasError(false);
+      setIsLoading(true);
+    }, [baseUri]);
+
+    if (hasError || !currentUri) {
       return (
-        <View testID="actaDetailImageError" style={styles.imageError}>
+        <View
+          testID={testID ? `${testID}_error` : 'actaDetailImageError'}
+          style={styles.imageError}>
           <MaterialIcons
             testID="actaDetailBrokenImageIcon"
             name="broken-image"
@@ -133,13 +152,22 @@ const ActaDetailScreen = () => {
     return (
       <View testID="actaDetailImageContainer" style={styles.imageContainer}>
         <Image
-          testID="actaDetailActaImage"
-          source={{uri: selectedActa?.uri}}
+          testID={testID || 'actaDetailActaImage'}
+          source={{uri: currentUri}}
           style={[styles.actaImage, isLoading && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={handleLoadStart}
           onLoad={handleImageLoad}
-          onError={handleImageError}
+          onError={() => {
+            if (tryIndex < candidates.length - 1) {
+              setTryIndex(tryIndex + 1);
+              setIsLoading(true);
+              setHasError(false);
+            } else {
+              setHasError(true);
+              setIsLoading(false);
+            }
+          }}
         />
         {isLoading && (
           <View
@@ -237,7 +265,9 @@ const ActaDetailScreen = () => {
   const instructionsText = `Revise la foto del acta`;
 
   // Custom photo component that uses our IPFS handler
-  const PhotoComponent = () => <IPFSImageComponent />;
+  const PhotoComponent = ({photoUri, testID}) => (
+    <IPFSImageComponent photoUri={photoUri} testID={testID} />
+  );
 
   return (
     <BaseRecordReviewScreen
