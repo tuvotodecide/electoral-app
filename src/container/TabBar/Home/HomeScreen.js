@@ -239,8 +239,7 @@ export default function HomeScreen({navigation}) {
   const [checkingVotePlace, setCheckingVotePlace] = useState(true);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
 
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger('HomeScreen', true);
+
 
   const userData = useSelector(state => state.wallet.payload);
 

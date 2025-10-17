@@ -5,8 +5,60 @@ import {oracleCalls, oracleReads} from '../api/oracle';
 import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
 import {executeOperation} from '../api/account';
-import {displayLocalActaPublished} from '../notifications';
+import {
+  displayLocalActaPublished,
+  showActaDuplicateNotification,
+} from '../notifications';
 import {requestPushPermissionExplicit} from '../services/pushPermission';
+
+const safeStr = v =>
+  String(v ?? '')
+    .trim()
+    .toLowerCase();
+const getBallotTableCode = b =>
+  safeStr(
+    b?.table?.tableCode ||
+      b?.tableCode ||
+      b?.table?.code ||
+      b?.table?.codigo ||
+      b?.codigo ||
+      b?.code ||
+      '',
+  );
+const fetchUserAttestations = async dniValue => {
+  if (!dniValue) return [];
+  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data || [];
+};
+const fetchBallotById = async ballotId => {
+  if (!ballotId) return null;
+  const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data ?? data;
+};
+const hasUserAttestedTable = async (dniValue, tableCode) => {
+  try {
+    if (!dniValue || !tableCode) return false;
+    const list = await fetchUserAttestations(dniValue);
+    if (!list?.length) return false;
+    const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
+    for (const id of ids) {
+      const ballot = await fetchBallotById(id).catch(() => null);
+      if (getBallotTableCode(ballot) === safeStr(tableCode)) return true;
+    }
+    return false;
+  } catch {
+    // Si falla la consulta, no bloquees el flujo offline.
+    return false;
+  }
+};
 
 export const publishActaHandler = async (item, userData) => {
   try {
@@ -43,6 +95,34 @@ export const publishActaHandler = async (item, userData) => {
         tableNumber: String(tableNumber),
       };
     })();
+
+    const dniValue =
+      userData?.dni ||
+      userData?.vc?.credentialSubject?.governmentIdentifier ||
+      userData?.vc?.credentialSubject?.documentNumber ||
+      userData?.vc?.credentialSubject?.nationalIdNumber ||
+      '';
+    const tableCodeToCheck =
+      normalizedAdditional?.tableCode ||
+      tableData?.codigo ||
+      tableData?.tableCode ||
+      '';
+    if (dniValue && tableCodeToCheck) {
+      const alreadyMine = await hasUserAttestedTable(
+        dniValue,
+        tableCodeToCheck,
+      );
+      if (alreadyMine) {
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        await showActaDuplicateNotification({
+          reason: 'Detectamos un acta igual. Se descartó el envío.',
+        });
+
+        return true;
+      }
+    }
 
     const buildFromPayload = type => {
       const norm = s =>
@@ -93,6 +173,10 @@ export const publishActaHandler = async (item, userData) => {
       );
       if (duplicateCheck?.exists) {
         await removePersistedImage(imageUri);
+        await showActaDuplicateNotification({
+          reason:
+            'Ya atestiguaste esta mesa con tu usuario. Se descartó el envío.',
+        });
         return true;
       }
     } catch (err) {
@@ -122,7 +206,10 @@ export const publishActaHandler = async (item, userData) => {
         normalizedAdditional,
       );
       if (!ipfs.success) {
-        console.error('[OFFLINE-QUEUE] fallo uploadElectoralActComplete', ipfs.error);
+        console.error(
+          '[OFFLINE-QUEUE] fallo uploadElectoralActComplete',
+          ipfs.error,
+        );
         throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
       }
     } catch (err) {
@@ -280,8 +367,7 @@ export const publishActaHandler = async (item, userData) => {
           },
         );
       }
-    } catch (err) {
-    }
+    } catch (err) {}
 
     try {
       await removePersistedImage(imageUri);

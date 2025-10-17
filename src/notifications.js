@@ -1,13 +1,12 @@
 // C:\apps\electoralmobile\src\notifications.js
 
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
-import { navigate } from './navigation/RootNavigation';
+import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
+import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
-import { setPendingNav } from './redux/slices/authSlice';
-import { StackNav } from './navigation/NavigationKey';
+import {setPendingNav} from './redux/slices/authSlice';
+import {StackNav} from './navigation/NavigationKey';
 
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
-
 
 export async function ensureNotificationChannel() {
   try {
@@ -19,7 +18,9 @@ export async function ensureNotificationChannel() {
   } catch {}
 }
 
-export async function registerNotifications({ askPermissionOnInit = false } = {}) {
+export async function registerNotifications({
+  askPermissionOnInit = false,
+} = {}) {
   try {
     if (askPermissionOnInit) {
       // Si quieres que pida permiso aquí (similar a iOS).
@@ -29,13 +30,15 @@ export async function registerNotifications({ askPermissionOnInit = false } = {}
     await ensureNotificationChannel();
 
     // Tap con app en foreground
-    notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS) handleNotificationPress(detail.notification);
+    notifee.onForegroundEvent(({type, detail}) => {
+      if (type === EventType.PRESS)
+        handleNotificationPress(detail.notification);
     });
 
     // Tap con app en background/terminada
-    notifee.onBackgroundEvent(async ({ type, detail }) => {
-      if (type === EventType.PRESS) handleNotificationPress(detail.notification);
+    notifee.onBackgroundEvent(async ({type, detail}) => {
+      if (type === EventType.PRESS)
+        handleNotificationPress(detail.notification);
     });
   } catch {}
 }
@@ -43,7 +46,7 @@ export async function registerNotifications({ askPermissionOnInit = false } = {}
 /**
  * Muestra una notificación local genérica.
  */
-export async function showLocalNotification({ title, body, data, android = {} }) {
+export async function showLocalNotification({title, body, data, android = {}}) {
   await ensureNotificationChannel();
   await notifee.displayNotification({
     title: title ?? 'Tu Voto Decide',
@@ -52,7 +55,7 @@ export async function showLocalNotification({ title, body, data, android = {} })
       channelId: HIGH_PRIO_CHANNEL_ID,
       smallIcon: 'ic_launcher',
       importance: AndroidImportance.HIGH,
-      pressAction: { id: 'PRESS' },
+      pressAction: {id: 'PRESS'},
       ...android,
     },
     data: data ?? {},
@@ -63,17 +66,29 @@ export async function showLocalNotification({ title, body, data, android = {} })
  * Notificación local específica para “Acta publicada”.
  * Navega a SuccessScreen con params serializados en data.routeParams.
  */
-export async function showActaPublishedNotification({ ipfsData, nftData, tableData }) {
+export async function showActaPublishedNotification({
+  ipfsData,
+  nftData,
+  tableData,
+}) {
   try {
     await showLocalNotification({
       title: 'Acta publicada',
       body: 'Tu acta fue publicada correctamente. Toca para ver y compartir.',
       data: {
         screen: 'SuccessScreen',
-        routeParams: JSON.stringify({ ipfsData, nftData, tableData }),
+        routeParams: JSON.stringify({ipfsData, nftData, tableData}),
       },
     });
   } catch {}
+}
+export async function showActaDuplicateNotification({
+  reason = 'Ya atestiguaste esta mesa.',
+} = {}) {
+  await showLocalNotification({
+    title: 'Acta descartada',
+    body: reason,
+  });
 }
 
 /** Alias de compatibilidad con llamadas existentes. */
@@ -92,7 +107,7 @@ export async function displayRemoteMessage(remoteMessage) {
       channelId: HIGH_PRIO_CHANNEL_ID,
       smallIcon: 'ic_launcher',
       importance: AndroidImportance.HIGH,
-      pressAction: { id: 'PRESS' },
+      pressAction: {id: 'PRESS'},
     },
     data: remoteMessage?.data ?? {},
   });
@@ -110,7 +125,7 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
   // if (!scr || !StackNav[scr] || auth.isAuthenticated) return;
   if (!scr || auth.isAuthenticated) return;
 
-  store.dispatch(setPendingNav({ name: scr, params: d }));
+  store.dispatch(setPendingNav({name: scr, params: d}));
 }
 
 /**
@@ -130,11 +145,12 @@ export function handleNotificationPress(notification) {
     }
   }
 
-  const route = d.screen && StackNav[d.screen]
-    ? { name: d.screen, params }
-    : { name: 'Splash' };
+  const route =
+    d.screen && StackNav[d.screen]
+      ? {name: d.screen, params}
+      : {name: 'Splash'};
 
-  const { isAuthenticated } = store.getState().auth;
+  const {isAuthenticated} = store.getState().auth;
 
   if (isAuthenticated) {
     navigate(route.name, route.params);
