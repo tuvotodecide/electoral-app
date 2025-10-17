@@ -158,14 +158,8 @@ export const publishActaHandler = async (item, userData) => {
       };
     };
     const verificationData = {
-      tableCode:
-        normalizedAdditional?.tableCode ||
-        tableData?.codigo ||
-        tableData?.tableCode ||
-        'N/A',
-      votes: {
-        parties: buildFromPayload('presidente'),
-      },
+      tableNumber: tableData?.codigo || 'N/A',
+      votes: {parties: buildFromPayload('presidente')},
     };
 
     let duplicateCheck;
