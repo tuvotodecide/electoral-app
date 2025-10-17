@@ -1,10 +1,11 @@
 // utils/migrateLegacy.js
 import axios from 'axios';
-import {BACKEND, BACKEND_IDENTITY, BUNDLER, SPONSORSHIP_POLICY, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME, CHAIN} from '@env';
+import {BACKEND, BACKEND_IDENTITY, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME, CHAIN} from '@env';
 import {buildSiweAuthSig} from './siweRn';
 import {decryptVCWithPin} from './vcCrypto';
 import wira from 'wira-sdk';
 import {checkPin, getSecrets} from './Cifrate';
+import { availableNetworks, sponsorshipPolicyId } from '../api/params';
 
 export const LEGACY_MIGRATION_ENABLED = true;
 
@@ -116,8 +117,8 @@ export async function migrateIfNeeded(pin) {
 
   const registerer = new wira.Registerer(
     BACKEND_IDENTITY,
-    BUNDLER,
-    SPONSORSHIP_POLICY,
+    availableNetworks[CHAIN].bundler,
+    sponsorshipPolicyId,
   );
 
   try {

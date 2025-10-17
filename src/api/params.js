@@ -15,15 +15,17 @@ export const availableNetworks = {
     oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80',
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xdCa6d6E8f4E69C3Cf86B656f0bBf9b460727Bed9',
+    participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
   },
   'arbitrum': {
     chain: arbitrum,
     bundler: BUNDLER_MAIN,
     explorer: 'https://arbiscan.io/',
     nftExplorer: 'https://routescan.io/nft',
-    oracle: '0x349E50230C48F245D1707A9250aae97639e2f046',
+    oracle: '0xb558021F42209c4E08Dab884B25b89106Dc7D747',
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
-    attestationNft: '0x1FEEF5E4302AdE8Ac70Beff5F8bB7270c6a9aba1',
+    attestationNft: '0xF81508fC99Ffcfbbb5421150785c9820F8cBA9b2',
+    participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
   },
   'base-sepolia': {
     chain: baseSepolia,
@@ -34,6 +36,7 @@ export const availableNetworks = {
     userRole: '0x2db9fd3d099848027c2383d0a083396f6c41510d7acfd92adc99b6cffcf31e96',
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
+    participationNft: '',
   },
   'base': {
     chain: base,
@@ -44,6 +47,7 @@ export const availableNetworks = {
     userRole: '',
     juryRole: '',
     attestationNft: '',
+    participationNft: '',
   }
 };
 

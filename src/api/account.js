@@ -3,6 +3,7 @@ import {privateKeyToAccount} from 'viem/accounts';
 import {
   availableNetworks,
   FACTORY_ADDRESS,
+  sponsorshipPolicyId,
 } from './params';
 import {entryPoint07Address} from 'viem/account-abstraction';
 import {toSimpleSmartAccount} from 'permissionless/accounts';
@@ -50,7 +51,6 @@ export async function executeOperation(
   callData,
   waitEvent,
   eventName,
-  sponsorshipPolicyId,
 ) {
   const {account, publicClient} = await getAccount(
     privateKey,

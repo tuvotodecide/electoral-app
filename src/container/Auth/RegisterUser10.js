@@ -27,13 +27,12 @@ import {
 import wira from 'wira-sdk';
 import {
   BACKEND_IDENTITY,
-  BUNDLER,
-  BUNDLER_MAIN,
   CHAIN,
   CRED_TYPE,
   CRED_EXP_DAYS,
   PROVIDER_NAME,
 } from '@env';
+import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
 
 export default function RegisterUser10({navigation, route}) {
   const {ocrData, dni, originalPin: pin, useBiometry, isMigration} = route.params;
@@ -119,11 +118,10 @@ export default function RegisterUser10({navigation, route}) {
           ocrData: normalizeOcrForUI(ocrData),
         });
 
-        const bundler = CHAIN === 'base' ? BUNDLER_MAIN : BUNDLER;
-
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
-          bundler,
+          availableNetworks[CHAIN].bundler,
+          sponsorshipPolicyId
         );
 
         await registerer.createVC(
