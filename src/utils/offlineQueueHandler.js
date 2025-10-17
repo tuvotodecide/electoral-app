@@ -106,11 +106,15 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.codigo ||
       tableData?.tableCode ||
       '';
-    if (dniValue && tableCodeToCheck) {
-      const alreadyMine = await hasUserAttestedTable(
-        dniValue,
-        tableCodeToCheck,
-      );
+
+    const tableCodeStrict = String(tableCodeToCheck || '').trim();
+    if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
+      console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
+      throw new Error('RETRY_LATER_MISSING_TABLECODE');
+    }
+    console.log(tableCodeStrict);
+    if (dniValue && tableCodeStrict) {
+      const alreadyMine = await hasUserAttestedTable(dniValue, tableCodeStrict);
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
@@ -158,7 +162,7 @@ export const publishActaHandler = async (item, userData) => {
       };
     };
     const verificationData = {
-      tableNumber: tableData?.codigo || 'N/A',
+      tableNumber: tableCodeStrict,
       votes: {parties: buildFromPayload('presidente')},
     };
 
