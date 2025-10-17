@@ -107,7 +107,7 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.tableCode ||
       '';
 
-    console.log(tableCodeToCheck)
+    console.log(tableCodeToCheck);
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
     if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
@@ -180,9 +180,157 @@ export const publishActaHandler = async (item, userData) => {
         });
         return true;
       }
+      if (duplicateCheck?.exists) {
+        const fetchByTable = async code => {
+          try {
+            const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+              code,
+            )}`;
+            const {data} = await axios.get(url, {
+              timeout: 15000,
+            });
+            const list = Array.isArray(data) ? data : [];
+
+            return (
+              list.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+              )[0] || null
+            );
+          } catch {
+            return null;
+          }
+        };
+
+        const existingBallot =
+          duplicateCheck.ballot || (await fetchByTable(tableCodeStrict));
+        if (!existingBallot) {
+          await removePersistedImage(imageUri).catch(() => {});
+          await showActaDuplicateNotification({
+            reason:
+              'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
+          });
+          return true;
+        }
+
+        const jsonUrl =
+          existingBallot?.ipfsUri ||
+          existingBallot?.jsonUrl ||
+          existingBallot?.ipfsJSON ||
+          existingBallot?.ipfs?.json ||
+          existingBallot?.ipfs?.jsonUrl ||
+          null;
+        if (!jsonUrl) {
+          await removePersistedImage(imageUri).catch(() => {});
+          await showActaDuplicateNotification({
+            reason:
+              'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
+          });
+          return true;
+        }
+        const privateKey = userData?.privKey;
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered) {
+            throw Error(
+              'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
+            );
+          }
+        }
+
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+
+        try {
+          if (existingBallot && existingBallot._id) {
+            const isJury = await oracleReads.isUserJury(
+              CHAIN,
+              userData.account,
+            );
+            const dniValue =
+              userData?.dni ||
+              userData?.vc?.credentialSubject?.governmentIdentifier ||
+              userData?.vc?.credentialSubject?.documentNumber ||
+              userData?.vc?.credentialSubject?.nationalIdNumber ||
+              '';
+            await axios.post(
+              `${BACKEND_RESULT}/api/v1/attestations`,
+              {
+                attestations: [
+                  {
+                    ballotId: existingBallot._id,
+                    support: true,
+                    isJury,
+                    dni: String(dniValue),
+                  },
+                ],
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-api-key': BACKEND_SECRET,
+                },
+                timeout: 30000,
+              },
+            );
+          }
+        } catch {}
+
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        try {
+          await requestPushPermissionExplicit();
+        } catch {}
+
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+
+        try {
+          await displayLocalActaPublished({
+            ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
+            nftData: nftResult,
+            tableData,
+          });
+        } catch {}
+
+        return {
+          success: true,
+          ipfsData: {jsonUrl},
+          nftData: nftResult,
+          tableData,
+        };
+      }
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
-      // continuar el flujo si el check falla
+
     }
 
     const imagePath = imageUri.startsWith('file://')
