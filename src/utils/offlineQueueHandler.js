@@ -172,14 +172,11 @@ export const publishActaHandler = async (item, userData) => {
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
       );
-      if (duplicateCheck?.exists) {
-        await removePersistedImage(imageUri);
-        await showActaDuplicateNotification({
-          reason:
-            'Ya atestiguaste esta mesa con tu usuario. Se descartó el envío.',
-        });
-        return true;
-      }
+      console.log('[OFFLINE-QUEUE] duplicateCheck', {
+        exists: !!duplicateCheck?.exists,
+        hasBallot: !!duplicateCheck?.ballot,
+        tableNumber: verificationData?.tableNumber,
+      });
       if (duplicateCheck?.exists) {
         const fetchByTable = async code => {
           try {
@@ -330,7 +327,6 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
-
     }
 
     const imagePath = imageUri.startsWith('file://')
