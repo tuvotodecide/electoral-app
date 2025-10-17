@@ -93,6 +93,7 @@ export const publishActaHandler = async (item, userData) => {
     const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
       item.task.payload;
 
+    // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
         additionalData?.idRecinto ||
@@ -124,6 +125,7 @@ export const publishActaHandler = async (item, userData) => {
       };
     })();
 
+    // --- Datos base del usuario / mesa (mismos nombres) ---
     const dniValue =
       userData?.dni ||
       userData?.vc?.credentialSubject?.governmentIdentifier ||
@@ -136,136 +138,27 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.tableCode ||
       '';
 
-    console.log(tableCodeToCheck);
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
     if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
-    console.log(tableCodeStrict);
+
+    // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(dniValue, tableCodeStrict);
       if (alreadyMine) {
-        try {
-          await removePersistedImage(imageUri);
-        } catch {}
+        try { await removePersistedImage(imageUri); } catch {}
         await showActaDuplicateNotification({
           reason: 'Detectamos un acta igual. Se descartó el envío.',
         });
-
         return true;
       }
     }
-    const existingByTable = await fetchLatestBallotByTable(tableCodeStrict);
-    if (existingByTable) {
-      const jsonUrl = extractJsonUrlFromBallot(existingByTable);
-      if (jsonUrl) {
-        const privateKey = userData?.privKey;
-        let isRegistered = await oracleReads.isRegistered(
-          CHAIN,
-          userData.account,
-          1,
-        );
-        if (!isRegistered) {
-          await executeOperation(
-            privateKey,
-            userData.account,
-            CHAIN,
-            oracleCalls.requestRegister(CHAIN, jsonUrl),
-          );
-          isRegistered = await oracleReads.isRegistered(
-            CHAIN,
-            userData.account,
-            20,
-          );
-          if (!isRegistered)
-            throw Error('No se pudo verificar registro de jurado');
-        }
-        const response = await executeOperation(
-          privateKey,
-          userData.account,
-          CHAIN,
-          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
-          oracleReads.waitForOracleEvent,
-          'Attested',
-        );
-        try {
-          if (existingByTable._id) {
-            const isJury = await oracleReads.isUserJury(
-              CHAIN,
-              userData.account,
-            );
-            const dniStr =
-              userData?.dni ||
-              userData?.vc?.credentialSubject?.governmentIdentifier ||
-              userData?.vc?.credentialSubject?.documentNumber ||
-              userData?.vc?.credentialSubject?.nationalIdNumber ||
-              '';
-            await axios.post(
-              `${BACKEND_RESULT}/api/v1/attestations`,
-              {
-                attestations: [
-                  {
-                    ballotId: existingByTable._id,
-                    support: true,
-                    isJury,
-                    dni: String(dniStr),
-                  },
-                ],
-              },
-              {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-api-key': BACKEND_SECRET,
-                },
-                timeout: 30000,
-              },
-            );
-          }
-        } catch {}
-        try {
-          await removePersistedImage(imageUri);
-        } catch {}
-        try {
-          await requestPushPermissionExplicit();
-        } catch {}
-        const {explorer, nftExplorer, attestationNft} =
-          availableNetworks[CHAIN];
-        const nftId = response.returnData.recordId.toString();
-        const nftResult = {
-          txHash: response.receipt.transactionHash,
-          nftId,
-          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
-        };
-        try {
-          await displayLocalActaPublished({
-            ipfsData: {jsonUrl, imageUrl: existingByTable?.image || null},
-            nftData: nftResult,
-            tableData,
-          });
-        } catch {}
-        return {
-          success: true,
-          ipfsData: {jsonUrl},
-          nftData: nftResult,
-          tableData,
-        };
-      }
-      try {
-        await removePersistedImage(imageUri);
-      } catch {}
-      await showActaDuplicateNotification({
-        reason: 'Acta ya creada pero no accesible. Se descartó el envío.',
-      });
-      return true;
-    }
 
+    // Helper para verificación de votos (sin cambiar nombres)
     const buildFromPayload = type => {
-      const norm = s =>
-        String(s ?? '')
-          .trim()
-          .toLowerCase();
+      const norm = s => String(s ?? '').trim().toLowerCase();
       const aliases = {
         validos: ['validos', 'válidos', 'votos válidos'],
         nulos: ['nulos', 'votos nulos'],
@@ -293,10 +186,11 @@ export const publishActaHandler = async (item, userData) => {
             parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) ||
             0,
         })),
-        totalVotes:
-          getValue('validos') + getValue('nulos') + getValue('blancos'),
+        totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
       };
     };
+
+    // 1) PRIMERO: verificar duplicado por votos (idéntico a online)
     const verificationData = {
       tableNumber: tableCodeStrict,
       votes: {parties: buildFromPayload('presidente')},
@@ -304,25 +198,21 @@ export const publishActaHandler = async (item, userData) => {
 
     let duplicateCheck;
     try {
-      duplicateCheck = await pinataService.checkDuplicateBallot(
-        verificationData,
-      );
+      duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
       console.log('[OFFLINE-QUEUE] duplicateCheck', {
         exists: !!duplicateCheck?.exists,
         hasBallot: !!duplicateCheck?.ballot,
         tableNumber: verificationData?.tableNumber,
       });
-      if (duplicateCheck?.exists) {
-        const fetchByTable = fetchLatestBallotByTable;
 
+      if (duplicateCheck?.exists) {
+        // = Duplicado por contenido → NO subir a IPFS; attest al existente
         const existingBallot =
-          duplicateCheck.ballot ||
-          (await fetchLatestBallotByTable(tableCodeStrict));
+          duplicateCheck.ballot || (await fetchLatestBallotByTable(tableCodeStrict));
         if (!existingBallot) {
           await removePersistedImage(imageUri).catch(() => {});
           await showActaDuplicateNotification({
-            reason:
-              'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
+            reason: 'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
           });
           return true;
         }
@@ -337,11 +227,11 @@ export const publishActaHandler = async (item, userData) => {
         if (!jsonUrl) {
           await removePersistedImage(imageUri).catch(() => {});
           await showActaDuplicateNotification({
-            reason:
-              'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
+            reason: 'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
           });
           return true;
         }
+
         const privateKey = userData?.privKey;
         let isRegistered = await oracleReads.isRegistered(
           CHAIN,
@@ -371,7 +261,12 @@ export const publishActaHandler = async (item, userData) => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleCalls.attest(
+            CHAIN,
+            (tableData?.codigo || tableCodeStrict),
+            BigInt(0),
+            jsonUrl,
+          ),
           oracleReads.waitForOracleEvent,
           'Attested',
         );
@@ -411,12 +306,8 @@ export const publishActaHandler = async (item, userData) => {
           }
         } catch {}
 
-        try {
-          await removePersistedImage(imageUri);
-        } catch {}
-        try {
-          await requestPushPermissionExplicit();
-        } catch {}
+        try { await removePersistedImage(imageUri); } catch {}
+        try { await requestPushPermissionExplicit(); } catch {}
 
         const {explorer, nftExplorer, attestationNft} =
           availableNetworks[CHAIN];
@@ -445,8 +336,201 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
+      // Si falla la verificación, seguimos (no bloqueamos)
     }
 
+    // 2) NO fue duplicado por votos → mirar si ya existe acta en la mesa
+    const existingByTable = await fetchLatestBallotByTable(tableCodeStrict);
+    if (existingByTable) {
+      // HAY record en la mesa PERO votos distintos:
+      // SUBIR a IPFS y luego ATESTIGUAR con el JSON NUEVO (NO createAttestation)
+      const imagePath = imageUri.startsWith('file://')
+        ? imageUri.substring(7)
+        : imageUri;
+
+      const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
+        data => {
+          if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
+          if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
+          if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
+          return data;
+        },
+      );
+
+      let ipfs;
+      try {
+        ipfs = await pinataService.uploadElectoralActComplete(
+          imagePath,
+          aiAnalysis || {},
+          {...electoralData, voteSummaryResults: normalizedVoteSummary},
+          normalizedAdditional,
+        );
+        if (!ipfs.success) {
+          console.error(
+            '[OFFLINE-QUEUE] fallo uploadElectoralActComplete (attest-nuevo)',
+            ipfs.error,
+          );
+          throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
+        }
+      } catch (err) {
+        console.error('[OFFLINE-QUEUE] error subiendo a IPFS (attest-nuevo)', err);
+        throw err;
+      }
+      const ipfsData = ipfs.data;
+
+      // Validación backend
+      try {
+        await axios.post(
+          `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`,
+          {
+            ipfsUri: ipfsData.jsonUrl,
+            recordId: 'String',
+            tableIdIpfs: 'String',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': BACKEND_SECRET,
+            },
+            timeout: 30000,
+          },
+        );
+      } catch (err) {
+        console.error('[OFFLINE-QUEUE] error en backend validation (attest-nuevo)', err);
+        throw err;
+      }
+
+      // Registrar si falta y ATESTIGUAR con JSON nuevo
+      const privateKey = userData?.privKey;
+      let isRegistered = await oracleReads.isRegistered(
+        CHAIN,
+        userData.account,
+        1,
+      );
+      if (!isRegistered) {
+        await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.requestRegister(CHAIN, ipfsData.imageUrl),
+        );
+        isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          20,
+        );
+        if (!isRegistered) {
+          console.error('[OFFLINE-QUEUE] registro en oracle fallido (attest-nuevo)');
+          throw Error(
+            'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
+          );
+        }
+      }
+
+      const response = await executeOperation(
+        privateKey,
+        userData.account,
+        CHAIN,
+        oracleCalls.attest(
+          CHAIN,
+          (tableData?.codigo || tableCodeStrict),
+          BigInt(0),
+          ipfsData.jsonUrl,
+        ),
+        oracleReads.waitForOracleEvent,
+        'Attested',
+      );
+
+      // Notificar backend (from-ipfs) y registrar attestation
+      let backendBallot;
+      try {
+        const {data} = await axios.post(
+          `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
+          {
+            ipfsUri: String(ipfsData.jsonUrl),
+            recordId: String(response.returnData.recordId.toString()),
+            tableIdIpfs: 'String',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': BACKEND_SECRET,
+            },
+            timeout: 30000,
+          },
+        );
+        backendBallot = data;
+      } catch (err) {
+        console.error(
+          '[OFFLINE-QUEUE] error notificando backend from-ipfs (attest-nuevo)',
+          err,
+        );
+      }
+
+      try {
+        if (backendBallot && backendBallot._id) {
+          const isJury = await oracleReads.isUserJury(
+            CHAIN,
+            userData.account,
+          );
+          await axios.post(
+            `${BACKEND_RESULT}/api/v1/attestations`,
+            {
+              attestations: [
+                {
+                  ballotId: backendBallot._id,
+                  support: true,
+                  isJury,
+                  dni: String(dniValue),
+                },
+              ],
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': BACKEND_SECRET,
+              },
+              timeout: 30000,
+            },
+          );
+        }
+      } catch (err) {}
+
+      try {
+        await removePersistedImage(imageUri);
+      } catch (err) {
+        console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
+      }
+      try {
+        await requestPushPermissionExplicit();
+      } catch (err) {
+        console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
+      }
+
+      const {explorer, nftExplorer, attestationNft} =
+        availableNetworks[CHAIN];
+      const nftId = response.returnData.recordId.toString();
+      const nftResult = {
+        txHash: response.receipt.transactionHash,
+        nftId,
+        txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+        nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+      };
+
+      try {
+        await displayLocalActaPublished({
+          ipfsData,
+          nftData: nftResult,
+          tableData,
+        });
+      } catch (err) {
+        console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
+      }
+
+      return {success: true, ipfsData, nftData: nftResult, tableData};
+    }
+
+    // 3) NO hay acta por mesa → primera vez: subir + createAttestation
     const imagePath = imageUri.startsWith('file://')
       ? imageUri.substring(7)
       : imageUri;
@@ -481,8 +565,8 @@ export const publishActaHandler = async (item, userData) => {
     }
     const ipfsData = ipfs.data;
 
+    // Validación en backend
     const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
-
     try {
       await axios.post(
         backendUrl,
@@ -504,6 +588,7 @@ export const publishActaHandler = async (item, userData) => {
       throw err;
     }
 
+    // Registro + createAttestation (fallback a attest)
     const privateKey = userData?.privKey;
     let isRegistered = await oracleReads.isRegistered(
       CHAIN,
@@ -528,7 +613,6 @@ export const publishActaHandler = async (item, userData) => {
           'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
         );
       }
-    } else {
     }
 
     let response;
@@ -539,7 +623,7 @@ export const publishActaHandler = async (item, userData) => {
         CHAIN,
         oracleCalls.createAttestation(
           CHAIN,
-          tableData.codigo,
+          (tableData?.codigo || tableCodeStrict),
           ipfsData.jsonUrl,
         ),
         oracleReads.waitForOracleEvent,
@@ -555,7 +639,7 @@ export const publishActaHandler = async (item, userData) => {
           CHAIN,
           oracleCalls.attest(
             CHAIN,
-            tableData.codigo,
+            (tableData?.codigo || tableCodeStrict),
             BigInt(0),
             ipfsData.jsonUrl,
           ),
@@ -602,23 +686,11 @@ export const publishActaHandler = async (item, userData) => {
     try {
       if (backendBallot && backendBallot._id) {
         const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
-        const dniValue =
-          userData?.dni ||
-          userData?.vc?.credentialSubject?.governmentIdentifier ||
-          userData?.vc?.credentialSubject?.documentNumber ||
-          userData?.vc?.credentialSubject?.nationalIdNumber ||
-          '';
-
         await axios.post(
           `${BACKEND_RESULT}/api/v1/attestations`,
           {
             attestations: [
-              {
-                ballotId: backendBallot._id,
-                support: true,
-                isJury,
-                dni: String(dniValue),
-              },
+              {ballotId: backendBallot._id, support: true, isJury, dni: String(dniValue)},
             ],
           },
           {
@@ -632,15 +704,10 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {}
 
-    try {
-      await removePersistedImage(imageUri);
-    } catch (err) {
+    try { await removePersistedImage(imageUri); } catch (err) {
       console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
     }
-
-    try {
-      await requestPushPermissionExplicit();
-    } catch (err) {
+    try { await requestPushPermissionExplicit(); } catch (err) {
       console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
     }
 
@@ -660,3 +727,4 @@ export const publishActaHandler = async (item, userData) => {
     throw fatalErr;
   }
 };
+
