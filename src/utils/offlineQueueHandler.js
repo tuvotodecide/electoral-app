@@ -107,6 +107,7 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.tableCode ||
       '';
 
+    console.log(tableCodeToCheck)
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
     if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
