@@ -55,7 +55,6 @@ const hasUserAttestedTable = async (dniValue, tableCode) => {
     }
     return false;
   } catch {
-    // Si falla la consulta, no bloquees el flujo offline.
     return false;
   }
 };
@@ -159,10 +158,13 @@ export const publishActaHandler = async (item, userData) => {
       };
     };
     const verificationData = {
-      tableNumber: tableData?.codigo || 'N/A',
+      tableCode:
+        normalizedAdditional?.tableCode ||
+        tableData?.codigo ||
+        tableData?.tableCode ||
+        'N/A',
       votes: {
         parties: buildFromPayload('presidente'),
-        // deputies: buildFromPayload('diputado'),
       },
     };
 
