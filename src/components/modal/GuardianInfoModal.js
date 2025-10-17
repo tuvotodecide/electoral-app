@@ -25,7 +25,7 @@ export default function GuardianInfoActionModal({
         <View
           style={[styles.container, {backgroundColor: colors.backgroundColor}]}>
           <CText type="B18" align="center" style={styles.title}>
-            {guardian.publicFullName ?? '(sin nombre)'}
+            {guardian.inviter?.displayNamePublic ?? '(sin nombre)'}
           </CText>
           
           <CInput
@@ -38,15 +38,12 @@ export default function GuardianInfoActionModal({
             rightAccessory={() => CCopyIcon({copyValue: guardian?.inviterDid})}
           />
           <CInput
-            label="Apodo"
+            label="Tu apodo"
              editable={false}
             _value={guardian?.nickname}
             placeHolder="Ingresa un apodo"
             inputContainerStyle={styles.inputContainer}
           />
-    
-
-         
 
           <TouchableOpacity onPress={onClose} style={styles.closeArea} />
         </View>

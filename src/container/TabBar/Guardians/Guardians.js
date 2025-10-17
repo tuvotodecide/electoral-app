@@ -22,6 +22,7 @@ import {
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { truncateDid } from '../../../utils/Address';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -149,15 +150,8 @@ export default function Guardians({navigation}) {
   }
 
   const renderGuardianOption = ({item}) => {
-    const parts = (item.fullName || '').split(' ');
-    const firstSegment = parts[0] || '';
-    const secondSegment = parts[1] || '';
-
-    const abbreviated = secondSegment.slice(0, 2).toUpperCase();
-    const displayName = secondSegment
-      ? `${firstSegment} ${abbreviated}`
-      : firstSegment;
-    const inviterDid = item.guardianDid?.slice(22, 31) + '...' + item.guardianDid?.slice(-4);
+    const displayName = item.nickname
+    const inviterDid = truncateDid(item.guardianDid);
 
     const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
@@ -188,7 +182,7 @@ export default function Guardians({navigation}) {
             <Icono testID={`guardiansListItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
           </View>
           <View testID={`guardiansListItemInfo_${item.id}`} style={styles.ml10}>
-            <View testID={`guardiansListItemNameRow_${item.id}`} style={styles.rowCenter}>
+            <View testID={`guardiansListItemNameRow_${item.id}`} style={styles.rowSpaceBetween}>
               <CText testID={`guardiansListItemName_${item.id}`} type="B16">{displayName}</CText>
 
               <View
@@ -200,7 +194,7 @@ export default function Guardians({navigation}) {
               </View>
             </View>
             <CText testID={`guardiansListItemNickname_${item.id}`} type="R12" color={colors.grayScale500}>
-              {item.nickname ?? '(sin apodo)'}
+              {inviterDid}
             </CText>
           </View>
         </View>

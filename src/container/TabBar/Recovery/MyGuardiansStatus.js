@@ -31,11 +31,12 @@ import {readOnChainApprovals} from '../../../api/guardianOnChain';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
 import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { truncateDid } from '../../../utils/Address';
 
 
 
 const statusColorKey = {
-  ACCEPTED: 'activeColor',
+  APPROVED: 'activeColor',
   PENDING: 'pendingColor',
   REJECTED: 'rejectedColor',
   REMOVED: 'rejectedColor',
@@ -77,7 +78,7 @@ export default function MyGuardiansStatus({navigation}) {
  
 
   const statusLabel = {
-    ACCEPTED: String.active,
+    APPROVED: String.active,
     PENDING: String.pending,
     REJECTED: String.rejected,
     REMOVED: String.removed ?? 'Removido',
@@ -148,11 +149,11 @@ export default function MyGuardiansStatus({navigation}) {
   };
 
   const renderGuardianOption = ({item}) => {
-    const colorKey = statusColorKey[item.status] || 'pendingColor';
+    const colorKey = statusColorKey[item.decision] || 'pendingColor';
     let actionIcon = null;
-    if (item.status === 'PENDING') {
+    if (item.decision === 'PENDING') {
       actionIcon = <ActivityIndicator size="small" color={colors[colorKey]} />;
-    } else if (item.status === 'ACCEPTED') {
+    } else if (item.decision === 'APPROVED') {
       actionIcon = (
         <Icono
           name="check-all"
@@ -160,7 +161,7 @@ export default function MyGuardiansStatus({navigation}) {
           color={colors[colorKey]}
         />
       );
-    } else if (item.status === 'REJECTED') {
+    } else if (item.decision === 'REJECTED') {
       actionIcon = (
         <Icono
           name="window-close"
@@ -194,12 +195,11 @@ export default function MyGuardiansStatus({navigation}) {
           </View>
           <View style={styles.ml10}>
             <View style={styles.rowCenter}>
-              <CText type="B16"> {item.nickname ?? '(sin apodo)'}</CText>
-
+              <CText type="B16"> {truncateDid(item.guardianDid)}</CText>
               <View
                 style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>
                 <CText type="R12" color={colors.white}>
-                  {statusLabel[item.status]}
+                  {statusLabel[item.decision]}
                 </CText>
               </View>
             </View>

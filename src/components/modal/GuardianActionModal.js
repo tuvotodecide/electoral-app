@@ -4,7 +4,6 @@ import {useSelector} from 'react-redux';
 
 import CText from '../common/CText';
 import CButton from '../common/CButton';
-import Icono from '../common/Icono';
 import {moderateScale} from '../../common/constants';
 import CInput from '../common/CInput';
 import { CCopyIcon } from '../common/CCopyIcon';
@@ -33,9 +32,6 @@ export default function GuardianActionModal({
       <View style={[styles.overlay, {backgroundColor: colors.modalBackground}]}>
         <View
           style={[styles.container, {backgroundColor: colors.backgroundColor}]}>
-          <CText type="B18" align="center" style={styles.title}>
-            {guardian.fullName ?? '(sin nombre)'}
-          </CText>
           <CInput
             label="Dirección DID"
             editable={false}

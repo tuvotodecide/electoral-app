@@ -309,6 +309,8 @@ export default {
   security3Subtitle: 'Crear tu correo',
   security4Title: 'Huella dactilar',
   security4Subtitle: 'Activar huella',
+  showName: 'Nombre público',
+  showNameValue: 'Tu nombre será visible para otros usuarios',
 
   //Limite
   limitTitle: 'Limite de compras',
@@ -1031,6 +1033,7 @@ export default {
   errorSearchingNearbyTables: 'Error al buscar mesas cercanas',
   foundNearbyTables: 'Se encontraron {count} mesas cercanas',
   tableCode: 'Código de mesa',
+  noNameAvailable: 'No se encontró el nombre de usuario',
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: 'Mis Atestiguamientos',
