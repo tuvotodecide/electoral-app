@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,14 +7,15 @@ import {
   Image,
   Linking,
   Share,
+  BackHandler,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {StackNav} from '../../../navigation/NavigationKey';
+import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {title} from 'process';
@@ -39,13 +40,31 @@ const SuccessScreen = () => {
 
   const {nftData, ipfsData} = route.params;
 
-  const handleBack = () => {
-    try {
-      navigation.popToTop();
-    } catch {
-      navigation.navigate(StackNav.TabNavigation);
-    }
-  };
+  const navigateHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+    return true;
+  }, [navigation]);
+
+  const handleBack = useCallback(() => {
+    navigateHome();
+  }, [navigateHome]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => navigateHome();
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [navigateHome]),
+  );
 
   const handleViewNFT = async () => {
     try {

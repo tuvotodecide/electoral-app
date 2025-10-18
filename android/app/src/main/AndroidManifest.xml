@@ -10,14 +10,17 @@
 	<uses-permission android:name="android.permission.VIBRATE" />
 	<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" tools:replace="android:maxSdkVersion" />
+	<!-- Permisos de almacenamiento para Android 10-12 (API 29-32) -->
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion" />
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-	<uses-permission android:name="com.identity.permission.SSI" />
+	<!-- Permisos de media para Android 13+ (API 33+) -->
 	<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 	<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+	<uses-permission android:name="com.identity.permission.SSI" />
 	<uses-feature android:name="android.hardware.camera" android:required="true" />
 	<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-	<application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:allowBackup="false" android:theme="@style/AppTheme" android:supportsRtl="true">
+	<!-- requestLegacyExternalStorage es necesario para compatibilidad Android 10/11 (Huawei/EMUI) -->
+	<application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:allowBackup="false" android:theme="@style/AppTheme" android:supportsRtl="true" android:requestLegacyExternalStorage="true">
 		<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_launcher" />
 		<meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/colorAccent" tools:replace="android:resource" />
 		<provider android:name="com.tuvotodecide.ssi.SsiProvider" android:authorities="${applicationId}.ssi.bundle" android:exported="true" android:permission="com.identity.permission.SSI" android:grantUriPermissions="true" />
