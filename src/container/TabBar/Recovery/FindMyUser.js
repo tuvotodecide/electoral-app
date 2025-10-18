@@ -171,12 +171,12 @@ export default function FindMyUser({navigation}) {
         {candidate && (
           <>
             <CText type="R14" style={localStyle.fieldLabel} testID="findMyUserNameLabel">
-              {String.guardianName}
+              {String.foundUserName}
             </CText>
             <View style={localStyle.inputWrapper} testID="findMyUserNameWrapper">
               <CInput
                 editable={false}
-                _value={candidate.fullName || '(sin nombre)'}
+                _value={candidate.fullName || '(nombre privado)'}
                 testID="findMyUserNameInput"
               />
             </View>

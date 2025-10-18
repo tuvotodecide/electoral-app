@@ -427,7 +427,7 @@ export default {
   rejected: 'Rechazado',
   deleted: 'Eliminado',
   carnet: 'Carnet',
-  guardianName: 'Nombre de guardián',
+  foundUserName: '¿Eres tú? tu nombre aparecerá aquí si lo hiciste público:',
   nickname: 'Apodo',
   guardiansSubtitle:
     'Administra las personas que pueden ayudarte a recuperar tu cuenta.',
