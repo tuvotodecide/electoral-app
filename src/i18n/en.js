@@ -56,7 +56,8 @@ export default {
   backLabel: 'Reverso',
   checking: 'Verificando...',
   DniExists: 'Carnet ya registrado',
-  DniNotFound: 'Carnet no encontrado',
+  DniNotFound1: 'El carnet:',
+  DniNotFound2: 'No se ha encontrado, regístrese por favor.',
   // Page 3
   titleCamera: 'Reconocimiento facial',
   description_camera:
@@ -249,6 +250,7 @@ export default {
   connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
+  register: 'REGISTRARSE',
 
   recoveryWallet: 'Recuperar cuenta',
   recoverymethod: 'Selecciona método para recuperar cuenta',

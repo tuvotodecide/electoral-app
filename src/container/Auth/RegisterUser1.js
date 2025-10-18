@@ -100,7 +100,7 @@ export default function RegisterUser1({navigation, route}) {
             <Ionicons
               testID="termsCheckboxIcon"
               name={check ? 'checkbox' : 'square-outline'}
-              color={check ? colors.primary : colors.grayScale50}
+              color={colors.primary}
               size={moderateScale(24)}
             />
           </TouchableOpacity>

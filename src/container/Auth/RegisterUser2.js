@@ -21,6 +21,7 @@ import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
 import {BACKEND_IDENTITY} from '@env';
 import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import SimpleModal from '../../components/modal/SimpleModal';
 
 export default function RegisterUser2({navigation, route}) {
   const {logAction, logNavigation} = useNavigationLogger('RegisterUser2', true);
@@ -31,7 +32,7 @@ export default function RegisterUser2({navigation, route}) {
   const [idNumber, setIdNumber] = useState('');
   const [isModalVisible, setModalVisible] = useState({
     visible: false,
-    message: '',
+    message: null,
   });
   const [submitting, setSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
@@ -39,7 +40,20 @@ export default function RegisterUser2({navigation, route}) {
   const dispatch = useDispatch();
   const isFormValid = () => idNumber.trim() !== '' && frontImage && backImage;
 
-  const closeModal = () => setModalVisible({visible: false, message: ''});
+  const closeModal = () => {
+    setModalVisible({visible: false, message: null});
+    navigation.reset({
+      index: 1,
+      routes: [
+        {
+          name: AuthNav.Connect,
+        },
+        {
+          name: AuthNav.RegisterUser1,
+        },
+      ],
+    })
+  };
 
   useEffect(() => {
     const trimmed = idNumber.trim();
@@ -71,12 +85,12 @@ export default function RegisterUser2({navigation, route}) {
         return;
       }
 
-      if (!isFormValid()) {
+      if (trimmedId === '') {
         return;
       }
 
       setSubmitting(true);
-      setModalVisible({visible: false, message: ''});
+      setModalVisible({visible: false, message: null});
 
       const api = new wira.RegistryApi(BACKEND_IDENTITY);
       api
@@ -87,7 +101,9 @@ export default function RegisterUser2({navigation, route}) {
           if (exists && !isRecovery) {
             setModalVisible({
               visible: true,
-              message: String.DniExists,
+              message: <CText type="B18" align="center" style={styles.mb20}>
+                {String.DniExists}
+              </CText>,
             });
             logAction('dni_exists_modal_shown', {isRecovery});
             return;
@@ -96,9 +112,23 @@ export default function RegisterUser2({navigation, route}) {
           if (!exists && isRecovery) {
             setModalVisible({
               visible: true,
-              message: String.DniNotFound,
+              message: <View style={{display: 'flex', alignItems: 'center'}}>
+                <CText type="B18" align="center">
+                  {String.DniNotFound1}
+                </CText>
+                <CText type="B18" align="center" style={{fontWeight: 'bold'}}>
+                  {trimmedId}
+                </CText>
+                <CText type="B18" align="center" style={styles.mb20}>
+                  {String.DniNotFound2}
+                </CText>
+              </View>
             });
             logAction('dni_not_found_modal_shown', {isRecovery});
+            return;
+          }
+
+          if(!isFormValid()) {
             return;
           }
 
@@ -214,10 +244,11 @@ export default function RegisterUser2({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
-      <DniExistsModal
+      <SimpleModal
         testID="registerUser2DniExistsModal"
         visible={isModalVisible.visible}
         message={isModalVisible.message}
+        closeBtn={String.register}
         onClose={closeModal}
       />
     </CSafeAreaViewAuth>
