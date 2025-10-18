@@ -74,7 +74,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
             ocrData: payload.legacyData,
             dni: payload.data.dni,
             originalPin,
-            useBiometry: false,
+            useBiometry: await wira.Biometric.getBioFlag(),
             isMigration: true,
           }
         )
