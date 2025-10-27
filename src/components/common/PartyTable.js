@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375; // Increased from 350
+const isSmallPhone = screenWidth < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -15,57 +14,120 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-// Party Table Row Component
-export const PartyTableRow = ({ party, isEditing, onUpdate }) => (
-  <View style={styles.partyTableRow}>
-    <CText style={styles.partyNameText}>{party.id || party.partyId}</CText>
-    <View style={styles.partyVoteContainer}>
+export const PartyTableRow = ({
+  party,
+  isEditing,
+  onUpdate,
+  rowIndex,
+  emptyDisplayWhenReadOnly = '0',
+  showDeputy = true,
+}) => (
+  <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
+    <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>
+      {party.id || party.partyId}
+    </CText>
+    <View
+      testID={`partyVotePresidenteContainer_${rowIndex}`}
+      style={styles.partyVoteContainer}>
       {isEditing ? (
         <TextInput
           style={styles.partyVoteInput}
-          value={party.presidente}
-          onChangeText={value => onUpdate(party.id, 'presidente', value)}
+          value={String(party.presidente ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              party.id,
+              'presidente',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
+          testID={`partyInputPresidente_${rowIndex}`}
         />
       ) : (
-        <CText style={styles.partyVoteText}>{party.presidente}</CText>
+        <CText
+          testID={`partyVotePresidenteText_${rowIndex}`}
+          style={styles.partyVoteText}>
+          {party.presidente === '' || party.presidente == null
+            ? emptyDisplayWhenReadOnly
+            : String(party.presidente)}
+        </CText>
       )}
     </View>
-    <View style={styles.partyVoteContainer}>
-      {isEditing ? (
-        <TextInput
-          style={styles.partyVoteInput}
-          value={party.diputado}
-          onChangeText={value => onUpdate(party.id, 'diputado', value)}
-          keyboardType="numeric"
-        />
-      ) : (
-        <CText style={styles.partyVoteText}>{party.diputado}</CText>
-      )}
-    </View>
+    {showDeputy && (
+      <View
+        testID={`partyVoteDiputadoContainer_${rowIndex}`}
+        style={styles.partyVoteContainer}>
+        {isEditing ? (
+          <TextInput
+            style={styles.partyVoteInput}
+            value={String(party.diputado ?? '')}
+            onChangeText={value =>
+              onUpdate(
+                party.id,
+                'diputado',
+                value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+              )
+            }
+            keyboardType="numeric"
+            placeholder="0"
+            testID={`partyInputDiputado_${rowIndex}`}
+          />
+        ) : (
+          <CText
+            testID={`partyVoteDiputadoText_${rowIndex}`}
+            style={styles.partyVoteText}>
+            {party.diputado === '' || party.diputado == null
+              ? emptyDisplayWhenReadOnly
+              : String(party.diputado)}
+          </CText>
+        )}
+      </View>
+    )}
   </View>
 );
 
-// Party Table Component
-export const PartyTable = ({ partyResults, isEditing = false, onUpdate }) => (
-  <View style={styles.partyTableContainer}>
-    <View style={styles.partyTableHeader}>
-      <CText style={styles.partyTableHeaderLeft}>Partido</CText>
-      <CText style={styles.partyTableHeaderCenter}>PRESIDENTE/A</CText>
-      <CText style={styles.partyTableHeaderCenter}>DIPUTADO/A</CText>
+export const PartyTable = ({
+  partyResults = [],
+  isEditing = false,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+  showDeputy = true,
+}) => (
+  <View testID="partyTableContainer" style={styles.partyTableContainer}>
+    <View testID="partyTableHeader" style={styles.partyTableHeader}>
+      <CText
+        testID="partyTableHeaderPartido"
+        style={styles.partyTableHeaderLeft}>
+        Partido
+      </CText>
+      <CText
+        testID="partyTableHeaderPresidente"
+        style={styles.partyTableHeaderCenter}>
+        PRESIDENTE/A
+      </CText>
+      {showDeputy && (
+        <CText
+          testID="partyTableHeaderDiputado"
+          style={styles.partyTableHeaderCenter}>
+          DIPUTADO/A
+        </CText>
+      )}
     </View>
 
-    {partyResults.map((party, index) => (
+    {(Array.isArray(partyResults) ? partyResults : []).map((party, index) => (
       <PartyTableRow
         key={party.id || index}
         party={{
           ...party,
-          // Asegurar que los nombres de propiedades coincidan
-          presidente: party.presidente?.toString() || "0",
-          diputado: party.diputado?.toString() || "0"
+          presidente: party.presidente,
+          diputado: party.diputado,
         }}
         isEditing={isEditing}
         onUpdate={onUpdate}
+        rowIndex={index}
+        emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+        showDeputy={showDeputy}
       />
     ))}
   </View>
@@ -77,7 +139,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(4, 8, 10),
     marginBottom: getResponsiveSize(6, 16, 20),
     elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowColor: '#000',

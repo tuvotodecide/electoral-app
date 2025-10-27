@@ -1,13 +1,14 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
+  
   Image,
   Modal,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,9 +17,11 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
-import { StackNav } from '../../../navigation/NavigationKey';
+import CAlert from '../../../components/common/CAlert';
+import {StackNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -40,76 +43,80 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function TableDetail({ navigation, route }) {
+export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
+
+  const {logAction, logNavigation} = useNavigationLogger(
+    'TableDetail',
+    true,
+  );
+
   // Use real table data from navigation, with mockMesa as fallback
-  const rawMesa = route.params?.mesa || route.params?.tableData;
-  // Get existing records if they exist
+  const rawMesa = route.params?.mesa || route.params?.tableData || {};
+  const locationFromParams = route.params?.locationData || {};
+  const mesaId =
+    rawMesa.tableId || rawMesa.id || rawMesa._id || route.params?.tableId; // Get existing records if they exist
   const existingRecords = route.params?.existingRecords || [];
+  const shouldCenter = !(existingRecords && existingRecords.length > 0);
   const mesaInfo = route.params?.mesaInfo || null;
   const totalRecords = route.params?.totalRecords || 0;
+  const hasRecords =
+    Array.isArray(existingRecords) && existingRecords.length > 0;
 
-  console.log('TableDetail - Mesa recibida:', rawMesa);
-  console.log('TableDetail - Existing records:', existingRecords);
-  console.log('TableDetail - Mesa info:', mesaInfo);
-  console.log('TableDetail - Total records:', totalRecords);
-  console.log('TableDetail - Zone data debug:', {
-    zone: rawMesa.zone,
-    zona: rawMesa.zona,
-    electoralZone: rawMesa.electoralZone,
-    district: rawMesa.district,
-    locationZone: rawMesa.location?.zone,
-    locationDistrict: rawMesa.location?.district,
-    allKeys: Object.keys(rawMesa),
-  });
+  const recordsCount = hasRecords ? existingRecords.length : 0;
+  const recordsMsg = `La mesa ya tiene ${recordsCount} acta${
+    recordsCount === 1 ? '' : 's'
+  } publicada${recordsCount === 1 ? '' : 's'}`;
 
   // Normalize mesa data structure
   const mesa = {
+    id: mesaId,
+    tableId: mesaId,
     idRecinto:
-      rawMesa.locationId,
+      rawMesa.idRecinto ||
+      rawMesa.locationId ||
+      route.params?.locationId ||
+      locationFromParams?._id,
     numero:
       rawMesa.tableNumber ||
       rawMesa.numero ||
       rawMesa.number ||
-      rawMesa.id ||
-      rawMesa.tableId ||
-      'FALLBACK-NUMERO',
+      mesaId ||
+      'N/A',
     tableNumber:
       rawMesa.tableNumber ||
       rawMesa.numero ||
       rawMesa.number ||
-      rawMesa.id ||
-      rawMesa.tableId ||
-      'FALLBACK-TABLENUMBER',
-    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || '2352',
+      mesaId ||
+      'N/A',
+    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || 'N/A',
     colegio:
       rawMesa.name ||
       rawMesa.recinto ||
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
-      rawMesa.school ||
-      'N/A',
-    provincia:
-      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
-      rawMesa.provincia ||
-      rawMesa.province ||
-      rawMesa.location?.province ||
+      locationFromParams?.name ||
       'N/A',
     recinto:
-      rawMesa.name ||
       rawMesa.recinto ||
-      rawMesa.venue ||
-      rawMesa.location?.venue ||
+      rawMesa.name ||
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
-      rawMesa.school ||
+      locationFromParams?.name || 
       'N/A',
     direccion:
       rawMesa.address ||
       rawMesa.direccion ||
       rawMesa.location?.address ||
+      locationFromParams?.address ||
+      'N/A',
+    provincia:
+      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
+      rawMesa.provincia ||
+      rawMesa.province ||
+      locationFromParams?.electoralSeat?.municipality?.province?.name ||
       'N/A',
     zone:
       rawMesa.zone ||
@@ -117,68 +124,113 @@ export default function TableDetail({ navigation, route }) {
       rawMesa.zona ||
       rawMesa.electoralZone ||
       rawMesa.location?.zone ||
-      rawMesa.location?.district ||
+      locationFromParams?.zone ||
+      locationFromParams?.district ||
       'Zona no especificada',
   };
 
-  console.log('TableDetail - Mesa normalizada:', mesa);
-  console.log('TableDetail - Mesa numero específico:', mesa.numero);
-  console.log('TableDetail - Mesa tableNumber específico:', mesa.tableNumber);
-
   // If an image comes from CameraScreen, use it
-  const [capturedImage, setCapturedImage] = React.useState(
+  const [capturedImage, setCapturedImage] = useState(
     route.params?.capturedImage || null,
   );
-  const [modalVisible, setModalVisible] = React.useState(
+  const [modalVisible, setModalVisible] = useState(
     !!route.params?.capturedImage,
   );
 
-  // Navega a la cámara interna
-  const handleTakePhoto = () => {
-    console.log('TableDetail - handleTakePhoto: mesa data:', mesa);
-    console.log('TableDetail - handleTakePhoto: normalized tableData:', {
-      ...mesa,
-      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-    });
-    console.log('TableDetail - handleTakePhoto: mesa.numero:', mesa.numero);
-    console.log(
-      'TableDetail - handleTakePhoto: mesa.tableNumber:',
-      mesa.tableNumber,
-    );
+  useEffect(() => {
+    logNavigation('table_detail_view', {recordsCount});
+  }, [logNavigation, recordsCount]);
 
+  const handleTakePhoto = () => {
     const finalTableData = {
       ...mesa,
       ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      // Ensure multiple ways to access mesa number
+      // claves redundantes para compatibilidad
       tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
       numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
       number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
     };
 
-    console.log(
-      'TableDetail - handleTakePhoto: finalTableData:',
-      finalTableData,
-    );
+    const count = Array.isArray(existingRecords) ? existingRecords.length : 0;
 
+    logAction('table_detail_take_photo', {recordsCount: count});
+
+    if (count === 0) {
+      try {
+        navigation.navigate(StackNav.CameraScreen, {
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          mesa: finalTableData,
+        });
+      } catch {
+        navigation.navigate('CameraScreen', {
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          mesa: finalTableData,
+        });
+      }
+      return;
+    }
+
+    if (count === 1) {
+      const record = existingRecords[0];
+      try {
+          logNavigation('table_detail_existing_record_open', {
+            index: 0,
+            totalRecords,
+          });
+          navigation.navigate(StackNav.PhotoReviewScreen, {
+          mesa: finalTableData,
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          existingRecord: record,
+          isViewOnly: true,
+          photoUri: record?.actaImage,
+          mode: 'attest',
+        });
+        
+      } catch {
+        navigation.navigate('PhotoReviewScreen', {
+          mesa: finalTableData,
+          tableData: finalTableData,
+          mesaData: finalTableData,
+          existingRecord: record,
+          isViewOnly: true,
+          photoUri: record?.actaImage,
+          mode: 'attest',
+        });
+      }
+      return;
+    }
+
+    // >1 actas -> WhichIsCorrectScreen
     try {
-      navigation.navigate(StackNav.CameraScreen, {
-        tableData: finalTableData,
-        mesaData: finalTableData,
-        mesa: finalTableData,
+      logNavigation('table_detail_existing_record_choose', {
+        totalRecords,
       });
-    } catch (error) {
-      console.error('TableDetail - Error navigating to CameraScreen:', error);
-      // Fallback navigation
-      navigation.navigate('CameraScreen', {
+      navigation.navigate(StackNav.WhichIsCorrectScreen, {
+        mesa: finalTableData,
         tableData: finalTableData,
         mesaData: finalTableData,
+        existingRecords,
+        totalRecords,
+        fromTableDetail: true,
+      });
+    } catch {
+      navigation.navigate('WhichIsCorrectScreen', {
         mesa: finalTableData,
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        existingRecords,
+        totalRecords,
+        fromTableDetail: true,
       });
     }
   };
 
   const handleConfirmPhoto = () => {
     setModalVisible(false);
+    logAction('table_detail_confirm_photo');
     navigation.navigate(StackNav.SuccessScreen, {
       title: String.photoSentTitle,
       message: String.photoSentMessage,
@@ -189,6 +241,7 @@ export default function TableDetail({ navigation, route }) {
   const handleRetakePhoto = () => {
     setModalVisible(false);
     setCapturedImage(null);
+    logAction('table_detail_retake_photo');
 
     const finalTableData = {
       ...mesa,
@@ -208,33 +261,44 @@ export default function TableDetail({ navigation, route }) {
   };
 
   return (
-    <CSafeAreaView style={stylesx.container}>
+    <CSafeAreaView testID="tableDetailContainer" style={stylesx.container} addTabPadding={false}>
       {/* HEADER */}
       <UniversalHeader
         colors={colors}
         onBack={() => navigation.goBack()}
-        title={String.tableInformation}
-        showNotification={false}
+        title={
+          /*  mesa ? mesa.colegio : String.tableInformation*/
+          'Revisa'
+        }
+        showNotification={true}
       />
 
       {/* SCROLLABLE CONTENT */}
-      <View style={stylesx.scrollableContent}>
+      <View
+        style={[
+          stylesx.scrollableContent,
+          shouldCenter && stylesx.centerVertically,
+        ]}>
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
             {/* Left Column: Instructions and Table Data */}
             <View style={stylesx.leftColumn}>
-              <View style={stylesx.instructionContainer}>
-                <CText style={[stylesx.bigBold, { color: 'black' }]}>
+              <View
+                style={[
+                  stylesx.instructionContainer,
+                  shouldCenter && {marginTop: 0},
+                ]}>
+                <CText style={[stylesx.bigBold, {color: 'black'}]}>
                   {String.ensureAssignedTable}
                 </CText>
-                <CText
+                {/* <CText
                   style={[
                     stylesx.subtitle,
-                    { color: colors.grayScale500 || '#8B9399' },
+                    {color: colors.grayScale500 || '#8B9399'},
                   ]}>
                   {String.verifyTableInformation}
-                </CText>
+                </CText> */}
               </View>
 
               <View style={stylesx.tableCard}>
@@ -243,10 +307,6 @@ export default function TableDetail({ navigation, route }) {
                     <CText style={stylesx.tableCardTitle}>
                       Mesa {mesa.numero}
                     </CText>
-                    <CText style={stylesx.tableCardDetail}>
-                      Recinto: {mesa.recinto}
-                    </CText>
-                    <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
                     <CText style={stylesx.tableCardDetail}>
                       Código de Mesa: {mesa.codigo}
                     </CText>
@@ -263,24 +323,24 @@ export default function TableDetail({ navigation, route }) {
 
             {/* Right Column: AI Info and Photo Button OR Existing Records */}
             <View style={stylesx.rightColumn}>
-              {existingRecords && existingRecords.length > 0 ? (
+              {recordsCount > 0 ? (
                 <View style={stylesx.existingRecordsContainer}>
-                  <CText style={stylesx.existingRecordsTitle}>
-                    Actas Ya Atestiguadas ({totalRecords})
-                  </CText>
-                  <CText style={stylesx.existingRecordsSubtitle}>
-                    Esta mesa ya tiene actas registradas
-                  </CText>
+                  <CAlert status="success" message={recordsMsg} />
 
                   {existingRecords.map((record, index) => (
                     <TouchableOpacity
                       key={`${record.recordId}-${index}`}
+                      testID={`tableDetailExistingRecord_${index}`}
                       style={stylesx.recordCard}
                       onPress={() => {
+                        logNavigation('table_detail_existing_record_view', {
+                          index,
+                          totalRecords,
+                        });
                         navigation.navigate(StackNav.PhotoReviewScreen, {
                           mesa: mesa,
                           existingRecord: record,
-                          isViewOnly: true
+                          isViewOnly: true,
                         });
                       }}>
                       <View style={stylesx.recordHeader}>
@@ -292,7 +352,7 @@ export default function TableDetail({ navigation, route }) {
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
-                            source={{ uri: record.actaImage }}
+                            source={{uri: record.actaImage}}
                             style={stylesx.actaImage}
                             resizeMode="cover"
                           />
@@ -307,10 +367,7 @@ export default function TableDetail({ navigation, route }) {
                   <TouchableOpacity
                     style={stylesx.addNewRecordBtn}
                     onPress={handleTakePhoto}>
-                    <Ionicons name="add-circle" size={20} color="#4F9858" />
-                    <CText style={stylesx.addNewRecordText}>
-                      Agregar Nueva
-                    </CText>
+                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -342,140 +399,90 @@ export default function TableDetail({ navigation, route }) {
         ) : (
           /* Regular Layout: Phones and Tablet Portrait */
           <>
-            <View style={stylesx.instructionContainer}>
-              <CText style={[stylesx.bigBold, { color: 'black' }]}>
-                {String.ensureAssignedTable}
-              </CText>
-              <CText
+            <View style={stylesx.middleWrap}>
+              <View
+                style={[
+                  stylesx.instructionContainer,
+                  shouldCenter && {marginTop: 0},
+                ]}>
+                <CText style={[stylesx.bigBold, {color: 'black'}]}>
+                  {String.ensureAssignedTable}
+                </CText>
+                {/* <CText
                 style={[
                   stylesx.subtitle,
-                  { color: colors.grayScale500 || '#8B9399' },
+                  {color: colors.grayScale500 || '#8B9399'},
                 ]}>
                 {String.verifyTableInformation}
-              </CText>
-            </View>
-
-            <View style={stylesx.tableCard}>
-              <View style={stylesx.tableCardHeader}>
-                <View style={stylesx.tableCardContent}>
-                  <CText style={stylesx.tableCardTitle}>
-                    Mesa {mesa.numero}
-                  </CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    Recinto: {mesa.recinto}
-                  </CText>
-                  <CText style={stylesx.tableCardZone}>{mesa.zone}</CText>
-                  <CText style={stylesx.tableCardDetail}>
-                    Código de Mesa: {mesa.codigo}
-                  </CText>
-                </View>
-                <MaterialIcons
-                  name="how-to-vote"
-                  size={getResponsiveSize(40, 48, 56)}
-                  color="#000"
-                  style={stylesx.downloadIcon}
-                />
+              </CText> */}
               </View>
-            </View>
 
-            {/* Show existing attestations if available */}
-            {existingRecords && existingRecords.length > 0 && (
-              <View style={stylesx.existingRecordsContainer}>
-                <CText style={stylesx.existingRecordsTitle}>
-                  Actas Ya Atestiguadas ({totalRecords})
-                </CText>
-                <CText style={stylesx.existingRecordsSubtitle}>
+              <View style={stylesx.tableCard}>
+                <View style={stylesx.tableCardHeader}>
+                  <MaterialIcons
+                    name="how-to-vote"
+                    size={getResponsiveSize(40, 48, 56)}
+                    color="#000"
+                    style={stylesx.downloadIcon}
+                  />
+                  <View style={stylesx.tableCardContent}>
+                    <CText style={stylesx.tableCardTitle}>
+                      {String.table} {mesa.numero}
+                    </CText>
+                    <CText style={stylesx.tableCardDetail}>
+                      {String.tableCode}
+                      {':'} {mesa.codigo}
+                    </CText>
+                    <CText style={stylesx.tableCardDetail}>
+                      {String.precinct}
+                      {':'} {mesa.colegio}
+                    </CText>
+                  </View>
+                </View>
+              </View>
+
+              {/* Show existing attestations if available */}
+              {recordsCount > 0 && (
+                <View style={stylesx.existingRecordsContainer}>
+                  {/* <CText style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
-                </CText>
+                </CText> */}
 
-                {existingRecords.map((record, index) => (
+                  <CAlert status="success" message={recordsMsg} />
                   <TouchableOpacity
-                    key={`${record.recordId}-${index}`}
-                    style={stylesx.recordCard}
-                    onPress={() => {
-                      // Navigate to detail view or show full image
-                      navigation.navigate(StackNav.PhotoReviewScreen, {
-                        mesa: mesa,
-                        existingRecord: record,
-                        isViewOnly: true
-                      });
-                    }}>
-                    <View style={stylesx.recordHeader}>
-                      <CText style={stylesx.recordTitle}>
-                        Acta #{index + 1}
-                      </CText>
-                      <CText style={stylesx.recordId}>
-                        ID: {record.recordId ? record.recordId.slice(0, 10) : 'N/A'}...
-                      </CText>
-                    </View>
-
-                    {record.actaImage && (
-                      <View style={stylesx.actaImageContainer}>
-                        <Image
-                          source={{ uri: record.actaImage }}
-                          style={stylesx.actaImage}
-                          resizeMode="cover"
-                        />
-                        <View style={stylesx.imageOverlay}>
-                          <Ionicons
-                            name="eye"
-                            size={24}
-                            color="#fff"
-                          />
-                          <CText style={stylesx.viewImageText}>Ver Acta</CText>
-                        </View>
-                      </View>
-                    )}
-
-                    {record.partyResults && record.partyResults.length > 0 && (
-                      <View style={stylesx.recordSummary}>
-                        <CText style={stylesx.recordSummaryText}>
-                          {record.partyResults.length} partidos registrados
-                        </CText>
-                      </View>
-                    )}
+                    style={stylesx.addNewRecordBtn}
+                    onPress={handleTakePhoto}>
+                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
                   </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity
-                  style={stylesx.addNewRecordBtn}
-                  onPress={handleTakePhoto}>
-                  <Ionicons
-                    name="add-circle"
-                    size={24}
-                    color="#4F9858"
-                    style={stylesx.addIcon}
-                  />
-                  <CText style={stylesx.addNewRecordText}>
-                    Agregar Nueva Acta
-                  </CText>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Show photo taking section only if no existing records */}
-            {(!existingRecords || existingRecords.length === 0) && (
-              <>
-                <View style={stylesx.infoAI}>
-                  <Ionicons
-                    name="sparkles"
-                    size={getResponsiveSize(16, 19, 22)}
-                    color={'#226678'}
-                    style={stylesx.aiIcon}
-                  />
-                  <CText style={stylesx.iaText}>
-                    {String.aiWillSelectClearestPhoto}
-                  </CText>
                 </View>
+              )}
 
-                <TouchableOpacity
-                  style={stylesx.takePhotoBtn}
-                  activeOpacity={0.85}
-                  onPress={handleTakePhoto}>
-                  <CText style={stylesx.takePhotoBtnText}>{String.takePhoto}</CText>
-                </TouchableOpacity>
-              </>
-            )}
+              {/* Show photo taking section only if no existing records */}
+              {(!existingRecords || existingRecords.length === 0) && (
+                <>
+                  <View style={stylesx.infoAI}>
+                    <Ionicons
+                      name="sparkles"
+                      size={getResponsiveSize(16, 19, 22)}
+                      color={'#226678'}
+                      style={stylesx.aiIcon}
+                    />
+                    <CText style={stylesx.iaText}>
+                      {String.aiWillSelectClearestPhoto}
+                    </CText>
+                  </View>
+
+                  <TouchableOpacity
+                    style={stylesx.takePhotoBtn}
+                    activeOpacity={0.85}
+                    onPress={handleTakePhoto}>
+                    <CText style={stylesx.takePhotoBtnText}>
+                      {String.takePhoto}
+                    </CText>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </>
         )}
       </View>
@@ -491,7 +498,7 @@ export default function TableDetail({ navigation, route }) {
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
-                source={{ uri: capturedImage.uri }}
+                source={{uri: capturedImage.uri}}
                 style={stylesx.previewImage}
                 resizeMode="contain"
               />
@@ -508,7 +515,7 @@ export default function TableDetail({ navigation, route }) {
             <TouchableOpacity
               style={[
                 stylesx.confirmButton,
-                { backgroundColor: colors.primary || '#4F9858' },
+                {backgroundColor: colors.primary || '#4F9858'},
               ]}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
@@ -527,6 +534,10 @@ const stylesx = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  middleWrap: {
+    flex: 1,
+    justifyContent: 'center', // centra vertical
   },
   scrollableContent: {
     flex: 1,
@@ -558,6 +569,7 @@ const stylesx = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: getResponsiveSize(6, 8, 10),
     color: '#222',
+    textAlign: 'center',
     lineHeight: getResponsiveSize(24, 26, 30),
   },
   subtitle: {
@@ -573,7 +585,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 20, 25),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -689,7 +701,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -697,6 +709,7 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 8,
   },
   tableCardContent: {
     flex: 1,
@@ -748,7 +761,7 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(12, 16, 18),
     marginBottom: getResponsiveSize(12, 15, 18),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -811,11 +824,8 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#4F9858',
     borderRadius: getResponsiveSize(8, 10, 12),
-    borderWidth: 2,
-    borderColor: '#4F9858',
-    borderStyle: 'dashed',
     padding: getResponsiveSize(12, 16, 18),
     marginTop: getResponsiveSize(8, 10, 12),
   },
@@ -825,6 +835,9 @@ const stylesx = StyleSheet.create({
   addNewRecordText: {
     fontSize: getResponsiveSize(15, 16, 17),
     fontWeight: '600',
-    color: '#4F9858',
+    color: '#fff',
+  },
+  centerVertically: {
+    justifyContent: 'center',
   },
 });

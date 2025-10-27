@@ -1,21 +1,27 @@
 /**
  * @format
  */
-if (__DEV__) {
-  require('./ReactotronConfig');
-}
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import 'text-encoding-polyfill';
-import 'react-native-quick-crypto';
+import 'react-native-gesture-handler';
 
+import crypto from 'react-native-quick-crypto';
 import {Buffer} from 'buffer';
-global.Buffer = Buffer;
-
 import process from 'process';
-global.process = process;
+import { WebAssembly } from 'polywasm';
 
-global.crypto = crypto.webcrypto;
+global.crypto = {
+  ...global.crypto,
+  ...crypto.webcrypto
+};
+global.Buffer = Buffer;
+global.process = process;
+globalThis.WebAssembly = WebAssembly;
+
+if (__DEV__) {
+  require('./ReactotronConfig');
+}
 import {AppRegistry} from 'react-native';
 import App from './src/App';
 import {name as appName} from './app.json';
@@ -24,6 +30,16 @@ import { PersistGate } from 'redux-persist/integration/react';
 import store, { persistor } from './src/redux/store';
 import {PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {registerBackgroundHandler} from './src/services/notifications';
+registerBackgroundHandler();
+// Debug de configuración de ambiente en desarrollo
+if (__DEV__) {
+  const { debugEnvironmentConfig } = require('./src/utils/debugNetwork');
+  debugEnvironmentConfig();
+  
+  // Cargar herramientas de debug en la consola
+  require('./src/utils/networkTestConsole');
+}
 
 const RNRoot = () => {
   return (

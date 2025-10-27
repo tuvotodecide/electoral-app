@@ -16,6 +16,7 @@ import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
 import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -51,11 +52,7 @@ export default function CountTableDetail({navigation, route}) {
   const originalTable = route?.params?.originalTable;
   const locationData = route?.params?.locationData;
   
-  console.log('CountTableDetail: Received mesa data:', mesaData);
-  console.log('CountTableDetail: Original table data:', originalTable);
-  console.log('CountTableDetail: Location data:', locationData);
-  console.log('CountTableDetail: User ID:', userId);
-  console.log('CountTableDetail: All route params:', route?.params);
+  
 
   // Use the processed mesa data if available, otherwise fallback to mock
   const mesa = mesaData || originalTable || mockMesa;
@@ -71,13 +68,15 @@ export default function CountTableDetail({navigation, route}) {
     distrito: mesa.distrito || mesa.district || locationData?.district || 'Distrito N/A',
   };
 
-  console.log('CountTableDetail: Processed mesa data for display:', processedMesa);
+
 
   const [modalVisible, setModalVisible] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
   const [notificationResult, setNotificationResult] = React.useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CountTableDetail', true);
   const handleAnnounceCount = () => {
     setModalVisible(true);
   };
@@ -86,7 +85,7 @@ export default function CountTableDetail({navigation, route}) {
     setLoading(true);
     
     try {
-      console.log('Iniciando anuncio de conteo...');
+
       
       // Enviar notificaciones a usuarios cercanos
       const result = await firebaseNotificationService.announceCountToNearbyUsers(
@@ -94,8 +93,7 @@ export default function CountTableDetail({navigation, route}) {
         processedMesa,
         locationData
       );
-      
-      console.log('Resultado de notificaciones:', result);
+  
       setNotificationResult(result);
       
       // Simular procesamiento adicional
@@ -113,7 +111,6 @@ export default function CountTableDetail({navigation, route}) {
       }, 1500);
       
     } catch (error) {
-      console.error('Error anunciando conteo:', error);
       setLoading(false);
       setSuccess(false);
       
@@ -155,7 +152,7 @@ export default function CountTableDetail({navigation, route}) {
                     <CText style={stylesx.label}>{processedMesa.colegio}</CText>
                     <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                     <CText style={stylesx.label}>
-                      {String.tableCode} {processedMesa.codigo}
+                      {String.tableCode}{':'} {processedMesa.codigo}
                     </CText>
                     {processedMesa.zona !== 'Zona N/A' && (
                       <CText style={stylesx.label}>
@@ -203,7 +200,7 @@ export default function CountTableDetail({navigation, route}) {
                   <CText style={stylesx.label}>{processedMesa.colegio}</CText>
                   <CText style={stylesx.label}>{processedMesa.provincia}</CText>
                   <CText style={stylesx.label}>
-                    {String.tableCode} {processedMesa.codigo}
+                    {String.tableCode}{':'} {processedMesa.codigo}
                   </CText>
                   {processedMesa.zona !== 'Zona N/A' && (
                     <CText style={stylesx.label}>

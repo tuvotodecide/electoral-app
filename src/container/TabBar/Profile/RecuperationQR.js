@@ -2,24 +2,16 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
-  Platform,
   Alert,
-  PermissionsAndroid,
   ToastAndroid,
   ActivityIndicator,
   StyleSheet,
   Linking,
 } from 'react-native';
 
-import ViewShot, {captureRef} from 'react-native-view-shot';
 import QRCodeSVG from 'react-native-qrcode-svg';
-import RNFS from 'react-native-fs';
-import {check, request, RESULTS, openSettings} from 'react-native-permissions';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
-import pako from 'pako';
-import {Buffer} from 'buffer';
+import {openSettings} from 'react-native-permissions';
 
-import {getSecrets} from '../../../utils/Cifrate';
 import {getBioFlag} from '../../../utils/BioFlag';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -32,143 +24,181 @@ import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
 import {styles} from '../../../themes';
 import {getHeight, moderateScale} from '../../../common/constants';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {useSelector} from 'react-redux';
+import wira from 'wira-sdk';
+import ViewShot from 'react-native-view-shot';
 
-const compress = obj =>
-  Buffer.from(pako.deflate(JSON.stringify(obj))).toString('base64');
-
-const requestGalleryPermission = async () => {
-  if (Platform.OS !== 'android') return true;
-
-  const perm =
-    Platform.Version >= 33
-      ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-      : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-
-  const status = await check(perm);
-  if (status === RESULTS.GRANTED) return true;
-
-  const res = await request(perm);
-  if (res === RESULTS.GRANTED) return true;
-
-  if (res === RESULTS.NEVER_ASK_AGAIN) {
-    Alert.alert(
-      'Permiso denegado',
-      'Actívalo manualmente en Ajustes > Permisos',
-      [{text: 'Abrir ajustes', onPress: openSettings}, {text: 'OK'}],
-    );
-  }
-  return false;
-};
-
-const saveToGallery = async (base64Data, fileName = `QR_${Date.now()}.png`) => {
-  const tmpPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
-
-  await RNFS.writeFile(tmpPath, base64Data, 'base64');
-
-  await CameraRoll.save(`file://${tmpPath}`, {type: 'photo'});
-
-  try {
-    await RNFS.unlink(tmpPath);
-  } catch (_) {}
-
-  return true;
-};
+const recoveryService = new wira.RecoveryService();
 
 export default function RecuperationQR() {
   const [qrData, setQrData] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const viewShotRef = useRef(null);
+  const {logAction} = useNavigationLogger('RecuperationQR', true);
+  const userData = useSelector(state => state.wallet.payload);
 
   useEffect(() => {
     (async () => {
       try {
-        const {payloadQr} = await getSecrets();
-        if (!payloadQr) throw new Error('No se encontró la identidad');
+        if (!userData) {
+          logAction('MissingUserData');
+          throw new Error('No se encontró la identidad');
+        }
 
         const bioEnabled = await getBioFlag();
-        setQrData(compress({...payloadQr, bioEnabled}));
+        const prepared = recoveryService.prepareQrData({...userData, bioEnabled});
+        setQrData(prepared);
+        logAction('PrepareQrSuccess');
       } catch (err) {
+        logAction('PrepareQrError', {message: err?.message});
         Alert.alert('Error', err.message);
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [userData]);
 
-  const saveQr = async () => {
+  const initSaveQr = async () => {
     if (!viewShotRef.current)
       return Alert.alert('QR', 'El código aún no está listo');
     if (saving) return;
 
     setSaving(true);
     try {
-      if (!(await requestGalleryPermission())) return setSaving(false);
+      logAction('SaveQrAttempt');
+      const hasPermission = await recoveryService.requestGalleryPermission();
+      if (!hasPermission) {
+        setSaving(false);
+        logAction('SaveQrPermissionDenied');
+        return;
+      }
 
-      const b64 = await captureRef(viewShotRef, {
-        format: 'png',
-        quality: 1,
-        result: 'base64',
-      });
-
-      await saveToGallery(b64);
-      ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
-      Alert.alert('¡Listo!', 'El QR se guardó correctamente.');
+      const uri = await viewShotRef.current.capture();
+      saveQr(uri);
     } catch (err) {
-      Alert.alert(
-        'Error',
-        'No se pudo guardar el QR. Comprueba los permisos de almacenamiento.',
-        [{text: 'OK'}, {text: 'Ajustes', onPress: openSettings}],
-      );
+      logAction('InitSaveError', {message: err?.message});
+
+      Alert.alert('Error', errorMessage, [
+        {text: 'OK', style: 'default'},
+        {text: 'Abrir configuración', onPress: () => openSettings()},
+      ]);
+    } 
+  };
+
+  const saveQr = async (dataUrl) => {
+    try {
+      const {savedOn, path, fileName} = await recoveryService.saveQrOnDevice(dataUrl);
+
+      if(savedOn === 'gallery') {
+        logAction('SaveQrGallery');
+        ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
+
+        Alert.alert('QR guardado', 'El código QR se guardó exitosamente ', [
+          { text: 'OK', style: 'default' },
+        ]);
+      } else if (savedOn === 'downloads') {
+        logAction('SaveQrDownloads');
+        ToastAndroid.show('QR guardado en Descargas', ToastAndroid.LONG);
+        Alert.alert(
+          'QR guardado',
+          `No se pudo guardar en la galería, pero se guardó en Descargas.\n\nArchivo: ${fileName}`,
+          [
+            { text: 'OK', style: 'default' },
+            {
+              text: 'Abrir descargas',
+              onPress: () => {
+                Linking.openURL(
+                  'content://com.android.externalstorage.documents/root/primary:Download'
+                ).catch(() => openSettings());
+              },
+            },
+          ]
+        );
+      } else {
+        logAction('SaveQrAppDirectory');
+        Alert.alert(
+          'QR guardado',
+          `Se guardó en el directorio de la app:\n${path}`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      logAction('SaveQrError', {message: err?.message});
+
+      let errorMessage = 'No se pudo guardar la imagen';
+      if (err.message.includes('EACCES')) {
+        errorMessage =
+          'Sin permisos para escribir. Verifica los permisos de la app.';
+      } else if (err.message.includes('ENOENT')) {
+        errorMessage =
+          'Error de directorio. Verifica los permisos de almacenamiento.';
+      }
+
+      Alert.alert('Error', errorMessage, [
+        {text: 'OK', style: 'default'},
+        {text: 'Abrir configuración', onPress: () => openSettings()},
+      ]);
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   if (loading) {
     return (
-      <CSafeAreaView>
-        <CHeader title={String.qrRecoveryTitle} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
+      <CSafeAreaView testID="recuperationQrLoadingContainer">
+        <CHeader testID="recuperationQrLoadingHeader" title={String.qrRecoveryTitle} />
+        <View testID="recuperationQrLoadingCenter" style={styles.center}>
+          <ActivityIndicator testID="recuperationQrLoadingIndicator" size="large" />
         </View>
       </CSafeAreaView>
     );
   }
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.qrRecoveryTitle} />
+    <CSafeAreaView testID="recuperationQrContainer" addTabPadding={false}>
+      <CHeader testID="recuperationQrHeader" title={String.qrRecoveryTitle} />
 
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
+      <KeyBoardAvoidWrapper testID="recuperationQrKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <ViewShot
           ref={viewShotRef}
           style={local.qrBox}
-          options={{format: 'png', quality: 1}}>
+          options={{
+            format: 'png',
+            quality: 1.0,
+            width: 1500,
+            height: 1500,
+            result: 'base64',
+          }}
+        >
           <QRCodeSVG
+            testID="recuperationQrCode"
             value={qrData}
-            size={moderateScale(250)}
+            size={moderateScale(290)}
             backgroundColor="#fff"
             color="#000"
+            quietZone={10}
           />
         </ViewShot>
 
-        <CText type="B16" align="center" marginTop={20}>
+        <CText testID="recuperationQrDescription" type="B16" align="center" marginTop={20}>
           {String.qrRecoveryDescription}
         </CText>
       </KeyBoardAvoidWrapper>
 
-      <View style={styles.ph20}>
-        <CAlert status="warning" message={String.qrRecoveryWarning} />
+      <View testID="recuperationQrFooter" style={styles.ph20}>
+        <CAlert testID="recuperationQrWarning" status="warning" message={String.qrRecoveryWarning} />
         <CButton
+          testID="recuperationQrSaveButton"
           title={saving ? 'Guardando…' : String.qrRecoveryButton}
-          onPress={saveQr}
+          onPress={initSaveQr}
           disabled={saving}
           frontIcon={
             saving ? (
-              <ActivityIndicator size={20} color="#fff" />
+              <ActivityIndicator testID="recuperationQrSaveLoading" size={20} color="#fff" />
             ) : (
-              <Icono name="download-outline" size={20} color="#fff" />
+              <Icono testID="recuperationQrSaveIcon" name="download-outline" size={20} color="#fff" />
             )
           }
           containerStyle={{marginVertical: 20}}

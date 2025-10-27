@@ -38,7 +38,6 @@ const WhichIsCorrectScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {tableData, photoUri, isFromUnifiedFlow} = route.params || {};
-  console.log('WhichIsCorrectScreen - Received params:', route.params);
 
   // State management
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -58,19 +57,22 @@ const WhichIsCorrectScreen = () => {
 
   // Load actas when component mounts
   useEffect(() => {
-    console.log('WhichIsCorrectScreen - useEffect triggered with tableData:', tableData);
-
-    const mesaId = tableData?.id || tableData?.numero || tableData?.tableNumber || tableData?.number;
-    console.log('WhichIsCorrectScreen - Extracted mesaId:', mesaId);
+    const mesaId =
+      tableData?.id ||
+      tableData?.numero ||
+      tableData?.tableNumber ||
+      tableData?.number;
 
     if (mesaId) {
       loadActasByMesa(mesaId);
     } else {
-      console.warn('WhichIsCorrectScreen - No valid mesa ID found, using fallback');
+
       setActaImages([
         {
           id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
         },
       ]);
       setIsLoadingActas(false);
@@ -80,7 +82,6 @@ const WhichIsCorrectScreen = () => {
   const loadActasByMesa = async mesaId => {
     try {
       setIsLoadingActas(true);
-      console.log('WhichIsCorrectScreen: Loading actas for mesa:', mesaId);
 
       let numericId = mesaId;
       if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
@@ -90,27 +91,31 @@ const WhichIsCorrectScreen = () => {
         }
       }
 
-      console.log('WhichIsCorrectScreen: Using numeric ID:', numericId);
       const response = await fetchActasByMesa(numericId);
 
       if (response.success) {
-        console.log('WhichIsCorrectScreen: Actas loaded successfully:', response.data);
         setActaImages(response.data.images);
         setPartyResults(response.data.partyResults);
         setVoteSummaryResults(response.data.voteSummaryResults);
       } else {
-        console.error('WhichIsCorrectScreen: Failed to load actas');
         showModal('error', String.error, String.couldNotLoadActas);
         // Fallback data
         setActaImages([
           {
             id: '1',
-            uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+            uri:
+              photoUri ||
+              'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
           },
         ]);
         setPartyResults([
           {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-          {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
+          {
+            id: 'mas-ipsp',
+            partido: 'MAS-IPSP',
+            presidente: '12',
+            diputado: '8',
+          },
           {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
           {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
         ]);
@@ -121,13 +126,14 @@ const WhichIsCorrectScreen = () => {
         ]);
       }
     } catch (error) {
-      console.error('WhichIsCorrectScreen: Error loading actas:', error);
       showModal('error', String.error, String.errorLoadingActas);
       // Fallback data
       setActaImages([
         {
           id: '1',
-          uri: photoUri || 'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          uri:
+            photoUri ||
+            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
         },
       ]);
       setPartyResults([
@@ -179,18 +185,20 @@ const WhichIsCorrectScreen = () => {
         });
       }
     } else {
-      showModal('warning', String.selectionRequired, String.pleaseSelectImageFirst);
+      showModal(
+        'warning',
+        String.selectionRequired,
+        String.pleaseSelectImageFirst,
+      );
     }
   };
 
   const handleCorrectActaSelected = actaId => {
-    console.log('WhichIsCorrectScreen - Correct acta selected:', actaId);
     setConfirmedCorrectActa(actaId);
     setShowConfirmationView(true);
   };
 
   const handleUploadNewActa = () => {
-    console.log('WhichIsCorrectScreen - Upload new acta requested');
     navigation.navigate(StackNav.TableDetail, {
       tableData: tableData,
       isFromUnifiedFlow: true,
@@ -200,7 +208,9 @@ const WhichIsCorrectScreen = () => {
 
   const handleContinueWithSelectedActa = () => {
     if (confirmedCorrectActa) {
-      const selectedImage = actaImages.find(img => img.id === confirmedCorrectActa);
+      const selectedImage = actaImages.find(
+        img => img.id === confirmedCorrectActa,
+      );
       if (selectedImage) {
         navigation.navigate('RecordReviewScreen', {
           photoUri: selectedImage.uri,
@@ -213,14 +223,12 @@ const WhichIsCorrectScreen = () => {
   };
 
   const handleChangeOpinion = () => {
-    console.log('WhichIsCorrectScreen - Change opinion requested');
     setConfirmedCorrectActa(null);
     setShowConfirmationView(false);
     setSelectedImageId(null);
   };
 
   const handleDatosNoCorrectos = () => {
-    console.log('Estos datos no son correctos pressed');
     showModal('info', String.information, String.dataReportedAsIncorrect);
   };
 
@@ -245,14 +253,18 @@ const WhichIsCorrectScreen = () => {
             <CText style={styles.questionText}>{String.whichIsCorrect}</CText>
           </View>
 
-          <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.imageList}
+            showsVerticalScrollIndicator={false}>
             {actaImages.map(image => (
               <View key={image.id} style={styles.confirmationImageContainer}>
                 <View
                   style={[
                     styles.imageCard,
-                    image.id === confirmedCorrectActa && styles.imageCardCorrect,
-                    image.id !== confirmedCorrectActa && styles.imageCardIncorrect,
+                    image.id === confirmedCorrectActa &&
+                      styles.imageCardCorrect,
+                    image.id !== confirmedCorrectActa &&
+                      styles.imageCardIncorrect,
                   ]}>
                   <Image
                     source={{uri: image.uri}}
@@ -269,7 +281,11 @@ const WhichIsCorrectScreen = () => {
                         : styles.incorrectIcon,
                     ]}>
                     <MaterialIcons
-                      name={image.id === confirmedCorrectActa ? 'check-circle' : 'cancel'}
+                      name={
+                        image.id === confirmedCorrectActa
+                          ? 'check-circle'
+                          : 'cancel'
+                      }
                       size={24}
                       color="#FFFFFF"
                     />
@@ -282,17 +298,29 @@ const WhichIsCorrectScreen = () => {
           {/* Confirmation Buttons */}
           <View style={styles.confirmationButtonsContainer}>
             <TouchableOpacity
-              style={[styles.continueButton, {backgroundColor: colors.primary || '#4F9858'}]}
+              style={[
+                styles.continueButton,
+                {backgroundColor: colors.primary || '#4F9858'},
+              ]}
               onPress={handleContinueWithSelectedActa}
               activeOpacity={0.8}>
-              <CText style={styles.continueButtonText}>{String.continueButton}</CText>
+              <CText style={styles.continueButtonText}>
+                {String.continueButton}
+              </CText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.changeOpinionButton, {borderColor: colors.textSecondary}]}
+              style={[
+                styles.changeOpinionButton,
+                {borderColor: colors.textSecondary},
+              ]}
               onPress={handleChangeOpinion}
               activeOpacity={0.8}>
-              <CText style={[styles.changeOpinionButtonText, {color: colors.textSecondary}]}>
+              <CText
+                style={[
+                  styles.changeOpinionButtonText,
+                  {color: colors.textSecondary},
+                ]}>
                 Cambiar de opinión
               </CText>
             </TouchableOpacity>
@@ -307,11 +335,16 @@ const WhichIsCorrectScreen = () => {
 
           {isLoadingActas ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
+              <ActivityIndicator
+                size="large"
+                color={colors.primary || '#4F9858'}
+              />
               <CText style={styles.loadingText}>{String.loadingActas}</CText>
             </View>
           ) : (
-            <ScrollView style={styles.imageList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.imageList}
+              showsVerticalScrollIndicator={false}>
               {isTablet
                 ? // Two-column layout for tablets
                   (() => {
@@ -326,7 +359,8 @@ const WhichIsCorrectScreen = () => {
                             <TouchableOpacity
                               style={[
                                 styles.imageCard,
-                                selectedImageId === image.id && styles.imageCardSelected,
+                                selectedImageId === image.id &&
+                                  styles.imageCardSelected,
                               ]}
                               onPress={() => handleImagePress(image.id)}>
                               <Image
@@ -336,10 +370,30 @@ const WhichIsCorrectScreen = () => {
                               />
                               {selectedImageId === image.id && (
                                 <>
-                                  <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                                  <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.topRightCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomLeftCorner,
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      styles.cornerBorder,
+                                      styles.bottomRightCorner,
+                                    ]}
+                                  />
                                 </>
                               )}
                             </TouchableOpacity>
@@ -354,7 +408,9 @@ const WhichIsCorrectScreen = () => {
                             )}
                           </View>
                         ))}
-                        {pair.length === 1 && <View style={styles.tabletColumn} />}
+                        {pair.length === 1 && (
+                          <View style={styles.tabletColumn} />
+                        )}
                       </View>
                     ));
                   })()
@@ -364,7 +420,8 @@ const WhichIsCorrectScreen = () => {
                       <TouchableOpacity
                         style={[
                           styles.imageCard,
-                          selectedImageId === image.id && styles.imageCardSelected,
+                          selectedImageId === image.id &&
+                            styles.imageCardSelected,
                         ]}
                         onPress={() => handleImagePress(image.id)}>
                         <Image
@@ -374,10 +431,30 @@ const WhichIsCorrectScreen = () => {
                         />
                         {selectedImageId === image.id && (
                           <>
-                            <View style={[styles.cornerBorder, styles.topLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.topRightCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomLeftCorner]} />
-                            <View style={[styles.cornerBorder, styles.bottomRightCorner]} />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.topRightCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomLeftCorner,
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cornerBorder,
+                                styles.bottomRightCorner,
+                              ]}
+                            />
                           </>
                         )}
                       </TouchableOpacity>
@@ -395,8 +472,12 @@ const WhichIsCorrectScreen = () => {
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.datosNoCorrectosButton} onPress={handleDatosNoCorrectos}>
-            <CText style={styles.datosNoCorrectosButtonText}>{String.dataNotCorrect}</CText>
+          <TouchableOpacity
+            style={styles.datosNoCorrectosButton}
+            onPress={handleDatosNoCorrectos}>
+            <CText style={styles.datosNoCorrectosButtonText}>
+              {String.dataNotCorrect}
+            </CText>
           </TouchableOpacity>
         </>
       )}

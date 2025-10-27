@@ -13,8 +13,13 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
-import {BACKEND_BLOCKCHAIN} from '@env';
-import axios from 'axios';
+import {normalizeOcrForUI} from '../../utils/issuerClient';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+
+function onlyDigits(s = '') {
+  return (s || '').replace(/\D/g, '');
+}
 
 export default function RegisterUser5({navigation, route}) {
   const {dni, frontImage, backImage, selfie} = route.params;
@@ -23,81 +28,81 @@ export default function RegisterUser5({navigation, route}) {
   const [errorMessage, setErrorMessage] = useState('');
   const colors = useSelector(state => state.theme.theme);
 
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     navigation.navigate(AuthNav.RegisterUser6);
-  //   }, 5000);
-
-  //   return () => clearTimeout(timeout);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser5',
+    true,
+  );
 
   useEffect(() => {
+    logAction('id_card_analysis_started', {
+      hasFrontImage: !!frontImage,
+      hasBackImage: !!backImage,
+      hasSelfie: !!selfie,
+    });
     (async () => {
       try {
-        const form = new FormData();
-        form.append('frontCI', {
-          uri: frontImage.uri,
-          name: frontImage.fileName || 'front.jpg',
-          type: frontImage.type || 'image/jpeg',
-        });
-        form.append('backCI', {
-          uri: backImage.uri,
-          name: backImage.fileName || 'back.jpg',
-          type: backImage.type || 'image/jpeg',
-        });
-        form.append('selfie', {
-          uri: selfie.uri,
-          name: selfie.fileName || 'selfie.jpg',
-          type: selfie.type || 'image/jpeg',
-        });
+        const idCardAnalyzer = wira.idCardAnalyzer;
+        await idCardAnalyzer.ensureClient();
 
-        const {data: apiResp} = await axios.post(
-          `${BACKEND_BLOCKCHAIN}/api/users`,
-          form,
-          {
-            // headers: { 'Content-Type': 'multipart/form-data' }
-            headers: {'Content-Type': 'multipart/form-data'},
-            timeout: 60_000,
-          },
-        );
-        const data = apiResp.data;
-        const vc = data.credentialData.vc;
-
-        const returnedDni = vc.credentialSubject.governmentIdentifier.replace(
-          /\D/g,
-          '',
+        const res = await idCardAnalyzer.analyze(
+          frontImage?.uri,
+          backImage?.uri,
+          selfie?.uri,
         );
 
-        if (returnedDni !== dni) {
+        if (!res.success) {
+          logAction('id_card_analysis_failed', {
+            reason: res.error || 'unknown',
+          });
+          if (res.error === 'front/back order') {
+            setErrorMessage(
+              'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
+            );
+          } else {
+            setErrorMessage(
+              res.error ||
+                'Error de verificación. Vuelve a intentar con fotos más nítidas.',
+            );
+          }
+          setErrorModalVisible(true);
+          return;
+        }
+
+        const {data} = res;
+        const returnedDni = onlyDigits(data.numeroDoc);
+        if (returnedDni !== onlyDigits(dni)) {
+          logAction('dni_mismatch_detected');
           setErrorMessage(
-            'El documento devuelto no coincide con el DNI ingresado. ' +
+            'El número de documento detectado no coincide con el DNI ingresado. ' +
               'Por favor, vuelve a cargar tus imágenes.',
           );
           setErrorModalVisible(true);
           return;
         }
 
-        navigation.replace(AuthNav.RegisterUser6, {
-          vc,
-          offerUrl: data.offerUrl,
-
-          dni,
-        });
+        const ocrData = normalizeOcrForUI(data);
+        navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
+        logNavigation('go_to_register_user6');
       } catch (err) {
-        setErrorMessage('Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.');
+        setErrorMessage(
+          'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
+        );
         setErrorModalVisible(true);
+        logAction('id_card_analysis_exception', {
+          name: err?.name,
+          message: err?.message,
+        });
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [backImage?.uri, frontImage?.uri, selfie?.uri, dni, logAction, logNavigation, navigation]);
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={5} />
-      <View style={localStyle.center}>
-        <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth testID="registerUser5Container">
+      <StepIndicator step={5} testID="registerUser5StepIndicator" />
+      <View style={localStyle.center} testID="registerUser5CenterView">
+        <View style={localStyle.mainContainer} testID="registerUser5MainContainer">
           <Image
             source={
               colors.dark
@@ -105,14 +110,16 @@ export default function RegisterUser5({navigation, route}) {
                 : images.IdentityCard_lightImage
             }
             style={localStyle.imageContainer}
+            testID="registerUser5IdentityImage"
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser5TitleText">
             {String.verifyingIdentityTitle}
           </CText>
           <CText
             type={'B16'}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={'center'}
+            testID="registerUser5MessageText">
             {String.verifyingIdentityMessage}
           </CText>
           {loading && (
@@ -120,6 +127,7 @@ export default function RegisterUser5({navigation, route}) {
               size={60}
               color={colors.grayScale500}
               style={localStyle.marginTop}
+              testID="registerUser5LoadingIndicator"
             />
           )}
         </View>
@@ -141,7 +149,7 @@ export default function RegisterUser5({navigation, route}) {
             ],
           });
         }}
-        
+        testID="registerUser5ErrorModal"
       />
     </CSafeAreaViewAuth>
   );

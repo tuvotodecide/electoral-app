@@ -11,30 +11,52 @@ import CText from '../../../components/common/CText';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
-import CButton from '../../../components/common/CButton';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import StepIndicator from '../../../components/authComponents/StepIndicator';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
-import {checkPin} from '../../../utils/Cifrate';
 import InfoModal from '../../../components/modal/InfoModal';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME} from '@env';
+import CLoaderOverlay from '../../../components/common/CLoaderOverlay';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-export default function ChangePinVerify({navigation, route}) {
+export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onOtpChange = text => setOtp(text);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('ChangePinVerify', true);
   const otpRef = useRef(null);
+
+  const handleFilled = async (code) => {
+    setVerifying(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    verify(code);
+  }
 
   const verify = async code => {
     if (code.length !== 4) return;
-    if (!(await checkPin(code))) {
+    try {
+      if (!(await wira.checkPin(PROVIDER_NAME, code))) {
+        setOtp('');
+        return setModal({
+          visible: true,
+          msg: 'PIN actual incorrecto',
+        });
+      }
+    } catch (error) {
       setOtp('');
-      return setModal({
+      setModal({
         visible: true,
-        msg: 'PIN actual incorrecto',
+        msg: 'Error al verificar el PIN: ' + error.message,
       });
+      return;
+    } finally {
+      setVerifying(false);
     }
+    
     navigation.replace(StackNav.ChangePinNew, {oldPin: code});
   };
   useEffect(() => {
@@ -46,29 +68,32 @@ export default function ChangePinVerify({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
+    <CSafeAreaView testID="changePinVerifyContainer">
+      <CHeader testID="changePinVerifyHeader" />
+      <KeyBoardAvoidWrapper testID="changePinVerifyKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="changePinVerifyMainContainer" style={localStyle.mainContainer}>
+          <View testID="changePinVerifyContentContainer">
             <CText
+              testID="changePinVerifyTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinChangeAccessTitle}
             </CText>
             <CText
+              testID="changePinVerifySubtitle"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinChange}
             </CText>
             <OTPInputView
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
               onCodeChanged={onOtpChange}
-              onCodeFilled={verify}
+              onCodeFilled={handleFilled}
               secureTextEntry={true}
               editable
               keyboardAppearance={'dark'}
@@ -85,10 +110,12 @@ export default function ChangePinVerify({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View></View>
+          <View testID="changePinVerifySpacerContainer"></View>
         </View>
       </KeyBoardAvoidWrapper>
+      {verifying ? <CLoaderOverlay message={String.verifyingPin} /> : null}
       <InfoModal
+        testID="changePinVerifyErrorModal"
         visible={modal.visible}
         title="Error"
         message={modal.msg}

@@ -15,8 +15,11 @@ import images from '../../../assets/images';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function Privacy({navigation}) {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('Privacy', true);
   const onPressCode = () => {
     navigation.navigate(StackNav.RewardCode);
   };
@@ -26,8 +29,8 @@ export default function Privacy({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.rewardsProgram} />
+    <CSafeAreaView addTabPadding={false}>
+      <CHeader title={String.rewardsProgram} testID="privacyHeader" />
       <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
         <Image source={images.RewardImage} style={localStyle.imageContainer} />
         <CText

@@ -1,0 +1,37 @@
+appId: com.tuvotodecide
+name: sendGuardInvitation
+onFlowStart:
+  - runFlow: ../../../../components/guardians/navigateTo.yaml
+---
+- runFlow:
+    file: ../../../../components/guardians/findGuardian.yaml
+    env:
+      GUARDIAN_ID: ${MAESTRO_GUARDIAN_ID}
+
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansNicknameInput
+    timeout: 12000
+- tapOn:
+    id: addGuardiansNicknameInput
+- inputText: 'CHAVO'
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansSendButton
+    timeout: 12000
+- tapOn:
+    id: addGuardiansSendButton
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansSuccessModalContainer
+    timeout: 12000
+- assertVisible:
+    id: addGuardiansSuccessModalContainer
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansSuccessModalButton
+    timeout: 12000
+- tapOn:
+    id: addGuardiansSuccessModalButton

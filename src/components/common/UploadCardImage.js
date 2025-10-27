@@ -27,7 +27,7 @@ async function requestGalleryPermission() {
   );
 }
 
-export default function UploadCardImage({label, image, setImage}) {
+export default function UploadCardImage({label, image, setImage, testID}) {
   const colors = useSelector(state => state.theme.theme);
 
   const selectImage =  async() => {
@@ -36,7 +36,7 @@ export default function UploadCardImage({label, image, setImage}) {
     launchImageLibrary(
       {
         mediaType: 'photo',
-        quality: 0.8,
+        quality: 1,
       },
       response => {
         if (!response.didCancel && !response.errorCode && response.assets) {
@@ -66,7 +66,6 @@ export default function UploadCardImage({label, image, setImage}) {
   const takePhoto = async () => {
     const permission = await requestCameraPermission();
     if (!permission) {
-      console.warn('Permiso de cámara no concedido');
       return;
     }
 
@@ -80,7 +79,6 @@ export default function UploadCardImage({label, image, setImage}) {
         if (response.assets) {
           setImage(response.assets[0]);
         } else if (response.errorCode) {
-          console.warn('Error al abrir la cámara:', response.errorMessage);
         }
       },
     );
@@ -88,11 +86,12 @@ export default function UploadCardImage({label, image, setImage}) {
 
   return (
     <View style={styles.container}>
-      <CText type="B16" color={colors.textColor}>
+      <CText testID={testID ? `${testID}_label` : undefined} type="B16" color={colors.textColor}>
         {label}
       </CText>
 
       <TouchableOpacity
+        testID={testID ? `${testID}_imageBox` : undefined}
         style={[styles.imageBox, {backgroundColor: colors.inputBackground}]}
         onPress={selectImage}>
         {image ? (
@@ -102,7 +101,7 @@ export default function UploadCardImage({label, image, setImage}) {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
+      <TouchableOpacity testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={takePhoto}>
         <CText type="R14" color={colors.primary}>
           Tomar foto
         </CText>

@@ -21,6 +21,7 @@ export default function CAlertPrimary({
   title = '',
   subttle = '',
   onPress = () => {},
+  testID,
 }) {
   const colors = useSelector(state => state.theme.theme);
 
@@ -28,6 +29,7 @@ export default function CAlertPrimary({
 
   return (
     <TouchableOpacity
+      testID={testID}
       style={[styles.container, {backgroundColor: bgColor}]}
       onPress={onPress}>
       <View style={styles.iconLeft}>{icon}</View>

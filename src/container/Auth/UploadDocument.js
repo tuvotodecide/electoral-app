@@ -14,11 +14,14 @@ import {moderateScale} from '../../common/constants';
 import {UploadDocumentData} from '../../api/constant';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function UploadDocument({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [isSelect, setIsSelect] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('UploadDocument', true);
   const onPressSelect = item => {
     setIsSelect(item.id);
   };
@@ -30,6 +33,7 @@ export default function UploadDocument({navigation}) {
   const RenderUploadData = ({item, index}) => {
     return (
       <TouchableOpacity
+        testID={`uploadDocumentOption_${item.id}`}
         style={[
           localStyle.uploadTypeContainer,
           {
@@ -48,6 +52,7 @@ export default function UploadDocument({navigation}) {
         <View style={localStyle.uploadTypeInnerView}>
           <View style={localStyle.imageAndTextContainer}>
             <View
+              testID={`uploadDocumentIcon_${item.id}`}
               style={[
                 localStyle.imageContainer,
                 {
@@ -62,6 +67,7 @@ export default function UploadDocument({navigation}) {
               {isSelect === item.id ? item.isSelectIcon : item.notSelectIcon}
             </View>
             <CText
+              testID={`uploadDocumentText_${item.id}`}
               type={'B16'}
               color={
                 isSelect === item.id
@@ -75,6 +81,7 @@ export default function UploadDocument({navigation}) {
             </CText>
           </View>
           <Ionicons
+            testID={`uploadDocumentRadio_${item.id}`}
             name={
               isSelect === item.id
                 ? 'radio-button-on-outline'
@@ -95,18 +102,19 @@ export default function UploadDocument({navigation}) {
     );
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <StepIndicator step={6} />
+    <CSafeAreaViewAuth testID="uploadDocumentContainer">
+      <CHeader testID="uploadDocumentHeader" />
+      <StepIndicator testID="uploadDocumentStepIndicator" step={6} />
       <View style={localStyle.mainContainer}>
-        <View>
-          <CText type={'B24'} style={localStyle.headerTextStyle}>
+        <View testID="uploadDocumentContentContainer">
+          <CText testID="uploadDocumentTitle" type={'B24'} style={localStyle.headerTextStyle}>
             {String.selectUpload}
           </CText>
-          <CText type={'R14'} color={colors.grayScale500}>
+          <CText testID="uploadDocumentDescription" type={'R14'} color={colors.grayScale500}>
             {String.selectUploadDescription}
           </CText>
           <View
+            testID="uploadDocumentOptionsContainer"
             style={[
               localStyle.uploadContainer,
               {
@@ -116,6 +124,7 @@ export default function UploadDocument({navigation}) {
               },
             ]}>
             <FlatList
+              testID="uploadDocumentOptionsList"
               data={UploadDocumentData}
               renderItem={RenderUploadData}
               showsVerticalScrollIndicator={false}
@@ -126,6 +135,7 @@ export default function UploadDocument({navigation}) {
           </View>
         </View>
         <CButton
+          testID="uploadDocumentContinueButton"
           title={String.continue}
           onPress={onPressContinue}
           type={'B16'}

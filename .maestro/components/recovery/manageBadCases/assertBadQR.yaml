@@ -1,0 +1,7 @@
+
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: alert_title
+- tapOn:
+    id: button1

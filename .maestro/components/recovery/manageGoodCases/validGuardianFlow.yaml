@@ -1,0 +1,7 @@
+appId: com.tuvotodecide
+---
+- assertVisible: ${MAESTRO_GUARDIAN_NAME}
+- tapOn:
+    id: findMyUserConfirmText
+- tapOn:
+    id: findMyUserSendButton

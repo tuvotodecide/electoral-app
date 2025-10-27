@@ -126,7 +126,7 @@ export async function registerStreamAndGuardian(
   salt,
   privateKey,
   dni,
-  streamId,
+  streamId='',
 ) {
   try {
     if (!availableNetworks[chainId]) {
@@ -209,8 +209,7 @@ export async function registerStreamAndGuardian(
       ]
     });
     const guardianReceipt = await publicClient.waitForTransactionReceipt({hash});
-    console.log(guardianReceipt);
-
+  
     const guardianAddress = await getPredictedGuardian(
       chainId,
       account.address,
@@ -219,7 +218,6 @@ export async function registerStreamAndGuardian(
    
     return {guardianReceipt, guardianAddress};   
   } catch (error) {
-    console.log(error);
     if (error.message.includes('instanceof')) {
       throw new Error(
         'Error de tipo en registerStreamOnChain - verifica las importaciones de viem',

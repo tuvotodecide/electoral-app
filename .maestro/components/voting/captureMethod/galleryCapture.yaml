@@ -1,0 +1,9 @@
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: openGalleryButton
+
+- tapOn:
+    id: openGalleryButton
+
+- tapOn: ${IMAGE_NAME}

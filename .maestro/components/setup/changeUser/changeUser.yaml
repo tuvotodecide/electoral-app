@@ -1,0 +1,42 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        visible:
+            id: homeMiVotoLogoTitle
+    file: ../../auth/logout.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: connectLoginButton
+    timeout: 15000
+- tapOn:
+    id: connectLoginButton
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- extendedWaitUntil:
+    visible:
+      id: loginUserTitle
+    timeout: 12000
+- tapOn:
+    id: loginUserTitle
+- waitForAnimationToEnd:
+    timeout: 500
+    
+- extendedWaitUntil:
+    visible:
+      id: loginUserForgotPasswordButton
+    timeout: 12000
+- tapOn:
+    id: loginUserForgotPasswordButton
+- waitForAnimationToEnd:
+    timeout: 500
+
+- runFlow:
+    file: ../../recovery/recoveryQR.yaml
+    env:
+        PHOTO_NAME: ${USER}
+        TEST_TYPE: 'pass'
+      
+    

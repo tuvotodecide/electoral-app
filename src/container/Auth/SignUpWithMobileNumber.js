@@ -25,6 +25,8 @@ export default function SignUpWithMobileNumber({route, navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [number, setNumber] = useState('');
   const [numberInputStyle, setNumberInputStyle] = useState(BlurredStyle);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SignUpWithMobileNumber', true);
   const [callingCodeLib, setCallingCodeLib] = useState('+91');
   const [visiblePiker, setVisiblePiker] = useState(false);
   const [countryCodeLib, setCountryCodeLib] = useState('IN');
@@ -67,7 +69,8 @@ export default function SignUpWithMobileNumber({route, navigation}) {
               ? colors.grayScale700
               : colors.grayScale200,
           },
-        ]}>
+        ]}
+        testID="signUpMobileNumberClearButton">
         <Ionicons
           name={'close'}
           size={moderateScale(17)}
@@ -81,16 +84,16 @@ export default function SignUpWithMobileNumber({route, navigation}) {
     navigation.navigate(AuthNav.OTPCode, {title: title});
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
-            <CText type={'B24'}>{String.almostDone}</CText>
-            <CText type={'R14'} color={colors.grayScale500}>
+    <CSafeAreaViewAuth testID="signUpWithMobileNumberContainer">
+      <CHeader testID="signUpWithMobileNumberHeader" />
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1} testID="signUpWithMobileNumberKeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="signUpWithMobileNumberMainContainer">
+          <View testID="signUpWithMobileNumberContentContainer">
+            <CText type={'B24'} testID="signUpWithMobileNumberTitle">{String.almostDone}</CText>
+            <CText type={'R14'} color={colors.grayScale500} testID="signUpWithMobileNumberDescription">
               {String.enterPhoneNumberText}
             </CText>
-            <View style={localStyle.mobileNumberContainer}>
+            <View style={localStyle.mobileNumberContainer} testID="signUpWithMobileNumberInputContainer">
               <TouchableOpacity
                 onPress={openCountryPicker}
                 style={[
@@ -98,7 +101,8 @@ export default function SignUpWithMobileNumber({route, navigation}) {
                   {
                     backgroundColor: colors.inputBackground,
                   },
-                ]}>
+                ]}
+                testID="signUpWithMobileNumberCountryPicker">
                 <FlagButton
                   value={callingCodeLib}
                   onOpen={openCountryPicker}
@@ -122,6 +126,7 @@ export default function SignUpWithMobileNumber({route, navigation}) {
                 _onFocus={onFocusNumber}
                 onBlur={onBlurNumber}
                 rightAccessory={() => <RightIcon />}
+                testID="signUpWithMobileNumberInput"
               />
             </View>
 
@@ -148,6 +153,7 @@ export default function SignUpWithMobileNumber({route, navigation}) {
             title={String.continue}
             onPress={onPressContinue}
             containerStyle={localStyle.btnStyle}
+            testID="signUpWithMobileNumberContinueButton"
           />
         </View>
       </KeyBoardAvoidWrapper>

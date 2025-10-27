@@ -1,18 +1,11 @@
-// src/container/Auth/Recovery/RecoveryQr.js
 import React, {useState} from 'react';
 import {
   View,
   Alert,
   Platform,
-  PermissionsAndroid,
   ToastAndroid,
   StyleSheet,
 } from 'react-native';
-import {launchImageLibrary} from 'react-native-image-picker';
-import RNQRGenerator from 'rn-qr-generator'; // ← nueva librería
-import pako from 'pako';
-import {Buffer} from 'buffer';
-
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
@@ -23,108 +16,130 @@ import {styles} from '../../../themes';
 import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import { getLegacyData } from '../../../utils/migrateLegacy';
+import CAlert from '../../../components/common/CAlert';
+import {BACKEND_IDENTITY} from '@env';
 
-
-const decompress = b64 =>
-  JSON.parse(pako.inflate(Buffer.from(b64, 'base64'), {to: 'string'}));
+const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryQr({navigation}) {
   const [imageUri, setImageUri] = useState(null);
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-  
-  const pickImage = async () => {
-    if (Platform.OS === 'android') {
-      const perm =
-        Platform.Version >= 33
-          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-
-      const status = await PermissionsAndroid.request(perm);
-      if (status !== PermissionsAndroid.RESULTS.GRANTED) {
-        return Alert.alert('Permiso denegado', 'Necesitamos acceso a fotos');
-      }
+  const {logAction, logNavigation} = useNavigationLogger('RecoveryQR', true);
+  // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
+  const onImageSelected = async (asset) => {
+    setErrorMsg(null);
+    if (!asset?.uri) {
+      logAction('RecoveryQrImageMissing');
+      Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
+      return;
     }
 
-    const res = await launchImageLibrary({mediaType: 'photo', quality: 1});
-    if (res.didCancel || !res.assets?.length) return;
-
-    const {uri} = res.assets[0];
-    setImageUri(uri);
+    setImageUri(asset.uri);
     setLoading(true);
-
     try {
-      
-      const {values} = await RNQRGenerator.detect({uri});
-      if (!values.length) {
-        throw new Error('No pude leer un QR válido');
+      logAction('RecoveryQrParseAttempt');
+      const start = Date.now();
+      const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
+
+      let newPayload = {
+        data: dataFromQr,
+      };
+
+      if(!dataFromQr.vc) {
+        if(dataFromQr.streamId && dataFromQr.privKey) {
+          newPayload.legacyData = await getLegacyData(dataFromQr);
+          const api = new wira.RegistryApi(BACKEND_IDENTITY);
+          const {exists} = await api.registryCheckByDni(dataFromQr.dni);
+          if(exists) {
+            setErrorMsg(String.alreadyMigrated);
+            return;
+          }
+        } else {
+          setErrorMsg(String.notEnoughLegacyData);
+          return;
+        }
       }
 
-      
-      const data = decompress(values[0]);
-
-      
-      const required = [
-        'streamId',
-        'dni',
-        'salt',
-        'privKey',
-        'account',
-        'guardian',
-        'did',
-      ];
-      const missing = required.filter(f => !data[f]);
-      if (missing.length) {
-        throw new Error(`Faltan campos: ${missing.join(', ')}`);
+      setPayload(newPayload);
+      logAction('RecoveryQrParseSuccess');
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('QR válido', ToastAndroid.SHORT);
       }
-
-      setPayload(data);
-      ToastAndroid.show('QR válido', ToastAndroid.SHORT);
     } catch (err) {
-      Alert.alert('QR inválido', err.message);
+      // Detailed error logging for connection / SDK errors
+      const url = err?.config?.url || err?.apiDebug?.url || err?.apiDebug?.requestUrl || err?.request?.uri || null;
+      const status = err?.response?.status ?? null;
+      console.error('[RecoveryQR] recoveryFromQr error', {
+        message: err?.message,
+        code: err?.code ?? null,
+        url,
+        status,
+        responseData: err?.response?.data ?? null,
+        apiDebug: err?.apiDebug ?? null,
+        stack: err?.stack ?? null,
+      });
+      logAction('RecoveryQrParseError', {
+        message: err?.message,
+        code: err?.code ?? null,
+        url,
+        status,
+      });
       setPayload(null);
       setImageUri(null);
+      Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');
     } finally {
       setLoading(false);
     }
   };
 
-  
   const goSetPin = () => {
-    navigation.navigate(AuthNav.RecoveryUserQrpin, {payload});
+    if (!payload) {
+      logAction('RecoveryQrContinueWithoutPayload');
+      return;
+    }
+    logNavigation(AuthNav.RecoveryUserQrpin, {payload: true});
+    navigation.navigate(AuthNav.RecoveryUserQrpin, { payload });
   };
 
-  
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={local.main}>
-          <CText type="B20" align="center" style={styles.boldText}>
+    <CSafeAreaViewAuth testID="recoveryQrContainer">
+      <CHeader testID="recoveryQrHeader" />
+      <KeyBoardAvoidWrapper testID="recoveryQrKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="recoveryQrMainContent" style={local.main}>
+          <CText testID="recoveryQrTitle" type="B20" align="center" style={styles.boldText}>
             {String.RecoverywithQR}
           </CText>
-          <CText type="B16" align="center">
+          <CText testID="recoveryQrSubtitle" type="B16" align="center">
             {String.recoveryQrSubtitle}
           </CText>
 
           <UploadCardImage
+            testID="recoveryQrUploadImage"
             label={String.qrimagelabel}
-            image={imageUri ? {uri: imageUri} : null}
-            setImage={pickImage}
+            image={imageUri ? { uri: imageUri } : null}
+            setImage={onImageSelected}
             loading={loading}
           />
+          {payload?.legacyData && <CAlert message={String.legacyDataFound} testID="recoveryQrLegacyDataAlert" />}
+          {errorMsg && <CAlert status='error' message={errorMsg} testID="recoveryQrLegacyDataError" />}
 
           {payload && (
-            <CText type="R14" align="center" style={{marginTop: 10}}>
+            <CText testID="recoveryQrValidMessage" type="R14" align="center" style={{marginTop: 10}}>
               {String.qrValid}
             </CText>
           )}
         </View>
       </KeyBoardAvoidWrapper>
 
-      <View style={local.footer}>
+      <View testID="recoveryQrFooter" style={local.footer}>
         <CButton
+          testID="recoveryQrContinueButton"
           title={String.continueButton}
           onPress={goSetPin}
           disabled={!payload || loading}
@@ -133,7 +148,6 @@ export default function RecoveryQr({navigation}) {
     </CSafeAreaViewAuth>
   );
 }
-
 
 const local = StyleSheet.create({
   main: {...styles.ph20, gap: moderateScale(8)},

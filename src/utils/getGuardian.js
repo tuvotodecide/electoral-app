@@ -26,7 +26,6 @@ export async function getPredictedGuardian(
     });
     return guardian ;
   } catch (err) {
-    console.warn('[getGuardianAddress] readContract error →', err);
     return null;
   }
 }

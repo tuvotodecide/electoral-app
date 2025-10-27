@@ -1,13 +1,16 @@
-import {ActivityIndicator, Image, StyleSheet, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  View,
+} from 'react-native';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import * as Keychain from 'react-native-keychain';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
-import {SHA256} from 'crypto-js';
 import {useDispatch, useSelector} from 'react-redux';
 import images from '../../assets/images';
 import {AuthNav} from '../../navigation/NavigationKey';
@@ -17,29 +20,22 @@ import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 
 import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
-import {createSeedBundle, saveSecrets, signWithKey} from '../../utils/Cifrate';
-import {
-  getTmpRegister,
-  setTmpRegister,
-  clearTmpRegister,
-  getTmpPin,
-  clearTmpPin,
-} from '../../utils/TempRegister';
-import {
-  predictWalletAddress,
-  registerStreamAndGuardian,
-} from '../../utils/walletRegister';
-import {CHAIN} from '@env';
-import {useKycRegisterQuery} from '../../data/kyc';
-import {Wallet} from 'ethers';
 import {setAddresses} from '../../redux/slices/addressSlice';
-import {getPredictedGuardian} from '../../utils/getGuardian';
-import {getBioFlag} from '../../utils/BioFlag';
-import {startSession} from '../../utils/Session';
+import {
+  normalizeOcrForUI,
+} from '../../utils/issuerClient';
+import wira from 'wira-sdk';
+import {
+  BACKEND_IDENTITY,
+  CHAIN,
+  CRED_TYPE,
+  CRED_EXP_DAYS,
+  PROVIDER_NAME,
+} from '@env';
+import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
 
 export default function RegisterUser10({navigation, route}) {
-  const {vc, offerUrl, dni, originalPin: pin, useBiometry} = route.params;
-
+  const {ocrData, dni, originalPin: pin, useBiometry, isMigration} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
@@ -48,8 +44,13 @@ export default function RegisterUser10({navigation, route}) {
   const [stage, setStage] = useState('init');
   const watchdogRef = useRef(null);
   const dispatch = useDispatch();
-  const {mutateAsync: registerStore} = useKycRegisterQuery();
+
   const startedRef = useRef(false);
+  const stageRef = useRef(stage);
+
+  useEffect(() => {
+    stageRef.current = stage;
+  }, [stage]);
 
   useEffect(() => {
     clearTimeout(watchdogRef.current);
@@ -83,6 +84,7 @@ export default function RegisterUser10({navigation, route}) {
       if (draft) {
         navigation.replace(AuthNav.RegisterUser10, {
           ...draft,
+          ocrData: draft.ocrData ?? route.params?.ocrData ?? null,
           fromDraft: true,
         });
         return;
@@ -101,165 +103,79 @@ export default function RegisterUser10({navigation, route}) {
       await new Promise(r => requestAnimationFrame(() => r()));
       try {
         const yieldUI = () => new Promise(r => setTimeout(r, 50));
-        setStage('predict');
-        await yieldUI();
-
-        await saveDraft({
-          step: 'predict',
-          dni,
-          vc,
-          useBiometry,
-        });
-        let bundle = await getTmpRegister();
-        if (!bundle) {
-
-          let workingPin = pin;
-          if (!workingPin) {
-            workingPin = await getTmpPin();
-          }
-          if (!workingPin || `${workingPin}`.length === 0) {
-            throw new Error('PIN no disponible para iniciar registro');
-          }
-          bundle = await createSeedBundle(workingPin);
-
-          if (!bundle.seedHex || bundle.seedHex.length !== 64) {
-            throw new Error('seedHex inválido: ' + bundle.seedHex);
-          }
-
-          const pinHash = SHA256((workingPin || '').trim()).toString();
-          await setTmpRegister({...bundle, pinHash});
-          bundle.pinHash = pinHash;
-
-          await clearTmpPin();
-        } else if (!bundle.pinHash) {
-          if (pin && `${pin}`.length) {
-            bundle.pinHash = SHA256(pin.trim()).toString();
-            await setTmpRegister({...bundle});
-          } else {
-            const workingPin = await getTmpPin();
-            if (workingPin && `${workingPin}`.length) {
-              bundle.pinHash = SHA256(workingPin.trim()).toString();
-              await setTmpRegister({...bundle});
-              await clearTmpPin();
-            } else {
-              throw new Error(
-                'No hay PIN disponible para finalizar el registro.',
-              );
-            }
-          }
+        if(isMigration) {
+          setStage('migrate');
+        } else {
+          setStage('issueVC');
         }
-
-        const privKey = '0x' + bundle.seedHex;
-        const walletData = await predictWalletAddress(CHAIN, privKey);
-
-        setStage('store');
         await yieldUI();
-        const sig = await signWithKey(privKey, vc.id);
-        const authSig = {
-          sig,
-          signedMessage: vc.id,
-          derivedVia: 'ethers.signMessage',
-          address: new Wallet(privKey).address,
-        };
 
-        const predictedGuardian = await getPredictedGuardian(
-          CHAIN,
-          walletData.address,
-          walletData.salt,
-        );
-
-        const {publicStreamId: streamId, jwt} = await withTimeout(
-          registerStore({
-            vc,
-            authSig,
-            accountAddress: walletData.address,
-            guardianAddress: predictedGuardian,
-            salt: walletData.salt.toString(),
-            privKey,
-          }),
-          30000,
-          'registerStore',
-        );
-        if (typeof jwt == 'string' && jwt.length) await startSession(jwt);
         await saveDraft({
-          step: 'store',
-          walletData,
+          step: isMigration ? 'migrate' : 'issueVC',
           dni,
-          vc,
-          streamId,
+          useBiometry,
+          originalPin: pin,
+          ocrData: normalizeOcrForUI(ocrData),
         });
-        setStage('guardian');
+
+        const registerer = new wira.Registerer(
+          BACKEND_IDENTITY,
+          availableNetworks[CHAIN].bundler,
+          sponsorshipPolicyId
+        );
+
+        await registerer.createVC(
+          CHAIN,
+          ocrData,
+          CRED_TYPE,
+          CRED_EXP_DAYS
+        );
+
         await yieldUI();
         const {guardianAddress} = await withTimeout(
-          registerStreamAndGuardian(
-            CHAIN,
-            walletData.salt,
-            privKey,
-            dni,
-            streamId,
-          ),
+          registerer.createWallet(dni),
           90000,
           'registerStreamAndGuardian',
         );
 
         dispatch(
           setAddresses({
-            account: walletData.address,
+            account: registerer.walletData.address,
             guardian: guardianAddress,
           }),
         );
 
         setStage('save');
         await yieldUI();
+        await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
+        if(useBiometry) {
+          await wira.Biometric.setBioFlag(true);
+        }
 
-        await saveSecrets(
-          pin || '',
-          {
-            streamId,
-            dni,
-            salt: walletData.salt.toString(),
-            privKey,
-            account: walletData.address,
-            guardian: guardianAddress,
-            did: vc.credentialSubject.id,
-          },
-          useBiometry,
-          bundle,
-          bundle.pinHash,
-        );
-
-        if (await getBioFlag()) {
-          const storedPayload = {
-            streamId,
-            salt: walletData.salt.toString(),
-            privKey,
-            account: walletData.address,
-            guardian: guardianAddress,
-            dni
-          };
-          await Keychain.setGenericPassword(
-            'bundle',
-            JSON.stringify({
-              stored: storedPayload,
-              jwt,
-            }),
-            {
-              service: 'walletBundle',
-              accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
-              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            },
+        const response = await registerer.storeDataOnServer();
+        if (!response.ok) {
+          throw new Error(
+            `Error al registrar tu cuenta.`,
           );
         }
+        
         await clearDraft();
-        await clearTmpRegister();
         setStage('done');
         setLoading(false);
         navigation.replace(AuthNav.RegisterUser11, {
-          offerUrl,
-          account: walletData.address,
+          account: registerer.walletData.address,
         });
       } catch (err) {
-        console.log(err);
+        if (__DEV__) {
+          const failingUrl =
+            err?.apiDebug?.url || err?.apiDebug?.requestUrl || null;
+          console.warn('[RegisterUser10] Registro fallido', {
+            failingUrl: failingUrl || '(URL no disponible)',
+            stage: stageRef.current,
+            message: err?.message,
+            apiDebug: err?.apiDebug ?? null,
+          });
+        }
         setLoading(false);
         setErrorMessage(
           err?.message || 'Ocurrió un error al registrar tu cuenta.',
@@ -267,16 +183,12 @@ export default function RegisterUser10({navigation, route}) {
         setErrorModalVisible(true);
       }
     })();
-    return () => {}; 
-  }, [pin, dni, vc, useBiometry, registerStore, navigation]);
+    return () => {};
+  }, [pin, dni, useBiometry, navigation]);
 
   const stageMessage = {
-    init: String.creatingWallet,
-    predict: String.predictSmart,
-    fund: String.fundAccount,
-    deposit: String.depositGas,
-    store: String.storeVC,
-    guardian: 'Creando guardian…',
+    issueVC: String.issuingVC,
+    migrate: String.migrating,
     save: String.saveData,
     done: String.doneRegister,
     stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',
@@ -325,15 +237,13 @@ export default function RegisterUser10({navigation, route}) {
             errorMessage?.includes('No hay PIN disponible')
           ) {
             navigation.replace(AuthNav.RegisterUser8, {
-              vc,
-              offerUrl,
+              ocrData,
               useBiometry,
               dni,
             });
           } else {
             navigation.replace(AuthNav.RegisterUser10, {
-              vc,
-              offerUrl,
+              ocrData,
               dni,
               originalPin: pin,
               useBiometry,

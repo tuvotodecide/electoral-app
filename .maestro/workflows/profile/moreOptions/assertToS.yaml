@@ -1,0 +1,42 @@
+appId: com.tuvotodecide
+name: assertToS
+onFlowStart:
+  - runFlow: ../../../components/setup/initialSetup.yaml
+---
+#- runFlow:
+#    when:
+#        true: ${MAESTRO_WALKTHROUGH != 'true'}
+#    file: ../../initialSetup.yaml
+- extendedWaitUntil:
+    visible:
+      id: tabButton_Profile
+    timeout: 15000
+- tapOn:
+    id: tabButton_Profile
+- waitForAnimationToEnd:
+    timeout: 1000
+- scroll
+- extendedWaitUntil:
+    visible:
+      id: profileMenuItem_5
+    timeout: 12000
+- tapOn:
+    id: profileMenuItem_5
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: moreMenuItem_11
+    timeout: 12000
+- tapOn:
+    id: moreMenuItem_11
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible: 
+        id: termsConditionsHeaderTitle
+    timeout: 10000  
+- waitForAnimationToEnd:
+    timeout: 10000    
+- assertWithAI:
+    assertion: Terms and Conditions page is visible.

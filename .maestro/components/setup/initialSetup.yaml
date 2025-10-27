@@ -1,0 +1,41 @@
+appId: com.tuvotodecide
+name: initialSetup
+---
+- runFlow:
+    when:
+      true: ${FRESH_START == 'true'}
+    file: ./cases/freshStart.yaml
+
+- runFlow:
+    when:
+      true: ${FRESH_START != 'true'}
+    file: ./cases/normalStart.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: MiVotoLogoImage
+    timeout: 25000
+- runFlow:
+    when:
+      visible: 'Open debugger to view warnings.'
+    file: skipDebuger.yaml
+    env:
+      EXTERNAL: 'true'
+
+- runFlow:
+    when:
+        true: ${CHANGE_USER == 'true'}
+    file: ./changeUser/changeUser.yaml
+
+- runFlow:
+    when:
+      notVisible:
+        id: homeMiVotoLogoTitle
+    file: ../auth/login.yaml
+    env:
+      PIN: ${MAESTRO_CORRECT_PIN}
+
+- runFlow:
+    when:
+        true: ${LOGOUT == 'true'}
+    file: ../auth/logout.yaml

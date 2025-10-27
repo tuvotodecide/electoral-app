@@ -1,0 +1,32 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+        true: ${RECORD_TYPE == 'new'}
+    file: ../cases/doesNotExists.yaml
+
+- runFlow:
+    when:
+        true: ${RECORD_TYPE == 'submited'}
+    file: ../cases/doesExists.yaml
+
+
+- runFlow:
+    when:
+        true: ${CAPTURE_TYPE == 'camera'}
+    file: ../captureMethod/cameraCapture.yaml
+
+- runFlow:
+    when:
+        true: ${CAPTURE_TYPE == 'gallery'}
+    file: ../captureMethod/galleryCapture.yaml
+- tapOn:
+    id: analyzePhotoButton
+
+- extendedWaitUntil:
+    visible:
+      id: cameraModal_container
+    timeout: 25000
+
+- assertVisible:
+    id: cameraModal_container

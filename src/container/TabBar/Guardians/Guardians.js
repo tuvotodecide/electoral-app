@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -9,24 +9,20 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {
   useGuardianDeleteQuery,
   useGuardianPatchQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
-import { CHAIN } from '@env';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
-import GuardianOptionsModal from '../../../components/modal/GuardianOptionsModal';
-import { guardianHashFrom, removeGuardianOnChain } from '../../../api/guardianOnChain';
-import { getSecrets } from '../../../utils/Cifrate';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { truncateDid } from '../../../utils/Address';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -35,36 +31,25 @@ const statusColorKey = {
   REMOVED: 'rejectedColor',
 };
 
-const baseColors = {
-  success: '#4caf50',
-  error: '#f44336',
-  warning: '#ff9800',
-  info: '#2196f3',
-};
-
 export default function Guardians({navigation}) {
-  const status = 'info';
+  const {logAction, logNavigation} = useNavigationLogger('Guardians');
   const colors = useSelector(state => state.theme.theme);
-  const theme = useSelector(state => state.theme.theme);
-  const isDark = theme.dark;
   const [modalVisible, setModalVisible] = useState(false);
-  const [optionsVisible, setOptionsVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
+  const walletPayload = useSelector(state => state.wallet.payload);
+  const did = walletPayload?.did;
 
-  const {data = [], error, isLoading} = useMyGuardiansAllListQuery();
+  const {data: guardians = [], error, isLoading} = useMyGuardiansAllListQuery({did});
   const {mutate: deleteGuardianId, isLoading: loading} =
     useGuardianDeleteQuery();
   const {mutate: patchGuardianId, isLoading: loadingpatch} =
     useGuardianPatchQuery();
 
-
-  const guardians = useMemo(() => data.map(edge => edge.node), [data]);
   const visibleGuardians = useMemo(
     () =>
       guardians.filter(g => g.status === 'ACCEPTED' || g.status === 'PENDING'),
     [guardians],
   );
-  const mainColor = baseColors[status] || baseColors.info;
 
   const statusLabel = {
     ACCEPTED: String.active,
@@ -74,53 +59,61 @@ export default function Guardians({navigation}) {
   };
 
   const onPressAddGuardian = () => {
+    logNavigation(StackNav.AddGuardians);
     navigation.navigate(StackNav.AddGuardians);
   };
   const onPressMyProtected = () => {
+    logNavigation(StackNav.GuardiansAdmin);
     navigation.navigate(StackNav.GuardiansAdmin);
   };
   const onPressWatchInfoGuardian = () => {
+    logNavigation(StackNav.OnBoardingGuardians);
     navigation.navigate(StackNav.OnBoardingGuardians);
   };
 
   const openModal = item => {
+    logAction('OpenGuardianActionModal', {guardianId: item.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
+    logAction('CloseGuardianActionModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };
 
   const deleteGuardian = async () => {
+    if (!selectedGuardian?.id || !did) {
+      logAction('DeleteGuardianMissingData');
+      return;
+    }
     try {
-      const {payloadQr} = await getSecrets();
-      const ownerPrivKey = payloadQr.privKey;
-      const ownerAccount = payloadQr.account;
-      const ownerGuardianCt = payloadQr.guardian; 
-      const guardianHash = guardianHashFrom(selectedGuardian.accountAddress); 
-
-      // await removeGuardianOnChain(
-      //   CHAIN,
-      //   ownerPrivKey,
-      //   ownerAccount,
-      //   ownerGuardianCt,
-      //   guardianHash,
-      // );
-
-      
-      deleteGuardianId(selectedGuardian.id, {onSuccess: () => closeModal()});
+      deleteGuardianId({
+        invId: selectedGuardian.id,
+        ownerDid: did,
+      }, {onSuccess: () => {
+        logAction('DeleteGuardianSuccess', {guardianId: selectedGuardian.id});
+        closeModal();
+      }});
     } catch (e) {
-      
+      logAction('DeleteGuardianError', {message: e?.message});
     }
   };
   const saveGuardian = newNick => {
+    if (!selectedGuardian?.id || !did) {
+      logAction('SaveGuardianMissingData');
+      return;
+    }
     patchGuardianId(
-      {id: selectedGuardian.id, nickname: newNick},
+      {invId: selectedGuardian.id, ownerDid: did, nickname: newNick},
       {
         onSuccess: () => {
+          logAction('SaveGuardianSuccess', {guardianId: selectedGuardian.id});
           closeModal();
+        },
+        onError: err => {
+          logAction('SaveGuardianError', {message: err?.message});
         },
       },
     );
@@ -134,48 +127,36 @@ export default function Guardians({navigation}) {
   }
 
   const RightIcon = () => (
-    <View style={localStyle.rightIcons}>
-      <TouchableOpacity onPress={onPressWatchInfoGuardian}>
-        {guardians.length != 0 && (
+    <View testID="guardiansRightIcons" style={localStyle.rightIcons}>
+      <TouchableOpacity testID="guardiansInfoButton" onPress={onPressWatchInfoGuardian}>
+        {guardians.length !== 0 && (
           <Icono
+            testID="guardiansInfoIcon"
             name="message-question"
             size={moderateScale(28)}
             color={colors.primaryColor}
           />
         )}
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => setOptionsVisible(true)}>
-        <Icono
-          name="format-list-bulleted"
-          size={moderateScale(28)}
-          color={colors.primaryColor}
-          style={styles.ml10}
-        />
-      </TouchableOpacity>
     </View>
   );
 
   if (isLoading) {
     return (
-      <View style={localStyle.loaderContainer}>
-        <ActivityIndicator size="large" color={colors.primaryColor} />
+      <View testID="guardiansLoadingContainer" style={localStyle.loaderContainer}>
+        <ActivityIndicator testID="guardiansLoadingIndicator" size="large" color={colors.primaryColor} />
       </View>
     );
   }
 
   const renderGuardianOption = ({item}) => {
-    const parts = (item.fullName || '').split(' ');
-    const firstSegment = parts[0] || '';
-    const secondSegment = parts[1] || '';
-
-    const abbreviated = secondSegment.slice(0, 2).toUpperCase();
-    const displayName = secondSegment
-      ? `${firstSegment} ${abbreviated}`
-      : firstSegment;
+    const displayName = item.nickname
+    const inviterDid = truncateDid(item.guardianDid);
 
     const colorKey = statusColorKey[item.status] || 'pendingColor';
     return (
       <TouchableOpacity
+        testID={`guardiansListItem_${item.id}`}
         style={[
           localStyle.optionContainer,
           {
@@ -186,10 +167,10 @@ export default function Guardians({navigation}) {
 
             elevation: 5,
           },
-        ]}
-        onPress={() => console.log('Pulsaste', item.title)}>
-        <View style={styles.rowCenter}>
+        ]}>
+        <View testID={`guardiansListItemContent_${item.id}`} style={styles.rowCenter}>
           <View
+            testID={`guardiansListItemIcon_${item.id}`}
             style={[
               localStyle.iconBg,
               {
@@ -198,26 +179,28 @@ export default function Guardians({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansListItemAccountIcon_${item.id}`} name="account" size={moderateScale(24)} />
           </View>
-          <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+          <View testID={`guardiansListItemInfo_${item.id}`} style={styles.ml10}>
+            <View testID={`guardiansListItemNameRow_${item.id}`} style={styles.rowSpaceBetween}>
+              <CText testID={`guardiansListItemName_${item.id}`} type="B16">{displayName}</CText>
 
               <View
+                testID={`guardiansListItemBadge_${item.id}`}
                 style={[localStyle.badge, {backgroundColor: colors[colorKey]}]}>
-                <CText type="R12" color={colors.white}>
+                <CText testID={`guardiansListItemStatus_${item.id}`} type="R12" color={colors.white}>
                   {statusLabel[item.status]}
                 </CText>
               </View>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
-              {item.nickname ?? '(sin apodo)'}
+            <CText testID={`guardiansListItemNickname_${item.id}`} type="R12" color={colors.grayScale500}>
+              {inviterDid}
             </CText>
           </View>
         </View>
-        <TouchableOpacity onPress={() => openModal(item)}>
+        <TouchableOpacity testID={`guardiansListItemMenu_${item.id}`} onPress={() => openModal(item)}>
           <Icono
+            testID={`guardiansListItemMenuIcon_${item.id}`}
             name="dots-vertical"
             size={moderateScale(30)}
             style={styles.mr10}
@@ -229,6 +212,7 @@ export default function Guardians({navigation}) {
 
   const InfoCard = () => (
     <TouchableOpacity
+      testID="guardiansInfoCard"
       style={[
         localStyle.infoCard,
         {
@@ -238,30 +222,33 @@ export default function Guardians({navigation}) {
       ]}
       activeOpacity={0.7}
       onPress={onPressWatchInfoGuardian}>
-      <View style={localStyle.infoIconContainer}>
+      <View testID="guardiansInfoCardIconContainer" style={localStyle.infoIconContainer}>
         <Icono
+          testID="guardiansInfoCardIcon"
           name="shield-account"
           size={moderateScale(42)}
           color={colors.primaryColor}
         />
       </View>
-      <View style={localStyle.infoTextContainer}>
+      <View testID="guardiansInfoCardTextContainer" style={localStyle.infoTextContainer}>
         <CText
-          style={localStyle.infoText} 
-        >
+          testID="guardiansInfoCardText"
+          style={localStyle.infoText}>
           {String.whatIsGuardians}
         </CText>
-        <Icono name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
+        <Icono testID="guardiansInfoCardArrow" name="arrow-right" size={moderateScale(30)} style={styles.ml5} />
       </View>
     </TouchableOpacity>
   );
   return (
-    <CSafeAreaView>
-      <CHeader title={String.guardiansTitle} 
-      // rightIcon={<RightIcon />} 
+    <CSafeAreaView addTabPadding={false} testID="guardiansContainer">
+      <CHeader
+        title={String.guardiansTitle}
+        rightIcon={<RightIcon />}
+        testID="guardiansHeader"
       />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20} testID="guardiansKeyboardWrapper">
+        <CText type={'B16'} align={'center'} marginTop={15} testID="guardiansSubtitle">
           {String.guardiansSubtitle}
         </CText>
         {guardians.length == 0 && <InfoCard />}
@@ -270,22 +257,28 @@ export default function Guardians({navigation}) {
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
+          testID="guardiansList"
         />
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="guardiansBottomContainer" style={localStyle.bottomTextContainer}>
         {guardians.length <= 1 && (
-          <CAlert status="info" message={String.alertguardiansrequired} />
+          <CAlert testID="guardiansRequiredAlert" status="info" message={String.alertguardiansrequired} />
         )}
 
         <CButton
+          testID="guardiansAddButton"
           title={` ${String.addGuardian}`}
           onPress={onPressAddGuardian}
           type={'B16'}
           containerStyle={localStyle.btnStyle1}
-          frontIcon={<Icono size={20} name="account-plus" color={'#fff'} />}
+          frontIcon={<Icono testID="guardiansAddButtonIcon" size={20} name="account-plus" color={'#fff'} />}
         />
       </View>
-      <GuardianOptionsModal
+      {/* <GuardianOptionsModal
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
         currentNickname={selectedGuardian?.nickname || ''}
@@ -298,7 +291,7 @@ export default function Guardians({navigation}) {
         onDeleteGuardian={() =>
           deleteGuardianId(selectedGuardian.id, {onSuccess: closeModal})
         }
-      />
+      /> */}
 
       {selectedGuardian && (
         <GuardianActionModal
@@ -307,6 +300,7 @@ export default function Guardians({navigation}) {
           onClose={closeModal}
           onSave={saveGuardian}
           onDelete={deleteGuardian}
+          testID="guardiansActionModal"
         />
       )}
     </CSafeAreaView>

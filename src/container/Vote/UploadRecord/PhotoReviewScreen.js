@@ -13,7 +13,7 @@ const PhotoReviewScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {photoUri, tableData} = route.params || {};
-
+  
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
 
@@ -27,7 +27,6 @@ const PhotoReviewScreen = () => {
     {id: 'pdc', partido: String.pdc, presidente: '17', diputado: '16'},
     {id: 'morena', partido: String.morena, presidente: '1', diputado: '0'},
   ]);
-
   // New state for the vote summary table (Votos, Blancos, Nulos)
   const [voteSummaryResults, setVoteSummaryResults] = useState([
     {id: 'validos', label: String.valid, value1: '141', value2: '176'},
@@ -52,15 +51,6 @@ const PhotoReviewScreen = () => {
 
   // Handler for navigating to the next screen
   const handleNext = () => {
-    console.log(
-      'PhotoReviewScreen - Navigating to PhotoConfirmationScreen with:',
-      {
-        photoUri,
-        tableData,
-        partyResults,
-        voteSummaryResults,
-      },
-    );
 
     navigation.navigate(StackNav.PhotoConfirmationScreen, {
       photoUri,
@@ -97,6 +87,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.edit,
           onPress: handleEdit,
+          testID: 'photoReviewEditButton',
           style: {
             backgroundColor: '#fff',
             borderColor: colors.primary || '#459151',
@@ -111,6 +102,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.next,
           onPress: handleNext,
+          testID: 'photoReviewNextButton',
           style: {
             backgroundColor: colors.primary || '#459151',
             flex: 1,
@@ -125,6 +117,7 @@ const PhotoReviewScreen = () => {
         {
           text: String.save,
           onPress: handleSave,
+          testID: 'photoReviewSaveButton',
           style: {
             backgroundColor: colors.primary || '#459151',
           },
@@ -137,6 +130,7 @@ const PhotoReviewScreen = () => {
   return (
     <>
       <BaseRecordReviewScreen
+        testID="photoReviewScreenBase"
         colors={colors}
         headerTitle={`${String.table} ${
           tableData?.tableNumber ||
@@ -159,6 +153,7 @@ const PhotoReviewScreen = () => {
       />
 
       <CustomModal
+        testID="photoReviewSuccessModal"
         visible={modalVisible}
         onClose={closeModal}
         type="success"

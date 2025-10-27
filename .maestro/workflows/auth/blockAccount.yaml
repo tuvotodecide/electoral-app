@@ -1,0 +1,93 @@
+appId: com.tuvotodecide
+name: blockAccount
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
+---
+- runFlow:
+    when:
+        visible:
+            id: homeMiVotoLogoTitle
+    file: ../../components/auth/logout.yaml
+- tapOn:
+    id: connectLoginButton
+- inputText: '9999'
+
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalButton
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: loginUserInfoModalContainer
+    timeout: 5000
+- tapOn:
+    id: loginUserInfoModalButton
+
+
+
+- inputText: '9999'
+
+- extendedWaitUntil:
+    visible:
+      id: accountLockImage
+    timeout: 5000
+    
+- extendedWaitUntil:
+    visible:
+      id: accountLockDescription
+    timeout: 5000

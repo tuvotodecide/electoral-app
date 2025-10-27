@@ -17,22 +17,24 @@ import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUserQrPin({navigation, route}) {
   // ───── params de navegación
-  const {payload, reqId} = route.params; // ← ahora recibes payload
+  const {payload} = route.params; // ← ahora recibes payload
   const colors = useSelector(state => state.theme.theme);
 
   // ───── estado & refs
   const [otp, setOtp] = useState('');
   const otpRef = useRef(null);
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecoveryUserQrpin', true);
 
   // ───── handlers
   const onPressContinue = () => {
     navigation.navigate(AuthNav.RecoveryUserQrpin2, {
       originalPin: otp,
       payload, // ← lo pasas a la siguiente
-      reqId,
     });
   };
 
@@ -82,6 +84,7 @@ export default function RecoveryUserQrPin({navigation, route}) {
 
           <CButton
             title={String.btnContinue}
+            testID="changePinNewContinueButton"
             disabled={otp.length !== 4}
             onPress={onPressContinue}
           />

@@ -9,167 +9,116 @@ import {getHeight, moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
-import {PermissionsAndroid, Platform, ToastAndroid, Alert} from 'react-native';
 import String from '../../../i18n/String';
 import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
-import GuardianActionModal from '../../../components/modal/GuardianActionModal';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {
-  useGuardianAcceptedListQuery,
-  useGuardianDeleteQuery,
   useGuardianInvitationActionQuery,
-  useGuardianPatchQuery,
   useMyGuardianInvitationsListQuery,
   useMyGuardianRecoveryListQuery,
-  useMyGuardiansAllListQuery,
   useRecoveryActionQuery,
 } from '../../../data/guardians';
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
-import {useKycFindPublicQuery} from '../../../data/kyc';
-import {getSecrets} from '../../../utils/Cifrate';
-import {
-  acceptGuardianOnChain,
-  approveRecoveryOnChain,
-} from '../../../api/guardianOnChain';
-import {getDeviceId} from '../../../utils/device-id';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import { truncateDid } from '../../../utils/Address';
 
-export default function GuardiansAdmin({navigation}) {
+export default function GuardiansAdmin() {
   const colors = useSelector(state => state.theme.theme);
+
+  const userData = useSelector(state => state.wallet.payload);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
-  const {data: invData = [], isLoading} = useMyGuardianInvitationsListQuery();
+  const did = userData?.did;
+  const {logAction} = useNavigationLogger('GuardiansAdmin', true);
+  const {data: invData = []} = useMyGuardianInvitationsListQuery({did});
 
-  const {data: recData = [], isLoading: loadingrecData} =
-    useMyGuardianRecoveryListQuery();
-  const {data: accData = [], isLoading: loadingdataAccepted} =
-    useGuardianAcceptedListQuery();
-  const {mutate: findPublicDni} = useKycFindPublicQuery();
-
+  const {data: recData = []} =
+    useMyGuardianRecoveryListQuery({did});
   const {mutate: mutateInvitation, isLoading: loadingInvitationAction} =
     useGuardianInvitationActionQuery();
   const {mutate: mutateRecovery, isLoading: loadingRecoveryAction} =
     useRecoveryActionQuery();
 
   const handleAcceptInvitation = async id => {
-    const inv = invData.map(e => e.node).find(i => i.id === id);
+    const inv = invData.find(i => i.id === id);
     if (!inv) return;
-    const dni = inv.governmentIdentifier;
-    const fp = await new Promise((res, rej) =>
-      findPublicDni(
-        {identifier: dni},
-        {
-          onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error buscando'))),
-          onError: rej,
-        },
-      ),
-    );
-    const ownerGuardianCt = fp.guardianAddress;
-    const {payloadQr} = await getSecrets();
-    // await acceptGuardianOnChain(
-    //   CHAIN,
-    //   payloadQr.privKey,
-    //   payloadQr.account,
-    //   ownerGuardianCt,
-    // );
-
-    mutateInvitation({id, action: 'accept'});
+    mutateInvitation({id, did: userData.did, action: 'accept'});
   };
   const handleRejectInvitation = id => {
-    mutateInvitation({id, action: 'reject'});
+    if (!did) {
+      logAction('RejectInvitationMissingDid');
+      return;
+    }
+    logAction('RejectInvitationAttempt', {invitationId: id});
+    mutateInvitation(
+      {id, did, action: 'reject'},
+      {
+        onSuccess: () =>
+          logAction('RejectInvitationSuccess', {invitationId: id}),
+        onError: err =>
+          logAction('RejectInvitationError', {message: err?.message}),
+      },
+    );
   };
 
   const handleApproveRecovery = async id => {
-    try {
-      const rec = recData.map(e => e.node).find(r => r.id === id);
-      if (!rec) return;
-
-      const dni = rec.governmentIdentifier;
-      const fp = await new Promise((res, rej) =>
-        findPublicDni(
-          {identifier: dni},
-          {
-            onSuccess: d => (d?.ok ? res(d) : rej(new Error('Error'))),
-            onError: rej,
-          },
-        ),
-      );
-      const ownerAccount = fp.accountAddress;
-      const ownerGuardianCt = fp.guardianAddress;
-
-      const {payloadQr} = await getSecrets();
-      // await approveRecoveryOnChain(
-      //   CHAIN,
-      //   payloadQr.privKey,
-      //   payloadQr.account,
-      //   ownerGuardianCt,
-      //   ownerAccount,
-      // );
-
-      mutateRecovery({id, action: 'approve'});
-    } catch (e) {}
+    mutateRecovery({id, action: 'approve', did: userData.did});
   };
   const handleRejectRecovery = id => {
-    mutateRecovery({id, action: 'reject'});
+    if (!did) {
+      logAction('RejectRecoveryMissingDid');
+      return;
+    }
+    logAction('RejectRecoveryAttempt', {recoveryId: id});
+    mutateRecovery(
+      {id, action: 'reject', did},
+      {
+        onSuccess: () =>
+          logAction('RejectRecoverySuccess', {recoveryId: id}),
+        onError: err =>
+          logAction('RejectRecoveryError', {message: err?.message}),
+      },
+    );
   };
 
   const invitations = useMemo(
-    () => invData.map(e => e.node).filter(i => i.status === 'PENDING'),
+    () => invData.filter(i => i.status === 'PENDING'),
     [invData],
   );
   const recoveries = useMemo(
-    () => recData.map(e => e.node).filter(r => r.status === 'PENDING'),
+    () => recData.filter(r => r.status === 'PENDING'),
     [recData],
   );
   const accepted = useMemo(
-    () => invData.map(e => e.node).filter(i => i.status === 'ACCEPTED'),
+    () => invData.filter(i => i.status === 'ACCEPTED'),
     [invData],
   );
 
-  const handleAccept = id => {};
-  const handleReject = id => {};
-
   const openModal = item => {
+    logAction('GuardiansAdminOpenModal', {id: item?.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
+    logAction('GuardiansAdminCloseModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };
 
-  const statusColorKey = {
-    ACCEPTED: 'activeColor',
-    PENDING: 'pendingColor',
-    REJECTED: 'rejectedColor',
-    REMOVED: 'rejectedColor',
-  };
-
-  const statusLabel = {
-    ACCEPTED: String.active,
-    PENDING: String.pending,
-    REJECTED: String.rejected,
-    REMOVED: String.removed ?? 'Removido',
-  };
-
-  const onPressAddGuardian = () => {
-    navigation.navigate(StackNav.AddGuardians);
-  };
-
   const renderGuardianOption = ({item}) => {
-    const parts = (item.publicFullName || '').split(' ');
+    const parts = (item.inviter?.displayNamePublic || '').split(' ');
     const firstSegment = parts[0] || '';
     const secondSegment = parts[1] || '';
 
-    const abbreviated = secondSegment.toUpperCase();
     const displayName = secondSegment
-      ? `${firstSegment} ${abbreviated}`
+      ? `${firstSegment} ${secondSegment}`
       : firstSegment;
+    const inviterDid = truncateDid(item.inviterDid);
 
     return (
       <TouchableOpacity
+        testID={`guardiansAdminProtectedItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer,
           {
@@ -181,8 +130,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`guardiansAdminProtectedItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
+            testID={`guardiansAdminProtectedItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -191,19 +141,20 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminProtectedItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{item.governmentIdentifier}</CText>
+          <View testID={`guardiansAdminProtectedItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminProtectedItemIdRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
+              <CText testID={`guardiansAdminProtectedItemId_${item.governmentIdentifier}`} type="B16">{inviterDid}</CText>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
-              {displayName ?? '(sin apodo)'}
+            <CText testID={`guardiansAdminProtectedItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
+              {displayName === "" ? '(sin nombre)' : displayName}
             </CText>
           </View>
         </View>
-        <TouchableOpacity onPress={() => openModal(item)}>
+        <TouchableOpacity testID={`guardiansAdminProtectedItemMenu_${item.governmentIdentifier}`} onPress={() => openModal(item)}>
           <Icono
+            testID={`guardiansAdminProtectedItemMenuIcon_${item.governmentIdentifier}`}
             name="dots-vertical"
             size={moderateScale(30)}
             style={styles.mr10}
@@ -222,8 +173,14 @@ export default function GuardiansAdmin({navigation}) {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
+    const targetDid = truncateDid(item.targetDid);
+    const createDate = new Date(item.createdAt * 1000);
+
+    const createdAt = createDate.toLocaleDateString() + ' ' + createDate.toLocaleTimeString();
+
     return (
       <View
+        testID={`guardiansAdminRecoveryItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer1,
           {
@@ -235,8 +192,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`guardiansAdminRecoveryItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
+            testID={`guardiansAdminRecoveryItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -245,34 +203,36 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminRecoveryItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{displayName}</CText>
+          <View testID={`guardiansAdminRecoveryItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminRecoveryItemNameRow_${item.governmentIdentifier}`}>
+              <CText testID={`guardiansAdminRecoveryItemName_${item.governmentIdentifier}`} type="B16">{displayName === '' ? targetDid : displayName}</CText>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
-              {item.governmentIdentifier}
+            <CText testID={`guardiansAdminRecoveryItemId_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
+              {createdAt}
             </CText>
           </View>
         </View>
-        <View style={localStyle.actionsRow}>
+        <View testID={`guardiansAdminRecoveryItemActions_${item.governmentIdentifier}`} style={localStyle.actionsRow}>
           <CButton
+            testID={`guardiansAdminRecoveryItemApprove_${item.governmentIdentifier}`}
             title={String.accept}
             type="B16"
             bgColor={'#4caf50'}
             disabled={loadingRecoveryAction}
-            onPress={() => handleApproveRecovery(item.id)}
+            onPress={() => handleApproveRecovery(item.requestId)}
             containerStyle={[
               localStyle.actionButton,
               {backgroundColor: '#4caf50'},
             ]}
           />
           <CButton
+            testID={`guardiansAdminRecoveryItemReject_${item.governmentIdentifier}`}
             title={String.reject}
             type="B16"
             disabled={loadingRecoveryAction}
-            onPress={() => handleRejectRecovery(item.id)}
+            onPress={() => handleRejectRecovery(item.requestId)}
             containerStyle={[
               localStyle.actionButton,
               {backgroundColor: '#f44336'},
@@ -283,7 +243,7 @@ export default function GuardiansAdmin({navigation}) {
     );
   };
   const renderInvitationOption = ({item}) => {
-    const parts = (item.publicFullName || '').split(' ');
+    const parts = (item.inviter?.displayNamePublic || '').split(' ');
     const firstSegment = parts[0] || '';
     const secondSegment = parts[1] || '';
 
@@ -291,8 +251,11 @@ export default function GuardiansAdmin({navigation}) {
       ? `${firstSegment} ${secondSegment}`
       : firstSegment;
 
+    const inviterDid = truncateDid(item.inviterDid);
+
     return (
       <View
+        testID={`guardiansAdminInvitationItem_${item.governmentIdentifier}`}
         style={[
           localStyle.optionContainer1,
           {
@@ -304,8 +267,9 @@ export default function GuardiansAdmin({navigation}) {
             elevation: 5,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`guardiansAdminInvitationItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
           <View
+            testID={`guardiansAdminInvitationItemIcon_${item.governmentIdentifier}`}
             style={[
               localStyle.iconBg,
               {
@@ -314,19 +278,22 @@ export default function GuardiansAdmin({navigation}) {
                   : colors.grayScale200,
               },
             ]}>
-            <Icono name="account" size={moderateScale(24)} />
+            <Icono testID={`guardiansAdminInvitationItemAccountIcon_${item.governmentIdentifier}`} name="account" size={moderateScale(24)} />
           </View>
-          <View style={styles.ml10}>
-            <View style={styles.rowCenter}>
-              <CText type="B16">{item.governmentIdentifier}</CText>
+          <View testID={`guardiansAdminInvitationItemInfo_${item.governmentIdentifier}`} style={styles.ml10}>
+            <View testID={`guardiansAdminInvitationItemIdRow_${item.governmentIdentifier}`} style={styles.rowCenter}>
+              <CText testID={`guardiansAdminInvitationItemId_${item.governmentIdentifier}`} type="B16">
+                {displayName === '' ? '(nombre no visible)' : displayName}
+              </CText>
             </View>
-            <CText type="R12" color={colors.grayScale500}>
-              {displayName ?? '(nombre no visible)'}
+            <CText testID={`guardiansAdminInvitationItemName_${item.governmentIdentifier}`} type="R12" color={colors.grayScale500}>
+              {inviterDid}
             </CText>
           </View>
         </View>
-        <View style={localStyle.actionsRow}>
+        <View testID={`guardiansAdminInvitationItemActions_${item.governmentIdentifier}`} style={localStyle.actionsRow}>
           <CButton
+            testID={`guardiansAdminInvitationItemAccept_${item.governmentIdentifier}`}
             title={String.accept}
             type="B16"
             bgColor={'#4caf50'}
@@ -338,6 +305,7 @@ export default function GuardiansAdmin({navigation}) {
             ]}
           />
           <CButton
+            testID={`guardiansAdminInvitationItemReject_${item.governmentIdentifier}`}
             title={String.reject}
             type="B16"
             disabled={loadingInvitationAction}
@@ -353,38 +321,54 @@ export default function GuardiansAdmin({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.myProtected} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+    <CSafeAreaView testID="guardiansAdminContainer" addTabPadding={false}>
+      <CHeader testID="guardiansAdminHeader" title={String.myProtected} />
+      <KeyBoardAvoidWrapper testID="guardiansAdminKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <CText testID="guardiansAdminInvitationsTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myInvitations}
         </CText>
         <FlatList
+          testID="guardiansAdminInvitationsList"
           data={invitations}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.requestId}
           renderItem={renderInvitationOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
-        <CText type={'B16'} align={'center'} marginTop={15}>
+        <CText testID="guardiansAdminRecoveryTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myRecovery}
         </CText>
         <FlatList
+          testID="guardiansAdminRecoveryList"
           data={recoveries}
           keyExtractor={item => item.id}
           renderItem={renderRevoceryOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
-        <CText type={'B16'} align={'center'} marginTop={15}>
+        <CText testID="guardiansAdminProtectedTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myProtectedInfo}
         </CText>
         <FlatList
+          testID="guardiansAdminProtectedList"
           data={accepted}
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
           contentContainerStyle={styles.mt20}
+          scrollEnabled={false} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
         />
       </KeyBoardAvoidWrapper>
       <GuardianInfoActionModal
+        testID="guardiansAdminInfoModal"
         visible={modalVisible}
         guardian={selectedGuardian}
         onClose={closeModal}

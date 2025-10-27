@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TextInput, Dimensions } from 'react-native';
+import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -16,52 +16,98 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 // Vote Summary Row Component
-export const VoteSummaryRow = ({ item, isEditing, onUpdate }) => (
-  <View style={styles.voteSummaryTableRow}>
-    <CText style={styles.voteSummaryLabel}>{item.label}</CText>
-    <View style={styles.voteSummaryValueContainer}>
+export const VoteSummaryRow = ({
+  testID = 'voteSummaryRow',
+  item,
+  isEditing,
+  onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+  twoColumns = true,
+}) => (
+  <View testID={testID} style={styles.voteSummaryTableRow}>
+    <CText testID={`${testID}Label`} style={styles.voteSummaryLabel}>
+      {item.label}
+    </CText>
+    <View
+      testID={`${testID}ValueContainer`}
+      style={styles.voteSummaryValueContainer}>
       {isEditing ? (
         <TextInput
+          testID={`${testID}Input`}
           style={styles.voteSummaryInput}
-          value={item.value1}
-          onChangeText={value => onUpdate(item.id, 'value1', value)}
+          value={String(item.value1 ?? '')}
+          onChangeText={value =>
+            onUpdate(
+              item.id,
+              'value1',
+              value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+            )
+          }
           keyboardType="numeric"
+          placeholder="0"
         />
       ) : (
-        <CText style={styles.voteSummaryValue}>{item.value1}</CText>
+        <CText testID={`${testID}Value`} style={styles.voteSummaryValue}>
+          {item.value1 === '' || item.value1 == null
+            ? emptyDisplayWhenReadOnly
+            : String(item.value1)}
+        </CText>
       )}
     </View>
-    <View style={styles.voteSummaryValueContainer}>
-      {isEditing ? (
-        <TextInput
-          style={styles.voteSummaryInput}
-          value={item.value2}
-          onChangeText={value => onUpdate(item.id, 'value2', value)}
-          keyboardType="numeric"
-        />
-      ) : (
-        <CText style={styles.voteSummaryValue}>{item.value2}</CText>
-      )}
-    </View>
+    {twoColumns && (
+      <View style={styles.voteSummaryValueContainer}>
+        {isEditing ? (
+          <TextInput
+            style={styles.voteSummaryInput}
+            value={String(item.value2 ?? '')}
+            onChangeText={value =>
+              onUpdate(
+                item.id,
+                'value2',
+                value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
+              )
+            }
+            keyboardType="numeric"
+            placeholder="0"
+          />
+        ) : (
+          <CText style={styles.voteSummaryValue}>
+            {item.value2 === '' || item.value2 == null
+              ? emptyDisplayWhenReadOnly
+              : String(item.value2)}
+          </CText>
+        )}
+      </View>
+    )}
   </View>
 );
 
 // Vote Summary Table Component
 export const VoteSummaryTable = ({
-  voteSummaryResults,
+  testID = 'voteSummaryTable',
+  voteSummaryResults = [],
   isEditing = false,
   onUpdate,
+  emptyDisplayWhenReadOnly = '0',
+  twoColumns = true,
 }) => (
-  <View style={styles.voteSummaryTableContainer}>
-    <CText style={styles.voteSummaryTableTitle}>Votos</CText>
-    {voteSummaryResults.map((item, index) => (
-      <VoteSummaryRow
-        key={index}
-        item={item}
-        isEditing={isEditing}
-        onUpdate={onUpdate}
-      />
-    ))}
+  <View testID={testID} style={styles.voteSummaryTableContainer}>
+    <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>
+      Votos
+    </CText>
+    {(Array.isArray(voteSummaryResults) ? voteSummaryResults : []).map(
+      (item, index) => (
+        <VoteSummaryRow
+          key={index}
+          testID={`${testID}Row_${index}`}
+          item={item}
+          isEditing={isEditing}
+          onUpdate={onUpdate}
+          emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
+          twoColumns={twoColumns}
+        />
+      ),
+    )}
   </View>
 );
 
@@ -72,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 24, 32),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     paddingTop: getResponsiveSize(4, 12, 16),

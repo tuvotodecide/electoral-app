@@ -11,7 +11,6 @@ export const instantiateAccountAddress = (privateKey, salt) => async dispatch =>
 		const account = await getAccount(privateKey, salt, 'opSepolia');
 		dispatch(setAccount(account.address));
 	} catch (error) {
-		console.error(error)
 	}
 }
 
@@ -50,6 +49,5 @@ export const setAccountBalance = () => async (dispatch, getState) => {
     }
     dispatch(setBalance({totalBalance: totalBalance.toFixed(2), tokenBalances}));
   } catch (error) {
-    console.error('Get balance error: ' + error);
   }
 }

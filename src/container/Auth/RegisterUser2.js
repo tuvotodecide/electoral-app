@@ -1,5 +1,5 @@
 import {StyleSheet, View, TextInput, Alert} from 'react-native';
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 // Custom imports
@@ -15,30 +15,68 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import UploadCardImage from '../../components/common/UploadCardImage';
 import String from '../../i18n/String';
 import DniExistsModal from '../../components/modal/DniExistsModal';
-import {useKycFindQuery} from '../../data/kyc';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
+import wira from 'wira-sdk';
+import {BACKEND_IDENTITY} from '@env';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import SimpleModal from '../../components/modal/SimpleModal';
 
-export default function RegisterUser2({navigation}) {
+export default function RegisterUser2({navigation, route}) {
+  const {logAction, logNavigation} = useNavigationLogger('RegisterUser2', true);
+  const isRecovery = !!route?.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [idNumber, setIdNumber] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [isModalVisible, setModalVisible] = useState({
+    visible: false,
+    message: null,
+  });
   const [submitting, setSubmitting] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
-  const {mutate: findDni, isLoading} = useKycFindQuery();
   const dispatch = useDispatch();
-  const isFormValid = () => {
-    return idNumber.trim() !== '' && frontImage && backImage;
+  const isFormValid = () => idNumber.trim() !== '' && frontImage && backImage;
+
+  const closeModal = () => {
+    setModalVisible({visible: false, message: null});
+    navigation.reset({
+      index: 1,
+      routes: [
+        {
+          name: AuthNav.Connect,
+        },
+        {
+          name: AuthNav.RegisterUser1,
+        },
+      ],
+    })
   };
 
-  const closeModal = () => setModalVisible(false);
+  useEffect(() => {
+    const trimmed = idNumber.trim();
+    if (!hasRedirectedRef.current && trimmed === REVIEW_DNI) {
+      hasRedirectedRef.current = true;
+      dispatch(setSecrets(DEMO_SECRETS));
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.TabNavigation}],
+      });
+    }
+  }, [idNumber, dispatch, navigation]);
 
   const handleCheckAndNext = useCallback(
     debounce(() => {
-      if (idNumber.trim() === REVIEW_DNI) {
+      logAction('submit_attempt', {
+        isRecovery,
+        hasFrontImage: !!frontImage,
+        hasBackImage: !!backImage,
+      });
+
+      const trimmedId = idNumber.trim();
+      if (trimmedId === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));
         navigation.reset({
           index: 0,
@@ -46,66 +84,124 @@ export default function RegisterUser2({navigation}) {
         });
         return;
       }
-      if (!isFormValid()) return;
 
-      findDni(
-        {identifier: idNumber.trim()},
-        {
-          onMutate: () => {
-            setSubmitting(true);
-            setModalVisible(false);
-          },
-          onSuccess: response => {
-            setSubmitting(false);
+      if (trimmedId === '') {
+        return;
+      }
 
-            if (response.ok) {
-         
-              setModalVisible(true);
-            } else {
-              navigation.navigate(AuthNav.RegisterUser3, {
-                dni: idNumber.trim(),
-                frontImage,
-                backImage,
-              });
-            }
-          },
-          onError: err => {
-            setSubmitting(false);
-            const msg =
-              err?.response?.data?.message || err.message || String.unknowerror;
-            Alert.alert(String.errorCi, msg);
-          },
-          onSettled: () => setSubmitting(false),
-        },
-      );
+      setSubmitting(true);
+      setModalVisible({visible: false, message: null});
+
+      const api = new wira.RegistryApi(BACKEND_IDENTITY);
+      api
+        .registryCheckByDni(trimmedId)
+        .then(({exists}) => {
+          setSubmitting(false);
+
+          if (exists && !isRecovery) {
+            setModalVisible({
+              visible: true,
+              message: <CText type="B18" align="center" style={styles.mb20}>
+                {String.DniExists}
+              </CText>,
+            });
+            logAction('dni_exists_modal_shown', {isRecovery});
+            return;
+          }
+
+          if (!exists && isRecovery) {
+            setModalVisible({
+              visible: true,
+              message: <View style={{display: 'flex', alignItems: 'center'}}>
+                <CText type="B18" align="center">
+                  {String.DniNotFound1}
+                </CText>
+                <CText type="B18" align="center" style={{fontWeight: 'bold'}}>
+                  {trimmedId}
+                </CText>
+                <CText type="B18" align="center" style={styles.mb20}>
+                  {String.DniNotFound2}
+                </CText>
+              </View>
+            });
+            logAction('dni_not_found_modal_shown', {isRecovery});
+            return;
+          }
+
+          if(!isFormValid()) {
+            return;
+          }
+
+          navigation.navigate(AuthNav.RegisterUser3, {
+            dni: trimmedId,
+            frontImage,
+            backImage,
+            isRecovery,
+          });
+          logNavigation('go_to_register_step_3', {
+            dni: trimmedId,
+            isRecovery,
+          });
+        })
+        .catch(err => {
+          setSubmitting(false);
+          const msg =
+            err?.response?.data?.message || err.message || String.unknowerror;
+          logAction('dni_check_error', {
+            message: msg,
+            name: err?.name,
+          });
+          Alert.alert(String.errorCi, msg);
+        });
     }, 500),
-    
-    [idNumber, frontImage, backImage],
+    [
+      idNumber,
+      frontImage,
+      backImage,
+      dispatch,
+      navigation,
+      logAction,
+      logNavigation,
+      isRecovery,
+    ],
   );
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={2} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser2Container">
+      <StepIndicator testID="registerUser2StepIndicator" step={2} />
+      <CHeader testID="registerUser2Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser2KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText
+            testID="idVerificationTitle"
+            type={'B20'}
+            style={styles.boldText}
+            align={'center'}>
             {String.idVerificationTitle}
           </CText>
 
-          <CText type={'B16'} align={'center'}>
+          <CText
+            testID="idVerificationSubtitle"
+            type={'B16'}
+            align={'center'}>
+            {isRecovery ? String.toRecovery : String.toContinue}
             {String.idVerificationSubtitle}
           </CText>
 
-          <CText type="B14" style={styles.mt10}>
+          <CText
+            testID="idLabel"
+            type="B14"
+            style={styles.mt10}>
             {String.idLabel}
           </CText>
           <TextInput
+            testID="idNumberInput"
             value={idNumber}
             onChangeText={setIdNumber}
             onEndEditing={handleCheckAndNext}
@@ -122,28 +218,39 @@ export default function RegisterUser2({navigation}) {
           />
 
           <UploadCardImage
+            testID="frontCardUpload"
             label={String.frontLabel}
             image={frontImage}
             setImage={setFrontImage}
           />
 
           <UploadCardImage
+            testID="backCardUpload"
             label={String.backLabel}
             image={backImage}
             setImage={setBackImage}
           />
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View
+        testID="registerUser2BottomContainer"
+        style={localStyle.bottomTextContainer}>
         <CButton
-          disabled={!isFormValid() || isLoading || submitting}
-          title={isLoading ? String.checking : String.continueButton}
+          testID="continueVerificationButton"
+          disabled={!isFormValid() || submitting}
+          title={submitting ? String.checking : String.continueButton}
           onPress={handleCheckAndNext}
           type="B16"
           containerStyle={localStyle.btnStyle}
         />
       </View>
-      <DniExistsModal visible={isModalVisible} onClose={closeModal} />
+      <SimpleModal
+        testID="registerUser2DniExistsModal"
+        visible={isModalVisible.visible}
+        message={isModalVisible.message}
+        closeBtn={String.register}
+        onClose={closeModal}
+      />
     </CSafeAreaViewAuth>
   );
 }

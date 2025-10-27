@@ -1,0 +1,20 @@
+appId: com.tuvotodecide
+---
+- runFlow:
+    when:
+      true: ${EXTERNAL != 'true'}
+    file: ./simpleActions/launchApp.yaml
+- extendedWaitUntil:
+    visible:
+      text: Open debugger to view warnings.
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: 90%,91%
+#- tapOn: Open debugger to view warnings.
+- extendedWaitUntil:
+    notVisible:
+      text: Open debugger to view warnings.
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000

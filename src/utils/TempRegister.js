@@ -1,8 +1,8 @@
-// utils/TempRegister.js
-import * as Keychain from 'react-native-keychain';
 
-const SERVICE_TMP = 'tmpRegister';
-const SERVICE_PIN = 'tmpRegisterPin';
+import * as Keychain from 'react-native-keychain';
+import { SERVICE_PIN, SERVICE_TMP } from '../common/constants';
+
+
 
 export async function setTmpRegister(bundle) {
   await Keychain.setGenericPassword('tmp', JSON.stringify({ ...bundle, createdAt: Date.now() }), {

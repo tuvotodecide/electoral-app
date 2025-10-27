@@ -1,0 +1,4 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: changePinNewContinueButton

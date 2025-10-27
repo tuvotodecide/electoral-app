@@ -1,8 +1,9 @@
 import React from 'react';
 import UniversalHeader from './UniversalHeader';
 
-export const RecordHeader = ({onBack, title, colors}) => (
+export const RecordHeader = ({testID = "recordHeader", onBack, title, colors}) => (
   <UniversalHeader
+    testID={testID}
     colors={colors}
     onBack={onBack}
     title={title}

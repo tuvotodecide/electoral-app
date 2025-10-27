@@ -1,5 +1,6 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
+import {InteractionManager} from 'react-native';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 
@@ -17,54 +18,68 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
-import { setTmpPin } from '../../utils/TempRegister';
+import {setTmpPin} from '../../utils/TempRegister';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+import CBigAlert from '../../components/common/CBigAlert';
 
 export default function RegisterUser9({navigation, route}) {
-  const {originalPin, vc, offerUrl, useBiometry, dni} = route.params;
+  const {originalPin, ocrData, useBiometry, dni} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
 
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser9Pin',
+    true,
+  );
   const otpRef = useRef(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      otpRef.current?.focusField(0);
-    }, 350);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    return () => clearTimeout(t);
   }, []);
 
   const handleConfirmPin = async () => {
-    if (otp === originalPin) {
+    const matchesOriginal = otp === originalPin;
+    logAction('confirm_pin_attempt', {
+      matchesOriginal,
+      length: otp.length,
+    });
+    if (matchesOriginal) {
       await setTmpPin(otp);
-      navigation.navigate(AuthNav.RegisterUser10, {
+      const params = {
         originalPin: otp,
-        vc,
-        offerUrl,
+        ocrData,
+
         useBiometry,
         dni,
-      });
+      };
+      logNavigation(AuthNav.RegisterUser10, params);
+      navigation.navigate(AuthNav.RegisterUser10, params);
     } else {
+      logAction('confirm_pin_failed');
       setShowError(true);
       setOtp('');
     }
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={9} />
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+    <CSafeAreaViewAuth testID="registerUser9PinContainer">
+      <StepIndicator testID="registerUser9PinStepIndicator" step={9} />
+      <CHeader testID="registerUser9PinHeader" />
+      <KeyBoardAvoidWrapper testID="registerUser9PinKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
+          <View testID="registerUser9PinContentContainer">
             <CText
+              testID="registerUser9PinTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.confirmPinTitle}
             </CText>
             <CText
+              testID="registerUser9PinDescription"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
@@ -72,13 +87,16 @@ export default function RegisterUser9({navigation, route}) {
             </CText>
 
             <OTPInputView
+              testID="registerUser9PinInput"
               ref={otpRef}
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
               onCodeChanged={text => {
                 setOtp(text);
+                logAction('confirm_pin_input_change', {length: text.length});
                 if (showError) {
+                  logAction('confirm_pin_error_cleared');
                   setShowError(false);
                 }
               }}
@@ -99,14 +117,21 @@ export default function RegisterUser9({navigation, route}) {
             />
 
             {showError && (
-              <View style={styles.mt10}>
-                <CAlert status="error" message={String.incorrectPinError} />
+              <View testID="registerUser9PinErrorContainer" style={styles.mt10}>
+                <CAlert testID="registerUser9PinErrorAlert" status="error" message={String.incorrectPinError} />
               </View>
             )}
+
+            <CBigAlert
+              icon='information-outline'
+              title='Recomendación'
+              subttle='Al concluir, NO OLVIDE registrar al menos un guardián para poder recuperar su cuenta en caso de olvidar el pin.'
+            />
           </View>
 
-          <View>
+          <View testID="registerUser9PinButtonContainer">
             <CButton
+              testID="registerUser9PinConfirmButton"
               disabled={otp.length !== 4}
               title={String.confirmPinButton}
               type={'B16'}

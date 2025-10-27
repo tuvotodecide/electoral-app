@@ -1,3 +1,20 @@
+/.dev-local/
+
+# Existing ignores (keep common defaults)
+node_modules/
+android/
+ios/
+*.log
+
+# Entornos locales
+.env
+.env.dev
+.env.prod
+.env_real
+
+# Salidas de pruebas automatizadas
+/.maestro/test_output_directory
+
 # OSX
 #
 .DS_Store
@@ -74,6 +91,11 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
+# Scripts auxiliares
+.sh
+
+# Build outputs
+android/app/src/main/assets/
 .env
 .env_real
 /.maestro/test_output_directory

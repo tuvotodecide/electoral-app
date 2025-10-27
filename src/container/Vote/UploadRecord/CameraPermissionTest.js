@@ -7,6 +7,7 @@ import {
 } from 'react-native-vision-camera';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function CameraPermissionTest({navigation}) {
   const {hasPermission, requestPermission} = useCameraPermission();
@@ -15,6 +16,8 @@ export default function CameraPermissionTest({navigation}) {
   const device = backDevice || frontDevice;
   const [permissionStatus, setPermissionStatus] = useState('checking');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('CameraPermissionTest', true);
   useEffect(() => {
     checkPermissions();
   }, []);
@@ -22,19 +25,17 @@ export default function CameraPermissionTest({navigation}) {
   const checkPermissions = async () => {
     try {
       const status = await Camera.getCameraPermissionStatus();
-      console.log('Current permission status:', status);
+
       setPermissionStatus(status);
     } catch (error) {
-      console.error('Error checking permissions:', error);
+
       setPermissionStatus('error');
     }
   };
 
   const handleRequestPermission = async () => {
     try {
-      console.log('Requesting camera permission...');
       const granted = await requestPermission();
-      console.log('Permission request result:', granted);
 
       if (granted) {
         setPermissionStatus('granted');
@@ -44,7 +45,6 @@ export default function CameraPermissionTest({navigation}) {
         Alert.alert('Error', 'Permisos de cámara denegados');
       }
     } catch (error) {
-      console.error('Error requesting permission:', error);
       Alert.alert('Error', 'Error al solicitar permisos: ' + error.message);
     }
   };
@@ -54,59 +54,61 @@ export default function CameraPermissionTest({navigation}) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{String.cameraPermissionTest}</Text>
+    <View testID="cameraPermissionTestContainer" style={styles.container}>
+      <Text testID="cameraPermissionTestTitle" style={styles.title}>{String.cameraPermissionTest}</Text>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>{String.hookHasPermission}</Text>
-        <Text style={styles.value}>{hasPermission ? 'true' : 'false'}</Text>
+      <View testID="cameraPermissionTestHasPermissionInfo" style={styles.infoContainer}>
+        <Text testID="cameraPermissionTestHasPermissionLabel" style={styles.label}>{String.hookHasPermission}</Text>
+        <Text testID="cameraPermissionTestHasPermissionValue" style={styles.value}>{hasPermission ? 'true' : 'false'}</Text>
       </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>{String.permissionStatus}</Text>
-        <Text style={styles.value}>{permissionStatus}</Text>
+      <View testID="cameraPermissionTestStatusInfo" style={styles.infoContainer}>
+        <Text testID="cameraPermissionTestStatusLabel" style={styles.label}>{String.permissionStatus}</Text>
+        <Text testID="cameraPermissionTestStatusValue" style={styles.value}>{permissionStatus}</Text>
       </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>{String.cameraDevice}</Text>
-        <Text style={styles.value}>
+      <View testID="cameraPermissionTestDeviceInfo" style={styles.infoContainer}>
+        <Text testID="cameraPermissionTestDeviceLabel" style={styles.label}>{String.cameraDevice}</Text>
+        <Text testID="cameraPermissionTestDeviceValue" style={styles.value}>
           {device ? String.available : String.notAvailable}
         </Text>
       </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>{String.backCamera}</Text>
-        <Text style={styles.value}>
+      <View testID="cameraPermissionTestBackCameraInfo" style={styles.infoContainer}>
+        <Text testID="cameraPermissionTestBackCameraLabel" style={styles.label}>{String.backCamera}</Text>
+        <Text testID="cameraPermissionTestBackCameraValue" style={styles.value}>
           {backDevice ? String.available : String.notAvailable}
         </Text>
       </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>{String.frontCamera}</Text>
-        <Text style={styles.value}>
+      <View testID="cameraPermissionTestFrontCameraInfo" style={styles.infoContainer}>
+        <Text testID="cameraPermissionTestFrontCameraLabel" style={styles.label}>{String.frontCamera}</Text>
+        <Text testID="cameraPermissionTestFrontCameraValue" style={styles.value}>
           {frontDevice ? String.available : String.notAvailable}
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={checkPermissions}>
-        <Text style={styles.buttonText}>{String.checkPermissions}</Text>
+      <TouchableOpacity testID="cameraPermissionTestCheckButton" style={styles.button} onPress={checkPermissions}>
+        <Text testID="cameraPermissionTestCheckButtonText" style={styles.buttonText}>{String.checkPermissions}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleRequestPermission}>
-        <Text style={styles.buttonText}>{String.requestPermissions}</Text>
+      <TouchableOpacity testID="cameraPermissionTestRequestButton" style={styles.button} onPress={handleRequestPermission}>
+        <Text testID="cameraPermissionTestRequestButtonText" style={styles.buttonText}>{String.requestPermissions}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
+        testID="cameraPermissionTestCameraButton"
         style={[styles.button, !hasPermission && styles.disabledButton]}
         onPress={testCamera}
         disabled={!hasPermission}>
-        <Text style={styles.buttonText}>Probar Cámara</Text>
+        <Text testID="cameraPermissionTestCameraButtonText" style={styles.buttonText}>Probar Cámara</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
+        testID="cameraPermissionTestBackButton"
         style={styles.backButton}
         onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>Volver</Text>
+        <Text testID="cameraPermissionTestBackButtonText" style={styles.buttonText}>Volver</Text>
       </TouchableOpacity>
     </View>
   );

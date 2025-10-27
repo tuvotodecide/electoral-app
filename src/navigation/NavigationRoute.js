@@ -1,6 +1,9 @@
 //import ElectoralLocations from '../container/Vote/Common/ElectoralLocations';
 import ElectoralLocations from '../container/Vote/common/ElectoralLocations';
+import ElectoralLocationsSave from '../container/Vote/common/ElectoralLocationsSave';
+import OfflinePendingScreen from '../container/Vote/common/OfflinePendingScreen';
 import UnifiedTableScreen from '../container/Vote/UnifiedTableScreen';
+import UnifiedTableScreenUser from '../container/Vote/UnifiedTableScreenUser';
 import ActaDetailScreen from '../container/Vote/WitnessRecord/ActaDetailScreen';
 import CreateNewPassword from '../container/Auth/CreateNewPassword';
 import CreatePin from '../container/Auth/CreatePin';
@@ -25,7 +28,7 @@ import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
 import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
 import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
 //import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
-import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
+import RecoveryQr from '../container/TabBar/Recovery/RecoveryQR';
 import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
 import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
 import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
@@ -102,7 +105,10 @@ import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
 
 export const StackRoute = {
   ElectoralLocations,
+  ElectoralLocationsSave,
+  OfflinePendingScreen,
   UnifiedTableScreen,
+  UnifiedTableScreenUser,
   ActaDetailScreen,
   Splash,
   AuthNavigation,

@@ -1,0 +1,31 @@
+appId: com.tuvotodecide
+name: assertPersonalData
+onFlowStart:
+  - runFlow: ../../components/setup/initialSetup.yaml
+---
+#- runFlow:
+#    when:
+#        true: ${MAESTRO_WALKTHROUGH != 'true'}
+#    file: ../initialSetup.yaml
+- extendedWaitUntil:
+    visible:
+      id: tabButton_Profile
+    timeout: 15000
+- tapOn:
+    id: tabButton_Profile
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: profileMenuItem_1
+    timeout: 12000
+- tapOn:
+    id: profileMenuItem_1
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: personalDetailsAvatarContainer
+    timeout: 12000
+- assertVisible:
+    id: personalDetailsAvatarContainer

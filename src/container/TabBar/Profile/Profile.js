@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -14,35 +14,43 @@ import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import { THEME, getHeight, moderateScale } from '../../../common/constants';
-import { styles } from '../../../themes';
-import { useDispatch, useSelector } from 'react-redux';
+import {THEME, getHeight, moderateScale} from '../../../common/constants';
+import {styles} from '../../../themes';
+import {useDispatch, useSelector} from 'react-redux';
 import CHeader from '../../../components/common/CHeader';
 import images from '../../../assets/images';
 import CText from '../../../components/common/CText';
-import { ProfileDataV2 } from '../../../api/constant';
-import { StackNav } from '../../../navigation/NavigationKey';
-import { colors } from '../../../themes/colors';
-import { changeThemeAction } from '../../../redux/action/themeAction';
-import { setAsyncStorageData } from '../../../utils/AsyncStorage';
+import {ProfileDataV2} from '../../../api/constant';
+import {StackNav} from '../../../navigation/NavigationKey';
+import {colors} from '../../../themes/colors';
+import {changeThemeAction} from '../../../redux/action/themeAction';
+import {setAsyncStorageData} from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
-export default function Profile({ navigation }) {
+export default function Profile({navigation}) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const dispatch = useDispatch();
 
+  const {logNavigation} = useNavigationLogger('Profile', true);
+
   const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
+  const subject = getCredentialSubjectFromPayload(userData) || {};
+  const addr = userData?.account ?? '';
   const data = {
-    name: subject.fullName || '(sin nombre)',
-    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+    name: subject?.fullName || '(sin nombre)',
+    hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
+
+  useEffect(() => {
+    logNavigation('profile_view');
+  }, [logNavigation]);
 
   // Datos de reputación y NFTs
   const reputation = {
@@ -70,15 +78,15 @@ export default function Profile({ navigation }) {
   // Sección adicional (ProfileDataV2)
   const onPressItem = item => {
     if (!!item.route) {
-      navigation.navigate(item.route, { item: item });
+      navigation.navigate(item.route, {item: item});
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }
   };
 
-  const RenderSectionHeader = ({ section: { section } }) => {
+  const RenderSectionHeader = ({section: {section}}) => {
     return (
-      <CText type={'B16'} style={styles.mv10}>
+      <CText testID={`profileSectionHeader_${section.replace(/\s+/g, '')}`} type={'B16'} style={styles.mv10}>
         {section}
       </CText>
     );
@@ -113,7 +121,7 @@ export default function Profile({ navigation }) {
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{ name: StackNav.AuthNavigation }],
+          routes: [{name: StackNav.AuthNavigation}],
         });
       }, 500);
       return true;
@@ -122,10 +130,11 @@ export default function Profile({ navigation }) {
     }
   };
 
-  const RenderItem = ({ item, index }) => {
+  const RenderItem = ({item, index}) => {
     return (
       <TouchableOpacity
-        disabled={item === 'darkMode'} s
+        testID={`profileMenuItem_${item.id || index}`}
+        disabled={item === 'darkMode'}
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
         onPress={() => onPressItem(item)}
@@ -134,10 +143,12 @@ export default function Profile({ navigation }) {
           {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
-        ]}
-      >
-        <View style={styles.rowCenter}>
+        ]}>
+        <View
+          testID={`profileMenuItemContent_${item.id || index}`}
+          style={styles.rowCenter}>
           <View
+            testID={`profileMenuItemIcon_${item.id || index}`}
             style={[
               localStyle.iconBackground,
               {
@@ -146,27 +157,39 @@ export default function Profile({ navigation }) {
                     ? color.primary
                     : color.inputBackground,
               },
-            ]}
-          >
+            ]}>
             {item.icon ? (
               <Entypo
+                testID={`profileMenuItemIconSvg_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}
                 color={color.dark ? color.grayScale500 : color.grayScale400}
               />
             ) : (
-              <View>{color.dark ? item.darkIcon : item.lightIcon}</View>
+              <View testID={`profileMenuItemCustomIcon_${item.id || index}`}>
+                {color.dark ? item.darkIcon : item.lightIcon}
+              </View>
             )}
           </View>
-          <View style={styles.ml10}>
-            <CText type={'B16'}>{item.title}</CText>
-            <CText type={'R12'} color={color.grayScale500}>
+          <View
+            testID={`profileMenuItemText_${item.id || index}`}
+            style={styles.ml10}>
+            <CText
+              testID={`profileMenuItemTitle_${item.id || index}`}
+              type={'B16'}>
+              {item.title}
+            </CText>
+            <CText
+              testID={`profileMenuItemValue_${item.id || index}`}
+              type={'R12'}
+              color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
         {!!item.rightIcon ? (
           <Switch
+            testID={`profileThemeToggleSwitch`}
             trackColor={{
               false: color.dark ? color.grayScale700 : color.grayScale200,
               true: color.primary,
@@ -177,6 +200,7 @@ export default function Profile({ navigation }) {
           />
         ) : (
           <Ionicons
+            testID={`profileMenuItemArrow_${item.id || index}`}
             name={'chevron-forward-outline'}
             size={moderateScale(24)}
             color={color.dark ? color.grayScale500 : color.grayScale400}
@@ -188,25 +212,40 @@ export default function Profile({ navigation }) {
   };
 
   return (
-    <CSafeAreaView>
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+    <CSafeAreaView testID="profileContainer">
+      <ScrollView
+        testID="profileScrollView"
+        showsVerticalScrollIndicator={false}
+        bounces={false}>
         {/* Header perfil */}
         <LinearGradient
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 2.1 }}
+          testID="profileHeaderGradient"
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 2.1}}
           style={localStyle.activityHeader}
-          colors={['#4A5568', '#2D3748', '#1A202C']}
-        >
-          <CHeader color={color.white} />
+          colors={['#4A5568', '#2D3748', '#1A202C']}>
+          <CHeader testID="profileHeaderComponent" color={color.white} />
           <Image
+            testID="profileUserImage"
             source={images.PersonCircleImage}
             style={localStyle.profileImage}
           />
-          <View style={localStyle.userNameAndEmailContainer}>
-            <CText type={'B20'} color={color.white} align={'center'}>
+          <View
+            testID="profileUserInfoContainer"
+            style={localStyle.userNameAndEmailContainer}>
+            <CText
+              testID="profileUserNameText"
+              type={'B20'}
+              color={color.white}
+              align={'center'}>
               {data.name}
             </CText>
-            <CHash text={data.hash} title={userData?.account} textColor={'#fff'} />
+            <CHash
+              testID="profileUserHashComponent"
+              text={data.hash}
+              title={userData?.account}
+              textColor={'#fff'}
+            />
           </View>
         </LinearGradient>
 
@@ -269,8 +308,9 @@ export default function Profile({ navigation }) {
         </View>
         */}
         {/* Sección de datos adicionales */}
-        <View style={localStyle.mainContainer}>
+        <View testID="profileMenuContainer" style={localStyle.mainContainer}>
           <SectionList
+            testID="profileMenuList"
             sections={ProfileDataV2}
             keyExtractor={(item, index) => item + index}
             renderItem={RenderItem}
@@ -292,6 +332,7 @@ export default function Profile({ navigation }) {
         */}
 
         <LogOutModal
+          testID="profileLogoutModal"
           visible={isModalVisible}
           onPressCancel={onPressCancelBtn}
           onPressLogOut={onPressLOut}

@@ -23,6 +23,15 @@ export default function VoteStackNavigation() {
         component={StackRoute.ElectoralLocations}
       />
       <VoteStack.Screen
+        name={StackNav.ElectoralLocationsSave}
+        component={StackRoute.ElectoralLocationsSave}
+      />
+      <VoteStack.Screen
+        name={StackNav.OfflinePendingScreen}
+        component={StackRoute.OfflinePendingScreen}
+        options={{headerShown: false}}
+      />
+      <VoteStack.Screen
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />

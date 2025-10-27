@@ -3,11 +3,15 @@ export default {
   sendInvitation: ' Enviar invitación',
   finishingRecovery: 'Finalizando recuperación',
   return: 'Regresar',
-  guardiansDescriptionStatus: 'Acá verás el estado de aprobación de tu cuenta',
+  guardiansDescriptionStatus: 'Aquí verás el estado de aprobación de tu cuenta',
+  noGuardians: 'Aún no hay votos de tus guardianes',
+  guardiansApprovedTitle: '¡Aprobado!',
+  guardiansApprovedMessage: 'Tus guardianes aprobaron la recuperación de tu cuenta, recuperando datos...',
+  noRecoveryDni: 'No se encontró el DNI de recuperación. Regresa e inténtalo de nuevo.',
   guardiansTitleStatus: 'Estado',
   connectBtnForgot: 'Olvidé mi cuenta',
   messagetorecovery:
-    'Para recuperar tu cuenta, debes seleccionar un método de recuperación.',
+    'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes horas desde su cuenta.',
   recoveryAccountWithGuardians: 'Recuperar cuenta con guardianes',
   confirmDataCorrect: 'Confirma que los datos son correctos',
 
@@ -42,14 +46,18 @@ export default {
   continueButton: 'Continuar',
   // page 2
   idVerificationTitle: 'Verificación de identidad',
+  toRecovery: 'Para recuperar tu cuenta, ',
+  toContinue: 'Para continuar, ',
   idVerificationSubtitle:
-    'Para continuar, necesitamos que subas fotos claras de tu carnet de identidad:',
+    'necesitamos que subas fotos claras de tu carnet de identidad:',
   idLabel: 'Carnet de identidad',
   idPlaceholder: 'Escribe tu número de CI',
   frontLabel: 'Anverso',
   backLabel: 'Reverso',
   checking: 'Verificando...',
   DniExists: 'Carnet ya registrado',
+  DniNotFound1: 'El carnet:',
+  DniNotFound2: 'No se ha encontrado, regístrese por favor.',
   // Page 3
   titleCamera: 'Reconocimiento facial',
   description_camera:
@@ -97,9 +105,12 @@ export default {
   pinAccessDescription1:
     'Confirma el nuevo PIN de acceso. Este PIN protegerá tu acceso a Tu Voto Decide. ',
   pinChange: 'Introduce tu pin actual para confirmar y cambiar tu pin',
+  verifyingPin: 'Verificando PIN...',
+  btnCheckData: 'Verificar datos',
   btnContinue: 'Continuar',
   //page 9
   confirmPinTitle: 'Confirma tu PIN',
+  waitForPinUpdate: 'Actualizando PIN, por favor espera...',
   confirmPinDescription:
     'Vuelve a ingresar el mismo PIN para verificar que lo escribiste correctamente.',
   confirmPinButton: 'Confirmar PIN',
@@ -119,6 +130,8 @@ export default {
   seguridadDesc: 'Eres dueño de tu clave y tu cuenta',
   goToWalletButton: 'Ir a mi cuenta',
   creatingWallet: 'Creando cuenta…',
+  issuingVC: 'Generando credenciales…',
+  migrating: 'Migrando datos…',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',
@@ -139,6 +152,10 @@ export default {
   pinChangeAccessTitle: 'Cambia tu PIN de acceso',
   myProtected: 'Mis Protegidos',
   qrimagelabel: 'Suba la imagen QR',
+  qrValid: 'Qr válido',
+  legacyDataFound: 'Los datos de este QR son antiguos, se realizará un proceso de migración',
+  notEnoughLegacyData: 'Este QR no tiene suficientes datos',
+  alreadyMigrated: 'Esta cuenta ya fué migrada, intente recuperar usando su Carnet y PIN',
   myProtectedInfo: 'Personas de las cuales soy guardián',
   myInvitations: 'Mis invitaciones',
   myRecovery: 'Solicitudes de recuperación',
@@ -233,11 +250,19 @@ export default {
   connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
+  register: 'REGISTRARSE',
 
   recoveryWallet: 'Recuperar cuenta',
   recoverymethod: 'Selecciona método para recuperar cuenta',
   recoverymethodGuardians: 'Recuperar con guardianes',
   recoverymethodQR: 'Recuperar con QR',
+  recoveryWithCI: 'Recuperar con Carnet y PIN',
+  recoveryCIIntro: 'También debes tener el PIN de acceso a tu cuenta.',
+  pin: 'PIN de acceso',
+  retryRecovery: 'Reintentar',
+  recoveringData: 'Recuperando datos...',
+  recoverySuccess: 'Sus datos fueron recuperados, ingrese su PIN a continuación para iniciar sesión',
+  recoveryError: 'Error en la recuperación. Verifica tu CI y PIN.',
 
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto Decide',
@@ -286,6 +311,8 @@ export default {
   security3Subtitle: 'Crear tu correo',
   security4Title: 'Huella dactilar',
   security4Subtitle: 'Activar huella',
+  showName: 'Nombre público',
+  showNameValue: 'Tu nombre será visible para otros usuarios',
 
   //Limite
   limitTitle: 'Limite de compras',
@@ -400,7 +427,7 @@ export default {
   rejected: 'Rechazado',
   deleted: 'Eliminado',
   carnet: 'Carnet',
-  guardianName: 'Nombre de guardián',
+  foundUserName: '¿Eres tú? tu nombre aparecerá aquí si lo hiciste público:',
   nickname: 'Apodo',
   guardiansSubtitle:
     'Administra las personas que pueden ayudarte a recuperar tu cuenta.',
@@ -448,7 +475,7 @@ export default {
   almostDone: 'Almost Done!',
   enterPhoneNumberText:
     'Enter your phone number and we’ll text you a code to activate your account.',
-  continue: 'Continue',
+  continue: 'Continuar',
   mobileNumber: 'Mobile Number',
   authenticationCode: 'Authentication Code',
   otpDescription:
@@ -988,7 +1015,7 @@ export default {
   witnessActaDescription: 'Valida un acta ya subida en una mesa.',
   announceCount: 'Anunciar Conteo',
   announceCountDescription: 'Avisar el inicio del conteo.',
-  myWitnesses: 'Mis atestiguamientos',
+  myWitnesses: `Mis${'\n'}atestiguamientos`,
   myWitnessesDescription: 'Revisa tu historial',
 
   // Buscar Mesa Screen
@@ -1007,7 +1034,8 @@ export default {
   couldNotLoadNearbyTables: 'No se pudieron cargar las mesas cercanas',
   errorSearchingNearbyTables: 'Error al buscar mesas cercanas',
   foundNearbyTables: 'Se encontraron {count} mesas cercanas',
-  tableCode: 'Código de mesa:',
+  tableCode: 'Código de mesa',
+  noNameAvailable: 'No se encontró el nombre de usuario',
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: 'Mis Atestiguamientos',
@@ -1071,7 +1099,7 @@ export default {
 
   // Announce Count
   tableInformation: 'Información de la mesa',
-  precinct: 'Recinto:',
+  precinct: 'Recinto',
   tableCodeLabel: 'Código de Mesa:',
   announceCountButton: 'Anunciar Conteo',
   processing: 'Procesando...',
@@ -1115,9 +1143,10 @@ export default {
   table: 'Mesa',
   whichIsCorrect: '¿Cuál de estas es la correcta?',
   loadingActas: 'Cargando actas de la mesa...',
-  seeMoreDetails: 'Ver mas detalles',
+  seeMoreDetails: 'Ver más detalles',
   dataNotCorrect: 'Estos datos no son correctos',
   correctData: 'Datos Correctos',
+  itsData: 'Están Correctos',
   reviewActaData: 'Revise los datos del acta',
   actaCertification: 'Certificación del Acta',
   certificationText:
@@ -1130,11 +1159,11 @@ export default {
   alreadyAttested: 'Ya atestiguó en esta mesa',
 
   // UploadRecord
-  ensureAssignedTable: 'Asegúrate que esta es la mesa asignada',
+  ensureAssignedTable: 'Asegúrate que esta es la mesa correcta',
   edit: 'Editar',
   next: 'Siguiente',
   save: 'Guardar',
-  reviewPhotoPlease: 'Revise la foto por favor',
+  reviewPhotoPlease: 'Revise la foto del acta',
   saved: 'Guardado',
   changesSavedSuccessfully: 'Los cambios han sido guardados correctamente.',
   acta: 'Acta',
@@ -1253,6 +1282,7 @@ export default {
   locationError: 'Error al obtener la ubicación',
   locationPermissionError: 'Error al solicitar permisos de ubicación',
   askMeLater: 'Preguntar después',
+  notRegistered: 'Aún no estas registrado, registrarse?',
   ok: 'OK',
   tables: 'mesas',
   code: 'Código',
@@ -1260,7 +1290,6 @@ export default {
   nftCertificate: 'Certificado NFT',
   obtain: 'obtenido!',
   viewMyNFT: 'Ver mi NFT',
-  electoralLocations: 'Recintos Electorales',
   gettingLocation: 'Obteniendo ubicación...',
   loadingNearbyLocations: 'Cargando recintos cercanos...',
   showingNearbyLocations: 'Mostrando recintos cercanos a ti',
@@ -1293,6 +1322,8 @@ export default {
 
   // Home Screen
   participate: 'Participar',
+  sendAct: 'Enviar Acta',
+  sendActDescription: 'Revisa o sube un acta',
   participateDescription:
     'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
 
@@ -1306,16 +1337,18 @@ export default {
   shareProfile: 'Compartir perfil',
 
   // Electoral period
-  loadingElectionConfig: "Verificando estado electoral...",
-  electionConfigError: "Error al obtener configuración electoral",
-  noActiveElection: "No hay elección activa",
-  noActiveElectionSubtitle: "Actualmente no hay ninguna elección configurada",
-  electionInactive: "Elección inactiva",
-  electionInactiveSubtitle: "La elección está configurada pero no está activa",
-  outOfVotingPeriod: "Fuera del periodo de votación",
-  outOfVotingPeriodSubtitle: "La aplicación solo está disponible durante el periodo de votación activo",
-  currentTime: "Hora actual",
-  votingPeriod: "Periodo de votación",
+  loadingElectionConfig: 'Verificando estado electoral...',
+  findingEstablishment: 'Buscando recintos cercanos...',
+  electionConfigError: 'Error al obtener configuración electoral',
+  noActiveElection: 'No hay elección activa',
+  noActiveElectionSubtitle: 'Actualmente no hay ninguna elección configurada',
+  electionInactive: 'Elección inactiva',
+  electionInactiveSubtitle: 'La elección está configurada pero no está activa',
+  outOfVotingPeriod: 'Fuera del periodo de votación',
+  outOfVotingPeriodSubtitle:
+    'La aplicación solo está disponible durante el periodo de votación activo',
+  currentTime: 'Hora actual',
+  votingPeriod: 'Periodo de votación',
   date: 'Fecha',
   from: 'De',
   to: 'Hasta',
@@ -1326,28 +1359,36 @@ export default {
   votingWillTakePlace: 'Se llevará a cabo en',
   votingTookPlace: 'Se llevó a cabo en',
   votingNotActive: 'La votación no está activa actualmente',
+  offlineNoCacheBanner: 'Sin conexión y sin datos guardados para este usuario.',
+  offlineNoCacheTitle: 'Estás sin conexión',
+  offlineNoCacheSubtitle:
+    'No pudimos cargar la configuración electoral ni los recintos cercanos, y no hay datos guardados para usar sin conexión. Conéctate a internet e inténtalo de nuevo.',
 
-
-  duplicateBallotTitle: "Acta ya existe",
-  duplicateBallotMessage: "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
-  genericError: "Ocurrió un error inesperado",
-  uploadAnyway: "Subir de todos modos",
-  attestationFailed: "Certificación completada pero no se pudo registrar en el sistema",
-  validationError: "Error de validación en el servidor",
-  invalidActaData: "Datos del acta no válidos",
-  validationFailed: "Validación fallida",
-  validationError400: "Datos de solicitud incorrectos",
-  validationError401: "No autorizado para validar",
-  validationError403: "Acceso denegado",
-  validationError404: "Servicio de validación no encontrado",
-  validationError500: "Error interno del servidor",
-  validationErrorGeneric: "Error en la validación",
-  validationTimeout: "Tiempo de espera agotado",
-  validationNoResponse: "El servidor no respondió",
+  duplicateBallotTitle: 'Acta ya existe',
+  duplicateBallotMessage:
+    'Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?',
+  genericError: 'Ocurrió un error inesperado',
+  uploadAnyway: 'Subir de todos modos',
+  attestationFailed:
+    'Certificación completada pero no se pudo registrar en el sistema',
+  validationError: 'Error de validación en el servidor',
+  oracleRegisterFail: 'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
+  invalidActaData: 'Datos del acta no válidos',
+  validationFailed: 'Validación fallida',
+  validationError400: 'Datos de solicitud incorrectos',
+  validationError401: 'No autorizado para validar',
+  validationError403: 'Acceso denegado',
+  validationError404: 'Servicio de validación no encontrado',
+  validationError500: 'Error interno del servidor',
+  validationErrorGeneric: 'Error en la validación',
+  validationTimeout: 'Tiempo de espera agotado',
+  validationNoResponse: 'El servidor no respondió',
   cancel: 'Cancelar',
   openSettings: 'Abrir configuración',
   locationRequired: 'Ubicación requerida',
   locationPermissionRequired: 'Permiso de ubicación',
-  locationDisabledMessage: 'El GPS está desactivado. Active la ubicación del dispositivo para continuar',
-  locationPermissionDeniedMessage: 'La aplicación no tiene permisos de ubicación. Active los permisos en configuración',
+  locationDisabledMessage:
+    'El GPS está desactivado. Active la ubicación del dispositivo para continuar',
+  locationPermissionDeniedMessage:
+    'La aplicación no tiene permisos de ubicación. Active los permisos en configuración',
 };

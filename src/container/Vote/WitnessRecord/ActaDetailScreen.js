@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
   View,
   Image,
@@ -6,14 +6,15 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
+import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -28,6 +29,7 @@ const getResponsiveSize = (small, medium, large) => {
 const ActaDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+
   const colors = useSelector(state => state.theme.theme);
 
   const {
@@ -42,14 +44,17 @@ const ActaDetailScreen = () => {
 
   const partyResultsTransformed = useMemo(() => {
     try {
-      return rawPartyResults.map(party => ({
-        id: party.partyId,
-        party: party.partyId,
-        presidente: party.presidente || 0,
-        diputado: party.diputado || 0
-      }));
+      return rawPartyResults.map(p => {
+        const pid = String(p.partyId ?? p.party ?? p.partido ?? '')
+          .trim()
+          .toLowerCase();
+        return {
+          id: pid,
+          party: pid,
+          presidente: p.presidente || 0,
+        };
+      });
     } catch (error) {
-      console.error('Error transformando partyResults:', error);
       return [];
     }
   }, [rawPartyResults]);
@@ -60,60 +65,84 @@ const ActaDetailScreen = () => {
         {
           label: 'Válidos',
           value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depValidVotes || 0  // Diputados
         },
         {
           label: 'Blancos',
           value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depBlankVotes || 0  // Diputados
         },
         {
           label: 'Nulos',
           value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depNullVotes || 0   // Diputados
         },
         {
           label: 'Total',
           value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depTotalVotes || 0   // Diputados
-        }
+        },
       ];
     } catch (error) {
-      console.error('Error transformando voteSummaryResults:', error);
       return [];
     }
   }, [rawVoteSummaryResults]);
 
-
   // Component for handling IPFS images
-  const IPFSImageComponent = () => {
+  const IPFSImageComponent = ({photoUri, testID}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
+    const [tryIndex, setTryIndex] = useState(0);
 
-    const handleImageError = (error) => {
-      console.error('ActaDetailScreen - Image load error:', selectedActa?.uri, error.nativeEvent);
+    const handleImageError = error => {
       setHasError(true);
       setIsLoading(false);
     };
 
+    const withCacheBust = (url, idx) =>
+      url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
+
     const handleImageLoad = () => {
-      console.log('ActaDetailScreen - Image loaded successfully:', selectedActa?.uri);
       setIsLoading(false);
       setHasError(false);
     };
 
     const handleLoadStart = () => {
-      console.log('ActaDetailScreen - Loading image:', selectedActa?.uri);
       setIsLoading(true);
       setHasError(false);
     };
 
-    if (hasError) {
+    const baseUri = useMemo(() => normalizeUri(photoUri), [photoUri]);
+    const candidates = useMemo(() => buildIpfsCandidates(baseUri), [baseUri]);
+    const currentUri = useMemo(
+      () =>
+        candidates[tryIndex]
+          ? withCacheBust(candidates[tryIndex], tryIndex)
+          : null,
+      [candidates, tryIndex],
+    );
+
+    useEffect(() => {
+      setTryIndex(0);
+      setHasError(false);
+      setIsLoading(true);
+    }, [baseUri]);
+
+    if (hasError || !currentUri) {
       return (
-        <View style={styles.imageError}>
-          <MaterialIcons name="broken-image" size={60} color="#999" />
-          <CText style={styles.imageErrorText}>Error cargando imagen</CText>
-          <CText style={styles.imageErrorSubtext}>
+        <View
+          testID={testID ? `${testID}_error` : 'actaDetailImageError'}
+          style={styles.imageError}>
+          <MaterialIcons
+            testID="actaDetailBrokenImageIcon"
+            name="broken-image"
+            size={60}
+            color="#999"
+          />
+          <CText
+            testID="actaDetailImageErrorText"
+            style={styles.imageErrorText}>
+            Error cargando imagen
+          </CText>
+          <CText
+            testID="actaDetailImageErrorSubtext"
+            style={styles.imageErrorSubtext}>
             Verifica tu conexión a internet
           </CText>
         </View>
@@ -121,19 +150,37 @@ const ActaDetailScreen = () => {
     }
 
     return (
-      <View style={styles.imageContainer}>
+      <View testID="actaDetailImageContainer" style={styles.imageContainer}>
         <Image
-          source={{ uri: selectedActa?.uri }}
+          testID={testID || 'actaDetailActaImage'}
+          source={{uri: currentUri}}
           style={[styles.actaImage, isLoading && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={handleLoadStart}
           onLoad={handleImageLoad}
-          onError={handleImageError}
+          onError={() => {
+            if (tryIndex < candidates.length - 1) {
+              setTryIndex(tryIndex + 1);
+              setIsLoading(true);
+              setHasError(false);
+            } else {
+              setHasError(true);
+              setIsLoading(false);
+            }
+          }}
         />
         {isLoading && (
-          <View style={styles.imageLoadingOverlay}>
-            <ActivityIndicator size="large" color={colors.primary || '#4F9858'} />
-            <CText style={styles.loadingIndicatorText}>
+          <View
+            testID="actaDetailImageLoadingOverlay"
+            style={styles.imageLoadingOverlay}>
+            <ActivityIndicator
+              testID="actaDetailLoadingIndicator"
+              size="large"
+              color={colors.primary || '#4F9858'}
+            />
+            <CText
+              testID="actaDetailLoadingIndicatorText"
+              style={styles.loadingIndicatorText}>
               Cargando imagen...
             </CText>
           </View>
@@ -147,9 +194,6 @@ const ActaDetailScreen = () => {
   };
 
   const handleThisIsCorrect = () => {
-    console.log('ActaDetailScreen - This is correct pressed for acta:', selectedActa?.id);
-    console.log('ActaDetailScreen - selectedActa object:', selectedActa);
-    console.log('ActaDetailScreen - Calling onCorrectActaSelected with ID:', selectedActa?.id);
     if (onCorrectActaSelected) {
       onCorrectActaSelected(selectedActa?.id);
     }
@@ -157,22 +201,21 @@ const ActaDetailScreen = () => {
   };
 
   const handleUploadCorrectActa = () => {
-    console.log('ActaDetailScreen - Upload correct acta pressed');
     if (onUploadNewActa) {
       onUploadNewActa();
     }
   };
 
   const handleChange = () => {
-    console.log('ActaDetailScreen - Change pressed');
     navigation.goBack();
   };
 
   // Action buttons for BaseRecordReviewScreen
   const actionButtons = [
     {
-      text: String.correctData,
+      text: String.itsData,
       onPress: handleThisIsCorrect,
+      testID: 'actaDetailCorrectDataButton',
       style: {
         backgroundColor: colors.primary || '#4F9858',
       },
@@ -182,10 +225,11 @@ const ActaDetailScreen = () => {
       icon: 'check-circle',
     },
     {
-      text: 'Subir foto de acta correcta',
+      text: 'Subir acta',
       onPress: handleUploadCorrectActa,
+      testID: 'actaDetailUploadCorrectActaButton',
       style: {
-        backgroundColor: colors.secondary || '#2196F3',
+        backgroundColor: colors.secondary || '#ff0000ff',
       },
       textStyle: {
         color: '#FFFFFF',
@@ -199,6 +243,7 @@ const ActaDetailScreen = () => {
     actionButtons.push({
       text: 'Cambiar',
       onPress: handleChange,
+      testID: 'actaDetailChangeButton',
       style: {
         backgroundColor: 'transparent',
         borderWidth: 1,
@@ -212,20 +257,21 @@ const ActaDetailScreen = () => {
   }
 
   // Header title
-  const headerTitle = `${String.table} ${tableData?.tableNumber ||
-    tableData?.numero ||
-    tableData?.number ||
-    'N/A'
-    }`;
+  const headerTitle = `${String.table} ${
+    tableData?.tableNumber || tableData?.numero || tableData?.number || 'N/A'
+  }`;
 
   // Instructions text
-  const instructionsText = `Revisa el acta atestiguada para la ${headerTitle}`;
+  const instructionsText = `Revise la foto del acta`;
 
   // Custom photo component that uses our IPFS handler
-  const PhotoComponent = () => <IPFSImageComponent />;
+  const PhotoComponent = ({photoUri, testID}) => (
+    <IPFSImageComponent photoUri={photoUri} testID={testID} />
+  );
 
   return (
     <BaseRecordReviewScreen
+      testID="actaDetailBaseScreen"
       colors={colors}
       headerTitle={headerTitle}
       instructionsText={instructionsText}

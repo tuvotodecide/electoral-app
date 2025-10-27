@@ -1,14 +1,38 @@
 import React from 'react';
-import { View, TouchableOpacity, TextInput } from 'react-native';
+import {View, TouchableOpacity, TextInput, Dimensions} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import CText from './CText';
 import UniversalHeader from './UniversalHeader';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
+export const getTableNumber = table => {
+  const raw =
+    table.tableNumber ??
+    table.numero ??
+    table.number ??
+    table.name ??
+    table.id ??
+    '0';
+  const n = parseInt(String(raw).replace(/\D+/g, ''), 10);
+  return Number.isNaN(n) ? 0 : n;
+};
+
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+const isTablet = screenWidth >= 768;
+const isSmallPhone = screenWidth < 375;
+const isLandscape = screenWidth > screenHeight;
+
+const getResponsiveSize = (small, medium, large) => {
+  if (isSmallPhone) return small;
+  if (isTablet) return large;
+  return medium;
+};
 // Header Component - Now uses UniversalHeader
 export const SearchTableHeader = ({
+  testID = "searchTableHeader",
   colors,
   onBack,
   title = 'Search Table',
@@ -17,6 +41,7 @@ export const SearchTableHeader = ({
   styles,
 }) => (
   <UniversalHeader
+    testID={testID}
     colors={colors}
     onBack={onBack}
     title={title}
@@ -31,58 +56,95 @@ export const SearchTableHeader = ({
   />
 );
 
+
+export const sortTables = (tables, order = 'desc') => {
+  const copy = [...(tables || [])];
+  copy.sort((a, b) => {
+    const an = getTableNumber(a);
+    const bn = getTableNumber(b);
+    return order === 'asc' ? an - bn : bn - an;
+  });
+  return copy;
+};
+
 // Choose Table Text Component
-export const ChooseTableText = ({ text = 'Please choose a table:', styles }) => (
-  <View style={styles.chooseTableContainer}>
-    <CText style={styles.chooseTableText}>{text}</CText>
+export const ChooseTableText = ({testID = "chooseTableText", text = 'Please choose a table:', styles}) => (
+  <View testID={testID} style={styles.chooseTableContainer}>
+    <CText testID={`${testID}Text`} style={styles.chooseTableText}>{text}</CText>
   </View>
 );
 
 // Location Info Bar Component
 export const LocationInfoBar = ({
+  testID = "locationInfoBar",
   text = 'The following list is based on your location',
   iconColor = '#0C5460',
   styles,
 }) => (
-  <View style={styles.locationInfoBar}>
+  <View testID={testID} style={styles.locationInfoBar}>
     <FontAwesome
       name="map-marker"
       size={moderateScale(16)}
       color={iconColor}
       style={styles.locationIcon}
     />
-    <CText style={styles.locationInfoText}>{text}</CText>
+    <CText testID={`${testID}Text`} style={styles.locationInfoText}>{text}</CText>
   </View>
 );
 
 // Search Input Component
 export const SearchInput = ({
+  testID = "searchInput",
   placeholder = 'Search table',
   value,
   onChangeText,
-  onClear, // Nuevo prop
+  onClear, // sigue siendo opcional
   styles,
-}) => (
-  <View style={styles.searchInputContainer}>
-    <TextInput
-      style={styles.searchInput}
-      placeholder={placeholder}
-      placeholderTextColor="#868686"
-      value={value}
-      onChangeText={onChangeText}
-    />
-  </View>
-);
+}) => {
+  return (
+    <View testID={testID} style={styles1.searchInputContainer}>
+      <TextInput
+        testID={`${testID}TextInput`}
+        style={styles1.searchInput}
+        placeholder={placeholder}
+        placeholderTextColor="#868686"
+        value={value}
+        onChangeText={onChangeText}
+      />
+
+      {value ? (
+        <TouchableOpacity
+          testID={`${testID}ClearButton`}
+          style={styles.clearButton}
+          onPress={() => {
+            if (onClear) onClear();
+            else if (onChangeText) onChangeText('');
+          }}
+          activeOpacity={0.7}>
+          <Ionicons name="close-circle" size={20} color="#888" />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons
+          name="search"
+          size={20}
+          color="#888"
+          style={styles.searchIcon}
+        />
+      )}
+    </View>
+  );
+};
 
 // Table Card Component
-export const TableCard = ({ table, onPress, styles, locationData, searchQuery }) => {
+export const TableCard = ({
+  testID = "tableCard",
+  table,
+  onPress,
+  styles,
+  locationData,
+  searchQuery,
+}) => {
   // Debug: log complete table structure to analyze available fields
-  console.log(
-    'TableCard: Complete table object:',
-    JSON.stringify(table, null, 2),
-  );
-  console.log('TableCard: Available keys:', Object.keys(table));
-  console.log('TableCard: Location data:', locationData);
 
   // Extract table information with API structure
   const tableNumber =
@@ -109,7 +171,7 @@ export const TableCard = ({ table, onPress, styles, locationData, searchQuery })
   const codigo =
     table.tableCode || table.codigo || table.code || table.id || 'N/A';
 
-  const locationId = locationData.locationId
+  const locationId = locationData.locationId;
 
   const highlightMatch = (text, query) => {
     if (!query || !text) return text;
@@ -120,7 +182,7 @@ export const TableCard = ({ table, onPress, styles, locationData, searchQuery })
     return (
       <>
         {text.substring(0, index)}
-        <CText style={{ backgroundColor: 'yellow', color: '#000' }}>
+        <CText style={{backgroundColor: 'yellow', color: '#000'}}>
           {text.substring(index, index + query.length)}
         </CText>
         {text.substring(index + query.length)}
@@ -128,33 +190,65 @@ export const TableCard = ({ table, onPress, styles, locationData, searchQuery })
     );
   };
 
-
-  // Debug: log extracted values to verify mapping
-  console.log('TableCard: Extracted values:', {
-    tableNumber,
-    recinto,
-    direccion,
-    codigo,
-    locationId
-  });
-
   return (
-    <TouchableOpacity style={styles.tableCard} onPress={() => onPress(table)}>
-      <CText style={styles.tableCardTitle}>
-        {searchQuery ? highlightMatch(`Mesa ${tableNumber}`, searchQuery) : `Mesa ${tableNumber}`}
-      </CText>
-      <CText style={styles.tableCardDetail}>
-        Recinto: {searchQuery ? highlightMatch(recinto, searchQuery) : recinto}
-      </CText>
-      <CText style={styles.tableCardDetail}>
-        Dirección: {searchQuery ? highlightMatch(direccion, searchQuery) : direccion}
-      </CText>
-      <CText style={styles.tableCardDetail}>
-        Código de Mesa: {searchQuery ? highlightMatch(codigo, searchQuery) : codigo}
-      </CText>
+    <TouchableOpacity
+      testID={testID}
+      style={[styles.tableCard, {flexDirection: 'row', alignItems: 'center'}]}
+      onPress={() => onPress(table)}>
+      <Ionicons
+        name="file-tray-full-sharp"
+        size={24}
+        color="#4F9858"
+        style={{marginRight: 12}}
+      />
+      <View testID={`${testID}Content`} style={{flex: 1}}>
+        <CText testID={`${testID}Title`} style={styles.tableCardTitle}>
+          {searchQuery
+            ? highlightMatch(`Mesa ${tableNumber}`, searchQuery)
+            : `Mesa ${tableNumber}`}
+        </CText>
+
+        <CText testID={`${testID}Detail`} style={styles.tableCardDetail}>
+          Código de Mesa:{' '}
+          {searchQuery ? highlightMatch(codigo, searchQuery) : codigo}
+        </CText>
+      </View>
     </TouchableOpacity>
   );
 };
+const styles1 = {
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(4, 6, 8),
+    marginBottom: getResponsiveSize(12, 16, 20),
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+
+  searchInput: {
+    flex: 1,
+    height: getResponsiveSize(40, 45, 50),
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#333',
+    paddingVertical: 0,
+  },
+
+  searchIcon: {
+    marginLeft: getResponsiveSize(8, 10, 12),
+  },
+
+  clearButton: {
+    padding: getResponsiveSize(5, 8, 10),
+  },
+};
 
 // Export UniversalHeader for use in other components
-export { default as UniversalHeader } from './UniversalHeader';
+export {default as UniversalHeader} from './UniversalHeader';

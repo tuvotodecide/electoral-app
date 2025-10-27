@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   FlatList,
@@ -7,22 +7,29 @@ import {
   PermissionsAndroid,
   Platform,
   Dimensions,
-  Linking
+  Linking,
+  TextInput,
+  Animated,
+  Easing,
+  AppState,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav} from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import NetInfo from '@react-native-community/netinfo';
+import {BACKEND_RESULT} from '@env';
+import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
 
-import { BACKEND_RESULT } from '@env';
+import {getVotePlace} from '../../../utils/offlineQueue';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -38,8 +45,13 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const ElectoralLocations = ({ navigation, route }) => {
+const ElectoralLocations = ({navigation, route}) => {
   const colors = useSelector(state => state.theme.theme);
+  const userData = useSelector(state => state.wallet.payload);
+  const dni = userData?.vc?.credentialSubject?.governmentIdentifier;
+  const [offline, setOffline] = useState(false);
+  const [cachedVotePlace, setCachedVotePlace] = useState(null);
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -56,28 +68,104 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [electionStatus, setElectionStatus] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredLocations, setFilteredLocations] = useState([]);
+  const pendingPermissionFromSettings = useRef(false);
 
   // Get navigation target from route params
-  const { targetScreen } = route.params || {};
+  const {targetScreen} = route.params || {};
+  const filterLocations = text => {
+    setSearchTerm(text);
+
+    if (!text) {
+      setFilteredLocations(locations);
+      return;
+    }
+
+    const lowerText = text.toLowerCase();
+
+    const results = locations.filter(location => {
+      return (
+        location.name?.toLowerCase().includes(lowerText) ||
+        location.code?.toLowerCase().includes(lowerText) ||
+        location.address?.toLowerCase().includes(lowerText) ||
+        location.zone?.toLowerCase().includes(lowerText) ||
+        location.district?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.name?.toLowerCase().includes(lowerText) ||
+        location.electoralSeat?.municipality?.name
+          ?.toLowerCase()
+          .includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.name
+          ?.toLowerCase()
+          .includes(lowerText) ||
+        location.electoralSeat?.municipality?.province?.department?.name
+          ?.toLowerCase()
+          .includes(lowerText)
+      );
+    });
+
+    setFilteredLocations(results);
+  };
+
+  const renderSearchBar = () => (
+    <View style={styles.searchContainer}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Nombre del recinto"
+        placeholderTextColor="#888"
+        value={searchTerm}
+        onChangeText={filterLocations}
+      />
+      {searchTerm ? (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={() => {
+            setSearchTerm('');
+            setFilteredLocations(locations);
+          }}>
+          <Ionicons name="close-circle" size={20} color="#888" />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons
+          name="search"
+          size={20}
+          color="#888"
+          style={styles.searchIcon}
+        />
+      )}
+    </View>
+  );
+
+  const highlightText = (text, highlight) => {
+    if (!highlight || !text) return text;
+
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <CText key={index} style={styles.highlightedText}>
+          {part}
+        </CText>
+      ) : (
+        part
+      ),
+    );
+  };
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=300`,
-        { timeout: 15000 } // 10 segundos timeout
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
+        //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
+        {timeout: 15000}, // 10 segundos timeout
       );
-      // const response = await axios.get(
-      //   `http://192.168.1.16:3000/api/v1/geographic/electoral-locations?latitude=-16.5204163&longitude=-68.1260124&maxDistance=300&unit=meters`,
-      // );
-
       if (response.data && response.data.data) {
         setLocations(response.data.data);
       } else {
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
-      console.error('Error fetching locations:', error);
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
         errorMessage = i18nString.connectionTimeout;
@@ -91,12 +179,12 @@ const ElectoralLocations = ({ navigation, route }) => {
     }
   }, []);
 
-  const formatIsoNoT = (iso) => {
+  const formatIsoNoT = iso => {
     if (!iso) return '';
     return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
   };
 
-  const formatDate = (isoDate) => {
+  const formatDate = isoDate => {
     if (!isoDate) return '';
     const date = new Date(isoDate);
     const year = date.getFullYear();
@@ -105,7 +193,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     return `${year}/${month}/${day}`;
   };
 
-  const formatTime = (isoDate) => {
+  const formatTime = isoDate => {
     if (!isoDate) return '';
     const date = new Date(isoDate);
     const hours = String(date.getHours()).padStart(2, '0');
@@ -114,114 +202,221 @@ const ElectoralLocations = ({ navigation, route }) => {
   };
 
   const openLocationSettings = () => {
+    setModalVisible(false);
+    pendingPermissionFromSettings.current = true;
     if (Platform.OS === 'android') {
       // Intenta abrir configuración de ubicación del sistema
-      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
-        // Fallback si falla
-        Linking.openSettings();
-      });
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(
+        () => {
+          // Fallback si falla
+          Linking.openSettings();
+        },
+      );
     } else {
       // Para iOS
-      Linking.openURL('App-Prefs:Privacy&path=LOCATION');
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION').catch(() =>
+        Linking.openSettings(),
+      );
     }
   };
 
-  const getCurrentLocation = useCallback(async (retryCount = 0) => {
-    try {
-      setLoadingLocation(true);
+  const getCurrentLocation = useCallback(
+    async (retryCount = 0, useHighAccuracy = true) => {
+      try {
+        setLoadingLocation(true);
+        setLocationRetries(retryCount);
 
-      // Show retry message if this is a retry attempt
-      if (retryCount > 0) {
-        console.log(`Retry attempt ${retryCount} for location`);
-      }
+        // Mostrar mensaje de reintento si corresponde
+        if (retryCount > 0) {
+        }
 
-      // Request location permission on Android
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        // Pedir permisos en Android
+        if (Platform.OS === 'android') {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title:
+                i18nString.locationPermissionTitle || 'Permiso de ubicación',
+              message:
+                i18nString.locationPermissionMessage ||
+                'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
+              buttonNeutral: i18nString.askMeLater || 'Preguntar después',
+              buttonNegative: i18nString.cancel || 'Cancelar',
+              buttonPositive: i18nString.ok || 'OK',
+            },
+          );
+
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            showModal(
+              'settings',
+              i18nString.locationPermissionRequired,
+              i18nString.locationPermissionDeniedMessage,
+              i18nString.openSettings,
+              openLocationSettings,
+              i18nString.cancel,
+              closeModal,
+            );
+            setLoadingLocation(false);
+            return;
+          }
+        } else {
+          // iOS
+          const status = await Geolocation.requestAuthorization('whenInUse');
+          if (status !== 'granted') {
+            showModal(
+              'settings',
+              i18nString.locationPermissionRequired,
+              i18nString.locationPermissionDeniedMessage,
+              i18nString.openSettings,
+              () => {
+                pendingPermissionFromSettings.current = true;
+                openLocationSettings();
+              },
+              i18nString.cancel,
+              closeModal,
+            );
+            setLoadingLocation(false);
+            return;
+          }
+        }
+
+        // Obtener ubicación
+        Geolocation.getCurrentPosition(
+          position => {
+            const {latitude, longitude} = position.coords;
+
+            setUserLocation({latitude, longitude});
+            fetchNearbyLocations(latitude, longitude);
+          },
+          error => {
+            // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
+            if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+              getCurrentLocation(retryCount + 1, false);
+              return;
+            }
+
+            // Manejo de errores final
+            let errorMessage = i18nString.locationError;
+            let modalTitle = i18nString.error;
+            let action = null;
+
+            if (error.code === 1) {
+              // PERMISSION_DENIED
+              errorMessage = i18nString.locationPermissionDeniedMessage;
+              modalTitle = i18nString.locationPermissionRequired;
+              action = openLocationSettings;
+            } else if (error.code === 2 || error.code === 3) {
+              // POSITION_UNAVAILABLE o TIMEOUT
+              errorMessage = i18nString.locationDisabledMessage;
+              modalTitle = i18nString.locationRequired;
+              action = openLocationSettings;
+            }
+
+            showModal(
+              'settings',
+              modalTitle,
+              errorMessage,
+              i18nString.openSettings,
+              action,
+              i18nString.cancel,
+              closeModal,
+            );
+
+            setLoadingLocation(false);
+            setLoading(false);
+          },
           {
-            title: i18nString.locationPermissionTitle || 'Permiso de ubicación',
-            message:
-              i18nString.locationPermissionMessage ||
-              'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-            buttonNeutral: i18nString.askMeLater || 'Preguntar después',
-            buttonNegative: i18nString.cancel || 'Cancelar',
-            buttonPositive: i18nString.ok || 'OK',
+            enableHighAccuracy: useHighAccuracy,
+            timeout: useHighAccuracy ? 15000 : 30000, // menos estricto en fallback
+            maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
           },
         );
-
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.log('Location permission denied');
-          showModal(
-            'settings',
-            i18nString.locationPermissionRequired,
-            i18nString.locationPermissionDeniedMessage,
-            i18nString.openSettings,
-            () => Linking.openSettings(),
-            i18nString.cancel,   // Botón secundario
-            closeModal           // Acción secundaria
-          );
-          setLoadingLocation(false);
-          return;
+      } catch (error) {
+        showModal(
+          'error',
+          i18nString.error,
+          i18nString.locationPermissionError,
+        );
+        setLoadingLocation(false);
+        setLoading(false);
+      }
+    },
+    [fetchNearbyLocations],
+  );
+  useEffect(() => {
+    const init = async () => {
+      const net = await NetInfo.fetch();
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.tolerant);
+      setOffline(!online);
+      if (!online) {
+        setConfigLoading(false);
+        if (dni) {
+          const cached = await getVotePlace(dni);
+          setCachedVotePlace(cached);
+          if (
+            route?.params?.targetScreen === 'UnifiedParticipation' &&
+            cached?.location?._id
+          ) {
+            navigation.replace(StackNav.UnifiedParticipationScreen, {
+              locationId: cached.location._id,
+              locationData: cached.location,
+              ...(cached.table ? {tableData: cached.table} : {}),
+              fromCache: true,
+              offline: true,
+            });
+            return;
+          }
         }
       }
-      //fetchNearbyLocations(-17.3746706, -66.1316081);
+    };
+    init();
+  }, [dni]);
 
-      // Get current position
-      Geolocation.getCurrentPosition(
-        position => {
-          const { latitude, longitude } = position.coords;
-          console.log('Location obtained:', latitude, longitude);
-          setUserLocation({ latitude, longitude });
-          fetchNearbyLocations(latitude, longitude);
-        },
-        error => {
-          console.error('Location error:', error);
-
-          let errorMessage = i18nString.locationError;
-          let modalTitle = i18nString.error;
-          let action = null;
-
-          if (error.code === 1) { // PERMISSION_DENIED
-            errorMessage = i18nString.locationPermissionDeniedMessage;
-            modalTitle = i18nString.locationPermissionRequired;
-            action = () => Linking.openSettings();
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (state === 'active' && pendingPermissionFromSettings.current) {
+        pendingPermissionFromSettings.current = false;
+        try {
+          if (Platform.OS === 'android') {
+            const ok = await PermissionsAndroid.check(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            );
+            if (ok) {
+              setModalVisible(false);
+              getCurrentLocation(0, true);
+            } else {
+              showModal(
+                'settings',
+                i18nString.locationPermissionRequired,
+                i18nString.locationPermissionDeniedMessage,
+                i18nString.openSettings,
+                openLocationSettings,
+                i18nString.cancel,
+                closeModal,
+              );
+            }
+          } else {
+            const status = await Geolocation.requestAuthorization('whenInUse');
+            if (status === 'granted') {
+              setModalVisible(false);
+              getCurrentLocation(0, true);
+            } else {
+              showModal(
+                'settings',
+                i18nString.locationPermissionRequired,
+                i18nString.locationPermissionDeniedMessage,
+                i18nString.openSettings,
+                openLocationSettings,
+                i18nString.cancel,
+                closeModal,
+              );
+            }
           }
-          else if (error.code === 2 || error.code === 3) { // POSITION_UNAVAILABLE o TIMEOUT
-            errorMessage = i18nString.locationDisabledMessage;
-            modalTitle = i18nString.locationRequired;
-            action = openLocationSettings;
-          }
-
-          showModal(
-            'settings',
-            modalTitle,       // Usar el título correcto
-            errorMessage,     // Usar el mensaje correcto
-            i18nString.openSettings,
-            action,           // Usar la acción correcta
-            i18nString.cancel,
-            closeModal
-          );
-          setLoadingLocation(false);
-          setLoading(false);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-        },
-      );
-    } catch (error) {
-      console.error('Permission error:', error);
-      showModal(
-        'error',
-        i18nString.error,
-        i18nString.locationPermissionError,
-      );
-      setLoadingLocation(false);
-      setLoading(false);
-    }
-  }, [fetchNearbyLocations]);
+        } catch (e) {}
+      }
+    });
+    return () => sub.remove();
+  }, [getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -229,8 +424,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       setConfigError(false);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 } // 10 segundos timeout
+        {timeout: 15000}, // 10 segundos timeout
       );
+
       if (response.data) {
         setElectionStatus(response.data);
       } else {
@@ -240,11 +436,12 @@ const ElectoralLocations = ({ navigation, route }) => {
           i18nString.error,
           i18nString.electionConfigError,
           i18nString.accept,
-          () => navigation.goBack()
-        )
+          () => navigation.goBack(),
+        );
       }
     } catch (error) {
-      console.error('Error fetching election config:', error);
+      const net = await NetInfo.fetch();
+      const online = isStateEffectivelyOnline(net,  NET_POLICIES.balanced);
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
@@ -252,31 +449,44 @@ const ElectoralLocations = ({ navigation, route }) => {
       } else if (error.response) {
         errorMessage = `${i18nString.serverError} (${error.response.status})`;
       }
-      showModal(
-        'error',
-        i18nString.error,
-        errorMessage,
-        i18nString.accept,
-        () => navigation.goBack()
-      )
+      if (online) {
+        showModal(
+          'error',
+          i18nString.error,
+          errorMessage,
+          i18nString.accept,
+          () => navigation.goBack(),
+        );
+      } else {
+        setConfigLoading(false);
+      }
     } finally {
       setConfigLoading(false);
     }
-  }, [navigation])
+  }, [navigation]);
 
   useEffect(() => {
-    fetchElectionStatus();
-  }, [fetchElectionStatus]);
-
+    if (!offline) {
+      fetchElectionStatus();
+    } else {
+      setConfigLoading(false);
+    }
+  }, [offline, fetchElectionStatus]);
 
   useEffect(() => {
-    if (electionStatus &&
+    if (
+      electionStatus &&
       electionStatus.hasActiveConfig &&
       electionStatus.config.isActive &&
-      electionStatus.isVotingPeriod) {
+      electionStatus.isVotingPeriod &&
+      !offline
+    ) {
       getCurrentLocation();
     }
-  }, [electionStatus, getCurrentLocation]);
+  }, [electionStatus, getCurrentLocation, offline]);
+  useEffect(() => {
+    setFilteredLocations(locations);
+  }, [locations]);
 
   const showModal = (
     type,
@@ -285,7 +495,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     primaryButtonText = i18nString.accept,
     onPrimaryAction = null,
     secondaryButtonText = null,
-    onSecondaryAction = null
+    onSecondaryAction = null,
   ) => {
     setModalConfig({
       type,
@@ -294,7 +504,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       primaryButtonText,
       onPrimaryAction,
       secondaryButtonText,
-      onSecondaryAction
+      onSecondaryAction,
     });
     setModalVisible(true);
   };
@@ -308,16 +518,17 @@ const ElectoralLocations = ({ navigation, route }) => {
 
   const handleRetryLocation = () => {
     setLocationRetries(0);
-    getCurrentLocation();
+    getCurrentLocation(0, true);
   };
 
   const handleLocationPress = location => {
     // Solo permitir navegar si estamos en periodo de votación activo
-    if (electionStatus &&
+    if (
+      electionStatus &&
       electionStatus.hasActiveConfig &&
       electionStatus.config.isActive &&
-      electionStatus.isVotingPeriod) {
-
+      electionStatus.isVotingPeriod
+    ) {
       if (targetScreen === 'AnnounceCount') {
         navigation.navigate(StackNav.SearchCountTable, {
           locationId: location._id,
@@ -340,12 +551,12 @@ const ElectoralLocations = ({ navigation, route }) => {
         'error',
         i18nString.error,
         i18nString.votingNotActive,
-        i18nString.accept
+        i18nString.accept,
       );
     }
   };
 
-  const renderLocationItem = ({ item }) => (
+  const renderLocationItem = ({item}) => (
     <TouchableOpacity
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
@@ -353,41 +564,22 @@ const ElectoralLocations = ({ navigation, route }) => {
       <View style={styles.locationHeader}>
         <View style={styles.locationTitleContainer}>
           <CText style={styles.locationName} numberOfLines={2}>
-            {item.name}
-          </CText>
-          <CText style={styles.locationCode}>
-            {i18nString.code}: {item.code}
+            {highlightText(item.name, searchTerm)}
           </CText>
         </View>
-        <View style={styles.distanceContainer}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <CText style={styles.distanceText}>{item.distance}m</CText>
+        <View style={styles.locationDetails}>
+          <View style={styles.tablesContainer}>
+            <Ionicons name="grid-outline" size={16} color="#4F9858" />
+            <CText style={styles.tablesCount}>
+              {item.tableCount} {i18nString.tables}
+            </CText>
+          </View>
         </View>
       </View>
 
       <CText style={styles.locationAddress} numberOfLines={2}>
-        {item.address}
+        {highlightText(item.address, searchTerm)}
       </CText>
-
-      <View style={styles.locationDetails}>
-        <CText style={styles.locationZone}>
-          {item.zone} - {item.district}
-        </CText>
-        <View style={styles.tablesContainer}>
-          <Ionicons name="grid-outline" size={16} color="#4F9858" />
-          <CText style={styles.tablesCount}>
-            {item.tableCount} {i18nString.tables}
-          </CText>
-        </View>
-      </View>
-
-      <View style={styles.hierarchyContainer}>
-        <CText style={styles.hierarchyText}>
-          {item.electoralSeat?.municipality?.province?.department?.name} →{' '}
-          {item.electoralSeat?.municipality?.province?.name} →{' '}
-          {item.electoralSeat?.municipality?.name} → {item.electoralSeat?.name}
-        </CText>
-      </View>
     </TouchableOpacity>
   );
 
@@ -398,7 +590,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       <CText style={styles.emptySubtitle}>
         {i18nString.noLocationsFoundSubtitle}
       </CText>
-      <TouchableOpacity style={styles.retryButton} onPress={handleRetryLocation}>
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={handleRetryLocation}>
         <CText style={styles.retryButtonText}>{i18nString.retry}</CText>
       </TouchableOpacity>
     </View>
@@ -412,7 +606,6 @@ const ElectoralLocations = ({ navigation, route }) => {
     const endDate = new Date(electionStatus.config.votingEndDateBolivia);
 
     let title, subtitle, statusText;
-
     if (currentTime < startDate) {
       // La votación aún no ha comenzado
       title = i18nString.votingUpcoming;
@@ -434,17 +627,23 @@ const ElectoralLocations = ({ navigation, route }) => {
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.date}:</CText>
-          <CText style={styles.votingDetailValue}>{formatDate(electionStatus.config.votingStartDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatDate(electionStatus.config.votingStartDateBolivia)}
+          </CText>
         </View>
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.from}:</CText>
-          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingStartDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatTime(electionStatus.config.votingStartDateBolivia)}
+          </CText>
         </View>
 
         <View style={styles.votingDetailRow}>
           <CText style={styles.votingDetailLabel}>{i18nString.to}:</CText>
-          <CText style={styles.votingDetailValue}>{formatTime(electionStatus.config.votingEndDateBolivia)}</CText>
+          <CText style={styles.votingDetailValue}>
+            {formatTime(electionStatus.config.votingEndDateBolivia)}
+          </CText>
         </View>
 
         <CText style={styles.votingPeriodSubtitle}>{subtitle}</CText>
@@ -452,13 +651,87 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   };
 
+  useEffect(() => {
+    if (configLoading) {
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ).start();
+    } else {
+      rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
+    }
+  }, [configLoading]);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const spinNeg = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-360deg'],
+  });
+
+  if (offline && !cachedVotePlace) {
+    return (
+      <View style={styles.inactiveContainer}>
+        <Ionicons name="cloud-offline" size={64} color="#ccc" />
+        <CText style={styles.inactiveTitle}>
+          {i18nString.offlineNoCacheTitle}
+        </CText>
+        <CText style={styles.inactiveSubtitle}>
+          {i18nString.offlineNoCacheSubtitle}
+        </CText>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={handleRetryLocation}>
+          <CText style={styles.retryButtonText}>{i18nString.retry}</CText>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const renderContent = () => {
     if (configLoading) {
+      const ringSize = getResponsiveSize(84, 96, 110);
+      const iconSize = getResponsiveSize(40, 50, 60);
+      const half = ringSize / 2;
+
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F9858" />
+          <View
+            style={{
+              position: 'relative',
+              width: ringSize,
+              height: ringSize,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+            <Animated.View
+              style={{
+                position: 'absolute',
+                width: ringSize,
+                height: ringSize,
+                transform: [{rotate: spin}],
+              }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  right: -iconSize / 2,
+                  top: half - iconSize / 2,
+                  transform: [{rotate: spinNeg}],
+                }}>
+                <Ionicons name="search" size={iconSize} color="#4F9858" />
+              </Animated.View>
+            </Animated.View>
+          </View>
+
           <CText style={styles.loadingText}>
-            {i18nString.loadingElectionConfig}
+            {i18nString.findingEstablishment}
           </CText>
         </View>
       );
@@ -473,7 +746,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.noActiveElection}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.noActiveElection}
+          </CText>
           <CText style={styles.inactiveSubtitle}>
             {i18nString.noActiveElectionSubtitle}
           </CText>
@@ -486,7 +761,9 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="warning-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.electionInactive}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.electionInactive}
+          </CText>
           <CText style={styles.inactiveSubtitle}>
             {i18nString.electionInactiveSubtitle}
           </CText>
@@ -499,12 +776,15 @@ const ElectoralLocations = ({ navigation, route }) => {
       return (
         <View style={styles.inactiveContainer}>
           <Ionicons name="time-outline" size={64} color="#ccc" />
-          <CText style={styles.inactiveTitle}>{i18nString.outOfVotingPeriod}</CText>
+          <CText style={styles.inactiveTitle}>
+            {i18nString.outOfVotingPeriod}
+          </CText>
 
           <View style={styles.timeContainer}>
             <Ionicons name="time" size={24} color="#666" />
             <CText style={styles.timeText}>
-              {i18nString.currentTime}: {formatIsoNoT(electionStatus.currentTimeBolivia)}
+              {i18nString.currentTime}:{' '}
+              {formatIsoNoT(electionStatus.currentTimeBolivia)}
             </CText>
           </View>
 
@@ -519,7 +799,8 @@ const ElectoralLocations = ({ navigation, route }) => {
 
     // Caso 4: Periodo de votación activo
     return (
-      <>
+      <View style={{flex: 1}}>
+        {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
             <ActivityIndicator size="small" color="#4F9858" />
@@ -550,7 +831,8 @@ const ElectoralLocations = ({ navigation, route }) => {
             )}
 
             <FlatList
-              data={locations}
+              style={{flex: 1}}
+              data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
               contentContainerStyle={styles.listContainer}
@@ -561,10 +843,9 @@ const ElectoralLocations = ({ navigation, route }) => {
             />
           </>
         )}
-      </>
+      </View>
     );
   };
-
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -573,10 +854,12 @@ const ElectoralLocations = ({ navigation, route }) => {
         onBack={() => navigation.goBack()}
         // color={colors.white}
       /> */}
-      <UniversalHeader
-        title={i18nString.electoralLocations}
-        onBack={() => navigation.goBack()}
-      />
+      {!configLoading && (
+        <UniversalHeader
+          title={i18nString.electoralLocations}
+          onBack={() => navigation.goBack()}
+        />
+      )}
 
       {renderContent()}
 
@@ -622,10 +905,11 @@ const styles = {
     paddingVertical: getResponsiveSize(40, 50, 60),
   },
   loadingText: {
-    marginTop: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(24, 28, 32),
     fontSize: getResponsiveSize(16, 18, 20),
     color: '#666',
     textAlign: 'center',
+    fontWeight: '800',
   },
   locationInfoContainer: {
     flexDirection: 'row',
@@ -654,7 +938,7 @@ const styles = {
     padding: getResponsiveSize(16, 18, 20),
     marginBottom: getResponsiveSize(12, 16, 20),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -841,6 +1125,38 @@ const styles = {
     marginTop: getResponsiveSize(10, 12, 14),
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 16, 20),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  searchInput: {
+    flex: 1,
+    height: getResponsiveSize(40, 45, 50),
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#333',
+    paddingVertical: 0,
+  },
+  searchIcon: {
+    marginLeft: getResponsiveSize(8, 10, 12),
+  },
+  clearButton: {
+    padding: getResponsiveSize(5, 8, 10),
+  },
+  highlightedText: {
+    backgroundColor: 'yellow',
+    color: '#000',
+    fontWeight: 'bold',
   },
 };
 

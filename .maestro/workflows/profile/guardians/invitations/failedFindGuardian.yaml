@@ -1,0 +1,20 @@
+appId: com.tuvotodecide
+name: failedFindGuardian
+onFlowStart:
+  - runFlow: 
+      file: ../../../../components/guardians/navigateTo.yaml
+      env:
+          CHANGE_USER: 'true'
+          USER: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+---
+- runFlow:
+    file: ../../../../components/guardians/findGuardian.yaml
+    env:
+      GUARDIAN_ID: '99999'
+
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansErrorAlert
+    timeout: 12000
+- assertVisible:
+    id: addGuardiansErrorAlert

@@ -1,0 +1,38 @@
+appId: com.tuvotodecide
+---
+- extendedWaitUntil:
+    visible:
+      id: selectRecuperationQROption
+    timeout: 15000
+- tapOn:
+    id: selectRecuperationQROption
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: recoveryQrUploadImage_imageBox
+    timeout: 15000
+- tapOn:
+    id: recoveryQrUploadImage_imageBox
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn: ${PHOTO_NAME}
+
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: ./simpleActions/pressNext.yaml
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: ../auth/createPin.yaml
+    env:
+        PIN: ${MAESTRO_CORRECT_PIN}
+        TEST_TYPE: 'create'
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'fail'}
+    file: manageBadCases/assertBadQR.yaml
+
+
+

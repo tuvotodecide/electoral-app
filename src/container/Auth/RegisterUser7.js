@@ -18,25 +18,35 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser7({navigation, route}) {
-  const {vc, offerUrl, dni} = route.params;
+  const {ocrData, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
-  const onPressNext = () => {
-    navigation.navigate(AuthNav.RegisterUser8);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser7',
+    true,
+  );
+
+  const navigateToNext = params => {
+    logNavigation(AuthNav.RegisterUser8, params);
+    navigation.navigate(AuthNav.RegisterUser8, params);
   };
 
   const handleActivateBio = async () => {
+    logAction('ActivateBiometryRequest');
     const {available, biometryType} = await biometryAvailability();
 
     if (!available) {
+      logAction('BiometryUnavailable');
       return setModal({
         visible: true,
         msg: 'Este dispositivo no tiene hardware biométrico.',
       });
     }
     if (!biometryType) {
+      logAction('BiometryNotConfigured');
       return setModal({
         visible: true,
         msg: 'No hay huellas ni Face ID registradas. Agrega una en Ajustes del sistema.',
@@ -50,57 +60,67 @@ export default function RegisterUser7({navigation, route}) {
     );
 
     if (!ok) {
+      logAction('BiometryAuthFailed');
       return setModal({
         visible: true,
         msg: 'La autenticación falló. Intenta otra vez o utiliza tu PIN.',
       });
     }
 
-    navigation.navigate(AuthNav.RegisterUser8, {
-      vc,
-      offerUrl,
+    logAction('BiometryAuthSuccess', {biometryType});
+    navigateToNext({
+      ocrData,
       useBiometry: true,
       dni,
     });
   };
 
-  const handleLater = () =>
-    navigation.navigate(AuthNav.RegisterUser8, {
-      vc,
-      offerUrl,
+  const handleLater = () => {
+    logAction('SkipBiometrySetup');
+    navigateToNext({
+      ocrData,
       useBiometry: false,
       dni,
     });
+  };
+
+  const onCloseModal = () => {
+    logAction('CloseBiometryInfoModal');
+    setModal({visible: false, msg: ''});
+  };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={7} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser7Container">
+      <StepIndicator step={7} testID="registerUser7StepIndicator" />
+      <CHeader testID="registerUser7Header" />
       <KeyBoardAvoidWrapper
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
-        ]}>
-        <View style={localStyle.mainContainer}>
+        ]}
+        testID="registerUser7KeyboardWrapper">
+        <View style={localStyle.mainContainer} testID="registerUser7MainContainer">
           <Image
             source={colors.dark ? images.FingerImage : images.Finger_lightImage}
             style={localStyle.imageContainer}
+            testID="registerUser7FingerprintImage"
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={'B20'} style={styles.boldText} align={'center'} testID="registerUser7TitleText">
             {String.authFingerprintTitle}
           </CText>
 
           <CText
             type={'B16'}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={'center'}
+            testID="registerUser7DescriptionText">
             {String.authFingerprintDesc}
           </CText>
         </View>
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CAlert status="info" message={String.alertFingerprintInfo} />
+      <View style={localStyle.bottomTextContainer} testID="registerUser7BottomContainer">
+        <CAlert status="info" message={String.alertFingerprintInfo} testID="registerUser7InfoAlert" />
 
         <CButton
           title={String.btnActivateFingerprint}
@@ -109,6 +129,7 @@ export default function RegisterUser7({navigation, route}) {
           variant="outlined"
           containerStyle={localStyle.btnStyle}
           sinMargen
+          testID="registerUser7ActivateButton"
         />
 
         <CButton
@@ -116,13 +137,15 @@ export default function RegisterUser7({navigation, route}) {
           onPress={handleLater}
           type={'B16'}
           containerStyle={localStyle.btnStyle}
+          testID="registerUser7LaterButton"
         />
       </View>
       <InfoModal
         visible={modal.visible}
         title="Atención"
         message={modal.msg}
-        onClose={() => setModal({visible: false, msg: ''})}
+        onClose={onCloseModal}
+        testID="registerUser7InfoModal"
       />
     </CSafeAreaViewAuth>
   );

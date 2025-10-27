@@ -1,6 +1,7 @@
 import {useState} from 'react';
-import {useNavigation} from '@react-navigation/native';
+import {CommonActions, useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
+import {StackNav, TabNav} from '../navigation/NavigationKey';
 
 export const useSearchTableLogic = navigationTarget => {
   const navigation = useNavigation();
@@ -18,23 +19,46 @@ export const useSearchTableLogic = navigationTarget => {
       ? tableOrParams
       : {table: tableOrParams, mesa: tableOrParams}; // Add mesa parameter for consistency
 
-    console.log('useSearchTableLogic: Navigating with params:', params);
     navigation.navigate(navigationTarget, params);
   };
 
   const handleNotificationPress = () => {
     // Implement notification logic if needed
-    console.log('Notification pressed');
   };
-
   const handleHomePress = () => {
-    // Implement home navigation
-    console.log('Home pressed');
+    let rootNav = navigation;
+
+    while (rootNav && rootNav.getParent && rootNav.getParent()) {
+      rootNav = rootNav.getParent();
+    }
+
+    if (
+      !CommonActions ||
+      typeof CommonActions.reset !== 'function' ||
+      !rootNav ||
+      typeof rootNav.dispatch !== 'function'
+    ) {
+      return;
+    }
+
+    rootNav.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: StackNav.TabNavigation,
+            params: {
+              screen: TabNav.HomeScreen,
+              params: {screen: 'HomeMain'},
+            },
+          },
+        ],
+      }),
+    );
   };
 
   const handleProfilePress = () => {
     // Implement profile navigation
-    console.log('Profile pressed');
   };
 
   return {

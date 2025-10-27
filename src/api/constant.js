@@ -185,14 +185,14 @@ export const socialIcon = [
     id: 1,
     svgDark: <Apple_Dark />,
     svgLight: <AppleIcon />,
-    onPress: () => console.log('apple'),
+    // onPress: () => console.log('apple'),
     name: String.apple,
   },
   {
     id: 2,
     svgDark: <GoogleIcon />,
     svgLight: <GoogleIcon />,
-    onPress: () => console.log('google'),
+    // onPress: () => console.log('google'),
     name: String.google,
   },
 ];

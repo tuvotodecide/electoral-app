@@ -1,0 +1,12 @@
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: logoutButton
+- tapOn:
+    id: logoutButton
+- assertVisible:
+    id: homeLogoutModalContent
+- tapOn:
+    id: homeLogoutModalConfirmText
+- assertVisible:
+    id: connectTitle

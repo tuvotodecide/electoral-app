@@ -12,30 +12,35 @@ import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function SuccessfulPassword({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SuccessfulPassword', true);
   const onPressBackSign = () => {
     navigation.navigate(AuthNav.Login);
   };
   return (
-    <CSafeAreaViewAuth style={styles.justifyBetween}>
-      <CHeader />
-      <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth style={styles.justifyBetween} testID="successfulPasswordContainer">
+      <CHeader testID="successfulPasswordHeader" />
+      <View style={localStyle.mainContainer} testID="successfulPasswordMainContainer">
         <Image
           source={images.SuccessPasswordImage}
           style={localStyle.imageContainer}
+          testID="successfulPasswordImage"
         />
 
-        <CText type={'B24'} align={'center'}>
+        <CText type={'B24'} align={'center'} testID="successfulPasswordTitle">
           {String.passwordUpdated}
         </CText>
         <CText
           type={'R14'}
           align={'center'}
           color={colors.grayScale500}
-          style={localStyle.descriptionText}>
+          style={localStyle.descriptionText}
+          testID="successfulPasswordDescription">
           {String.updatePasswordDescription}
         </CText>
       </View>
@@ -44,6 +49,7 @@ export default function SuccessfulPassword({navigation}) {
         type={'B16'}
         containerStyle={localStyle.btnStyle}
         onPress={onPressBackSign}
+        testID="successfulPasswordBackButton"
       />
     </CSafeAreaViewAuth>
   );

@@ -15,6 +15,7 @@ import {styles} from '../../../themes';
 import FaqComponent from '../../../components/home/FaqComponents';
 import {FaqData, SearchTopicsFaqs} from '../../../api/constant';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function FAQScreen() {
   const colors = useSelector(state => state.theme.theme);
@@ -22,6 +23,8 @@ export default function FAQScreen() {
   const [searchInputStyle, setSearchInputStyle] = useState(BlurredStyle);
   const [searchData, setSearchData] = useState(SearchTopicsFaqs);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('FAQScreen', true);
   const onChangeTextSearch = item => {
     setSearchText(item);
   };

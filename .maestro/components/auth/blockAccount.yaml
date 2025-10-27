@@ -1,0 +1,29 @@
+appId: com.tuvotodecide
+---
+
+- tapOn:
+    id: connectLoginButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton
+
+- inputText: '9999'
+- tapOn:
+    id: loginUserInfoModalButton

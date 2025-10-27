@@ -1,0 +1,32 @@
+appId: com.tuvotodecide
+name: selfInvitation
+onFlowStart:
+  - runFlow: ../../../../components/guardians/navigateTo.yaml
+---
+- runFlow:
+    file: ../../../../components/guardians/findGuardian.yaml
+    env:
+        GUARDIAN_ID: ${MAESTRO_PRINCIPAL_ID}
+
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansNicknameInput
+    timeout: 12000
+- tapOn:
+    id: addGuardiansNicknameInput
+- inputText: 'YOMISMOJAJAQONDA'
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansSendButton
+    timeout: 12000
+- tapOn:
+    id: addGuardiansSendButton
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- extendedWaitUntil:
+    visible:
+      id: addGuardiansErrorAlert
+    timeout: 12000
+- assertVisible:
+    id: addGuardiansErrorAlert

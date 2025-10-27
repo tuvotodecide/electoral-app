@@ -12,46 +12,63 @@ import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
 import CButton from '../../../components/common/CButton';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import StepIndicator from '../../../components/authComponents/StepIndicator';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
-import {changePin} from '../../../utils/changePin';
-import InfoModal from '../../../components/modal/InfoModal';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+import LoadingModal from '../../../components/modal/LoadingModal';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function ChangePinNewConfirm({navigation, route}) {
   const {oldPin, newPin} = route.params;
   const colors = useSelector(state => state.theme.theme);
-  const [modal, setModal] = useState({visible: false, msg: '', title: ''});
+  const [modal, setModal] = useState({
+    visible: false,
+    message: '',
+    isLoading: false,
+    success: false,
+  });
   const [otp, setOtp] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('ChangePinNewConfirm', true);
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
   const finish = async () => {
     if (otp !== newPin) {
       return setModal({
+        ...modal,
         visible: true,
-        msg: 'Los PIN no coinciden',
-        title: 'Error',
+        message: 'Los PIN no coinciden',
       });
     }
     try {
-      await changePin(oldPin, newPin);
+      setModal({
+        ...modal,
+        visible: true,
+        message: String.waitForPinUpdate,
+        isLoading: true,
+      });
+      // Delay to allow modal to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await wira.updatePin(PROVIDER_NAME, BACKEND_IDENTITY, oldPin, newPin);
       setModal({
         visible: true,
-        title: 'Éxito',
-        msg: 'Tu PIN ha sido actualizado correctamente',
+        message: 'Tu PIN ha sido actualizado correctamente',
+        success: true,
+        isLoading: false,
       });
     } catch (err) {
-      setModal({visible: true, title: 'Error', msg: err.message});
+      setModal({visible: true, message: err.message, isLoading: false, success: false});
     }
   };
 
   const closeModal = () => {
-    if (modal.title === 'Éxito') {
+    if (modal.success) {
       navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
     }
-    setModal({visible: false, msg: '', title: ''});
+    setModal({visible: false, message: '', success: false, isLoading: false});
   };
 
   useEffect(() => {
@@ -63,24 +80,27 @@ export default function ChangePinNewConfirm({navigation, route}) {
   }, []);
 
   return (
-    <CSafeAreaView>
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-        <View style={localStyle.mainContainer}>
-          <View>
+    <CSafeAreaView testID="changePinNewConfirmContainer">
+      <CHeader testID="changePinNewConfirmHeader" />
+      <KeyBoardAvoidWrapper testID="changePinNewConfirmKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="changePinNewConfirmMainContainer" style={localStyle.mainContainer}>
+          <View testID="changePinNewConfirmContentContainer">
             <CText
+              testID="changePinNewConfirmTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinConfirmAccessTitle}
             </CText>
             <CText
+              testID="changePinNewConfirmSubtitle"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinAccessDescription1}
             </CText>
             <OTPInputView
+              testID="textInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -101,8 +121,9 @@ export default function ChangePinNewConfirm({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
+          <View testID="changePinNewConfirmButtonContainer">
             <CButton
+              testID="changePinNewConfirmFinishButton"
               disabled={otp.length !== 4}
               title={String.btnContinue}
               type={'B16'}
@@ -111,10 +132,10 @@ export default function ChangePinNewConfirm({navigation, route}) {
           </View>
         </View>
       </KeyBoardAvoidWrapper>
-      <InfoModal
-        visible={modal.visible}
-        title={modal.title}
-        message={modal.msg}
+      <LoadingModal
+        testID="changePinNewConfirmResultModal"
+        {...modal}
+        buttonText={String.ok}
         onClose={closeModal}
       />
     </CSafeAreaView>

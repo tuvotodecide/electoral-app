@@ -1,0 +1,29 @@
+appId: com.tuvotodecide
+name: wrongPartySumatory
+onFlowStart:
+  - runFlow: ../../components/setup/initialSetup.yaml
+---
+- runFlow:
+    file: ../../components/voting/uploadElectoralRecord.yaml
+    env:
+        ELECTORAL_RECORD_LOCATION: ${MAESTRO_ELECTORAL_RECORD_LOCATION} 
+        ELECTORAL_RECORD_TABLE: ${MAESTRO_ELECTORAL_RECORD_TABLE_1}
+        TEST_TYPE: 'pass'
+        CAPTURE_TYPE: 'gallery'
+        IMAGE_NAME: ${MAESTRO_ELECTORAL_RECORD_IMAGE_NAME}
+        RECORD_TYPE: 'new'
+        #ASSERTION_TYPE: 'sumatory'
+        RECORD_FILE: 'wrongElectoralRecord'
+  
+- extendedWaitUntil:
+    visible:
+      id: photoConfirmationInfoModalTitle
+    timeout: 20000
+- assertVisible:
+    id: photoConfirmationInfoModalTitle
+- extendedWaitUntil:
+    visible:
+      id: photoConfirmationInfoModalContainer
+    timeout: 20000
+- assertVisible:
+    id: photoConfirmationInfoModalContainer

@@ -16,9 +16,6 @@ const MyWitnessesDetailScreen = () => {
     attestationData
   } = route.params || {};
 
-  console.log('MyWitnessesDetailScreen - Received params:', route.params);
-  console.log('MyWitnessesDetailScreen - API Party Results:', apiPartyResults);
-  console.log('MyWitnessesDetailScreen - API Vote Summary Results:', apiVoteSummaryResults);
 
   // Usar los datos reales del API que vienen desde MyWitnessesListScreen
   const partyResults = apiPartyResults || [];
@@ -32,6 +29,7 @@ const MyWitnessesDetailScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
+      testID: 'myWitnessesDetailGoBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -69,6 +67,7 @@ const MyWitnessesDetailScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="myWitnessesDetailBaseScreen"
       colors={colors}
       headerTitle={headerTitle}
       instructionsText={instructionsText}

@@ -11,15 +11,19 @@ import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import CButton from '../../../components/common/CButton';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function NotificationDetails({route}) {
   const colors = useSelector(state => state.theme.theme);
   const item = route?.params?.item;
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('NotificationDetails', true);
 
   const RightIcon = () => {
     return (
-      <TouchableOpacity>
+      <TouchableOpacity testID="notificationDetailsMenuButton">
         <Ionicons
+          testID="notificationDetailsMenuIcon"
           name={'ellipsis-vertical'}
           size={moderateScale(24)}
           color={colors.white}
@@ -28,22 +32,22 @@ export default function NotificationDetails({route}) {
     );
   };
   return (
-    <CSafeAreaView>
-      <CHeader rightIcon={<RightIcon />} />
-      <View style={localStyle.mainContainer}>
-        <View>
-          <Image source={item.image} style={localStyle.notificationImage} />
-          <CText type={'B20'} align={'center'} style={styles.mt10}>
+    <CSafeAreaView testID="notificationDetailsContainer">
+      <CHeader testID="notificationDetailsHeader" rightIcon={<RightIcon />} />
+      <View testID="notificationDetailsMainContainer" style={localStyle.mainContainer}>
+        <View testID="notificationDetailsImageSection">
+          <Image testID="notificationDetailsImage" source={item.image} style={localStyle.notificationImage} />
+          <CText testID="notificationDetailsTitle" type={'B20'} align={'center'} style={styles.mt10}>
             {String.verifyYourEmail}
           </CText>
         </View>
-        <View>
-          <CText type={'B16'}>{String.helloText}</CText>
-          <CText type={'R14'} color={colors.grayScale500} style={styles.mt20}>
+        <View testID="notificationDetailsContentSection">
+          <CText testID="notificationDetailsHelloText" type={'B16'}>{String.helloText}</CText>
+          <CText testID="notificationDetailsDescription" type={'R14'} color={colors.grayScale500} style={styles.mt20}>
             {String.verifyEmailText}
           </CText>
-          <CButton title={String.verifyEmail} type={'B16'} />
-          <CText type={'R14'} color={colors.grayScale500} style={styles.mt10}>
+          <CButton testID="notificationDetailsVerifyButton" title={String.verifyEmail} type={'B16'} />
+          <CText testID="notificationDetailsQueryText" type={'R14'} color={colors.grayScale500} style={styles.mt10}>
             {String.queryText}
           </CText>
         </View>

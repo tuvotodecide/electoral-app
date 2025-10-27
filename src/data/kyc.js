@@ -24,8 +24,6 @@ export const useKycFindQuery = () => {
   });
 };
 export const useKycFindPublicQuery = () => {
-  const queryClient = useQueryClient();
-
   return useMutation(kycClient.postFindPublic, {
     onSuccess: data => {
       return data;
@@ -35,12 +33,7 @@ export const useKycFindPublicQuery = () => {
       if (axios.isAxiosError(error)) {
      
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(
-        `${API_ENDPOINTS.KYC}${API_ENDPOINTS.FIND}${API_ENDPOINTS.PUBLIC}`,
-      );
-    },
+    }
   });
 };
 export const useKycRegisterQuery = () => {
@@ -53,7 +46,7 @@ export const useKycRegisterQuery = () => {
 
     onError: error => {
       if (axios.isAxiosError(error)) {
-        console.log(error);
+
       }
     },
     onSettled: () => {

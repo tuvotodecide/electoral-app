@@ -1,0 +1,40 @@
+appId: com.tuvotodecide
+name: recoverySuccessfulQR
+onFlowStart:
+  - runFlow: ../../components/setup/skipDebuger.yaml
+---
+- extendedWaitUntil:
+    visible:
+      id: connectLoginButton
+    timeout: 15000
+- tapOn:
+    id: connectLoginButton
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: loginUserTitle
+    timeout: 12000
+- tapOn:
+    id: loginUserTitle
+- waitForAnimationToEnd:
+    timeout: 500
+- extendedWaitUntil:
+    visible:
+      id: loginUserForgotPasswordButton
+    timeout: 12000
+- tapOn:
+    id: loginUserForgotPasswordButton
+- waitForAnimationToEnd:
+    timeout: 500
+    
+#Script RecoveryQR component
+- runFlow: 
+    file: ../../components/recovery/recoveryQR.yaml
+    env:
+        TEST_TYPE: pass
+        PHOTO_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+        PIN: ${MAESTRO_CORRECT_PIN}
+
+
+

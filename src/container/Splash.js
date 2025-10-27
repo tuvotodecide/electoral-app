@@ -1,4 +1,3 @@
-
 import {StyleSheet, View, Image} from 'react-native';
 import React, {useEffect} from 'react';
 import BootSplash from 'react-native-bootsplash';
@@ -15,11 +14,14 @@ import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
 import {moderateScale, PENDINGRECOVERY} from '../common/constants';
-import {isSessionValid} from '../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
+import {ensureProvisioned} from '../utils/provisionClient';
+import {useNavigationLogger} from '../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import {GATEWAY_BASE} from '@env';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -29,14 +31,25 @@ export default function Splash({navigation}) {
 
   const dispatch = useDispatch();
 
+  const {logAction, logNavigation} = useNavigationLogger('Splash', true);
+
   useEffect(() => {
     const asyncProcess = async () => {
       try {
+        logAction('boot_started');
+        await ensureProvisioned({mock: true});
+        if (wira?.provision?.ensureProvisioned) {
+          await wira.provision.ensureProvisioned({
+            mock: true,
+            gatewayBase: GATEWAY_BASE,
+          });
+        }
         let asyncData = await initialStorageValueGet();
 
-        let {themeColor, onBoardingValue} = asyncData;
+        let {themeColor} = asyncData;
         const draft = await getDraft();
         if (draft) {
+          logNavigation('resume_register_draft');
           navigation.replace(StackNav.AuthNavigation, {
             screen: AuthNav.RegisterUser10,
             params: draft,
@@ -57,6 +70,7 @@ export default function Splash({navigation}) {
           const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
           if (pending === 'true') {
+            logNavigation('open_pending_recovery');
             navigation.navigate(StackNav.AuthNavigation, {
               screen: AuthNav.MyGuardiansStatus,
             });
@@ -64,20 +78,28 @@ export default function Splash({navigation}) {
           }
 
           const bundleReady = await ensureBundle();
-          console.log(bundleReady);
+          logAction('bundle_checked', {bundleReady});
 
-          const alive = await isSessionValid();
+          // const alive = await isSessionValid();
 
-          if (alive) {
-            navigation.replace(StackNav.TabNavigation);
-            return;
-          }
+          // if (alive) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
+
+          // const isAuth = store.getState().auth?.isAuthenticated;
+          // if (isAuth) {
+          //   navigation.replace(StackNav.TabNavigation);
+          //   return;
+          // }
+          logNavigation('go_to_auth_flow');
           navigation.replace(StackNav.AuthNavigation);
         } else {
+          logNavigation('go_to_auth_flow_empty');
           navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
-        console.log('error ', e);
+        logAction('boot_error', {message: e?.message, name: e?.name});
         navigation.replace(StackNav.AuthNavigation);
       }
     };
@@ -95,11 +117,12 @@ export default function Splash({navigation}) {
         backgroundColor: color.backgroundColor,
         ...styles.center,
         ...styles.flexRow,
-      }}>
-      <View style={localStyle.imageContainer}>
-        <Image source={images.logoImg} style={localStyle.imageStyle} />
+      }}
+      testID="splashContainer">
+      <View style={localStyle.imageContainer} testID="splashImageContainer">
+        <Image source={images.logoImg} style={localStyle.imageStyle} testID="splashLogo" />
       </View>
-      <CText type={'B30'} style={localStyle.textStyle}>
+      <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
         {String.wira}
       </CText>
     </CSafeAreaView>

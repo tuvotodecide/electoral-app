@@ -4,9 +4,9 @@ import {useSelector} from 'react-redux';
 
 import CText from '../common/CText';
 import CButton from '../common/CButton';
-import Icono from '../common/Icono';
 import {moderateScale} from '../../common/constants';
 import CInput from '../common/CInput';
+import { CCopyIcon } from '../common/CCopyIcon';
 
 export default function GuardianActionModal({
   visible,
@@ -17,12 +17,8 @@ export default function GuardianActionModal({
 }) {
   const colors = useSelector(state => state.theme.theme);
   const [nickname, setNickname] = useState('');
-  const [address, setAddress] = useState('');
-  const [ci, setCi] = useState('');
   useEffect(() => {
     setNickname(guardian?.nickname ?? '');
-    setAddress(guardian?.accountAddress ?? '');
-    setCi(guardian?.carnet ?? '');
   }, [guardian]);
 
   if (!guardian) return null;
@@ -36,25 +32,13 @@ export default function GuardianActionModal({
       <View style={[styles.overlay, {backgroundColor: colors.modalBackground}]}>
         <View
           style={[styles.container, {backgroundColor: colors.backgroundColor}]}>
-          <CText type="B18" align="center" style={styles.title}>
-            {guardian.fullName ?? '(sin nombre)'}
-          </CText>
           <CInput
-            label="Dirección"
+            label="Dirección DID"
             editable={false}
-            _value={address}
+            _value={guardian?.guardianDid}
             toGetTextFieldValue={setNickname}
-            placeHolder="Ingresa un apodo"
             inputContainerStyle={styles.inputContainer}
-          />
-          <CInput
-            label="Carnet"
-            editable={false}
-            _value={ci}
-            disabled
-            toGetTextFieldValue={setNickname}
-            placeHolder="Ingresa un apodo"
-            inputContainerStyle={styles.inputContainer}
+            rightAccessory={() => CCopyIcon({copyValue: guardian?.guardianDid})}
           />
           <CInput
             label="Apodo"

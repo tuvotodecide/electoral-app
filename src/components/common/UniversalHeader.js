@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
-import { moderateScale } from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -18,70 +18,86 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const UniversalHeader = ({
+  testID = "universalHeader",
   colors,
   onBack,
   title = 'Title',
   showNotification = true,
   onNotificationPress,
   customStyles = {},
-}) => (
-  <View
-    style={[
-      styles.header,
-      customStyles.header,
-      {
-        paddingHorizontal: getResponsiveSize(12, 16, 24),
-        paddingVertical: getResponsiveSize(8, 12, 16),
-        minHeight: getResponsiveSize(56, 64, 72),
-      },
-    ]}>
-    <TouchableOpacity
-      onPress={onBack}
+}) => {
+  const SIDE_W = getResponsiveSize(48, 56, 64);
+  const TITLE_SIZE = getResponsiveSize(16, 20, 26);
+  return (
+    <View
+      testID={testID}
       style={[
-        styles.backButton,
-        customStyles.backButton,
+        styles.header,
+        customStyles.header,
         {
-          padding: getResponsiveSize(6, 8, 12),
+          paddingHorizontal: getResponsiveSize(12, 16, 24),
+          paddingVertical: getResponsiveSize(8, 12, 16),
+          minHeight: getResponsiveSize(56, 64, 72),
         },
       ]}>
-      <MaterialIcons
-        name="keyboard-arrow-left"
-        size={getResponsiveSize(32, 36, 44)}
-        color={colors?.black || '#2F2F2F'}
-      />
-    </TouchableOpacity>
-    <CText
-      style={[
-        styles.headerTitle,
-        customStyles.headerTitle,
-        {
-          fontSize: getResponsiveSize(16, 20, 26),
-          marginLeft: getResponsiveSize(4, 8, 12),
-          flex: 1,
-        },
-      ]}>
-      {title}
-    </CText>
-    {showNotification && (
-      <TouchableOpacity
-        style={[
-          styles.disabledIcon,
-          styles.bellIcon,
-          customStyles.bellIcon,
-          {
-            padding: getResponsiveSize(6, 8, 12),
-          },
-        ]}
-        disabled={true}>
-        <Ionicons
-          name="notifications-outline"
-          size={getResponsiveSize(28, 32, 40)}
-          color={colors?.text || '#cccccc'}
-        />
-      </TouchableOpacity>
-    )}
-  </View>
-);
+      <View testID={`${testID}LeftSide`} style={[styles.side, {width: SIDE_W}]}>
+        <TouchableOpacity
+          testID={`${testID}BackButton`}
+          onPress={onBack}
+          style={[
+            styles.backButton,
+            customStyles.backButton,
+            {
+              padding: getResponsiveSize(6, 8, 12),
+            },
+          ]}>
+          <MaterialIcons
+            name="keyboard-arrow-left"
+            size={getResponsiveSize(32, 36, 44)}
+            color={colors?.black || '#2F2F2F'}
+          />
+        </TouchableOpacity>
+      </View>
+      <View testID={`${testID}CenterWrap`} style={styles.centerWrap}>
+        <CText
+          testID={`${testID}Title`}
+          style={[
+            styles.headerTitle,
+            customStyles.headerTitle,
+            {
+              fontSize: TITLE_SIZE,
+              lineHeight: TITLE_SIZE,
+              includeFontPadding: false,
+              textAlignVertical: 'center',
+            },
+          ]}>
+          {title}
+        </CText>
+      </View>
+      <View testID={`${testID}RightSide`} style={[styles.side, {width: SIDE_W}]}>
+        {showNotification && (
+          <TouchableOpacity
+            testID={`${testID}NotificationButton`}
+            style={[
+              styles.disabledIcon,
+              styles.bellIcon,
+              customStyles.bellIcon,
+              {
+                padding: getResponsiveSize(6, 8, 12),
+              },
+            ]}
+            disabled={true}>
+            <Ionicons
+              name="notifications-outline"
+              size={getResponsiveSize(28, 32, 40)}
+              color={colors?.text || '#cccccc'}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
@@ -93,9 +109,19 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0,
   },
+  side: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backButton: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  centerWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    
   },
   headerTitle: {
     fontWeight: '600',

@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"maestro-mcp-server": {
+			"type": "stdio",
+			"command": "/home/saul/.maestro/bin/maestro",
+			"args": [
+				"mcp"
+			]
+		}
+	},
+	"inputs": []
+}

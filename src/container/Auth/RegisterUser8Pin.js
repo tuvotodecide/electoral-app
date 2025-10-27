@@ -1,4 +1,4 @@
-import {InteractionManager, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -16,52 +16,64 @@ import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser8({navigation, route}) {
-  const {vc, offerUrl, useBiometry, dni} = route.params;
+  const routeParams = route?.params ?? {};
+  const {ocrData, useBiometry, dni} = routeParams;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
-  const onOtpChange = text => setOtp(text);
+  // Hook para logging de navegación
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RegisterUser8Pin',
+    true,
+  );
+  const onOtpChange = text => {
+    setOtp(text);
+    logAction('PinInputChanged', {length: text.length});
+  };
   const otpRef = useRef(null);
   const onPressContinue = () => {
-    navigation.navigate(AuthNav.RegisterUser9, {
+    logAction('SubmitPin', {length: otp.length});
+    const params = {
       originalPin: otp,
-      vc,
-      offerUrl,
+      ocrData,
       useBiometry,
       dni,
-    });
+    };
+    logNavigation(AuthNav.RegisterUser9, params);
+    navigation.navigate(AuthNav.RegisterUser9, params);
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      otpRef.current?.focusField(0);
-    }, 350);
-
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    return () => clearTimeout(t);
   }, []);
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={8} />
-      <CHeader />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+    <CSafeAreaViewAuth testID="registerUser8PinContainer">
+      <StepIndicator testID="registerUser8PinStepIndicator" step={8} />
+      <CHeader testID="registerUser8PinHeader" />
+      <KeyBoardAvoidWrapper testID="registerUser8PinKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
         <View style={localStyle.mainContainer}>
-          <View>
+          <View testID="registerUser8PinContentContainer">
             <CText
+              testID="registerUser8PinTitle"
               type={'B24'}
               style={localStyle.headerTextStyle}
               align={'center'}>
               {String.pinAccessTitle}
             </CText>
             <CText
+              testID="registerUser8PinDescription"
               type={'R14'}
               color={getSecondaryTextColor(colors)}
               align={'center'}>
               {String.pinAccessDescription}
             </CText>
             <OTPInputView
+              testID="registerUser8PinInput"
               pinCount={4}
               style={localStyle.otpInputViewStyle}
               code={otp}
@@ -83,8 +95,9 @@ export default function RegisterUser8({navigation, route}) {
               codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
-          <View>
+          <View testID="registerUser8PinButtonContainer">
             <CButton
+              testID="registerUser8PinContinueButton"
               disabled={otp.length !== 4}
               title={String.btnContinue}
               type={'B16'}

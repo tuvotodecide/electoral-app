@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import React, {useEffect} from 'react';
+import {useSelector} from 'react-redux';
 import {
   AppState,
   StyleSheet,
@@ -8,7 +8,6 @@ import {
   Dimensions,
 } from 'react-native';
 
-import {moderateScale} from '../../common/constants';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
@@ -17,9 +16,7 @@ import {TabRoute} from '../NavigationRoute';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
-import {clearSession, isSessionValid, startSession} from '../../utils/Session';
-import {clearWallet} from '../../redux/action/walletAction';
-import {clearAuth} from '../../redux/slices/authSlice';
+import {isSessionValid, startSession} from '../../utils/Session';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -74,12 +71,6 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
     'SuccessScreen',
   ];
 
-  console.log(
-    'TabBar - Current route:',
-    routeName,
-    'Should hide:',
-    hideTabBarScreens.includes(routeName),
-  );
 
   // Si estamos en una pantalla que debe ocultar el tab bar, no renderizar nada
   if (hideTabBarScreens.includes(routeName)) {
@@ -88,6 +79,7 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
 
   return (
     <View
+      testID="tabBarContainer"
       style={[
         stylesx.tabBarContainer,
         {
@@ -119,18 +111,19 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
         return (
           <TouchableOpacity
             key={route.key}
+            testID={`tabButton_${route.name}`}
             accessibilityRole="button"
             accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
             onPress={onPress}
             style={stylesx.tabButton}>
             <Icono
+              testID={`tabIcon_${route.name}`}
               name={iconName}
               color="#222" // SIEMPRE NEGRO, NO cambia por selección
               size={getResponsiveSize(28, 33, 38)}
               style={{marginBottom: getResponsiveSize(0, 1, 2)}}
             />
-            <CText style={stylesx.tabLabel} numberOfLines={1}>
+            <CText testID={`tabLabel_${route.name}`} style={stylesx.tabLabel} numberOfLines={1}>
               {label}
             </CText>
           </TouchableOpacity>
@@ -147,6 +140,7 @@ export default function TabNavigation() {
 
   return (
     <Tab.Navigator
+      testID="mainTabNavigator"
       screenOptions={{
         headerShown: false,
       }}

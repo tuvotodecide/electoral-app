@@ -17,17 +17,8 @@ const RecordReviewScreen = () => {
     voteSummaryResults: routeVoteSummaryResults,
   } = route.params || {};
 
-  console.log('RecordReviewScreen - Received params:', route.params);
-  console.log('RecordReviewScreen - tableData:', tableData);
-  console.log(
-    'RecordReviewScreen - tableData keys:',
-    Object.keys(tableData || {}),
-  );
-  console.log('RecordReviewScreen - tableNumber fields:', {
-    tableNumber: tableData?.tableNumber,
-    numero: tableData?.numero,
-    number: tableData?.number,
-  });
+
+
 
   // Use dynamic data if available, otherwise fallback to static data
   const partyResults = routePartyResults || [
@@ -54,19 +45,7 @@ const RecordReviewScreen = () => {
   };
 
   const handleCorrectData = () => {
-    console.log(
-      'RecordReviewScreen - handleCorrectData: Passing tableData:',
-      tableData,
-    );
-    console.log(
-      'RecordReviewScreen - tableData keys:',
-      Object.keys(tableData || {}),
-    );
-    console.log('RecordReviewScreen - tableNumber fields:', {
-      tableNumber: tableData?.tableNumber,
-      numero: tableData?.numero,
-      number: tableData?.number,
-    });
+
 
     navigation.navigate('RecordCertificationScreen', {
       recordId,
@@ -82,6 +61,7 @@ const RecordReviewScreen = () => {
     {
       text: String.goBack,
       onPress: handleBack,
+      testID: 'recordReviewGoBackButton',
       style: {
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -94,6 +74,7 @@ const RecordReviewScreen = () => {
     {
       text: String.correctData,
       onPress: handleCorrectData,
+      testID: 'recordReviewCorrectDataButton',
       style: {
         backgroundColor: '#459151',
       },
@@ -105,6 +86,7 @@ const RecordReviewScreen = () => {
 
   return (
     <BaseRecordReviewScreen
+      testID="recordReviewBaseScreen"
       colors={colors}
       headerTitle={`${String.table} ${tableData?.tableNumber ||
         tableData?.numero ||

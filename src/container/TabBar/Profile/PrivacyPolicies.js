@@ -9,20 +9,22 @@ import CHeader from '../../../components/common/CHeader';
 import String from '../../../i18n/String';
 import {PRIVACY_URL} from '@env';
 import {styles} from '../../../themes';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function PrivacyPolicies() {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('PrivacyPolicies', true);
   return (
-    <CSafeAreaView>
-      <CHeader title={String.privacyPolicy} />
+    <CSafeAreaView addTabPadding={false}>
+      <CHeader title={String.privacyPolicy} testID="privacyPoliciesHeader" />
 
       <View style={localStyle.webViewContainer}>
-         <WebView
-          source={{ uri: PRIVACY_URL }}
-          style={{ flex: 1 }}
+        <WebView
+          source={{uri: PRIVACY_URL}}
+          style={{flex: 1}}
           javaScriptEnabled
           domStorageEnabled
           startInLoadingState
-       
         />
       </View>
     </CSafeAreaView>
@@ -48,5 +50,10 @@ const localStyle = StyleSheet.create({
   webViewContainer: {
     flex: 1,
     overflow: 'hidden',
+    marginHorizontal: moderateScale(10),
+    marginTop: moderateScale(10),
+    marginBottom: moderateScale(10),
+    borderRadius: moderateScale(8),
+    backgroundColor: '#fff',
   },
 });

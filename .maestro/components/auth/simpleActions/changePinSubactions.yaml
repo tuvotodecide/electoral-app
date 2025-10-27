@@ -1,0 +1,8 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: changePinNewConfirmFinishButton
+- assertVisible:
+    id: changePinNewConfirmResultModalContainer
+- tapOn:
+    id: changePinNewConfirmResultModalButton

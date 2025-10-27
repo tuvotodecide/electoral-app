@@ -17,76 +17,74 @@ import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {useGuardiansInviteQuery} from '../../../data/guardians';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
-import {CHAIN} from '@env';
 import axios from 'axios';
-import {
-  guardianHashFrom,
-  inviteGuardianOnChain,
-} from '../../../api/guardianOnChain';
 import {getSecrets} from '../../../utils/Cifrate';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
-export default function AddGuardians({navigation}) {
+export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
   const {
     mutateAsync: sendInvitation,
     isLoading: loading,
-    error,
   } = useGuardiansInviteQuery();
   const [carnet, setCarnet] = useState('');
+  const payloadQr = useSelector(state => state.wallet.payload);
 
-  const [dni, setDni] = useState('');
   const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [msg, setMsg] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
-  const onPressNext = () => {};
+  // Hook para logging de navegación
+  const {logAction, logNavigation} = useNavigationLogger(
+    'AddGuardians',
+    true,
+  );
   const onPressSearch = () => {
+    logAction('SearchGuardianAttempt', {identifier: carnet.trim()});
     setMsg('');
     findPublicDni(
       {identifier: carnet.trim()},
       {
         onSuccess: data => {
           if (!data.ok) {
+            logAction('SearchGuardianFailed', {message: data.message});
             setMsg(data.message || 'Persona no encontrada');
             return;
           }
-          console.log(data);
 
           setCandidate({
             did: data.did,
-            fullName: data.fullName,
+            fullName: data.displayNamePublic,
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });
+          logAction('SearchGuardianSuccess', {did: data.did});
         },
-        onError: err => setMsg(err?.response?.data?.error ?? err.message),
+        onError: err => {
+          const message = err?.response?.data?.error ?? err.message;
+          logAction('SearchGuardianError', {message});
+          setMsg(message);
+        },
       },
     );
   };
   const onPressInvitation = async () => {
     if (!candidate) return;
-    console.log('candidate', candidate);
-    const {payloadQr} = await getSecrets();
-    console.log('secrets', payloadQr);
-
+    logAction('InviteGuardianAttempt', {guardianId: candidate.did});
     setMsg('');
-    const invitateAddress = guardianHashFrom(candidate.accountAddress);
-    const ownerPk = payloadQr.privKey;
-    const guardianCt = payloadQr.guardian;
-    console.log(guardianCt);
 
     try {
-      // await inviteGuardianOnChain(CHAIN, ownerPk, payloadQr.account, guardianCt, invitateAddress);
       const data = await sendInvitation({
-        guardianId: candidate.did,
+        inviterDid: payloadQr.did,
+        guardianDid: candidate.did,
         nickname: nick,
       });
+
       setModalMessage(
         `Invitación enviada. ${
           candidate.fullName || '(sin nombre)'
@@ -95,33 +93,35 @@ export default function AddGuardians({navigation}) {
       setModalVisible(true);
       setCandidate(null);
       setNick('');
+      logNavigation('GuardiansInvitationSent');
+      logAction('InviteGuardianSuccess', {guardianId: data?.guardianId ?? candidate.did});
     } catch (err) {
-      console.log(err);
-
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : err.message;
+      logAction('InviteGuardianError', {message});
       setMsg(message);
     }
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.addGuardian} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type={'B16'} align={'center'} marginTop={15}>
+    <CSafeAreaView testID="addGuardiansContainer" addTabPadding={false}>
+  <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
+      <KeyBoardAvoidWrapper testID="addGuardiansKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <CText testID="addGuardiansTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.addGuardianSubtitle}{' '}
-          <CText type="B16" style={{fontWeight: 'bold'}}>
+          <CText testID="addGuardiansTitleSpan" type="B16" style={{fontWeight: 'bold'}}>
             {String.addGuardianSubtitleSpan}
           </CText>
         </CText>
-        <CText type="R14" style={localStyle.fieldLabel}>
+        <CText testID="addGuardiansCarnetLabel" type="R14" style={localStyle.fieldLabel}>
           {String.carnet}
         </CText>
-        <View style={localStyle.searchContainer}>
-          <View style={localStyle.inputWrapper}>
+        <View testID="addGuardiansSearchContainer" style={localStyle.searchContainer}>
+          <View testID="addGuardiansInputWrapper" style={localStyle.inputWrapper}>
             <CInput
+              testID="addGuardiansCarnetInput"
               label={null}
               _value={carnet}
               toGetTextFieldValue={setCarnet}
@@ -133,6 +133,7 @@ export default function AddGuardians({navigation}) {
           </View>
 
           <TouchableOpacity
+            testID="addGuardiansSearchButton"
             onPress={onPressSearch}
             disabled={isLoading}
             style={[
@@ -140,29 +141,31 @@ export default function AddGuardians({navigation}) {
               {backgroundColor: colors.primary},
             ]}>
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator testID="addGuardiansSearchLoading" color="#fff" />
             ) : (
-              <Icono name="search-web" size={24} color="#fff" />
+              <Icono testID="addGuardiansSearchIcon" name="search-web" size={24} color="#fff" />
             )}
           </TouchableOpacity>
         </View>
         {candidate && (
           <>
-            <CText type="R14" style={localStyle.fieldLabel}>
+            <CText testID="addGuardiansNameLabel" type="R14" style={localStyle.fieldLabel}>
               {String.guardianName}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View testID="addGuardiansNameWrapper" style={localStyle.inputWrapper}>
               <CInput
+                testID="addGuardiansNameInput"
                 editable={false}
                 _value={candidate.fullName || '(sin nombre)'}
               />
             </View>
 
-            <CText type="R14" style={localStyle.fieldLabel}>
+            <CText testID="addGuardiansNicknameLabel" type="R14" style={localStyle.fieldLabel}>
               {String.nickname}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View testID="addGuardiansNicknameWrapper" style={localStyle.inputWrapper}>
               <CInput
+                testID="addGuardiansNicknameInput"
                 _value={nick}
                 toGetTextFieldValue={setNick}
                 placeHolder={String.nickname}
@@ -170,11 +173,18 @@ export default function AddGuardians({navigation}) {
             </View>
           </>
         )}
-        {msg !== '' && <CAlert status="error" message={msg} />}
+        {msg !== '' && (
+          <CAlert 
+            testID="addGuardiansErrorAlert" 
+            status="error" 
+            message={msg} 
+          />
+        )}
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
-        <CAlert status="info" message={String.guardianNotificationTitle} />
+      <View testID="addGuardiansBottomContainer" style={localStyle.bottomTextContainer}>
+        <CAlert testID="addGuardiansInfoAlert" status="info" message={String.guardianNotificationTitle} />
         <CButton
+          testID="addGuardiansSendButton"
           title={String.sendInvitation}
           disabled={loading || !candidate || isWhitespaceOnly}
           onPress={onPressInvitation}
@@ -184,10 +194,14 @@ export default function AddGuardians({navigation}) {
         />
       </View>
       <InfoModal
+        testID="addGuardiansSuccessModal"
         visible={modalVisible}
         title="¡Invitación enviada!"
         message={modalMessage}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          logAction('InviteGuardianModalClosed');
+          setModalVisible(false);
+        }}
       />
     </CSafeAreaView>
   );

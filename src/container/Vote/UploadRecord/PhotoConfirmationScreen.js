@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,25 +8,85 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import { executeOperation } from "../../../api/account"
-import { BACKEND_RESULT, CHAIN, BACKEND_SECRET } from "@env"
+import {executeOperation} from '../../../api/account';
+import {BACKEND_RESULT, CHAIN, BACKEND_SECRET} from '@env';
 import axios from 'axios';
-import { oracleCalls, oracleReads } from '../../../api/oracle';
-import { availableNetworks } from '../../../api/params';
+import {oracleCalls, oracleReads} from '../../../api/oracle';
+import {availableNetworks} from '../../../api/params';
 import InfoModal from '../../../components/modal/InfoModal';
+import NetInfo from '@react-native-community/netinfo';
+import {enqueue} from '../../../utils/offlineQueue';
+import {persistLocalImage} from '../../../utils/persistLocalImage';
+import {validateBallotLocally} from '../../../utils/ballotValidation';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
+
+const safeStr = v =>
+  String(v ?? '')
+    .trim()
+    .toLowerCase();
+
+const fetchUserAttestations = async dniValue => {
+  if (!dniValue) return [];
+  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data || [];
+};
+
+const hasUserAttestedTable = async (dniValue, tableCode) => {
+  try {
+    if (!dniValue || !tableCode) return false;
+
+    const list = await fetchUserAttestations(dniValue);
+    if (!list?.length) return false;
+
+    const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
+
+    for (const id of ids) {
+      const ballot = await fetchBallotById(id).catch(() => null);
+      if (getBallotTableCode(ballot) === safeStr(tableCode)) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+const fetchBallotById = async ballotId => {
+  if (!ballotId) return null;
+  const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
+  const {data} = await axios.get(url, {
+    headers: {'x-api-key': BACKEND_SECRET},
+    timeout: 15000,
+  });
+  return data?.data ?? data;
+};
+
+const hasUserAttestedBallot = async (dniValue, ballotId) => {
+  try {
+    const list = await fetchUserAttestations(dniValue);
+    return list.some(a => String(a.ballotId) === String(ballotId));
+  } catch {
+    return false; // si hay error de red, no bloquees
+  }
+};
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -52,38 +112,13 @@ const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
-  const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
+  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
     route.params || {}; // Destructure all needed data
-
   // Also try to get data from alternative parameter names
+  const existingRecord = route.params?.existingRecord || null;
+  const flowMode = route.params?.mode || 'upload';
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
-
-
-  console.log('PhotoConfirmationScreen - Received data:', {
-    tableData,
-    photoUri,
-    partyResults,
-    voteSummaryResults,
-    aiAnalysis,
-  });
-  console.log('PhotoConfirmationScreen - Alternative data sources:', {
-    mesaData,
-    mesa,
-    allRouteParams: route.params,
-  });
-  console.log('PhotoConfirmationScreen - tableData debug:', {
-    tableData,
-    tableNumber: tableData?.tableNumber,
-    numero: tableData?.numero,
-    number: tableData?.number,
-    allKeys: tableData ? Object.keys(tableData) : 'no tableData',
-  });
-  console.log(
-    'PhotoConfirmationScreen - tableData is empty?',
-    !tableData || Object.keys(tableData || {}).length === 0,
-  );
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [step, setStep] = useState(0);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
@@ -93,152 +128,215 @@ const PhotoConfirmationScreen = () => {
   const [uploadError, setUploadError] = useState('');
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
-    title: "",
-    message: "",
+    title: '',
+    message: '',
   });
+  const extractJsonUrlFromBallot = b =>
+    b?.ipfsUri ||
+    b?.jsonUrl ||
+    b?.ipfsJSON ||
+    b?.ipfs?.json ||
+    b?.ipfs?.jsonUrl ||
+    null;
+  const didAutoOpenRef = useRef(false);
+  useEffect(() => {
+    if (didAutoOpenRef.current) return;
+    didAutoOpenRef.current = true;
+    const t = setTimeout(() => {
+      verifyAndUpload();
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
+
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-  };
+  const subject = getCredentialSubjectFromPayload(userData) || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni ??
+    null;
+  const data = {name: subject?.fullName || '(sin nombre)'};
   const userFullName = data.name || '(sin nombre)';
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-
   const verifyAndUpload = async () => {
     try {
+
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+      if (!online) {
+        handlePublishAndCertify();
+        return;
+      }
+
+      if (flowMode === 'attest') {
+        // Nada de duplicados: pasamos directo a la confirmación
+        handlePublishAndCertify();
+        return;
+      }
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
       // Construir datos para verificación
       const verificationData = {
         tableNumber: tableData?.codigo || 'N/A',
         votes: {
           parties: buildVoteData('presidente'),
-          deputies: buildVoteData('diputado')
-        }
+          // deputies: buildVoteData('diputado'),
+        },
       };
-      // Verificar duplicados
-      const duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+      const duplicateCheck = await pinataService.checkDuplicateBallot(
+        verificationData,
+      );
 
       if (duplicateCheck.exists) {
         setDuplicateBallot(duplicateCheck.ballot);
         setShowDuplicateModal(true);
       } else {
-        // No existe duplicado, proceder con la publicación
         handlePublishAndCertify();
       }
     } catch (error) {
-      console.error('Error en verificación:', error);
       setUploadError('Error verificando duplicados');
     }
   };
 
-  const buildVoteData = (type) => {
-    const getValue = (label, defaultValue = 0) => {
-      const item = voteSummaryResults.find(s => s.label === label);
-      if (!item) return defaultValue;
-
-      const value = type === 'presidente' ? item.value1 : item.value2;
-      return parseInt(value, 10) || defaultValue;
+  const buildVoteData = type => {
+    const norm = s =>
+      String(s ?? '')
+        .trim()
+        .toLowerCase();
+    const aliases = {
+      validos: ['validos', 'válidos', 'votos válidos'],
+      nulos: ['nulos', 'votos nulos'],
+      blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    };
+    const pickRow = key =>
+      (voteSummaryResults || []).find(
+        r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      );
+    const getValue = key => {
+      const row = pickRow(key);
+      const raw = type === 'presidente' ? row?.value1 : row?.value2;
+      const n = parseInt(String(raw ?? '0'), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
     };
 
     return {
-      validVotes: getValue('Votos Válidos'),
-      nullVotes: getValue('Votos Nulos'),
-      blankVotes: getValue('Votos en Blanco'),
+      validVotes: getValue('validos'),
+      nullVotes: getValue('nulos'),
+      blankVotes: getValue('blancos'),
       partyVotes: partyResults.map(party => ({
-        partyId: party.partido,
-        votes: parseInt(type === 'presidente' ? party.presidente : party.diputado, 10) || 0
+        partyId: String(party.partido || '')
+          .trim()
+          .toLowerCase(),
+        votes: parseInt(party.presidente, 10) || 0,
       })),
-      totalVotes: getValue('Votos Válidos') +
-        getValue('Votos Nulos') +
-        getValue('Votos en Blanco')
+      totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
     };
   };
 
-  // Funcion para subir al Backend
   const uploadMetadataToBackend = async (jsonUrl, jsonCID, tableCode) => {
     try {
-      const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`
+      const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`;
+
       const payload = {
         ipfsUri: String(jsonUrl),
         recordId: String(jsonCID),
-        tableIdIpfs: "String"
+        tableIdIpfs: 'String',
       };
-      console.log('📤 Subiendo metadata al backend:', payload);
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000,
       });
 
-      console.log('✅ Metadata subida al backend:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error subiendo metadata al backend:', error);
+      console.error('[PhotoConfirmation] uploadMetadataToBackend error', {
+        message: error?.message,
+        response: error?.response
+          ? {
+              status: error.response.status,
+              dataPreview: error.response.data
+                ? error.response.data._id
+                  ? {_id: error.response.data._id}
+                  : null
+                : null,
+            }
+          : null,
+      });
       throw error;
     }
-  }
+  };
 
-  // Función para subir el atestiguamiento al backend
-  const uploadAttestation = async (ballotId) => {
+  const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
       const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
 
       const payload = {
-        attestations: [{
-          ballotId,
-          support: true,
-          isJury,
-          dni: String(userData.dni)
-        }]
+        attestations: [
+          {
+            ballotId,
+            support: true,
+            isJury,
+            dni: String(userData.dni),
+          },
+        ],
       };
-
-      console.log('Subiendo attestation:', payload);
 
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000,
       });
 
-      console.log('Attestation subida exitosamente:', response.data);
+
       return true;
     } catch (error) {
-      console.error('Error subiendo attestation:', error);
+      console.error('[PhotoConfirmation] uploadAttestation error', error?.message || error);
       return false;
     }
   };
 
-  const validateWithBackend = async (ipfsJsonUrl) => {
+  const validateWithBackend = async ipfsJsonUrl => {
     try {
       const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
       const payload = {
         ipfsUri: ipfsJsonUrl,
-        recordId: "String",
-        tableIdIpfs: "String",
+        recordId: 'String',
+        tableIdIpfs: 'String',
       };
-      console.log('🔍 Validando con el backend:', payload);
 
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET
+          'x-api-key': BACKEND_SECRET,
         },
-        timeout: 30000 // 30 segundos timeout
+        timeout: 30000,
       });
 
-      console.log('✅ Respuesta de validación:', response.data);
 
       // Manejar diferentes tipos de respuestas
       if (response.data === true) {
@@ -250,14 +348,13 @@ const PhotoConfirmationScreen = () => {
       }
 
       // Manejar respuestas con mensajes de error específicos
-      const errorMessage = response.data?.message ||
+      const errorMessage =
+        response.data?.message ||
         response.data?.error ||
         I18nStrings.validationFailed;
 
       throw new Error(errorMessage);
     } catch (error) {
-      console.error('❌ Error en validación:', error);
-
       // Manejar diferentes tipos de errores de Axios
       if (error.response) {
         // El servidor respondió con un código de estado fuera del rango 2xx
@@ -285,44 +382,49 @@ const PhotoConfirmationScreen = () => {
         }
 
         // Intentar obtener mensaje detallado del servidor
-        const serverMessage = error.response.data?.message ||
-          error.response.data?.error ||
-          '';
+        const serverMessage =
+          error.response.data?.message || error.response.data?.error || '';
+
+        console.error('[PhotoConfirmation] validateWithBackend server error', { status, serverMessage });
 
         throw new Error(`${statusMessage} ${serverMessage}`.trim());
-      }
-      else if (error.request) {
+      } else if (error.request) {
         // La solicitud fue hecha pero no se recibió respuesta
         if (error.code === 'ECONNABORTED') {
           throw new Error(I18nStrings.validationTimeout);
         }
         throw new Error(I18nStrings.validationNoResponse);
-      }
-      else {
+      } else {
         // Error al configurar la solicitud
         throw new Error(error.message || I18nStrings.validationFailed);
       }
     }
   };
 
-
   // Función para subir a IPFS
   const uploadToIPFS = async () => {
     if (!photoUri) {
-      console.log('No photo to upload');
       return null;
     }
 
     setUploadingToIPFS(true);
 
     try {
-      console.log('🚀 Iniciando subida a IPFS...');
       // Preparar datos adicionales
       const additionalData = {
         idRecinto: tableData?.idRecinto || tableData.locationId,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
         tableCode: tableData?.codigo || 'N/A',
+        idRecinto: tableData?.idRecinto || tableData.locationId,
+        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
+        tableCode: tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        // userId: 'current-user-id', // Obtener del estado global
+        // userName: 'Usuario Actual', // Obtener del estado global
         time: new Date().toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit',
@@ -340,33 +442,41 @@ const PhotoConfirmationScreen = () => {
         voteSummaryResults: voteSummaryResults || [],
       };
 
+      const normalizedVoteSummary = (
+        electoralData.voteSummaryResults || []
+      ).map(r => {
+        if (r.id === 'validos') return {...r, label: 'Votos Válidos'};
+        if (r.id === 'nulos') return {...r, label: 'Votos Nulos'};
+        if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
+        return r;
+      });
+
       // Convertir URI a path
       const imagePath = photoUri.startsWith('file://')
         ? photoUri.substring(7)
         : photoUri;
 
-      console.log('🖼️ Ruta de la imagen:', imagePath);
-      console.log('📊 voteSummaryResults:', JSON.stringify(voteSummaryResults, null, 2));
-
       // Subir imagen y crear metadata completa
+      const startIpfs = Date.now();
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        electoralData,
+        {...electoralData, voteSummaryResults: normalizedVoteSummary},
         additionalData,
       );
+      const ipfsDuration = Date.now() - startIpfs;
 
       if (result.success) {
-        console.log('✅ Subida a IPFS exitosa:', result.data);
-        console.log('🔗 Enlace de imagen:', result.data.imageUrl);
-        console.log('📄 Enlace de metadata:', result.data.jsonUrl);
         return result.data;
       } else {
-        console.error('❌ Error en subida a IPFS:', result.error);
-        throw new Error(result.error);
+        console.error(
+          '[PhotoConfirmation] uploadToIPFS failed result:',
+          result,
+        );
+        throw new Error(result.error || 'uploadToIPFS failed');
       }
     } catch (error) {
-      console.error('❌ Error inesperado en subida a IPFS:', error);
+      console.error('[PhotoConfirmation] uploadToIPFS error', error);
       throw error;
     } finally {
       setUploadingToIPFS(false);
@@ -379,9 +489,233 @@ const PhotoConfirmationScreen = () => {
   };
 
   const confirmPublishAndCertify = async () => {
-    setStep(1);
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
+    if (!online) {
+      const local = validateBallotLocally(
+        partyResults || [],
+        voteSummaryResults || [],
+      );
+      if (!local.ok) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message: local.errors.join('\n'),
+        });
+        return;
+      }
+      const tableCodeToCheck = String(
+        tableData?.codigo ||
+          tableData?.tableCode ||
+          mesaData?.codigo ||
+          mesaData?.tableCode ||
+          mesa?.codigo ||
+          mesa?.tableCode ||
+          '',
+      );
 
+      if (dni && tableCodeToCheck) {
+        const alreadyMine = await hasUserAttestedTable(dni, tableCodeToCheck);
+        if (alreadyMine) {
+          setInfoModalData({
+            visible: true,
+            title: I18nStrings.genericInfo || 'Aviso',
+            message:
+              I18nStrings.alreadyAttested ||
+              'Ya atestiguaste esta mesa con tu usuario.',
+          });
+          return;
+        }
+      }
+      const locationId =
+        route.params?.locationId ||
+        tableData?.location?._id ||
+        tableData?.idRecinto ||
+        tableData?.locationId ||
+        mesaData?.idRecinto ||
+        mesa?.idRecinto ||
+        null;
+
+      const tableCode = String(
+        tableData?.tableCode ||
+          tableData?.codigo ||
+          mesaData?.tableCode ||
+          mesaData?.codigo ||
+          mesa?.tableCode ||
+          mesa?.codigo ||
+          '',
+      );
+
+      const tableNumber = String(
+        tableData?.tableNumber ||
+          tableData?.numero ||
+          tableData?.number ||
+          mesaData?.tableNumber ||
+          mesaData?.numero ||
+          mesaData?.number ||
+          mesa?.tableNumber ||
+          mesa?.numero ||
+          mesa?.number ||
+          aiAnalysis?.table_number ||
+          '',
+      );
+
+      const persistedUri = await persistLocalImage(photoUri);
+      const additionalData = {
+        idRecinto: String(locationId ?? ''),
+        locationId: String(locationId ?? ''),
+        tableNumber: String(tableNumber),
+        tableCode: String(tableCode),
+        location: tableData?.location || 'Bolivia',
+
+        userId: userData?.id || 'unknown',
+        userName: userFullName,
+        role: 'witness',
+      };
+      const electoralData = {
+        partyResults: partyResults || [],
+        voteSummaryResults: voteSummaryResults || [],
+      };
+
+      await enqueue({
+        type: 'publishActa',
+        payload: {
+          imageUri: persistedUri,
+          aiAnalysis: aiAnalysis || {},
+          electoralData,
+          additionalData,
+          tableData: {
+            codigo: String(tableCode),
+            idRecinto: locationId,
+            tableNumber: String(tableNumber),
+            numero: String(tableNumber),
+          },
+          tableCode: String(tableCode),
+          tableNumber: String(tableNumber),
+          locationId: String(locationId ?? ''),
+          createdAt: Date.now(),
+        },
+      });
+      setShowConfirmModal(false);
+      setStep(0);
+      navigation.replace('OfflinePendingScreen');
+      return;
+    }
+    setStep(1);
+    const tableCodeForGuard = String(
+      tableData?.codigo ||
+        tableData?.tableCode ||
+        mesaData?.codigo ||
+        mesaData?.tableCode ||
+        mesa?.codigo ||
+        mesa?.tableCode ||
+        '',
+    );
+
+    if (dni && tableCodeForGuard) {
+      const alreadyMine = await hasUserAttestedTable(dni, tableCodeForGuard);
+      if (alreadyMine) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.genericInfo || 'Aviso',
+          message:
+            I18nStrings.alreadyAttested ||
+            'Ya atestiguaste esta mesa con tu usuario.',
+        });
+        setShowConfirmModal(false);
+        setStep(0);
+        return;
+      }
+    }
     try {
+      if (flowMode === 'attest') {
+        const ballot = existingRecord || duplicateBallot;
+        const ballotIdToCheck = ballot?._id || ballot?.id;
+        if (dni && ballotIdToCheck) {
+          const repeated = await hasUserAttestedBallot(
+            dni,
+            String(ballotIdToCheck),
+          );
+          if (repeated) {
+            setInfoModalData({
+              visible: true,
+              title: I18nStrings.genericInfo || 'Aviso',
+              message:
+                I18nStrings.alreadyAttested || 'Ya atestiguaste este acta.',
+            });
+            setShowConfirmModal(false);
+            setStep(0);
+            return;
+          }
+        }
+        if (!ballot) {
+          throw new Error(
+            I18nStrings.noExistingBallotToAttest ||
+              'No hay un acta previa para atestiguar en esta mesa.',
+          );
+        }
+        const jsonUrl = extractJsonUrlFromBallot(ballot);
+        if (!jsonUrl) {
+          throw new Error('No se encontró el JSON/IPFS del acta existente.');
+        }
+
+        const privateKey = userData?.privKey;
+        // asegurar registro
+        let isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          1,
+        );
+        if (!isRegistered) {
+          await executeOperation(
+            privateKey,
+            userData.account,
+            CHAIN,
+            oracleCalls.requestRegister(CHAIN, jsonUrl),
+          );
+          isRegistered = await oracleReads.isRegistered(
+            CHAIN,
+            userData.account,
+            20,
+          );
+          if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
+        }
+
+        const response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+
+        if (ballot?._id) {
+          await uploadAttestation(ballot._id);
+        }
+
+        const {explorer, nftExplorer, attestationNft} =
+          availableNetworks[CHAIN];
+        const nftId = response.returnData.recordId.toString();
+        const nftResult = {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        };
+
+        navigation.navigate('SuccessScreen', {
+          ipfsData: {
+            jsonUrl,
+            imageUrl:
+              existingRecord?.imageUrl || existingRecord?.actaImage || null,
+          },
+          nftData: nftResult,
+          tableData: tableData,
+        });
+        return;
+      }
+
       // 1. Subir a IPFS
       const ipfsResult = await uploadToIPFS();
       setIpfsData(ipfsResult);
@@ -393,10 +727,10 @@ const PhotoConfirmationScreen = () => {
       const privateKey = userData?.privKey;
 
       // 4. Crear NFT en blockchain
-      const isRegistered = await oracleReads.isRegistered(
+      let isRegistered = await oracleReads.isRegistered(
         CHAIN,
         userData.account,
-        1
+        1,
       );
 
       if (!isRegistered) {
@@ -404,17 +738,17 @@ const PhotoConfirmationScreen = () => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl)
+          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
         );
 
-        const isRegistered = await oracleReads.isRegistered(
+        isRegistered = await oracleReads.isRegistered(
           CHAIN,
           userData.account,
-          20
+          20,
         );
 
         if (!isRegistered) {
-          throw Error('Failed to register user on oracle');
+          throw Error(I18nStrings.oracleRegisterFail);
         }
       }
 
@@ -425,30 +759,40 @@ const PhotoConfirmationScreen = () => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.createAttestation(CHAIN, tableData.codigo, ipfsResult.jsonUrl),
+          oracleCalls.createAttestation(
+            CHAIN,
+            tableData.codigo,
+            ipfsResult.jsonUrl,
+          ),
           oracleReads.waitForOracleEvent,
-          'AttestationCreated'
+          'AttestationCreated',
         );
-
       } catch (error) {
         const message = error.message;
         //check if attestation is already created
-        if (message.indexOf('416c72656164792063726561746564') >= 0) {
-          console.log('Attestation already created, attesting instead')
+        if (
+          message.indexOf('416c72656164792063726561746564') >= 0 ||
+          message.indexOf('Already created') >= 0
+        ) {
           response = await executeOperation(
             privateKey,
             userData.account,
             CHAIN,
-            oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), ipfsResult.jsonUrl),
+            oracleCalls.attest(
+              CHAIN,
+              tableData.codigo,
+              BigInt(0),
+              ipfsResult.jsonUrl,
+            ),
             oracleReads.waitForOracleEvent,
-            'Attested'
+            'Attested',
           );
         } else {
           throw error;
         }
       }
 
-      const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
+      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
 
       const nftResult = {
@@ -456,46 +800,48 @@ const PhotoConfirmationScreen = () => {
         nftId,
         txUrl: explorer + 'tx/' + response.receipt.transactionHash,
         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
-      }
+      };
 
-      console.log("CODIGO DE MESA", tableData)
       // 5. Subir Metadata al backend
       const uploadedBackendData = await uploadMetadataToBackend(
         ipfsResult.jsonUrl,
         nftResult.nftId,
-        String(tableData.idRecinto)
+        String(tableData.idRecinto),
       );
 
       if (uploadedBackendData._id) {
-        const attestationSuccess = await uploadAttestation(uploadedBackendData._id);
+        const attestationSuccess = await uploadAttestation(
+          uploadedBackendData._id,
+        );
 
         if (!attestationSuccess) {
-          // Mostrar advertencia pero continuar
-          console.warn('Falló la subida de attestation al backend, pero continuamos');
         }
       } else {
-        console.warn('No se encontró _id en tableData para subir attestation');
       }
 
       // 6. Navegar a pantalla de éxito con datos de IPFS
       navigation.navigate('SuccessScreen', {
         ipfsData: ipfsResult,
         nftData: nftResult,
-        tableData: tableData
+        tableData: tableData,
       });
     } catch (error) {
+      console.error(
+        '[PhotoConfirmation] confirmPublishAndCertify error',
+        error,
+      );
       let message = error.message;
       if (message.includes('Validation Error')) {
         message = I18nStrings.validationError;
       } else if (message.includes('Invalid data')) {
         message = I18nStrings.invalidActaData;
-      } else if (error.message.indexOf("616c7265616479206174746573746564") >= 0) {
+      } else if (
+        error.message.indexOf('616c7265616479206174746573746564') >= 0
+      ) {
         message = I18nStrings.alreadyAttested;
-      }
-      else if (error.message.indexOf("416c72656164792063726561746564") >= 0) {
+      } else if (error.message.indexOf('416c72656164792063726561746564') >= 0) {
         message = I18nStrings.alreadyCreated;
       }
-      console.error('Error en el proceso:', error);
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
@@ -505,46 +851,30 @@ const PhotoConfirmationScreen = () => {
       setShowConfirmModal(false);
       setStep(0);
     }
-
-    //try {
-    //  // Simular procesamiento
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    // Navegar directamente a SuccessScreen en lugar de mostrar modal
-    //    navigation.navigate('SuccessScreen');
-    //  }, 2000);
-    //} catch (error) {
-    //  console.error('Error en confirmPublishAndCertify:', error);
-    //  // Navegar a SuccessScreen incluso en caso de error
-    //  setTimeout(() => {
-    //    setShowConfirmModal(false);
-    //    setStep(0);
-    //    navigation.navigate('SuccessScreen');
-    //  }, 1000);
-    //}
   };
 
-  const closeModal = () => {
+  const closeModal = (goBack = false) => {
     setShowConfirmModal(false);
     setStep(0);
+    if (goBack) navigation.goBack();
   };
-
   const closeInfoModal = () => {
     setInfoModalData({
       visible: false,
       title: '',
-      message: ''
-    })
-  }
+      message: '',
+    });
+  };
 
   return (
-    <CSafeAreaView style={styles.container}>
+    <CSafeAreaView testID="photoConfirmationContainer" style={styles.container}>
       {/* Header */}
       <UniversalHeader
+        testID="photoConfirmationHeader"
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${tableData?.tableNumber ||
+        title={`Mesa ${
+          tableData?.tableNumber ||
           tableData?.numero ||
           tableData?.number ||
           tableData?.id ||
@@ -559,7 +889,7 @@ const PhotoConfirmationScreen = () => {
             ? tableData.numero.replace('Mesa ', '')
             : '') ||
           'DEBUG-EMPTY' // Changed to make it clear data is missing
-          }`}
+        }`}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -567,92 +897,135 @@ const PhotoConfirmationScreen = () => {
       />
 
       {/* Information Ready to Load Text */}
-      <View style={styles.infoContainer}>
-        <CText style={styles.infoText}>{I18nStrings.infoReadyToLoad}</CText>
+      <View
+        testID="photoConfirmationInfoContainer"
+        style={styles.infoContainer}>
+        <CText testID="photoConfirmationInfoText" style={styles.infoText}>
+          {I18nStrings.infoReadyToLoad}
+        </CText>
       </View>
 
       {/* Main Content */}
-      <View style={styles.content}>
-        <CText style={styles.mainText}>
-          {I18nStrings.i}
-          <CText style={styles.mainTextBold}> {userFullName}</CText>
-        </CText>
+      <View testID="photoConfirmationContent" style={styles.content}>
+        {!showConfirmModal && !showDuplicateModal && (
+          <>
+            <CText testID="photoConfirmationMainText" style={styles.mainText}>
+              {I18nStrings.i}
+              <CText
+                testID="photoConfirmationUserName"
+                style={styles.mainTextBold}>
+                {' '}
+                {userFullName}
+              </CText>
+            </CText>
 
-        <TouchableOpacity
-          style={styles.publishButton}
-          onPress={verifyAndUpload}>
-          <CText style={styles.publishButtonText}>
-            {I18nStrings.publishAndCertify}
-          </CText>
-        </TouchableOpacity>
-
-        <CText style={styles.confirmationText}>
+            <TouchableOpacity
+              testID="photoConfirmationPublishButton"
+              style={styles.publishButton}
+              onPress={verifyAndUpload}>
+              <CText
+                testID="photoConfirmationPublishButtonText"
+                style={styles.publishButtonText}>
+                {I18nStrings.publishAndCertify}
+              </CText>
+            </TouchableOpacity>
+          </>
+        )}
+        <CText testID="photoConfirmationText" style={styles.confirmationText}>
           {I18nStrings.actaCorrectConfirmation
             .replace(
               '{tableNumber}',
               tableData?.tableNumber ||
-              tableData?.numero ||
-              tableData?.number ||
-              tableData?.id ||
-              tableData?.tableId ||
-              mesaData?.tableNumber ||
-              mesaData?.numero ||
-              mesaData?.number ||
-              mesa?.tableNumber ||
-              mesa?.numero ||
-              mesa?.number ||
-              (typeof tableData?.numero === 'string'
-                ? tableData.numero.replace('Mesa ', '')
-                : '') ||
-              'DEBUG-EMPTY', // Changed to make it clear data is missing
+                tableData?.numero ||
+                tableData?.number ||
+                tableData?.id ||
+                tableData?.tableId ||
+                mesaData?.tableNumber ||
+                mesaData?.numero ||
+                mesaData?.number ||
+                mesa?.tableNumber ||
+                mesa?.numero ||
+                mesa?.number ||
+                (typeof tableData?.numero === 'string'
+                  ? tableData.numero.replace('Mesa ', '')
+                  : '') ||
+                'DEBUG-EMPTY', // Changed to make it clear data is missing
             )
             .replace(
               '{location}',
               tableData?.recinto ||
-              tableData?.ubicacion ||
-              tableData?.location ||
-              tableData?.venue ||
-              mesaData?.recinto ||
-              mesaData?.ubicacion ||
-              mesa?.recinto ||
-              mesa?.ubicacion ||
-              I18nStrings.locationNotAvailable,
+                tableData?.ubicacion ||
+                tableData?.location ||
+                tableData?.venue ||
+                mesaData?.recinto ||
+                mesaData?.ubicacion ||
+                mesa?.recinto ||
+                mesa?.ubicacion ||
+                I18nStrings.locationNotAvailable,
             )}
         </CText>
       </View>
 
       <Modal
+        testID="photoConfirmationModal"
         visible={showConfirmModal}
         transparent
         animationType="fade"
-        onRequestClose={closeModal}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
+        onRequestClose={() => closeModal(true)}>
+        <View
+          testID="photoConfirmationModalOverlay"
+          style={modalStyles.modalOverlay}>
+          <View
+            testID="photoConfirmationModalContainer"
+            style={modalStyles.modalContainer}>
             {step === 0 && (
               <>
-                <View style={modalStyles.iconCircleWarning}>
+                <View
+                  testID="photoConfirmationModalWarningIcon"
+                  style={modalStyles.iconCircleWarning}>
                   <Ionicons
                     name="alert-outline"
                     size={getResponsiveSize(36, 48, 60)}
                     color="#da2a2a"
                   />
                 </View>
-                <View style={modalStyles.spacer} />
-                <CText style={modalStyles.confirmTitle}>
-                  {I18nStrings.publishAndCertifyConfirmation}
+
+                <CText
+                  testID="photoConfirmationModalBody"
+                  style={modalStyles.confirmBody}>
+                  <CText
+                    testID="photoConfirmationModalUserName"
+                    style={modalStyles.boldText}>
+                    Yo {userFullName}
+                  </CText>
+                  {'\n'}
+                  Certifico que los datos que ingreso coinciden con la foto del
+                  acta de la mesa y declaro que no he{' '}
+                  <CText style={modalStyles.boldText}>
+                    inventado ni modificado
+                  </CText>{' '}
+                  información.
                 </CText>
-                <View style={modalStyles.buttonContainer}>
+                <View
+                  testID="photoConfirmationModalButtonContainer"
+                  style={modalStyles.buttonContainer}>
                   <TouchableOpacity
+                    testID="photoConfirmationModalCancelButton"
                     style={modalStyles.cancelButton}
-                    onPress={closeModal}>
-                    <CText style={modalStyles.cancelButtonText}>
+                    onPress={() => closeModal(true)}>
+                    <CText
+                      testID="photoConfirmationModalCancelText"
+                      style={modalStyles.cancelButtonText}>
                       {I18nStrings.cancel}
                     </CText>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    testID="photoConfirmationModalConfirmButton"
                     style={modalStyles.confirmButton}
                     onPress={confirmPublishAndCertify}>
-                    <CText style={modalStyles.confirmButtonText}>
+                    <CText
+                      testID="photoConfirmationModalConfirmText"
+                      style={modalStyles.confirmButtonText}>
                       {I18nStrings.publishAndCertify}
                     </CText>
                   </TouchableOpacity>
@@ -662,14 +1035,19 @@ const PhotoConfirmationScreen = () => {
             {step === 1 && (
               <>
                 <ActivityIndicator
+                  testID="photoConfirmationModalLoading"
                   size="large"
                   color="#193b5e"
                   style={modalStyles.loading}
                 />
-                <CText style={modalStyles.loadingTitle}>
+                <CText
+                  testID="photoConfirmationModalLoadingTitle"
+                  style={modalStyles.loadingTitle}>
                   {I18nStrings.pleaseWait}
                 </CText>
-                <CText style={modalStyles.loadingSubtext}>
+                <CText
+                  testID="photoConfirmationModalLoadingSubtext"
+                  style={modalStyles.loadingSubtext}>
                   {I18nStrings.savingToBlockchain}
                 </CText>
               </>
@@ -678,13 +1056,20 @@ const PhotoConfirmationScreen = () => {
         </View>
       </Modal>
       <Modal
+        testID="photoConfirmationDuplicateModal"
         visible={showDuplicateModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowDuplicateModal(false)}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
-            <View style={modalStyles.iconCircleWarning}>
+        <View
+          testID="photoConfirmationDuplicateModalOverlay"
+          style={modalStyles.modalOverlay}>
+          <View
+            testID="photoConfirmationDuplicateModalContainer"
+            style={modalStyles.modalContainer}>
+            <View
+              testID="photoConfirmationDuplicateModalWarningIcon"
+              style={modalStyles.iconCircleWarning}>
               <Ionicons
                 name="warning-outline"
                 size={getResponsiveSize(36, 48, 60)}
@@ -692,19 +1077,28 @@ const PhotoConfirmationScreen = () => {
               />
             </View>
             <View style={modalStyles.spacer} />
-            <CText style={modalStyles.confirmTitle}>
+            <CText
+              testID="photoConfirmationDuplicateModalTitle"
+              style={modalStyles.confirmTitle}>
               {I18nStrings.duplicateBallotTitle}
             </CText>
 
-            <CText style={modalStyles.duplicateMessage}>
+            <CText
+              testID="photoConfirmationDuplicateModalMessage"
+              style={modalStyles.duplicateMessage}>
               {I18nStrings.duplicateBallotMessage}
             </CText>
 
-            <View style={modalStyles.buttonContainer}>
+            <View
+              testID="photoConfirmationDuplicateModalButtonContainer"
+              style={modalStyles.buttonContainer}>
               <TouchableOpacity
-                style={[modalStyles.cancelButton, { flex: 1 }]}
+                testID="photoConfirmationDuplicateModalGoBackButton"
+                style={[modalStyles.cancelButton, {flex: 1}]}
                 onPress={() => setShowDuplicateModal(false)}>
-                <CText style={modalStyles.cancelButtonText}>
+                <CText
+                  testID="photoConfirmationDuplicateModalGoBackText"
+                  style={modalStyles.cancelButtonText}>
                   {I18nStrings.goBack}
                 </CText>
               </TouchableOpacity>
@@ -714,6 +1108,7 @@ const PhotoConfirmationScreen = () => {
       </Modal>
 
       <InfoModal
+        testID="photoConfirmationInfoModal"
         {...infoModalData}
         onClose={closeInfoModal}
       />
@@ -729,6 +1124,19 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: getResponsiveSize(16, 20, 32),
   },
+  confirmBody: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    color: '#4F4F4F',
+    textAlign: 'justify',
+    lineHeight: getResponsiveSize(20, 24, 28),
+    marginBottom: getResponsiveSize(14, 18, 22),
+    paddingHorizontal: getResponsiveSize(8, 16, 24),
+    alignSelf: 'stretch',
+  },
+  boldText: {
+    fontWeight: '700',
+    color: '#2F2F2F',
+  },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: getResponsiveSize(12, 16, 20),
@@ -736,7 +1144,7 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     width: getResponsiveModalWidth(),
@@ -802,7 +1210,7 @@ const modalStyles = StyleSheet.create({
   },
   loading: {
     marginBottom: getResponsiveSize(12, 16, 20),
-    transform: [{ scale: getResponsiveSize(0.8, 1, 1.2) }],
+    transform: [{scale: getResponsiveSize(0.8, 1, 1.2)}],
   },
   loadingTitle: {
     fontSize: getResponsiveSize(18, 20, 24),
@@ -883,7 +1291,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(16, 20, 28),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     minWidth: getResponsiveSize(200, 250, 300), // Minimum button width

@@ -36,19 +36,17 @@ export const setupNotificationChannels = async () => {
 // Configuración inicial de Firebase
 export const initializeFirebase = async () => {
   try {
-    console.log('🔥 Inicializando Firebase...');
-    
+
     // Verificar que Firebase esté conectado
     const isConnected = await firebaseDatabase.goOnline();
-    console.log('📱 Firebase Database conectado');
+  
     
     // Configurar canales de notificación
     await setupNotificationChannels();
-    console.log('📢 Canales de notificación configurados');
+
     
     return true;
   } catch (error) {
-    console.error('❌ Error inicializando Firebase:', error);
     return false;
   }
 };

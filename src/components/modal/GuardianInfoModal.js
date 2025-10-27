@@ -3,28 +3,16 @@ import {Modal, View, TouchableOpacity, StyleSheet} from 'react-native';
 import {useSelector} from 'react-redux';
 
 import CText from '../common/CText';
-import CButton from '../common/CButton';
-import Icono from '../common/Icono';
 import {moderateScale} from '../../common/constants';
 import CInput from '../common/CInput';
+import { CCopyIcon } from '../common/CCopyIcon';
 
 export default function GuardianInfoActionModal({
   visible,
   guardian,
   onClose,
-  onDelete,
-  onSave,
 }) {
   const colors = useSelector(state => state.theme.theme);
-  const [nickname, setNickname] = useState('');
-  const [address, setAddress] = useState('');
-  const [ci, setCi] = useState('');
-  useEffect(() => {
-    setNickname(guardian?.nickname ?? '');
-    setAddress(guardian?.accountAddress ?? '');
-    setCi(guardian?.governmentIdentifier ?? '');
-  }, [guardian]);
-
   if (!guardian) return null;
 
   return (
@@ -37,29 +25,25 @@ export default function GuardianInfoActionModal({
         <View
           style={[styles.container, {backgroundColor: colors.backgroundColor}]}>
           <CText type="B18" align="center" style={styles.title}>
-            {guardian.publicFullName ?? '(sin nombre)'}
+            {guardian.inviter?.displayNamePublic ?? '(sin nombre)'}
           </CText>
           
           <CInput
-            label="Carnet"
+            label="Dirección DID"
             editable={false}
-            _value={ci}
+            _value={guardian?.inviterDid}
             disabled
-            toGetTextFieldValue={setNickname}
             placeHolder=""
             inputContainerStyle={styles.inputContainer}
+            rightAccessory={() => CCopyIcon({copyValue: guardian?.inviterDid})}
           />
           <CInput
-            label="Apodo"
+            label="Tu apodo"
              editable={false}
-            _value={nickname}
-            toGetTextFieldValue={setNickname}
+            _value={guardian?.nickname}
             placeHolder="Ingresa un apodo"
             inputContainerStyle={styles.inputContainer}
           />
-    
-
-         
 
           <TouchableOpacity onPress={onClose} style={styles.closeArea} />
         </View>

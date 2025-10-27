@@ -1,0 +1,9 @@
+appId: com.tuvotodecide
+---
+
+
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    id: nftSuccessTitle

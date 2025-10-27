@@ -1,0 +1,10 @@
+appId: com.tuvotodecide
+---
+- extendedWaitUntil:
+    visible:
+      id: recoveryQrContinueButton
+    timeout: 12000
+- tapOn:
+    id: recoveryQrContinueButton
+- waitForAnimationToEnd:
+    timeout: 1000

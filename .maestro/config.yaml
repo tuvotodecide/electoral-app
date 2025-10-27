@@ -1,0 +1,90 @@
+# Specify flows to include
+flows:
+  - '**'
+
+#includeTags:
+#  - tagNameToInclude
+#excludeTags:
+#  - tagNameToExclude
+
+# Sequential execution configuration using file names (without .yaml extension)
+executionOrder:
+  #continueOnFailure: false # Stop execution on first failure for proper sequential testing
+  flowsOrder:
+    ## onBoarding
+    - onboardingNextFlow
+    - onboardingSwipeFlow
+    - onboardingXButton
+    - onboardingMiddleBack
+    ## recoveryQR
+    - recoveryFailedQR
+    - recoverySuccessfulQR
+    ## auth
+    - loginWrongPin
+    - loginCorrectPin
+    ## blockAccount -reset
+    - blockAccount
+    - recoverBlockedAccountQR
+    ## ---------------------------------
+    - resetAndRecoverAccount
+    ## ---------------------------------
+    ## profile
+    - assertPersonalData
+    - assertRecoveryQR
+    ## moreOptions
+    - assertToS
+    - assertPP
+    ## securityOptions
+    - changePin
+    ## guardians
+    ## whatAreGuardians
+    - nextFlowGuard
+    - swipeFlowGuard
+    - xButtonGuard
+    - middleBackGuard
+    ## addGuardian
+    - failedFindGuardian
+    - successfulFindGuardian
+    - selfInvitation
+    - sendGuardInvitation
+    - resendGuardianInvitation
+    - acceptGuardInvitation
+    ## RecoveryGuardian
+    ## -- It requires user with guardian already set/ Requiere usuario con guardián ya establecido
+    ## -- It requires to logout/ Requiere cerrar sesion
+    - failedRecoveryGuardian
+    #- successfulRecoveryGuardian
+#
+    ## Participate
+    ## -- It requires an already set table and location / Requiere una mesa y ubicación ya establecidas
+    ## -- It requires to login as the principal user / Requiere iniciar sesión como el usuario principal
+    ## -- It requires to have results alredy set / Requiere tener resultados ya establecidos
+    - submitWrongImageGallery
+    - wrongPartySumatory
+    - submitElectoralRecordGallery
+    - submitElectoralRecordCamera
+    - resubmitElectoralRecordGallery
+    # witness
+    # -- It requires to have an electoral record already submitted / Requiere tener un registro
+    - certifySelfRecord
+    - certifyValidRecord
+
+
+# Customised test output directory
+testOutputDir: test_output_directory
+
+# Cloud only config options
+#baselineBranch: main
+#notifications:
+#  email:
+#    enabled: true
+#    recipients:
+#      - john@example.com
+#
+## Platform Configuration
+#platform:
+#  ios:
+#    snapshotKeyHonorModalViews: false
+#    disableAnimations: true
+#  android:
+#    disableAnimations: true

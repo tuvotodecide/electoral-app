@@ -13,31 +13,36 @@ import {moderateScale} from '../../common/constants';
 import CButton from '../../components/common/CButton';
 import String from '../../i18n/String';
 import {AuthNav} from '../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function FingerPrintScreen({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const onPressEnableFaceId = () => {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('FingerPrintScreen', true);
     navigation.navigate(AuthNav.SelectCountry);
   };
   const onPressSkipNow = () => {
     navigation.navigate(AuthNav.SelectCountry);
   };
   return (
-    <CSafeAreaViewAuth>
-      <CHeader />
-      <StepIndicator step={2} />
-      <View style={localStyle.mainContainer}>
+    <CSafeAreaViewAuth testID="fingerPrintScreenContainer">
+      <CHeader testID="fingerPrintScreenHeader" />
+      <StepIndicator step={2} testID="fingerPrintScreenStepIndicator" />
+      <View style={localStyle.mainContainer} testID="fingerPrintScreenMainContainer">
         <View />
-        <View>
+        <View testID="fingerPrintScreenContentContainer">
           <Image
+            testID="fingerprintImage"
             source={colors.dark ? images.FingerImage : images.Finger_lightImage}
             style={localStyle.imageContainer}
           />
 
-          <CText type={'B24'} align={'center'}>
+          <CText testID="enableFingerprintTitle" type={'B24'} align={'center'}>
             {String.enableFingerprint}
           </CText>
           <CText
+            testID="enableFingerprintDescription"
             type={'R14'}
             align={'center'}
             color={colors.grayScale500}
@@ -45,14 +50,16 @@ export default function FingerPrintScreen({navigation}) {
             {String.enableFingerprintDescription}
           </CText>
         </View>
-        <View>
+        <View testID="fingerPrintScreenButtonsContainer">
           <CButton
+            testID="enableFingerprintButton"
             title={String.enableFingerprint}
             type={'B16'}
             containerStyle={localStyle.btnStyle}
             onPress={onPressEnableFaceId}
           />
           <CButton
+            testID="skipFingerprintButton"
             title={String.skipForNow}
             type={'B16'}
             containerStyle={localStyle.skipBtn}

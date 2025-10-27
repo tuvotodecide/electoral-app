@@ -5,6 +5,7 @@ import {StyleSheet} from 'react-native';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -13,28 +14,23 @@ export default function SearchTable({navigation, route}) {
   const [mesas, setMesas] = useState([]);
   const [locationData, setLocationData] = useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SearchTable', true);
   // Cargar mesas al montar el componente
   useEffect(() => {
     loadMesasFromApi(route?.params?.locationId);
   }, [route?.params?.locationId]);
 
-  const loadMesasFromApi = async (locationId) => {
+  const loadMesasFromApi = async locationId => {
     try {
       setIsLoadingMesas(true);
-      console.log(
-        'SearchTable: Loading tables from API for location:',
-        locationId || 'default location',
-      );
-      
+
       // Always use the same endpoint for now, could be made dynamic based on locationId
       const response = await axios.get(
         `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
-      console.log('SearchTable - API Response structure:', response.data);
 
       if (response.data && response.data.tables) {
-        console.log('SearchTable - Tables found:', response.data.tables.length);
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.name,
@@ -50,11 +46,6 @@ export default function SearchTable({navigation, route}) {
         response.data.data &&
         response.data.data.tables
       ) {
-        console.log(
-          'SearchTable - Tables found in data.data:',
-          response.data.data.tables.length,
-        );
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.data.name,
@@ -66,11 +57,9 @@ export default function SearchTable({navigation, route}) {
 
         setMesas(response.data.data.tables);
       } else {
-        console.log('SearchTable: No tables found in response');
         setMesas([]);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas from API:', error);
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);

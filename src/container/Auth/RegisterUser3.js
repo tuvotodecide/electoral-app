@@ -17,47 +17,55 @@ import images from '../../assets/images';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function RegisterUser3({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
+  const {logNavigation} = useNavigationLogger('RegisterUser3', true);
+
   const onPressNext = () => {
-    const {dni, frontImage, backImage} = route.params;
-    navigation.navigate(AuthNav.RegisterUser4, {
-      dni,
-      frontImage,
-      backImage,
-    });
+    logNavigation(AuthNav.RegisterUser4, route?.params ?? null);
+    navigation.navigate(AuthNav.RegisterUser4, route?.params);
   };
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={3} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser3Container">
+      <StepIndicator testID="registerUser3StepIndicator" step={3} />
+      <CHeader testID="registerUser3Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser3KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
-        <View style={localStyle.mainContainer}>
+        <View testID="registerUser3Content" style={localStyle.mainContainer}>
           <Image
+            testID="faceIdImage"
             source={colors.dark ? images.FaceIdImage : images.FaceId_lightImage}
             style={localStyle.imageContainer}
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="cameraTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.titleCamera}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText
+            testID="cameraDescription"
+            type={'B16'}
+            color={getSecondaryTextColor(colors)}>
             {String.description_camera}
           </CText>
 
-          <CText type={'B16'} color={getSecondaryTextColor(colors)}>
+          <CText
+            testID="cameraNote"
+            type={'B16'}
+            color={getSecondaryTextColor(colors)}>
             {String.description_note}
           </CText>
         </View>
         <CIconText
-          icon={<Icono name="weather-sunny" color={colors.primary} />}
+          testID="tipWellLit"
+          icon={<Icono name="weather-sunny" color={colors.primary} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               {String.tip_well_lit}
@@ -65,7 +73,8 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
-          icon={<Icono name="account-remove-outline" color={colors.primary} />}
+          testID="tipRemoveItems"
+          icon={<Icono name="account-remove-outline" color={colors.primary} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               {String.tip_remove_items}
@@ -73,7 +82,8 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
-          icon={<Icono name="camera-outline" color={colors.primary} />}
+          testID="tipLookCamera"
+          icon={<Icono name="camera-outline" color={colors.primary} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               {String.tip_look_camera}
@@ -81,8 +91,9 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
       </KeyBoardAvoidWrapper>
-      <View style={localStyle.bottomTextContainer}>
+      <View testID="registerUser3Footer" style={localStyle.bottomTextContainer}>
         <CButton
+          testID="scanFaceButton"
           title={String.button_scan_face}
           onPress={onPressNext}
           type={'B16'}

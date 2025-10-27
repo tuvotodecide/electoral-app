@@ -1,0 +1,593 @@
+[ {
+  "command" : {
+    "tapOnElement" : {
+      "selector" : {
+        "idRegex" : "connectLoginButton",
+        "optional" : false
+      },
+      "retryIfNoChange" : false,
+      "waitUntilVisible" : false,
+      "longPress" : false,
+      "optional" : false
+    }
+  },
+  "metadata" : {
+    "status" : "FAILED",
+    "timestamp" : 1757125386100,
+    "duration" : 618,
+    "error" : {
+      "cause" : {
+        "cause" : {
+          "stackTrace" : [ {
+            "moduleName" : "java.base",
+            "moduleVersion" : "17.0.15",
+            "methodName" : "pollConnect",
+            "fileName" : "Net.java",
+            "lineNumber" : -2,
+            "nativeMethod" : true,
+            "className" : "sun.nio.ch.Net"
+          }, {
+            "moduleName" : "java.base",
+            "moduleVersion" : "17.0.15",
+            "methodName" : "pollConnectNow",
+            "fileName" : "Net.java",
+            "lineNumber" : 672,
+            "nativeMethod" : false,
+            "className" : "sun.nio.ch.Net"
+          }, {
+            "moduleName" : "java.base",
+            "moduleVersion" : "17.0.15",
+            "methodName" : "finishConnect",
+            "fileName" : "SocketChannelImpl.java",
+            "lineNumber" : 946,
+            "nativeMethod" : false,
+            "className" : "sun.nio.ch.SocketChannelImpl"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "doFinishConnect",
+            "fileName" : "NioSocketChannel.java",
+            "lineNumber" : 337,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.socket.nio.NioSocketChannel"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "finishConnect",
+            "fileName" : "AbstractNioChannel.java",
+            "lineNumber" : 334,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "processSelectedKey",
+            "fileName" : "NioEventLoop.java",
+            "lineNumber" : 776,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.nio.NioEventLoop"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "processSelectedKeysOptimized",
+            "fileName" : "NioEventLoop.java",
+            "lineNumber" : 724,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.nio.NioEventLoop"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "processSelectedKeys",
+            "fileName" : "NioEventLoop.java",
+            "lineNumber" : 650,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.nio.NioEventLoop"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "run",
+            "fileName" : "NioEventLoop.java",
+            "lineNumber" : 562,
+            "nativeMethod" : false,
+            "className" : "io.netty.channel.nio.NioEventLoop"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "run",
+            "fileName" : "SingleThreadEventExecutor.java",
+            "lineNumber" : 997,
+            "nativeMethod" : false,
+            "className" : "io.netty.util.concurrent.SingleThreadEventExecutor$4"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "run",
+            "fileName" : "ThreadExecutorMap.java",
+            "lineNumber" : 74,
+            "nativeMethod" : false,
+            "className" : "io.netty.util.internal.ThreadExecutorMap$2"
+          }, {
+            "classLoaderName" : "app",
+            "methodName" : "run",
+            "fileName" : "FastThreadLocalRunnable.java",
+            "lineNumber" : 30,
+            "nativeMethod" : false,
+            "className" : "io.netty.util.concurrent.FastThreadLocalRunnable"
+          }, {
+            "moduleName" : "java.base",
+            "moduleVersion" : "17.0.15",
+            "methodName" : "run",
+            "fileName" : "Thread.java",
+            "lineNumber" : 840,
+            "nativeMethod" : false,
+            "className" : "java.lang.Thread"
+          } ],
+          "message" : "Conexión rehusada",
+          "localizedMessage" : "Conexión rehusada"
+        },
+        "message" : "Conexión rehusada: localhost/127.0.0.1:7001",
+        "localizedMessage" : "Conexión rehusada: localhost/127.0.0.1:7001"
+      },
+      "stackTrace" : [ {
+        "classLoaderName" : "app",
+        "methodName" : "toStatusRuntimeException",
+        "fileName" : "ClientCalls.java",
+        "lineNumber" : 275,
+        "nativeMethod" : false,
+        "className" : "io.grpc.stub.ClientCalls"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "getUnchecked",
+        "fileName" : "ClientCalls.java",
+        "lineNumber" : 256,
+        "nativeMethod" : false,
+        "className" : "io.grpc.stub.ClientCalls"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "blockingUnaryCall",
+        "fileName" : "ClientCalls.java",
+        "lineNumber" : 169,
+        "nativeMethod" : false,
+        "className" : "io.grpc.stub.ClientCalls"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "deviceInfo",
+        "fileName" : "MaestroDriverGrpc.java",
+        "lineNumber" : 740,
+        "nativeMethod" : false,
+        "className" : "maestro_android.MaestroDriverGrpc$MaestroDriverBlockingStub"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "deviceInfo$lambda$5",
+        "fileName" : "AndroidDriver.kt",
+        "lineNumber" : 219,
+        "nativeMethod" : false,
+        "className" : "maestro.drivers.AndroidDriver"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runDeviceCall",
+        "fileName" : "AndroidDriver.kt",
+        "lineNumber" : 1250,
+        "nativeMethod" : false,
+        "className" : "maestro.drivers.AndroidDriver"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "deviceInfo",
+        "fileName" : "AndroidDriver.kt",
+        "lineNumber" : 218,
+        "nativeMethod" : false,
+        "className" : "maestro.drivers.AndroidDriver"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "from-8JJjmZI",
+        "fileName" : "ViewHierarchy.kt",
+        "lineNumber" : 28,
+        "nativeMethod" : false,
+        "className" : "maestro.ViewHierarchy$Companion"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "viewHierarchy-c1iYVAs",
+        "fileName" : "Maestro.kt",
+        "lineNumber" : 413,
+        "nativeMethod" : false,
+        "className" : "maestro.Maestro"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "viewHierarchy-c1iYVAs$default",
+        "fileName" : "Maestro.kt",
+        "lineNumber" : 412,
+        "nativeMethod" : false,
+        "className" : "maestro.Maestro"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "findElementWithTimeout_AE3g2Tc$lambda$9",
+        "fileName" : "Maestro.kt",
+        "lineNumber" : 423,
+        "nativeMethod" : false,
+        "className" : "maestro.Maestro"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "withTimeout",
+        "fileName" : "MaestroTimer.kt",
+        "lineNumber" : 16,
+        "nativeMethod" : false,
+        "className" : "maestro.utils.MaestroTimer"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "findElementWithTimeout-AE3g2Tc",
+        "fileName" : "Maestro.kt",
+        "lineNumber" : 422,
+        "nativeMethod" : false,
+        "className" : "maestro.Maestro"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "findElementWithTimeout-AE3g2Tc$default",
+        "fileName" : "Maestro.kt",
+        "lineNumber" : 416,
+        "nativeMethod" : false,
+        "className" : "maestro.Maestro"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "findElement",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 1171,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "findElement$default",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 1126,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "tapOnElement",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 1053,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "executeCommand",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 318,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "executeCommands",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 251,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runFlow",
+        "fileName" : "Orchestra.kt",
+        "lineNumber" : 169,
+        "nativeMethod" : false,
+        "className" : "maestro.orchestra.Orchestra"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runFlow",
+        "fileName" : "TestSuiteInteractor.kt",
+        "lineNumber" : 242,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.runner.TestSuiteInteractor"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runTestSuite",
+        "fileName" : "TestSuiteInteractor.kt",
+        "lineNumber" : 96,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.runner.TestSuiteInteractor"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runMultipleFlows",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 470,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "access$runMultipleFlows",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 65,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "invokeSuspend",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 397,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand$runShardSuite$1$1"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "resumeWith",
+        "fileName" : "ContinuationImpl.kt",
+        "lineNumber" : 33,
+        "nativeMethod" : false,
+        "className" : "kotlin.coroutines.jvm.internal.BaseContinuationImpl"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "run",
+        "fileName" : "DispatchedTask.kt",
+        "lineNumber" : 104,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.DispatchedTask"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "processNextEvent",
+        "fileName" : "EventLoop.common.kt",
+        "lineNumber" : 277,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.EventLoopImplBase"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "joinBlocking",
+        "fileName" : "Builders.kt",
+        "lineNumber" : 95,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.BlockingCoroutine"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runBlocking",
+        "fileName" : "Builders.kt",
+        "lineNumber" : 69,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.BuildersKt__BuildersKt"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runBlocking",
+        "lineNumber" : 1,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.BuildersKt"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runBlocking$default",
+        "fileName" : "Builders.kt",
+        "lineNumber" : 48,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.BuildersKt__BuildersKt"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runBlocking$default",
+        "lineNumber" : 1,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.BuildersKt"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runShardSuite$lambda$7",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 396,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "newSession",
+        "fileName" : "MaestroSessionManager.kt",
+        "lineNumber" : 129,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.session.MaestroSessionManager"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "newSession$default",
+        "fileName" : "MaestroSessionManager.kt",
+        "lineNumber" : 65,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.session.MaestroSessionManager"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runShardSuite",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 372,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "access$runShardSuite",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 65,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "invokeSuspend",
+        "fileName" : "TestCommand.kt",
+        "lineNumber" : 336,
+        "nativeMethod" : false,
+        "className" : "maestro.cli.command.TestCommand$handleSessions$1$results$1$1"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "resumeWith",
+        "fileName" : "ContinuationImpl.kt",
+        "lineNumber" : 33,
+        "nativeMethod" : false,
+        "className" : "kotlin.coroutines.jvm.internal.BaseContinuationImpl"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "run",
+        "fileName" : "DispatchedTask.kt",
+        "lineNumber" : 104,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.DispatchedTask"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "run",
+        "fileName" : "LimitedDispatcher.kt",
+        "lineNumber" : 111,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.internal.LimitedDispatcher$Worker"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "run",
+        "fileName" : "Tasks.kt",
+        "lineNumber" : 99,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.scheduling.TaskImpl"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runSafely",
+        "fileName" : "CoroutineScheduler.kt",
+        "lineNumber" : 585,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.scheduling.CoroutineScheduler"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "executeTask",
+        "fileName" : "CoroutineScheduler.kt",
+        "lineNumber" : 802,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.scheduling.CoroutineScheduler$Worker"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "runWorker",
+        "fileName" : "CoroutineScheduler.kt",
+        "lineNumber" : 706,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.scheduling.CoroutineScheduler$Worker"
+      }, {
+        "classLoaderName" : "app",
+        "methodName" : "run",
+        "fileName" : "CoroutineScheduler.kt",
+        "lineNumber" : 693,
+        "nativeMethod" : false,
+        "className" : "kotlinx.coroutines.scheduling.CoroutineScheduler$Worker"
+      } ],
+      "status" : {
+        "code" : "UNAVAILABLE",
+        "description" : "io exception",
+        "cause" : {
+          "cause" : {
+            "stackTrace" : [ {
+              "moduleName" : "java.base",
+              "moduleVersion" : "17.0.15",
+              "methodName" : "pollConnect",
+              "fileName" : "Net.java",
+              "lineNumber" : -2,
+              "nativeMethod" : true,
+              "className" : "sun.nio.ch.Net"
+            }, {
+              "moduleName" : "java.base",
+              "moduleVersion" : "17.0.15",
+              "methodName" : "pollConnectNow",
+              "fileName" : "Net.java",
+              "lineNumber" : 672,
+              "nativeMethod" : false,
+              "className" : "sun.nio.ch.Net"
+            }, {
+              "moduleName" : "java.base",
+              "moduleVersion" : "17.0.15",
+              "methodName" : "finishConnect",
+              "fileName" : "SocketChannelImpl.java",
+              "lineNumber" : 946,
+              "nativeMethod" : false,
+              "className" : "sun.nio.ch.SocketChannelImpl"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "doFinishConnect",
+              "fileName" : "NioSocketChannel.java",
+              "lineNumber" : 337,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.socket.nio.NioSocketChannel"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "finishConnect",
+              "fileName" : "AbstractNioChannel.java",
+              "lineNumber" : 334,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "processSelectedKey",
+              "fileName" : "NioEventLoop.java",
+              "lineNumber" : 776,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.nio.NioEventLoop"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "processSelectedKeysOptimized",
+              "fileName" : "NioEventLoop.java",
+              "lineNumber" : 724,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.nio.NioEventLoop"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "processSelectedKeys",
+              "fileName" : "NioEventLoop.java",
+              "lineNumber" : 650,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.nio.NioEventLoop"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "run",
+              "fileName" : "NioEventLoop.java",
+              "lineNumber" : 562,
+              "nativeMethod" : false,
+              "className" : "io.netty.channel.nio.NioEventLoop"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "run",
+              "fileName" : "SingleThreadEventExecutor.java",
+              "lineNumber" : 997,
+              "nativeMethod" : false,
+              "className" : "io.netty.util.concurrent.SingleThreadEventExecutor$4"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "run",
+              "fileName" : "ThreadExecutorMap.java",
+              "lineNumber" : 74,
+              "nativeMethod" : false,
+              "className" : "io.netty.util.internal.ThreadExecutorMap$2"
+            }, {
+              "classLoaderName" : "app",
+              "methodName" : "run",
+              "fileName" : "FastThreadLocalRunnable.java",
+              "lineNumber" : 30,
+              "nativeMethod" : false,
+              "className" : "io.netty.util.concurrent.FastThreadLocalRunnable"
+            }, {
+              "moduleName" : "java.base",
+              "moduleVersion" : "17.0.15",
+              "methodName" : "run",
+              "fileName" : "Thread.java",
+              "lineNumber" : 840,
+              "nativeMethod" : false,
+              "className" : "java.lang.Thread"
+            } ],
+            "message" : "Conexión rehusada",
+            "localizedMessage" : "Conexión rehusada"
+          },
+          "message" : "Conexión rehusada: localhost/127.0.0.1:7001",
+          "localizedMessage" : "Conexión rehusada: localhost/127.0.0.1:7001"
+        },
+        "ok" : false
+      },
+      "message" : "UNAVAILABLE: io exception",
+      "localizedMessage" : "UNAVAILABLE: io exception"
+    }
+  }
+}, {
+  "command" : {
+    "applyConfigurationCommand" : {
+      "config" : {
+        "appId" : "com.tuvotodecide",
+        "name" : "loginWrongPin"
+      },
+      "optional" : false
+    }
+  },
+  "metadata" : {
+    "status" : "COMPLETED",
+    "timestamp" : 1757125386100,
+    "duration" : 0
+  }
+}, {
+  "command" : {
+    "defineVariablesCommand" : {
+      "env" : {
+        "MAESTRO_FILENAME" : "loginWrongPin"
+      },
+      "optional" : false
+    }
+  },
+  "metadata" : {
+    "status" : "COMPLETED",
+    "timestamp" : 1757125386100,
+    "duration" : 0
+  }
+} ]

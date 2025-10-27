@@ -1,0 +1,42 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: participateButtonRegular
+
+#**---------------------------------------
+#- tapOn: Obteniendo ubicación...
+#**---------------------------------------
+#- tapOn: Cargando recintos cercanos...
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: ${ELECTORAL_RECORD_LOCATION}
+    timeout: 25000
+
+- scrollUntilVisible:
+    element:
+      id: ${ELECTORAL_RECORD_LOCATION}
+
+- tapOn:
+    id: ${ELECTORAL_RECORD_LOCATION}
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: ${ELECTORAL_RECORD_TABLE}
+    timeout: 25000
+- tapOn:
+    id: ${ELECTORAL_RECORD_TABLE}
+
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'fail'}
+    file: cases/wrongImageRecord.yaml
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'pass'}
+    file: cases/validImageRecord.yaml
+# - runFlow:
+#     when:
+#         true: ${TEST_TYPE == 'correct'}
+#     file: cases/correctImageRecord.yaml

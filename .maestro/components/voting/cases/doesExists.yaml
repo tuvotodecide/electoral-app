@@ -1,0 +1,7 @@
+appId: com.tuvotodecide
+---
+- assertVisible:
+    id: whichIsCorrect_questionContainer
+
+- tapOn:
+    id: addNewRecordText    

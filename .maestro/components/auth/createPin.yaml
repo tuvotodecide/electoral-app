@@ -1,0 +1,41 @@
+appId: com.tuvotodecide
+---
+- extendedWaitUntil:
+    visible:
+      id: textInput
+    timeout: 12000
+- doubleTapOn:
+    id: textInput
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: ${PIN}
+- extendedWaitUntil:
+    visible:
+      id: changePinNewContinueButton
+    timeout: 12000
+- doubleTapOn:
+    id: changePinNewContinueButton
+- waitForAnimationToEnd:
+    timeout: 500
+
+- extendedWaitUntil:
+    visible:
+      id: textInput
+    timeout: 12000
+- doubleTapOn:
+    id: textInput
+- waitForAnimationToEnd:
+    timeout: 500
+- inputText: ${PIN}
+
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'create'}
+    file: ./simpleActions/createPinSubactions.yaml
+
+- runFlow:
+    when:
+        true: ${TEST_TYPE == 'change'}
+    file: ./simpleActions/changePinSubactions.yaml
+
+

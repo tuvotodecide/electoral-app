@@ -17,72 +17,113 @@ import Icono from '../../components/common/Icono';
 import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
-export default function RegisterUser1({navigation}) {
+export default function RegisterUser1({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
 
-  const onPressRememberMe = () => setCheck(!check);
-  const onPressNext = () => navigation.navigate(AuthNav.RegisterUser2);
-  const onPressConditions = () =>
+  const {logAction, logNavigation} = useNavigationLogger('RegisterUser1', true);
+
+  const onPressRememberMe = () => {
+    logAction('ToggleTerms', {nextValue: !check});
+    setCheck(!check);
+  };
+
+  const onPressNext = () => {
+    logNavigation(AuthNav.RegisterUser2, route?.params ?? null);
+    if (route?.params) {
+      navigation.navigate(AuthNav.RegisterUser2, route.params);
+    } else {
+      navigation.navigate(AuthNav.RegisterUser2);
+    }
+  };
+
+  const onPressConditions = () => {
+    logNavigation(StackNav.TermsAndCondition);
     navigation.navigate(StackNav.TermsAndCondition);
+  };
+
+  const isRecoveryFlow = !!route?.params?.isRecovery;
 
   return (
-    <CSafeAreaViewAuth>
-      <StepIndicator step={1} />
-      <CHeader />
+    <CSafeAreaViewAuth testID="registerUser1Container">
+      <StepIndicator testID="registerUser1StepIndicator" step={1} />
+      <CHeader testID="registerUser1Header" />
       <KeyBoardAvoidWrapper
+        testID="registerUser1KeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           {top: moderateScale(10)},
         ]}>
-        <View style={localStyle.mainContainer}>
-          <CText type={'B20'}>{String.titleReg}</CText>
+        <View testID="registerUser1MainContent" style={localStyle.mainContainer}>
+          <CText testID="registerUser1Title" type={'B20'}>
+            {String.titleReg + (isRecoveryFlow ? ` ${String.recoveryCIIntro}` : '')}
+          </CText>
 
           <CIconText
-            icon={
-              <Icono
-                name="card-account-details-outline"
-                color={colors.primary}
-              />
+            testID="registerUser1Step1Icon"
+            icon={<Icono name="card-account-details-outline" color={colors.primary} />}
+            text={
+              <CText testID="registerUser1Step1Text" type={'B16'}>
+                {String.connectItem1Reg}
+              </CText>
             }
-            text={<CText type={'B16'}>{String.connectItem1Reg}</CText>}
           />
           <CIconText
+            testID="registerUser1Step2Icon"
             icon={<Icono name="camera-outline" color={colors.primary} />}
-            text={<CText type={'B16'}>{String.connectItem2Reg}</CText>}
+            text={
+              <CText testID="registerUser1Step2Text" type={'B16'}>
+                {String.connectItem2Reg}
+              </CText>
+            }
           />
+          {isRecoveryFlow && (
+            <CIconText
+              testID="registerUser1Step3Icon"
+              icon={<Icono name="form-textbox-password" color={colors.primary} />}
+              text={
+                <CText testID="registerUser1Step3Text" type={'B16'}>
+                  {String.pin}
+                </CText>
+              }
+            />
+          )}
         </View>
       </KeyBoardAvoidWrapper>
 
-      <View style={localStyle.bottomTextContainer}>
-        <View style={localStyle.rowWithGap}>
-          <TouchableOpacity onPress={onPressRememberMe}>
+      <View testID="registerUser1BottomSection" style={localStyle.bottomTextContainer}>
+        <View testID="termsCheckboxContainer" style={localStyle.rowWithGap}>
+          <TouchableOpacity testID="termsCheckbox" onPress={onPressRememberMe}>
             <Ionicons
+              testID="termsCheckboxIcon"
               name={check ? 'checkbox' : 'square-outline'}
-              color={check ? colors.primary : colors.grayScale50}
+              color={colors.primary}
               size={moderateScale(24)}
             />
           </TouchableOpacity>
 
-          <CText type={'r14'} color={colors.colorText} style={localStyle.item}>
+          <CText testID="termsText" type={'r14'} color={colors.colorText} style={localStyle.item}>
             {String.termsPrefix}
             <CText
+              testID="termsLink"
               type={'r14'}
               color={colors.primary}
               onPress={onPressConditions}>
               {String.termsLink}
             </CText>
-            <CText type={'r14'} color={colors.colorText}>
+            <CText testID="termsSuffix" type={'r14'} color={colors.colorText}>
               {String.termsSuffix}
             </CText>
           </CText>
         </View>
 
-        <CAlert status="info" message={String.infoMessage} />
+        <CAlert testID="registerUser1InfoAlert" status="info" message={String.infoMessage} />
 
         <CButton
+          testID="registerUser1ContinueButton"
           title={String.continueButton}
           disabled={!check}
           onPress={onPressNext}

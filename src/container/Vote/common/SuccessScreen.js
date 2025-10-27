@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,21 +6,23 @@ import {
   Dimensions,
   Image,
   Linking,
-  Share
+  Share,
+  BackHandler,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { StackNav } from '../../../navigation/NavigationKey';
+import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
-import { title } from 'process';
-import { url } from 'inspector';
+import {title} from 'process';
+import {url} from 'inspector';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
@@ -36,15 +38,33 @@ const SuccessScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
 
-  const { nftData } = route.params;
+  const {nftData, ipfsData} = route.params;
 
-  const handleBack = () => {
-    try {
-      navigation.popToTop();
-    } catch {
-      navigation.navigate(StackNav.TabNavigation);
-    }
-  };
+  const navigateHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+    return true;
+  }, [navigation]);
+
+  const handleBack = useCallback(() => {
+    navigateHome();
+  }, [navigateHome]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => navigateHome();
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [navigateHome]),
+  );
 
   const handleViewNFT = async () => {
     try {
@@ -52,49 +72,55 @@ const SuccessScreen = () => {
       if (supported) {
         await Linking.openURL(nftData.nftUrl);
       } else {
-        console.log('Cannot open URL:', nftData.nftUrl);
       }
-    } catch (error) {
-      console.error('Error opening URL:', error);
-    }
+    } catch (error) {}
   };
 
-  const handleShareProfile = async () => {
+  const handleShareNft = async () => {
     try {
       if (!nftData || !nftData.nftUrl) {
-        console.log("No hay enlace NFT para compartir");
         return;
       }
       const shareOptions = {
         title: 'Compartir certificado NFT',
         message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${nftData.nftUrl}`,
         url: nftData.nftUrl,
-        subject: 'Certificado NFT - Elecciones Bolivia 2025'
-      }
+        subject: 'Certificado NFT - Elecciones Bolivia 2025',
+      };
 
       const result = await Share.share(shareOptions, {
         dialogTitle: 'Compartir certificado NFT',
-        subject: 'Certificado NFT - Elecciones Bolivia 2025'
+        subject: 'Certificado NFT - Elecciones Bolivia 2025',
       });
 
       if (result.action === Share.sharedAction) {
-        console.log('Contenido compartido exitosamente');
       } else if (result.action === Share.dismissedAction) {
-        console.log('Compartir cancelado');
       }
-    } catch (error) {
-      console.error('Error al compartir:', error.message);
-    }
+    } catch (error) {}
+  };
+
+  const handleShareActa = async () => {
+    try {
+      // Puedes elegir imageUrl (foto del acta) o jsonUrl (metadata completa)
+      const url = ipfsData?.imageUrl || ipfsData?.jsonUrl;
+      if (!url) return;
+      const shareOptions = {
+        title: 'Compartir acta (IPFS)',
+        message: `Acta publicada en IPFS: ${url}`,
+        url,
+        subject: 'Acta en IPFS - Elecciones Bolivia 2025',
+      };
+      await Share.share(shareOptions, {
+        dialogTitle: 'Compartir acta (IPFS)',
+        subject: 'Acta en IPFS - Elecciones Bolivia 2025',
+      });
+    } catch (error) {}
   };
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
-  const data = {
-    name: subject.fullName || '(sin nombre)',
-  };
-  const nombre = data.name || '(sin nombre)';
+const subject = getCredentialSubjectFromPayload(userData) || {};
+  const nombre = subject?.fullName || '(sin nombre)';
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -108,7 +134,11 @@ const SuccessScreen = () => {
 
       <View style={styles.mainContent}>
         {/* Título principal */}
-        <CText style={styles.bigTitle}>{String.nftCertificate}{'\n'}{String.obtain}</CText>
+        <CText style={styles.bigTitle}>
+          {String.nftCertificate}
+          {'\n'}
+          {String.obtain}
+        </CText>
 
         {/* Certificado NFT como vista normal */}
         <View style={styles.nftCertificate}>
@@ -133,22 +163,35 @@ const SuccessScreen = () => {
 
         {/* Botones de acción */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity
-            style={styles.nftButton}
-            onPress={handleViewNFT}>
+          {/* <TouchableOpacity style={styles.nftButton} onPress={handleViewNFT}>
             <CText style={styles.nftButtonText}>Ver mi NFT</CText>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity style={styles.shareButton} onPress={handleShareNft}>
+            <Ionicons
+              name="share-outline"
+              size={20}
+              color="#fff"
+              style={styles.shareIcon}
+            />
+            <CText style={styles.shareButtonText}>Compartir NFT</CText>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.shareButton}
-            onPress={handleShareProfile}>
-            <Ionicons name="share-outline" size={20} color="#2196F3" style={styles.shareIcon} />
-            <CText style={styles.shareButtonText}>Compartir perfil</CText>
+            onPress={handleShareActa}>
+            <Ionicons
+              name="document-text-outline"
+              size={20}
+              color="#fff"
+              style={styles.shareIcon}
+            />
+            <CText style={styles.shareButtonText}>
+              Compartir NFT del acta{' '}
+            </CText>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backHomeButton}
-            onPress={handleBack}>
+          <TouchableOpacity style={styles.backHomeButton} onPress={handleBack}>
             <CText style={styles.backHomeButtonText}>Regresar al inicio</CText>
           </TouchableOpacity>
         </View>
@@ -186,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     marginBottom: getResponsiveSize(20, 25, 30),
@@ -275,7 +318,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shareButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#17694A',
     borderRadius: 12,
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(30, 36, 42),
@@ -285,13 +328,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: '#fff',
   },
   shareIcon: {
     marginRight: 8,
   },
   shareButtonText: {
-    color: '#2196F3',
+    color: '#fff',
     fontWeight: '700',
     fontSize: getResponsiveSize(14, 16, 18),
     textAlign: 'center',

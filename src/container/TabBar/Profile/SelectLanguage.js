@@ -13,11 +13,14 @@ import CText from '../../../components/common/CText';
 import {LanguageData} from '../../../api/constant';
 import CButton from '../../../components/common/CButton';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function SelectLanguage({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [isSelect, setIsSelect] = useState('English (USA)');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SelectLanguage', true);
   const onPressLanguage = item => {
     setIsSelect(item.lName);
   };
@@ -25,6 +28,7 @@ export default function SelectLanguage({navigation}) {
   const languages = ({item, index}) => {
     return (
       <TouchableOpacity
+        testID={`selectLanguageItem_${index}`}
         onPress={() => onPressLanguage(item)}
         style={[
           localStyle.languageContainer,
@@ -43,9 +47,10 @@ export default function SelectLanguage({navigation}) {
                 : colors.backgroundColor,
           },
         ]}>
-        <View style={localStyle.flagAndNameContainer}>
+        <View testID={`selectLanguageFlagAndNameContainer_${index}`} style={localStyle.flagAndNameContainer}>
           {item.svgIcon}
           <CText
+            testID={`selectLanguageName_${index}`}
             type={'B14'}
             color={isSelect === item.lName ? colors.primary : colors.textColor}
             style={styles.ml10}>
@@ -53,6 +58,7 @@ export default function SelectLanguage({navigation}) {
           </CText>
         </View>
         <Ionicons
+          testID={`selectLanguageRadio_${index}`}
           name={
             isSelect === item?.lName ? 'radio-button-on' : 'radio-button-off'
           }
@@ -71,6 +77,7 @@ export default function SelectLanguage({navigation}) {
   const FooterComponent = () => {
     return (
       <CButton
+        testID="selectLanguageChangeButton"
         title={String.changeLanguage}
         type={'B16'}
         onPress={onPressChangeLanguage}
@@ -83,9 +90,10 @@ export default function SelectLanguage({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.language} />
+    <CSafeAreaView testID="selectLanguageContainer">
+      <CHeader testID="selectLanguageHeader" title={String.language} />
       <FlatList
+        testID="selectLanguageList"
         data={LanguageData}
         renderItem={languages}
         keyExtractor={(item, index) => index.toString()}

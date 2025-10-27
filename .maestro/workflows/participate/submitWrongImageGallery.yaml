@@ -1,0 +1,14 @@
+appId: com.tuvotodecide
+name: submitWrongImageGallery
+onFlowStart:
+  - runFlow: ../../components/setup/initialSetup.yaml
+---
+- runFlow:
+    file: ../../components/voting/uploadElectoralRecord.yaml
+    env:
+        ELECTORAL_RECORD_LOCATION: ${MAESTRO_ELECTORAL_RECORD_LOCATION}   
+        ELECTORAL_RECORD_TABLE: ${MAESTRO_ELECTORAL_RECORD_TABLE_1}
+        TEST_TYPE: 'fail'
+        CAPTURE_TYPE: 'gallery'
+        IMAGE_NAME: ${MAESTRO_FIRST_USER_PHOTO_NAME}
+        RECORD_TYPE: 'new'

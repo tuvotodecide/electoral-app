@@ -9,11 +9,14 @@ import String from '../../../i18n/String';
 import {styles} from '../../../themes';
 import {TERMS_URL} from '@env';
 import {WebView} from 'react-native-webview';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function TermsAndCondition() {
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('TermsAndCondition', true);
   return (
-    <CSafeAreaView>
-      <CHeader title={String.termsConditions} />
+    <CSafeAreaView addTabPadding={false}>
+      <CHeader title={String.termsConditions} testID="termsConditionsHeader"/>
       <View style={localStyle.webViewContainer}>
         <WebView
           source={{uri: TERMS_URL}}
@@ -49,5 +52,10 @@ const localStyle = StyleSheet.create({
   webViewContainer: {
     flex: 1,
     overflow: 'hidden',
+    marginHorizontal: moderateScale(10), 
+    marginTop: moderateScale(10),        
+    marginBottom: moderateScale(10),     
+    borderRadius: moderateScale(8),      
+    backgroundColor: '#fff',             
   },
 });

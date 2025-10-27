@@ -1,6 +1,5 @@
 import {
   Alert,
-  Platform,
   SectionList,
   StyleSheet,
   Switch,
@@ -13,9 +12,8 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {JWT_KEY, moderateScale} from '../../../common/constants';
+import {moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
-import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import {SecuryData} from '../../../api/constant';
 import {TouchableOpacity} from 'react-native-gesture-handler';
@@ -23,76 +21,40 @@ import {useSelector} from 'react-redux';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icons from 'react-native-vector-icons/Entypo';
-import {biometryAvailability} from '../../../utils/Biometry';
-import {getBioFlag, setBioFlag, BIO_KEY} from '../../../utils/BioFlag';
-import * as Keychain from 'react-native-keychain';
-import {getSecrets} from '../../../utils/Cifrate';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getJwt} from '../../../utils/Session';
+import wira from 'wira-sdk';
+
 
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
+  const userData = useSelector(state => state.wallet.payload);
+
   const [bioEnabled, setBioEnabled] = useState(false);
   useEffect(() => {
-    (async () => setBioEnabled(await getBioFlag()))();
+    (async () => setBioEnabled(await wira.Biometric.getBioFlag()))();
   }, []);
 
   const toggleBio = async val => {
     try {
-      if (val) {
-        const {available} = await biometryAvailability();
-        if (!available) {
-          Alert.alert(
-            'Biometría no disponible',
-            'Actívala en Ajustes del sistema',
-          );
-          return;
-        }
-
-        const secrets = await getSecrets();
-
-        const jwt = await getJwt();
-        if (!secrets || !jwt) {
-          Alert.alert(
-            'Sin datos',
-            'Crea tu cuenta/PIN antes de activar la biometría',
-          );
-          return;
-        }
-
-        const storedPayload = secrets.payloadQr;
-        await Keychain.setGenericPassword(
-          'walletBundle',
-          JSON.stringify({stored: storedPayload, jwt}),
-          {
-            service: 'walletBundle',
-            accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            accessControl:
-              Platform.OS === 'ios'
-                ? Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
-                : Keychain.ACCESS_CONTROL.BIOMETRY_ANY,
-          },
-        );
-      } else {
-        await Keychain.resetGenericPassword({service: 'walletBundle'});
-
-        const secrets = await getSecrets();
-        if (secrets) {
-          await Keychain.setGenericPassword(
-            'finline.wallet.vc',
-            JSON.stringify(secrets.payloadQr),
-            {
-              service: 'finline.wallet.vc',
-              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            },
-          );
-        }
-      }
-
-      await setBioFlag(val);
+      await wira.toggleBiometricAuth(userData, val);
+      await wira.Biometric.setBioFlag(val);
       setBioEnabled(val);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      if(err.message === 'Biometric authentication is not available'){
+        Alert.alert(
+          'Biometría no disponible',
+          'Actívala en Ajustes del sistema',
+        );
+      } else if (err.message === 'User data is required to enable biometric authentication'){
+        Alert.alert(
+          'Sin datos',
+          'Crea tu cuenta/PIN antes de activar la biometría',
+        );
+      } else if (err.message === 'User cancelled biometric change'){
+        await wira.Biometric.setBioFlag(false);
+        setBioEnabled(false);
+      } else {
+        Alert.alert('Error', err?.message || 'No se pudo cambiar la biometría');
+      }
     }
   };
 
@@ -106,21 +68,24 @@ export default function Security({navigation}) {
     if (item.rightIcon === 'switch') {
       return (
         <View
+          testID={`securitySwitchItem_${item.id || index}`}
           style={[
             localStyle.renderItemContainer,
             {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
           ]}>
-          <View style={styles.rowCenter}>
+          <View testID="securityBiometricLabelContainer" style={styles.rowCenter}>
             <Icons
+              testID="securityBiometricIcon"
               name="fingerprint"
               size={moderateScale(20)}
               color={color.primary}
             />
-            <CText style={styles.ml10} type="B12">
+            <CText testID="securityBiometricLabel" style={styles.ml10} type="B12">
               {item.title}
             </CText>
           </View>
           <Switch
+            testID="securityBiometricSwitch"
             value={bioEnabled}
             onValueChange={toggleBio}
             trackColor={{
@@ -135,6 +100,7 @@ export default function Security({navigation}) {
 
     return (
       <TouchableOpacity
+        testID={`securityMenuItem_${item.id || index}`}
         disabled={item === String.darkMode}
         key={index}
         activeOpacity={item.rightIcon ? 1 : 0.5}
@@ -145,8 +111,9 @@ export default function Security({navigation}) {
             borderColor: color.dark ? color.grayScale700 : color.grayScale200,
           },
         ]}>
-        <View style={styles.rowCenter}>
+        <View testID={`securityMenuItemContent_${item.id || index}`} style={styles.rowCenter}>
           <View
+            testID={`securityMenuItemIconBackground_${item.id || index}`}
             style={[
               localStyle.iconBackground,
               {
@@ -158,23 +125,25 @@ export default function Security({navigation}) {
             ]}>
             {item.icon ? (
               <Icons
+                testID={`securityMenuItemIcon_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}
                 color={color.dark ? color.grayScale500 : color.grayScale400}
               />
             ) : (
-              <View>{color.dark ? item.darkIcon : item.lightIcon}</View>
+              <View testID={`securityMenuItemCustomIcon_${item.id || index}`}>{color.dark ? item.darkIcon : item.lightIcon}</View>
             )}
           </View>
-          <View style={styles.ml10}>
-            <CText type={'B12'}>{item.title}</CText>
-            <CText type={'R10'} color={color.grayScale500}>
+          <View testID={`securityMenuItemTextContainer_${item.id || index}`} style={styles.ml10}>
+            <CText testID={`securityMenuItemTitle_${item.id || index}`} type={'B12'}>{item.title}</CText>
+            <CText testID={`securityMenuItemValue_${item.id || index}`} type={'R10'} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
 
         <Ionicons
+          testID={`securityMenuItemArrow_${item.id || index}`}
           name={'chevron-forward-outline'}
           size={moderateScale(24)}
           color={color.dark ? color.grayScale500 : color.grayScale400}
@@ -185,10 +154,11 @@ export default function Security({navigation}) {
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.settings} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
+    <CSafeAreaView testID="securityContainer">
+      <CHeader testID="securityHeader" title={String.settings} />
+      <KeyBoardAvoidWrapper testID="securityKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <SectionList
+          testID="securitySectionList"
           sections={SecuryData}
           keyExtractor={(item, index) => item + index}
           renderItem={RenderItem}

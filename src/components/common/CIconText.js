@@ -11,6 +11,7 @@ export default function CIconText({
   color = null,
   containerStyle,
   textStyle,
+  testID,
 }) {
   const colors = useSelector(state => state.theme.theme);
   const finalColor = color || colors.white;
@@ -18,7 +19,7 @@ export default function CIconText({
   const isTextString = typeof text === 'string' || typeof text === 'number';
 
   return (
-    <View style={[localStyle.wrapper, containerStyle]}>
+    <View testID={testID} style={[localStyle.wrapper, containerStyle]}>
       <View style={localStyle.iconWrapper}>{icon}</View>
       <View style={[localStyle.text, textStyle]}>
         {isTextString ? (

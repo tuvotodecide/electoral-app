@@ -59,35 +59,16 @@ const WitnessRecordScreen = ({navigation, route}) => {
   const loadTablesFromApi = async locationId => {
     try {
       setIsLoading(true);
-      console.log(
-        'WitnessRecord: Loading tables from API for location:',
-        locationId,
-      );
+
       // const response = await axios.get(
       //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
       // );
       const response = await axios.get(
         `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
-      console.log('WitnessRecord: API Response structure:', response.data);
-
+    
       if (response.data && response.data.tables) {
-        console.log(
-          'WitnessRecord: Tables found:',
-          response.data.tables.length,
-        );
-        console.log(
-          'WitnessRecord: First table structure:',
-          response.data.tables[0],
-        );
-        console.log(
-          'WitnessRecord: Complete first table JSON:',
-          JSON.stringify(response.data.tables[0], null, 2),
-        );
-        console.log('WitnessRecord: Location data (name, address):', {
-          name: response.data.name,
-          address: response.data.address,
-        });
+
 
         // Store location data for TableCard components
         setLocationData({
@@ -102,19 +83,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
         response.data.data &&
         response.data.data.tables
       ) {
-        console.log(
-          'WitnessRecord: Tables found in data.data:',
-          response.data.data.tables.length,
-        );
-        console.log(
-          'WitnessRecord: First table in data.data:',
-          response.data.data.tables[0],
-        );
-        console.log(
-          'WitnessRecord: Complete first table JSON in data.data:',
-          JSON.stringify(response.data.data.tables[0], null, 2),
-        );
-
+ 
         // Store location data for TableCard components
         setLocationData({
           name: response.data.data.name,
@@ -124,11 +93,11 @@ const WitnessRecordScreen = ({navigation, route}) => {
 
         setMesas(response.data.data.tables);
       } else {
-        console.log('WitnessRecord: No tables found in response');
+  
         showModal('info', String.info, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('WitnessRecord: Error loading tables from API:', error);
+
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoading(false);
@@ -147,21 +116,16 @@ const WitnessRecordScreen = ({navigation, route}) => {
   const loadTables = async () => {
     try {
       setIsLoading(true);
-      console.log('WitnessRecord: Loading tables...');
+      
       const response = await fetchMesas();
 
       if (response.success) {
-        console.log(
-          'WitnessRecord: Tables loaded successfully:',
-          response.data.length,
-        );
+
         setMesas(response.data);
       } else {
-        console.error('WitnessRecord: Failed to load tables');
         showModal('error', String.error, String.couldNotLoadTables);
       }
     } catch (error) {
-      console.error('WitnessRecord: Error loading tables:', error);
       showModal('error', String.error, String.errorLoadingTables);
     } finally {
       setIsLoading(false);
@@ -170,11 +134,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
 
   // Override handleTablePress for WitnessRecord specific behavior
   const handleTablePress = mesa => {
-    console.log('WitnessRecord - handleTablePress called with mesa:', mesa);
-    console.log(
-      'WitnessRecord - StackNav.WhichIsCorrectScreen:',
-      StackNav.WhichIsCorrectScreen,
-    );
+
 
     // Process the table data to include location information
     const processedMesa = {
@@ -196,7 +156,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
       locationData: locationData,
     };
 
-    console.log('WitnessRecord - Processed mesa data:', processedMesa);
+    
 
     try {
       // Navigate directly to WhichIsCorrectScreen with proper parameters
@@ -208,9 +168,9 @@ const WitnessRecordScreen = ({navigation, route}) => {
         photoUri:
           'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
       });
-      console.log('WitnessRecord - Navigation call successful');
+ 
     } catch (error) {
-      console.error('WitnessRecord - Navigation error:', error);
+
     }
   };
 
@@ -218,6 +178,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
   if (isLoading) {
     return (
       <View
+        testID="witnessRecordLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -225,10 +186,12 @@ const WitnessRecordScreen = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
+          testID="witnessRecordLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
+          testID="witnessRecordLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -245,6 +208,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
   return (
     <>
       <BaseSearchTableScreen
+        testID="witnessRecordBaseScreen"
         // Header props
         colors={colors}
         onBack={handleBack}
@@ -275,6 +239,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
+        testID="witnessRecordModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}

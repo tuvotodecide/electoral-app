@@ -10,19 +10,35 @@ import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import {AuthNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import CButton from '../../components/common/CButton';
 import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
+import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
-export default function SelectRecuperation({navigation}) {
+export default function SelectRecuperation({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
+  // Hook para logging de navegación
+  const {logAction, logNavigation} = useNavigationLogger(
+    'SelectRecuperation',
+    true,
+  );
+
+  const initCIrecovery = () => {
+    logAction('InitCIRecovery');
+    const params = {
+      isRecovery: true,
+    };
+    logNavigation(AuthNav.RegisterUser1, params);
+    navigation.navigate(AuthNav.RegisterUser1, params);
+  };
   return (
-    <CSafeAreaViewAuth>
+    <CSafeAreaViewAuth testID="selectRecuperationContainer">
       <CHeader
+        testID="selectRecuperationHeader"
         title={String.recoveryWallet}
         onPressBack={() => navigation.navigate(AuthNav.Connect)}
       />
       <KeyBoardAvoidWrapper
+        testID="selectRecuperationKeyboardWrapper"
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
@@ -30,10 +46,46 @@ export default function SelectRecuperation({navigation}) {
           {top: moderateScale(10)},
         ]}>
         <View style={localStyle.mainContainer}>
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="selectRecuperationTitle" type={'B20'} style={styles.boldText} align={'center'}>
             {String.recoverymethod}
           </CText>
         </View>
+        {!route.params?.disableCI &&
+          <TouchableOpacity
+            testID="selectRecuperationGuardiansOption"
+            style={[
+              localStyle.optionContainer,
+              {
+                backgroundColor: colors.backgroundColor,
+                borderColor: colors.dark
+                  ? colors.grayScale700
+                  : colors.grayScale200,
+
+                elevation: 5,
+              },
+            ]}
+            onPress={initCIrecovery}>
+            <View style={styles.rowCenter}>
+              <View
+                style={[
+                  localStyle.iconBg,
+                  {
+                    borderColor: colors.dark
+                      ? colors.stepBackgroundColor
+                      : colors.grayScale200,
+                  },
+                ]}>
+                <Icono name="card-account-details" size={moderateScale(24)} />
+              </View>
+              <View style={styles.ml10}>
+                <View style={styles.rowCenter}>
+                  <CText type="B16">{String.recoveryWithCI}</CText>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        }
+        
         <TouchableOpacity
           style={[
             localStyle.optionContainer,
@@ -46,9 +98,13 @@ export default function SelectRecuperation({navigation}) {
               elevation: 5,
             },
           ]}
-          onPress={() => navigation.navigate(AuthNav.FindMyUser)}>
+          onPress={() => {
+            logNavigation(AuthNav.FindMyUser);
+            navigation.navigate(AuthNav.FindMyUser);
+          }}>
           <View style={styles.rowCenter}>
             <View
+              testID="selectRecuperationGuardiansIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -61,12 +117,13 @@ export default function SelectRecuperation({navigation}) {
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText type="B16">{String.recoverymethodGuardians}</CText>
+                <CText testID="selectRecuperationGuardiansText" type="B16">{String.recoverymethodGuardians}</CText>
               </View>
             </View>
           </View>
         </TouchableOpacity>
         <TouchableOpacity
+          testID="selectRecuperationQROption"
           style={[
             localStyle.optionContainer,
             {
@@ -78,9 +135,13 @@ export default function SelectRecuperation({navigation}) {
               elevation: 5,
             },
           ]}
-          onPress={() => navigation.navigate(AuthNav.RecoveryQr)}>
+          onPress={() => {
+            logNavigation(AuthNav.RecoveryQr);
+            navigation.navigate(AuthNav.RecoveryQr);
+          }}>
           <View style={styles.rowCenter}>
             <View
+              testID="selectRecuperationQRIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -93,7 +154,7 @@ export default function SelectRecuperation({navigation}) {
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText type="B16">{String.recoverymethodQR}</CText>
+                <CText testID="selectRecuperationQRText" type="B16">{String.recoverymethodQR}</CText>
               </View>
             </View>
           </View>

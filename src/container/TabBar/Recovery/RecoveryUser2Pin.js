@@ -17,20 +17,23 @@ import StepIndicator from '../../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import CAlert from '../../../components/common/CAlert';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function RecoveryUser2Pin({navigation, route}) {
-  const {originalPin,reqId} = route.params;
+  const {originalPin, recData} = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('RecoveryUser2Pin', true);
   const otpRef = useRef(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       otpRef.current?.focusField(0);
-    }, 300);
+    }, 350);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -38,7 +41,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
     if (otp === originalPin) {
       navigation.navigate(AuthNav.RecoveryFinalize, {
         originalPin: otp,
-        reqId
+        recData,
       });
     } else {
       setShowError(true);
@@ -81,7 +84,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
+              autoFocusOnLoad={false}
               codeInputFieldStyle={[
                 localStyle.underlineStyleBase,
                 {
@@ -103,6 +106,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
           <View>
             <CButton
               disabled={otp.length !== 4}
+              testID="changePinNewContinueButton"
               title={String.confirmPinButton}
               type={'B16'}
               onPress={handleConfirmPin}

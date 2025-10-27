@@ -1,0 +1,247 @@
+import React from 'react';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Provider } from 'react-redux';
+import { PermissionsAndroid, Platform } from 'react-native';
+import axios from 'axios';
+
+import ElectoralLocationsScreen from '../../../../src/container/Vote/ElectoralLocationsScreen';
+import { StackNav } from '../../../../src/navigation/NavigationKey';
+
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios;
+
+// Mock strings
+jest.mock('../../../../src/i18n/String', () => require('../../../__mocks__/String').default);
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context');
+
+// Mock navigation
+jest.mock('@react-navigation/native');
+
+// Mock vector icons
+jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
+jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
+
+// Mock Geolocation
+jest.mock('@react-native-community/geolocation');
+
+// Mock custom components
+jest.mock('../../../../src/components/common/CSafeAreaView', () => 
+  require('../../../__mocks__/components/common/CSafeAreaView')
+);
+jest.mock('../../../../src/components/common/UniversalHeader', () => 
+  require('../../../__mocks__/components/common/UniversalHeader')
+);
+jest.mock('../../../../src/components/common/CText', () => 
+  require('../../../__mocks__/components/common/CText')
+);
+jest.mock('../../../../src/components/common/CustomModal', () => 
+  require('../../../__mocks__/components/common/CustomModal')
+);
+
+// Mock FlatList
+jest.mock('react-native/Libraries/Lists/FlatList', () => {
+  const React = require('react');
+  
+  return function FlatList({ data, renderItem, testID, keyExtractor, contentContainerStyle, ...props }) {
+    if (!data || data.length === 0) {
+      return React.createElement('FlatList', { testID, ...props });
+    }
+
+    const items = data.map((item, index) => {
+      const key = keyExtractor ? keyExtractor(item, index) : index.toString();
+      const renderedItem = renderItem({ item, index });
+      return React.createElement('View', { key }, renderedItem);
+    });
+
+    return React.createElement('View', { testID, style: contentContainerStyle, ...props }, items);
+  };
+});
+
+// Create a simple mock store using Redux Toolkit
+const createMockStore = () => {
+  const { configureStore } = require('@reduxjs/toolkit');
+  
+  return configureStore({
+    reducer: {
+      theme: (state = { 
+        theme: {
+          background: '#FFFFFF',
+          text: '#000000',
+          textSecondary: '#666666',
+          primary: '#4F9858',
+          primaryLight: '#E8F5E8',
+        } 
+      }) => state,
+    },
+    preloadedState: {
+      theme: {
+        theme: {
+          background: '#FFFFFF',
+          text: '#000000',
+          textSecondary: '#666666',
+          primary: '#4F9858',
+          primaryLight: '#E8F5E8',
+        }
+      }
+    }
+  });
+};
+
+// Mock data
+const mockLocationsData = [
+  {
+    id: '1',
+    name: 'Escuela Primaria Central',
+    address: 'Av. Principal 123, Centro',
+    tablesCount: 8,
+    code: 'EP001',
+    coordinates: { lat: -12.0464, lng: -77.0428 }
+  },
+  {
+    id: '2', 
+    name: 'Centro Comunitario Norte',
+    address: 'Calle Los Pinos 456, Norte',
+    tablesCount: 5,
+    code: 'CC002',
+    coordinates: { lat: -12.0564, lng: -77.0528 }
+  },
+  {
+    id: '3',
+    name: 'Instituto Tecnológico Sur',
+    address: 'Av. Universitaria 789, Sur',
+    tablesCount: 12,
+    code: 'ITS003',
+    coordinates: { lat: -12.0364, lng: -77.0328 }
+  }
+];
+
+// Mock navigation object
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  reset: jest.fn(),
+  setParams: jest.fn(),
+  dispatch: jest.fn(),
+  setOptions: jest.fn(),
+  isFocused: jest.fn(() => true),
+  addListener: jest.fn(() => jest.fn()),
+};
+
+describe('Tests de Estados y Props', () => {
+  let mockStore;
+
+  // Helper function to render component
+  const renderComponent = () => {
+    return render(
+      <Provider store={mockStore}>
+        <ElectoralLocationsScreen />
+      </Provider>
+    );
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Platform.OS = 'android'; // Usar Android para probar el flujo de permisos
+    mockStore = createMockStore();
+    
+    // Configuración por defecto de axios - esencial para que los tests funcionen
+    mockedAxios.get.mockResolvedValue({
+      data: mockLocationsData
+    });
+    
+    // Mock PermissionsAndroid para denegar permisos y forzar loadAllLocations
+    PermissionsAndroid.request = jest.fn().mockResolvedValue(PermissionsAndroid.RESULTS.DENIED);
+    PermissionsAndroid.RESULTS = {
+      GRANTED: 'granted',
+      DENIED: 'denied',
+      NEVER_ASK_AGAIN: 'never_ask_again',
+    };
+    PermissionsAndroid.PERMISSIONS = {
+      ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+    };
+
+    // Mock navigation
+    require('@react-navigation/native').useNavigation = jest.fn(() => mockNavigation);
+  });
+
+  describe('2.1 Estado Inicial', () => {
+    test('debe tener estado inicial correcto', () => {
+      mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+      
+      const { getByTestId } = renderComponent();
+      
+      // Debe estar en estado de carga inicialmente
+      expect(getByTestId('electoralLocationsLoadingIndicator')).toBeTruthy();
+    });
+    test('debe validar store de Redux disponible', () => {
+      const { getByTestId } = renderComponent();
+      
+      // Debe renderizar sin errores con store mock
+      expect(getByTestId('electoralLocationsLoadingContainer')).toBeTruthy();
+    });
+  });
+
+
+  describe('2.2 Cambios de Estado', () => {
+    test('debe transicionar de loading a datos correctamente', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: mockLocationsData
+      });
+      const { getByTestId, queryByTestId } = renderComponent();
+      
+      // Inicialmente debe mostrar loading
+      expect(getByTestId('electoralLocationsLoadingIndicator')).toBeTruthy();
+      
+      // Después de cargar debe mostrar la lista
+      await waitFor(() => {
+        expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+        expect(getByTestId('electoralLocationsList')).toBeTruthy();
+      });
+    });
+    test('debe transicionar de loading a estado vacío', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: []
+      });
+      
+      const { getByTestId, queryByTestId } = renderComponent();
+      
+      await waitFor(() => {
+        expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+        expect(getByTestId('electoralLocationsEmptyContainer')).toBeTruthy();
+      });
+    });
+    test('debe transicionar de loading a modal de error', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('Network error'));
+      
+      const { getByTestId, queryByTestId } = renderComponent();
+      
+      await waitFor(() => {
+        expect(queryByTestId('electoralLocationsLoadingIndicator')).toBeNull();
+        // El modal se muestra pero con el testID del CustomModal, no específico
+        expect(getByTestId('electoralLocationsModalCloseButton')).toBeTruthy();
+      });
+    });
+    test('debe mantener consistencia en re-renders', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: mockLocationsData
+      });
+      const { getByTestId, rerender } = renderComponent();
+      
+      await waitFor(() => {
+        expect(getByTestId('electoralLocationsList')).toBeTruthy();
+      });
+      
+      // Re-render no debe cambiar el estado
+      rerender(
+        <Provider store={mockStore}>
+          <ElectoralLocationsScreen />
+        </Provider>
+      );
+      
+      expect(getByTestId('electoralLocationsList')).toBeTruthy();
+    });
+  });
+});

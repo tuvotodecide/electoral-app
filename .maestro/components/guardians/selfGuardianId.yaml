@@ -1,0 +1,7 @@
+appId: com.tuvotodecide
+---
+- inputText: ${MAESTRO_PRINCIPAL_ID}
+- doubleTapOn:
+    id: addGuardiansSearchButton
+- assertVisible:
+    id: addGuardiansErrorAlert

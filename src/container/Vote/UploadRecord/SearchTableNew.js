@@ -5,6 +5,7 @@ import {StyleSheet} from 'react-native';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 import {
   fetchMesas,
   fetchNearbyMesas,
@@ -19,6 +20,8 @@ export default function SearchTable({navigation, route}) {
   const [mesas, setMesas] = useState([]);
   const [locationData, setLocationData] = useState(null);
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('SearchTableNew', true);
   // Cargar mesas al montar el componente
   useEffect(() => {
     if (route?.params?.locationId) {
@@ -31,19 +34,12 @@ export default function SearchTable({navigation, route}) {
   const loadMesasFromApi = async locationId => {
     try {
       setIsLoadingMesas(true);
-      console.log(
-        'SearchTable: Loading tables from API for location:',
-        locationId,
-      );
-      
+
       const response = await axios.get(
         `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
       );
-      console.log('SearchTable - API Response structure:', response.data);
 
       if (response.data && response.data.tables) {
-        console.log('SearchTable - Tables found:', response.data.tables.length);
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.name,
@@ -59,11 +55,6 @@ export default function SearchTable({navigation, route}) {
         response.data.data &&
         response.data.data.tables
       ) {
-        console.log(
-          'SearchTable - Tables found in data.data:',
-          response.data.data.tables.length,
-        );
-
         // Store location data for TableCard components
         setLocationData({
           name: response.data.data.name,
@@ -75,11 +66,9 @@ export default function SearchTable({navigation, route}) {
 
         setMesas(response.data.data.tables);
       } else {
-        console.log('SearchTable: No tables found in response');
         setMesas([]);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas from API:', error);
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);
@@ -89,26 +78,17 @@ export default function SearchTable({navigation, route}) {
   const loadMesas = async () => {
     try {
       setIsLoadingMesas(true);
-      console.log('SearchTable: Loading mesas...');
 
       // Obtener locationId si existe en route.params
       const locationId = route?.params?.locationId;
       const response = await fetchMesas(locationId);
 
       if (response.success) {
-        console.log(
-          'SearchTable: Mesas loaded successfully:',
-          response.data.length,
-          'for location:',
-          locationId || 'all',
-        );
         setMesas(response.data);
       } else {
-        console.error('SearchTable: Failed to load mesas');
         setMesas([]);
       }
     } catch (error) {
-      console.error('SearchTable: Error loading mesas:', error);
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);

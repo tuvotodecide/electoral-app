@@ -6,10 +6,12 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
-import {CHAIN} from '@env';
 import {
   getHeight,
+  GUARDIAN_RECOVERY_DNI,
   moderateScale,
+  PENDING_OWNER_ACCOUNT,
+  PENDING_OWNER_GUARDIAN_CT,
   PENDINGRECOVERY,
 } from '../../../common/constants';
 import CText from '../../../components/common/CText';
@@ -22,34 +24,29 @@ import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
 import {useKycFindPublicQuery} from '../../../data/kyc';
 import {
-  useGuardiansInviteQuery,
   useGuardiansRecoveryRequestQuery,
   useHasGuardiansQuery,
 } from '../../../data/guardians';
-import {Short_Black, Short_White} from '../../../assets/svg';
 import {ActivityIndicator} from 'react-native-paper';
-import InfoModal from '../../../components/modal/InfoModal';
 import InfoModalWithoutClose from '../../../components/modal/InfoModalWithoutClose';
-import {getDeviceId} from '../../../utils/device-id';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import wira from 'wira-sdk';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
 
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [carnet, setCarnet] = useState('');
   const {mutate: findPublicDni, isLoading} = useKycFindPublicQuery();
 
- 
-    const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
-  const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
-  const [nick, setNick] = useState('');
   const [candidate, setCandidate] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [hasGuardians, setHasGuardians] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
+  // Hook para logging de navegación
+  const { logAction, logNavigation } = useNavigationLogger('FindMyUser', true);
   const {
     has,
     loading: loadingHas,
@@ -84,7 +81,7 @@ export default function FindMyUser({navigation}) {
           }
           setCandidate({
             did: data.did,
-            fullName: data.fullName,
+            fullName: data.displayNamePublic,
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });
@@ -98,42 +95,51 @@ export default function FindMyUser({navigation}) {
     if (!candidate) {
       return;
     }
-    const deviceId = await getDeviceId();
+    const deviceId = await wira.DeviceId.getDeviceId();
 
     sendRequest(
-      {dni: carnet.trim(), deviceId},
+      {targetDid: candidate.did, deviceId},
       {
         onSuccess: async data => {
-          await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
-          await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
-          await AsyncStorage.setItem(
-            PENDING_OWNER_GUARDIAN_CT,
-            candidate.guardianAddress,
-          );
+          try {
+            await AsyncStorage.setItem(PENDINGRECOVERY, 'true');
+            await AsyncStorage.setItem(PENDING_OWNER_ACCOUNT, candidate.accountAddress);
+            await AsyncStorage.setItem(GUARDIAN_RECOVERY_DNI, carnet.trim());
 
-          setModalMessage(`${String.messagetorecovery}`);
-          setModalVisible(true);
+            if(candidate.guardianAddress) {
+              await AsyncStorage.setItem(
+                PENDING_OWNER_GUARDIAN_CT,
+                candidate.guardianAddress,
+              );
+            }
 
-          setCandidate(null);
-          setNick('');
-          navigation.replace(StackNav.AuthNavigation, {
-            screen: AuthNav.MyGuardiansStatus,
-            params: {dni: carnet.trim()},
-          });
+            setModalMessage(`${String.messagetorecovery}`);
+            setModalVisible(true);
+
+            setCandidate(null);
+            
+            navigation.replace(StackNav.AuthNavigation, {
+              screen: AuthNav.MyGuardiansStatus,
+              params: {dni: carnet.trim()},
+            });
+          } catch (error) {
+            console.error('Error storing data', error);
+          }
+          
         },
       },
     );
   };
 
   return (
-    <CSafeAreaView>
-      <CHeader title={String.recoveryAccountWithGuardians} />
-      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20}>
-        <CText type="R14" style={localStyle.fieldLabel}>
+    <CSafeAreaView testID="findMyUserContainer">
+      <CHeader title={String.recoveryAccountWithGuardians} testID="findMyUserHeader" />
+      <KeyBoardAvoidWrapper contentContainerStyle={styles.ph20} testID="findMyUserKeyboardWrapper">
+        <CText type="R14" style={localStyle.fieldLabel} testID="findMyUserIdLabel">
           {String.idPlaceholder}
         </CText>
-        <View style={localStyle.searchContainer}>
-          <View style={localStyle.inputWrapper}>
+        <View style={localStyle.searchContainer} testID="findMyUserSearchContainer">
+          <View style={localStyle.inputWrapper} testID="findMyUserInputWrapper">
             <CInput
               label={null}
               _value={carnet}
@@ -142,6 +148,7 @@ export default function FindMyUser({navigation}) {
               keyBoardType="numeric"
               inputContainerStyle={localStyle.inputContainer}
               inputBoxStyle={localStyle.inputBox}
+              testID="findMyUserIdInput"
             />
           </View>
 
@@ -151,7 +158,8 @@ export default function FindMyUser({navigation}) {
             style={[
               localStyle.searchButton,
               {backgroundColor: colors.primary},
-            ]}>
+            ]}
+            testID="findMyUserSearchButton">
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -159,39 +167,41 @@ export default function FindMyUser({navigation}) {
             )}
           </TouchableOpacity>
         </View>
-        {errorMsg && <CAlert status="error" message={errorMsg} />}
+        {errorMsg && <CAlert status="error" message={errorMsg} testID="findMyUserErrorAlert" />}
         {candidate && (
           <>
-            <CText type="R14" style={localStyle.fieldLabel}>
-              {String.guardianName}
+            <CText type="R14" style={localStyle.fieldLabel} testID="findMyUserNameLabel">
+              {String.foundUserName}
             </CText>
-            <View style={localStyle.inputWrapper}>
+            <View style={localStyle.inputWrapper} testID="findMyUserNameWrapper">
               <CInput
                 editable={false}
-                _value={candidate.fullName || '(sin nombre)'}
+                _value={candidate.fullName || '(nombre privado)'}
+                testID="findMyUserNameInput"
               />
             </View>
           </>
         )}
       </KeyBoardAvoidWrapper>
       {candidate && (
-        <View style={localStyle.confirmContainer}>
+        <View style={localStyle.confirmContainer} testID="findMyUserConfirmContainer">
           <TouchableOpacity
             style={localStyle.confirmRow}
             onPress={onToggleConfirm}
-            disabled={loadingHas || !candidate}>
+            disabled={loadingHas || !candidate}
+            testID="findMyUserConfirmButton">
             <Icono
               name={confirmed ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={20}
               color={colors.primaryColor}
             />
-            <CText style={localStyle.confirmText}>
+            <CText style={localStyle.confirmText} testID="findMyUserConfirmText">
               {String.confirmDataCorrect}
             </CText>
           </TouchableOpacity>
         </View>
       )}
-      <View style={localStyle.bottomTextContainer}>
+      <View style={localStyle.bottomTextContainer} testID="findMyUserBottomContainer">
         <CButton
           title={String.sendRecovery}
           disabled={loading || !candidate || !confirmed}
@@ -199,6 +209,7 @@ export default function FindMyUser({navigation}) {
           type={'B16'}
           containerStyle={localStyle.btnStyle}
           frontIcon={<Icono size={20} name="send" color={'#fff'} />}
+          testID="findMyUserSendButton"
         />
       </View>
       <InfoModalWithoutClose
@@ -206,6 +217,7 @@ export default function FindMyUser({navigation}) {
         title="¡Invitación!"
         message={modalMessage}
         onClose={() => setModalVisible(false)}
+        testID="findMyUserInfoModal"
       />
     </CSafeAreaView>
   );

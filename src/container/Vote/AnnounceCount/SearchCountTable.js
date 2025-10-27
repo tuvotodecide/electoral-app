@@ -9,6 +9,7 @@ import {fetchMesasConteo} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import axios from 'axios';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -33,6 +34,9 @@ const SearchCountTable = ({navigation, route}) => {
     message: '',
     buttonText: String.acceptButton,
   });
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [selectedMesa, setSelectedMesa] = useState(null);
+  const [sending, setSending] = useState(false);
 
   const {
     colors,
@@ -45,55 +49,168 @@ const SearchCountTable = ({navigation, route}) => {
     handleProfilePress,
   } = useSearchTableLogic(StackNav.CountTableDetail);
 
-  // Custom handleTablePress that processes table data with location info
-  const handleTablePress = (table) => {
-    console.log('SearchCountTable: Processing table press for:', table);
-    
+  // Custom handleTablePress abrir modal "Anunciar conteo"
+  const handleTablePress = table => {
     // Process the table data to include location information
     const processedMesa = {
       // Table identification
-      numero: table.tableNumber || table.numero || table.number || table.name || table.id || 'N/A',
-      codigo: table.tableCode || table.codigo || table.code || table.id || 'N/A',
-      
+      numero:
+        table.tableNumber ||
+        table.numero ||
+        table.number ||
+        table.name ||
+        table.id ||
+        'N/A',
+      codigo:
+        table.tableCode || table.codigo || table.code || table.id || 'N/A',
+      tableId: table._id || table.id,
+      tableCode: table.tableCode || table.codigo || table.code,
       // Location information from locationData or table itself
-      recinto: locationData?.name || table.recinto || table.venue || table.precinctName || 'N/A',
-      colegio: locationData?.name || table.colegio || table.venue || table.precinctName || 'N/A',
-      provincia: locationData?.address || table.direccion || table.address || table.provincia || 'N/A',
-      
+      recinto:
+        locationData?.name ||
+        table.recinto ||
+        table.venue ||
+        table.precinctName ||
+        'N/A',
+      colegio:
+        locationData?.name ||
+        table.colegio ||
+        table.venue ||
+        table.precinctName ||
+        'N/A',
+      provincia:
+        locationData?.address ||
+        table.direccion ||
+        table.address ||
+        table.provincia ||
+        'N/A',
+
       // Additional location details if available
       zona: locationData?.zone || table.zona || table.zone || 'N/A',
-      distrito: locationData?.district || table.distrito || table.district || 'N/A',
-      
+      distrito:
+        locationData?.district || table.distrito || table.district || 'N/A',
+
       // Original table data for reference
       originalTableData: table,
       locationData: locationData,
     };
 
-    console.log('SearchCountTable: Processed mesa data:', processedMesa);
-    
-    // Navigate with both processed mesa and original table
-    originalHandleTablePress({
-      table: processedMesa,
-      mesa: processedMesa,
-      originalTable: table,
-      locationData: locationData,
-    });
+    setSelectedMesa(processedMesa);
+    setConfirmVisible(true);
+  };
+
+  // Llamada al backend para que publique al tópico del recinto
+  const sendAnnounceCount = async () => {
+    const locationId =
+      route?.params?.locationId ||
+      locationData?._id ||
+      locationData?.locationId;
+
+    if (!selectedMesa || !locationId) {
+      setConfirmVisible(false);
+      setModalConfig({
+        type: 'error',
+        title: String.errorTitle || 'Error',
+        message: 'Faltan datos de recinto o mesa.',
+        buttonText: String.acceptButton || 'Aceptar',
+      });
+      setModalVisible(true);
+      return;
+    }
+
+    const tableCode =
+      selectedMesa.codigo ||
+      selectedMesa.tableCode ||
+      selectedMesa.originalTableData?.tableCode;
+
+    if (!tableCode) {
+      setConfirmVisible(false);
+      setModalConfig({
+        type: 'error',
+        title: String.errorTitle || 'Error',
+        message: 'No se encontró el código de la mesa.',
+        buttonText: String.acceptButton || 'Aceptar',
+      });
+      setModalVisible(true);
+      return;
+    }
+
+    try {
+      setSending(true);
+
+      await axios.post(
+        `${BACKEND_RESULT}/api/v1/announcements/count`,
+        {
+          locationId,
+          locationCode: locationData?.code,
+          tableId: (
+            selectedMesa.tableId ?? selectedMesa.originalTableData?._id
+          )?.toString(),
+          tableCode: (
+            selectedMesa.codigo ??
+            selectedMesa.tableCode ??
+            selectedMesa.originalTableData?.tableCode
+          )?.toString(),
+          title: 'Conteo anunciado',
+          body: `${locationData?.name || 'Recinto'} · Mesa ${
+            selectedMesa.numero
+          }`,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': BACKEND_SECRET,
+          },
+          timeout: 30000,
+        },
+      );
+
+      setConfirmVisible(false);
+      setModalConfig({
+        type: 'success',
+        title: 'Enviado',
+        message: 'Se anunció el conteo para la mesa seleccionada.',
+        buttonText: String.acceptButton || 'Aceptar',
+      });
+      setModalVisible(true);
+    } catch (e) {
+      setConfirmVisible(false);
+      setModalConfig({
+        type: 'error',
+        title: String.errorTitle || 'Error',
+        message:
+          e?.response?.data?.message ||
+          'No se pudo enviar la notificación de conteo.',
+        buttonText: String.acceptButton || 'Aceptar',
+      });
+      setModalVisible(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   const styles = createSearchTableStyles();
 
   // Load tables when component mounts
   useEffect(() => {
-    const locationId = route?.params?.locationId;
-    console.log('SearchCountTable: useEffect triggered with locationId:', locationId);
-    
-    if (locationId) {
-      console.log('SearchCountTable: Loading from API with locationId:', locationId);
-      loadTablesFromApi(locationId);
-    } else {
-      console.log('SearchCountTable: No locationId, loading from mock data');
-      loadTables();
-    }
+    setIsLoading(true);
+
+    const loc = route?.params?.locationData || {};
+    const id = route?.params?.locationId;
+
+    setLocationData({
+      _id: id,
+      name: loc.name,
+      address: loc.address,
+      code: loc.code,
+      zone: loc.zone,
+      district: loc.district,
+    });
+
+    const initial = Array.isArray(loc.tables) ? loc.tables : [];
+    setMesas(initial);
+
+    setIsLoading(false);
   }, [route?.params?.locationId]);
 
   const showModal = (
@@ -110,158 +227,11 @@ const SearchCountTable = ({navigation, route}) => {
     setModalVisible(false);
   };
 
-  const loadTablesFromApi = async locationId => {
-    try {
-      setIsLoading(true);
-      console.log(
-        'SearchCountTable: Loading tables from API for location:',
-        locationId,
-      );
-      // const response = await axios.get(
-      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
-      // );
-      const response = await axios.get(
-        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
-      );
-      console.log('SearchCountTable - API Response structure:', response.data);
-
-      if (response.data && response.data.tables && response.data.tables.length > 0) {
-        console.log('SearchCountTable - Tables found:', response.data.tables.length);
-        console.log(
-          'SearchCountTable - First table structure:',
-          response.data.tables[0],
-        );
-        console.log(
-          'SearchCountTable - Complete first table JSON:',
-          JSON.stringify(response.data.tables[0], null, 2),
-        );
-        console.log('SearchCountTable - Location data (name, address):', {
-          name: response.data.name,
-          address: response.data.address,
-        });
-
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.name,
-          address: response.data.address,
-          code: response.data.code,
-          zone: response.data.zone,
-          district: response.data.district,
-        });
-
-        setMesas(response.data.tables);
-      } else if (
-        response.data &&
-        response.data.data &&
-        response.data.data.tables &&
-        response.data.data.tables.length > 0
-      ) {
-        console.log(
-          'SearchCountTable - Tables found in data.data:',
-          response.data.data.tables.length,
-        );
-        console.log(
-          'SearchCountTable - First table in data.data structure:',
-          response.data.data.tables[0],
-        );
-        console.log(
-          'SearchCountTable - Complete first table JSON in data.data:',
-          JSON.stringify(response.data.data.tables[0], null, 2),
-        );
-
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.data.name,
-          address: response.data.data.address,
-          code: response.data.data.code,
-          zone: response.data.data.zone,
-          district: response.data.data.district,
-        });
-
-        setMesas(response.data.data.tables);
-      } else {
-        console.log('SearchCountTable: No tables found in API response, falling back to mock data');
-        // Fallback to mock data when API has no tables
-        const mockResponse = await fetchMesasConteo(locationId);
-        if (mockResponse.success && mockResponse.data.length > 0) {
-          console.log('SearchCountTable: Mock data fallback successful:', mockResponse.data.length);
-          setMesas(mockResponse.data);
-          // Set location data from route params if available
-          const locationInfo = route?.params?.locationData;
-          if (locationInfo) {
-            setLocationData(locationInfo);
-          }
-        } else {
-          console.log('SearchCountTable: No tables found in API or mock data');
-          showModal('info', String.info, String.couldNotLoadCountTables);
-        }
-      }
-    } catch (error) {
-      console.error('SearchCountTable: Error loading tables from API:', error);
-      console.log('SearchCountTable: API failed, trying mock data fallback');
-      
-      // Fallback to mock data when API fails
-      try {
-        const mockResponse = await fetchMesasConteo(locationId);
-        if (mockResponse.success && mockResponse.data.length > 0) {
-          console.log('SearchCountTable: Mock data fallback after API error successful:', mockResponse.data.length);
-          setMesas(mockResponse.data);
-          // Set location data from route params if available
-          const locationInfo = route?.params?.locationData;
-          if (locationInfo) {
-            setLocationData(locationInfo);
-          }
-        } else {
-          showModal('error', String.errorTitle, String.errorLoadingCountTables);
-        }
-      } catch (mockError) {
-        console.error('SearchCountTable: Mock data fallback also failed:', mockError);
-        showModal('error', String.errorTitle, String.errorLoadingCountTables);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadTables = async () => {
-    try {
-      setIsLoading(true);
-      console.log('SearchCountTable: Loading count tables...');
-
-      // Obtener locationId del route.params si existe
-      const locationId = route?.params?.locationId;
-      const locationInfo = route?.params?.locationData;
-
-      // Si tenemos datos de ubicación, guardarlos
-      if (locationInfo) {
-        console.log('SearchCountTable: Setting location data:', locationInfo);
-        setLocationData(locationInfo);
-      }
-
-      const response = await fetchMesasConteo(locationId);
-
-      if (response.success) {
-        console.log(
-          'SearchCountTable: Count tables loaded successfully:',
-          response.data.length,
-        );
-        setMesas(response.data);
-      } else {
-        console.error('SearchCountTable: Failed to load count tables');
-        showModal('error', String.errorTitle, String.couldNotLoadCountTables);
-      }
-    } catch (error) {
-      console.error('SearchCountTable: Error loading count tables:', error);
-      showModal('error', String.errorTitle, String.errorLoadingCountTables);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Show loading indicator while tables are loading
   if (isLoading) {
     return (
       <View
+        testID="searchCountTableLoadingContainer"
         style={{
           flex: 1,
           justifyContent: 'center',
@@ -269,10 +239,12 @@ const SearchCountTable = ({navigation, route}) => {
           backgroundColor: '#FAFAFA',
         }}>
         <ActivityIndicator
+          testID="searchCountTableLoadingIndicator"
           size={isTablet ? 'large' : 'large'}
           color={colors.primary || '#4F9858'}
         />
         <CText
+          testID="searchCountTableLoadingText"
           style={{
             marginTop: getResponsiveSize(12, 15, 18),
             fontSize: getResponsiveSize(14, 16, 18),
@@ -289,9 +261,11 @@ const SearchCountTable = ({navigation, route}) => {
   return (
     <>
       <BaseSearchTableScreen
+        testID="searchCountTableBaseScreen"
         // Header props
         colors={colors}
         onBack={handleBack}
+        enableAutoVerification={false}
         title={String.searchTableForCount}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
@@ -319,12 +293,30 @@ const SearchCountTable = ({navigation, route}) => {
 
       {/* Custom Modal */}
       <CustomModal
+        testID="searchCountTableModal"
         visible={modalVisible}
         onClose={closeModal}
         type={modalConfig.type}
         title={modalConfig.title}
         message={modalConfig.message}
         buttonText={modalConfig.buttonText}
+      />
+
+      {/* Confirmación de Anunciar conteo */}
+      <CustomModal
+        visible={confirmVisible}
+        onClose={() => !sending && setConfirmVisible(false)}
+        type="success"
+        title="¿Anunciar conteo?"
+        message={
+          selectedMesa
+            ? `Recinto: ${locationData?.name}\nMesa: ${selectedMesa.numero}\nCódigo: ${selectedMesa.codigo}`
+            : ''
+        }
+        secondaryButtonText={String.cancel || 'Cancelar'}
+        onSecondaryPress={() => !sending && setConfirmVisible(false)}
+        buttonText={sending ? 'Enviando…' : 'Confirmar'}
+        onButtonPress={() => !sending && sendAnnounceCount()}
       />
     </>
   );

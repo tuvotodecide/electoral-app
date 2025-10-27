@@ -1,9 +1,8 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin2.js
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, View, Alert, InteractionManager} from 'react-native';
+import {StyleSheet, View, Alert} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
-import {SHA256} from 'crypto-js';
 
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
@@ -20,11 +19,17 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-import {createBundleFromPrivKey, saveSecrets} from '../../../utils/Cifrate';
 import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import wira from 'wira-sdk';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+import LoadingModal from '../../../components/modal/LoadingModal';
+import { resetAttempts } from '../../../utils/PinAttempts';
+
+const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryUserQrPin2({navigation, route}) {
   const {originalPin, payload} = route.params;
@@ -34,25 +39,49 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const [showError, setShowError] = useState(false);
   const dispatch = useDispatch();
   const otpRef = useRef(null);
+  const {logAction, logNavigation} = useNavigationLogger(
+    'RecoveryUserQrpin2',
+    true,
+  );
+  const [modal, setModal] = useState({
+    visible: false,
+    message: '',
+    isLoading: false,
+  });
 
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+    logAction('RecoveryPinScreenLoaded');
     return () => clearTimeout(t);
   }, []);
 
-  const finish = async () => {
-    try {
-      const bundle = await createBundleFromPrivKey(otp, payload.privKey);
-      const pinHash = SHA256(otp.trim()).toString();
+  const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
 
-      
-      await saveSecrets(
-        otp,
-        payload,
-        false, 
-        bundle, 
-        pinHash, 
-      );
+  const finish = async () => {
+    setModal({
+      visible: true,
+      message: String.recoveringData,
+      isLoading: true,
+    });
+
+    await yieldUI();
+    try {
+      logAction('RecoveryPinFinishAttempt');
+      if(payload.legacyData) {
+        navigation.navigate(
+          AuthNav.RegisterUser10,
+          {
+            ocrData: payload.legacyData,
+            dni: payload.data.dni,
+            originalPin,
+            useBiometry: await wira.Biometric.getBioFlag(),
+            isMigration: true,
+          }
+        )
+        return;
+      }
+
+      await recoveryService.saveQrData(payload.data, otp.trim(), PROVIDER_NAME, BACKEND_IDENTITY);
 
       dispatch(setSecrets(payload));
       dispatch(
@@ -63,18 +92,38 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       );
       dispatch(setAuthenticated(true));
       await startSession(null);
+      await resetAttempts();
 
+      setModal({
+        visible: false,
+        message: '',
+        isLoading: false,
+      })
+
+      logNavigation(AuthNav.LoginUser);
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
+      logAction('RecoveryPinFinishSuccess');
     } catch (err) {
-      Alert.alert('Error', err.message);
+      logAction('RecoveryPinFinishError', {message: err?.message});
+      setModal({
+        visible: true,
+        message: 'Error: ' + err.message,
+        isLoading: false,
+      })
     }
   };
 
   const handleConfirmPin = () => {
-    if (otp === originalPin) finish();
+    const matchesOriginal = otp === originalPin;
+    logAction('RecoveryPinConfirmAttempt', {
+      matchesOriginal,
+      length: otp.length,
+    });
+    if (matchesOriginal) finish();
     else {
       setShowError(true);
       setOtp('');
+      logAction('RecoveryPinMismatch');
     }
   };
 
@@ -127,11 +176,19 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
           <CButton
             title={String.confirmPinButton}
+            testID="changePinNewContinueButton"
             disabled={otp.length !== 4}
             onPress={handleConfirmPin}
           />
         </View>
       </KeyBoardAvoidWrapper>
+      <LoadingModal
+        {...modal}
+        buttonText={String.retryRecovery}
+        onClose={() =>
+          navigation.navigate(AuthNav.RecoveryQr)
+        }
+      />
     </CSafeAreaViewAuth>
   );
 }

@@ -1,16 +1,35 @@
-
 import ReactNativeBiometrics from 'react-native-biometrics';
-
 const rnBio = new ReactNativeBiometrics();
 
-
 export async function biometryAvailability() {
-  const { available, biometryType } = await rnBio.isSensorAvailable();
-  return { available, biometryType };
+  try {
+    const response = await rnBio.isSensorAvailable();
+
+    if (!response || typeof response !== 'object') {
+      return {available: undefined, biometryType: undefined};
+    }
+
+    const {available, biometryType} = response;
+    return {available, biometryType};
+  } catch (error) {
+    throw error;
+  }
 }
 
-
 export async function biometricLogin(prompt = 'Autentícate') {
-  const { success } = await rnBio.simplePrompt({ promptMessage: prompt });
-  return success;
+  const promptMessage = prompt === undefined ? 'Autentícate' : prompt;
+
+  try {
+    const response = await rnBio.simplePrompt({
+      promptMessage,
+    });
+
+    if (!response || typeof response !== 'object') {
+      return undefined;
+    }
+
+    return response.success;
+  } catch (error) {
+    throw error;
+  }
 }

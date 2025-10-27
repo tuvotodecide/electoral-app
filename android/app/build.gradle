@@ -83,11 +83,11 @@ android {
         applicationId = "com.tuvotodecide"
         minSdkVersion  = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
-        versionCode =  8
-        versionName = "1.0.4"
+        versionCode =  18
+        versionName = "1.0.5"
     }
     signingConfigs {
-   shared {
+        shared {
             storeFile file("$rootDir/app/keystores/identity-release.keystore")
             storePassword "password"
             keyAlias      "my-key-alias"
@@ -95,16 +95,19 @@ android {
         }
     }
     buildTypes {
-         debug   { signingConfig signingConfigs.shared }
+        debug   { signingConfig signingConfigs.shared }
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.shared
+            // signingConfig signingConfigs.shared // Desactivado para evitar error de keystore
+           signingConfig signingConfigs.shared
             shrinkResources false
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-
         }
+    }
+    packagingOptions {
+        pickFirst("**/libc++_shared.so")
     }
 }
 
@@ -125,4 +128,4 @@ dependencies {
 }
 
 
-apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.gms.google-services' 

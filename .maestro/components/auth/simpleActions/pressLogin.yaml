@@ -1,0 +1,10 @@
+appId: com.tuvotodecide
+---
+- extendedWaitUntil:
+    visible:
+      id: connectLoginButton
+    timeout: 12000
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: connectLoginButton

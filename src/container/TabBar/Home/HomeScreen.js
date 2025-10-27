@@ -9,26 +9,41 @@ import {
   FlatList,
   Image,
   ImageBackground,
+  Alert,
 } from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearAuth } from '../../../redux/slices/authSlice';
-import { clearWallet } from '../../../redux/action/walletAction';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
+import {useDispatch} from 'react-redux';
+import {clearAuth} from '../../../redux/slices/authSlice';
+import {clearWallet} from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
-import { useSelector } from 'react-redux';
-import { store } from '../../../redux/store';
-import { clearSession } from '../../../utils/Session';
+import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
+import {useSelector} from 'react-redux';
+import {store} from '../../../redux/store';
+import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { JWT_KEY } from '../../../common/constants';
+import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+import {useFocusEffect} from '@react-navigation/native';
+import {
+  getAll as getOfflineQueue,
+  getVotePlace,
+  processQueue,
+  saveVotePlace,
+} from '../../../utils/offlineQueue';
+import {ActivityIndicator} from 'react-native-paper';
+import NetInfo from '@react-native-community/netinfo';
+import {publishActaHandler} from '../../../utils/offlineQueueHandler';
+import CustomModal from '../../../components/common/CustomModal';
+import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -53,50 +68,70 @@ const getCardLayout = () => {
     }
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
   } else {
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
+    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
   }
 };
 
-const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
+const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
 
 // Carousel Item Component
-const CarouselItem = ({ item }) => (
-  <View style={stylesx.carouselItem}>
-    <View style={stylesx.carouselContent}>
-      <View style={stylesx.carouselMainContent}>
-        {/* Imagen específica para cada elemento del carrusel */}
+const CarouselItem = ({item}) => (
+  <View testID={`homeCarouselItem_${item.id}`} style={stylesx.carouselItem}>
+    <View testID={`homeCarouselGrid_${item.id}`} style={stylesx.carouselGrid}>
+      <View testID={`homeCarouselLeft_${item.id}`} style={stylesx.carouselLeft}>
         <Image
+          testID={`homeCarouselImage_${item.id}`}
           source={item.image}
           style={stylesx.bcLogoImage}
           resizeMode="contain"
         />
-
-        <View style={stylesx.carouselTextContainer}>
-          <CText style={stylesx.carouselTitle}>{item.title}</CText>
-          <CText style={stylesx.carouselSubtitle}>{item.subtitle}</CText>
-        </View>
       </View>
 
-      {/* Botón en la esquina inferior derecha */}
-      <TouchableOpacity
-        style={stylesx.carouselButton}
-        onPress={item.onPress}
-        activeOpacity={0.8}>
-        <CText style={stylesx.carouselButtonText}>{item.buttonText}</CText>
-      </TouchableOpacity>
+      <View
+        testID={`homeCarouselRight_${item.id}`}
+        style={stylesx.carouselRight}>
+        <View
+          testID={`homeCarouselTextContainer_${item.id}`}
+          style={stylesx.carouselTextContainer}>
+          <CText
+            testID={`homeCarouselTitle_${item.id}`}
+            style={stylesx.carouselTitle}>
+            {item.title}
+          </CText>
+          <CText
+            testID={`homeCarouselSubtitle_${item.id}`}
+            style={stylesx.carouselSubtitle}
+            numberOfLines={3}>
+            {item.subtitle}
+          </CText>
+        </View>
+
+        <TouchableOpacity
+          testID={`homeCarouselButton_${item.id}`}
+          style={stylesx.carouselButtonInline}
+          onPress={item.onPress}
+          activeOpacity={0.8}>
+          <CText
+            testID={`homeCarouselButtonText_${item.id}`}
+            style={stylesx.carouselButtonText}>
+            {item.buttonText}
+          </CText>
+        </TouchableOpacity>
+      </View>
     </View>
   </View>
 );
 
 const MiVotoLogo = () => (
-  <View style={stylesx.logoRow}>
+  <View testID="homeMiVotoLogo" style={stylesx.logoRow}>
     {/* Bandera */}
     <Image
+      testID="MiVotoLogoImage"
       source={images.logoImg}
       style={stylesx.logoImage}
       resizeMode="contain"
@@ -119,46 +154,215 @@ const MiVotoLogo = () => (
       />
       <View style={stylesx.flagCheckOutline} />
     </View> */}
-    <View style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
-      <CText style={stylesx.logoTitle}>Tu Voto Decide</CText>
-      <CText style={stylesx.logoSubtitle}>Control ciudadano del voto</CText>
+    <View
+      testID="homeMiVotoLogoText"
+      style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+      <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>
+        Tu Voto Decide
+      </CText>
+      <CText testID="homeMiVotoLogoSubtitle" style={stylesx.logoSubtitle}>
+        Control ciudadano del voto
+      </CText>
     </View>
+  </View>
+);
+
+const RegisterAlertCard = ({onPress}) => (
+  <View style={stylesx.registerAlertCard}>
+    <View style={{flex: 1}}>
+      <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
+      <CText style={stylesx.registerAlertSubtitle}>
+        Registra tu recinto y mesa para recibir avisos.
+      </CText>
+    </View>
+
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={stylesx.registerAlertCta}
+      accessibilityRole="button"
+      accessibilityLabel="Registrar recinto">
+      <Ionicons
+        name="arrow-forward"
+        size={getResponsiveSize(16, 18, 20)}
+        color="#fff"
+      />
+    </TouchableOpacity>
   </View>
 );
 
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
-  <View style={stylesx.bannerBC}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-      <View style={{ marginLeft: 10, flex: 1 }}>
-        <CText style={stylesx.bannerTitle}>{String.needBlockchainApp}</CText>
-        <CText style={stylesx.bannerSubtitle}>
+  <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
+    <View
+      testID="homeBlockchainBannerContent"
+      style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+      <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
+        <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
+          {String.needBlockchainApp}
+        </CText>
+        <CText
+          testID="homeBlockchainBannerSubtitle"
+          style={stylesx.bannerSubtitle}>
           {String.blockchainConsultBanner}
         </CText>
       </View>
     </View>
     <TouchableOpacity
+      testID="homeBlockchainBannerButton"
       onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
       style={stylesx.bannerButton}
       activeOpacity={0.8}>
-      <CText style={stylesx.bannerButtonText}>{String.learnMore}</CText>
+      <CText
+        testID="homeBlockchainBannerButtonText"
+        style={stylesx.bannerButtonText}>
+        {String.learnMore}
+      </CText>
     </TouchableOpacity>
   </View>
 );
+const CTA_HEIGHT = getResponsiveSize(44, 48, 56);
+const CTA_WIDTH = getResponsiveSize(120, 140, 160);
+const CTA_MARGIN = getResponsiveSize(16, 20, 24);
+const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({navigation}) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
+  const auth = useSelector(s => s.auth);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
+  const [hasPendingActa, setHasPendingActa] = useState(false);
+  const processingRef = useRef(false);
+  const [checkingVotePlace, setCheckingVotePlace] = useState(true);
+  const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
+
+
+
+  const userData = useSelector(state => state.wallet.payload);
+
+  const [infoModal, setInfoModal] = useState({
+    visible: false,
+    type: 'warning',
+    title: '',
+    message: '',
+  });
+
+  const runOfflineQueueOnce = useCallback(async () => {
+    if (processingRef.current) return;
+    // Solo si hay sesión y llaves listas
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
+      return;
+    const net = await NetInfo.fetch();
+    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    if (!online) return;
+    processingRef.current = true;
+    try {
+      const result = await processQueue(async item => {
+        await publishActaHandler(item, userData);
+      });
+      if (typeof result?.remaining === 'number') {
+        setHasPendingActa(result.remaining > 0);
+      } else {
+        const listAfter = await getOfflineQueue();
+        const pendingAfter = (listAfter || []).some(
+          i => i.task?.type === 'publishActa',
+        );
+        setHasPendingActa(pendingAfter);
+      }
+    } catch (e) {
+      // no-op: los que fallen se quedan en cola
+    } finally {
+      processingRef.current = false;
+    }
+  }, [auth?.isAuthenticated, userData]);
+
+  const handleParticiparPress = async () => {
+    const net = await NetInfo.fetch();
+    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    if (online) {
+      navigation.navigate(StackNav.ElectoralLocations, {
+        targetScreen: 'UnifiedParticipation',
+      });
+      return;
+    }
+    if (!dni) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'No se pudo detectar tu DNI para cargar tu recinto.',
+      });
+      return;
+    }
+    const cached = await getVotePlace(dni);
+    if (cached?.location?._id) {
+      navigation.navigate(StackNav.UnifiedParticipationScreen, {
+        dni,
+        locationId: cached.location._id,
+        locationData: cached.location,
+        ...(cached.table ? {tableData: cached.table} : {}),
+        fromCache: true,
+        offline: true,
+      });
+    } else {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión para escoger tu recinto por primera vez.',
+      });
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const checkQueue = async () => {
+        try {
+          const list = await getOfflineQueue();
+
+          const pending = (list || []).some(
+            i => i.task?.type === 'publishActa',
+          );
+
+          if (isActive) setHasPendingActa(pending);
+        } catch {}
+      };
+      checkQueue();
+      const t = setInterval(checkQueue, 4000); // refresca cada 4s mientras está enfocada
+      return () => {
+        isActive = false;
+        clearInterval(t);
+      };
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      checkUserVotePlace();
+      let alive = true;
+      // intenta una vez al enfocar
+      runOfflineQueueOnce();
+      // escucha cambios de red mientras esta pantalla está activa
+      const unsubNet = NetInfo.addEventListener(state => {
+        const online = isStateEffectivelyOnline(state,NET_POLICIES.balanced);
+        if (online && alive) runOfflineQueueOnce();
+      });
+      return () => {
+        alive = false;
+        unsubNet && unsubNet();
+      };
+    }, [runOfflineQueueOnce]),
+  );
 
   // Datos del carrusel
   const carouselData = [
     {
       id: 1,
-      title: '¿Necesita un app blockchain?',
+      title: '¿Necesita una app blockchain?',
       subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
       buttonText: 'Más Info',
       backgroundColor: '#e8f5e8',
@@ -174,24 +378,6 @@ export default function HomeScreen({ navigation }) {
       image: require('../../../assets/images/block-aso.png'),
       onPress: () => Linking.openURL('https://asoblockchainbolivia.org/'),
     },
-    // {
-    //   id: 3,
-    //   title: 'Transparencia y confianza',
-    //   subtitle: 'Tecnología blockchain para procesos electorales seguros',
-    //   buttonText: 'Descubrir',
-    //   backgroundColor: '#fff5e8',
-    //   image: require('../../../assets/images/block-con.png'),
-    //   onPress: () => console.log('Blockchain info pressed'),
-    // },
-    // {
-    //   id: 4,
-    //   title: 'Seguridad garantizada',
-    //   subtitle: 'Protegemos la integridad de cada voto con tecnología avanzada',
-    //   buttonText: 'Ver más',
-    //   backgroundColor: '#f0f8ff',
-    //   image: require('../../../assets/images/block-con.png'),
-    //   onPress: () => console.log('Security info pressed'),
-    // },
   ];
 
   // Auto-scroll del carrusel
@@ -220,34 +406,93 @@ export default function HomeScreen({ navigation }) {
 
       navigation.reset({
         index: 0,
-        routes: [{ name: StackNav.AuthNavigation }],
+        routes: [{name: StackNav.AuthNavigation}],
       });
-    } catch (err) {
-      console.error('Logout error', err);
-    }
+    } catch (err) {}
   };
 
-  const userData = useSelector(state => state.wallet.payload);
   const vc = userData?.vc;
-  const subject = vc?.credentialSubject || {};
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni;
+
+  const normalizeVotePlace = srv => {
+    const loc = srv?.location || {};
+    const tab = srv?.table || {};
+    return {
+      location: {
+        ...loc,
+        _id: loc._id || loc.id,
+        id: loc.id || loc._id,
+      },
+      table:
+        tab && Object.keys(tab).length
+          ? {
+              ...tab,
+              _id: tab._id || tab.id,
+              id: tab.id || tab._id,
+              tableId: tab.tableId || tab._id || tab.id,
+              tableCode: tab.tableCode || tab.code || tab.codigo,
+              tableNumber: String(
+                tab.tableNumber || tab.numero || tab.number || '',
+              ),
+            }
+          : undefined,
+    };
+  };
+  const checkUserVotePlace = useCallback(async () => {
+    if (!dni) {
+      setShouldShowRegisterAlert(false);
+      setCheckingVotePlace(false);
+      return;
+    }
+    try {
+      setCheckingVotePlace(true);
+      const res = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+        {
+          timeout: 12000,
+          headers: {'x-api-key': BACKEND_SECRET},
+        },
+      );
+
+      if (res?.data) {
+        const {location, table} = normalizeVotePlace(res.data);
+        await saveVotePlace(dni, {
+          dni,
+          userId: res.data.userId,
+          location,
+          table,
+        });
+      }
+      const hasBoth = !!res?.data?.location && !!res?.data?.table;
+      setShouldShowRegisterAlert(!hasBoth);
+    } catch (e) {
+      const cached = await getVotePlace(dni);
+      const hasBothCached = !!cached?.location && !!cached?.table;
+      setShouldShowRegisterAlert(!hasBothCached);
+    } finally {
+      setCheckingVotePlace(false);
+    }
+  }, [dni]);
+
   const data = {
     name: subject.fullName || '(sin nombre)',
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
-  const userFullName = data.name || '(sin nombre)';
+  const userFullName = data.name || '(sin nolombre)';
 
-  const onPressNotification = () => navigation.navigate(StackNav.Notification);
   const onPressLogout = () => setLogoutModalVisible(true);
 
   const menuItems = [
     {
       icon: 'people-outline',
-      title: String.participate,
-      description: String.participateDescription,
-      onPress: () =>
-        navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'UnifiedParticipation',
-        }),
+      title: String.sendAct,
+      description: String.sendActDescription,
+      onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
@@ -270,14 +515,16 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <CSafeAreaView style={stylesx.bg}>
+    <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
       {/* Modal de cerrar sesión */}
       <Modal
+        testID="homeLogoutModal"
         visible={logoutModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setLogoutModalVisible(false)}>
         <View
+          testID="homeLogoutModalOverlay"
           style={{
             flex: 1,
             backgroundColor: 'rgba(0,0,0,0.4)',
@@ -285,6 +532,7 @@ export default function HomeScreen({ navigation }) {
             alignItems: 'center',
           }}>
           <View
+            testID="homeLogoutModalContent"
             style={{
               backgroundColor: '#fff',
               borderRadius: 16,
@@ -292,12 +540,17 @@ export default function HomeScreen({ navigation }) {
               alignItems: 'center',
               width: '80%',
             }}>
-            <CText style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+            <CText
+              testID="homeLogoutModalTitle"
+              style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
               {String.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
-            <View style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
+            <View
+              testID="homeLogoutModalButtons"
+              style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
               <TouchableOpacity
+                testID="homeLogoutModalCancelButton"
                 style={{
                   backgroundColor: '#f5f5f5',
                   paddingVertical: 10,
@@ -306,11 +559,14 @@ export default function HomeScreen({ navigation }) {
                   marginRight: 8,
                 }}
                 onPress={() => setLogoutModalVisible(false)}>
-                <CText style={{ color: '#222', fontWeight: '600' }}>
+                <CText
+                  testID="homeLogoutModalCancelText"
+                  style={{color: '#222', fontWeight: '600'}}>
                   {String.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="homeLogoutModalConfirmButton"
                 style={{
                   backgroundColor: '#E72F2F',
                   paddingVertical: 10,
@@ -318,7 +574,9 @@ export default function HomeScreen({ navigation }) {
                   borderRadius: 8,
                 }}
                 onPress={handleLogout}>
-                <CText style={{ color: '#fff', fontWeight: '600' }}>
+                <CText
+                  testID="homeLogoutModalConfirmText"
+                  style={{color: '#fff', fontWeight: '600'}}>
                   {String.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -336,12 +594,11 @@ export default function HomeScreen({ navigation }) {
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
                 <TouchableOpacity
-                  disabled={true}
-                  style={stylesx.disabledIcon}>
+                  onPress={() => navigation.navigate(StackNav.Notification)}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#cccccc'}
+                    color={'#41A44D'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
@@ -368,7 +625,7 @@ export default function HomeScreen({ navigation }) {
               <FlatList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({ item }) => <CarouselItem item={item} />}
+                renderItem={({item}) => <CarouselItem item={item} />}
                 keyExtractor={item => item.id.toString()}
                 horizontal
                 pagingEnabled
@@ -387,15 +644,23 @@ export default function HomeScreen({ navigation }) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                        stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
               </View>
             </View>
           </View>
+          {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
+          <RegisterAlertCard
+            onPress={() =>
+              navigation.navigate(StackNav.ElectoralLocationsSave, {
+                dni,
+              })
+            }
+          />
+          {/*)}*/}
 
-          {/* Right Column: Menu Cards */}
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
             <View style={stylesx.gridParent}>
@@ -403,12 +668,13 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity
                 style={[stylesx.gridDiv1, stylesx.card]}
                 activeOpacity={0.87}
-                onPress={menuItems[0].onPress}>
+                onPress={menuItems[0].onPress}
+                testID="participateButton">
                 {React.createElement(menuItems[0].iconComponent, {
                   name: menuItems[0].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
 
                 <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
@@ -420,17 +686,20 @@ export default function HomeScreen({ navigation }) {
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                  activeOpacity={1}
-                  disabled={true}>
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[1].onPress}
+                  testID="announceCountButtonTablet">
                   {React.createElement(menuItems[1].iconComponent, {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#cccccc',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                    color: '#41A44D',
+                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
-                  <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                  <CText style={[stylesx.cardTitle]}>
+                    {menuItems[1].title}
+                  </CText>
+                  <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity>
@@ -438,14 +707,20 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity
                   style={[stylesx.gridDiv3, stylesx.card]}
                   activeOpacity={0.87}
-                  onPress={menuItems[2].onPress}>
+                  onPress={menuItems[2].onPress}
+                  testID="myWitnessesButton">
+                  {hasPendingActa && (
+                    <View style={stylesx.cardBadge}>
+                      <ActivityIndicator size="small" color="#41A44D" />
+                    </View>
+                  )}
                   {React.createElement(menuItems[2].iconComponent, {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
-                    color: '#41A44D',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                    color: '#fff',
+                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
                   })}
-                  <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                  <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
                     {menuItems[2].description}
                   </CText>
@@ -461,15 +736,15 @@ export default function HomeScreen({ navigation }) {
             <MiVotoLogo />
             <View style={stylesx.headerIcons}>
               <TouchableOpacity
-                disabled={true}
-                style={stylesx.disabledIcon}>
+                testID="notificationsButton"
+                onPress={() => navigation.navigate(StackNav.Notification)}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#cccccc'}
+                  color={'#41A44D'}
                 />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onPressLogout}>
+              <TouchableOpacity onPress={onPressLogout} testID="logoutButton">
                 <Ionicons
                   name="log-out-outline"
                   size={getResponsiveSize(24, 28, 32)}
@@ -492,7 +767,7 @@ export default function HomeScreen({ navigation }) {
             <FlatList
               ref={carouselRef}
               data={carouselData}
-              renderItem={({ item }) => <CarouselItem item={item} />}
+              renderItem={({item}) => <CarouselItem item={item} />}
               keyExtractor={item => item.id.toString()}
               horizontal
               pagingEnabled
@@ -511,44 +786,62 @@ export default function HomeScreen({ navigation }) {
                   style={[
                     stylesx.pageIndicator,
                     index === currentCarouselIndex &&
-                    stylesx.activePageIndicator,
+                      stylesx.activePageIndicator,
                   ]}
                 />
               ))}
             </View>
           </View>
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni,
+                })
+              }
+            />
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
             <TouchableOpacity
-              style={[stylesx.gridDiv1, stylesx.card]}
+              style={[
+                stylesx.gridDiv1,
+                stylesx.card,
+                {flexDirection: 'row', alignItems: 'center'},
+              ]}
               activeOpacity={0.87}
-              onPress={menuItems[0].onPress}>
+              onPress={menuItems[0].onPress}
+              testID="participateButtonRegular">
               {React.createElement(menuItems[0].iconComponent, {
                 name: menuItems[0].icon,
-                size: getResponsiveSize(30, 36, 42),
+                size: getResponsiveSize(40, 50, 60),
                 color: '#41A44D',
-                style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                style: {marginRight: getResponsiveSize(6, 8, 10)},
               })}
-              <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-              <CText style={stylesx.cardDescription}>
-                {menuItems[0].description}
-              </CText>
+
+              <View style={{flex: 1}}>
+                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                <CText style={stylesx.cardDescription}>
+                  {menuItems[0].description}
+                </CText>
+              </View>
             </TouchableOpacity>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card, stylesx.disabledItem]}
-                activeOpacity={1}
-                disabled={true}>
+                style={[stylesx.gridDiv2, stylesx.card]}
+                activeOpacity={0.87}
+                onPress={menuItems[1].onPress}
+                testID="announceCountButtonRegular">
                 {React.createElement(menuItems[1].iconComponent, {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
-                  color: '#cccccc',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  color: '#41A44D',
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={[stylesx.cardTitle, stylesx.disabledText]}>{menuItems[1].title}</CText>
-                <CText style={[stylesx.cardDescription, stylesx.disabledText]}>
+                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                <CText style={[stylesx.cardDescription]}>
                   {menuItems[1].description}
                 </CText>
               </TouchableOpacity>
@@ -556,14 +849,20 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity
                 style={[stylesx.gridDiv3, stylesx.card]}
                 activeOpacity={0.87}
-                onPress={menuItems[2].onPress}>
+                onPress={menuItems[2].onPress}
+                testID="myWitnessesButtonRegular">
+                {hasPendingActa && (
+                  <View style={stylesx.cardBadge}>
+                    <ActivityIndicator size="small" color="#ff0000ff" />
+                  </View>
+                )}
                 {React.createElement(menuItems[2].iconComponent, {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
                 })}
-                <CText style={stylesx.cardTitle}>{menuItems[2].title}</CText>
+                <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
                   {menuItems[2].description}
                 </CText>
@@ -572,6 +871,14 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       )}
+      <CustomModal
+        visible={!!infoModal.visible}
+        onClose={() => setInfoModal(m => ({...m, visible: false}))}
+        type={infoModal.type}
+        title={infoModal.title}
+        message={infoModal.message}
+        buttonText={'Aceptar'}
+      />
     </CSafeAreaView>
   );
 }
@@ -682,9 +989,9 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(40, 50, 60),
-      marginBottom: getResponsiveSize(20, 25, 30),
-    }),
+        marginTop: getResponsiveSize(40, 50, 60),
+        marginBottom: getResponsiveSize(20, 25, 30),
+      }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -694,8 +1001,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -705,8 +1012,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -720,7 +1027,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     elevation: 1,
   },
   bcLogoCircle: {
@@ -778,8 +1085,8 @@ const stylesx = StyleSheet.create({
       CARDS_PER_ROW === 4
         ? 'space-around'
         : isTablet
-          ? 'flex-start'
-          : 'space-between',
+        ? 'flex-start'
+        : 'space-between',
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -790,9 +1097,9 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(20, 25, 30),
-      paddingHorizontal: getResponsiveSize(12, 16, 20),
-    }),
+        marginTop: getResponsiveSize(20, 25, 30),
+        paddingHorizontal: getResponsiveSize(12, 16, 20),
+      }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
@@ -804,15 +1111,21 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-      marginRight: getResponsiveSize(8, 12, 16),
-    }),
+        marginRight: getResponsiveSize(8, 12, 16),
+      }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    color: '#232323',
+    marginBottom: getResponsiveSize(1, 2, 3),
+  },
+  cardTitle1: {
+    fontSize: getResponsiveSize(14, 16, 18),
     fontWeight: '700',
     color: '#232323',
     marginBottom: getResponsiveSize(1, 2, 3),
@@ -867,16 +1180,30 @@ const stylesx = StyleSheet.create({
   // Carousel Styles
   carouselContainer: {
     marginVertical: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(50, 24, 28),
+    marginBottom: getResponsiveSize(30, 24, 28),
   },
   carouselItem: {
     width: screenWidth - getResponsiveSize(32, 40, 48),
     marginHorizontal: getResponsiveSize(16, 20, 24),
     borderRadius: getResponsiveSize(12, 16, 20),
-    minHeight: getResponsiveSize(130, 160, 170),
-    backgroundColor: '#E8F5E9', // Fondo verde claro como en la imagen
-    padding: getResponsiveSize(16, 20, 24),
-    position: 'relative', // Para permitir posicionamiento absoluto del botón
+    minHeight: getResponsiveSize(110, 130, 140),
+    backgroundColor: '#E8F5E9',
+    padding: getResponsiveSize(12, 18, 18),
+    // position: 'relative',
+    // paddingBottom: CTA_HEIGHT + CTA_MARGIN, // espacio para el botón
+  },
+  carouselGrid: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+
+  // Columna izquierda (logo)
+  carouselLeft: {
+    width: LEFT_COL_WIDTH,
+    marginRight: getResponsiveSize(12, 16, 20),
+    justifyContent: 'flex-start', // ← antes estaba 'center'
+    alignItems: 'center',
+    paddingTop: getResponsiveSize(2, 4, 6),
   },
   carouselContent: {
     flex: 1,
@@ -887,9 +1214,11 @@ const stylesx = StyleSheet.create({
     flex: 1,
   },
   carouselTextContainer: {
-    flex: 1,
-    marginLeft: getResponsiveSize(12, 16, 20),
-    marginRight: getResponsiveSize(8, 12, 16),
+    // flex: 1,
+    // flexShrink: 1,
+    // marginLeft: getResponsiveSize(0, 0, 0),
+    // marginRight: 0,
+    // paddingRight: CTA_WIDTH + CTA_MARGIN,
   },
   carouselArrow: {
     justifyContent: 'center',
@@ -897,12 +1226,9 @@ const stylesx = StyleSheet.create({
     width: getResponsiveSize(28, 32, 36),
     height: getResponsiveSize(28, 32, 36),
   },
-  carouselContent: {
+  carouselRight: {
     flex: 1,
     justifyContent: 'space-between',
-  },
-  carouselTextContainer: {
-    flex: 1,
   },
   carouselTitle: {
     fontSize: getResponsiveSize(16, 18, 22),
@@ -918,16 +1244,29 @@ const stylesx = StyleSheet.create({
     opacity: 0.87,
   },
   carouselButton: {
-    backgroundColor: '#4CA950', // Verde como en la imagen
+    position: 'absolute',
+    right: CTA_MARGIN,
+    bottom: CTA_MARGIN,
+    backgroundColor: '#4CA950',
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingVertical: getResponsiveSize(8, 10, 12),
     borderRadius: getResponsiveSize(8, 10, 12),
-    position: 'absolute',
-    bottom: getResponsiveSize(16, 20, 24),
-    right: getResponsiveSize(16, 20, 24),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  carouselButtonInline: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#4CA950',
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    paddingVertical: getResponsiveSize(8, 10, 12),
+    borderRadius: getResponsiveSize(8, 10, 12),
+    // Sombra opcional:
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -965,5 +1304,55 @@ const stylesx = StyleSheet.create({
   },
   disabledIcon: {
     opacity: 0.6,
+  },
+  registerAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2', // rojo claro
+    borderColor: '#FCA5A5', // borde rojo suave
+    borderWidth: 1,
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(14, 16, 20),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    // marginTop: getResponsiveSize(10, 12, 16),
+    marginBottom: getResponsiveSize(8, 10, 12),
+    // sombra sutil
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 1,
+  },
+  registerAlertTitle: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    color: '#7F1D1D',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  registerAlertSubtitle: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#7F1D1D',
+    opacity: 0.9,
+  },
+  registerAlertCta: {
+    width: getResponsiveSize(36, 40, 44),
+    height: getResponsiveSize(36, 40, 44),
+    borderRadius: 999,
+    backgroundColor: '#E72F2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: getResponsiveSize(10, 12, 16),
+  },
+  cardBadge: {
+    position: 'absolute',
+    top: getResponsiveSize(10, 12, 14),
+    right: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#f8a1a1ff',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
 });
