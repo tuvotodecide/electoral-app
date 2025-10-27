@@ -96,3 +96,6 @@ yarn-error.log
 
 # Build outputs
 android/app/src/main/assets/
+.env
+.env_real
+/.maestro/test_output_directory
