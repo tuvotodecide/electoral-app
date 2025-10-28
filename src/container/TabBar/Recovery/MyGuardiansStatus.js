@@ -212,8 +212,8 @@ export default function MyGuardiansStatus({navigation}) {
 
   return (
     <CSafeAreaView testID="myGuardiansStatusContainer">
-      <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} />
-      <KeyboardAvoidingView testID="myGuardiansStatusKeyboardWrapper" contentContainerStyle={styles.ph20}>
+      <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} isHideBack />
+      <KeyboardAvoidingView testID="myGuardiansStatusKeyboardWrapper" style={{flexGrow: 1}} contentContainerStyle={styles.ph20}>
         <CText testID="myGuardiansStatusDescription" type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansDescriptionStatus}
         </CText>
