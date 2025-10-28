@@ -1,9 +1,8 @@
 import {Image, StyleSheet, View} from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../components/common/CSafeAreaView';
 import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import {deviceWidth, moderateScale} from '../common/constants';
 import {styles} from '../themes';
@@ -15,11 +14,54 @@ import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
+import ReceiveSharingIntent from 'react-native-receive-sharing-intent';
 import wira from 'wira-sdk';
-import { PROVIDER_NAME } from '@env';
+import {PROVIDER_NAME} from '@env';
+import InfoModal from '../components/modal/InfoModal';
+
+const defaultModalState = {
+  visible: false,
+  title: '',
+  message: '',
+  buttonText: '',
+  onClose: null,
+};
 
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  const [modal, setModal] = useState(defaultModalState);
+
+  useEffect(() => {
+    ReceiveSharingIntent.getReceivedFiles(
+      onSessionReceived,
+    );
+  }, []);
+
+  const onSessionReceived = (files) => {
+    console.log('files', files);
+    if(!files || files.length !== 1) {
+      return;
+    }
+    try {
+      wira.Storage.saveSharedData(PROVIDER_NAME, files[0].text);
+      setModal({
+        visible: true,
+        title: String.sessionReceived,
+        message: String.sessionReceivedMessage,
+        buttonText: String.ok,
+        onClose: onPressLoginUser,
+      })
+    } catch (error) {
+      console.log('Error processing shared session:', error);
+      setModal({
+        visible: true,
+        title: String.error,
+        message: String.sharedSessionError,
+        buttonText: String.ok,
+        onClose: () => setModal(defaultModalState),
+      });
+    }
+  };
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
@@ -116,6 +158,7 @@ export default function Connect({navigation}) {
           />
         </View> 
       </View>
+      <InfoModal {...modal} />
     </CSafeAreaViewAuth>
   );
 }
