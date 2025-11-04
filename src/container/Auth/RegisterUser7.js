@@ -18,35 +18,27 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function RegisterUser7({navigation, route}) {
   const {ocrData, dni} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RegisterUser7',
-    true,
-  );
 
   const navigateToNext = params => {
-    logNavigation(AuthNav.RegisterUser8, params);
     navigation.navigate(AuthNav.RegisterUser8, params);
   };
 
   const handleActivateBio = async () => {
-    logAction('ActivateBiometryRequest');
     const {available, biometryType} = await biometryAvailability();
 
     if (!available) {
-      logAction('BiometryUnavailable');
       return setModal({
         visible: true,
         msg: 'Este dispositivo no tiene hardware biométrico.',
       });
     }
     if (!biometryType) {
-      logAction('BiometryNotConfigured');
       return setModal({
         visible: true,
         msg: 'No hay huellas ni Face ID registradas. Agrega una en Ajustes del sistema.',
@@ -60,14 +52,12 @@ export default function RegisterUser7({navigation, route}) {
     );
 
     if (!ok) {
-      logAction('BiometryAuthFailed');
       return setModal({
         visible: true,
         msg: 'La autenticación falló. Intenta otra vez o utiliza tu PIN.',
       });
     }
 
-    logAction('BiometryAuthSuccess', {biometryType});
     navigateToNext({
       ocrData,
       useBiometry: true,
@@ -76,7 +66,6 @@ export default function RegisterUser7({navigation, route}) {
   };
 
   const handleLater = () => {
-    logAction('SkipBiometrySetup');
     navigateToNext({
       ocrData,
       useBiometry: false,
@@ -85,7 +74,6 @@ export default function RegisterUser7({navigation, route}) {
   };
 
   const onCloseModal = () => {
-    logAction('CloseBiometryInfoModal');
     setModal({visible: false, msg: ''});
   };
 

@@ -17,14 +17,11 @@ import images from '../../assets/images';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function RegisterUser3({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  const {logNavigation} = useNavigationLogger('RegisterUser3', true);
-
   const onPressNext = () => {
-    logNavigation(AuthNav.RegisterUser4, route?.params ?? null);
     navigation.navigate(AuthNav.RegisterUser4, route?.params);
   };
 

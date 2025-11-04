@@ -12,7 +12,7 @@ import CEtiqueta from '../../../components/common/CEtiqueta';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 import Icons from 'react-native-vector-icons/Entypo';
 import COptionItem from '../../../components/common/COptionItem';
@@ -51,15 +51,10 @@ export default function PersonalDetails() {
 
   const vc = userData?.vc;
 
-  const {logNavigation} = useNavigationLogger('PersonalDetails', true);
-
   const subject =
     getCredentialSubjectFromPayload(userData) || vc?.credentialSubject || {};
   const birthSec = Number(subject.birthDate ?? subject.dateOfBirth);
 
-  useEffect(() => {
-    logNavigation('personal_details_view');
-  }, [logNavigation]);
 
   const birthDate = useMemo(() => {
     if (!birthSec) return null;

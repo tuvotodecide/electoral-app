@@ -123,26 +123,11 @@ export const useNavigationLogger = (screenName = null, logParams = false, logMou
     };
   }, [currentScreenName, logMount, logParams, logSafely, route?.params]);
 
-  // Función helper para loggear acciones personalizadas
-  const logAction = useCallback((action, data = null) => {
-    if (!action) {
-      return;
-    }
-    logSafely('action', `${currentScreenName} - ${action}`, data ?? null);
-  }, [currentScreenName, logSafely]);
 
-  // Función helper para loggear navegación desde el componente
-  const logNavigation = useCallback((targetScreen, params = null) => {
-    if (!targetScreen) {
-      return;
-    }
-    logSafely('navigate', `${currentScreenName} -> ${targetScreen}`, params ?? null);
-  }, [currentScreenName, logSafely]);
+
 
   return {
     currentScreenName,
-    logAction,
-    logNavigation,
     route,
     navigation
   };

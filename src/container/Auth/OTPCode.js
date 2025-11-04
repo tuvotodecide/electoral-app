@@ -14,15 +14,12 @@ import {moderateScale} from '../../common/constants';
 import typography from '../../themes/typography';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function OTPCode({route, navigation}) {
   const title = route?.params?.title;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
-
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('OTPCode', true);
   const onOtpChange = text => setOtp(text);
 
   const onPressResendCode = () => {

@@ -17,14 +17,13 @@ import typography from '../../../themes/typography';
 import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function RecoveryUser1Pin({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryUser1Pin', true);
+  
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
 

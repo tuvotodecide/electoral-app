@@ -16,13 +16,12 @@ import {PROVIDER_NAME} from '@env';
 import wira from 'wira-sdk';
 
 
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { resetAttempts } from '../../../utils/PinAttempts';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, recData} = route.params;
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryFinalize', true);
+  
   useEffect(() => {
     (async () => {
       try {

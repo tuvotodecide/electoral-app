@@ -33,7 +33,8 @@ const config = {
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg', 'cjs', 'ts', 'tsx'],
     extraNodeModules,
-    blockList: [ /wira-sdk\/node_modules\/react-native\//, ],
+    // cross-platform regex: match both forward and back slashes so Windows paths are handled
+    blockList: [ /wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/, ],
   },
   watchFolders: [path.resolve(__dirname, '../wira-sdk')],
 };

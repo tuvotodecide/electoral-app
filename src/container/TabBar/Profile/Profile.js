@@ -28,7 +28,7 @@ import {setAsyncStorageData} from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 export default function Profile({navigation}) {
@@ -38,7 +38,6 @@ export default function Profile({navigation}) {
 
   const dispatch = useDispatch();
 
-  const {logNavigation} = useNavigationLogger('Profile', true);
 
   const userData = useSelector(state => state.wallet.payload);
   const subject = getCredentialSubjectFromPayload(userData) || {};
@@ -48,9 +47,6 @@ export default function Profile({navigation}) {
     hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
 
-  useEffect(() => {
-    logNavigation('profile_view');
-  }, [logNavigation]);
 
   // Datos de reputación y NFTs
   const reputation = {

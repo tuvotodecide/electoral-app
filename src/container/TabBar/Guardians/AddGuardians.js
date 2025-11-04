@@ -21,7 +21,7 @@ import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
 import axios from 'axios';
 import {getSecrets} from '../../../utils/Cifrate';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
@@ -39,20 +39,14 @@ export default function AddGuardians() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const isWhitespaceOnly = nick.length > 0 && nick.trim().length === 0;
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger(
-    'AddGuardians',
-    true,
-  );
+
   const onPressSearch = () => {
-    logAction('SearchGuardianAttempt', {identifier: carnet.trim()});
     setMsg('');
     findPublicDni(
       {identifier: carnet.trim()},
       {
         onSuccess: data => {
           if (!data.ok) {
-            logAction('SearchGuardianFailed', {message: data.message});
             setMsg(data.message || 'Persona no encontrada');
             return;
           }
@@ -63,11 +57,9 @@ export default function AddGuardians() {
             accountAddress: data.accountAddress,
             guardianAddress: data.guardianAddress,
           });
-          logAction('SearchGuardianSuccess', {did: data.did});
         },
         onError: err => {
           const message = err?.response?.data?.error ?? err.message;
-          logAction('SearchGuardianError', {message});
           setMsg(message);
         },
       },
@@ -75,7 +67,6 @@ export default function AddGuardians() {
   };
   const onPressInvitation = async () => {
     if (!candidate) return;
-    logAction('InviteGuardianAttempt', {guardianId: candidate.did});
     setMsg('');
 
     try {
@@ -93,14 +84,11 @@ export default function AddGuardians() {
       setModalVisible(true);
       setCandidate(null);
       setNick('');
-      logNavigation('GuardiansInvitationSent');
-      logAction('InviteGuardianSuccess', {guardianId: data?.guardianId ?? candidate.did});
     } catch (err) {
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
           : err.message;
-      logAction('InviteGuardianError', {message});
       setMsg(message);
     }
   };
@@ -199,7 +187,6 @@ export default function AddGuardians() {
         title="¡Invitación enviada!"
         message={modalMessage}
         onClose={() => {
-          logAction('InviteGuardianModalClosed');
           setModalVisible(false);
         }}
       />

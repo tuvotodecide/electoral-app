@@ -13,13 +13,11 @@ import CButton from '../../components/common/CButton';
 import images from '../../assets/images';
 import {AuthNav} from '../../navigation/NavigationKey';
 import {deviceHeight, getHeight, moderateScale} from '../../common/constants';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function SelfieWithIdCard({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const SheetRef = useRef(null);
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('SelfieWithIdCard', true);
   const onPressImage = () => {
     SheetRef?.current?.show();
   };

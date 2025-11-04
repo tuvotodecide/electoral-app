@@ -30,7 +30,7 @@ import {CHAIN} from '@env';
 import {readOnChainApprovals} from '../../../api/guardianOnChain';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { truncateDid } from '../../../utils/Address';
 
 
@@ -53,8 +53,7 @@ export default function MyGuardiansStatus({navigation}) {
     isLoading: false,
   });
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('MyGuardiansStatus', true);
+  
   // Mantén tu firma original del hook; el segundo arg puede ser "enabled/ready" según tu implementación
   const {
     data: detailRaw,
