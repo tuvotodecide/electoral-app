@@ -127,6 +127,16 @@ export default function RecoveryUserQrPin2({navigation, route}) {
     }
   };
 
+  const handleRetry = () => {
+    navigation.reset({
+      index: 1,
+      routes: [
+        {name: AuthNav.Connect},
+        {name: AuthNav.RecoveryQr},
+      ],
+    })
+  }
+
   return (
     <CSafeAreaViewAuth>
       <StepIndicator step={9} />
@@ -185,9 +195,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
       <LoadingModal
         {...modal}
         buttonText={String.retryRecovery}
-        onClose={() =>
-          navigation.navigate(AuthNav.RecoveryQr)
-        }
+        onClose={handleRetry}
       />
     </CSafeAreaViewAuth>
   );
