@@ -180,11 +180,6 @@ export default function LoginUser({navigation}) {
     navigation.navigate(AuthNav.SelectRecuperation);
   };
 
-  const onShareData = () => {
-    wira.Storage.shareData(PROVIDER_NAME)
-    .catch(error => console.log(error));
-  }
-
   async function verifyPin(code) {
     try {
       const response = wira.getWiraData(PROVIDER_NAME);
@@ -454,15 +449,6 @@ export default function LoginUser({navigation}) {
         </View>
       </KeyBoardAvoidWrapper>
       <View style={localStyle.bottomButtons} testID="loginUserActions">
-        <CButton
-          onPress={onShareData}
-          title={String.share}
-          type={'B16'}
-          containerStyle={localStyle.btnStyle}
-          color={colors.white}
-          bgColor={commonColor.gradient2}
-          testID="loginUserShareButton"
-        />
         <CButton
           onPress={onPressLoginUser1}
           title={String.connectBtnForgot}

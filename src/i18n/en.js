@@ -254,9 +254,6 @@ export default {
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   register: 'REGISTRARSE',
-  sessionReceived: 'Sesión recibida',
-  sessionReceivedMessage: 'Ingrese su pin para iniciar la sesión compartida.',
-  sharedSessionError: 'Error al recibir archivos compartidos.',
 
   recoveryWallet: 'Recuperar cuenta',
   recoverymethod: 'Selecciona método para recuperar cuenta',

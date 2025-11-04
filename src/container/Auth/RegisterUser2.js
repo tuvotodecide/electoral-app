@@ -42,17 +42,19 @@ export default function RegisterUser2({navigation, route}) {
 
   const closeModal = () => {
     setModalVisible({visible: false, message: null});
-    navigation.reset({
-      index: 1,
-      routes: [
-        {
-          name: AuthNav.Connect,
-        },
-        {
-          name: AuthNav.RegisterUser1,
-        },
-      ],
-    })
+    if(isRecovery) {
+      navigation.reset({
+        index: 1,
+        routes: [
+          {
+            name: AuthNav.Connect,
+          },
+          {
+            name: AuthNav.RegisterUser1,
+          },
+        ],
+      });
+    }
   };
 
   useEffect(() => {
@@ -248,7 +250,7 @@ export default function RegisterUser2({navigation, route}) {
         testID="registerUser2DniExistsModal"
         visible={isModalVisible.visible}
         message={isModalVisible.message}
-        closeBtn={String.register}
+        closeBtn={isRecovery ? String.register : String.ok}
         onClose={closeModal}
       />
     </CSafeAreaViewAuth>
