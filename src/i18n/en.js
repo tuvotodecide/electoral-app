@@ -254,8 +254,8 @@ export default {
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   register: 'REGISTRARSE',
-  sessionReceived: 'Sesión recibida',
-  sessionReceivedMessage: 'Ingrese su pin para iniciar la sesión compartida.',
+  sharedSessionTitle: 'Solicitud para compartir la sesión de Wira',
+  sharedSessionMessage: '¿Deseas compartir tu sesión actual con otra aplicación?',
   sharedSessionError: 'Error al recibir archivos compartidos.',
 
   recoveryWallet: 'Recuperar cuenta',

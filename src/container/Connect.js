@@ -14,9 +14,8 @@ import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
-import ReceiveSharingIntent from 'react-native-receive-sharing-intent';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME} from '@env';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import InfoModal from '../components/modal/InfoModal';
 
 const defaultModalState = {
@@ -27,41 +26,49 @@ const defaultModalState = {
   onClose: null,
 };
 
+const sharedSession = new wira.SharedSession(
+  BACKEND_IDENTITY,
+  PROVIDER_NAME
+);
+
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState(defaultModalState);
+  const [sharedUrl, setSharedUrl] = useState(null);
 
   useEffect(() => {
-    ReceiveSharingIntent.getReceivedFiles(
-      onSessionReceived,
-    );
+    const fetchSharedUrl = async () => {
+      const url = await sharedSession.handleOpenApp();
+      setSharedUrl(url);
+    }
+
+    fetchSharedUrl();
   }, []);
 
-  const onSessionReceived = (files) => {
-    console.log('files', files);
-    if(!files || files.length !== 1) {
-      return;
-    }
-    try {
-      wira.Storage.saveSharedData(PROVIDER_NAME, files[0].text);
+  useEffect(() => {
+    if(sharedUrl) {
       setModal({
         visible: true,
-        title: String.sessionReceived,
-        message: String.sessionReceivedMessage,
-        buttonText: String.ok,
-        onClose: onPressLoginUser,
-      })
-    } catch (error) {
-      console.log('Error processing shared session:', error);
-      setModal({
-        visible: true,
-        title: String.error,
-        message: String.sharedSessionError,
-        buttonText: String.ok,
-        onClose: () => setModal(defaultModalState),
+        title: String.sharedSessionTitle,
+        message: String.sharedSessionMessage,
+        buttonText: String.accept,
+        onClose: async () => {
+          setModal(defaultModalState);
+          try {
+            await sharedSession.onShareSession(sharedUrl, true);
+          } catch (error) {
+            setModal({
+              visible: true,
+              title: String.error,
+              message: error.message,
+              buttonText: String.ok,
+              onClose: () => setModal(defaultModalState),
+            });
+          }
+        }
       });
     }
-  };
+  }, [sharedUrl]);
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);

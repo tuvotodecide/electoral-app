@@ -40,11 +40,15 @@
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
-			<!-- Intent filter for receiving text -->
-			<intent-filter>
-				<action android:name="android.intent.action.SEND" />
+			<!-- Intent filter for receive shared session -->
+			<intent-filter android:label="Wira Shared Session">
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.BROWSABLE" />
 				<category android:name="android.intent.category.DEFAULT" />
-				<data android:mimeType="text/*" />
+				<data android:scheme="appelectoral"
+              		android:host="shared.request" />
+				<data android:scheme="appelectoral"
+              		android:host="shared.response" />
 			</intent-filter>
 		</activity>
 		<!--
