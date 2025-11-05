@@ -958,6 +958,7 @@ const PhotoConfirmationScreen = () => {
         electionConfigId: electionConfigId || undefined,
       };
 
+
       const electoralData = {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
@@ -967,6 +968,7 @@ const PhotoConfirmationScreen = () => {
         type: 'publishActa',
         payload: {
           imageUri: persistedUri,
+          certificateImageUri: persistedCertificateUri,
           certificateImageUri: persistedCertificateUri,
           aiAnalysis: aiAnalysis || {},
           electoralData,

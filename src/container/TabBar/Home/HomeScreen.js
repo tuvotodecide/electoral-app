@@ -19,7 +19,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
+import I18nStrings  from '../../../i18n/String';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import {useSelector} from 'react-redux';
 import {store} from '../../../redux/store';
@@ -207,12 +207,12 @@ const BlockchainConsultoraBanner = () => (
       style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
       <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
-          {String.needBlockchainApp}
+          {I18nStrings.needBlockchainApp}
         </CText>
         <CText
           testID="homeBlockchainBannerSubtitle"
           style={stylesx.bannerSubtitle}>
-          {String.blockchainConsultBanner}
+          {I18nStrings.blockchainConsultBanner}
         </CText>
       </View>
     </View>
@@ -224,7 +224,7 @@ const BlockchainConsultoraBanner = () => (
       <CText
         testID="homeBlockchainBannerButtonText"
         style={stylesx.bannerButtonText}>
-        {String.learnMore}
+        {I18nStrings.learnMore}
       </CText>
     </TouchableOpacity>
   </View>
@@ -519,15 +519,15 @@ export default function HomeScreen({navigation}) {
   const menuItems = [
     {
       icon: 'people-outline',
-      title: String.sendAct,
-      description: String.sendActDescription,
+      title: I18nStrings.sendAct,
+      description: I18nStrings.sendActDescription,
       onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
       icon: 'megaphone-outline',
-      title: String.announceCount,
-      description: String.announceCountDescription,
+      title: I18nStrings.announceCount,
+      description: I18nStrings.announceCountDescription,
       onPress: () =>
         navigation.navigate(StackNav.ElectoralLocations, {
           targetScreen: 'AnnounceCount',
@@ -536,8 +536,8 @@ export default function HomeScreen({navigation}) {
     },
     {
       icon: 'bar-chart-outline',
-      title: String.myWitnesses,
-      description: String.myWitnessesDescription,
+      title: I18nStrings.myWitnesses,
+      description: I18nStrings.myWitnessesDescription,
       onPress: () => navigation.navigate(StackNav.MyWitnessesListScreen),
       iconComponent: Ionicons,
     },
@@ -572,7 +572,7 @@ export default function HomeScreen({navigation}) {
             <CText
               testID="homeLogoutModalTitle"
               style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
-              {String.areYouSureWantToLogout ||
+              {I18nStrings.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
             <View
@@ -591,7 +591,7 @@ export default function HomeScreen({navigation}) {
                 <CText
                   testID="homeLogoutModalCancelText"
                   style={{color: '#222', fontWeight: '600'}}>
-                  {String.cancel || 'Cancelar'}
+                  {I18nStrings.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -606,7 +606,7 @@ export default function HomeScreen({navigation}) {
                 <CText
                   testID="homeLogoutModalConfirmText"
                   style={{color: '#fff', fontWeight: '600'}}>
-                  {String.logOut || 'Cerrar sesión'}
+                  {I18nStrings.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
             </View>
@@ -643,7 +643,7 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.welcomeContainer}>
               <View style={stylesx.welcomeHeader}>
                 <View style={stylesx.welcomeTextContainer}>
-                  <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                  <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
               </View>
@@ -786,7 +786,7 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.welcomeContainer}>
             <View style={stylesx.welcomeHeader}>
               <View style={stylesx.welcomeTextContainer}>
-                <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
             </View>
