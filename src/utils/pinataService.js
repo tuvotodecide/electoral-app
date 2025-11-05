@@ -475,6 +475,78 @@ class PinataService {
       };
     }
   }
+  async uploadCertificateNFT(
+    certificatePath,
+    {
+      userName = '',
+      tableNumber = '',
+      tableCode = '',
+      location = 'Bolivia',
+    } = {},
+  ) {
+    try {
+      // 1) Subir la IMAGEN del certificado
+      const imageResult = await this.uploadImageToIPFS(
+        certificatePath,
+        'participation-certificate.png',
+      );
+
+      if (!imageResult.success) {
+        throw new Error(`Error subiendo imagen: ${imageResult.error}`);
+      }
+
+      const timestamp = new Date().toISOString();
+
+      // 2) Metadata del certificado (SIN `data`)
+      const metadata = {
+        name: `Certificado de participación - Mesa ${tableNumber}`,
+        description: `Certificado de participación electoral de ${userName} en la mesa ${tableNumber} (${tableCode}) en ${location}.`,
+        image: `ipfs://${imageResult.data.ipfsHash}`,
+        external_url: `https://tuapp.com/certificado/${tableCode}`,
+        attributes: [
+          {trait_type: 'Nombre', value: userName},
+          {trait_type: 'Mesa', value: tableNumber},
+          {trait_type: 'Código de Mesa', value: tableCode},
+          {trait_type: 'Lugar', value: location},
+        ],
+        _technical: {
+          uploadedAt: timestamp,
+          uploadedFrom: 'mobile-app',
+          version: '1.0.0',
+          imageSize: imageResult.data.size,
+          imageCID: imageResult.data.ipfsHash,
+        },
+     
+      };
+
+      // 3) Subir el JSON a IPFS
+      const jsonResult = await this.uploadJSONToIPFS(
+        metadata,
+        `participation-certificate-${tableCode}-${tableNumber}.json`,
+      );
+
+      if (!jsonResult.success) {
+        throw new Error(`Error subiendo JSON: ${jsonResult.error}`);
+      }
+
+      return {
+        success: true,
+        data: {
+          imageCID: imageResult.data.ipfsHash,
+          jsonCID: jsonResult.data.ipfsHash,
+          imageUrl: imageResult.data.gatewayUrl,
+          jsonUrl: jsonResult.data.gatewayUrl,
+          metadata,
+          timestamp,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Error desconocido',
+      };
+    }
+  }
 }
 
 export default new PinataService();

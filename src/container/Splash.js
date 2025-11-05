@@ -34,9 +34,9 @@ export default function Splash({navigation}) {
   useEffect(() => {
     const asyncProcess = async () => {
       try {
-        await ensureProvisioned({mock: true});
-        if (wira?.provision?.ensureProvisioned) {
-          await wira.provision.ensureProvisioned({
+        await fetchProvision({mock: true});
+        if (wira?.provision?.fetchProvision) {
+          await wira.provision.fetchProvision({
             mock: true,
             gatewayBase: GATEWAY_BASE,
           });

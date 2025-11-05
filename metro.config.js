@@ -12,9 +12,9 @@ const extraNodeModules = {
   path: path.resolve(__dirname, 'node_modules/path-browserify'),
   assert: path.resolve(__dirname, 'node_modules/assert/'),
   buffer: path.resolve(__dirname, 'node_modules/buffer/'),
-  zlib:   path.resolve(__dirname, 'node_modules/pako/'),
-  http:   path.resolve(__dirname, 'node_modules/stream-http/'),
-  https:  path.resolve(__dirname, 'node_modules/https-browserify/'),
+  zlib: path.resolve(__dirname, 'node_modules/pako/'),
+  http: path.resolve(__dirname, 'node_modules/stream-http/'),
+  https: path.resolve(__dirname, 'node_modules/https-browserify/'),
   'react-native-fs': path.resolve(__dirname, 'node_modules/react-native-fs'),
   'react-native': path.resolve(__dirname, 'node_modules/react-native'),
 };
@@ -33,8 +33,7 @@ const config = {
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg', 'cjs', 'ts', 'tsx'],
     extraNodeModules,
-    // cross-platform regex: match both forward and back slashes so Windows paths are handled
-    blockList: [ /wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/, ],
+    blockList: [/wira-sdk\\node_modules\\react-native\\/],
   },
   watchFolders: [path.resolve(__dirname, '../wira-sdk')],
 };

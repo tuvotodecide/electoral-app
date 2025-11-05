@@ -19,13 +19,18 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
+import I18nStrings  from '../../../i18n/String';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 import {useSelector} from 'react-redux';
 import {store} from '../../../redux/store';
 import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
+import {
+  ELECTION_ID,
+  ELECTION_STATUS,
+  JWT_KEY,
+  KEY_OFFLINE,
+} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
 import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
@@ -41,7 +46,10 @@ import {ActivityIndicator} from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import {publishActaHandler} from '../../../utils/offlineQueueHandler';
 import CustomModal from '../../../components/common/CustomModal';
-import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
+import {
+  isStateEffectivelyOnline,
+  NET_POLICIES,
+} from '../../../utils/networkQuality';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -199,12 +207,12 @@ const BlockchainConsultoraBanner = () => (
       style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
       <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
-          {String.needBlockchainApp}
+          {I18nStrings.needBlockchainApp}
         </CText>
         <CText
           testID="homeBlockchainBannerSubtitle"
           style={stylesx.bannerSubtitle}>
-          {String.blockchainConsultBanner}
+          {I18nStrings.blockchainConsultBanner}
         </CText>
       </View>
     </View>
@@ -216,7 +224,7 @@ const BlockchainConsultoraBanner = () => (
       <CText
         testID="homeBlockchainBannerButtonText"
         style={stylesx.bannerButtonText}>
-        {String.learnMore}
+        {I18nStrings.learnMore}
       </CText>
     </TouchableOpacity>
   </View>
@@ -238,8 +246,28 @@ export default function HomeScreen({navigation}) {
   const processingRef = useRef(false);
   const [checkingVotePlace, setCheckingVotePlace] = useState(true);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
+  const [electionStatus, setElectionStatus] = useState(null);
+  const fetchElectionStatus = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `${BACKEND_RESULT}/api/v1/elections/config/status`,
+        {timeout: 15000},
+      );
 
+      if (res?.data) {
+        setElectionStatus(res.data);
 
+        await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
+
+        // guardar solo el id de la config
+        if (res.data?.config?.id) {
+          await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
+        }
+      }
+    } catch (err) {
+      console.error('[HOME] fetchElectionStatus error', err);
+    }
+  }, []);
 
   const userData = useSelector(state => state.wallet.payload);
 
@@ -256,7 +284,7 @@ export default function HomeScreen({navigation}) {
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
       return;
     const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) return;
     processingRef.current = true;
     try {
@@ -281,7 +309,7 @@ export default function HomeScreen({navigation}) {
 
   const handleParticiparPress = async () => {
     const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     if (online) {
       navigation.navigate(StackNav.ElectoralLocations, {
         targetScreen: 'UnifiedParticipation',
@@ -343,19 +371,20 @@ export default function HomeScreen({navigation}) {
   useFocusEffect(
     useCallback(() => {
       checkUserVotePlace();
+      fetchElectionStatus();
       let alive = true;
       // intenta una vez al enfocar
       runOfflineQueueOnce();
       // escucha cambios de red mientras esta pantalla está activa
       const unsubNet = NetInfo.addEventListener(state => {
-        const online = isStateEffectivelyOnline(state,NET_POLICIES.balanced);
+        const online = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
         if (online && alive) runOfflineQueueOnce();
       });
       return () => {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [runOfflineQueueOnce]),
+    }, [runOfflineQueueOnce, fetchElectionStatus]),
   );
 
   // Datos del carrusel
@@ -490,15 +519,15 @@ export default function HomeScreen({navigation}) {
   const menuItems = [
     {
       icon: 'people-outline',
-      title: String.sendAct,
-      description: String.sendActDescription,
+      title: I18nStrings.sendAct,
+      description: I18nStrings.sendActDescription,
       onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
       icon: 'megaphone-outline',
-      title: String.announceCount,
-      description: String.announceCountDescription,
+      title: I18nStrings.announceCount,
+      description: I18nStrings.announceCountDescription,
       onPress: () =>
         navigation.navigate(StackNav.ElectoralLocations, {
           targetScreen: 'AnnounceCount',
@@ -507,8 +536,8 @@ export default function HomeScreen({navigation}) {
     },
     {
       icon: 'bar-chart-outline',
-      title: String.myWitnesses,
-      description: String.myWitnessesDescription,
+      title: I18nStrings.myWitnesses,
+      description: I18nStrings.myWitnessesDescription,
       onPress: () => navigation.navigate(StackNav.MyWitnessesListScreen),
       iconComponent: Ionicons,
     },
@@ -543,7 +572,7 @@ export default function HomeScreen({navigation}) {
             <CText
               testID="homeLogoutModalTitle"
               style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
-              {String.areYouSureWantToLogout ||
+              {I18nStrings.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
             <View
@@ -562,7 +591,7 @@ export default function HomeScreen({navigation}) {
                 <CText
                   testID="homeLogoutModalCancelText"
                   style={{color: '#222', fontWeight: '600'}}>
-                  {String.cancel || 'Cancelar'}
+                  {I18nStrings.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -577,7 +606,7 @@ export default function HomeScreen({navigation}) {
                 <CText
                   testID="homeLogoutModalConfirmText"
                   style={{color: '#fff', fontWeight: '600'}}>
-                  {String.logOut || 'Cerrar sesión'}
+                  {I18nStrings.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
             </View>
@@ -614,7 +643,7 @@ export default function HomeScreen({navigation}) {
             <View style={stylesx.welcomeContainer}>
               <View style={stylesx.welcomeHeader}>
                 <View style={stylesx.welcomeTextContainer}>
-                  <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                  <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
               </View>
@@ -757,7 +786,7 @@ export default function HomeScreen({navigation}) {
           <View style={stylesx.welcomeContainer}>
             <View style={stylesx.welcomeHeader}>
               <View style={stylesx.welcomeTextContainer}>
-                <CText style={stylesx.bienvenido}>{String.homeWelcome}</CText>
+                <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
             </View>

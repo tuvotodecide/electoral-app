@@ -2,6 +2,7 @@ import {StatusBar, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
+import {BACKEND_IDENTITY} from '@env';
 import {useDispatch, useSelector} from 'react-redux';
 import {QueryClient, QueryClientProvider} from 'react-query';
 import {migrateIfNeeded} from './utils/migrateBundle';
@@ -16,6 +17,12 @@ import {
 import messaging from '@react-native-firebase/messaging';
 import {LAST_TOPIC_KEY} from './common/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import wira from 'wira-sdk';
+wira.initWiraSdk({
+  appId: 'tuvotodecide',
+  guardiansUrl: BACKEND_IDENTITY,
+});
+
 
 const queryClient = new QueryClient();
 

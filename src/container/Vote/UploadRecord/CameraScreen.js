@@ -154,11 +154,11 @@ export default function CameraScreen({navigation, route}) {
     }
     NetInfoSafe.fetch().then(s =>
       setIsOnline(
-        isStateEffectivelyOnline(s, NET_POLICIES.balanced),
+        isStateEffectivelyOnline(s, NET_POLICIES.estrict),
       ),
     );
     const sub = NetInfoSafe.addEventListener(state => {
-      const ok = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
+      const ok = isStateEffectivelyOnline(state, NET_POLICIES.estrict);
       setIsOnline(ok);
     });
     return () => sub && sub();
@@ -620,7 +620,7 @@ export default function CameraScreen({navigation, route}) {
 
 
       if (!analysisResult.success) {
-        console.error('[CAMERA-SCREEN] ❌ Error en análisis AI:', analysisResult.error);
+        console.error('[CAMERA-SCREEN]  Error en análisis AI:', analysisResult.error);
         showModal(
           'Error de Análisis',
           analysisResult.error || 'No se pudo analizar la imagen',

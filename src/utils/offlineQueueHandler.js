@@ -88,10 +88,87 @@ const hasUserAttestedTable = async (dniValue, tableCode) => {
   }
 };
 
+const uploadCertificateAndNotifyBackend = async (
+  certificateImageUri,
+  normalizedAdditional,
+  userData,
+) => {
+  if (!certificateImageUri) return;
+
+  try {
+    // Normalizar path (igual que con el acta)
+    const certPath = certificateImageUri.startsWith('file://')
+      ? certificateImageUri.substring(7)
+      : certificateImageUri;
+
+    // 1) Subir certificado a IPFS (imagen + metadata, SIN data)
+    const nftResult = await pinataService.uploadCertificateNFT(certPath, {
+      userName: normalizedAdditional.userName || '',
+      tableNumber: normalizedAdditional.tableNumber || '',
+      tableCode: normalizedAdditional.tableCode || '',
+      location: normalizedAdditional.location || 'Bolivia',
+    });
+
+    if (!nftResult.success) {
+      console.error(
+        '[OFFLINE-QUEUE] error uploadCertificateNFT',
+        nftResult.error,
+      );
+      return;
+    }
+    console.log(nftResult);
+    const {jsonUrl, imageUrl} = nftResult.data;
+
+    const dniValue =
+      userData?.dni ||
+      userData?.vc?.credentialSubject?.governmentIdentifier ||
+      userData?.vc?.credentialSubject?.documentNumber ||
+      userData?.vc?.credentialSubject?.nationalIdNumber ||
+      '';
+
+    if (!dniValue) {
+      console.warn('[OFFLINE-QUEUE] no hay DNI para enviar certificado');
+      return;
+    }
+    const electionId = normalizedAdditional?.electionConfigId || undefined;
+
+    const res = await axios.post(
+      `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
+      {
+        account: userData?.account,
+        imageUrl,
+        electionId,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': BACKEND_SECRET,
+        },
+        timeout: 30000,
+      },
+    );
+
+    console.log('[OFFLINE-QUEUE] participation NFT mint OK', res.data);
+
+    console.log('[OFFLINE-QUEUE] certificado enviado al backend OK');
+  } catch (err) {
+    console.error(
+      '[OFFLINE-QUEUE] error al subir certificado y notificar backend',
+      err,
+    );
+  }
+};
+
 export const publishActaHandler = async (item, userData) => {
   try {
-    const {imageUri, aiAnalysis, electoralData, additionalData, tableData} =
-      item.task.payload;
+    const {
+      imageUri,
+      certificateImageUri,
+      aiAnalysis,
+      electoralData,
+      additionalData,
+      tableData,
+    } = item.task.payload;
 
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
@@ -143,12 +220,18 @@ export const publishActaHandler = async (item, userData) => {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
+    const electionConfigId = normalizedAdditional?.electionConfigId;
+    const tableCodeForOracle = electionConfigId
+      ? `${tableCodeStrict}-${electionConfigId}`
+      : tableCodeStrict;
 
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(dniValue, tableCodeStrict);
       if (alreadyMine) {
-        try { await removePersistedImage(imageUri); } catch {}
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
         await showActaDuplicateNotification({
           reason: 'Detectamos un acta igual. Se descartó el envío.',
         });
@@ -158,7 +241,10 @@ export const publishActaHandler = async (item, userData) => {
 
     // Helper para verificación de votos (sin cambiar nombres)
     const buildFromPayload = type => {
-      const norm = s => String(s ?? '').trim().toLowerCase();
+      const norm = s =>
+        String(s ?? '')
+          .trim()
+          .toLowerCase();
       const aliases = {
         validos: ['validos', 'válidos', 'votos válidos'],
         nulos: ['nulos', 'votos nulos'],
@@ -186,7 +272,8 @@ export const publishActaHandler = async (item, userData) => {
             parseInt(type === 'presidente' ? p.presidente : p.diputado, 10) ||
             0,
         })),
-        totalVotes: getValue('validos') + getValue('nulos') + getValue('blancos'),
+        totalVotes:
+          getValue('validos') + getValue('nulos') + getValue('blancos'),
       };
     };
 
@@ -198,7 +285,9 @@ export const publishActaHandler = async (item, userData) => {
 
     let duplicateCheck;
     try {
-      duplicateCheck = await pinataService.checkDuplicateBallot(verificationData);
+      duplicateCheck = await pinataService.checkDuplicateBallot(
+        verificationData,
+      );
       console.log('[OFFLINE-QUEUE] duplicateCheck', {
         exists: !!duplicateCheck?.exists,
         hasBallot: !!duplicateCheck?.ballot,
@@ -208,11 +297,13 @@ export const publishActaHandler = async (item, userData) => {
       if (duplicateCheck?.exists) {
         // = Duplicado por contenido → NO subir a IPFS; attest al existente
         const existingBallot =
-          duplicateCheck.ballot || (await fetchLatestBallotByTable(tableCodeStrict));
+          duplicateCheck.ballot ||
+          (await fetchLatestBallotByTable(tableCodeStrict));
         if (!existingBallot) {
           await removePersistedImage(imageUri).catch(() => {});
           await showActaDuplicateNotification({
-            reason: 'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
+            reason:
+              'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
           });
           return true;
         }
@@ -227,7 +318,8 @@ export const publishActaHandler = async (item, userData) => {
         if (!jsonUrl) {
           await removePersistedImage(imageUri).catch(() => {});
           await showActaDuplicateNotification({
-            reason: 'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
+            reason:
+              'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
           });
           return true;
         }
@@ -261,12 +353,7 @@ export const publishActaHandler = async (item, userData) => {
           privateKey,
           userData.account,
           CHAIN,
-          oracleCalls.attest(
-            CHAIN,
-            (tableData?.codigo || tableCodeStrict),
-            BigInt(0),
-            jsonUrl,
-          ),
+          oracleCalls.attest(CHAIN, tableCodeForOracle, BigInt(0), jsonUrl),
           oracleReads.waitForOracleEvent,
           'Attested',
         );
@@ -306,8 +393,12 @@ export const publishActaHandler = async (item, userData) => {
           }
         } catch {}
 
-        try { await removePersistedImage(imageUri); } catch {}
-        try { await requestPushPermissionExplicit(); } catch {}
+        try {
+          await removePersistedImage(imageUri);
+        } catch {}
+        try {
+          await requestPushPermissionExplicit();
+        } catch {}
 
         const {explorer, nftExplorer, attestationNft} =
           availableNetworks[CHAIN];
@@ -326,6 +417,19 @@ export const publishActaHandler = async (item, userData) => {
             tableData,
           });
         } catch {}
+
+        try {
+          await uploadCertificateAndNotifyBackend(
+            certificateImageUri,
+            normalizedAdditional,
+            userData,
+          );
+        } catch (err) {
+          console.error(
+            '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
+            err,
+          );
+        }
 
         return {
           success: true,
@@ -348,14 +452,14 @@ export const publishActaHandler = async (item, userData) => {
         ? imageUri.substring(7)
         : imageUri;
 
-      const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
-        data => {
-          if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
-          if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
-          if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
-          return data;
-        },
-      );
+      const normalizedVoteSummary = (
+        electoralData?.voteSummaryResults || []
+      ).map(data => {
+        if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
+        if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
+        if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
+        return data;
+      });
 
       let ipfs;
       try {
@@ -373,7 +477,10 @@ export const publishActaHandler = async (item, userData) => {
           throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
         }
       } catch (err) {
-        console.error('[OFFLINE-QUEUE] error subiendo a IPFS (attest-nuevo)', err);
+        console.error(
+          '[OFFLINE-QUEUE] error subiendo a IPFS (attest-nuevo)',
+          err,
+        );
         throw err;
       }
       const ipfsData = ipfs.data;
@@ -396,7 +503,10 @@ export const publishActaHandler = async (item, userData) => {
           },
         );
       } catch (err) {
-        console.error('[OFFLINE-QUEUE] error en backend validation (attest-nuevo)', err);
+        console.error(
+          '[OFFLINE-QUEUE] error en backend validation (attest-nuevo)',
+          err,
+        );
         throw err;
       }
 
@@ -420,7 +530,9 @@ export const publishActaHandler = async (item, userData) => {
           20,
         );
         if (!isRegistered) {
-          console.error('[OFFLINE-QUEUE] registro en oracle fallido (attest-nuevo)');
+          console.error(
+            '[OFFLINE-QUEUE] registro en oracle fallido (attest-nuevo)',
+          );
           throw Error(
             'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
           );
@@ -433,7 +545,7 @@ export const publishActaHandler = async (item, userData) => {
         CHAIN,
         oracleCalls.attest(
           CHAIN,
-          (tableData?.codigo || tableCodeStrict),
+          tableCodeForOracle,
           BigInt(0),
           ipfsData.jsonUrl,
         ),
@@ -469,10 +581,7 @@ export const publishActaHandler = async (item, userData) => {
 
       try {
         if (backendBallot && backendBallot._id) {
-          const isJury = await oracleReads.isUserJury(
-            CHAIN,
-            userData.account,
-          );
+          const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
           await axios.post(
             `${BACKEND_RESULT}/api/v1/attestations`,
             {
@@ -504,11 +613,13 @@ export const publishActaHandler = async (item, userData) => {
       try {
         await requestPushPermissionExplicit();
       } catch (err) {
-        console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
+        console.error(
+          '[OFFLINE-QUEUE] error solicitando permisos de push',
+          err,
+        );
       }
 
-      const {explorer, nftExplorer, attestationNft} =
-        availableNetworks[CHAIN];
+      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
       const nftResult = {
         txHash: response.receipt.transactionHash,
@@ -524,7 +635,10 @@ export const publishActaHandler = async (item, userData) => {
           tableData,
         });
       } catch (err) {
-        console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
+        console.error(
+          '[OFFLINE-QUEUE] error mostrando notificacion local',
+          err,
+        );
       }
 
       return {success: true, ipfsData, nftData: nftResult, tableData};
@@ -623,7 +737,7 @@ export const publishActaHandler = async (item, userData) => {
         CHAIN,
         oracleCalls.createAttestation(
           CHAIN,
-          (tableData?.codigo || tableCodeStrict),
+          tableData?.codigo || tableCodeStrict,
           ipfsData.jsonUrl,
         ),
         oracleReads.waitForOracleEvent,
@@ -639,7 +753,7 @@ export const publishActaHandler = async (item, userData) => {
           CHAIN,
           oracleCalls.attest(
             CHAIN,
-            (tableData?.codigo || tableCodeStrict),
+            tableCodeForOracle,
             BigInt(0),
             ipfsData.jsonUrl,
           ),
@@ -690,7 +804,12 @@ export const publishActaHandler = async (item, userData) => {
           `${BACKEND_RESULT}/api/v1/attestations`,
           {
             attestations: [
-              {ballotId: backendBallot._id, support: true, isJury, dni: String(dniValue)},
+              {
+                ballotId: backendBallot._id,
+                support: true,
+                isJury,
+                dni: String(dniValue),
+              },
             ],
           },
           {
@@ -704,10 +823,14 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {}
 
-    try { await removePersistedImage(imageUri); } catch (err) {
+    try {
+      await removePersistedImage(imageUri);
+    } catch (err) {
       console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
     }
-    try { await requestPushPermissionExplicit(); } catch (err) {
+    try {
+      await requestPushPermissionExplicit();
+    } catch (err) {
       console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
     }
 
@@ -727,4 +850,3 @@ export const publishActaHandler = async (item, userData) => {
     throw fatalErr;
   }
 };
-

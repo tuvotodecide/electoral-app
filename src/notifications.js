@@ -74,7 +74,7 @@ export async function showActaPublishedNotification({
   try {
     await showLocalNotification({
       title: 'Acta publicada',
-      body: 'Tu acta fue publicada correctamente. Toca para ver y compartir.',
+      body: 'Tu acta fue publicada correctamente. ',
       data: {
         screen: 'SuccessScreen',
         routeParams: JSON.stringify({ipfsData, nftData, tableData}),
