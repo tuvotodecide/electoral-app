@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
+  Image,
+  Switch,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -26,6 +28,11 @@ import {enqueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import nftImage from '../../../assets/images/nft-medal.png';
+import {captureRef} from 'react-native-view-shot';
+import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {ELECTION_ID} from '../../../common/constants';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -110,6 +117,17 @@ const getResponsiveModalWidth = () => {
 
 const PhotoConfirmationScreen = () => {
   const navigation = useNavigation();
+  const navigateHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+  }, [navigation]);
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
   const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
@@ -124,13 +142,43 @@ const PhotoConfirmationScreen = () => {
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
   const [ipfsData, setIpfsData] = useState(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [isNameVisible, setIsNameVisible] = useState(true);
   const [duplicateBallot, setDuplicateBallot] = useState(null);
   const [uploadError, setUploadError] = useState('');
+  const [certificateUri, setCertificateUri] = useState(null);
+  const certificateRef = useRef(null);
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
     title: '',
     message: '',
   });
+  const tableNumberLabel =
+    tableData?.tableNumber ||
+    tableData?.numero ||
+    tableData?.number ||
+    tableData?.id ||
+    tableData?.tableId ||
+    mesaData?.tableNumber ||
+    mesaData?.numero ||
+    mesaData?.number ||
+    mesa?.tableNumber ||
+    mesa?.numero ||
+    mesa?.number ||
+    (typeof tableData?.numero === 'string'
+      ? tableData.numero.replace('Mesa ', '')
+      : '') ||
+    'DEBUG-EMPTY';
+
+  const tableLocationLabel =
+    tableData?.recinto ||
+    tableData?.ubicacion ||
+    tableData?.location ||
+    tableData?.venue ||
+    mesaData?.recinto ||
+    mesaData?.ubicacion ||
+    mesa?.recinto ||
+    mesa?.ubicacion ||
+    I18nStrings.locationNotAvailable;
   const extractJsonUrlFromBallot = b =>
     b?.ipfsUri ||
     b?.jsonUrl ||
@@ -139,14 +187,14 @@ const PhotoConfirmationScreen = () => {
     b?.ipfs?.jsonUrl ||
     null;
   const didAutoOpenRef = useRef(false);
-  useEffect(() => {
-    if (didAutoOpenRef.current) return;
-    didAutoOpenRef.current = true;
-    const t = setTimeout(() => {
-      verifyAndUpload();
-    }, 0);
-    return () => clearTimeout(t);
-  }, []);
+  // useEffect(() => {
+  //   if (didAutoOpenRef.current) return;
+  //   didAutoOpenRef.current = true;
+  //   const t = setTimeout(() => {
+  //     verifyAndUpload();
+  //   }, 0);
+  //   return () => clearTimeout(t);
+  // }, []);
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
@@ -168,19 +216,21 @@ const PhotoConfirmationScreen = () => {
 
   const verifyAndUpload = async () => {
     try {
-
-      const net = await NetInfo.fetch();
-      const online = !!(net.isConnected && (net.isInternetReachable ?? true));
-      if (!online) {
-        handlePublishAndCertify();
-        return;
+      if (certificateRef.current) {
+        const capturedCertificateUri = await captureRef(
+          certificateRef.current,
+          {
+            format: 'png',
+            quality: 0.9,
+          },
+        );
+        setCertificateUri(capturedCertificateUri);
       }
+    } catch (err) {
+      console.error('[PhotoConfirmation] capture error', err);
+    }
 
-      if (flowMode === 'attest') {
-        // Nada de duplicados: pasamos directo a la confirmación
-        handlePublishAndCertify();
-        return;
-      }
+    try {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
@@ -193,26 +243,10 @@ const PhotoConfirmationScreen = () => {
         });
         return;
       }
-      // Construir datos para verificación
-      const verificationData = {
-        tableNumber: tableData?.codigo || 'N/A',
-        votes: {
-          parties: buildVoteData('presidente'),
-          // deputies: buildVoteData('diputado'),
-        },
-      };
-      const duplicateCheck = await pinataService.checkDuplicateBallot(
-        verificationData,
-      );
 
-      if (duplicateCheck.exists) {
-        setDuplicateBallot(duplicateCheck.ballot);
-        setShowDuplicateModal(true);
-      } else {
-        handlePublishAndCertify();
-      }
+      handlePublishAndCertify();
     } catch (error) {
-      setUploadError('Error verificando duplicados');
+      setUploadError('Error en validación local');
     }
   };
 
@@ -312,10 +346,12 @@ const PhotoConfirmationScreen = () => {
         timeout: 30000,
       });
 
-
       return true;
     } catch (error) {
-      console.error('[PhotoConfirmation] uploadAttestation error', error?.message || error);
+      console.error(
+        '[PhotoConfirmation] uploadAttestation error',
+        error?.message || error,
+      );
       return false;
     }
   };
@@ -336,7 +372,6 @@ const PhotoConfirmationScreen = () => {
         },
         timeout: 30000,
       });
-
 
       // Manejar diferentes tipos de respuestas
       if (response.data === true) {
@@ -385,7 +420,10 @@ const PhotoConfirmationScreen = () => {
         const serverMessage =
           error.response.data?.message || error.response.data?.error || '';
 
-        console.error('[PhotoConfirmation] validateWithBackend server error', { status, serverMessage });
+        console.error('[PhotoConfirmation] validateWithBackend server error', {
+          status,
+          serverMessage,
+        });
 
         throw new Error(`${statusMessage} ${serverMessage}`.trim());
       } else if (error.request) {
@@ -488,45 +526,378 @@ const PhotoConfirmationScreen = () => {
     setShowConfirmModal(true);
   };
 
+  // const confirmPublishAndCertify = async () => {
+  //   setStep(1);
+
+  //   try {
+  //     const local = validateBallotLocally(
+  //       partyResults || [],
+  //       voteSummaryResults || [],
+  //     );
+  //     if (!local.ok) {
+  //       setInfoModalData({
+  //         visible: true,
+  //         title: I18nStrings.validationFailed,
+  //         message: local.errors.join('\n'),
+  //       });
+  //       setStep(0);
+  //       return;
+  //     }
+
+  //     const locationId =
+  //       route.params?.locationId ||
+  //       tableData?.location?._id ||
+  //       tableData?.idRecinto ||
+  //       tableData?.locationId ||
+  //       mesaData?.idRecinto ||
+  //       mesa?.idRecinto ||
+  //       null;
+
+  //     const tableCode = String(
+  //       tableData?.tableCode ||
+  //         tableData?.codigo ||
+  //         mesaData?.tableCode ||
+  //         mesaData?.codigo ||
+  //         mesa?.tableCode ||
+  //         mesa?.codigo ||
+  //         '',
+  //     );
+
+  //     const tableNumber = String(
+  //       tableData?.tableNumber ||
+  //         tableData?.numero ||
+  //         tableData?.number ||
+  //         mesaData?.tableNumber ||
+  //         mesaData?.numero ||
+  //         mesaData?.number ||
+  //         mesa?.tableNumber ||
+  //         mesa?.numero ||
+  //         mesa?.number ||
+  //         aiAnalysis?.table_number ||
+  //         '',
+  //     );
+
+  //     const persistedUri = await persistLocalImage(photoUri);
+
+  //     let persistedCertificateUri = null;
+  //     if (certificateUri) {
+  //       try {
+  //         persistedCertificateUri = await persistLocalImage(certificateUri);
+  //       } catch (e) {
+  //         console.error(
+  //           '[PhotoConfirmation] persist certificate error (no bloquea)',
+  //           e,
+  //         );
+  //       }
+  //     }
+
+  //     const additionalData = {
+  //       idRecinto: String(locationId ?? ''),
+  //       locationId: String(locationId ?? ''),
+  //       tableNumber: String(tableNumber),
+  //       tableCode: String(tableCode),
+  //       location: tableData?.location || 'Bolivia',
+  //       userId: userData?.id || 'unknown',
+  //       userName: userFullName,
+  //       role: 'witness',
+  //       dni: String(dni ?? ''),
+  //     };
+
+  //     const electoralData = {
+  //       partyResults: partyResults || [],
+  //       voteSummaryResults: voteSummaryResults || [],
+  //     };
+
+  //     await enqueue({
+  //       type: 'publishActa',
+  //       payload: {
+  //         imageUri: persistedUri,
+  //         certificateImageUri: persistedCertificateUri,
+  //         aiAnalysis: aiAnalysis || {},
+  //         electoralData,
+  //         additionalData,
+  //         tableData: {
+  //           codigo: String(tableCode),
+  //           idRecinto: locationId,
+  //           tableNumber: String(tableNumber),
+  //           numero: String(tableNumber),
+  //         },
+  //         tableCode: String(tableCode),
+  //         tableNumber: String(tableNumber),
+  //         locationId: String(locationId ?? ''),
+  //         createdAt: Date.now(),
+  //       },
+  //     });
+  //     setShowConfirmModal(false);
+  //     setStep(0);
+  //     navigation.replace('OfflinePendingScreen');
+  //     return;
+  //   }catch
+
+  //   setStep(1);
+  //   const tableCodeForGuard = String(
+  //     tableData?.codigo ||
+  //       tableData?.tableCode ||
+  //       mesaData?.codigo ||
+  //       mesaData?.tableCode ||
+  //       mesa?.codigo ||
+  //       mesa?.tableCode ||
+  //       '',
+  //   );
+
+  //   if (dni && tableCodeForGuard) {
+  //     const alreadyMine = await hasUserAttestedTable(dni, tableCodeForGuard);
+  //     if (alreadyMine) {
+  //       setInfoModalData({
+  //         visible: true,
+  //         title: I18nStrings.genericInfo || 'Aviso',
+  //         message:
+  //           I18nStrings.alreadyAttested ||
+  //           'Ya atestiguaste esta mesa con tu usuario.',
+  //       });
+  //       setShowConfirmModal(false);
+  //       setStep(0);
+  //       return;
+  //     }
+  //   }
+  //   try {
+  //     if (flowMode === 'attest') {
+  //       const ballot = existingRecord || duplicateBallot;
+  //       const ballotIdToCheck = ballot?._id || ballot?.id;
+  //       if (dni && ballotIdToCheck) {
+  //         const repeated = await hasUserAttestedBallot(
+  //           dni,
+  //           String(ballotIdToCheck),
+  //         );
+  //         if (repeated) {
+  //           setInfoModalData({
+  //             visible: true,
+  //             title: I18nStrings.genericInfo || 'Aviso',
+  //             message:
+  //               I18nStrings.alreadyAttested || 'Ya atestiguaste este acta.',
+  //           });
+  //           setShowConfirmModal(false);
+  //           setStep(0);
+  //           return;
+  //         }
+  //       }
+  //       if (!ballot) {
+  //         throw new Error(
+  //           I18nStrings.noExistingBallotToAttest ||
+  //             'No hay un acta previa para atestiguar en esta mesa.',
+  //         );
+  //       }
+  //       const jsonUrl = extractJsonUrlFromBallot(ballot);
+  //       if (!jsonUrl) {
+  //         throw new Error('No se encontró el JSON/IPFS del acta existente.');
+  //       }
+
+  //       const privateKey = userData?.privKey;
+  //       // asegurar registro
+  //       let isRegistered = await oracleReads.isRegistered(
+  //         CHAIN,
+  //         userData.account,
+  //         1,
+  //       );
+  //       if (!isRegistered) {
+  //         await executeOperation(
+  //           privateKey,
+  //           userData.account,
+  //           CHAIN,
+  //           oracleCalls.requestRegister(CHAIN, jsonUrl),
+  //         );
+  //         isRegistered = await oracleReads.isRegistered(
+  //           CHAIN,
+  //           userData.account,
+  //           20,
+  //         );
+  //         if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
+  //       }
+
+  //       const response = await executeOperation(
+  //         privateKey,
+  //         userData.account,
+  //         CHAIN,
+  //         oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
+  //         oracleReads.waitForOracleEvent,
+  //         'Attested',
+  //       );
+
+  //       if (ballot?._id) {
+  //         await uploadAttestation(ballot._id);
+  //       }
+
+  //       const {explorer, nftExplorer, attestationNft} =
+  //         availableNetworks[CHAIN];
+  //       const nftId = response.returnData.recordId.toString();
+  //       const nftResult = {
+  //         txHash: response.receipt.transactionHash,
+  //         nftId,
+  //         txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+  //         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+  //       };
+
+  //       navigation.navigate('SuccessScreen', {
+  //         ipfsData: {
+  //           jsonUrl,
+  //           imageUrl:
+  //             existingRecord?.imageUrl || existingRecord?.actaImage || null,
+  //         },
+  //         nftData: nftResult,
+  //         tableData: tableData,
+  //       });
+  //       return;
+  //     }
+
+  //     // 1. Subir a IPFS
+  //     const ipfsResult = await uploadToIPFS();
+  //     setIpfsData(ipfsResult);
+
+  //     // 2. Validar con el nuevo endpoint
+  //     await validateWithBackend(ipfsResult.jsonUrl);
+
+  //     // 3. Obtener datos necesarios para blockchain
+  //     const privateKey = userData?.privKey;
+
+  //     // 4. Crear NFT en blockchain
+  //     let isRegistered = await oracleReads.isRegistered(
+  //       CHAIN,
+  //       userData.account,
+  //       1,
+  //     );
+
+  //     if (!isRegistered) {
+  //       await executeOperation(
+  //         privateKey,
+  //         userData.account,
+  //         CHAIN,
+  //         oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
+  //       );
+
+  //       isRegistered = await oracleReads.isRegistered(
+  //         CHAIN,
+  //         userData.account,
+  //         20,
+  //       );
+
+  //       if (!isRegistered) {
+  //         throw Error(I18nStrings.oracleRegisterFail);
+  //       }
+  //     }
+
+  //     let response;
+
+  //     try {
+  //       response = await executeOperation(
+  //         privateKey,
+  //         userData.account,
+  //         CHAIN,
+  //         oracleCalls.createAttestation(
+  //           CHAIN,
+  //           tableData.codigo,
+  //           ipfsResult.jsonUrl,
+  //         ),
+  //         oracleReads.waitForOracleEvent,
+  //         'AttestationCreated',
+  //       );
+  //     } catch (error) {
+  //       const message = error.message;
+  //       //check if attestation is already created
+  //       if (
+  //         message.indexOf('416c72656164792063726561746564') >= 0 ||
+  //         message.indexOf('Already created') >= 0
+  //       ) {
+  //         response = await executeOperation(
+  //           privateKey,
+  //           userData.account,
+  //           CHAIN,
+  //           oracleCalls.attest(
+  //             CHAIN,
+  //             tableData.codigo,
+  //             BigInt(0),
+  //             ipfsResult.jsonUrl,
+  //           ),
+  //           oracleReads.waitForOracleEvent,
+  //           'Attested',
+  //         );
+  //       } else {
+  //         throw error;
+  //       }
+  //     }
+
+  //     const {explorer, nftExplorer, attestationNft, chain} = availableNetworks[CHAIN];
+  //     const nftId = response.returnData.recordId.toString();
+
+  //     const nftResult = {
+  //       txHash: response.receipt.transactionHash,
+  //       nftId,
+  //       txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+  //       nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId + `?chainid=${chain.id}&type=erc721`,
+  //     };
+
+  //     // 5. Subir Metadata al backend
+  //     const uploadedBackendData = await uploadMetadataToBackend(
+  //       ipfsResult.jsonUrl,
+  //       nftResult.nftId,
+  //       String(tableData.idRecinto),
+  //     );
+
+  //     if (uploadedBackendData._id) {
+  //       const attestationSuccess = await uploadAttestation(
+  //         uploadedBackendData._id,
+  //       );
+
+  //       if (!attestationSuccess) {
+  //       }
+  //     } else {
+  //     }
+
+  //     // 6. Navegar a pantalla de éxito con datos de IPFS
+  //     navigation.navigate('SuccessScreen', {
+  //       ipfsData: ipfsResult,
+  //       nftData: nftResult,
+  //       tableData: tableData,
+  //     });
+
+  //     setStep(2);
+  //   } catch (error) {
+  //     console.error(
+  //       '[PhotoConfirmation] confirmPublishAndCertify error',
+  //       error,
+  //     );
+  //     setInfoModalData({
+  //       visible: true,
+  //       title: I18nStrings.genericError,
+  //       message: error.message || 'Error al encolar el acta',
+  //     });
+  //     setShowConfirmModal(false);
+  //     setStep(0);
+  //   }
+  // };
   const confirmPublishAndCertify = async () => {
-    const net = await NetInfo.fetch();
-    const online = !!(net.isConnected && (net.isInternetReachable ?? true));
-    if (!online) {
+    setStep(1);
+    let electionConfigId = null;
+    try {
+      electionConfigId = await AsyncStorage.getItem(ELECTION_ID);
+    } catch (e) {
+      console.error('[PhotoConfirmation] error leyendo electionConfigId', e);
+    }
+    try {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
       );
+
       if (!local.ok) {
         setInfoModalData({
           visible: true,
           title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
+        setStep(0);
         return;
       }
-      const tableCodeToCheck = String(
-        tableData?.codigo ||
-          tableData?.tableCode ||
-          mesaData?.codigo ||
-          mesaData?.tableCode ||
-          mesa?.codigo ||
-          mesa?.tableCode ||
-          '',
-      );
 
-      if (dni && tableCodeToCheck) {
-        const alreadyMine = await hasUserAttestedTable(dni, tableCodeToCheck);
-        if (alreadyMine) {
-          setInfoModalData({
-            visible: true,
-            title: I18nStrings.genericInfo || 'Aviso',
-            message:
-              I18nStrings.alreadyAttested ||
-              'Ya atestiguaste esta mesa con tu usuario.',
-          });
-          return;
-        }
-      }
       const locationId =
         route.params?.locationId ||
         tableData?.location?._id ||
@@ -561,17 +932,32 @@ const PhotoConfirmationScreen = () => {
       );
 
       const persistedUri = await persistLocalImage(photoUri);
+
+      let persistedCertificateUri = null;
+      if (certificateUri) {
+        try {
+          persistedCertificateUri = await persistLocalImage(certificateUri);
+        } catch (e) {
+          console.error(
+            '[PhotoConfirmation] persist certificate error (no bloquea)',
+            e,
+          );
+        }
+      }
+
       const additionalData = {
         idRecinto: String(locationId ?? ''),
         locationId: String(locationId ?? ''),
         tableNumber: String(tableNumber),
         tableCode: String(tableCode),
         location: tableData?.location || 'Bolivia',
-
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
+        dni: String(dni ?? ''),
+        electionConfigId: electionConfigId || undefined,
       };
+
       const electoralData = {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
@@ -581,6 +967,7 @@ const PhotoConfirmationScreen = () => {
         type: 'publishActa',
         payload: {
           imageUri: persistedUri,
+          certificateImageUri: persistedCertificateUri,
           aiAnalysis: aiAnalysis || {},
           electoralData,
           additionalData,
@@ -596,267 +983,25 @@ const PhotoConfirmationScreen = () => {
           createdAt: Date.now(),
         },
       });
-      setShowConfirmModal(false);
-      setStep(0);
-      navigation.replace('OfflinePendingScreen');
-      return;
-    }
-    setStep(1);
-    const tableCodeForGuard = String(
-      tableData?.codigo ||
-        tableData?.tableCode ||
-        mesaData?.codigo ||
-        mesaData?.tableCode ||
-        mesa?.codigo ||
-        mesa?.tableCode ||
-        '',
-    );
-
-    if (dni && tableCodeForGuard) {
-      const alreadyMine = await hasUserAttestedTable(dni, tableCodeForGuard);
-      if (alreadyMine) {
-        setInfoModalData({
-          visible: true,
-          title: I18nStrings.genericInfo || 'Aviso',
-          message:
-            I18nStrings.alreadyAttested ||
-            'Ya atestiguaste esta mesa con tu usuario.',
-        });
-        setShowConfirmModal(false);
-        setStep(0);
-        return;
-      }
-    }
-    try {
-      if (flowMode === 'attest') {
-        const ballot = existingRecord || duplicateBallot;
-        const ballotIdToCheck = ballot?._id || ballot?.id;
-        if (dni && ballotIdToCheck) {
-          const repeated = await hasUserAttestedBallot(
-            dni,
-            String(ballotIdToCheck),
-          );
-          if (repeated) {
-            setInfoModalData({
-              visible: true,
-              title: I18nStrings.genericInfo || 'Aviso',
-              message:
-                I18nStrings.alreadyAttested || 'Ya atestiguaste este acta.',
-            });
-            setShowConfirmModal(false);
-            setStep(0);
-            return;
-          }
-        }
-        if (!ballot) {
-          throw new Error(
-            I18nStrings.noExistingBallotToAttest ||
-              'No hay un acta previa para atestiguar en esta mesa.',
-          );
-        }
-        const jsonUrl = extractJsonUrlFromBallot(ballot);
-        if (!jsonUrl) {
-          throw new Error('No se encontró el JSON/IPFS del acta existente.');
-        }
-
-        const privateKey = userData?.privKey;
-        // asegurar registro
-        let isRegistered = await oracleReads.isRegistered(
-          CHAIN,
-          userData.account,
-          1,
-        );
-        if (!isRegistered) {
-          await executeOperation(
-            privateKey,
-            userData.account,
-            CHAIN,
-            oracleCalls.requestRegister(CHAIN, jsonUrl),
-          );
-          isRegistered = await oracleReads.isRegistered(
-            CHAIN,
-            userData.account,
-            20,
-          );
-          if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
-        }
-
-        const response = await executeOperation(
-          privateKey,
-          userData.account,
-          CHAIN,
-          oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
-          oracleReads.waitForOracleEvent,
-          'Attested',
-        );
-
-        if (ballot?._id) {
-          await uploadAttestation(ballot._id);
-        }
-
-        const {explorer, nftExplorer, attestationNft} =
-          availableNetworks[CHAIN];
-        const nftId = response.returnData.recordId.toString();
-        const nftResult = {
-          txHash: response.receipt.transactionHash,
-          nftId,
-          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
-        };
-
-        navigation.navigate('SuccessScreen', {
-          ipfsData: {
-            jsonUrl,
-            imageUrl:
-              existingRecord?.imageUrl || existingRecord?.actaImage || null,
-          },
-          nftData: nftResult,
-          tableData: tableData,
-        });
-        return;
-      }
-
-      // 1. Subir a IPFS
-      const ipfsResult = await uploadToIPFS();
-      setIpfsData(ipfsResult);
-
-      // 2. Validar con el nuevo endpoint
-      await validateWithBackend(ipfsResult.jsonUrl);
-
-      // 3. Obtener datos necesarios para blockchain
-      const privateKey = userData?.privKey;
-
-      // 4. Crear NFT en blockchain
-      let isRegistered = await oracleReads.isRegistered(
-        CHAIN,
-        userData.account,
-        1,
-      );
-
-      if (!isRegistered) {
-        await executeOperation(
-          privateKey,
-          userData.account,
-          CHAIN,
-          oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
-        );
-
-        isRegistered = await oracleReads.isRegistered(
-          CHAIN,
-          userData.account,
-          20,
-        );
-
-        if (!isRegistered) {
-          throw Error(I18nStrings.oracleRegisterFail);
-        }
-      }
-
-      let response;
-
-      try {
-        response = await executeOperation(
-          privateKey,
-          userData.account,
-          CHAIN,
-          oracleCalls.createAttestation(
-            CHAIN,
-            tableData.codigo,
-            ipfsResult.jsonUrl,
-          ),
-          oracleReads.waitForOracleEvent,
-          'AttestationCreated',
-        );
-      } catch (error) {
-        const message = error.message;
-        //check if attestation is already created
-        if (
-          message.indexOf('416c72656164792063726561746564') >= 0 ||
-          message.indexOf('Already created') >= 0
-        ) {
-          response = await executeOperation(
-            privateKey,
-            userData.account,
-            CHAIN,
-            oracleCalls.attest(
-              CHAIN,
-              tableData.codigo,
-              BigInt(0),
-              ipfsResult.jsonUrl,
-            ),
-            oracleReads.waitForOracleEvent,
-            'Attested',
-          );
-        } else {
-          throw error;
-        }
-      }
-
-      const {explorer, nftExplorer, attestationNft, chain} = availableNetworks[CHAIN];
-      const nftId = response.returnData.recordId.toString();
-
-      const nftResult = {
-        txHash: response.receipt.transactionHash,
-        nftId,
-        txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-        nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId + `?chainid=${chain.id}&type=erc721`,
-      };
-
-      // 5. Subir Metadata al backend
-      const uploadedBackendData = await uploadMetadataToBackend(
-        ipfsResult.jsonUrl,
-        nftResult.nftId,
-        String(tableData.idRecinto),
-      );
-
-      if (uploadedBackendData._id) {
-        const attestationSuccess = await uploadAttestation(
-          uploadedBackendData._id,
-        );
-
-        if (!attestationSuccess) {
-        }
-      } else {
-      }
-
-      // 6. Navegar a pantalla de éxito con datos de IPFS
-      navigation.navigate('SuccessScreen', {
-        ipfsData: ipfsResult,
-        nftData: nftResult,
-        tableData: tableData,
-      });
+      setStep(2);
     } catch (error) {
       console.error(
         '[PhotoConfirmation] confirmPublishAndCertify error',
         error,
       );
-      let message = error.message;
-      if (message.includes('Validation Error')) {
-        message = I18nStrings.validationError;
-      } else if (message.includes('Invalid data')) {
-        message = I18nStrings.invalidActaData;
-      } else if (
-        error.message.indexOf('616c7265616479206174746573746564') >= 0
-      ) {
-        message = I18nStrings.alreadyAttested;
-      } else if (error.message.indexOf('416c72656164792063726561746564') >= 0) {
-        message = I18nStrings.alreadyCreated;
-      }
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
-        message,
+        message: error?.message || 'Error al encolar el acta',
       });
-    } finally {
       setShowConfirmModal(false);
       setStep(0);
     }
   };
 
-  const closeModal = (goBack = false) => {
+  const closeModal = () => {
     setShowConfirmModal(false);
     setStep(0);
-    if (goBack) navigation.goBack();
   };
   const closeInfoModal = () => {
     setInfoModalData({
@@ -873,23 +1018,7 @@ const PhotoConfirmationScreen = () => {
         testID="photoConfirmationHeader"
         colors={colors}
         onBack={handleBack}
-        title={`Mesa ${
-          tableData?.tableNumber ||
-          tableData?.numero ||
-          tableData?.number ||
-          tableData?.id ||
-          tableData?.tableId ||
-          mesaData?.tableNumber ||
-          mesaData?.numero ||
-          mesaData?.number ||
-          mesa?.tableNumber ||
-          mesa?.numero ||
-          mesa?.number ||
-          (typeof tableData?.numero === 'string'
-            ? tableData.numero.replace('Mesa ', '')
-            : '') ||
-          'DEBUG-EMPTY' // Changed to make it clear data is missing
-        }`}
+        title={``}
         showNotification={true}
         onNotificationPress={() => {
           // Handle notification press
@@ -901,23 +1030,46 @@ const PhotoConfirmationScreen = () => {
         testID="photoConfirmationInfoContainer"
         style={styles.infoContainer}>
         <CText testID="photoConfirmationInfoText" style={styles.infoText}>
-          {I18nStrings.infoReadyToLoad}
+          Hacer nombre visible
         </CText>
+        <Switch
+          value={isNameVisible}
+          onValueChange={setIsNameVisible}
+          style={styles.infoSwitch}
+          trackColor={{false: '#D6D6D6', true: '#A5D6A7'}}
+          thumbColor={isNameVisible ? '#4CAF50' : '#f4f3f4'}
+        />
       </View>
 
       {/* Main Content */}
       <View testID="photoConfirmationContent" style={styles.content}>
         {!showConfirmModal && !showDuplicateModal && (
           <>
-            <CText testID="photoConfirmationMainText" style={styles.mainText}>
-              {I18nStrings.i}
-              <CText
-                testID="photoConfirmationUserName"
-                style={styles.mainTextBold}>
-                {' '}
-                {userFullName}
-              </CText>
-            </CText>
+            <View style={styles.nftCertificate} ref={certificateRef}>
+              <View style={styles.certificateBorder}>
+                <View style={styles.medalContainer}>
+                  <Image
+                    source={nftImage}
+                    style={styles.medalImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <CText style={styles.nftName}>
+                  {isNameVisible ? userFullName : '••••••'}
+                </CText>
+                <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
+                <CText style={styles.nftCertTitle}>
+                  PARTICIPACIÓN ELECTORAL
+                </CText>
+                <CText style={styles.nftCertDetail}>
+                  {(tableLocationLabel || '').toUpperCase()}
+                </CText>
+
+                <CText style={styles.nftCertDetail}>
+                  {`MESA ${tableNumberLabel || ''}`.toUpperCase()}
+                </CText>
+              </View>
+            </View>
 
             <TouchableOpacity
               testID="photoConfirmationPublishButton"
@@ -926,44 +1078,11 @@ const PhotoConfirmationScreen = () => {
               <CText
                 testID="photoConfirmationPublishButtonText"
                 style={styles.publishButtonText}>
-                {I18nStrings.publishAndCertify}
+                {'Siguiente'}
               </CText>
             </TouchableOpacity>
           </>
         )}
-        <CText testID="photoConfirmationText" style={styles.confirmationText}>
-          {I18nStrings.actaCorrectConfirmation
-            .replace(
-              '{tableNumber}',
-              tableData?.tableNumber ||
-                tableData?.numero ||
-                tableData?.number ||
-                tableData?.id ||
-                tableData?.tableId ||
-                mesaData?.tableNumber ||
-                mesaData?.numero ||
-                mesaData?.number ||
-                mesa?.tableNumber ||
-                mesa?.numero ||
-                mesa?.number ||
-                (typeof tableData?.numero === 'string'
-                  ? tableData.numero.replace('Mesa ', '')
-                  : '') ||
-                'DEBUG-EMPTY', // Changed to make it clear data is missing
-            )
-            .replace(
-              '{location}',
-              tableData?.recinto ||
-                tableData?.ubicacion ||
-                tableData?.location ||
-                tableData?.venue ||
-                mesaData?.recinto ||
-                mesaData?.ubicacion ||
-                mesa?.recinto ||
-                mesa?.ubicacion ||
-                I18nStrings.locationNotAvailable,
-            )}
-        </CText>
       </View>
 
       <Modal
@@ -971,7 +1090,7 @@ const PhotoConfirmationScreen = () => {
         visible={showConfirmModal}
         transparent
         animationType="fade"
-        onRequestClose={() => closeModal(true)}>
+        onRequestClose={closeModal}>
         <View
           testID="photoConfirmationModalOverlay"
           style={modalStyles.modalOverlay}>
@@ -1012,7 +1131,7 @@ const PhotoConfirmationScreen = () => {
                   <TouchableOpacity
                     testID="photoConfirmationModalCancelButton"
                     style={modalStyles.cancelButton}
-                    onPress={() => closeModal(true)}>
+                    onPress={closeModal}>
                     <CText
                       testID="photoConfirmationModalCancelText"
                       style={modalStyles.cancelButtonText}>
@@ -1048,8 +1167,41 @@ const PhotoConfirmationScreen = () => {
                 <CText
                   testID="photoConfirmationModalLoadingSubtext"
                   style={modalStyles.loadingSubtext}>
-                  {I18nStrings.savingToBlockchain}
+                  Estamos guardando tu acta para subirla.
                 </CText>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <CText
+                  testID="photoConfirmationModalFinishedTitle"
+                  style={modalStyles.loadingTitle}></CText>
+                <CText
+                  testID="photoConfirmationModalFinishedSubtext"
+                  style={modalStyles.loadingSubtext}>
+                  Acta guardada. Se subirá en segundo plano.
+                </CText>
+                <View
+                  testID="photoConfirmationModalFinishedButtons"
+                  style={[
+                    modalStyles.buttonContainer,
+                    {marginTop: getResponsiveSize(12, 16, 20)},
+                  ]}>
+                  <TouchableOpacity
+                    testID="photoConfirmationModalGoHomeButton"
+                    style={modalStyles.confirmButton}
+                    onPress={() => {
+                      setShowConfirmModal(false);
+                      setStep(0);
+                      navigateHome();
+                    }}>
+                    <CText
+                      testID="photoConfirmationModalGoHomeText"
+                      style={modalStyles.confirmButtonText}>
+                      Ir al Inicio
+                    </CText>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </View>
@@ -1237,22 +1389,115 @@ const modalStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  bigTitle: {
+    fontSize: getResponsiveSize(22, 26, 30),
+    fontWeight: '800',
+    color: '#17694A',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(20, 25, 30),
+    lineHeight: getResponsiveSize(28, 32, 36),
+  },
+  nftCertificate: {
+    backgroundColor: '#f8fff8',
+    borderRadius: 18,
+    padding: getResponsiveSize(20, 24, 28),
+    width: '100%',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: getResponsiveSize(20, 25, 30),
+  },
+  certificateBorder: {
+    borderWidth: 2,
+    borderColor: '#a5deb5',
+    borderRadius: 15,
+    padding: getResponsiveSize(18, 22, 26),
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#edffe8',
+    borderStyle: 'dashed',
+  },
+  medalContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+    width: getResponsiveSize(70, 80, 90),
+    height: getResponsiveSize(70, 80, 90),
+    justifyContent: 'center',
+    borderRadius: 50,
+    backgroundColor: '#ffe9b8',
+    borderWidth: 3,
+    borderColor: '#fff7e0',
+    marginTop: getResponsiveSize(-25, -30, -35),
+  },
+  medalImage: {
+    width: getResponsiveSize(45, 55, 65),
+    height: getResponsiveSize(45, 55, 65),
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: getResponsiveSize(-22, -27, -32),
+    marginLeft: getResponsiveSize(-22, -27, -32),
+  },
+  nftMedalText: {
+    position: 'absolute',
+    bottom: getResponsiveSize(6, 8, 10),
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: getResponsiveSize(12, 14, 16),
+    color: '#CBA233',
+    letterSpacing: 1,
+  },
+  nftName: {
+    fontWeight: '700',
+    fontSize: getResponsiveSize(18, 20, 22),
+    marginVertical: getResponsiveSize(4, 6, 8),
+    color: '#17694A',
+    textAlign: 'center',
+  },
+  nftCertTitle: {
+    fontWeight: '700',
+    fontSize: getResponsiveSize(13, 15, 17),
+    color: '#17694A',
+    textAlign: 'center',
+    marginVertical: 1,
+  },
+  nftCertDetail: {
+    fontWeight: '400',
+    fontSize: getResponsiveSize(13, 15, 17),
+    color: '#17694A',
+    textAlign: 'center',
+    marginVertical: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF', // White background for the entire screen
   },
   infoContainer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: getResponsiveSize(12, 16, 24),
-    paddingBottom: getResponsiveSize(8, 12, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 28),
+    paddingBottom: getResponsiveSize(10, 14, 18),
     marginTop: 0,
+    marginHorizontal: 5,
+
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   infoText: {
-    fontSize: getResponsiveSize(12, 14, 16),
+    fontSize: getResponsiveSize(15, 17, 19),
     color: '#868686',
     fontWeight: '500',
+  },
+  infoSwitch: {
+    marginLeft: getResponsiveSize(8, 10, 12),
+    transform: [{scale: getResponsiveSize(1.1, 1.15, 1.2)}],
   },
   content: {
     flex: 1,

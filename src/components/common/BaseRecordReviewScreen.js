@@ -132,7 +132,7 @@ const BaseRecordReviewScreen = ({
               <CText
                 testID={`${testID}TabletTableSubtitle`}
                 style={styles.tabletTableSubtitleText}>
-                {tableInfo?.recinto || tableInfo?.escuela || 'Precinct N/A'}
+                {tableInfo?.recinto || tableInfo?.escuela || 'Recinto'}
               </CText>
             </View>
           )}

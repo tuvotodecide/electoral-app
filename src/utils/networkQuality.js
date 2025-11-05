@@ -1,5 +1,5 @@
 export const NET_POLICIES = {
-  estrict:  { minWifiPercent: 35, minWifiBars: 2, minWifiRssi: -80, minCellGen: '4g' },
+  estrict:  { minWifiPercent: 50, minWifiBars: 4, minWifiRssi: -50, minCellGen: '4g' },
   balanced:{ minWifiPercent: 25, minWifiBars: 2, minWifiRssi: -85, minCellGen: '3g' },
   tolerant: { minWifiPercent: 20, minWifiBars: 1, minWifiRssi: -90, minCellGen: '3g' },
 };

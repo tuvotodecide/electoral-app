@@ -25,7 +25,12 @@ import {useSelector} from 'react-redux';
 import {store} from '../../../redux/store';
 import {clearSession} from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
+import {
+  ELECTION_ID,
+  ELECTION_STATUS,
+  JWT_KEY,
+  KEY_OFFLINE,
+} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
 import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
@@ -41,7 +46,10 @@ import {ActivityIndicator} from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import {publishActaHandler} from '../../../utils/offlineQueueHandler';
 import CustomModal from '../../../components/common/CustomModal';
-import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
+import {
+  isStateEffectivelyOnline,
+  NET_POLICIES,
+} from '../../../utils/networkQuality';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -238,8 +246,28 @@ export default function HomeScreen({navigation}) {
   const processingRef = useRef(false);
   const [checkingVotePlace, setCheckingVotePlace] = useState(true);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
+  const [electionStatus, setElectionStatus] = useState(null);
+  const fetchElectionStatus = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `${BACKEND_RESULT}/api/v1/elections/config/status`,
+        {timeout: 15000},
+      );
 
+      if (res?.data) {
+        setElectionStatus(res.data);
 
+        await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
+
+        // guardar solo el id de la config
+        if (res.data?.config?.id) {
+          await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
+        }
+      }
+    } catch (err) {
+      console.error('[HOME] fetchElectionStatus error', err);
+    }
+  }, []);
 
   const userData = useSelector(state => state.wallet.payload);
 
@@ -256,7 +284,7 @@ export default function HomeScreen({navigation}) {
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
       return;
     const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) return;
     processingRef.current = true;
     try {
@@ -281,7 +309,7 @@ export default function HomeScreen({navigation}) {
 
   const handleParticiparPress = async () => {
     const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net,NET_POLICIES.balanced);
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     if (online) {
       navigation.navigate(StackNav.ElectoralLocations, {
         targetScreen: 'UnifiedParticipation',
@@ -343,19 +371,20 @@ export default function HomeScreen({navigation}) {
   useFocusEffect(
     useCallback(() => {
       checkUserVotePlace();
+      fetchElectionStatus();
       let alive = true;
       // intenta una vez al enfocar
       runOfflineQueueOnce();
       // escucha cambios de red mientras esta pantalla está activa
       const unsubNet = NetInfo.addEventListener(state => {
-        const online = isStateEffectivelyOnline(state,NET_POLICIES.balanced);
+        const online = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
         if (online && alive) runOfflineQueueOnce();
       });
       return () => {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [runOfflineQueueOnce]),
+    }, [runOfflineQueueOnce, fetchElectionStatus]),
   );
 
   // Datos del carrusel

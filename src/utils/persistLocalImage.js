@@ -45,7 +45,7 @@ export const removePersistedImage = async fileUri => {
       await RNFS.unlink(path);
     }
   } catch (error) {
-    console.error('[💾 PERSIST-IMAGE] ❌ Error al eliminar imagen', {
+    console.error('[PERSIST-IMAGE] Error al eliminar imagen', {
       error: error.message,
     });
   }
