@@ -23,7 +23,7 @@ import {
 } from '../../../data/guardians';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { truncateDid } from '../../../utils/Address';
 import ActionSheet from 'react-native-actions-sheet';
 import CInput from '../../../components/common/CInput';
@@ -37,7 +37,6 @@ const statusColorKey = {
 };
 
 export default function Guardians({navigation}) {
-  const {logAction, logNavigation} = useNavigationLogger('Guardians');
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
@@ -75,15 +74,12 @@ export default function Guardians({navigation}) {
   };
 
   const onPressAddGuardian = () => {
-    logNavigation(StackNav.AddGuardians);
     navigation.navigate(StackNav.AddGuardians);
   };
   const onPressMyProtected = () => {
-    logNavigation(StackNav.GuardiansAdmin);
     navigation.navigate(StackNav.GuardiansAdmin);
   };
   const onPressWatchInfoGuardian = () => {
-    logNavigation(StackNav.OnBoardingGuardians);
     navigation.navigate(StackNav.OnBoardingGuardians);
   };
   const onPressGuardiansThreshold = () => {
@@ -113,20 +109,17 @@ export default function Guardians({navigation}) {
   };
 
   const openModal = item => {
-    logAction('OpenGuardianActionModal', {guardianId: item.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
-    logAction('CloseGuardianActionModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };
 
   const deleteGuardian = async () => {
     if (!selectedGuardian?.id || !did) {
-      logAction('DeleteGuardianMissingData');
       return;
     }
     try {
@@ -134,27 +127,22 @@ export default function Guardians({navigation}) {
         invId: selectedGuardian.id,
         ownerDid: did,
       }, {onSuccess: () => {
-        logAction('DeleteGuardianSuccess', {guardianId: selectedGuardian.id});
         closeModal();
       }});
     } catch (e) {
-      logAction('DeleteGuardianError', {message: e?.message});
     }
   };
   const saveGuardian = newNick => {
     if (!selectedGuardian?.id || !did) {
-      logAction('SaveGuardianMissingData');
       return;
     }
     patchGuardianId(
       {invId: selectedGuardian.id, ownerDid: did, nickname: newNick},
       {
         onSuccess: () => {
-          logAction('SaveGuardianSuccess', {guardianId: selectedGuardian.id});
           closeModal();
         },
         onError: err => {
-          logAction('SaveGuardianError', {message: err?.message});
         },
       },
     );

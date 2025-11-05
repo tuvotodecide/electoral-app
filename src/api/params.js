@@ -1,7 +1,7 @@
 import { arbitrum, arbitrumSepolia, base, baseSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
-import {SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN} from "@env";
+import {SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM} from "@env";
 
 export const sponsorshipPolicyId = SPONSORSHIP_POLICY;
 export const FACTORY_ADDRESS = FACTORY;
@@ -9,7 +9,7 @@ export const FACTORY_ADDRESS = FACTORY;
 export const availableNetworks = {
 	'arbitrum-sepolia': {
     chain: arbitrumSepolia,
-    bundler: BUNDLER,
+    bundler: BUNDLER_ARBITRUM,
     explorer: 'https://sepolia.arbiscan.io/',
     nftExplorer: 'https://testnet.routescan.io/nft',
     oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80',
@@ -20,7 +20,7 @@ export const availableNetworks = {
   },
   'arbitrum': {
     chain: arbitrum,
-    bundler: BUNDLER_MAIN,
+    bundler: BUNDLER_MAIN_ARBITRUM,
     explorer: 'https://arbiscan.io/',
     nftExplorer: 'https://routescan.io/nft',
     oracle: '0xb558021F42209c4E08Dab884B25b89106Dc7D747',
@@ -45,10 +45,10 @@ export const availableNetworks = {
     bundler: BUNDLER_MAIN,
     explorer: 'https://basescan.org/',
     nftExplorer: 'https://routescan.io/nft',
-    oracle: '',
-    userRole: '',
-    juryRole: '',
-    attestationNft: '',
+    oracle: '0xF81508fC99Ffcfbbb5421150785c9820F8cBA9b2',
+    userRole: '0x2db9fd3d099848027c2383d0a083396f6c41510d7acfd92adc99b6cffcf31e96',
+    juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
+    attestationNft: '0xded7aD213240729cEB65c4196f4020d9DbC6C094',
     participationNft: '',
   }
 };

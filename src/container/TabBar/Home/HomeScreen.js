@@ -29,7 +29,7 @@ import {JWT_KEY, KEY_OFFLINE} from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
 import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {useFocusEffect} from '@react-navigation/native';
 import {
   getAll as getOfflineQueue,

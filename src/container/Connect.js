@@ -1,5 +1,5 @@
 import {Image, StyleSheet, View} from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
@@ -17,6 +17,7 @@ import {commonColor} from '../themes/colors';
 import wira from 'wira-sdk';
 import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import InfoModal from '../components/modal/InfoModal';
+import { checkLegacyDataExists } from '../utils/migrateLegacy';
 
 const defaultModalState = {
   visible: false,
@@ -74,11 +75,14 @@ export default function Connect({navigation}) {
     navigation.navigate(AuthNav.RegisterUser1);
   };
 
-  const onPressLoginUser = () => {
+  const onPressLoginUser = async () => {
     const response = wira.getWiraData(PROVIDER_NAME);
     if (!response) {
-      navigation.navigate(AuthNav.SelectRecuperation);
-      return;
+      const legacyDataExists = await checkLegacyDataExists();
+      if (!legacyDataExists) {
+        navigation.navigate(AuthNav.SelectRecuperation);
+        return;
+      }
     }
     navigation.navigate(AuthNav.LoginUser);
   };

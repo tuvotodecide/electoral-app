@@ -10,7 +10,7 @@ import {getHeight, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 const RenderEtiqueta = ({title, subtitle, colors, testId}) => {
   return (
@@ -28,8 +28,6 @@ const RenderEtiqueta = ({title, subtitle, colors, testId}) => {
 export default function ConditionsRegister({navigation}) {
   const colors = useSelector(state => state.theme.theme);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('ConditionsRegister', true);
   return (
     <CSafeAreaViewAuth testID="conditionsRegisterContainer">
       <CHeader testID="conditionsRegisterHeader" />

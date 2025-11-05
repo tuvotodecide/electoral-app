@@ -16,7 +16,7 @@ import {styles} from '../../../themes';
 import String from '../../../i18n/String';
 import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import wira from 'wira-sdk';
 import { getLegacyData } from '../../../utils/migrateLegacy';
 import CAlert from '../../../components/common/CAlert';
@@ -30,12 +30,10 @@ export default function RecoveryQr({navigation}) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const {logAction, logNavigation} = useNavigationLogger('RecoveryQR', true);
   // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
   const onImageSelected = async (asset) => {
     setErrorMsg(null);
     if (!asset?.uri) {
-      logAction('RecoveryQrImageMissing');
       Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
       return;
     }
@@ -43,7 +41,6 @@ export default function RecoveryQr({navigation}) {
     setImageUri(asset.uri);
     setLoading(true);
     try {
-      logAction('RecoveryQrParseAttempt');
       const start = Date.now();
       const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
 
@@ -67,7 +64,6 @@ export default function RecoveryQr({navigation}) {
       }
 
       setPayload(newPayload);
-      logAction('RecoveryQrParseSuccess');
       if (Platform.OS === 'android') {
         ToastAndroid.show('QR válido', ToastAndroid.SHORT);
       }
@@ -84,12 +80,6 @@ export default function RecoveryQr({navigation}) {
         apiDebug: err?.apiDebug ?? null,
         stack: err?.stack ?? null,
       });
-      logAction('RecoveryQrParseError', {
-        message: err?.message,
-        code: err?.code ?? null,
-        url,
-        status,
-      });
       setPayload(null);
       setImageUri(null);
       Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');
@@ -100,10 +90,8 @@ export default function RecoveryQr({navigation}) {
 
   const goSetPin = () => {
     if (!payload) {
-      logAction('RecoveryQrContinueWithoutPayload');
       return;
     }
-    logNavigation(AuthNav.RecoveryUserQrpin, {payload: true});
     navigation.navigate(AuthNav.RecoveryUserQrpin, { payload });
   };
 

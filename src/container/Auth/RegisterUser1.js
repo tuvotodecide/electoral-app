@@ -17,21 +17,16 @@ import Icono from '../../components/common/Icono';
 import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function RegisterUser1({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
-
-  const {logAction, logNavigation} = useNavigationLogger('RegisterUser1', true);
-
   const onPressRememberMe = () => {
-    logAction('ToggleTerms', {nextValue: !check});
     setCheck(!check);
   };
 
   const onPressNext = () => {
-    logNavigation(AuthNav.RegisterUser2, route?.params ?? null);
     if (route?.params) {
       navigation.navigate(AuthNav.RegisterUser2, route.params);
     } else {
@@ -40,7 +35,6 @@ export default function RegisterUser1({navigation, route}) {
   };
 
   const onPressConditions = () => {
-    logNavigation(StackNav.TermsAndCondition);
     navigation.navigate(StackNav.TermsAndCondition);
   };
 

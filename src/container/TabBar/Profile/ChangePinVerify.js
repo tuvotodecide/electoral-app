@@ -18,7 +18,7 @@ import InfoModal from '../../../components/modal/InfoModal';
 import wira from 'wira-sdk';
 import {PROVIDER_NAME} from '@env';
 import CLoaderOverlay from '../../../components/common/CLoaderOverlay';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -26,8 +26,6 @@ export default function ChangePinVerify({navigation}) {
   const [verifying, setVerifying] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: ''});
   const onOtpChange = text => setOtp(text);
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('ChangePinVerify', true);
   const otpRef = useRef(null);
 
   const handleFilled = async (code) => {

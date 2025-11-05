@@ -132,6 +132,7 @@ export default {
   creatingWallet: 'Creando cuenta…',
   issuingVC: 'Generando credenciales…',
   migrating: 'Migrando datos…',
+  migratingOnLogin: 'Estamos migrando su cuenta a la nueva versión, por favor espere...',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',

@@ -12,22 +12,14 @@ import {AuthNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function SelectRecuperation({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger(
-    'SelectRecuperation',
-    true,
-  );
-
   const initCIrecovery = () => {
-    logAction('InitCIRecovery');
     const params = {
       isRecovery: true,
     };
-    logNavigation(AuthNav.RegisterUser1, params);
     navigation.navigate(AuthNav.RegisterUser1, params);
   };
   return (
@@ -99,7 +91,6 @@ export default function SelectRecuperation({navigation, route}) {
             },
           ]}
           onPress={() => {
-            logNavigation(AuthNav.FindMyUser);
             navigation.navigate(AuthNav.FindMyUser);
           }}>
           <View style={styles.rowCenter}>
@@ -136,7 +127,6 @@ export default function SelectRecuperation({navigation, route}) {
             },
           ]}
           onPress={() => {
-            logNavigation(AuthNav.RecoveryQr);
             navigation.navigate(AuthNav.RecoveryQr);
           }}>
           <View style={styles.rowCenter}>

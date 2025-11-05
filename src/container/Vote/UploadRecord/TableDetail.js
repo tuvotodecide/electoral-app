@@ -19,7 +19,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -45,11 +45,6 @@ const mockMesa = {
 
 export default function TableDetail({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
-
-  const {logAction, logNavigation} = useNavigationLogger(
-    'TableDetail',
-    true,
-  );
 
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
@@ -137,9 +132,6 @@ export default function TableDetail({navigation, route}) {
     !!route.params?.capturedImage,
   );
 
-  useEffect(() => {
-    logNavigation('table_detail_view', {recordsCount});
-  }, [logNavigation, recordsCount]);
 
   const handleTakePhoto = () => {
     const finalTableData = {
@@ -153,7 +145,6 @@ export default function TableDetail({navigation, route}) {
 
     const count = Array.isArray(existingRecords) ? existingRecords.length : 0;
 
-    logAction('table_detail_take_photo', {recordsCount: count});
 
     if (count === 0) {
       try {
@@ -175,10 +166,6 @@ export default function TableDetail({navigation, route}) {
     if (count === 1) {
       const record = existingRecords[0];
       try {
-          logNavigation('table_detail_existing_record_open', {
-            index: 0,
-            totalRecords,
-          });
           navigation.navigate(StackNav.PhotoReviewScreen, {
           mesa: finalTableData,
           tableData: finalTableData,
@@ -205,9 +192,6 @@ export default function TableDetail({navigation, route}) {
 
     // >1 actas -> WhichIsCorrectScreen
     try {
-      logNavigation('table_detail_existing_record_choose', {
-        totalRecords,
-      });
       navigation.navigate(StackNav.WhichIsCorrectScreen, {
         mesa: finalTableData,
         tableData: finalTableData,
@@ -230,7 +214,6 @@ export default function TableDetail({navigation, route}) {
 
   const handleConfirmPhoto = () => {
     setModalVisible(false);
-    logAction('table_detail_confirm_photo');
     navigation.navigate(StackNav.SuccessScreen, {
       title: String.photoSentTitle,
       message: String.photoSentMessage,
@@ -241,7 +224,6 @@ export default function TableDetail({navigation, route}) {
   const handleRetakePhoto = () => {
     setModalVisible(false);
     setCapturedImage(null);
-    logAction('table_detail_retake_photo');
 
     const finalTableData = {
       ...mesa,
@@ -333,10 +315,6 @@ export default function TableDetail({navigation, route}) {
                       testID={`tableDetailExistingRecord_${index}`}
                       style={stylesx.recordCard}
                       onPress={() => {
-                        logNavigation('table_detail_existing_record_view', {
-                          index,
-                          totalRecords,
-                        });
                         navigation.navigate(StackNav.PhotoReviewScreen, {
                           mesa: mesa,
                           existingRecord: record,

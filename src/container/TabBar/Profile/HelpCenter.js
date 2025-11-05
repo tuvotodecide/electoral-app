@@ -22,16 +22,13 @@ import images from '../../../assets/images';
 import {helpAndCenterData} from '../../../api/constant';
 import {HeadSetIcon} from '../../../assets/svg';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function HelpCenter({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [searchText, setSearchText] = useState('');
   const [searchInputStyle, setSearchInputStyle] = useState(BlurredStyle);
   const [searchData, setSearchData] = useState(helpAndCenterData);
-
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('HelpCenter', true);
   const onChangeTextSearch = item => {
     setSearchText(item);
   };

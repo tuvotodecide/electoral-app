@@ -24,7 +24,7 @@ import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
 import {styles} from '../../../themes';
 import {getHeight, moderateScale} from '../../../common/constants';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
 import ViewShot from 'react-native-view-shot';
@@ -36,23 +36,19 @@ export default function RecuperationQR() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const viewShotRef = useRef(null);
-  const {logAction} = useNavigationLogger('RecuperationQR', true);
   const userData = useSelector(state => state.wallet.payload);
 
   useEffect(() => {
     (async () => {
       try {
         if (!userData) {
-          logAction('MissingUserData');
           throw new Error('No se encontró la identidad');
         }
 
         const bioEnabled = await getBioFlag();
         const prepared = recoveryService.prepareQrData({...userData, bioEnabled});
         setQrData(prepared);
-        logAction('PrepareQrSuccess');
       } catch (err) {
-        logAction('PrepareQrError', {message: err?.message});
         Alert.alert('Error', err.message);
       } finally {
         setLoading(false);
@@ -67,18 +63,15 @@ export default function RecuperationQR() {
 
     setSaving(true);
     try {
-      logAction('SaveQrAttempt');
       const hasPermission = await recoveryService.requestGalleryPermission();
       if (!hasPermission) {
         setSaving(false);
-        logAction('SaveQrPermissionDenied');
         return;
       }
 
       const uri = await viewShotRef.current.capture();
       saveQr(uri);
     } catch (err) {
-      logAction('InitSaveError', {message: err?.message});
 
       Alert.alert('Error', errorMessage, [
         {text: 'OK', style: 'default'},
@@ -92,14 +85,12 @@ export default function RecuperationQR() {
       const {savedOn, path, fileName} = await recoveryService.saveQrOnDevice(dataUrl);
 
       if(savedOn === 'gallery') {
-        logAction('SaveQrGallery');
         ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
 
         Alert.alert('QR guardado', 'El código QR se guardó exitosamente ', [
           { text: 'OK', style: 'default' },
         ]);
       } else if (savedOn === 'downloads') {
-        logAction('SaveQrDownloads');
         ToastAndroid.show('QR guardado en Descargas', ToastAndroid.LONG);
         Alert.alert(
           'QR guardado',
@@ -117,7 +108,6 @@ export default function RecuperationQR() {
           ]
         );
       } else {
-        logAction('SaveQrAppDirectory');
         Alert.alert(
           'QR guardado',
           `Se guardó en el directorio de la app:\n${path}`,
@@ -125,7 +115,6 @@ export default function RecuperationQR() {
         );
       }
     } catch (error) {
-      logAction('SaveQrError', {message: err?.message});
 
       let errorMessage = 'No se pudo guardar la imagen';
       if (err.message.includes('EACCES')) {

@@ -17,7 +17,7 @@ import StepIndicator from '../../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import CAlert from '../../../components/common/CAlert';
 import String from '../../../i18n/String';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function RecoveryUser2Pin({navigation, route}) {
   const {originalPin, recData} = route.params;
@@ -26,8 +26,7 @@ export default function RecoveryUser2Pin({navigation, route}) {
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryUser2Pin', true);
+  
   const otpRef = useRef(null);
 
   useEffect(() => {
