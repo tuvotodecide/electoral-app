@@ -126,6 +126,7 @@ export default function LoginUser({navigation}) {
   const [locked, setLocked] = useState(null);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(String.loading);
   const [modal, setModal] = useState({visible: false, msg: '', btn: String.understand, onClose: null});
   const hideModal = () => setModal({visible: false, msg: '', btn: String.understand, onClose: null});
 
@@ -202,9 +203,15 @@ export default function LoginUser({navigation}) {
         return {ok: true, payload: userData, jwt: null};
       }
 
+      setLoadingMessage(String.migratingOnLogin);
       const mig = await migrateIfNeeded(code.trim());
+      setLoadingMessage(String.loading);
       if (mig.ok) {
-        const userData = await wira.signIn(mig.payload, code.trim());
+        const response = wira.getWiraData(PROVIDER_NAME);
+        if(!response) {
+          return {ok: false, type: 'unexpected'};
+        }
+        const userData = await wira.signIn(response, code.trim());
         return {ok: true, payload: userData, jwt: null};
       }
 
@@ -463,7 +470,7 @@ export default function LoginUser({navigation}) {
         <View style={localStyle.loadingOverlay} testID="loginUserLoading">
           <ActivityIndicator size="large" color={colors.white} />
           <CText type="B16" color={colors.white} style={styles.mt10}>
-            {String.loading}
+            {loadingMessage}
           </CText>
         </View>
       )}

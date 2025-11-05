@@ -28,7 +28,7 @@ function mapLegacyVcToNewClaims(legacyVc) {
   return {
     fullName: String(fullName || '').trim(),
     nationalIdNumber: String(nationalIdNumber || '').trim(),
-    birthDate: birthDate ?? 0,
+    dateOfBirth: birthDate ?? 0,
   };
 }
 
@@ -129,6 +129,7 @@ export async function migrateIfNeeded(pin) {
       CRED_EXP_DAYS,
       privKey,
     );
+    await registerer.createWallet(claims.nationalIdNumber);
   } catch (error) {
     return {ok: false, reason: 'create_vc_failed', error};
   }
@@ -139,12 +140,15 @@ export async function migrateIfNeeded(pin) {
       sanitizedPin,
       false,
     );
+    const response = await registerer.storeDataOnServer();
+    if (!response.ok) {
+      throw new Error(`Failed to store data on server: ${response.error}`);
+    }
     return {ok: true, migrated: true, payload: encrypted};
   } catch (error) {
     return {ok: false, reason: 'store_on_device_failed', error};
   }
 }
-
 
 export async function getLegacyData(data) {
   const load = await axios.post(
@@ -183,4 +187,9 @@ export async function getLegacyData(data) {
   }
 
   return credData;
+}
+
+export async function checkLegacyDataExists() {
+  const stored = await getSecrets();
+  return !!stored;
 }

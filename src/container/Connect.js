@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 import wira from 'wira-sdk';
 import { PROVIDER_NAME } from '@env';
+import { checkLegacyDataExists } from '../utils/migrateLegacy';
 
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -24,11 +25,14 @@ export default function Connect({navigation}) {
     navigation.navigate(AuthNav.RegisterUser1);
   };
 
-  const onPressLoginUser = () => {
+  const onPressLoginUser = async () => {
     const response = wira.getWiraData(PROVIDER_NAME);
     if (!response) {
-      navigation.navigate(AuthNav.SelectRecuperation);
-      return;
+      const legacyDataExists = await checkLegacyDataExists();
+      if (!legacyDataExists) {
+        navigation.navigate(AuthNav.SelectRecuperation);
+        return;
+      }
     }
     navigation.navigate(AuthNav.LoginUser);
   };
