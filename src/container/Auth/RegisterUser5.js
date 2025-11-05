@@ -14,7 +14,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import {normalizeOcrForUI} from '../../utils/issuerClient';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 import wira from 'wira-sdk';
 
 function onlyDigits(s = '') {
@@ -28,17 +28,7 @@ export default function RegisterUser5({navigation, route}) {
   const [errorMessage, setErrorMessage] = useState('');
   const colors = useSelector(state => state.theme.theme);
 
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RegisterUser5',
-    true,
-  );
-
   useEffect(() => {
-    logAction('id_card_analysis_started', {
-      hasFrontImage: !!frontImage,
-      hasBackImage: !!backImage,
-      hasSelfie: !!selfie,
-    });
     (async () => {
       try {
         const idCardAnalyzer = wira.idCardAnalyzer;
@@ -51,9 +41,6 @@ export default function RegisterUser5({navigation, route}) {
         );
 
         if (!res.success) {
-          logAction('id_card_analysis_failed', {
-            reason: res.error || 'unknown',
-          });
           if (res.error === 'front/back order') {
             setErrorMessage(
               'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
@@ -71,7 +58,6 @@ export default function RegisterUser5({navigation, route}) {
         const {data} = res;
         const returnedDni = onlyDigits(data.numeroDoc);
         if (returnedDni !== onlyDigits(dni)) {
-          logAction('dni_mismatch_detected');
           setErrorMessage(
             'El número de documento detectado no coincide con el DNI ingresado. ' +
               'Por favor, vuelve a cargar tus imágenes.',
@@ -82,21 +68,16 @@ export default function RegisterUser5({navigation, route}) {
 
         const ocrData = normalizeOcrForUI(data);
         navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
-        logNavigation('go_to_register_user6');
       } catch (err) {
         setErrorMessage(
           'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
         );
         setErrorModalVisible(true);
-        logAction('id_card_analysis_exception', {
-          name: err?.name,
-          message: err?.message,
-        });
       } finally {
         setLoading(false);
       }
     })();
-  }, [backImage?.uri, frontImage?.uri, selfie?.uri, dni, logAction, logNavigation, navigation]);
+  }, [backImage?.uri, frontImage?.uri, selfie?.uri, dni, navigation]);
 
   return (
     <CSafeAreaViewAuth testID="registerUser5Container">

@@ -19,7 +19,7 @@ import {
   useRecoveryActionQuery,
 } from '../../../data/guardians';
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { truncateDid } from '../../../utils/Address';
 
 export default function GuardiansAdmin() {
@@ -29,7 +29,6 @@ export default function GuardiansAdmin() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const did = userData?.did;
-  const {logAction} = useNavigationLogger('GuardiansAdmin', true);
   const {data: invData = []} = useMyGuardianInvitationsListQuery({did});
 
   const {data: recData = []} =
@@ -46,18 +45,10 @@ export default function GuardiansAdmin() {
   };
   const handleRejectInvitation = id => {
     if (!did) {
-      logAction('RejectInvitationMissingDid');
       return;
     }
-    logAction('RejectInvitationAttempt', {invitationId: id});
     mutateInvitation(
       {id, did, action: 'reject'},
-      {
-        onSuccess: () =>
-          logAction('RejectInvitationSuccess', {invitationId: id}),
-        onError: err =>
-          logAction('RejectInvitationError', {message: err?.message}),
-      },
     );
   };
 
@@ -66,18 +57,10 @@ export default function GuardiansAdmin() {
   };
   const handleRejectRecovery = id => {
     if (!did) {
-      logAction('RejectRecoveryMissingDid');
       return;
     }
-    logAction('RejectRecoveryAttempt', {recoveryId: id});
     mutateRecovery(
       {id, action: 'reject', did},
-      {
-        onSuccess: () =>
-          logAction('RejectRecoverySuccess', {recoveryId: id}),
-        onError: err =>
-          logAction('RejectRecoveryError', {message: err?.message}),
-      },
     );
   };
 
@@ -95,13 +78,11 @@ export default function GuardiansAdmin() {
   );
 
   const openModal = item => {
-    logAction('GuardiansAdminOpenModal', {id: item?.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
-    logAction('GuardiansAdminCloseModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };

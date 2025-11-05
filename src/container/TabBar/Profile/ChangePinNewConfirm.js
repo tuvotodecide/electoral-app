@@ -18,7 +18,7 @@ import String from '../../../i18n/String';
 import wira from 'wira-sdk';
 import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import LoadingModal from '../../../components/modal/LoadingModal';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function ChangePinNewConfirm({navigation, route}) {
   const {oldPin, newPin} = route.params;
@@ -30,9 +30,6 @@ export default function ChangePinNewConfirm({navigation, route}) {
     success: false,
   });
   const [otp, setOtp] = useState('');
-
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('ChangePinNewConfirm', true);
   const onOtpChange = text => setOtp(text);
   const otpRef = useRef(null);
   const finish = async () => {

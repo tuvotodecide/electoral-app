@@ -15,23 +15,18 @@ import typography from '../../themes/typography';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
 
 export default function CreatePin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('CreatePin', true);
 
   const onOtpChange = text => {
     setOtp(text);
-    logAction('OTP Changed', `Length: ${text ? text.length : 0}`);
   };
 
   const onPressContinue = () => {
     try {
-      logNavigation('UploadDocument');
       navigation.navigate(AuthNav.UploadDocument);
     } catch (error) {
       console.warn('[CreatePin] Navigation failed', error);

@@ -18,27 +18,17 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function RegisterUser6({navigation, route}) {
   const {dni, ocrData} = route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
-
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RegisterUser6',
-    true,
-  );
   const onPressNext = () => {
-    logAction('ConfirmDataNext', {checked: check});
     const params = {ocrData, dni};
-    logNavigation(AuthNav.RegisterUser7, params);
     navigation.navigate(AuthNav.RegisterUser7, params);
   };
   const onPressReturn = () => {
-    logAction('ReturnToVerify');
-    logNavigation(AuthNav.RegisterUser2);
     navigation.reset({
       index: 0,
       routes: [
@@ -50,11 +40,9 @@ export default function RegisterUser6({navigation, route}) {
   };
   const onPressRememberMe = () => {
     const nextValue = !check;
-    logAction('ToggleConfirmData', {nextValue});
     setCheck(nextValue);
   };
   const onPressBack = () => {
-    logNavigation(AuthNav.RegisterUser4);
     navigation.navigate(AuthNav.RegisterUser4);
   };
   const {fullName, governmentIdentifier, dateOfBirth} = ocrData;

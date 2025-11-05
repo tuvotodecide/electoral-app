@@ -9,7 +9,7 @@ import {useSelector} from 'react-redux';
 import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import CText from '../../../components/common/CText';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {
   Email_Dark,
   Email_Light,
@@ -36,8 +36,7 @@ export default function PushNotification() {
     isEnableWhatsapp: true,
   });
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('PushNotification', true);
+  
 
   const PushNotificationData = [
     {

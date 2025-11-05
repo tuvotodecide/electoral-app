@@ -23,7 +23,7 @@ import {setSecrets} from '../../../redux/action/walletAction';
 import {setAddresses} from '../../../redux/slices/addressSlice';
 import {setAuthenticated} from '../../../redux/slices/authSlice';
 import {startSession} from '../../../utils/Session';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import wira from 'wira-sdk';
 import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import LoadingModal from '../../../components/modal/LoadingModal';
@@ -39,10 +39,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
   const [showError, setShowError] = useState(false);
   const dispatch = useDispatch();
   const otpRef = useRef(null);
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RecoveryUserQrpin2',
-    true,
-  );
   const [modal, setModal] = useState({
     visible: false,
     message: '',
@@ -51,7 +47,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);
-    logAction('RecoveryPinScreenLoaded');
     return () => clearTimeout(t);
   }, []);
 
@@ -66,7 +61,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
     await yieldUI();
     try {
-      logAction('RecoveryPinFinishAttempt');
       if(payload.legacyData) {
         navigation.navigate(
           AuthNav.RegisterUser10,
@@ -100,11 +94,8 @@ export default function RecoveryUserQrPin2({navigation, route}) {
         isLoading: false,
       })
 
-      logNavigation(AuthNav.LoginUser);
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
-      logAction('RecoveryPinFinishSuccess');
     } catch (err) {
-      logAction('RecoveryPinFinishError', {message: err?.message});
       setModal({
         visible: true,
         message: 'Error: ' + err.message,
@@ -115,15 +106,10 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
   const handleConfirmPin = () => {
     const matchesOriginal = otp === originalPin;
-    logAction('RecoveryPinConfirmAttempt', {
-      matchesOriginal,
-      length: otp.length,
-    });
     if (matchesOriginal) finish();
     else {
       setShowError(true);
       setOtp('');
-      logAction('RecoveryPinMismatch');
     }
   };
 

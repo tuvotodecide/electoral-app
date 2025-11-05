@@ -15,7 +15,7 @@ import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
 import {requestPushPermissionExplicit} from '../../../services/pushPermission';
 import {formatTiempoRelativo} from '../../../services/notifications';
 import {mockNotificaciones} from '../../../data/mockNotificaciones';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 
 export default function Notification({navigation}) {
   const userData = useSelector(state => state.wallet.payload);
@@ -31,11 +31,6 @@ export default function Notification({navigation}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const {logAction, logNavigation} = useNavigationLogger(
-    'Notification',
-    true,
-  );
 
   const mapServerToUi = useCallback(n => {
     const data = n?.data || {};
@@ -60,7 +55,6 @@ export default function Notification({navigation}) {
   const fetchFromBackend = useCallback(
     async (isRefresh = false) => {
       if (!dni) {
-        logAction('notifications_missing_dni');
         setItems([]);
         setLoading(false);
         setRefreshing(false);
@@ -72,7 +66,6 @@ export default function Notification({navigation}) {
       }
 
       try {
-        logAction('notifications_fetch_start', {refresh: isRefresh});
         const response = await axios.get(
           `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
           {headers: {'x-api-key': BACKEND_SECRET}, timeout: 12000},
@@ -82,12 +75,7 @@ export default function Notification({navigation}) {
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
-        logAction('notifications_fetch_success', {count: mapped.length});
       } catch (error) {
-        logAction('notifications_fetch_error', {
-          name: error?.name,
-          message: error?.message,
-        });
         setItems([...mockNotificaciones]);
       } finally {
         if (isRefresh) {
@@ -96,27 +84,25 @@ export default function Notification({navigation}) {
         setLoading(false);
       }
     },
-    [dni, mapServerToUi, logAction],
+    [dni, mapServerToUi],
   );
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      logAction('notification_screen_mounted');
       await requestPushPermissionExplicit();
       if (mounted) {
         await fetchFromBackend(false);
       }
     })();
     const unsubFocus = navigation.addListener('focus', () => {
-      logNavigation('notification_focus_refresh');
       fetchFromBackend(true);
     });
     return () => {
       mounted = false;
       unsubFocus && unsubFocus();
     };
-  }, [navigation, fetchFromBackend, logAction, logNavigation]);
+  }, [navigation, fetchFromBackend]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -135,7 +121,6 @@ export default function Notification({navigation}) {
   const handleNotificationPress = useCallback(
     item => {
       if (item.tipo === 'Conteo de Votos') {
-        logNavigation('open_count_table_detail');
         const mesaData = {
           id: item.id,
           numero: item.mesa,
@@ -151,7 +136,7 @@ export default function Notification({navigation}) {
         navigation.navigate('CountTableDetail', {mesa: mesaData});
       }
     },
-    [navigation, logNavigation],
+    [navigation],
   );
 
   const renderNotificationItem = useCallback(
