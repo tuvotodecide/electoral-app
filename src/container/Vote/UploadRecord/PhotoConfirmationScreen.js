@@ -792,14 +792,14 @@ const PhotoConfirmationScreen = () => {
         }
       }
 
-      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+      const {explorer, nftExplorer, attestationNft, chain} = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
 
       const nftResult = {
         txHash: response.receipt.transactionHash,
         nftId,
         txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-        nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId + `?chainid=${chain.id}&type=erc721`,
       };
 
       // 5. Subir Metadata al backend
