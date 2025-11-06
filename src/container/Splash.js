@@ -18,7 +18,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
-import {ensureProvisioned} from '../utils/provisionClient';
 import wira from 'wira-sdk';
 import {GATEWAY_BASE} from '@env';
 
@@ -33,10 +32,7 @@ export default function Splash({navigation}) {
   useEffect(() => {
     const asyncProcess = async () => {
       try {
-        await wira.provision.ensureProvisioned({
-          mock: true,
-          gatewayBase: GATEWAY_BASE,
-        });
+        await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;
