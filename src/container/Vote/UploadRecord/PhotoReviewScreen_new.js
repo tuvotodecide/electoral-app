@@ -285,7 +285,7 @@ const PhotoReviewScreen = () => {
         headerTitle={`${Strings.table} ${tableData.numero}`}
         instructionsText={
           offline
-            ? 'Revise los votos de la pizarra'
+            ? 'Completa los datos por favor'
             : aiAnalysis
             ? 'Revise los votos de la pizarra'
             : Strings.reviewPhotoPlease

@@ -411,14 +411,6 @@ export const publishActaHandler = async (item, userData) => {
         };
 
         try {
-          await displayLocalActaPublished({
-            ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
-            nftData: nftResult,
-            tableData,
-          });
-        } catch {}
-
-        try {
           await uploadCertificateAndNotifyBackend(
             certificateImageUri,
             normalizedAdditional,
@@ -430,6 +422,14 @@ export const publishActaHandler = async (item, userData) => {
             err,
           );
         }
+        try {
+          await displayLocalActaPublished({
+            ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
+            nftData: nftResult,
+            tableData,
+          });
+        } catch {}
+
 
         return {
           success: true,
@@ -440,7 +440,6 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
-      // Si falla la verificación, seguimos (no bloqueamos)
     }
 
     // 2) NO fue duplicado por votos → mirar si ya existe acta en la mesa
