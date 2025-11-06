@@ -13,12 +13,11 @@ import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
+import {KEY_OFFLINE, moderateScale, PENDINGRECOVERY} from '../common/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
-import {ensureProvisioned} from '../utils/provisionClient';
 import wira from 'wira-sdk';
 import {GATEWAY_BASE} from '@env';
 
@@ -30,17 +29,10 @@ export default function Splash({navigation}) {
 
   const dispatch = useDispatch();
 
-
   useEffect(() => {
     const asyncProcess = async () => {
       try {
-        await fetchProvision({mock: true});
-        if (wira?.provision?.fetchProvision) {
-          await wira.provision.fetchProvision({
-            mock: true,
-            gatewayBase: GATEWAY_BASE,
-          });
-        }
+        await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;
@@ -111,7 +103,11 @@ export default function Splash({navigation}) {
       }}
       testID="splashContainer">
       <View style={localStyle.imageContainer} testID="splashImageContainer">
-        <Image source={images.logoImg} style={localStyle.imageStyle} testID="splashLogo" />
+        <Image
+          source={images.logoImg}
+          style={localStyle.imageStyle}
+          testID="splashLogo"
+        />
       </View>
       <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
         {String.wira}

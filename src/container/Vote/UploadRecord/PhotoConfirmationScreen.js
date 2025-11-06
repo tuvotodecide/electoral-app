@@ -958,7 +958,6 @@ const PhotoConfirmationScreen = () => {
         electionConfigId: electionConfigId || undefined,
       };
 
-
       const electoralData = {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
@@ -1175,6 +1174,18 @@ const PhotoConfirmationScreen = () => {
             )}
             {step === 2 && (
               <>
+                <View
+                  testID="photoConfirmationModalWarningIcon"
+                  style={modalStyles.iconCircleWarning}>
+                  <Ionicons
+                    name="alert-outline"
+                    size={getResponsiveSize(36, 48, 60)}
+                    color="#da2a2a"
+                  />
+
+
+                  
+                </View>
                 <CText
                   testID="photoConfirmationModalFinishedTitle"
                   style={modalStyles.loadingTitle}></CText>
