@@ -45,9 +45,9 @@
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.BROWSABLE" />
 				<category android:name="android.intent.category.DEFAULT" />
-				<data android:scheme="appelectoral"
+				<data android:scheme="com.appelectoral"
               		android:host="shared.request" />
-				<data android:scheme="appelectoral"
+				<data android:scheme="com.appelectoral"
               		android:host="shared.response" />
 			</intent-filter>
 		</activity>

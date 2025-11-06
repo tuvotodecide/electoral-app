@@ -1,5 +1,5 @@
 import {StatusBar, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect} from 'react';
 import AppNavigator from './navigation';
 import {styles} from './themes';
 import {BACKEND_IDENTITY} from '@env';
@@ -31,13 +31,8 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const colors = useSelector(state => state.theme.theme);
-  const wallet = useSelector(s => s.wallet.payload);
-  const account = useSelector(state => state.account);
-  const userData = useSelector(state => state.wallet.payload);
-  const [ready, setReady] = useState(false);
   const auth = useSelector(s => s.auth);
   const dispatch = useDispatch();
-  const processingRef = useRef(false);
 
   useEffect(() => {
     if (Platform.OS !== 'android' || __DEV__) {

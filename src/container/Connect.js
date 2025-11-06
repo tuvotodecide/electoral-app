@@ -1,5 +1,5 @@
 import {Image, StyleSheet, View} from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
@@ -38,12 +38,7 @@ export default function Connect({navigation}) {
   const [sharedUrl, setSharedUrl] = useState(null);
 
   useEffect(() => {
-    const fetchSharedUrl = async () => {
-      const url = await sharedSession.handleOpenApp();
-      setSharedUrl(url);
-    }
-
-    fetchSharedUrl();
+    sharedSession.handleOpenApp(setSharedUrl);
   }, []);
 
   useEffect(() => {
@@ -53,23 +48,29 @@ export default function Connect({navigation}) {
         title: String.sharedSessionTitle,
         message: String.sharedSessionMessage,
         buttonText: String.accept,
-        onClose: async () => {
-          setModal(defaultModalState);
-          try {
-            await sharedSession.onShareSession(sharedUrl, true);
-          } catch (error) {
-            setModal({
-              visible: true,
-              title: String.error,
-              message: error.message,
-              buttonText: String.ok,
-              onClose: () => setModal(defaultModalState),
-            });
-          }
-        }
+        onClose: () => handleCloseModal(true),
+        closeCornerBtn: true,
+        onCloseCorner: () => handleCloseModal(false),
       });
     }
   }, [sharedUrl]);
+
+  const handleCloseModal = async (accept) => {
+    setModal(defaultModalState);
+    try {
+      await sharedSession.onShareSession(sharedUrl, accept);
+    } catch (error) {
+      setModal({
+        visible: true,
+        title: String.error,
+        message: error.message,
+        buttonText: String.ok,
+        onClose: () => setModal(defaultModalState),
+      });
+    } finally {
+      setSharedUrl(null);
+    }
+  }
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
