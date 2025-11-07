@@ -77,7 +77,7 @@ export default function Connect({navigation}) {
   };
 
   const onPressLoginUser = async () => {
-    const response = wira.getWiraData(PROVIDER_NAME);
+    const response = await wira.Storage.checkUserData();
     if (!response) {
       const legacyDataExists = await checkLegacyDataExists();
       if (!legacyDataExists) {

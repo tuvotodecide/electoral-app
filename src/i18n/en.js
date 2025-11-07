@@ -133,6 +133,7 @@ export default {
   issuingVC: 'Generando credenciales…',
   migrating: 'Migrando datos…',
   migratingOnLogin: 'Estamos migrando su cuenta a la nueva versión, por favor espere...',
+  noBiometricData: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',

@@ -24,7 +24,6 @@ import String from '../../i18n/String';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
-import {PROVIDER_NAME} from '@env';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -121,7 +120,6 @@ export default function RegisterUser4({navigation, route}) {
         backImage,
         selfie,
         dni,
-        PROVIDER_NAME,
       );
 
       setModal({

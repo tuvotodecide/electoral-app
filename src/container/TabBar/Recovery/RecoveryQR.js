@@ -41,7 +41,6 @@ export default function RecoveryQr({navigation}) {
     setImageUri(asset.uri);
     setLoading(true);
     try {
-      const start = Date.now();
       const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
 
       let newPayload = {

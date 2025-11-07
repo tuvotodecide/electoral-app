@@ -183,9 +183,9 @@ export default function LoginUser({navigation}) {
 
   async function verifyPin(code) {
     try {
-      const response = wira.getWiraData(PROVIDER_NAME);
-      if (response) {
-        const userData = await wira.signIn(response, code.trim());
+      const hasUserData = await wira.Storage.checkUserData();
+      if (hasUserData) {
+        const userData = await wira.signIn(code.trim());
 
         try {
           await guardianApi.deviceToken({
@@ -207,11 +207,11 @@ export default function LoginUser({navigation}) {
       const mig = await migrateIfNeeded(code.trim());
       setLoadingMessage(String.loading);
       if (mig.ok) {
-        const response = wira.getWiraData(PROVIDER_NAME);
-        if(!response) {
+        const hasUserData = wira.Storage.checkUserData();
+        if(!hasUserData) {
           return {ok: false, type: 'unexpected'};
         }
-        const userData = await wira.signIn(response, code.trim());
+        const userData = await wira.signIn(code.trim());
         return {ok: true, payload: userData, jwt: null};
       }
 
@@ -375,7 +375,7 @@ export default function LoginUser({navigation}) {
             setLoading(false);
             setModal({
               visible: true,
-              msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
+              msg: String.noBiometricData,
               btn: String.understand,
             });
             return;

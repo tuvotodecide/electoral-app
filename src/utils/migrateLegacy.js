@@ -117,6 +117,7 @@ export async function migrateIfNeeded(pin) {
 
   const registerer = new wira.Registerer(
     BACKEND_IDENTITY,
+    PROVIDER_NAME,
     availableNetworks[CHAIN].bundler,
     sponsorshipPolicyId,
   );
@@ -136,7 +137,6 @@ export async function migrateIfNeeded(pin) {
 
   try {
     const encrypted = await registerer.storeOnDevice(
-      PROVIDER_NAME,
       sanitizedPin,
       false,
     );

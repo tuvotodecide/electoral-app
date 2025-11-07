@@ -36,7 +36,6 @@ export default function Security({navigation}) {
   const toggleBio = async val => {
     try {
       await wira.toggleBiometricAuth(userData, val);
-      await wira.Biometric.setBioFlag(val);
       setBioEnabled(val);
     } catch (err) {
       if(err.message === 'Biometric authentication is not available'){
@@ -50,7 +49,6 @@ export default function Security({navigation}) {
           'Crea tu cuenta/PIN antes de activar la biometría',
         );
       } else if (err.message === 'User cancelled biometric change'){
-        await wira.Biometric.setBioFlag(false);
         setBioEnabled(false);
       } else {
         Alert.alert('Error', err?.message || 'No se pudo cambiar la biometría');
