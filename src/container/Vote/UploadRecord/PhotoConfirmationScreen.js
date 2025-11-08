@@ -45,55 +45,19 @@ const safeStr = v =>
     .trim()
     .toLowerCase();
 
-const fetchUserAttestations = async dniValue => {
-  if (!dniValue) return [];
-  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
-  const {data} = await axios.get(url, {
-    headers: {'x-api-key': BACKEND_SECRET},
-    timeout: 15000,
-  });
-  return data?.data || [];
-};
+// const fetchUserAttestations = async (dniValue, electionId) => {
+//   if (!dniValue) return [];
+//   const queryId = electionId
+//     ? `?electionId=${encodeURIComponent(electionId)}`
+//     : '';
+//   const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}${queryId}`;
+//   const {data} = await axios.get(url, {
+//     headers: {'x-api-key': BACKEND_SECRET},
+//     timeout: 15000,
+//   });
+//   return data?.data || [];
+// };
 
-const hasUserAttestedTable = async (dniValue, tableCode) => {
-  try {
-    if (!dniValue || !tableCode) return false;
-
-    const list = await fetchUserAttestations(dniValue);
-    if (!list?.length) return false;
-
-    const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
-
-    for (const id of ids) {
-      const ballot = await fetchBallotById(id).catch(() => null);
-      if (getBallotTableCode(ballot) === safeStr(tableCode)) {
-        return true;
-      }
-    }
-    return false;
-  } catch {
-    return false;
-  }
-};
-
-const fetchBallotById = async ballotId => {
-  if (!ballotId) return null;
-  const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
-  const {data} = await axios.get(url, {
-    headers: {'x-api-key': BACKEND_SECRET},
-    timeout: 15000,
-  });
-  return data?.data ?? data;
-};
-
-const hasUserAttestedBallot = async (dniValue, ballotId) => {
-  try {
-    const list = await fetchUserAttestations(dniValue);
-    return list.some(a => String(a.ballotId) === String(ballotId));
-  } catch {
-    return false; // si hay error de red, no bloquees
-  }
-};
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -129,10 +93,10 @@ const PhotoConfirmationScreen = () => {
     });
   }, [navigation]);
   const route = useRoute();
-  const colors = useSelector(state => state.theme.theme); // Assuming colors are managed by Redux
+  const colors = useSelector(state => state.theme.theme);
   const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
-    route.params || {}; // Destructure all needed data
-  // Also try to get data from alternative parameter names
+    route.params || {};
+
   const existingRecord = route.params?.existingRecord || null;
   const flowMode = route.params?.mode || 'upload';
   const mesaData = route.params?.mesaData;
@@ -226,9 +190,7 @@ const PhotoConfirmationScreen = () => {
         );
         setCertificateUri(capturedCertificateUri);
       }
-    } catch (err) {
-      console.error('[PhotoConfirmation] capture error', err);
-    }
+    } catch (err) {}
 
     try {
       const local = validateBallotLocally(
@@ -1182,9 +1144,6 @@ const PhotoConfirmationScreen = () => {
                     size={getResponsiveSize(36, 48, 60)}
                     color="#da2a2a"
                   />
-
-
-                  
                 </View>
                 <CText
                   testID="photoConfirmationModalFinishedTitle"

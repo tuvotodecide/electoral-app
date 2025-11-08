@@ -199,7 +199,6 @@ export default function LoginUser({navigation}) {
             context: 'deviceToken',
           });
         }
-
         return {ok: true, payload: userData, jwt: null};
       }
 
@@ -220,6 +219,7 @@ export default function LoginUser({navigation}) {
         return {ok: false, type: 'bad_pin'};
       }
 
+      
       if (reason === 'no_local_secrets') {
         logNetworkIssue('migrateIfNeeded:no_local', null, {
           stage: 'verifyPin',

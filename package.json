@@ -62,6 +62,7 @@
     "react-native-blob-util": "^0.22.2",
     "react-native-config": "^1.5.5",
     "react-native-country-picker-modal": "^2.0.0",
+    "react-native-device-info": "^14.1.1",
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.25.0",

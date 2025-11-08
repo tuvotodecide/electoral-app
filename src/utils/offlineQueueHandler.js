@@ -10,6 +10,8 @@ import {
   showActaDuplicateNotification,
 } from '../notifications';
 import {requestPushPermissionExplicit} from '../services/pushPermission';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {ELECTION_ID} from '../common/constants';
 
 const safeStr = v =>
   String(v ?? '')
@@ -54,9 +56,12 @@ const extractJsonUrlFromBallot = b =>
   b?.ipfs?.jsonUrl ||
   null;
 
-const fetchUserAttestations = async dniValue => {
+const fetchUserAttestations = async (dniValue, electionId) => {
   if (!dniValue) return [];
-  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}`;
+  const queryEID = electionId
+    ? `?electionId=${encodeURIComponent(electionId)}`
+    : '';
+  const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}${queryEID}`;
   const {data} = await axios.get(url, {
     headers: {'x-api-key': BACKEND_SECRET},
     timeout: 15000,
@@ -72,10 +77,10 @@ const fetchBallotById = async ballotId => {
   });
   return data?.data ?? data;
 };
-const hasUserAttestedTable = async (dniValue, tableCode) => {
+const hasUserAttestedTable = async (dniValue, tableCode, electionId) => {
   try {
     if (!dniValue || !tableCode) return false;
-    const list = await fetchUserAttestations(dniValue);
+    const list = await fetchUserAttestations(dniValue, electionId);
     if (!list?.length) return false;
     const ids = [...new Set(list.map(a => String(a.ballotId)).filter(Boolean))];
     for (const id of ids) {
@@ -151,6 +156,7 @@ const uploadCertificateAndNotifyBackend = async (
     console.log('[OFFLINE-QUEUE] participation NFT mint OK', res.data);
 
     console.log('[OFFLINE-QUEUE] certificado enviado al backend OK');
+    return {jsonUrl, imageUrl};
   } catch (err) {
     console.error(
       '[OFFLINE-QUEUE] error al subir certificado y notificar backend',
@@ -169,7 +175,7 @@ export const publishActaHandler = async (item, userData) => {
       additionalData,
       tableData,
     } = item.task.payload;
-
+    let certificateData = null;
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -227,7 +233,11 @@ export const publishActaHandler = async (item, userData) => {
 
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
-      const alreadyMine = await hasUserAttestedTable(dniValue, tableCodeStrict);
+      const alreadyMine = await hasUserAttestedTable(
+        dniValue,
+        tableCodeStrict,
+        electionConfigId,
+      );
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
@@ -410,32 +420,36 @@ export const publishActaHandler = async (item, userData) => {
           nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
         };
 
-        try {
-          await uploadCertificateAndNotifyBackend(
-            certificateImageUri,
-            normalizedAdditional,
-            userData,
-          );
-        } catch (err) {
-          console.error(
-            '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
-            err,
-          );
+        if (certificateImageUri) {
+          try {
+            certificateData = await uploadCertificateAndNotifyBackend(
+              certificateImageUri,
+              normalizedAdditional,
+              userData,
+            );
+          } catch (err) {
+            console.error(
+              '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
+              err,
+            );
+          }
         }
+
         try {
           await displayLocalActaPublished({
             ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
             nftData: nftResult,
             tableData,
+            certificateData,
           });
         } catch {}
-
 
         return {
           success: true,
           ipfsData: {jsonUrl},
           nftData: nftResult,
           tableData,
+          certificateData,
         };
       }
     } catch (err) {
@@ -483,6 +497,7 @@ export const publishActaHandler = async (item, userData) => {
         throw err;
       }
       const ipfsData = ipfs.data;
+      console.log(ipfsData);
 
       // Validación backend
       try {
@@ -627,11 +642,27 @@ export const publishActaHandler = async (item, userData) => {
         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
       };
 
+      if (certificateImageUri) {
+        try {
+          certificateData = await uploadCertificateAndNotifyBackend(
+            certificateImageUri,
+            normalizedAdditional,
+            userData,
+          );
+        } catch (err) {
+          console.error(
+            '[OFFLINE-QUEUE] error subiendo certificado (attest-nuevo)',
+            err,
+          );
+        }
+      }
+
       try {
         await displayLocalActaPublished({
           ipfsData,
           nftData: nftResult,
           tableData,
+          certificateData,
         });
       } catch (err) {
         console.error(
@@ -640,7 +671,13 @@ export const publishActaHandler = async (item, userData) => {
         );
       }
 
-      return {success: true, ipfsData, nftData: nftResult, tableData};
+      return {
+        success: true,
+        ipfsData,
+        nftData: nftResult,
+        tableData,
+        certificateData,
+      };
     }
 
     // 3) NO hay acta por mesa → primera vez: subir + createAttestation
@@ -833,17 +870,40 @@ export const publishActaHandler = async (item, userData) => {
       console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
     }
 
+    // 👉 Subir certificado y obtener enlace (si hay foto de certificado)
+    if (certificateImageUri) {
+      try {
+        certificateData = await uploadCertificateAndNotifyBackend(
+          certificateImageUri,
+          normalizedAdditional,
+          userData,
+        );
+      } catch (err) {
+        console.error(
+          '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
+          err,
+        );
+      }
+    }
+
     try {
       await displayLocalActaPublished({
         ipfsData,
         nftData: nftResult,
         tableData,
+        certificateData,
       });
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
     }
 
-    return {success: true, ipfsData, nftData: nftResult, tableData};
+    return {
+      success: true,
+      ipfsData,
+      nftData: nftResult,
+      tableData,
+      certificateData,
+    };
   } catch (fatalErr) {
     console.error('[OFFLINE-QUEUE] publishActaHandler fallo fatal', fatalErr);
     throw fatalErr;

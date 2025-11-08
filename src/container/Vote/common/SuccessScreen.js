@@ -10,7 +10,11 @@ import {
   BackHandler,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
@@ -20,7 +24,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {title} from 'process';
 import {url} from 'inspector';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -38,7 +42,16 @@ const SuccessScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
 
-  const {nftData, ipfsData} = route.params;
+  const params = route?.params || {};
+  const ipfsData = params.ipfsData || {};
+  const nftData = params.nftData || {};
+  const tableData = params.tableData || {};
+  const certificateData = params.certificateData || {};
+  const fromNotifications = params.fromNotifications === true;
+
+  const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
+  const certificateUrl =
+    certificateData.imageUrl || certificateData.jsonUrl || null;
 
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -54,16 +67,30 @@ const SuccessScreen = () => {
   }, [navigation]);
 
   const handleBack = useCallback(() => {
-    navigateHome();
-  }, [navigateHome]);
-
+    if (fromNotifications) {
+      navigation.goBack();
+    } else {
+      navigateHome();
+    }
+  }, [fromNotifications, navigateHome, navigation]);
   useFocusEffect(
     useCallback(() => {
-      const onBackPress = () => navigateHome();
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const onBackPress = () => {
+        if (fromNotifications) {
+          navigation.goBack();
+        } else {
+          navigateHome();
+        }
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
 
       return () => subscription.remove();
-    }, [navigateHome]),
+    }, [fromNotifications, navigateHome, navigation]),
   );
 
   const handleViewNFT = async () => {
@@ -119,7 +146,7 @@ const SuccessScreen = () => {
 
   // Obtener nombre real del usuario desde Redux
   const userData = useSelector(state => state.wallet.payload);
-const subject = getCredentialSubjectFromPayload(userData) || {};
+  const subject = getCredentialSubjectFromPayload(userData) || {};
   const nombre = subject?.fullName || '(sin nombre)';
 
   return (

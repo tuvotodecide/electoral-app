@@ -16,7 +16,6 @@ import {requestPushPermissionExplicit} from '../../../services/pushPermission';
 import {formatTiempoRelativo} from '../../../services/notifications';
 import {mockNotificaciones} from '../../../data/mockNotificaciones';
 
-
 export default function Notification({navigation}) {
   const userData = useSelector(state => state.wallet.payload);
 
@@ -39,16 +38,31 @@ export default function Notification({navigation}) {
       ? `Mesa ${String(data.tableNumber)}`
       : data.tableCode || 'Mesa';
 
+    let tipo = 'Notificación';
+    if (data?.type === 'announce_count') {
+      tipo = 'Conteo de Votos';
+    } else if (data?.type === 'acta_published') {
+      tipo = 'Acta publicada';
+    } else if (data?.type === 'participation_certificate') {
+      tipo = 'Certificado de participación';
+    }
+
     return {
       id: n?._id || `srv_${created}`,
-      tipo:
-        data?.type === 'announce_count' ? 'Conteo de Votos' : 'Notificación',
+      raw: n,
+      data,
+      tipo,
       mesa: mesaLabel,
       colegio: data?.locationName || n?.locationName || 'Recinto',
       direccion: data?.locationAddress || n?.locationAddress || '',
       distancia: data?.distance ?? null,
       timestamp: new Date(created).getTime(),
       estado: data?.status || 'iniciado',
+
+      screen: data?.screen || null,
+      routeParams: data?.routeParams || null,
+      title: n?.title || data?.title || '',
+      body: n?.body || data?.body || '',
     };
   }, []);
 
@@ -120,30 +134,31 @@ export default function Notification({navigation}) {
 
   const handleNotificationPress = useCallback(
     item => {
-      if (item.tipo === 'Conteo de Votos') {
-        const mesaData = {
-          id: item.id,
-          numero: item.mesa,
-          nombre: item.mesa,
-          recinto: item.colegio,
-          direccion: item.direccion,
-          distancia: item.distancia || 'Cerca',
-          latitude: -16.5,
-          longitude: -68.15,
-          estado: item.estado || 'iniciado',
-        };
+      // Solo navegamos si es SuccessScreen
+      if (item.screen === 'SuccessScreen') {
+        let paramsFromNotif = {};
+        if (item.routeParams) {
+          try {
+            paramsFromNotif = JSON.parse(item.routeParams);
+          } catch (e) {
+            // si viene mal, no revienta
+          }
+        }
 
-        navigation.navigate('CountTableDetail', {mesa: mesaData});
+        navigation.navigate('SuccessScreen', {
+          ...paramsFromNotif,
+          fromNotifications: true,
+        });
       }
     },
     [navigation],
   );
-
   const renderNotificationItem = useCallback(
     ({item, index}) => (
       <TouchableOpacity
         testID={`notificationItem_${index}`}
         style={localStyle.notificationCard}
+        disabled={item.tipo === 'Conteo de Votos'}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}>
         <View
@@ -199,23 +214,6 @@ export default function Notification({navigation}) {
               style={localStyle.detailText}>
               {item.direccion}
             </Text>
-            {item.tipo === 'Conteo de Votos' && (
-              <View
-                testID={`notificationActionHint_${index}`}
-                style={localStyle.actionHint}>
-                <Ionicons
-                  testID={`notificationActionIcon_${index}`}
-                  name="arrow-forward"
-                  size={16}
-                  color="#2790b0"
-                />
-                <Text
-                  testID={`notificationActionText_${index}`}
-                  style={localStyle.actionText}>
-                  Toca para ver detalles
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>

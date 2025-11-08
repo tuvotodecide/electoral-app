@@ -4,7 +4,7 @@ import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {setPendingNav} from './redux/slices/authSlice';
-import {StackNav} from './navigation/NavigationKey';
+import {StackNav, TabNav} from './navigation/NavigationKey';
 
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 
@@ -23,7 +23,6 @@ export async function registerNotifications({
 } = {}) {
   try {
     if (askPermissionOnInit) {
-      // Si quieres que pida permiso aquí (similar a iOS).
       await notifee.requestPermission();
     }
 
@@ -34,14 +33,14 @@ export async function registerNotifications({
       if (type === EventType.PRESS)
         handleNotificationPress(detail.notification);
     });
-
-    // Tap con app en background/terminada
-    notifee.onBackgroundEvent(async ({type, detail}) => {
-      if (type === EventType.PRESS)
-        handleNotificationPress(detail.notification);
-    });
   } catch {}
 }
+
+notifee.onBackgroundEvent(async ({type, detail}) => {
+  if (type === EventType.PRESS) {
+    handleNotificationPressBackground(detail.notification);
+  }
+});
 
 /**
  * Muestra una notificación local genérica.
@@ -70,6 +69,7 @@ export async function showActaPublishedNotification({
   ipfsData,
   nftData,
   tableData,
+  certificateData,
 }) {
   try {
     await showLocalNotification({
@@ -77,7 +77,12 @@ export async function showActaPublishedNotification({
       body: 'Tu acta fue publicada correctamente. ',
       data: {
         screen: 'SuccessScreen',
-        routeParams: JSON.stringify({ipfsData, nftData, tableData}),
+        routeParams: JSON.stringify({
+          ipfsData,
+          nftData,
+          tableData,
+          certificateData,
+        }),
       },
     });
   } catch {}
@@ -128,27 +133,38 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
   store.dispatch(setPendingNav({name: scr, params: d}));
 }
 
+function buildRouteFromNotification(notification) {
+  const data = notification?.data ?? {};
+  if (data?.type === 'announce_count') {
+    return {
+      name: StackNav.TabNavigation,
+      params: {screen: TabNav.HomeScreen},
+    };
+  }
+
+  let params = data;
+  if (data?.routeParams) {
+    try {
+      params = JSON.parse(data.routeParams);
+    } catch {
+      params = data;
+    }
+  }
+
+  const name =
+    data.screen && StackNav[data.screen]
+      ? data.screen
+      : StackNav.Splash ?? 'Splash';
+
+  return {name, params};
+}
+
 /**
  * Handler de taps en notificaciones (locales o remotas a través de notifee).
  * Soporta data.routeParams (JSON) para pantallas que necesiten objetos complejos.
  */
 export function handleNotificationPress(notification) {
-  const d = notification?.data ?? {};
-
-  // Si viene routeParams serializado (para SuccessScreen), parseamos
-  let params = d;
-  if (d?.routeParams) {
-    try {
-      params = JSON.parse(d.routeParams);
-    } catch {
-      params = d;
-    }
-  }
-
-  const route =
-    d.screen && StackNav[d.screen]
-      ? {name: d.screen, params}
-      : {name: 'Splash'};
+  const route = buildRouteFromNotification(notification);
 
   const {isAuthenticated} = store.getState().auth;
 
@@ -158,4 +174,9 @@ export function handleNotificationPress(notification) {
     store.dispatch(setPendingNav(route));
     navigate('LoginUser');
   }
+}
+
+function handleNotificationPressBackground(notification) {
+  const route = buildRouteFromNotification(notification);
+  store.dispatch(setPendingNav(route));
 }
