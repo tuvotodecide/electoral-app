@@ -14,7 +14,6 @@ import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import UploadCardImage from '../../components/common/UploadCardImage';
 import String from '../../i18n/String';
-import DniExistsModal from '../../components/modal/DniExistsModal';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
@@ -137,7 +136,7 @@ export default function RegisterUser2({navigation, route}) {
           setSubmitting(false);
           const msg =
             err?.response?.data?.message || err.message || String.unknowerror;
-          Alert.alert(String.errorCi, msg);
+          Alert.alert(String.error, msg);
         });
     }, 500),
     [

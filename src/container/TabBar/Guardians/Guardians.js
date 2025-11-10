@@ -54,7 +54,6 @@ export default function Guardians({navigation}) {
     useGuardianPatchQuery();
 
   useEffect(() => {
-    console.log('Guardian threshold:', gotThreshold);
     if(gotThreshold) {
       setGuardianThreshold(gotThreshold.toString());
     }

@@ -430,7 +430,7 @@ export default {
   addGuardianSubtitle:
     'Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.',
   addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto Decide.',
-  active: 'Activo',
+  approved: 'Aprobado',
   pending: 'Pendiente',
   rejected: 'Rechazado',
   deleted: 'Eliminado',
