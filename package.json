@@ -27,7 +27,7 @@
     "@react-native-firebase/database": "^22.4.0",
     "@react-native-firebase/functions": "^22.4.0",
     "@react-native-firebase/messaging": "^22.4.0",
-    "@react-native-ml-kit/barcode-scanning": "^1.4.1",
+    "@react-native-ml-kit/barcode-scanning": "^2.0.0",
     "@react-navigation/bottom-tabs": "^7.3.14",
     "@react-navigation/native": "^7.1.10",
     "@react-navigation/native-stack": "^7.3.14",
@@ -62,6 +62,7 @@
     "react-native-blob-util": "^0.22.2",
     "react-native-config": "^1.5.5",
     "react-native-country-picker-modal": "^2.0.0",
+    "react-native-device-info": "^15.0.1",
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.25.0",
@@ -109,7 +110,7 @@
     "victory-native": "^41.17.4",
     "viem": "^2.31.3",
     "vm-browserify": "^1.1.2",
-    "wira-sdk": "file:../wira-sdk"
+    "wira-sdk": "file:../../blockon/billetera/wira-sdk"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -56,5 +56,20 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>itms-apps</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleUrlName</key>
+			<string>com.appelectoral</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.appelectoral</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

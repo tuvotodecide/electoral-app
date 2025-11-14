@@ -33,9 +33,9 @@ const config = {
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg', 'cjs', 'ts', 'tsx'],
     extraNodeModules,
-    blockList: [ /wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/, ],
+    blockList: [/wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/],
   },
-  watchFolders: [path.resolve(__dirname, '../wira-sdk')],
+  watchFolders: [path.resolve(__dirname, '../../blockon/billetera/wira-sdk')],
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);
