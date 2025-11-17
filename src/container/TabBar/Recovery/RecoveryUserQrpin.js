@@ -18,7 +18,6 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 
-
 export default function RecoveryUserQrPin({navigation, route}) {
   // ───── params de navegación
   const {payload} = route.params; // ← ahora recibes payload
@@ -27,7 +26,6 @@ export default function RecoveryUserQrPin({navigation, route}) {
   // ───── estado & refs
   const [otp, setOtp] = useState('');
   const otpRef = useRef(null);
-  
 
   // ───── handlers
   const onPressContinue = () => {
