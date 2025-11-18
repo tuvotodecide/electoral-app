@@ -14,14 +14,11 @@ import {moderateScale} from '../../common/constants';
 import {UploadDocumentData} from '../../api/constant';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function UploadDocument({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [isSelect, setIsSelect] = useState('');
-
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('UploadDocument', true);
   const onPressSelect = item => {
     setIsSelect(item.id);
   };

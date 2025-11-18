@@ -346,7 +346,7 @@ const ElectoralLocations = ({navigation, route}) => {
   useEffect(() => {
     const init = async () => {
       const net = await NetInfo.fetch();
-      const online = isStateEffectivelyOnline(net, NET_POLICIES.tolerant);
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
       setOffline(!online);
       if (!online) {
         setConfigLoading(false);

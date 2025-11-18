@@ -24,10 +24,6 @@
 		<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_launcher" />
 		<meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/colorAccent" tools:replace="android:resource" />
 		<provider android:name="com.tuvotodecide.ssi.SsiProvider" android:authorities="${applicationId}.ssi.bundle" android:exported="true" android:permission="com.identity.permission.SSI" android:grantUriPermissions="true" />
-		<provider
-			android:authorities="com.wira.appelectoral.provider"
-			android:name="com.nativewiraprovider.WiraContentProvider"
-			android:exported="true"/>
 		<activity android:name="com.tuvotodecide.ssi.DeepLinkActivity" android:exported="true" android:permission="com.identity.permission.SSI" android:theme="@android:style/Theme.NoDisplay">
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
@@ -39,6 +35,16 @@
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+			<!-- Intent filter for receive shared session -->
+			<intent-filter android:label="Wira Shared Session">
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:scheme="com.appelectoral"
+              		android:host="shared.request" />
+				<data android:scheme="com.appelectoral"
+              		android:host="shared.response" />
 			</intent-filter>
 		</activity>
 		<!--

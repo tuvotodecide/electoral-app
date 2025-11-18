@@ -215,3 +215,21 @@ export const useMyGuardianRecoveryListQuery = options => {
     isLoading,
   };
 };
+export const useGuardiansThresholdQuery = options => {
+  const {data, error, isLoading} = useQuery(
+    ['guardiansThreshold', options.did],
+    () => guardianApi.getThreshold(options.did),
+    {
+      keepPreviousData: true,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  return {
+    data: data?.threshold,
+    error,
+    isLoading,
+  };
+};

@@ -14,17 +14,15 @@ import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import UploadCardImage from '../../components/common/UploadCardImage';
 import String from '../../i18n/String';
-import DniExistsModal from '../../components/modal/DniExistsModal';
 import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
 import {setSecrets} from '../../redux/action/walletAction';
 import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
 import {BACKEND_IDENTITY} from '@env';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 import SimpleModal from '../../components/modal/SimpleModal';
 
 export default function RegisterUser2({navigation, route}) {
-  const {logAction, logNavigation} = useNavigationLogger('RegisterUser2', true);
   const isRecovery = !!route?.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
   const [frontImage, setFrontImage] = useState(null);
@@ -42,17 +40,19 @@ export default function RegisterUser2({navigation, route}) {
 
   const closeModal = () => {
     setModalVisible({visible: false, message: null});
-    navigation.reset({
-      index: 1,
-      routes: [
-        {
-          name: AuthNav.Connect,
-        },
-        {
-          name: AuthNav.RegisterUser1,
-        },
-      ],
-    })
+    if(isRecovery) {
+      navigation.reset({
+        index: 1,
+        routes: [
+          {
+            name: AuthNav.Connect,
+          },
+          {
+            name: AuthNav.RegisterUser1,
+          },
+        ],
+      });
+    }
   };
 
   useEffect(() => {
@@ -69,11 +69,6 @@ export default function RegisterUser2({navigation, route}) {
 
   const handleCheckAndNext = useCallback(
     debounce(() => {
-      logAction('submit_attempt', {
-        isRecovery,
-        hasFrontImage: !!frontImage,
-        hasBackImage: !!backImage,
-      });
 
       const trimmedId = idNumber.trim();
       if (trimmedId === REVIEW_DNI) {
@@ -105,7 +100,6 @@ export default function RegisterUser2({navigation, route}) {
                 {String.DniExists}
               </CText>,
             });
-            logAction('dni_exists_modal_shown', {isRecovery});
             return;
           }
 
@@ -124,7 +118,6 @@ export default function RegisterUser2({navigation, route}) {
                 </CText>
               </View>
             });
-            logAction('dni_not_found_modal_shown', {isRecovery});
             return;
           }
 
@@ -138,20 +131,12 @@ export default function RegisterUser2({navigation, route}) {
             backImage,
             isRecovery,
           });
-          logNavigation('go_to_register_step_3', {
-            dni: trimmedId,
-            isRecovery,
-          });
         })
         .catch(err => {
           setSubmitting(false);
           const msg =
             err?.response?.data?.message || err.message || String.unknowerror;
-          logAction('dni_check_error', {
-            message: msg,
-            name: err?.name,
-          });
-          Alert.alert(String.errorCi, msg);
+          Alert.alert(String.error, msg);
         });
     }, 500),
     [
@@ -160,8 +145,6 @@ export default function RegisterUser2({navigation, route}) {
       backImage,
       dispatch,
       navigation,
-      logAction,
-      logNavigation,
       isRecovery,
     ],
   );
@@ -248,7 +231,7 @@ export default function RegisterUser2({navigation, route}) {
         testID="registerUser2DniExistsModal"
         visible={isModalVisible.visible}
         message={isModalVisible.message}
-        closeBtn={String.register}
+        closeBtn={isRecovery ? String.register : String.ok}
         onClose={closeModal}
       />
     </CSafeAreaViewAuth>

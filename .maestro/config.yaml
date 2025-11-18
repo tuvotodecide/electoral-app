@@ -1,12 +1,6 @@
 # Specify flows to include
 flows:
   - '**'
-
-#includeTags:
-#  - tagNameToInclude
-#excludeTags:
-#  - tagNameToExclude
-
 # Sequential execution configuration using file names (without .yaml extension)
 executionOrder:
   #continueOnFailure: false # Stop execution on first failure for proper sequential testing
@@ -54,7 +48,7 @@ executionOrder:
     ## -- It requires to logout/ Requiere cerrar sesion
     - failedRecoveryGuardian
     #- successfulRecoveryGuardian
-#
+
     ## Participate
     ## -- It requires an already set table and location / Requiere una mesa y ubicación ya establecidas
     ## -- It requires to login as the principal user / Requiere iniciar sesión como el usuario principal
@@ -73,18 +67,3 @@ executionOrder:
 # Customised test output directory
 testOutputDir: test_output_directory
 
-# Cloud only config options
-#baselineBranch: main
-#notifications:
-#  email:
-#    enabled: true
-#    recipients:
-#      - john@example.com
-#
-## Platform Configuration
-#platform:
-#  ios:
-#    snapshotKeyHonorModalViews: false
-#    disableAnimations: true
-#  android:
-#    disableAnimations: true

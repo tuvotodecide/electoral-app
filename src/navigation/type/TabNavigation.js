@@ -167,11 +167,6 @@ export default function TabNavigation() {
 
 const stylesx = StyleSheet.create({
   tabBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',

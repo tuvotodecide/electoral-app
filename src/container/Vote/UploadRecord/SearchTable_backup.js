@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {
   fetchMesas,
   fetchNearbyMesas,
@@ -19,8 +19,7 @@ export default function SearchTable({navigation, route}) {
   const [mesas, setMesas] = useState([]);
   const [locationData, setLocationData] = useState(null);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('SearchTable_backup', true);
+  
   // Cargar mesas al montar el componente
 
   useEffect(() => {

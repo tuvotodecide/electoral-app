@@ -45,6 +45,11 @@ import {
   PROVIDER_NAME,
 } from '@env';
 
+const sharedSession = new wira.SharedSession(
+  BACKEND_IDENTITY,
+  PROVIDER_NAME
+);
+
 const EXTERNAL_ENDPOINTS = Object.fromEntries(
   Object.entries({
     BACKEND,
@@ -120,12 +125,15 @@ const logNetworkIssue = (label, error, extra = {}) => {
   });
 };
 
-export default function LoginUser({navigation}) {
+export default function LoginUser({navigation, route}) {
+  const { sharedSessionId, sharedSessionSalt, isCIRecovery = false } = route.params ?? {};
+
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(String.loading);
   const [modal, setModal] = useState({visible: false, msg: '', btn: String.understand, onClose: null});
   const hideModal = () => setModal({visible: false, msg: '', btn: String.understand, onClose: null});
 
@@ -182,9 +190,25 @@ export default function LoginUser({navigation}) {
 
   async function verifyPin(code) {
     try {
-      const response = wira.getWiraData(PROVIDER_NAME);
-      if (response) {
-        const userData = await wira.signIn(response, code.trim());
+      if(sharedSessionId && sharedSessionSalt) {
+        await sharedSession.signInWithSharedSession(
+          sharedSessionId,
+          sharedSessionSalt,
+          code.trim()
+        );
+      }
+
+      let signInOptions = null;
+      if(isCIRecovery) {
+        signInOptions = {
+          registryUrl: BACKEND_IDENTITY,
+          sharedSessionSchema: PROVIDER_NAME,
+        };
+      }
+
+      const hasUserData = await wira.Storage.checkUserData();
+      if (hasUserData) {
+        const userData = await wira.signIn(code.trim(), signInOptions);
 
         try {
           await guardianApi.deviceToken({
@@ -202,9 +226,15 @@ export default function LoginUser({navigation}) {
         return {ok: true, payload: userData, jwt: null};
       }
 
+      setLoadingMessage(String.migratingOnLogin);
       const mig = await migrateIfNeeded(code.trim());
+      setLoadingMessage(String.loading);
       if (mig.ok) {
-        const userData = await wira.signIn(mig.payload, code.trim());
+        const hasUserData = wira.Storage.checkUserData();
+        if(!hasUserData) {
+          return {ok: false, type: 'unexpected'};
+        }
+        const userData = await wira.signIn(code.trim(), signInOptions);
         return {ok: true, payload: userData, jwt: null};
       }
 
@@ -368,7 +398,7 @@ export default function LoginUser({navigation}) {
             setLoading(false);
             setModal({
               visible: true,
-              msg: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
+              msg: String.noBiometricData,
               btn: String.understand,
             });
             return;
@@ -463,7 +493,7 @@ export default function LoginUser({navigation}) {
         <View style={localStyle.loadingOverlay} testID="loginUserLoading">
           <ActivityIndicator size="large" color={colors.white} />
           <CText type="B16" color={colors.white} style={styles.mt10}>
-            {String.loading}
+            {loadingMessage}
           </CText>
         </View>
       )}

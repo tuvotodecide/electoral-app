@@ -112,4 +112,5 @@ export const AuthNav = {
   RecoveryUser1Pin: 'RecoveryUser1Pin',
   RecoveryUser2Pin: 'RecoveryUser2Pin',
   MyGuardiansStatus: 'MyGuardiansStatus',
+  FindSession: 'FindSession',
 };

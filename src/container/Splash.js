@@ -13,13 +13,11 @@ import {initialStorageValueGet} from '../utils/AsyncStorage';
 import {changeThemeAction} from '../redux/action/themeAction';
 import {colors} from '../themes/colors';
 import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
+import {KEY_OFFLINE, moderateScale, PENDINGRECOVERY} from '../common/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {getDraft} from '../utils/RegisterDraft';
 import {ensureBundle} from '../utils/ensureBundle';
-import {ensureProvisioned} from '../utils/provisionClient';
-import {useNavigationLogger} from '../hooks/useNavigationLogger';
 import wira from 'wira-sdk';
 import {GATEWAY_BASE} from '@env';
 
@@ -31,25 +29,15 @@ export default function Splash({navigation}) {
 
   const dispatch = useDispatch();
 
-  const {logAction, logNavigation} = useNavigationLogger('Splash', true);
-
   useEffect(() => {
     const asyncProcess = async () => {
       try {
-        logAction('boot_started');
-        await ensureProvisioned({mock: true});
-        if (wira?.provision?.ensureProvisioned) {
-          await wira.provision.ensureProvisioned({
-            mock: true,
-            gatewayBase: GATEWAY_BASE,
-          });
-        }
+        await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
         let asyncData = await initialStorageValueGet();
 
         let {themeColor} = asyncData;
         const draft = await getDraft();
         if (draft) {
-          logNavigation('resume_register_draft');
           navigation.replace(StackNav.AuthNavigation, {
             screen: AuthNav.RegisterUser10,
             params: draft,
@@ -70,7 +58,6 @@ export default function Splash({navigation}) {
           const pending = await AsyncStorage.getItem(PENDINGRECOVERY);
 
           if (pending === 'true') {
-            logNavigation('open_pending_recovery');
             navigation.navigate(StackNav.AuthNavigation, {
               screen: AuthNav.MyGuardiansStatus,
             });
@@ -78,7 +65,6 @@ export default function Splash({navigation}) {
           }
 
           const bundleReady = await ensureBundle();
-          logAction('bundle_checked', {bundleReady});
 
           // const alive = await isSessionValid();
 
@@ -92,14 +78,11 @@ export default function Splash({navigation}) {
           //   navigation.replace(StackNav.TabNavigation);
           //   return;
           // }
-          logNavigation('go_to_auth_flow');
           navigation.replace(StackNav.AuthNavigation);
         } else {
-          logNavigation('go_to_auth_flow_empty');
           navigation.replace(StackNav.AuthNavigation);
         }
       } catch (e) {
-        logAction('boot_error', {message: e?.message, name: e?.name});
         navigation.replace(StackNav.AuthNavigation);
       }
     };
@@ -120,7 +103,11 @@ export default function Splash({navigation}) {
       }}
       testID="splashContainer">
       <View style={localStyle.imageContainer} testID="splashImageContainer">
-        <Image source={images.logoImg} style={localStyle.imageStyle} testID="splashLogo" />
+        <Image
+          source={images.logoImg}
+          style={localStyle.imageStyle}
+          testID="splashLogo"
+        />
       </View>
       <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
         {String.wira}

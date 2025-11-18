@@ -41,7 +41,6 @@
 	<string>Esta aplicación necesita acceso a tu ubicación para geolocalizar recintos/mesas.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>La app usa Face ID para autenticarte de forma segura.</string>
-
 	<key>UILaunchStoryboardName</key>
 	<string>BootSplash</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -56,5 +55,30 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>itms-apps</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Entypo.ttf</string>
+        <string>EvilIcons.ttf</string>
+        <string>Feather.ttf</string>
+        <string>FontAwesome.ttf</string>
+        <string>Ionicons.ttf</string>
+        <string>MaterialIcons.ttf</string>
+        <string>MaterialCommunityIcons.ttf</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleUrlName</key>
+			<string>com.appelectoral</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.appelectoral</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

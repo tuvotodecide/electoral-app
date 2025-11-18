@@ -21,10 +21,9 @@ import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
-import {PROVIDER_NAME} from '@env';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -36,14 +35,11 @@ export default function RegisterUser4({navigation, route}) {
     isLoading: false,
   });
 
-  const {logAction, logNavigation} = useNavigationLogger('RegisterUser4', true);
-
   useEffect(() => {
     const openCamera = async () => {
       const granted = await requestCameraPermission();
       if (!granted) {
         Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
-        logAction('camera_permission_denied');
         return;
       }
 
@@ -56,16 +52,14 @@ export default function RegisterUser4({navigation, route}) {
         response => {
           if (response?.assets) {
             setSelfie(response.assets[0]);
-            logAction('selfie_captured');
           } else if (response?.errorCode) {
-            logAction('camera_launch_error', {code: response.errorCode});
           }
         },
       );
     };
 
     openCamera();
-  }, [logAction]);
+  }, []);
 
   const requestCameraPermission = async () => {
     if (Platform.OS !== 'android') return true;
@@ -93,17 +87,14 @@ export default function RegisterUser4({navigation, route}) {
   const onPressNext = () => {
     if (!selfie) {
       Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
-      logAction('selfie_missing');
       return;
     }
 
     if (isRecovery) {
-      logAction('recovery_flow_start', {dni});
       triggerRecovery();
       return;
     }
 
-    logNavigation(AuthNav.RegisterUser5, {dni});
     navigation.navigate(AuthNav.RegisterUser5, {
       dni,
       frontImage,
@@ -129,7 +120,6 @@ export default function RegisterUser4({navigation, route}) {
         backImage,
         selfie,
         dni,
-        PROVIDER_NAME,
       );
 
       setModal({
@@ -138,7 +128,6 @@ export default function RegisterUser4({navigation, route}) {
         isLoading: false,
         success: true,
       });
-      logAction('recovery_success');
     } catch (error) {
       setModal({
         visible: true,
@@ -154,7 +143,10 @@ export default function RegisterUser4({navigation, route}) {
   const goToLogin = () => {
     navigation.reset({
       index: 0,
-      routes: [{name: AuthNav.LoginUser}],
+      routes: [{
+        name: AuthNav.LoginUser,
+        params: {isCIRecovery: true}
+      }],
     });
   }
 

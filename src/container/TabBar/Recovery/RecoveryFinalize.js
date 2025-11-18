@@ -12,22 +12,21 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-import {PROVIDER_NAME} from '@env';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import wira from 'wira-sdk';
 
 
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { resetAttempts } from '../../../utils/PinAttempts';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, recData} = route.params;
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RecoveryFinalize', true);
+  
   useEffect(() => {
     (async () => {
       try {
         const data = JSON.parse(recData);
-        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, PROVIDER_NAME);
+        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, BACKEND_IDENTITY, PROVIDER_NAME);
         await AsyncStorage.removeItem(GUARDIAN_RECOVERY_DNI);
         await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
         await resetAttempts();

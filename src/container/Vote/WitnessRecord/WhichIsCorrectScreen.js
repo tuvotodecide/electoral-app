@@ -17,7 +17,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import Strings from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {normalizeUri} from '../../../utils/normalizedUri';
 import {useFocusEffect} from '@react-navigation/native';
@@ -310,24 +310,17 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     ],
   );
 
-  const {logAction, logNavigation} = useNavigationLogger(
-    'WhichIsCorrectScreen',
-    true,
-  );
-
   const showModal = useCallback(
     (type, title, message, buttonText = Strings.accept) => {
       setModalConfig({type, title, message, buttonText});
       setModalVisible(true);
-      logAction('which_correct_modal_show', {type, title});
     },
-    [logAction],
+    [],
   );
 
   const closeModal = useCallback(() => {
     setModalVisible(false);
-    logAction('which_correct_modal_close');
-  }, [logAction]);
+  }, []);
 
   const loadActasByMesa = useCallback(async () => {
     const mesaIdentifier =
@@ -360,19 +353,11 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         setActaImages(normalized);
         setGlobalPartyResults(response.data.partyResults || []);
         setGlobalVoteSummaryResults(response.data.voteSummaryResults || []);
-        logAction('which_correct_load_actas_success', {
-          actaCount: normalized.length,
-        });
       } else if (normalizedInitialActas.length === 0) {
-        logAction('which_correct_load_actas_empty', {
-          mesaIdentifier,
-        });
+
         showModal('error', Strings.error, Strings.couldNotLoadActas);
       }
     } catch (error) {
-      logAction('which_correct_load_actas_error', {
-        message: error?.message,
-      });
       if (normalizedInitialActas.length === 0) {
         showModal('error', Strings.error, Strings.errorLoadingActas);
       }
@@ -381,7 +366,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     }
   }, [
     fallbackUri,
-    logAction,
     mesaInfo,
     normalizedInitialActas.length,
     showModal,
@@ -400,24 +384,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     normalizedInitialActas.length,
   ]);
 
-  useEffect(() => {
-    logNavigation('which_correct_view', {
-      actaCount: actaImages.length,
-      allowAddNewActa,
-      fromUnifiedFlow: isFromUnifiedFlow,
-      fromTableDetail,
-      fromApi: isFromAPI,
-      totalRecords,
-    });
-  }, [
-    actaImages.length,
-    allowAddNewActa,
-    fromTableDetail,
-    isFromAPI,
-    isFromUnifiedFlow,
-    logNavigation,
-    totalRecords,
-  ]);
 
   useEffect(() => {
     if (
@@ -458,10 +424,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
           ? selectedImage.partyResults
           : globalPartyResults) || [];
 
-      logNavigation('which_correct_view_details', {
-        actaId: targetId,
-        voteSummaryLength: voteSummary.length,
-      });
 
       const payloadForPhotoReview = {
         photoUri: selectedImage.uri,
@@ -487,7 +449,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       actaImages,
       globalPartyResults,
       globalVoteSummaryResults,
-      logNavigation,
       mesaInfo,
       navigation,
       selectedImageId,
@@ -497,10 +458,9 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
 
   const handleImagePress = useCallback(
     imageId => {
-      logAction('which_correct_tap_navigate', {actaId: imageId});
       handleViewMoreDetails(imageId);
     },
-    [logAction, handleViewMoreDetails],
+    [handleViewMoreDetails],
   );
 
   const handleUploadNewActa = useCallback(() => {
@@ -516,9 +476,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     };
 
     if (isFromUnifiedFlow && !fromTableDetail && !isFromAPI) {
-      logNavigation('which_correct_add_new_via_table_detail', {
-        actaCount: actaImages.length,
-      });
       try {
         navigation.navigate(StackNav.TableDetail, basePayload);
       } catch {
@@ -527,10 +484,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       return;
     }
 
-    logNavigation('which_correct_add_new_acta', {
-      actaCount: actaImages.length,
-      fromApi: isFromAPI,
-    });
 
     const cameraPayload = {
       ...basePayload,
@@ -549,7 +502,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     isFromAPI,
     isFromUnifiedFlow,
     locationData,
-    logNavigation,
     mesaInfo,
     navigation,
     originalTable,
@@ -560,9 +512,8 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       handleUploadNewActa();
       return;
     }
-    logAction('which_correct_report_incorrect');
     showModal('info', Strings.information, Strings.dataReportedAsIncorrect);
-  }, [allowAddNewActa, handleUploadNewActa, logAction, showModal]);
+  }, [allowAddNewActa, handleUploadNewActa, showModal]);
 
   const handleBack = useCallback(() => {
     navigation.goBack();

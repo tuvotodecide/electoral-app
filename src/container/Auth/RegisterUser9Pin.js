@@ -19,7 +19,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
 import String from '../../i18n/String';
 import {setTmpPin} from '../../utils/TempRegister';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 import CBigAlert from '../../components/common/CBigAlert';
 
 export default function RegisterUser9({navigation, route}) {
@@ -28,13 +28,7 @@ export default function RegisterUser9({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
-
-  const {logAction, logNavigation} = useNavigationLogger(
-    'RegisterUser9Pin',
-    true,
-  );
   const otpRef = useRef(null);
-
   useEffect(() => {
     const t = setTimeout(() => otpRef.current?.focusField(0), 350);
     return () => clearTimeout(t);
@@ -42,10 +36,6 @@ export default function RegisterUser9({navigation, route}) {
 
   const handleConfirmPin = async () => {
     const matchesOriginal = otp === originalPin;
-    logAction('confirm_pin_attempt', {
-      matchesOriginal,
-      length: otp.length,
-    });
     if (matchesOriginal) {
       await setTmpPin(otp);
       const params = {
@@ -55,10 +45,8 @@ export default function RegisterUser9({navigation, route}) {
         useBiometry,
         dni,
       };
-      logNavigation(AuthNav.RegisterUser10, params);
       navigation.navigate(AuthNav.RegisterUser10, params);
     } else {
-      logAction('confirm_pin_failed');
       setShowError(true);
       setOtp('');
     }
@@ -94,9 +82,7 @@ export default function RegisterUser9({navigation, route}) {
               code={otp}
               onCodeChanged={text => {
                 setOtp(text);
-                logAction('confirm_pin_input_change', {length: text.length});
                 if (showError) {
-                  logAction('confirm_pin_error_cleared');
                   setShowError(false);
                 }
               }}

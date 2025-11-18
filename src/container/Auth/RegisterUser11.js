@@ -19,13 +19,10 @@ import {
   getSecondaryTextColor,
 } from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function RegisterUser11({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('RegisterUser11', true);
-
   const onPressNext = () => {
     
     navigation.navigate(AuthNav.LoginUser);

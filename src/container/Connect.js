@@ -3,7 +3,6 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../components/common/CSafeAreaView';
 import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import {deviceWidth, moderateScale} from '../common/constants';
 import {styles} from '../themes';
@@ -16,20 +15,28 @@ import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 import wira from 'wira-sdk';
-import { PROVIDER_NAME } from '@env';
+import { checkLegacyDataExists } from '../utils/migrateLegacy';
+import { HandleModal } from './TabBar/SignIn/HandleModal';
 
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+
+  const onLoginWithWira = () => {
+    navigation.navigate(AuthNav.FindSession);
+  }
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
   };
 
-  const onPressLoginUser = () => {
-    const response = wira.getWiraData(PROVIDER_NAME);
+  const onPressLoginUser = async () => {
+    const response = await wira.Storage.checkUserData();
     if (!response) {
-      navigation.navigate(AuthNav.SelectRecuperation);
-      return;
+      const legacyDataExists = await checkLegacyDataExists();
+      if (!legacyDataExists) {
+        navigation.navigate(AuthNav.SelectRecuperation);
+        return;
+      }
     }
     navigation.navigate(AuthNav.LoginUser);
   };
@@ -114,8 +121,17 @@ export default function Connect({navigation}) {
             bgColor={commonColor.gradient2}
             testID="connectLoginButton"
           />
+          <CButton
+            onPress={onLoginWithWira}
+            title={String.signInWithWira}
+            type={'B16'}
+            containerStyle={localStyle.btnStyle}
+            color={colors.white}
+            bgColor={commonColor.gradient2}
+          />
         </View> 
       </View>
+      <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>
   );
 }

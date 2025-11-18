@@ -28,7 +28,7 @@ import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 import {launchImageLibrary} from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
 
 const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
@@ -136,8 +136,7 @@ export default function CameraScreen({navigation, route}) {
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
-  // Hook para logging de navegación
-  const {logAction, logNavigation} = useNavigationLogger('CameraScreen', true);
+  
   const initialScale = useRef(1);
   const isZooming = useRef(false);
 
@@ -155,11 +154,11 @@ export default function CameraScreen({navigation, route}) {
     }
     NetInfoSafe.fetch().then(s =>
       setIsOnline(
-        isStateEffectivelyOnline(s, NET_POLICIES.balanced),
+        isStateEffectivelyOnline(s, NET_POLICIES.estrict),
       ),
     );
     const sub = NetInfoSafe.addEventListener(state => {
-      const ok = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
+      const ok = isStateEffectivelyOnline(state, NET_POLICIES.estrict);
       setIsOnline(ok);
     });
     return () => sub && sub();
@@ -621,7 +620,7 @@ export default function CameraScreen({navigation, route}) {
 
 
       if (!analysisResult.success) {
-        console.error('[CAMERA-SCREEN] ❌ Error en análisis AI:', analysisResult.error);
+        console.error('[CAMERA-SCREEN]  Error en análisis AI:', analysisResult.error);
         showModal(
           'Error de Análisis',
           analysisResult.error || 'No se pudo analizar la imagen',

@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -15,14 +15,19 @@ import {useSelector} from 'react-redux';
 import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {
+  guardianApi,
   useGuardianDeleteQuery,
   useGuardianPatchQuery,
+  useGuardiansThresholdQuery,
   useMyGuardiansAllListQuery,
 } from '../../../data/guardians';
 import CAlert from '../../../components/common/CAlert';
 import {ActivityIndicator} from 'react-native-paper';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { truncateDid } from '../../../utils/Address';
+import ActionSheet from 'react-native-actions-sheet';
+import CInput from '../../../components/common/CInput';
+import CIconButton from '../../../components/common/CIconButton';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -32,18 +37,27 @@ const statusColorKey = {
 };
 
 export default function Guardians({navigation}) {
-  const {logAction, logNavigation} = useNavigationLogger('Guardians');
   const colors = useSelector(state => state.theme.theme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
   const walletPayload = useSelector(state => state.wallet.payload);
   const did = walletPayload?.did;
+  const guardianSettings = useRef(null);
+  const [guardianThreshold, setGuardianThreshold] = useState('1');
+  const [thresholdError, setThresholdError] = useState(null);
 
   const {data: guardians = [], error, isLoading} = useMyGuardiansAllListQuery({did});
-  const {mutate: deleteGuardianId, isLoading: loading} =
+  const {data: gotThreshold} = useGuardiansThresholdQuery({did});
+  const {mutate: deleteGuardianId} =
     useGuardianDeleteQuery();
-  const {mutate: patchGuardianId, isLoading: loadingpatch} =
+  const {mutate: patchGuardianId} =
     useGuardianPatchQuery();
+
+  useEffect(() => {
+    if(gotThreshold) {
+      setGuardianThreshold(gotThreshold.toString());
+    }
+  }, [gotThreshold])
 
   const visibleGuardians = useMemo(
     () =>
@@ -59,33 +73,52 @@ export default function Guardians({navigation}) {
   };
 
   const onPressAddGuardian = () => {
-    logNavigation(StackNav.AddGuardians);
     navigation.navigate(StackNav.AddGuardians);
   };
   const onPressMyProtected = () => {
-    logNavigation(StackNav.GuardiansAdmin);
     navigation.navigate(StackNav.GuardiansAdmin);
   };
   const onPressWatchInfoGuardian = () => {
-    logNavigation(StackNav.OnBoardingGuardians);
     navigation.navigate(StackNav.OnBoardingGuardians);
+  };
+  const onPressGuardiansThreshold = () => {
+    guardianSettings.current?.show();
+  };
+
+  const onSaveGuardianThreshold = async () => {
+    setThresholdError(null);
+    const intThreshold = parseInt(guardianThreshold, 10);
+    if (isNaN(intThreshold) || intThreshold < 1) {
+      setThresholdError(String.invalidThreshold);
+      throw new Error('Invalid threshold');
+    }
+
+    try {
+      const response = await guardianApi.updateThreshold(did, intThreshold);
+      if(!response.ok) {
+        console.log(response);
+        setThresholdError(response.error);
+        throw new Error('Error updating guardian threshold');
+      }
+    } catch (error) {
+      console.log(error);
+      setThresholdError(error.message);
+      throw error;
+    }
   };
 
   const openModal = item => {
-    logAction('OpenGuardianActionModal', {guardianId: item.id});
     setSelectedGuardian(item);
     setModalVisible(true);
   };
 
   const closeModal = () => {
-    logAction('CloseGuardianActionModal');
     setModalVisible(false);
     setSelectedGuardian(null);
   };
 
   const deleteGuardian = async () => {
     if (!selectedGuardian?.id || !did) {
-      logAction('DeleteGuardianMissingData');
       return;
     }
     try {
@@ -93,27 +126,22 @@ export default function Guardians({navigation}) {
         invId: selectedGuardian.id,
         ownerDid: did,
       }, {onSuccess: () => {
-        logAction('DeleteGuardianSuccess', {guardianId: selectedGuardian.id});
         closeModal();
       }});
     } catch (e) {
-      logAction('DeleteGuardianError', {message: e?.message});
     }
   };
   const saveGuardian = newNick => {
     if (!selectedGuardian?.id || !did) {
-      logAction('SaveGuardianMissingData');
       return;
     }
     patchGuardianId(
       {invId: selectedGuardian.id, ownerDid: did, nickname: newNick},
       {
         onSuccess: () => {
-          logAction('SaveGuardianSuccess', {guardianId: selectedGuardian.id});
           closeModal();
         },
         onError: err => {
-          logAction('SaveGuardianError', {message: err?.message});
         },
       },
     );
@@ -137,6 +165,14 @@ export default function Guardians({navigation}) {
             color={colors.primaryColor}
           />
         )}
+      </TouchableOpacity>
+      <TouchableOpacity testID="guardiansThresholdButton" onPress={onPressGuardiansThreshold}>
+        <Icono
+          testID="guardiansThresholdIcon"
+          name="tune"
+          size={moderateScale(28)}
+          color={colors.primaryColor}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -303,6 +339,28 @@ export default function Guardians({navigation}) {
           testID="guardiansActionModal"
         />
       )}
+
+      <ActionSheet ref={guardianSettings} >
+        <View style={[localStyle.configContainer, {backgroundColor: colors.backgroundColor}]} >
+          <CText type="B16" align="center" marginVertical={20}>{String.guardianSettings}</CText>
+          <CText testID="threshholdLabel" type="R14">
+            {String.threshholdLabel}
+          </CText>
+          <View style={localStyle.inputWrapper} testID="threshholdWrapper">
+            <CInput
+              _value={guardianThreshold}
+              _errorText={thresholdError}
+              testID="threshholdInput"
+              keyBoardType='numeric'
+              toGetTextFieldValue={setGuardianThreshold}
+              rightAccessory={() => 
+                <CIconButton name='content-save' color={colors.primary} size={moderateScale(25)} onPress={onSaveGuardianThreshold}/>
+              }
+            />
+            
+          </View>
+        </View>
+      </ActionSheet>
     </CSafeAreaView>
   );
 }
@@ -422,6 +480,15 @@ const localStyle = StyleSheet.create({
   rightIcons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: moderateScale(10),
     padding: moderateScale(10),
   },
+  inputWrapper: {
+    marginRight: moderateScale(8),
+  },
+  configContainer: {
+    padding: moderateScale(20),
+    borderTopEndRadius: moderateScale(10),
+    borderTopStartRadius: moderateScale(10),
+  }
 });

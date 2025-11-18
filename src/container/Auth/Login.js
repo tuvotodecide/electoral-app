@@ -18,7 +18,7 @@ import CButton from '../../components/common/CButton';
 import {socialIcon} from '../../api/constant';
 import {AuthNav, StackNav, TabNav} from '../../navigation/NavigationKey';
 import {setAuthToken} from '../../utils/AsyncStorage';
-import {useNavigationLogger} from '../../hooks/useNavigationLogger';
+
 
 export default function Login({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -30,8 +30,7 @@ export default function Login({navigation}) {
   const [emailInputStyle, setEmailInputStyle] = useState(BlurredStyle);
   const [passwordInputStyle, setPasswordInputStyle] = useState(BlurredStyle);
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('Login', true);
+  
 
   const onFocusInput = onHighlight => onHighlight(FocusedStyle);
   const onBlurInput = onUnHighlight => onUnHighlight(BlurredStyle);

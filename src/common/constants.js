@@ -72,4 +72,6 @@ export const STORAGE_KEY = 'PROVISION_V1';
 export const LAST_TOPIC_KEY = 'LAST_LOCATION_TOPIC';
 export const SERVICE_TMP = 'tmpRegister';
 export const SERVICE_PIN = 'tmpRegisterPin';
+export const ELECTION_STATUS = '@electionStatus';
+export const ELECTION_ID = '@electionConfigId';
 

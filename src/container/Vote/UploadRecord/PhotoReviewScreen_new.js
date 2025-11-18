@@ -38,7 +38,7 @@ const PhotoReviewScreen = () => {
     return normalizeUri(photoUri || fromRecord);
   }, [photoUri, existingRecord]);
   // State for editable fields
-  const [isEditing, setIsEditing] = useState(false);
+  const isEditing = !isViewOnly;
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
     title: '',
@@ -121,24 +121,46 @@ const PhotoReviewScreen = () => {
     return tableData;
   };
 
-  // Handler for editing votes
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  // // Handler for editing votes
+  // const handleEdit = () => {
+  //   setIsEditing(true);
+  // };
 
-  // Handler for saving changes
-  const handleSave = () => {
-    setIsEditing(false);
-    setInfoModalData({
-      visible: true,
-      title: Strings.saved,
-      message: Strings.changesSavedSuccessfully,
-    });
-  };
+  // // Handler for saving changes
+  // const handleSave = () => {
+  //   setIsEditing(false);
+  //   setInfoModalData({
+  //     visible: true,
+  //     title: Strings.saved,
+  //     message: Strings.changesSavedSuccessfully,
+  //   });
+  // };
 
   // Handler for navigating to the next screen
   const handleNext = () => {
     const mesaInfo = getMesaInfo();
+
+    // 1) Asegurarnos de trabajar con arrays
+    const partiesArray = Array.isArray(partyResults) ? partyResults : [];
+    const summaryArray = Array.isArray(voteSummaryResults)
+      ? voteSummaryResults
+      : [];
+
+    // 2) Validar que no haya campos vacíos antes de normalizar
+    if (!isViewOnly) {
+      const hasEmptyParty = partiesArray.some(p => (p.presidente ?? '') === '');
+      const hasEmptySummary = summaryArray.some(v => (v.value1 ?? '') === '');
+
+      if (hasEmptyParty || hasEmptySummary) {
+        setInfoModalData({
+          visible: true,
+          title: 'Campos incompletos',
+          message:
+            'Completa todos los campos de votos de los partidos y del resumen antes de continuar.',
+        });
+        return; // NO avanzar
+      }
+    }
 
     const normalizedPartyResults = partyResults.map(p => ({
       ...p,
@@ -243,35 +265,10 @@ const PhotoReviewScreen = () => {
           textStyle: {color: '#fff'},
         },
       ]
-    : !isEditing
-    ? [
-        {
-          text: Strings.edit,
-          onPress: handleEdit,
-          style: {
-            backgroundColor: '#fff',
-            borderColor: colors.primary,
-            borderWidth: moderateScale(1),
-          },
-          textStyle: {
-            color: colors.primary,
-          },
-        },
+    : [
         {
           text: Strings.next,
           onPress: handleNext,
-          style: {
-            backgroundColor: colors.primary,
-          },
-          textStyle: {
-            color: '#fff',
-          },
-        },
-      ]
-    : [
-        {
-          text: Strings.save,
-          onPress: handleSave,
           style: {
             backgroundColor: colors.primary,
           },
@@ -288,7 +285,7 @@ const PhotoReviewScreen = () => {
         headerTitle={`${Strings.table} ${tableData.numero}`}
         instructionsText={
           offline
-            ? 'Completar los datos por favor'
+            ? 'Completa los datos por favor'
             : aiAnalysis
             ? 'Revise los votos de la pizarra'
             : Strings.reviewPhotoPlease

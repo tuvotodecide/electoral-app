@@ -3,14 +3,11 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import {styles} from '../../../themes';
 import {
   getHeight,
   GUARDIAN_RECOVERY_DNI,
   moderateScale,
-  PENDING_OWNER_ACCOUNT,
-  PENDING_OWNER_GUARDIAN_CT,
   PENDINGRECOVERY,
 } from '../../../common/constants';
 import CText from '../../../components/common/CText';
@@ -26,11 +23,9 @@ import {ActivityIndicator} from 'react-native-paper';
 import {getDeviceId} from '../../../utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
-import {CHAIN} from '@env';
-import {readOnChainApprovals} from '../../../api/guardianOnChain';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
-import {useNavigationLogger} from '../../../hooks/useNavigationLogger';
+
 import { truncateDid } from '../../../utils/Address';
 
 
@@ -53,8 +48,7 @@ export default function MyGuardiansStatus({navigation}) {
     isLoading: false,
   });
 
-  // Hook para logging de navegación
-  const { logAction, logNavigation } = useNavigationLogger('MyGuardiansStatus', true);
+  
   // Mantén tu firma original del hook; el segundo arg puede ser "enabled/ready" según tu implementación
   const {
     data: detailRaw,
@@ -78,7 +72,7 @@ export default function MyGuardiansStatus({navigation}) {
  
 
   const statusLabel = {
-    APPROVED: String.active,
+    APPROVED: String.approved,
     PENDING: String.pending,
     REJECTED: String.rejected,
     REMOVED: String.removed ?? 'Removido',
@@ -212,8 +206,8 @@ export default function MyGuardiansStatus({navigation}) {
 
   return (
     <CSafeAreaView testID="myGuardiansStatusContainer">
-      <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} />
-      <KeyboardAvoidingView testID="myGuardiansStatusKeyboardWrapper" contentContainerStyle={styles.ph20}>
+      <CHeader testID="myGuardiansStatusHeader" title={String.guardiansTitleStatus} isHideBack />
+      <KeyboardAvoidingView testID="myGuardiansStatusKeyboardWrapper" style={[styles.flexGrow1, styles.ph20]}>
         <CText testID="myGuardiansStatusDescription" type={'B16'} align={'center'} marginTop={15}>
           {String.guardiansDescriptionStatus}
         </CText>
