@@ -1,5 +1,5 @@
 import {Image, StyleSheet, View} from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
@@ -15,61 +15,14 @@ import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
-import InfoModal from '../components/modal/InfoModal';
 import { checkLegacyDataExists } from '../utils/migrateLegacy';
-
-const defaultModalState = {
-  visible: false,
-  title: '',
-  message: '',
-  buttonText: '',
-  onClose: null,
-};
-
-const sharedSession = new wira.SharedSession(
-  BACKEND_IDENTITY,
-  PROVIDER_NAME
-);
+import { HandleModal } from './TabBar/SignIn/HandleModal';
 
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  const [modal, setModal] = useState(defaultModalState);
-  const [sharedUrl, setSharedUrl] = useState(null);
 
-  useEffect(() => {
-    sharedSession.handleOpenApp(setSharedUrl);
-  }, []);
-
-  useEffect(() => {
-    if(sharedUrl) {
-      setModal({
-        visible: true,
-        title: String.sharedSessionTitle,
-        message: String.sharedSessionMessage,
-        buttonText: String.accept,
-        onClose: () => handleCloseModal(true),
-        closeCornerBtn: true,
-        onCloseCorner: () => handleCloseModal(false),
-      });
-    }
-  }, [sharedUrl]);
-
-  const handleCloseModal = async (accept) => {
-    setModal(defaultModalState);
-    try {
-      await sharedSession.onShareSession(sharedUrl, accept);
-    } catch (error) {
-      setModal({
-        visible: true,
-        title: String.error,
-        message: error.message,
-        buttonText: String.ok,
-        onClose: () => setModal(defaultModalState),
-      });
-    } finally {
-      setSharedUrl(null);
-    }
+  const onLoginWithWira = () => {
+    navigation.navigate(AuthNav.FindSession);
   }
 
   const onPressRegister1 = () => {
@@ -168,9 +121,17 @@ export default function Connect({navigation}) {
             bgColor={commonColor.gradient2}
             testID="connectLoginButton"
           />
+          <CButton
+            onPress={onLoginWithWira}
+            title={String.signInWithWira}
+            type={'B16'}
+            containerStyle={localStyle.btnStyle}
+            color={colors.white}
+            bgColor={commonColor.gradient2}
+          />
         </View> 
       </View>
-      <InfoModal {...modal} />
+      <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>
   );
 }

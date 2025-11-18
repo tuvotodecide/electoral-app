@@ -45,6 +45,11 @@ import {
   PROVIDER_NAME,
 } from '@env';
 
+const sharedSession = new wira.SharedSession(
+  BACKEND_IDENTITY,
+  PROVIDER_NAME
+);
+
 const EXTERNAL_ENDPOINTS = Object.fromEntries(
   Object.entries({
     BACKEND,
@@ -120,7 +125,9 @@ const logNetworkIssue = (label, error, extra = {}) => {
   });
 };
 
-export default function LoginUser({navigation}) {
+export default function LoginUser({navigation, route}) {
+  const { sharedSessionId, sharedSessionSalt, isCIRecovery = false } = route.params ?? {};
+
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
@@ -183,9 +190,25 @@ export default function LoginUser({navigation}) {
 
   async function verifyPin(code) {
     try {
+      if(sharedSessionId && sharedSessionSalt) {
+        await sharedSession.signInWithSharedSession(
+          sharedSessionId,
+          sharedSessionSalt,
+          code.trim()
+        );
+      }
+
+      let signInOptions = null;
+      if(isCIRecovery) {
+        signInOptions = {
+          registryUrl: BACKEND_IDENTITY,
+          sharedSessionSchema: PROVIDER_NAME,
+        };
+      }
+
       const hasUserData = await wira.Storage.checkUserData();
       if (hasUserData) {
-        const userData = await wira.signIn(code.trim());
+        const userData = await wira.signIn(code.trim(), signInOptions);
 
         try {
           await guardianApi.deviceToken({
@@ -211,7 +234,7 @@ export default function LoginUser({navigation}) {
         if(!hasUserData) {
           return {ok: false, type: 'unexpected'};
         }
-        const userData = await wira.signIn(code.trim());
+        const userData = await wira.signIn(code.trim(), signInOptions);
         return {ok: true, payload: userData, jwt: null};
       }
 

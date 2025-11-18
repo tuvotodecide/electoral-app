@@ -143,7 +143,10 @@ export default function RegisterUser4({navigation, route}) {
   const goToLogin = () => {
     navigation.reset({
       index: 0,
-      routes: [{name: AuthNav.LoginUser}],
+      routes: [{
+        name: AuthNav.LoginUser,
+        params: {isCIRecovery: true}
+      }],
     });
   }
 

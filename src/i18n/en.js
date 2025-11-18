@@ -256,9 +256,11 @@ export default {
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   register: 'REGISTRARSE',
+  sessionReceived: 'Sesión recibida',
+  sessionReceivedMessage: 'Ingrese su pin para iniciar la sesión compartida.',
+  sharedSessionError: 'Error al recibir archivos compartidos.',
   sharedSessionTitle: 'Solicitud para compartir la sesión de Wira',
   sharedSessionMessage: '¿Deseas compartir tu sesión actual con otra aplicación?',
-  sharedSessionError: 'Error al recibir archivos compartidos.',
 
   recoveryWallet: 'Recuperar cuenta',
   recoverymethod: 'Selecciona método para recuperar cuenta',
@@ -1399,4 +1401,11 @@ export default {
     'El GPS está desactivado. Active la ubicación del dispositivo para continuar',
   locationPermissionDeniedMessage:
     'La aplicación no tiene permisos de ubicación. Active los permisos en configuración',
+  //Sign In with Wira
+  signInWithWira: 'Ingresar con Wira',
+  enterDni: 'Ingresa tu carnet',
+  deviceNotFound: 'No tiene una sesión en este dispositivo, regístrese o recupere su cuenta por favor.',
+  deviceGetError: 'Error al buscar aplicaciones',
+  shareDeclined: 'Rechazado',
+  shareDeclinedMessage: 'El usuario rechazó la solicitud de compartir',
 };

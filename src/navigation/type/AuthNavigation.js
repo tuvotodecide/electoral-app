@@ -172,6 +172,10 @@ export default function AuthNavigation() {
         name={AuthNav.VerifySuccess}
         component={AuthRoute.VerifySuccess}
       />
+      <Stack.Screen
+        name={AuthNav.FindSession}
+        component={AuthRoute.FindSession}
+      />
     </Stack.Navigator>
   );
   
