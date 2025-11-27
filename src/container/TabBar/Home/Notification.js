@@ -34,10 +34,14 @@ export default function Notification({navigation}) {
   const mapServerToUi = useCallback(n => {
     const data = n?.data || {};
     const created = n?.createdAt || n?.timestamp || new Date().toISOString();
-    const mesaLabel = data.tableNumber
-      ? `Mesa ${String(data.tableNumber)}`
-      : data.tableCode || 'Mesa';
-
+    let mesaLabel = '';
+    if (data.tableNumber) {
+      mesaLabel = `Mesa ${String(data.tableNumber)}`;
+    } else if (data.tableCode) {
+      mesaLabel = data.tableCode;
+    } else {
+      mesaLabel = n?.title || data?.title || 'Notificación';
+    }
     let tipo = 'Notificación';
     if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';

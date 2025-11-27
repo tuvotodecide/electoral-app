@@ -54,7 +54,6 @@ export default function Guardians({navigation}) {
     useGuardianPatchQuery();
 
   useEffect(() => {
-    console.log('Guardian threshold:', gotThreshold);
     if(gotThreshold) {
       setGuardianThreshold(gotThreshold.toString());
     }
@@ -97,12 +96,10 @@ export default function Guardians({navigation}) {
     try {
       const response = await guardianApi.updateThreshold(did, intThreshold);
       if(!response.ok) {
-        console.log(response);
         setThresholdError(response.error);
         throw new Error('Error updating guardian threshold');
       }
     } catch (error) {
-      console.log(error);
       setThresholdError(error.message);
       throw error;
     }

@@ -156,7 +156,7 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${'-16.5241815'}&lng=${'-68.1464907'}&maxDistance=500`,
         //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
         {timeout: 15000}, // 10 segundos timeout
       );
@@ -440,6 +440,7 @@ const ElectoralLocations = ({navigation, route}) => {
         );
       }
     } catch (error) {
+      console.log(error)
       const net = await NetInfo.fetch();
       const online = isStateEffectivelyOnline(net,  NET_POLICIES.balanced);
       setConfigError(true);

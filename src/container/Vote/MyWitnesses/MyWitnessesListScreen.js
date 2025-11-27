@@ -12,7 +12,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import String from '../../../i18n/String';
+import Strings from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import {moderateScale} from '../../../common/constants';
@@ -49,7 +49,6 @@ const MyWitnessesListScreen = () => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({});
-  const [selectedImageId, setSelectedImageId] = useState(null);
   const [hasNoAttestations, setHasNoAttestations] = useState(false);
 
   // Cargar atestiguamientos al montar el componente
@@ -60,7 +59,7 @@ const MyWitnessesListScreen = () => {
       setLoading(false);
       setHasNoAttestations(true);
       setModalData({
-        title: String.error,
+        title: Strings.error,
         message: 'DNI del usuario no disponible',
         type: 'error',
       });
@@ -79,7 +78,13 @@ const MyWitnessesListScreen = () => {
       );
 
       const attestationsData = attestationsResponse.data.data || [];
-
+      const certificatesByBallotId = {};
+      attestationsData.forEach(attestation => {
+        if (attestation.ballotId && attestation.certificateUrl) {
+          certificatesByBallotId[attestation.ballotId] =
+            attestation.certificateUrl;
+        }
+      });
       if (attestationsData.length === 0) {
         setHasNoAttestations(true);
         setWitnessRecords([]);
@@ -164,6 +169,10 @@ const MyWitnessesListScreen = () => {
             value1: ballot.votes?.parties?.totalVotes?.toString() || '0',
           },
         ];
+        const certificateUrl =
+          certificatesByBallotId[ballot._id] ||
+          certificatesByBallotId[String(ballot._id)] ||
+          null;
 
         return {
           id: ballot._id || `ballot-${index}`,
@@ -184,6 +193,7 @@ const MyWitnessesListScreen = () => {
           electoralLocationId: ballot.electoralLocationId,
           recordId: ballot.recordId,
           ballotData: ballot, // Guardar datos completos para referencia
+          certificateUrl,
         };
       });
 
@@ -196,9 +206,9 @@ const MyWitnessesListScreen = () => {
       } else {
         // Otros errores sí se muestran en modal
         setModalData({
-          title: String.error,
+          title: Strings.error,
           message:
-            String.errorLoadingWitnesses ||
+            Strings.errorLoadingWitnesses ||
             error.response?.data?.message ||
             error.message,
           type: 'error',
@@ -214,38 +224,19 @@ const MyWitnessesListScreen = () => {
   const handleBack = () => {
     navigation.goBack();
   };
-
-  const handleImagePress = imageId => {
-    setSelectedImageId(imageId);
-  };
-
-  const handleVerMas = () => {
-    if (selectedImageId) {
-      const selectedWitnessRecord = witnessRecords.find(
-        item => item.id === selectedImageId,
-      );
-      if (selectedWitnessRecord) {
-        // Navigate to MyWitnessesDetailScreen with complete data
-        navigation.navigate(StackNav.MyWitnessesDetailScreen, {
-          photoUri: selectedWitnessRecord.imagen,
-          mesaData: {
-            tableNumber: selectedWitnessRecord.tableNumber,
-            tableCode: selectedWitnessRecord.tableCode,
-            numero: selectedWitnessRecord.tableNumber,
-          },
-          partyResults: selectedWitnessRecord.partyResults,
-          voteSummaryResults: selectedWitnessRecord.voteSummaryResults,
-          attestationData: selectedWitnessRecord,
-        });
-      }
-    } else {
-      setModalData({
-        title: String.selectionRequired,
-        message: String.pleaseSelectDocument,
-        type: 'warning',
-      });
-      setModalVisible(true);
-    }
+  const handleOpenWitness = witnessRecord => {
+    navigation.navigate(StackNav.MyWitnessesDetailScreen, {
+      photoUri: witnessRecord.imagen,
+      mesaData: {
+        tableNumber: witnessRecord.tableNumber,
+        tableCode: witnessRecord.tableCode,
+        numero: witnessRecord.tableNumber,
+      },
+      partyResults: witnessRecord.partyResults,
+      voteSummaryResults: witnessRecord.voteSummaryResults,
+      attestationData: witnessRecord,
+      certificateUrl: witnessRecord.certificateUrl,
+    });
   };
 
   return (
@@ -255,7 +246,7 @@ const MyWitnessesListScreen = () => {
         testID="myWitnessesHeader"
         colors={colors}
         onBack={handleBack}
-        title={String.myWitnessesTitle}
+        title={Strings.myWitnessesTitle}
         showNotification={true}
       />
 
@@ -264,7 +255,7 @@ const MyWitnessesListScreen = () => {
         testID="witnessesQuestionContainer"
         style={styles.questionContainer}>
         <CText testID="witnessesQuestionText" style={styles.questionText}>
-          {String.selectDocumentToReview}
+          {Strings.selectDocumentToReview}
         </CText>
       </View>
 
@@ -279,7 +270,7 @@ const MyWitnessesListScreen = () => {
             color={colors.primary || '#459151'}
           />
           <CText testID="witnessesLoadingText" style={styles.loadingText}>
-            {String.loadingWitnesses}
+            {Strings.loadingWitnesses}
           </CText>
         </View>
       ) : hasNoAttestations ? (
@@ -342,12 +333,8 @@ const MyWitnessesListScreen = () => {
                           style={styles.tabletColumn}>
                           <TouchableOpacity
                             testID={`witnessRecord_${globalIndex}`}
-                            style={[
-                              styles.imageCard,
-                              selectedImageId === witnessRecord.id &&
-                                styles.imageCardSelected,
-                            ]}
-                            onPress={() => handleImagePress(witnessRecord.id)}>
+                            style={[styles.imageCard]}
+                            onPress={() => handleOpenWitness(witnessRecord)}>
                             <View style={styles.imageHeader}>
                               <CText
                                 testID={`witnessRecordMesa_${globalIndex}`}
@@ -373,52 +360,7 @@ const MyWitnessesListScreen = () => {
                               style={styles.imageDisplay}
                               resizeMode="contain"
                             />
-                            {selectedImageId === witnessRecord.id && (
-                              <>
-                                {/* Corner borders - black color */}
-                                <View
-                                  testID={`witnessTopLeftCorner_${globalIndex}`}
-                                  style={[
-                                    styles.cornerBorder,
-                                    styles.topLeftCorner,
-                                  ]}
-                                />
-                                <View
-                                  testID={`witnessTopRightCorner_${globalIndex}`}
-                                  style={[
-                                    styles.cornerBorder,
-                                    styles.topRightCorner,
-                                  ]}
-                                />
-                                <View
-                                  testID={`witnessBottomLeftCorner_${globalIndex}`}
-                                  style={[
-                                    styles.cornerBorder,
-                                    styles.bottomLeftCorner,
-                                  ]}
-                                />
-                                <View
-                                  testID={`witnessBottomRightCorner_${globalIndex}`}
-                                  style={[
-                                    styles.cornerBorder,
-                                    styles.bottomRightCorner,
-                                  ]}
-                                />
-                              </>
-                            )}
                           </TouchableOpacity>
-                          {selectedImageId === witnessRecord.id && (
-                            <TouchableOpacity
-                              testID={`tabletWitnessDetailsButton_${globalIndex}`}
-                              style={styles.detailsButton}
-                              onPress={handleVerMas}>
-                              <CText
-                                testID={`tabletWitnessDetailsButtonText_${globalIndex}`}
-                                style={styles.detailsButtonText}>
-                                {String.seeMore}
-                              </CText>
-                            </TouchableOpacity>
-                          )}
                         </View>
                       );
                     })}
@@ -431,12 +373,8 @@ const MyWitnessesListScreen = () => {
                 <React.Fragment key={witnessRecord.id}>
                   <TouchableOpacity
                     testID={`phoneWitnessRecord_${index}`}
-                    style={[
-                      styles.imageCard,
-                      selectedImageId === witnessRecord.id &&
-                        styles.imageCardSelected,
-                    ]}
-                    onPress={() => handleImagePress(witnessRecord.id)}>
+                    style={styles.imageCard}
+                    onPress={() => handleOpenWitness(witnessRecord)}>
                     <View style={styles.imageHeader}>
                       <CText
                         testID={`phoneWitnessRecordMesa_${index}`}
@@ -461,43 +399,7 @@ const MyWitnessesListScreen = () => {
                       style={styles.imageDisplay}
                       resizeMode="contain"
                     />
-                    {selectedImageId === witnessRecord.id && (
-                      <>
-                        {/* Corner borders - black color */}
-                        <View
-                          testID={`phoneWitnessTopLeftCorner_${index}`}
-                          style={[styles.cornerBorder, styles.topLeftCorner]}
-                        />
-                        <View
-                          testID={`phoneWitnessTopRightCorner_${index}`}
-                          style={[styles.cornerBorder, styles.topRightCorner]}
-                        />
-                        <View
-                          testID={`phoneWitnessBottomLeftCorner_${index}`}
-                          style={[styles.cornerBorder, styles.bottomLeftCorner]}
-                        />
-                        <View
-                          testID={`phoneWitnessBottomRightCorner_${index}`}
-                          style={[
-                            styles.cornerBorder,
-                            styles.bottomRightCorner,
-                          ]}
-                        />
-                      </>
-                    )}
                   </TouchableOpacity>
-                  {selectedImageId === witnessRecord.id && (
-                    <TouchableOpacity
-                      testID={`phoneWitnessDetailsButton_${index}`}
-                      style={styles.detailsButton}
-                      onPress={handleVerMas}>
-                      <CText
-                        testID={`phoneWitnessDetailsButtonText_${index}`}
-                        style={styles.detailsButtonText}>
-                        {String.seeMore}
-                      </CText>
-                    </TouchableOpacity>
-                  )}
                 </React.Fragment>
               ))}
         </ScrollView>
@@ -511,7 +413,7 @@ const MyWitnessesListScreen = () => {
         title={modalData.title}
         message={modalData.message}
         type={modalData.type}
-        confirmText={String.understood}
+        confirmText={Strings.understood}
         onConfirm={() => setModalVisible(false)}
       />
     </CSafeAreaView>

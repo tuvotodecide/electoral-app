@@ -121,7 +121,6 @@ const uploadCertificateAndNotifyBackend = async (
       );
       return;
     }
-    console.log(nftResult);
     const {jsonUrl, imageUrl} = nftResult.data;
 
     const dniValue =
@@ -152,10 +151,6 @@ const uploadCertificateAndNotifyBackend = async (
         timeout: 30000,
       },
     );
-
-    console.log('[OFFLINE-QUEUE] participation NFT mint OK', res.data);
-
-    console.log('[OFFLINE-QUEUE] certificado enviado al backend OK');
     return {jsonUrl, imageUrl};
   } catch (err) {
     console.error(
@@ -227,6 +222,7 @@ export const publishActaHandler = async (item, userData) => {
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
     const electionConfigId = normalizedAdditional?.electionConfigId;
+
     const tableCodeForOracle = electionConfigId
       ? `${tableCodeStrict}-${electionConfigId}`
       : tableCodeStrict;
@@ -298,12 +294,6 @@ export const publishActaHandler = async (item, userData) => {
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
       );
-      console.log('[OFFLINE-QUEUE] duplicateCheck', {
-        exists: !!duplicateCheck?.exists,
-        hasBallot: !!duplicateCheck?.ballot,
-        tableNumber: verificationData?.tableNumber,
-      });
-
       if (duplicateCheck?.exists) {
         // = Duplicado por contenido → NO subir a IPFS; attest al existente
         const existingBallot =
@@ -497,7 +487,6 @@ export const publishActaHandler = async (item, userData) => {
         throw err;
       }
       const ipfsData = ipfs.data;
-      console.log(ipfsData);
 
       // Validación backend
       try {
@@ -773,7 +762,7 @@ export const publishActaHandler = async (item, userData) => {
         CHAIN,
         oracleCalls.createAttestation(
           CHAIN,
-          tableData?.codigo || tableCodeStrict,
+          tableCodeForOracle,
           ipfsData.jsonUrl,
         ),
         oracleReads.waitForOracleEvent,

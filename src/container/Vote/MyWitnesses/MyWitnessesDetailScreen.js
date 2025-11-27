@@ -3,29 +3,61 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
+import {StackNav} from '../../../navigation/NavigationKey';
 
 const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const {
-    photoUri, 
-    mesaData, 
-    partyResults: apiPartyResults, 
+    photoUri,
+    mesaData,
+    partyResults: apiPartyResults,
     voteSummaryResults: apiVoteSummaryResults,
-    attestationData
+    attestationData,
+    certificateUrl: routeCertificateUrl,
   } = route.params || {};
-
 
   // Usar los datos reales del API que vienen desde MyWitnessesListScreen
   const partyResults = apiPartyResults || [];
   const voteSummaryResults = apiVoteSummaryResults || [];
-
+  const certificateUrl =
+    routeCertificateUrl || attestationData?.certificateUrl || null;
   const handleBack = () => {
     navigation.goBack();
   };
 
+  const handleViewCertificate = () => {
+    if (!certificateUrl) return;
+
+    // Mismo formato que usan las notificaciones (screen: 'SuccessScreen')
+    navigation.navigate(StackNav.SuccessScreen, {
+      certificateData: {
+        imageUrl: certificateUrl,
+      },
+      nftData: {
+        nftUrl: certificateUrl,
+      },
+    });
+  };
+
   const actionButtons = [
+    ...(certificateUrl
+      ? [
+          {
+            text: 'Ver certificado',
+            onPress: handleViewCertificate,
+            testID: 'viewCertificateButton',
+            style: {
+              backgroundColor: colors.primary || '#459151',
+              borderWidth: 0,
+            },
+            textStyle: {
+              color: '#fff',
+            },
+          },
+        ]
+      : []),
     {
       text: String.goBack,
       onPress: handleBack,
@@ -62,7 +94,9 @@ const MyWitnessesDetailScreen = () => {
   const instructionsText = attestationData
     ? `Resultados atestiguados para Mesa ${attestationData.tableNumber}`
     : mesaData
-    ? `Resultados atestiguados para ${mesaData.mesa || `Mesa ${mesaData.tableNumber}`}`
+    ? `Resultados atestiguados para ${
+        mesaData.mesa || `Mesa ${mesaData.tableNumber}`
+      }`
     : String.registeredVotes;
 
   return (

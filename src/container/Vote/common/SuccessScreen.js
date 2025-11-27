@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   Linking,
   Share,
   BackHandler,
+  ScrollView,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {
@@ -25,6 +26,7 @@ import nftImage from '../../../assets/images/nft-medal.png';
 import {title} from 'process';
 import {url} from 'inspector';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import {ActivityIndicator} from 'react-native-paper';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -47,6 +49,8 @@ const SuccessScreen = () => {
   const nftData = params.nftData || {};
   const tableData = params.tableData || {};
   const certificateData = params.certificateData || {};
+  const [imageLoading, setImageLoading] = useState(true);
+const [imageError, setImageError] = useState(false);
   const fromNotifications = params.fromNotifications === true;
 
   const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
@@ -105,19 +109,19 @@ const SuccessScreen = () => {
 
   const handleShareNft = async () => {
     try {
-      if (!nftData || !nftData.nftUrl) {
+      if (!certificateUrl) {
         return;
       }
       const shareOptions = {
         title: 'Compartir certificado NFT',
-        message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${nftData.nftUrl}`,
-        url: nftData.nftUrl,
-        subject: 'Certificado NFT - Elecciones Bolivia 2025',
+        message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${certificateUrl}`,
+        url: certificateUrl,
+        subject: 'Certificado NFT ',
       };
 
       const result = await Share.share(shareOptions, {
         dialogTitle: 'Compartir certificado NFT',
-        subject: 'Certificado NFT - Elecciones Bolivia 2025',
+        subject: 'Certificado NFT',
       });
 
       if (result.action === Share.sharedAction) {
@@ -155,39 +159,37 @@ const SuccessScreen = () => {
         colors={colors}
         onBack={handleBack}
         // title={String.confirmation}
-        title="NFT: Elecciones Generales Bolivia 2025"
+        title="NFT"
         showNotification={false}
       />
 
-      <View style={styles.mainContent}>
+      <ScrollView contentContainerStyle={styles.mainContent} bounces={false}>
         {/* Título principal */}
-        <CText style={styles.bigTitle}>
-          {String.nftCertificate}
-          {'\n'}
-          {String.obtain}
-        </CText>
-
-        {/* Certificado NFT como vista normal */}
-        <View style={styles.nftCertificate}>
-          <View style={styles.certificateBorder}>
-            {/* Medallón NFT */}
-            <View style={styles.medalContainer}>
-              <Image
-                source={nftImage}
-                style={styles.medalImage}
-                resizeMode="contain"
-              />
-              {/* <CText style={styles.nftMedalText}>NFT</CText> */}
-            </View>
-            {/* Datos del certificado */}
-            <CText style={styles.nftName}>{nombre}</CText>
-            <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
-            <CText style={styles.nftCertTitle}>PARTICIPACIÓN ELECTORAL</CText>
-            <CText style={styles.nftCertDetail}>ELECCIONES GENERALES</CText>
-            <CText style={styles.nftCertDetail}>BOLIVIA 2025</CText>
+        {certificateUrl && (
+          <View style={styles.certificateImageWrapper}>
+            {imageLoading && !imageError && (
+              <View style={styles.imageLoaderOverlay}>
+                <ActivityIndicator size="large" color="#17694A" />
+              </View>
+            )}
+            <Image
+              source={{uri: certificateUrl}}
+              style={styles.certificateImage}
+              resizeMode="contain"
+              onLoadStart={() => {
+                setImageLoading(true);
+                setImageError(false);
+              }}
+              onLoad={() => {
+                setImageLoading(false);
+              }}
+              onError={() => {
+                setImageLoading(false);
+                setImageError(true);
+              }}
+            />
           </View>
-        </View>
-
+        )}
         {/* Botones de acción */}
         <View style={styles.buttonsContainer}>
           {/* <TouchableOpacity style={styles.nftButton} onPress={handleViewNFT}>
@@ -222,7 +224,7 @@ const SuccessScreen = () => {
             <CText style={styles.backHomeButtonText}>Regresar al inicio</CText>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </CSafeAreaView>
   );
 };
@@ -232,8 +234,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  certificateImageWrapper: {
+    width: '100%',
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: isTablet ? 500 : 380,
+    aspectRatio: 3 / 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: getResponsiveSize(24, 28, 32),
+  },
+  certificateImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageLoaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f1f1',
+  },
+
   mainContent: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingHorizontal: getResponsiveSize(16, 24, 32),

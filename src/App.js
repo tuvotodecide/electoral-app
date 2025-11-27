@@ -74,7 +74,7 @@ const App = () => {
           setIsUpdating(false);
         }
       } catch (e) {
-        console.log('Error verificando actualización', e);
+
       }
     };
 
@@ -95,7 +95,6 @@ const App = () => {
         setMustUpdate(false);
       }
     } catch (e) {
-      console.log('Error en startUpdate desde modal', e);
     } finally {
       setIsUpdating(false);
     }

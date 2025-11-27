@@ -354,7 +354,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         setGlobalPartyResults(response.data.partyResults || []);
         setGlobalVoteSummaryResults(response.data.voteSummaryResults || []);
       } else if (normalizedInitialActas.length === 0) {
-
         showModal('error', Strings.error, Strings.couldNotLoadActas);
       }
     } catch (error) {
@@ -364,12 +363,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     } finally {
       setIsLoadingActas(false);
     }
-  }, [
-    fallbackUri,
-    mesaInfo,
-    normalizedInitialActas.length,
-    showModal,
-  ]);
+  }, [fallbackUri, mesaInfo, normalizedInitialActas.length, showModal]);
 
   useEffect(() => {
     if (normalizedInitialActas.length === 0 || isFromUnifiedFlow || isFromAPI) {
@@ -383,7 +377,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     loadActasByMesa,
     normalizedInitialActas.length,
   ]);
-
 
   useEffect(() => {
     if (
@@ -423,7 +416,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         selectedImage.partyResults.length > 0
           ? selectedImage.partyResults
           : globalPartyResults) || [];
-
 
       const payloadForPhotoReview = {
         photoUri: selectedImage.uri,
@@ -483,7 +475,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       }
       return;
     }
-
 
     const cameraPayload = {
       ...basePayload,
@@ -584,11 +575,6 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
           }}
           onLoad={() => setIsLoadingImage(false)}
           onError={e => {
-            console.log(
-              '[WhichIsCorrect] Image onError event:',
-              e?.nativeEvent || e,
-            );
-
             if (tryIndex < candidates.length - 1) {
               setTryIndex(tryIndex + 1);
               setIsLoadingImage(true);

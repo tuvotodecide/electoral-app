@@ -108,7 +108,6 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
   });
 
   for(let i = 0; i < attemps; i++) {
-    console.log('iterate: ' + i)
 
     const logs = await publicClient.getContractEvents({
       address: availableNetworks[chain].oracle,
@@ -118,7 +117,6 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
       toBlock: txBlock
     });
 
-    console.log(logs);
 
     if(logs.length > 0) {
       return logs[0].args;
