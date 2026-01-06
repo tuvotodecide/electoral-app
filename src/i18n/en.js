@@ -276,6 +276,9 @@ export default {
 
   connectBtnLogin: 'Tengo una cuenta',
   wira: 'Tu Voto Decide',
+  downloadingData: 'Descargando datos adicionales: ',
+  downloadingFailed: 'Descarga de datos fallida. Revisa tu conexión a internet e intenta de nuevo.',
+  initApp: 'Iniciando...',
   onBoardingTitleText1: 'Obtén tu identidad digital soberana',
   onBoardingTitleText2: 'Actas electorales inalterables con NFTs',
   onBoardingTitleText3: 'Validación abierta, con firma electrónica',

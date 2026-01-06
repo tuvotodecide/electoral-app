@@ -118,13 +118,15 @@ export default function RegisterUser10({navigation, route}) {
           ocrData: normalizeOcrForUI(ocrData),
         });
 
+        console.log('Starting registration for DNI:', dni);
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
           PROVIDER_NAME,
           availableNetworks[CHAIN].bundler,
           sponsorshipPolicyId
         );
-
+        
+        console.log('Registerer initialized.');
         await registerer.createVC(
           CHAIN,
           ocrData,
@@ -132,12 +134,14 @@ export default function RegisterUser10({navigation, route}) {
           CRED_EXP_DAYS
         );
 
+        console.log('VC created.');
         await yieldUI();
         const {guardianAddress} = await withTimeout(
           registerer.createWallet(dni),
           90000,
           'registerStreamAndGuardian',
         );
+        console.log('Wallet created. Guardian Address');
 
         dispatch(
           setAddresses({
@@ -149,6 +153,7 @@ export default function RegisterUser10({navigation, route}) {
         setStage('save');
         await yieldUI();
         await registerer.storeOnDevice(pin, useBiometry);
+        console.log('Data saved on device.');
 
         const response = await registerer.storeDataOnServer();
         if (!response.ok) {
@@ -156,6 +161,7 @@ export default function RegisterUser10({navigation, route}) {
             `Error al registrar tu cuenta.`,
           );
         }
+        console.log('Data stored on server.');
         
         await clearDraft();
         setStage('done');

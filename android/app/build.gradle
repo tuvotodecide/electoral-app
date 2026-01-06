@@ -73,6 +73,17 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+String storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"
+
+repositories {
+    maven {
+        url '/media/john/IdeaSpace/Workspace/zk-login/flutter/wira_flutter_module/build/host/outputs/repo'
+    }
+    maven {
+        url "$storageUrl/download.flutter.io"
+    }
+}
+
 android {
     ndkVersion = rootProject.ext.ndkVersion
     buildToolsVersion =  rootProject.ext.buildToolsVersion
@@ -120,6 +131,9 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation('com.google.mlkit:barcode-scanning:17.3.0')
 
+    debugImplementation 'com.example.wira_flutter_module:flutter_debug:1.0'
+    releaseImplementation 'com.example.wira_flutter_module:flutter_release:1.0'
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
@@ -128,4 +142,4 @@ dependencies {
 }
 
 
-apply plugin: 'com.google.gms.google-services' 
+apply plugin: 'com.google.gms.google-services'
