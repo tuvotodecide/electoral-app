@@ -8,3 +8,4 @@ onFlowStart:
 ---
 - assertVisible:
     id: homeMiVotoLogoTitle
+- stopApp

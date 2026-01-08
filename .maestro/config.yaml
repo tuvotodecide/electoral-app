@@ -1,6 +1,7 @@
 # Specify flows to include
 flows:
   - 'register/*'
+  - 'auth/*'
 
 # Sequential execution configuration using file names (without .yaml extension)
 executionOrder:
@@ -17,8 +18,9 @@ executionOrder:
     - register_newAccount
     - register_ciAlreadyExists
     ## auth
-    #- loginWrongPin
-    #- loginCorrectPin
+    - loginWrongPin
+    - loginCorrectPin
+    - blockAccount
     ## recoveryQR
     #- recoveryFailedQR
     #- recoverySuccessfulQR
