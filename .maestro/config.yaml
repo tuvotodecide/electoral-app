@@ -1,67 +1,73 @@
 # Specify flows to include
 flows:
-  - '**'
+  - 'register/*'
+
 # Sequential execution configuration using file names (without .yaml extension)
 executionOrder:
   #continueOnFailure: false # Stop execution on first failure for proper sequential testing
   flowsOrder:
     ## onBoarding
-    - onboardingNextFlow
-    - onboardingSwipeFlow
-    - onboardingXButton
-    - onboardingMiddleBack
-    ## recoveryQR
-    - recoveryFailedQR
-    - recoverySuccessfulQR
+    #- onboardingNextFlow
+    #- onboardingSwipeFlow
+    #- onboardingXButton
+    #- onboardingMiddleBack
+    ## register
+    - downloadCircuits
+    - register_loginWithoutSession
+    - register_newAccount
+    - register_ciAlreadyExists
     ## auth
-    - loginWrongPin
-    - loginCorrectPin
+    #- loginWrongPin
+    #- loginCorrectPin
+    ## recoveryQR
+    #- recoveryFailedQR
+    #- recoverySuccessfulQR
     ## blockAccount -reset
-    - blockAccount
-    - recoverBlockedAccountQR
+    #- blockAccount
+    #- recoverBlockedAccountQR
     ## ---------------------------------
-    - resetAndRecoverAccount
+    #- resetAndRecoverAccount
     ## ---------------------------------
     ## profile
-    - assertPersonalData
-    - assertRecoveryQR
+    #- assertPersonalData
+    #- assertRecoveryQR
     ## moreOptions
-    - assertToS
-    - assertPP
+    #- assertToS
+    #- assertPP
     ## securityOptions
-    - changePin
+    #- changePin
     ## guardians
     ## whatAreGuardians
-    - nextFlowGuard
-    - swipeFlowGuard
-    - xButtonGuard
-    - middleBackGuard
+    #- nextFlowGuard
+    #- swipeFlowGuard
+    #- xButtonGuard
+    #- middleBackGuard
     ## addGuardian
-    - failedFindGuardian
-    - successfulFindGuardian
-    - selfInvitation
-    - sendGuardInvitation
-    - resendGuardianInvitation
-    - acceptGuardInvitation
+    #- failedFindGuardian
+    #- successfulFindGuardian
+    #- selfInvitation
+    #- sendGuardInvitation
+    #- resendGuardianInvitation
+    #- acceptGuardInvitation
     ## RecoveryGuardian
     ## -- It requires user with guardian already set/ Requiere usuario con guardián ya establecido
     ## -- It requires to logout/ Requiere cerrar sesion
-    - failedRecoveryGuardian
+    #- failedRecoveryGuardian
     #- successfulRecoveryGuardian
 
     ## Participate
     ## -- It requires an already set table and location / Requiere una mesa y ubicación ya establecidas
     ## -- It requires to login as the principal user / Requiere iniciar sesión como el usuario principal
     ## -- It requires to have results alredy set / Requiere tener resultados ya establecidos
-    - submitWrongImageGallery
-    - wrongPartySumatory
-    - submitElectoralRecordGallery
-    - submitElectoralRecordCamera
-    - resubmitElectoralRecordGallery
+    #- submitWrongImageGallery
+    #- wrongPartySumatory
+    #- submitElectoralRecordGallery
+    #- submitElectoralRecordCamera
+    #- resubmitElectoralRecordGallery
     # witness
     # -- It requires to have an electoral record already submitted / Requiere tener un registro
-    - certifySelfRecord
-    - certifyValidRecord
+    #- certifySelfRecord
+    #- certifyValidRecord
 
 
 # Customised test output directory

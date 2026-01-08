@@ -2,13 +2,9 @@ appId: com.tuvotodecide
 name: loginCorrectPin
 onFlowStart:
   - runFlow: 
-        file: ../../components/setup/initialSetup.yaml
-        env:
-            PIN: ${MAESTRO_CORRECT_PIN}
+      file: ../../components/setup/initialSetup.yaml
+      env:
+        PIN: ${MAESTRO_CORRECT_PIN}
 ---
-- extendedWaitUntil:
-    visible:
-      id: homeMiVotoLogoTitle
-    timeout: 15000
 - assertVisible:
     id: homeMiVotoLogoTitle

@@ -2,22 +2,17 @@ appId: com.tuvotodecide
 ---
 - runFlow:
     when:
-        notVisible: 
-            id: loginUserContentContainer
+      notVisible: 
+        id: loginUserContentContainer
     file: ./simpleActions/pressLogin.yaml
 
-- extendedWaitUntil:
-    visible:
-      id: textInput
-    timeout: 12000
-- waitForAnimationToEnd:
-    timeout: 500
 - tapOn:
     id: textInput
     
 - inputText: ${PIN}
 
-- extendedWaitUntil:
-        visible:
-            id: homeMiVotoLogoTitle
-        timeout: 15000
+- assertVisible:
+    id: homeMiVotoLogoTitle
+
+- assertVisible:
+    text: '.*${MAESTRO_SELF_NAME}.*'

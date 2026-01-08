@@ -1,0 +1,50 @@
+appId: com.tuvotodecide
+name: register_newAccount
+---
+- launchApp
+- tapOn:
+    id: "connectRegisterButton"
+- tapOn:
+    id: "termsCheckboxIcon"
+- tapOn:
+    id: "registerUser1ContinueButton"
+- tapOn:
+    id: "idNumberInput"
+- inputText:
+    text: ${MAESTRO_EXISTING_CI}
+- tapOn:
+    id: "idVerificationSubtitle"
+- runFlow: actions/uploadCiImages.yaml
+- tapOn:
+    id: "continueVerificationButton"
+- tapOn:
+    id: "scanFaceButton"
+- tapOn:
+    id: "com.android.camera2:id/shutter_button"
+- tapOn:
+    id: "com.android.camera2:id/done_button"
+- tapOn:
+    id: "registerUser4NextButton"
+- assertVisible:
+    id: "registerUser5TitleText"
+- tapOn:
+    id: "registerUser6CheckboxButton"
+- tapOn:
+    id: "registerUser6ConfirmButton"
+- tapOn:
+    id: "registerUser7LaterButton"
+- inputText: ${MAESTRO_NEW_ACC_PIN}
+- tapOn:
+    id: "registerUser8PinContinueButton"
+- inputText: ${MAESTRO_NEW_ACC_PIN}
+- tapOn:
+    id: "registerUser9PinConfirmButton"
+- extendedWaitUntil:
+    visible:
+      id: "registerUser11Container"
+    timeout: 120000
+- tapOn:
+    id: "registerUser11GoToWalletButton"
+- assertVisible:
+    id: "loginUserSafeArea"
+- stopApp

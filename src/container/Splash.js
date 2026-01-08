@@ -38,7 +38,7 @@ export default function Splash({navigation}) {
           case config.CircuitDownloadStatus.DOWNLOADING:
             setDownloadMessage(String.downloadingData + info);
             break;
-          
+
           case config.CircuitDownloadStatus.DONE:
             setDownloadMessage(String.initApp);
             subscription?.remove();
@@ -46,7 +46,7 @@ export default function Splash({navigation}) {
             break;
 
           case config.CircuitDownloadStatus.ERROR:
-            setDownloadMessage(String.downloadingFailed);
+            setDownloadMessage(String.downloadingFailed + '\nProgress cancelel: ' + info);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
@@ -82,13 +82,12 @@ export default function Splash({navigation}) {
             fileName: 'credentialAtomicQuerySigV2.dat',
             circuitId: 'credentialAtomicQuerySigV2',
             checksum: null,
-          }
-        ]
+          },
+        ],
       });
       await downloadComplete;
     } catch (error) {
-      console.log('Splash init error:', error);
-      setDownloadMessage(String.downloadingFailed);
+      setDownloadMessage(String.downloadingFailed + '\n' + error.message);
       cancel();
       return;
     }
@@ -105,8 +104,8 @@ export default function Splash({navigation}) {
         });
         return;
       }
-      if (!!asyncData) {
-        if (!!themeColor) {
+      if (asyncData) {
+        if (themeColor) {
           if (themeColor === 'light') {
             dispatch(changeThemeAction(colors.light));
           } else {
@@ -133,7 +132,7 @@ export default function Splash({navigation}) {
     } catch (e) {
       navigation.replace(StackNav.AuthNavigation);
     }
-  }, [dispatch, navigation]);
+  }, [dispatch, navigation, waitForCircuitDownloadCompletion]);
 
   useEffect(() => {
     initializeApp();
@@ -164,13 +163,14 @@ export default function Splash({navigation}) {
           {downloadMessage}
         </CText>
       )}
-      {downloadMessage === String.downloadingFailed &&
+      {downloadMessage.startsWith(String.downloadingFailed) &&
         <View>
           <CButton
             title={String.retry}
+            testID="retryDownloadButton"
             onPress={initializeApp}
           />
-        </View> 
+        </View>
       }
     </CSafeAreaView>
   );

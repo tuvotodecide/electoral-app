@@ -1,0 +1,12 @@
+appId: com.tuvotodecide
+---
+- tapOn:
+    id: "frontCardUpload_imageBox"
+- tapOn:
+    point: "50%,61%"
+- tapOn: "Done"
+- tapOn:
+    id: "backCardUpload_imageBox"
+- tapOn:
+    point: "17%,61%"
+- tapOn: "Done"

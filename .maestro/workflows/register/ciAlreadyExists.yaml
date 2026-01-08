@@ -1,0 +1,24 @@
+appId: com.tuvotodecide
+name: register_ciAlreadyExists
+---
+- launchApp
+- tapOn:
+    id: "connectRegisterButton"
+- tapOn:
+    id: "termsCheckboxIcon"
+- tapOn:
+    id: "registerUser1ContinueButton"
+- tapOn:
+    id: "idNumberInput"
+- inputText:
+    text: ${MAESTRO_EXISTING_CI}
+- tapOn:
+    id: "idVerificationSubtitle"
+- assertVisible: "${MAESTRO_EXISTING_CI_MESSAGE}"
+- tapOn:
+    id: "simpleModalCloseBtn"
+- runFlow: actions/uploadCiImages.yaml
+- tapOn:
+    id: "continueVerificationButton"
+- assertVisible: "${MAESTRO_EXISTING_CI_MESSAGE}"
+- stopApp
