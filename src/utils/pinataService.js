@@ -1,6 +1,7 @@
 import axios from 'axios';
 import RNFS from 'react-native-fs';
 import {
+  PINATA_API,
   PINATA_API_KEY,
   PINATA_API_SECRET,
   PINATA_JWT,
@@ -13,7 +14,7 @@ class PinataService {
     this.apiSecret = PINATA_API_SECRET;
     this.jwt = PINATA_JWT;
 
-    this.baseURL = 'https://api.pinata.cloud';
+    this.baseURL = PINATA_API;
   }
 
   isHttpUrl(u) {

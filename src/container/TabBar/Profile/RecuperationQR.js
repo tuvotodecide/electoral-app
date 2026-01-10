@@ -1,18 +1,14 @@
 // src/container/TabBar/Recovery/RecuperationQR.js
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Alert,
-  ToastAndroid,
   ActivityIndicator,
-  StyleSheet,
   Linking,
+  StyleSheet,
 } from 'react-native';
 
-import QRCodeSVG from 'react-native-qrcode-svg';
 import {openSettings} from 'react-native-permissions';
-
-import {getBioFlag} from '../../../utils/BioFlag';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -23,56 +19,24 @@ import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
 import {styles} from '../../../themes';
-import {getHeight, moderateScale} from '../../../common/constants';
 
 import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
-import ViewShot from 'react-native-view-shot';
 
 const recoveryService = new wira.RecoveryService();
 
 export default function RecuperationQR() {
-  const [qrData, setQrData] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const viewShotRef = useRef(null);
   const userData = useSelector(state => state.wallet.payload);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!userData) {
-          throw new Error('No se encontró la identidad');
-        }
-
-        const bioEnabled = await getBioFlag();
-        const prepared = recoveryService.prepareQrData({...userData, bioEnabled});
-        setQrData(prepared);
-      } catch (err) {
-        Alert.alert('Error', err.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [userData]);
+  const colors = useSelector(state => state.theme.theme);
 
   const initSaveQr = async () => {
-    if (!viewShotRef.current)
-      return Alert.alert('QR', 'El código aún no está listo');
     if (saving) return;
 
     setSaving(true);
     try {
-      const hasPermission = await recoveryService.requestGalleryPermission();
-      if (!hasPermission) {
-        setSaving(false);
-        return;
-      }
-
-      const uri = await viewShotRef.current.capture();
-      saveQr(uri);
+      saveData();
     } catch (err) {
-
       Alert.alert('Error', errorMessage, [
         {text: 'OK', style: 'default'},
         {text: 'Abrir configuración', onPress: () => openSettings()},
@@ -80,25 +44,25 @@ export default function RecuperationQR() {
     } 
   };
 
-  const saveQr = async (dataUrl) => {
+  const saveData = async () => {
     try {
-      const {savedOn, path, fileName} = await recoveryService.saveQrOnDevice(dataUrl);
+      const {savedOn, path, fileName} = await recoveryService.backupDataOnDevice({
+        dni: userData.dni,
+        salt: userData.salt,
+        privKey: userData.privKey,
+        account: userData.account,
+        guardian: userData.guardian,
+        did: userData.did,
+      });
 
-      if(savedOn === 'gallery') {
-        ToastAndroid.show('QR guardado en la galería', ToastAndroid.LONG);
-
-        Alert.alert('QR guardado', 'El código QR se guardó exitosamente ', [
-          { text: 'OK', style: 'default' },
-        ]);
-      } else if (savedOn === 'downloads') {
-        ToastAndroid.show('QR guardado en Descargas', ToastAndroid.LONG);
+      if (savedOn === 'downloads') {
         Alert.alert(
-          'QR guardado',
-          `No se pudo guardar en la galería, pero se guardó en Descargas.\n\nArchivo: ${fileName}`,
+          String.backed,
+          String.backedOnDownloads + fileName,
           [
             { text: 'OK', style: 'default' },
             {
-              text: 'Abrir descargas',
+              text: String.openDownloads,
               onPress: () => {
                 Linking.openURL(
                   'content://com.android.externalstorage.documents/root/primary:Download'
@@ -109,85 +73,53 @@ export default function RecuperationQR() {
         );
       } else {
         Alert.alert(
-          'QR guardado',
-          `Se guardó en el directorio de la app:\n${path}`,
+          String.backed,
+          String.backedOnAppDir + path,
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
-
-      let errorMessage = 'No se pudo guardar la imagen';
-      if (err.message.includes('EACCES')) {
-        errorMessage =
-          'Sin permisos para escribir. Verifica los permisos de la app.';
+      let errorMessage = String.backupSaveError;
+      if (err.message.includes('Storage permission not granted')) {
+        errorMessage = String.permissionDeniedMessage;
       } else if (err.message.includes('ENOENT')) {
-        errorMessage =
-          'Error de directorio. Verifica los permisos de almacenamiento.';
+        errorMessage = String.badDirectoryMessage;
       }
 
       Alert.alert('Error', errorMessage, [
         {text: 'OK', style: 'default'},
-        {text: 'Abrir configuración', onPress: () => openSettings()},
+        {text: String.openSettings, onPress: () => openSettings()},
       ]);
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) {
-    return (
-      <CSafeAreaView testID="recuperationQrLoadingContainer">
-        <CHeader testID="recuperationQrLoadingHeader" title={String.qrRecoveryTitle} />
-        <View testID="recuperationQrLoadingCenter" style={styles.center}>
-          <ActivityIndicator testID="recuperationQrLoadingIndicator" size="large" />
-        </View>
-      </CSafeAreaView>
-    );
-  }
-
   return (
-    <CSafeAreaView testID="recuperationQrContainer" addTabPadding={false}>
-      <CHeader testID="recuperationQrHeader" title={String.qrRecoveryTitle} />
+    <CSafeAreaView testID="recuperationFileContainer" addTabPadding={false}>
+      <CHeader testID="recuperationFileHeader" title={String.dataBackup} />
 
-      <KeyBoardAvoidWrapper testID="recuperationQrKeyboardWrapper" contentContainerStyle={styles.ph20}>
-        <ViewShot
-          ref={viewShotRef}
-          style={local.qrBox}
-          options={{
-            format: 'png',
-            quality: 1.0,
-            width: 1500,
-            height: 1500,
-            result: 'base64',
-          }}
-        >
-          <QRCodeSVG
-            testID="recuperationQrCode"
-            value={qrData}
-            size={moderateScale(290)}
-            backgroundColor="#fff"
-            color="#000"
-            quietZone={10}
-          />
-        </ViewShot>
-
-        <CText testID="recuperationQrDescription" type="B16" align="center" marginTop={20}>
-          {String.qrRecoveryDescription}
-        </CText>
+      <KeyBoardAvoidWrapper testID="recuperationFileKeyboardWrapper" contentContainerStyle={styles.ph20}>
+        <View style={{ backgroundColor: colors.stepBackgroundColor, ...local.backupBox }}>
+          <Icono testID="recuperationFileBackupIcon" name="card-account-details-outline" size={80} color={colors.primary} />
+          <CText testID="recuperationFileDescription" type="B16" align="center" marginTop={20}>
+            {String.backupFileDescription}
+          </CText>
+        </View>
       </KeyBoardAvoidWrapper>
 
-      <View testID="recuperationQrFooter" style={styles.ph20}>
-        <CAlert testID="recuperationQrWarning" status="warning" message={String.qrRecoveryWarning} />
+      <View testID="recuperationFileFooter" style={styles.ph20}>
+        <CAlert testID="recuperationFileWarning" status="warning" message={String.backupFileWarning} />
         <CButton
-          testID="recuperationQrSaveButton"
-          title={saving ? 'Guardando…' : String.qrRecoveryButton}
+          testID="recuperationFileSaveButton"
+          title={saving ? String.downloadingBackup : String.downloadBackup}
           onPress={initSaveQr}
           disabled={saving}
           frontIcon={
             saving ? (
-              <ActivityIndicator testID="recuperationQrSaveLoading" size={20} color="#fff" />
+              <ActivityIndicator testID="recuperationFileSaveLoading" size={20} color="#fff" />
             ) : (
-              <Icono testID="recuperationQrSaveIcon" name="download-outline" size={20} color="#fff" />
+              <Icono testID="recuperationFileSaveIcon" name="download-outline" size={20} color="#fff" />
             )
           }
           containerStyle={{marginVertical: 20}}
@@ -198,13 +130,10 @@ export default function RecuperationQR() {
 }
 
 const local = StyleSheet.create({
-  qrBox: {
-    ...styles.center,
-    marginTop: 50,
-    marginBottom: 10,
-    height: getHeight(300),
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-  },
+  backupBox: {
+    padding: 20,
+    borderRadius: 10,
+    marginTop: 20,
+    alignItems: 'center'
+  }
 });

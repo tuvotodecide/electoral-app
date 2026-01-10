@@ -5,11 +5,12 @@ import {
   Platform,
   ToastAndroid,
   StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import UploadCardImage from '../../../components/common/UploadCardImage';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import {styles} from '../../../themes';
@@ -25,33 +26,27 @@ import {BACKEND_IDENTITY} from '@env';
 const recoveryService = new wira.RecoveryService();
 
 export default function RecoveryQr({navigation}) {
-  const [imageUri, setImageUri] = useState(null);
+  const [selectFileLabel, setSelectFileLabel] = useState(String.selectFile);
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // ⬇️ Este es el ÚNICO punto de entrada de imagen (galería o cámara)
-  const onImageSelected = async (asset) => {
+  const onUploadPress = async () => {
     setErrorMsg(null);
-    if (!asset?.uri) {
-      Alert.alert('Imagen', 'No se pudo obtener la imagen seleccionada.');
-      return;
-    }
-
-    setImageUri(asset.uri);
+    setPayload(null);
     setLoading(true);
+    
     try {
-      const dataFromQr = await recoveryService.recoveryFromQr(asset.uri);
-
+      const recoveredData = await recoveryService.recoveryFromBackup();
       let newPayload = {
-        data: dataFromQr,
+        data: recoveredData,
       };
 
-      if(!dataFromQr.vc) {
-        if(dataFromQr.streamId && dataFromQr.privKey) {
-          newPayload.legacyData = await getLegacyData(dataFromQr);
+      if(!recoveredData.identity) {
+        if(recoveredData.streamId && recoveredData.privKey) {
+          newPayload.legacyData = await getLegacyData(recoveredData);
           const api = new wira.RegistryApi(BACKEND_IDENTITY);
-          const {exists} = await api.registryCheckByDni(dataFromQr.dni);
+          const {exists} = await api.registryCheckByDni(recoveredData.dni);
           if(exists) {
             setErrorMsg(String.alreadyMigrated);
             return;
@@ -63,10 +58,15 @@ export default function RecoveryQr({navigation}) {
       }
 
       setPayload(newPayload);
+      setSelectFileLabel(String.processingSuccess);
       if (Platform.OS === 'android') {
-        ToastAndroid.show('QR válido', ToastAndroid.SHORT);
+        ToastAndroid.show(String.processingSuccess, ToastAndroid.SHORT);
       }
     } catch (err) {
+      if (err.message.includes('user canceled')) {
+        return;
+      }
+
       // Detailed error logging for connection / SDK errors
       const url = err?.config?.url || err?.apiDebug?.url || err?.apiDebug?.requestUrl || err?.request?.uri || null;
       const status = err?.response?.status ?? null;
@@ -80,8 +80,8 @@ export default function RecoveryQr({navigation}) {
         stack: err?.stack ?? null,
       });
       setPayload(null);
-      setImageUri(null);
-      Alert.alert('QR inválido', err?.message || 'No se pudo leer el QR.');
+      setSelectFileLabel(String.selectFile);
+      Alert.alert(String.selectFileError, err.message);
     } finally {
       setLoading(false);
     }
@@ -95,38 +95,43 @@ export default function RecoveryQr({navigation}) {
   };
 
   return (
-    <CSafeAreaViewAuth testID="recoveryQrContainer">
-      <CHeader testID="recoveryQrHeader" />
-      <KeyBoardAvoidWrapper testID="recoveryQrKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
-        <View testID="recoveryQrMainContent" style={local.main}>
-          <CText testID="recoveryQrTitle" type="B20" align="center" style={styles.boldText}>
-            {String.RecoverywithQR}
+    <CSafeAreaViewAuth testID="recoveryFileContainer">
+      <CHeader testID="recoveryFileHeader" />
+      <KeyBoardAvoidWrapper testID="recoveryFileKeyboardWrapper" contentContainerStyle={styles.flexGrow1}>
+        <View testID="recoveryFileMainContent" style={local.main}>
+          <CText testID="recoveryFileTitle" type="B20" align="center" style={styles.boldText}>
+            {String.recoverywithFile}
           </CText>
-          <CText testID="recoveryQrSubtitle" type="B16" align="center">
-            {String.recoveryQrSubtitle}
+          <CText testID="recoveryFileSubtitle" type="B16" align="center">
+            {String.recoveryFileSubtitle}
           </CText>
 
-          <UploadCardImage
-            testID="recoveryQrUploadImage"
-            label={String.qrimagelabel}
-            image={imageUri ? { uri: imageUri } : null}
-            setImage={onImageSelected}
-            loading={loading}
-          />
-          {payload?.legacyData && <CAlert message={String.legacyDataFound} testID="recoveryQrLegacyDataAlert" />}
-          {errorMsg && <CAlert status='error' message={errorMsg} testID="recoveryQrLegacyDataError" />}
-
-          {payload && (
-            <CText testID="recoveryQrValidMessage" type="R14" align="center" style={{marginTop: 10}}>
-              {String.qrValid}
+          <TouchableOpacity
+            testID="recoveryFileUploadCard"
+            style={[local.uploadCard, loading && local.uploadCardDisabled]}
+            onPress={onUploadPress}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <CText type="R14" align="center" style={styles.boldText}>
+              {selectFileLabel}
             </CText>
-          )}
+            {loading && (
+              <ActivityIndicator
+                size="small"
+                color={styles.primary?.color || '#000'}
+                style={local.uploadSpinner}
+              />
+            )}
+          </TouchableOpacity>
+          {payload?.legacyData && <CAlert message={String.legacyDataFound} testID="recoveryFileLegacyDataAlert" />}
+          {errorMsg && <CAlert status='error' message={errorMsg} testID="recoveryFileLegacyDataError" />}
         </View>
       </KeyBoardAvoidWrapper>
 
-      <View testID="recoveryQrFooter" style={local.footer}>
+      <View testID="recoveryFileFooter" style={local.footer}>
         <CButton
-          testID="recoveryQrContinueButton"
+          testID="recoveryFileContinueButton"
           title={String.continueButton}
           onPress={goSetPin}
           disabled={!payload || loading}
@@ -138,5 +143,22 @@ export default function RecoveryQr({navigation}) {
 
 const local = StyleSheet.create({
   main: {...styles.ph20, gap: moderateScale(8)},
+  uploadCard: {
+    borderWidth: 1,
+    marginVertical: moderateScale(20),
+    borderColor: '#d1d5db',
+    borderRadius: moderateScale(12),
+    paddingVertical: moderateScale(16),
+    paddingHorizontal: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9fafb',
+  },
+  uploadCardDisabled: {
+    opacity: 0.6,
+  },
+  uploadSpinner: {
+    marginTop: moderateScale(8),
+  },
   footer: {...styles.ph20, marginBottom: moderateScale(20)},
 });

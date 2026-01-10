@@ -44,7 +44,7 @@ export default function SelectRecuperation({navigation, route}) {
         </View>
         {!route.params?.disableCI &&
           <TouchableOpacity
-            testID="selectRecuperationGuardiansOption"
+            testID="selectRecuperationCiOption"
             style={[
               localStyle.optionContainer,
               {
@@ -79,6 +79,7 @@ export default function SelectRecuperation({navigation, route}) {
         }
         
         <TouchableOpacity
+          testID="selectRecuperationGuardiansOption"
           style={[
             localStyle.optionContainer,
             {
@@ -114,7 +115,7 @@ export default function SelectRecuperation({navigation, route}) {
           </View>
         </TouchableOpacity>
         <TouchableOpacity
-          testID="selectRecuperationQROption"
+          testID="selectRecuperationFileOption"
           style={[
             localStyle.optionContainer,
             {
@@ -131,7 +132,7 @@ export default function SelectRecuperation({navigation, route}) {
           }}>
           <View style={styles.rowCenter}>
             <View
-              testID="selectRecuperationQRIcon"
+              testID="selectRecuperationFileIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -140,11 +141,11 @@ export default function SelectRecuperation({navigation, route}) {
                     : colors.grayScale200,
                 },
               ]}>
-              <Icono name="qrcode" size={moderateScale(24)} />
+              <Icono name="file-download-outline" size={moderateScale(24)} />
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText testID="selectRecuperationQRText" type="B16">{String.recoverymethodQR}</CText>
+                <CText testID="selectRecuperationFileText" type="B16">{String.recoverymethodFile}</CText>
               </View>
             </View>
           </View>

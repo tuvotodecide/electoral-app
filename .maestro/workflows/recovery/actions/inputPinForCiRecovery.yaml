@@ -1,0 +1,11 @@
+appId: com.tuvotodecide
+---
+- inputText: ${MAESTRO_RECOVERY_BAD_PIN}
+- assertVisible:
+    id: "loginUserInfoModalContainer"
+- tapOn:
+    id: "loginUserInfoModalButton"
+- inputText: ${MAESTRO_RECOVERED_PIN}
+- assertVisible:
+    id: "homeMiVotoLogoTitle"
+- stopApp

@@ -42,6 +42,7 @@ export default function LoadingModal({
             <>
             <CButton
               title={buttonText}
+              testID="loadingModalCloseButton"
               disabled={isLoading}
               type="M16"
               containerStyle={base.button}
@@ -50,6 +51,7 @@ export default function LoadingModal({
             { secondBtn &&
               <CButton
                 title={secondBtn}
+                testID="loadingModalSecondButton"
                 type="M16"
                 containerStyle={[base.button, {backgroundColor: colors.grayScale200}]}
                 textStyle={{color: colors.textColor}}

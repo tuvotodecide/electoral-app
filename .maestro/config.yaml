@@ -1,7 +1,9 @@
 # Specify flows to include
 flows:
-  - 'register/*'
-  - 'auth/*'
+  #- 'register/*'
+  #- 'auth/*'
+  #- 'recovery/*'
+  - 'participate/*'
 
 # Sequential execution configuration using file names (without .yaml extension)
 executionOrder:
@@ -13,17 +15,24 @@ executionOrder:
     #- onboardingXButton
     #- onboardingMiddleBack
     ## register
-    - downloadCircuits
-    - register_loginWithoutSession
-    - register_newAccount
-    - register_ciAlreadyExists
+    #- downloadCircuits
+    #- register_loginWithoutSession
+    #- register_newAccount
+    #- register_ciAlreadyExists
     ## auth
-    - loginWrongPin
-    - loginCorrectPin
-    - blockAccount
-    ## recoveryQR
-    #- recoveryFailedQR
-    #- recoverySuccessfulQR
+    #- loginWrongPin
+    #- loginCorrectPin
+    #- blockAccount
+    ## recoveryJson
+    #- failedRecoveryJson
+    #- successRecoveryJson
+    ## recoveryCI
+    #- successDataRecoveryCI
+    ## recoveryGuardian
+    #- initRecoveryGuardian
+    ## Participate
+    - uploadElectoralRecord
+
     ## blockAccount -reset
     #- blockAccount
     #- recoverBlockedAccountQR

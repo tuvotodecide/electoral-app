@@ -236,7 +236,7 @@ export default function GuardiansAdmin() {
 
     return (
       <View
-        testID={`guardiansAdminInvitationItem_${item.governmentIdentifier}`}
+        testID={`guardiansAdminInvitationItem_${item.id}`}
         style={[
           localStyle.optionContainer1,
           {
@@ -248,9 +248,9 @@ export default function GuardiansAdmin() {
             elevation: 5,
           },
         ]}>
-        <View testID={`guardiansAdminInvitationItemContent_${item.governmentIdentifier}`} style={styles.rowCenter}>
+        <View testID={`guardiansAdminInvitationItemContent_${item.id}`} style={styles.rowCenter}>
           <View
-            testID={`guardiansAdminInvitationItemIcon_${item.governmentIdentifier}`}
+            testID={`guardiansAdminInvitationItemIcon_${item.id}`}
             style={[
               localStyle.iconBg,
               {
@@ -311,7 +311,7 @@ export default function GuardiansAdmin() {
         <FlatList
           testID="guardiansAdminInvitationsList"
           data={invitations}
-          keyExtractor={item => item.requestId}
+          keyExtractor={item => item.id}
           renderItem={renderInvitationOption}
           contentContainerStyle={styles.mt20}
           scrollEnabled={false} 

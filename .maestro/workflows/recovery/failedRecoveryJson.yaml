@@ -1,0 +1,18 @@
+appId: com.tuvotodecide
+name: failedRecoveryJson
+---
+- runFlow: ../../components/setup/cases/freshStart.yaml
+- tapOn:
+    id: connectLoginButton
+- tapOn:
+    id: selectRecuperationFileOption
+- tapOn:
+    id: recoveryFileUploadCard
+- back
+- tapOn:
+    id: recoveryFileUploadCard
+- tapOn: "bad.json"
+- assertVisible: ${MAESTRO_BAD_FILE_MESSAGE}
+- tapOn:
+    id: "android:id/button1"
+- stopApp

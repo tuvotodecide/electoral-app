@@ -208,7 +208,7 @@ export default function LoginUser({navigation, route}) {
 
       const hasUserData = await wira.Storage.checkUserData();
       if (hasUserData) {
-        const userData = await wira.signIn(code.trim(), signInOptions);
+        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
 
         try {
           await guardianApi.deviceToken({
@@ -234,7 +234,7 @@ export default function LoginUser({navigation, route}) {
         if(!hasUserData) {
           return {ok: false, type: 'unexpected'};
         }
-        const userData = await wira.signIn(code.trim(), signInOptions);
+        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
         return {ok: true, payload: userData, jwt: null};
       }
 
