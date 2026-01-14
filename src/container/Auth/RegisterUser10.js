@@ -120,6 +120,7 @@ export default function RegisterUser10({navigation, route}) {
 
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
+          PROVIDER_NAME,
           availableNetworks[CHAIN].bundler,
           sponsorshipPolicyId
         );
@@ -147,10 +148,7 @@ export default function RegisterUser10({navigation, route}) {
 
         setStage('save');
         await yieldUI();
-        await registerer.storeOnDevice(PROVIDER_NAME, pin, useBiometry);
-        if(useBiometry) {
-          await wira.Biometric.setBioFlag(true);
-        }
+        await registerer.storeOnDevice(pin, useBiometry);
 
         const response = await registerer.storeDataOnServer();
         if (!response.ok) {

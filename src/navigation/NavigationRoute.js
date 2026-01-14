@@ -102,6 +102,7 @@ import AccountLock from '../container/Auth/AccountLock';
 import Guardians from '../container/TabBar/Guardians/Guardians';
 import GuardiansAdmin from '../container/TabBar/Guardians/GuardiansAdmin';
 import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
+import FindSession from '../container/TabBar/SignIn/FindSession';
 
 export const StackRoute = {
   ElectoralLocations,
@@ -200,6 +201,7 @@ export const AuthRoute = {
   RecoveryUser1Pin,
   RecoveryUser2Pin,
   RecoveryFinalize,
+  FindSession,
 };
 
 export const TabRoute = {

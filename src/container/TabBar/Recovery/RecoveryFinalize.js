@@ -12,7 +12,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-import {PROVIDER_NAME} from '@env';
+import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import wira from 'wira-sdk';
 
 
@@ -26,7 +26,7 @@ export default function RecoveryFinalize({route, navigation}) {
     (async () => {
       try {
         const data = JSON.parse(recData);
-        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, PROVIDER_NAME);
+        await (new wira.RecoveryService()).saveRecoveryDataFromGuardians(data, originalPin, BACKEND_IDENTITY, PROVIDER_NAME);
         await AsyncStorage.removeItem(GUARDIAN_RECOVERY_DNI);
         await AsyncStorage.setItem(PENDINGRECOVERY, 'false');
         await resetAttempts();

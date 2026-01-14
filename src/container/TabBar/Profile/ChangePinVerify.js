@@ -1,4 +1,4 @@
-import {Alert, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
@@ -16,7 +16,6 @@ import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 import InfoModal from '../../../components/modal/InfoModal';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME} from '@env';
 import CLoaderOverlay from '../../../components/common/CLoaderOverlay';
 
 
@@ -37,7 +36,7 @@ export default function ChangePinVerify({navigation}) {
   const verify = async code => {
     if (code.length !== 4) return;
     try {
-      if (!(await wira.checkPin(PROVIDER_NAME, code))) {
+      if (!(await wira.checkPin(code))) {
         setOtp('');
         return setModal({
           visible: true,

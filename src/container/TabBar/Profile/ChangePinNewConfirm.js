@@ -16,7 +16,7 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+import {BACKEND_IDENTITY} from '@env';
 import LoadingModal from '../../../components/modal/LoadingModal';
 
 
@@ -49,7 +49,7 @@ export default function ChangePinNewConfirm({navigation, route}) {
       });
       // Delay to allow modal to render
       await new Promise(resolve => setTimeout(resolve, 100));
-      await wira.updatePin(PROVIDER_NAME, BACKEND_IDENTITY, oldPin, newPin);
+      await wira.updatePin(BACKEND_IDENTITY, oldPin, newPin);
       setModal({
         visible: true,
         message: 'Tu PIN ha sido actualizado correctamente',

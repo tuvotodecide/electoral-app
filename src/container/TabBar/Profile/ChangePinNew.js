@@ -12,8 +12,7 @@ import {styles} from '../../../themes';
 import {moderateScale} from '../../../common/constants';
 import typography from '../../../themes/typography';
 import CButton from '../../../components/common/CButton';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import StepIndicator from '../../../components/authComponents/StepIndicator';
+import {StackNav} from '../../../navigation/NavigationKey';
 import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import String from '../../../i18n/String';
 

@@ -15,18 +15,22 @@ import CIconText from '../components/common/CIconText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {commonColor} from '../themes/colors';
 import wira from 'wira-sdk';
-import { PROVIDER_NAME } from '@env';
 import { checkLegacyDataExists } from '../utils/migrateLegacy';
+import { HandleModal } from './TabBar/SignIn/HandleModal';
 
 export default function Connect({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+
+  const onLoginWithWira = () => {
+    navigation.navigate(AuthNav.FindSession);
+  }
 
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
   };
 
   const onPressLoginUser = async () => {
-    const response = wira.getWiraData(PROVIDER_NAME);
+    const response = await wira.Storage.checkUserData();
     if (!response) {
       const legacyDataExists = await checkLegacyDataExists();
       if (!legacyDataExists) {
@@ -117,8 +121,17 @@ export default function Connect({navigation}) {
             bgColor={commonColor.gradient2}
             testID="connectLoginButton"
           />
+          <CButton
+            onPress={onLoginWithWira}
+            title={String.signInWithWira}
+            type={'B16'}
+            containerStyle={localStyle.btnStyle}
+            color={colors.white}
+            bgColor={commonColor.gradient2}
+          />
         </View> 
       </View>
+      <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>
   );
 }

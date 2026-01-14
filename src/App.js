@@ -29,10 +29,6 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const colors = useSelector(state => state.theme.theme);
-  const wallet = useSelector(s => s.wallet.payload);
-  const account = useSelector(state => state.account);
-  const userData = useSelector(state => state.wallet.payload);
-  const [ready, setReady] = useState(false);
   const auth = useSelector(s => s.auth);
   const dispatch = useDispatch();
   const processingRef = useRef(false);

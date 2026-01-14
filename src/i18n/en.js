@@ -133,6 +133,7 @@ export default {
   issuingVC: 'Generando credenciales…',
   migrating: 'Migrando datos…',
   migratingOnLogin: 'Estamos migrando su cuenta a la nueva versión, por favor espere...',
+  noBiometricData: 'No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.',
   uploadingBlockchain: 'Subiendo a la blockchain',
   predictSmart: 'Prediciendo smart-account…',
   fundAccount: 'Fondeando cuenta…',
@@ -255,6 +256,11 @@ export default {
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   register: 'REGISTRARSE',
+  sessionReceived: 'Sesión recibida',
+  sessionReceivedMessage: 'Ingrese su pin para iniciar la sesión compartida.',
+  sharedSessionError: 'Error al recibir archivos compartidos.',
+  sharedSessionTitle: 'Solicitud para compartir la sesión de Wira',
+  sharedSessionMessage: '¿Deseas compartir tu sesión actual con otra aplicación?',
 
   recoveryWallet: 'Recuperar cuenta',
   recoverymethod: 'Selecciona método para recuperar cuenta',
@@ -426,7 +432,7 @@ export default {
   addGuardianSubtitle:
     'Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.',
   addGuardianSubtitleSpan: ' Debe tener una cuenta abierta en Tu Voto Decide.',
-  active: 'Activo',
+  approved: 'Aprobado',
   pending: 'Pendiente',
   rejected: 'Rechazado',
   deleted: 'Eliminado',
@@ -1395,4 +1401,11 @@ export default {
     'El GPS está desactivado. Active la ubicación del dispositivo para continuar',
   locationPermissionDeniedMessage:
     'La aplicación no tiene permisos de ubicación. Active los permisos en configuración',
+  //Sign In with Wira
+  signInWithWira: 'Ingresar con Wira',
+  enterDni: 'Ingresa tu carnet',
+  deviceNotFound: 'No tiene una sesión en este dispositivo, regístrese o recupere su cuenta por favor.',
+  deviceGetError: 'Error al buscar aplicaciones',
+  shareDeclined: 'Rechazado',
+  shareDeclinedMessage: 'El usuario rechazó la solicitud de compartir',
 };
