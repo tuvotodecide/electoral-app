@@ -230,7 +230,7 @@ export default function LoginUser({navigation, route}) {
       const mig = await migrateIfNeeded(code.trim());
       setLoadingMessage(String.loading);
       if (mig.ok) {
-        const hasUserData = wira.Storage.checkUserData();
+        const hasUserData = await wira.Storage.checkUserData();
         if(!hasUserData) {
           return {ok: false, type: 'unexpected'};
         }
