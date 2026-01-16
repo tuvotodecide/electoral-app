@@ -1631,8 +1631,8 @@ export const ProfileDataV2 = [
         id: 2,
         darkIcon: <IdentityVerification_Dark />,
         lightIcon: <IdentityVerification_Light />,
-        title: String.qrBackup,
-        value: String.qrBackupValue,
+        title: String.dataBackup,
+        value: String.dataBackupValue,
         route: StackNav.RecuperationQR,
       },
       {

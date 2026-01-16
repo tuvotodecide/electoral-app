@@ -1,0 +1,9 @@
+appId: com.tuvotodecide
+name: register_loginWithoutSession
+---
+- launchApp
+- tapOn:
+    id: connectLoginButton
+- assertVisible:
+    id: selectRecuperationContainer
+- stopApp

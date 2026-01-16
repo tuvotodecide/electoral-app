@@ -19,6 +19,7 @@ export default function SimpleModal({ visible, message, closeBtn, onClose }) {
 
           <CButton
             title={closeBtn ?? "Cerrar"}
+            testID="simpleModalCloseBtn"
             type="M16"
             containerStyle={localStyles.button}
             onPress={onClose}

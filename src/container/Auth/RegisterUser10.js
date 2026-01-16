@@ -124,7 +124,7 @@ export default function RegisterUser10({navigation, route}) {
           availableNetworks[CHAIN].bundler,
           sponsorshipPolicyId
         );
-
+        
         await registerer.createVC(
           CHAIN,
           ocrData,

@@ -1,6 +1,6 @@
 import pinataService from '../utils/pinataService';
 import axios from 'axios';
-import {BACKEND_RESULT, CHAIN, BACKEND_SECRET} from '@env';
+import {BACKEND_RESULT, CHAIN, BACKEND_SECRET, VERIFIER_REQUEST_ENDPOINT} from '@env';
 import {oracleCalls, oracleReads} from '../api/oracle';
 import {availableNetworks} from '../api/params';
 import {removePersistedImage} from '../utils/persistLocalImage';
@@ -10,6 +10,7 @@ import {
   showActaDuplicateNotification,
 } from '../notifications';
 import {requestPushPermissionExplicit} from '../services/pushPermission';
+import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ELECTION_ID} from '../common/constants';
 
@@ -170,7 +171,13 @@ export const publishActaHandler = async (item, userData) => {
       additionalData,
       tableData,
     } = item.task.payload;
-    let certificateData = null;
+
+    // Make zk-auth to get API key for backend for upload atestation
+    const apiKey = await authenticateWithBackend(
+      userData.did,
+      userData.privKey,
+    );
+
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -385,7 +392,7 @@ export const publishActaHandler = async (item, userData) => {
               {
                 headers: {
                   'Content-Type': 'application/json',
-                  'x-api-key': BACKEND_SECRET,
+                  'x-api-key': apiKey,
                 },
                 timeout: 30000,
               },
@@ -600,7 +607,7 @@ export const publishActaHandler = async (item, userData) => {
             {
               headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': BACKEND_SECRET,
+                'x-api-key': apiKey,
               },
               timeout: 30000,
             },
@@ -840,7 +847,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET,
+              'x-api-key': apiKey,
             },
             timeout: 30000,
           },
@@ -848,11 +855,16 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) {}
 
+    console.log('[OFFLINE-QUEUE] acta publicada OK', { ipfsData, nftResult });
+
     try {
       await removePersistedImage(imageUri);
     } catch (err) {
       console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
     }
+
+    console.log('[OFFLINE-QUEUE] imagen local eliminada');
+
     try {
       await requestPushPermissionExplicit();
     } catch (err) {
@@ -875,6 +887,8 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
+    console.log('[OFFLINE-QUEUE] permisos de push gestionados');
+
     try {
       await displayLocalActaPublished({
         ipfsData,
@@ -886,15 +900,28 @@ export const publishActaHandler = async (item, userData) => {
       console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
     }
 
-    return {
-      success: true,
-      ipfsData,
-      nftData: nftResult,
-      tableData,
-      certificateData,
-    };
+    console.log('[OFFLINE-QUEUE] notificacion local mostrada');
+
+    return {success: true, ipfsData, nftData: nftResult, tableData};
   } catch (fatalErr) {
     console.error('[OFFLINE-QUEUE] publishActaHandler fallo fatal', fatalErr);
     throw fatalErr;
   }
 };
+
+export const authenticateWithBackend = async (did, privateKey) => {
+  const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
+
+  const authData = request.data;
+  if (!authData.apiKey || !authData.request) {
+    throw new Error('Invalid authentication request response: missing message');
+  }
+
+  await wira.authenticateWithVerifier(
+    JSON.stringify(authData.request),
+    did,
+    privateKey
+  );
+
+  return authData.apiKey;
+}

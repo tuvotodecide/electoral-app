@@ -1,0 +1,39 @@
+appId: com.tuvotodecide
+name: successDataRecoveryCI
+---
+- runFlow: ../../components/setup/cases/freshStart.yaml
+- tapOn:
+    id: "connectLoginButton"
+- tapOn:
+    id: "selectRecuperationCiOption"
+- tapOn:
+    id: "termsCheckboxIcon"
+- tapOn:
+    id: "registerUser1ContinueButton"
+- tapOn:
+    id: "idNumberInput"
+- inputText:
+    text: ${MAESTRO_EXISTING_CI}
+- tapOn:
+    id: "idVerificationSubtitle"
+- runFlow: ../register/actions/uploadCiImages.yaml
+- tapOn:
+    id: "continueVerificationButton"
+- tapOn:
+    id: "scanFaceButton"
+- tapOn:
+    id: "com.android.camera2:id/shutter_button"
+- tapOn:
+    id: "com.android.camera2:id/done_button"
+- tapOn:
+    id: "registerUser4NextButton"
+- assertVisible: ${MAESTRO_RECOVERING_DATA_MESSAGE}
+- extendedWaitUntil:
+    visible:
+      text: ${MAESTRO_SUCCESS_CI_RECOVERY_MESSAGE}
+    timeout: 90000
+- tapOn:
+    id: "loadingModalCloseButton"
+- assertVisible:
+    id: "loginUserContentContainer"
+- runFlow: actions/inputPinForCiRecovery.yaml

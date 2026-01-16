@@ -208,7 +208,7 @@ export default function LoginUser({navigation, route}) {
 
       const hasUserData = await wira.Storage.checkUserData();
       if (hasUserData) {
-        const userData = await wira.signIn(code.trim(), signInOptions);
+        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
 
         try {
           await guardianApi.deviceToken({
@@ -229,11 +229,11 @@ export default function LoginUser({navigation, route}) {
       const mig = await migrateIfNeeded(code.trim());
       setLoadingMessage(String.loading);
       if (mig.ok) {
-        const hasUserData = wira.Storage.checkUserData();
+        const hasUserData = await wira.Storage.checkUserData();
         if(!hasUserData) {
           return {ok: false, type: 'unexpected'};
         }
-        const userData = await wira.signIn(code.trim(), signInOptions);
+        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
         return {ok: true, payload: userData, jwt: null};
       }
 
@@ -267,8 +267,7 @@ export default function LoginUser({navigation, route}) {
         stage: 'verifyPin',
         attemptCode: code,
       });
-      console.error(err);
-      if (err?.message === 'Invalid PIN') {
+      if (err?.message.includes('Invalid PIN')) {
         return {ok: false, type: 'bad_pin'};
       }
       return {ok: false, type: 'unexpected', error: err};

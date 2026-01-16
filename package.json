@@ -22,6 +22,7 @@
     "@react-native-community/datetimepicker": "^8.4.1",
     "@react-native-community/geolocation": "^3.4.0",
     "@react-native-community/netinfo": "^11.4.1",
+    "@react-native-documents/picker": "^12.0.0",
     "@react-native-firebase/app": "^22.4.0",
     "@react-native-firebase/auth": "22.4.0",
     "@react-native-firebase/database": "^22.4.0",
@@ -110,7 +111,7 @@
     "victory-native": "^41.17.4",
     "viem": "^2.31.3",
     "vm-browserify": "^1.1.2",
-    "wira-sdk": "file:../../blockon/billetera/wira-sdk"
+    "wira-sdk": "file:../wira-sdk"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

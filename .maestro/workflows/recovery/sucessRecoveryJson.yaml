@@ -1,0 +1,9 @@
+appId: com.tuvotodecide
+name: successRecoveryJson
+---
+- runFlow:
+    file: actions/initAccountWithJson.yaml
+    env:
+      RECOVERY_JSON_FILE: ${MAESTRO_USER_1_FILE}
+      RECOVERY_PIN: ${MAESTRO_RECOVERED_PIN}
+- stopApp

@@ -1,93 +1,29 @@
 appId: com.tuvotodecide
 name: blockAccount
-onFlowStart:
-  - runFlow: ../../components/setup/skipDebuger.yaml
 ---
-- runFlow:
-    when:
-        visible:
-            id: homeMiVotoLogoTitle
-    file: ../../components/auth/logout.yaml
+- launchApp
 - tapOn:
     id: connectLoginButton
-- inputText: '9999'
 
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalButton
-    timeout: 5000
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalContainer
-    timeout: 5000
+- repeat:
+    times: 4
+    commands:
+      - inputText: 9999
+      - assertVisible:
+          id: loginUserInfoModalContainer
+      - tapOn:
+          id: loginUserInfoModalButton
+
+- inputText: 9999
+- assertVisible: '.*${MAESTRO_BLOCK_LOGIN_MSG}.*'
 - tapOn:
     id: loginUserInfoModalButton
-
-
-- inputText: '9999'
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalButton
-    timeout: 5000
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalContainer
-    timeout: 5000
+- assertVisible:
+    id: selectRecuperationContainer
+- stopApp
+- launchApp
 - tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalButton
-    timeout: 5000
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalContainer
-    timeout: 5000
+    id: connectLoginButton
 - tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalButton
-    timeout: 5000
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalContainer
-    timeout: 5000
-- tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalButton
-    timeout: 5000
-- extendedWaitUntil:
-    visible:
-      id: loginUserInfoModalContainer
-    timeout: 5000
-- tapOn:
-    id: loginUserInfoModalButton
-
-
-
-- inputText: '9999'
-
-- extendedWaitUntil:
-    visible:
-      id: accountLockImage
-    timeout: 5000
-    
-- extendedWaitUntil:
-    visible:
-      id: accountLockDescription
-    timeout: 5000
+    id: accountLockRecoveryButton
+- stopApp

@@ -1,0 +1,32 @@
+appId: com.tuvotodecide
+name: initRecoveryGuardian
+---
+- runFlow: ../../components/setup/cases/freshStart.yaml
+- tapOn:
+    id: connectLoginButton
+- tapOn:
+    id: "selectRecuperationGuardiansOption"
+- tapOn:
+    id: "findMyUserIdInput"
+- inputText: ${MAESTRO_NO_EXISTING_CI}
+- back
+- tapOn:
+    id: "findMyUserSearchButton"
+- assertVisible:
+    id: "findMyUserErrorAlert"
+- tapOn:
+    id: "findMyUserIdInput"
+- eraseText
+- inputText: ${MAESTRO_USER_1_CI}
+- back
+- tapOn:
+    id: "findMyUserSearchButton"
+- assertVisible:
+    id: "findMyUserNameInput"
+- tapOn:
+    id: "findMyUserConfirmButton"
+- tapOn:
+    id: "findMyUserSendButton"
+- assertVisible:
+    id: "myGuardiansStatusContainer"
+- stopApp

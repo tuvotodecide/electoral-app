@@ -1,9 +1,8 @@
-import { Platform, PermissionsAndroid, Alert, Linking, AppState } from 'react-native';
-import notifee, { AuthorizationStatus, AndroidImportance } from '@notifee/react-native';
+import {Platform, PermissionsAndroid, Alert, Linking, AppState} from 'react-native';
+import notifee, {AuthorizationStatus, AndroidImportance} from '@notifee/react-native';
 
 export async function requestPushPermissionExplicit() {
   try {
-
     const currentSettings = await notifee.getNotificationSettings();
     if (currentSettings.authorizationStatus === AuthorizationStatus.AUTHORIZED) {
       await notifee.createChannel({
@@ -17,7 +16,6 @@ export async function requestPushPermissionExplicit() {
     if (AppState.currentState !== 'active') {
       return false;
     }
-
 
     // iOS y Android 13+: muestra prompt del SO
     const settings = await notifee.requestPermission();

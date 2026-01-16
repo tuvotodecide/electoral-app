@@ -1,4 +1,4 @@
-import {SectionList, View} from 'react-native';
+import {View} from 'react-native';
 import React, {useEffect, useMemo, useState} from 'react';
 
 //custom import
@@ -14,7 +14,6 @@ import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
 
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
-import Icons from 'react-native-vector-icons/Entypo';
 import COptionItem from '../../../components/common/COptionItem';
 import { registryApi } from '../../../data/client/kyc';
 import CAlert from '../../../components/common/CAlert';

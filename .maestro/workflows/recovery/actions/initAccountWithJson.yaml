@@ -1,0 +1,27 @@
+appId: com.tuvotodecide
+---
+- runFlow: ../../../components/setup/cases/freshStart.yaml
+- tapOn:
+    id: connectLoginButton
+- tapOn:
+    id: selectRecuperationFileOption
+- tapOn:
+    id: recoveryFileUploadCard
+- tapOn: ${RECOVERY_JSON_FILE}
+- assertVisible: ${MAESTRO_RIGHT_FILE_MESSAGE}
+- tapOn:
+    id: recoveryFileContinueButton
+- inputText: ${RECOVERY_PIN}
+- tapOn:
+    id: changePinNewContinueButton
+- inputText: ${RECOVERY_PIN}
+- tapOn:
+    id: changePinNewContinueButton
+- assertVisible: ${MAESTRO_RECOVERING_DATA_MESSAGE}
+- extendedWaitUntil:
+    visible:
+      id: loginUserContentContainer
+    timeout: 90000
+- inputText: ${RECOVERY_PIN}
+- assertVisible:
+    id: homeMiVotoLogoTitle

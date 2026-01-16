@@ -1,4 +1,5 @@
 appId: com.tuvotodecide
+name: downloadCircuits
 ---
 - launchApp:
     clearState: true
@@ -10,3 +11,4 @@ appId: com.tuvotodecide
     visible:
       id: MiVotoLogoImage
     timeout: 90000
+- stopApp

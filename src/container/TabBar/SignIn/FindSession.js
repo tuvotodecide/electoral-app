@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import wira from "wira-sdk";
 import {BACKEND_IDENTITY, PROVIDER_NAME} from '@env';
 import CSafeAreaView from "../../../components/common/CSafeAreaView";
@@ -20,7 +19,6 @@ const sharedSession = new wira.SharedSession(
 );
 
 export default function FindSession() {
-  const colors = useSelector(state => state.theme.theme);
   const [dni, setDni] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -33,7 +31,8 @@ export default function FindSession() {
     } catch (error) {
       if(
         error.message?.includes('Device not found') ||
-        error.message?.includes('No supported app found')
+        error.message?.includes('No supported app found') ||
+        error.message?.includes('Could not open URL')
       ) {
         setErrorMsg(String.deviceNotFound);
       } else {

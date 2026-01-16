@@ -75,17 +75,7 @@ export default function RecoveryUserQrPin2({navigation, route}) {
         return;
       }
 
-      await recoveryService.saveQrData(payload.data, otp.trim(), PROVIDER_NAME, BACKEND_IDENTITY);
-
-      dispatch(setSecrets(payload));
-      dispatch(
-        setAddresses({
-          account: payload.account,
-          guardian: payload.guardian ?? null,
-        }),
-      );
-      dispatch(setAuthenticated(true));
-      await startSession(null);
+      await recoveryService.saveBackupData(payload.data, otp.trim(), PROVIDER_NAME, BACKEND_IDENTITY);
       await resetAttempts();
 
       setModal({

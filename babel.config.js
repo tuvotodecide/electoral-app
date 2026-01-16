@@ -1,3 +1,7 @@
+const path = require('path');
+
+const envPath = path.resolve(__dirname, '.env');
+
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   plugins: [
@@ -8,7 +12,7 @@ module.exports = {
       'module:react-native-dotenv',
       {
         moduleName: '@env',
-        path: '.env',
+        path: envPath, // absolute so Gradle builds from android/ still find the env file
       },
     ],
     ['@babel/plugin-transform-export-namespace-from', { allowNamespaces: true }],
