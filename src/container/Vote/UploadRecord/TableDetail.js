@@ -363,6 +363,7 @@ export default function TableDetail({navigation, route}) {
                   </View>
 
                   <TouchableOpacity
+                    testID='tableDetailTakePhotoButton'
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
@@ -451,6 +452,7 @@ export default function TableDetail({navigation, route}) {
                   </View>
 
                   <TouchableOpacity
+                    testID='tableDetailTakePhotoButton'
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>

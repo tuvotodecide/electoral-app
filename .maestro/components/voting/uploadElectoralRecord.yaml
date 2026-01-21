@@ -9,24 +9,19 @@ appId: com.tuvotodecide
 #- tapOn: Cargando recintos cercanos...
 - waitForAnimationToEnd
 - extendedWaitUntil:
-    visible:
-      id: ${ELECTORAL_RECORD_LOCATION}
+    visible: ${ELECTORAL_RECORD_LOCATION}
     timeout: 25000
 
 - scrollUntilVisible:
-    element:
-      id: ${ELECTORAL_RECORD_LOCATION}
+    element: ${ELECTORAL_RECORD_LOCATION}
 
-- tapOn:
-    id: ${ELECTORAL_RECORD_LOCATION}
+- tapOn: ${ELECTORAL_RECORD_LOCATION}
 
 - waitForAnimationToEnd
 - extendedWaitUntil:
-    visible:
-      id: ${ELECTORAL_RECORD_TABLE}
+    visible: ${ELECTORAL_RECORD_TABLE}
     timeout: 25000
-- tapOn:
-    id: ${ELECTORAL_RECORD_TABLE}
+- tapOn: ${ELECTORAL_RECORD_TABLE}
 
 - runFlow:
     when:

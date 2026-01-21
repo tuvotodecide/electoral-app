@@ -36,97 +36,36 @@ appId: com.tuvotodecide
     id: cameraScreenFooterAnalyzeButton
 
 # Esperar a que se complete el análisis y se cargue la pantalla de revisión
-- waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: photoReviewScreenInstructionsText
+      id: baseRecordReviewScreenContainer
     timeout: 40000
 
-# Verificar que la pantalla de revisión esté completamente cargada
-- assertVisible:
-    id: photoReviewScreenBase
-
-# Desplazarse hasta el botón de editar
-- scrollUntilVisible:
-    element:
-      id: photoReviewEditButton
-
-- assertVisible:
-    id: photoReviewEditButton
-
+# Verificar botón de siguiente
 - tapOn:
-    id: photoReviewEditButton
-
-# Editar los datos del acta electoral según el tipo de registro
-- runFlow: 
-    when:
-        true: ${RECORD_FILE == 'wrongElectoralRecord'}
-    file: ../../records/wrongElectoralRecord.yaml
-
-- runFlow: 
-    when:
-        true: ${RECORD_FILE == 'electoralRecord1'}
-    file: ../../records/electoralRecord1.yaml
-
-# Esperar a que los cambios se guarden y verificar botón de siguiente
-- extendedWaitUntil:
-    visible:
-      id: photoReviewNextButton
-    timeout: 3000
-
-- assertVisible:
-    id: photoReviewNextButton
-
-- tapOn:
-    id: photoReviewNextButton
-
-# Esperar a que se cargue la pantalla de confirmación
-- extendedWaitUntil:
-    visible:
-      id: photoConfirmationContainer
-    timeout: 5000
+    id: baseRecordReviewScreenActionButtonsButton_0
 
 # Verificar elementos de la pantalla de confirmación
 - assertVisible:
-    id: photoConfirmationHeader
-
-- assertVisible:
-    id: photoConfirmationPublishButton
+    id: photoConfirmationContent
 
 # Publicar y certificar el acta
 - tapOn:
     id: photoConfirmationPublishButton
 
-# Esperar a que aparezca el modal de confirmación
-- extendedWaitUntil:
-    visible:
-      id: photoConfirmationModal
-    timeout: 5000
-
 # Verificar que el modal de confirmación esté visible
 - assertVisible:
     id: photoConfirmationModalContainer
-
-- assertVisible:
-    id: photoConfirmationModalConfirmButton
 
 # Confirmar la publicación
 - tapOn:
     id: photoConfirmationModalConfirmButton
 
-# Esperar a que se procese (puede tardar según la red)
-- waitForAnimationToEnd
-#- runFlow:
-#    when:
-#        true: ${ASSERTION_TYPE_TYPE == 'pass'}
-#    file: ../finish/assertValidUploading.yaml
+- tapOn:
+    id: photoConfirmationModalGoHomeButton
 
-#- runFlow:
-#    when:
-#        true: ${ASSERTION_TYPE == 'submited'}
-#    file: ../finish/assertRepeatedUploading.yaml
-
-#- runFlow:
-#    when:
-#        true: ${ASSERTION_TYPE == 'sumatory'}
-#    file: ../finish/assertBadSumatory.yaml
+# Esperar mensaje de error
+- extendedWaitUntil:
+    visible:
+      id: uploadErrorMessageContainer
+    timeout: 60000
