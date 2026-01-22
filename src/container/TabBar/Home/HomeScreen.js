@@ -10,20 +10,25 @@ import {
   Image,
   ImageBackground,
   Alert,
+  AppState,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
-import React, {useState, useRef, useEffect, useCallback} from 'react';
-import {useDispatch} from 'react-redux';
-import {clearAuth} from '../../../redux/slices/authSlice';
-import {clearWallet} from '../../../redux/action/walletAction';
+
+import Geolocation from '@react-native-community/geolocation';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
+import { clearAuth } from '../../../redux/slices/authSlice';
+import { clearWallet } from '../../../redux/action/walletAction';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import I18nStrings  from '../../../i18n/String';
-import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
-import {useSelector} from 'react-redux';
-import {store} from '../../../redux/store';
-import {clearSession} from '../../../utils/Session';
+import I18nStrings from '../../../i18n/String';
+import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
+import { useSelector } from 'react-redux';
+import { store } from '../../../redux/store';
+import { clearSession } from '../../../utils/Session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ELECTION_ID,
@@ -33,25 +38,25 @@ import {
 } from '../../../common/constants';
 import axios from 'axios';
 import images from '../../../assets/images';
-import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
 
-import {useFocusEffect} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   getAll as getOfflineQueue,
   getVotePlace,
   processQueue,
   saveVotePlace,
 } from '../../../utils/offlineQueue';
-import {ActivityIndicator} from 'react-native-paper';
+import { ActivityIndicator } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
-import {publishActaHandler} from '../../../utils/offlineQueueHandler';
+import { publishActaHandler } from '../../../utils/offlineQueueHandler';
 import CustomModal from '../../../components/common/CustomModal';
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
 } from '../../../utils/networkQuality';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -76,19 +81,19 @@ const getCardLayout = () => {
     }
     const CARD_WIDTH =
       (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   } else {
     const CARD_MARGIN = getResponsiveSize(8, 10, 12);
     const CARDS_PER_ROW = 2;
     const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW};
+    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
   }
 };
 
-const {CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW} = getCardLayout();
+const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
 
 // Carousel Item Component
-const CarouselItem = ({item}) => (
+const CarouselItem = ({ item }) => (
   <View testID={`homeCarouselItem_${item.id}`} style={stylesx.carouselItem}>
     <View testID={`homeCarouselGrid_${item.id}`} style={stylesx.carouselGrid}>
       <View testID={`homeCarouselLeft_${item.id}`} style={stylesx.carouselLeft}>
@@ -164,7 +169,7 @@ const MiVotoLogo = () => (
     </View> */}
     <View
       testID="homeMiVotoLogoText"
-      style={{marginLeft: getResponsiveSize(6, 8, 10)}}>
+      style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
       <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>
         Tu Voto Decide
       </CText>
@@ -175,9 +180,9 @@ const MiVotoLogo = () => (
   </View>
 );
 
-const RegisterAlertCard = ({onPress}) => (
+const RegisterAlertCard = ({ onPress }) => (
   <View style={stylesx.registerAlertCard}>
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
       <CText style={stylesx.registerAlertSubtitle}>
         Registra tu recinto y mesa para recibir avisos.
@@ -204,8 +209,8 @@ const BlockchainConsultoraBanner = () => (
   <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
     <View
       testID="homeBlockchainBannerContent"
-      style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-      <View testID="homeBlockchainBannerText" style={{marginLeft: 10, flex: 1}}>
+      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View testID="homeBlockchainBannerText" style={{ marginLeft: 10, flex: 1 }}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
           {I18nStrings.needBlockchainApp}
         </CText>
@@ -234,7 +239,7 @@ const CTA_WIDTH = getResponsiveSize(120, 140, 160);
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
 const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
-export default function HomeScreen({navigation}) {
+export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const wallet = useSelector(s => s.wallet.payload);
   const account = useSelector(state => state.account);
@@ -247,11 +252,243 @@ export default function HomeScreen({navigation}) {
   const [checkingVotePlace, setCheckingVotePlace] = useState(true);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
+  const [contractsAvailability, setContractsAvailability] = useState({
+    ALCALDE: false,
+    GOBERNADOR: false,
+  });
+  const contracts = contractsAvailability;
+
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  const pendingPermissionFromSettings = useRef(false);
+  const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
+
+  const [permissionModal, setPermissionModal] = useState({
+    visible: false,
+    type: 'settings', // o 'warning'
+    title: '',
+    message: '',
+    primaryText: 'Abrir ajustes',
+    onPrimary: null,
+    secondaryText: 'Cancelar',
+    onSecondary: null,
+  });
+  const showPermissionModal = (
+    title,
+    message,
+    onOpenSettings,
+    onCancel = () => setPermissionModal(m => ({ ...m, visible: false })),
+  ) => {
+    setPermissionModal({
+      visible: true,
+      type: 'settings',
+      title,
+      message,
+      primaryText: 'Abrir ajustes',
+      onPrimary: onOpenSettings,
+      secondaryText: 'Cancelar',
+      onSecondary: onCancel,
+    });
+  };
+
+  const openLocationSettings = () => {
+    setPermissionModal(m => ({ ...m, visible: false }));
+    pendingPermissionFromSettings.current = true;
+
+    if (Platform.OS === 'android') {
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() =>
+        Linking.openSettings(),
+      );
+    } else {
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION').catch(() =>
+        Linking.openSettings(),
+      );
+    }
+  };
+
+
+  const requestLocationPermission = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Permiso de ubicación',
+          message:
+            'La aplicación necesita acceso a tu ubicación para verificar disponibilidad de envío.',
+          buttonNeutral: 'Preguntar después',
+          buttonNegative: 'Cancelar',
+          buttonPositive: 'OK',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+
+    // iOS
+    const status = await Geolocation.requestAuthorization('whenInUse');
+    return status === 'granted';
+  }, []);
+
+  const getCurrentPositionAsync = (useHighAccuracy = true) =>
+    new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        pos => resolve(pos),
+        err => reject(err),
+        {
+          enableHighAccuracy: useHighAccuracy,
+          timeout: useHighAccuracy ? 15000 : 30000,
+          maximumAge: useHighAccuracy ? 10000 : 60000,
+        },
+      );
+    });
+
+  const getHomeLocation = useCallback(async () => {
+    const ok = await requestLocationPermission();
+    if (!ok) {
+      showPermissionModal(
+        'Ubicación requerida',
+        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
+        openLocationSettings,
+      );
+      return null;
+    }
+
+    try {
+      // intento 1: high accuracy
+      const pos = await getCurrentPositionAsync(true);
+      return pos.coords;
+    } catch (err1) {
+      // fallback: low accuracy si es TIMEOUT/POSITION_UNAVAILABLE
+      try {
+        const pos2 = await getCurrentPositionAsync(false);
+        return pos2.coords;
+      } catch (err2) {
+        showPermissionModal(
+          'No se pudo obtener ubicación',
+          'Activa la ubicación (GPS) e intenta nuevamente.',
+          openLocationSettings,
+        );
+        return null;
+      }
+    }
+  }, [requestLocationPermission]);
+  const checkAttestationAvailability = useCallback(
+    async (latitude, longitude) => {
+      try {
+        setLoadingAvailability(true);
+
+        // Si tu endpoint requiere maxDistance, lo mandamos igual que "nearby"
+        const res = await axios.get(
+          `${BACKEND_RESULT}/api/v1/contracts/check-attestation-availability`,
+          {
+            timeout: 15000,
+            params: {
+              latitude: Number(latitude),
+              longitude: Number(longitude),
+              maxDistance: 10000,
+            },
+            // Si tu backend usa x-api-key en algunos endpoints, agrega aquí:
+            // headers: { 'x-api-key': BACKEND_SECRET },
+          },
+        );
+
+        const data = res?.data || {};
+
+        // Mapeo robusto: ajusta a la forma exacta de tu respuesta
+        // Opciones comunes:
+        // - data.ALCALDE / data.GOBERNADOR
+        // - data.mayor / data.governor
+        // - data.availability = { mayor: true, governor: false }
+        const mayor =
+          !!data?.ALCALDE ||
+          !!data?.mayor ||
+          !!data?.availability?.mayor ||
+          !!data?.canMayor ||
+          !!data?.canAttestMayor;
+
+        const governor =
+          !!data?.GOBERNADOR ||
+          !!data?.governor ||
+          !!data?.availability?.governor ||
+          !!data?.canGovernor ||
+          !!data?.canAttestGovernor;
+
+        setContractsAvailability({
+          ALCALDE: mayor,
+          GOBERNADOR: governor,
+        });
+      } catch (e) {
+        // En error: por seguridad, deshabilitamos ambos
+        setContractsAvailability({
+          ALCALDE: false,
+          GOBERNADOR: false,
+        });
+      } finally {
+        setLoadingAvailability(false);
+      }
+    },
+    [],
+  );
+  const requestLocationAndCheckAvailability = useCallback(async () => {
+    // evita llamar demasiado en focus
+    const now = Date.now();
+    if (now - (availabilityRef.current.lastCheckAt || 0) < 4000) return;
+    availabilityRef.current.lastCheckAt = now;
+
+    // si estás offline, no tiene sentido pedir GPS para endpoint remoto
+    const net = await NetInfo.fetch();
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+    if (!online) return;
+
+    const coords = await getHomeLocation();
+    if (!coords?.latitude || !coords?.longitude) return;
+
+    await checkAttestationAvailability(coords.latitude, coords.longitude);
+  }, [getHomeLocation, checkAttestationAvailability]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (state === 'active' && pendingPermissionFromSettings.current) {
+        pendingPermissionFromSettings.current = false;
+
+        try {
+          if (Platform.OS === 'android') {
+            const ok = await PermissionsAndroid.check(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            );
+            if (ok) {
+              setPermissionModal(m => ({ ...m, visible: false }));
+              requestLocationAndCheckAvailability();
+            } else {
+              showPermissionModal(
+                'Ubicación requerida',
+                'Aún no se otorgó el permiso de ubicación.',
+                openLocationSettings,
+              );
+            }
+          } else {
+            const status = await Geolocation.requestAuthorization('whenInUse');
+            if (status === 'granted') {
+              setPermissionModal(m => ({ ...m, visible: false }));
+              requestLocationAndCheckAvailability();
+            } else {
+              showPermissionModal(
+                'Ubicación requerida',
+                'Aún no se otorgó el permiso de ubicación.',
+                openLocationSettings,
+              );
+            }
+          }
+        } catch (e) { }
+      }
+    });
+
+    return () => sub.remove();
+  }, [requestLocationAndCheckAvailability]);
+
   const fetchElectionStatus = useCallback(async () => {
     try {
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        {timeout: 15000},
+        { timeout: 15000 },
       );
 
       if (res?.data) {
@@ -310,6 +547,11 @@ export default function HomeScreen({navigation}) {
   const handleParticiparPress = async () => {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
+
+    const params = {
+      targetScreen: 'UnifiedParticipation',
+      electionType: type,
+    };
     if (online) {
       navigation.navigate(StackNav.ElectoralLocations, {
         targetScreen: 'UnifiedParticipation',
@@ -331,7 +573,7 @@ export default function HomeScreen({navigation}) {
         dni,
         locationId: cached.location._id,
         locationData: cached.location,
-        ...(cached.table ? {tableData: cached.table} : {}),
+        ...(cached.table ? { tableData: cached.table } : {}),
         fromCache: true,
         offline: true,
       });
@@ -357,7 +599,7 @@ export default function HomeScreen({navigation}) {
           );
 
           if (isActive) setHasPendingActa(pending);
-        } catch {}
+        } catch { }
       };
       checkQueue();
       const t = setInterval(checkQueue, 4000); // refresca cada 4s mientras está enfocada
@@ -372,19 +614,25 @@ export default function HomeScreen({navigation}) {
     useCallback(() => {
       checkUserVotePlace();
       fetchElectionStatus();
+      requestLocationAndCheckAvailability();
       let alive = true;
       // intenta una vez al enfocar
       runOfflineQueueOnce();
       // escucha cambios de red mientras esta pantalla está activa
       const unsubNet = NetInfo.addEventListener(state => {
         const online = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
-        if (online && alive) runOfflineQueueOnce();
+        if (online && alive) {
+          runOfflineQueueOnce();
+
+          // opcional: recheck cuando vuelve el internet
+          requestLocationAndCheckAvailability();
+        }
       });
       return () => {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [runOfflineQueueOnce, fetchElectionStatus]),
+    }, [runOfflineQueueOnce, fetchElectionStatus, requestLocationAndCheckAvailability]),
   );
 
   // Datos del carrusel
@@ -435,9 +683,9 @@ export default function HomeScreen({navigation}) {
 
       navigation.reset({
         index: 0,
-        routes: [{name: StackNav.AuthNavigation}],
+        routes: [{ name: StackNav.AuthNavigation }],
       });
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const vc = userData?.vc;
@@ -460,15 +708,15 @@ export default function HomeScreen({navigation}) {
       table:
         tab && Object.keys(tab).length
           ? {
-              ...tab,
-              _id: tab._id || tab.id,
-              id: tab.id || tab._id,
-              tableId: tab.tableId || tab._id || tab.id,
-              tableCode: tab.tableCode || tab.code || tab.codigo,
-              tableNumber: String(
-                tab.tableNumber || tab.numero || tab.number || '',
-              ),
-            }
+            ...tab,
+            _id: tab._id || tab.id,
+            id: tab.id || tab._id,
+            tableId: tab.tableId || tab._id || tab.id,
+            tableCode: tab.tableCode || tab.code || tab.codigo,
+            tableNumber: String(
+              tab.tableNumber || tab.numero || tab.number || '',
+            ),
+          }
           : undefined,
     };
   };
@@ -484,12 +732,12 @@ export default function HomeScreen({navigation}) {
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
         {
           timeout: 12000,
-          headers: {'x-api-key': BACKEND_SECRET},
+
         },
       );
 
       if (res?.data) {
-        const {location, table} = normalizeVotePlace(res.data);
+        const { location, table } = normalizeVotePlace(res.data);
         await saveVotePlace(dni, {
           dni,
           userId: res.data.userId,
@@ -571,13 +819,13 @@ export default function HomeScreen({navigation}) {
             }}>
             <CText
               testID="homeLogoutModalTitle"
-              style={{fontSize: 18, fontWeight: 'bold', marginBottom: 12}}>
+              style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
               {I18nStrings.areYouSureWantToLogout ||
                 '¿Seguro que quieres cerrar sesión?'}
             </CText>
             <View
               testID="homeLogoutModalButtons"
-              style={{flexDirection: 'row', marginTop: 18, gap: 16}}>
+              style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
               <TouchableOpacity
                 testID="homeLogoutModalCancelButton"
                 style={{
@@ -590,7 +838,7 @@ export default function HomeScreen({navigation}) {
                 onPress={() => setLogoutModalVisible(false)}>
                 <CText
                   testID="homeLogoutModalCancelText"
-                  style={{color: '#222', fontWeight: '600'}}>
+                  style={{ color: '#222', fontWeight: '600' }}>
                   {I18nStrings.cancel || 'Cancelar'}
                 </CText>
               </TouchableOpacity>
@@ -605,7 +853,7 @@ export default function HomeScreen({navigation}) {
                 onPress={handleLogout}>
                 <CText
                   testID="homeLogoutModalConfirmText"
-                  style={{color: '#fff', fontWeight: '600'}}>
+                  style={{ color: '#fff', fontWeight: '600' }}>
                   {I18nStrings.logOut || 'Cerrar sesión'}
                 </CText>
               </TouchableOpacity>
@@ -654,7 +902,7 @@ export default function HomeScreen({navigation}) {
               <FlatList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({item}) => <CarouselItem item={item} />}
+                renderItem={({ item }) => <CarouselItem item={item} />}
                 keyExtractor={item => item.id.toString()}
                 horizontal
                 pagingEnabled
@@ -673,7 +921,7 @@ export default function HomeScreen({navigation}) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                        stylesx.activePageIndicator,
+                      stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -703,7 +951,7 @@ export default function HomeScreen({navigation}) {
                   name: menuItems[0].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
 
                 <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
@@ -723,7 +971,7 @@ export default function HomeScreen({navigation}) {
                     name: menuItems[1].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#41A44D',
-                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
                   })}
                   <CText style={[stylesx.cardTitle]}>
                     {menuItems[1].title}
@@ -747,7 +995,7 @@ export default function HomeScreen({navigation}) {
                     name: menuItems[2].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#fff',
-                    style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
                   })}
                   <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                   <CText style={stylesx.cardDescription}>
@@ -796,7 +1044,7 @@ export default function HomeScreen({navigation}) {
             <FlatList
               ref={carouselRef}
               data={carouselData}
-              renderItem={({item}) => <CarouselItem item={item} />}
+              renderItem={({ item }) => <CarouselItem item={item} />}
               keyExtractor={item => item.id.toString()}
               horizontal
               pagingEnabled
@@ -815,7 +1063,7 @@ export default function HomeScreen({navigation}) {
                   style={[
                     stylesx.pageIndicator,
                     index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                    stylesx.activePageIndicator,
                   ]}
                 />
               ))}
@@ -837,7 +1085,7 @@ export default function HomeScreen({navigation}) {
               style={[
                 stylesx.gridDiv1,
                 stylesx.card,
-                {flexDirection: 'row', alignItems: 'center'},
+                { flexDirection: 'row', alignItems: 'center' },
               ]}
               activeOpacity={0.87}
               onPress={menuItems[0].onPress}
@@ -846,10 +1094,10 @@ export default function HomeScreen({navigation}) {
                 name: menuItems[0].icon,
                 size: getResponsiveSize(40, 50, 60),
                 color: '#41A44D',
-                style: {marginRight: getResponsiveSize(6, 8, 10)},
+                style: { marginRight: getResponsiveSize(6, 8, 10) },
               })}
 
-              <View style={{flex: 1}}>
+              <View style={{ flex: 1 }}>
                 <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
                 <CText style={stylesx.cardDescription}>
                   {menuItems[0].description}
@@ -867,7 +1115,7 @@ export default function HomeScreen({navigation}) {
                   name: menuItems[1].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
                 <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
                 <CText style={[stylesx.cardDescription]}>
@@ -889,7 +1137,7 @@ export default function HomeScreen({navigation}) {
                   name: menuItems[2].icon,
                   size: getResponsiveSize(30, 36, 42),
                   color: '#41A44D',
-                  style: {marginBottom: getResponsiveSize(6, 8, 10)},
+                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
                 })}
                 <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
                 <CText style={stylesx.cardDescription}>
@@ -901,8 +1149,19 @@ export default function HomeScreen({navigation}) {
         </View>
       )}
       <CustomModal
+        visible={permissionModal.visible}
+        onClose={() => setPermissionModal(m => ({ ...m, visible: false }))}
+        type={permissionModal.type}
+        title={permissionModal.title}
+        message={permissionModal.message}
+        buttonText={permissionModal.primaryText}
+        onButtonPress={permissionModal.onPrimary}
+        secondaryButtonText={permissionModal.secondaryText}
+        onSecondaryPress={permissionModal.onSecondary}
+      />
+      <CustomModal
         visible={!!infoModal.visible}
-        onClose={() => setInfoModal(m => ({...m, visible: false}))}
+        onClose={() => setInfoModal(m => ({ ...m, visible: false }))}
         type={infoModal.type}
         title={infoModal.title}
         message={infoModal.message}
@@ -1018,9 +1277,9 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 16, 20),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(40, 50, 60),
-        marginBottom: getResponsiveSize(20, 25, 30),
-      }),
+      marginTop: getResponsiveSize(40, 50, 60),
+      marginBottom: getResponsiveSize(20, 25, 30),
+    }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -1030,8 +1289,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   nombre: {
     fontSize: getResponsiveSize(18, 22, 26),
@@ -1041,8 +1300,8 @@ const stylesx = StyleSheet.create({
     letterSpacing: -0.5,
     ...(isTablet &&
       isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
+      fontSize: getResponsiveSize(24, 28, 32),
+    }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -1056,7 +1315,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   bcLogoCircle: {
@@ -1114,8 +1373,8 @@ const stylesx = StyleSheet.create({
       CARDS_PER_ROW === 4
         ? 'space-around'
         : isTablet
-        ? 'flex-start'
-        : 'space-between',
+          ? 'flex-start'
+          : 'space-between',
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -1126,9 +1385,9 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-        marginTop: getResponsiveSize(20, 25, 30),
-        paddingHorizontal: getResponsiveSize(12, 16, 20),
-      }),
+      marginTop: getResponsiveSize(20, 25, 30),
+      paddingHorizontal: getResponsiveSize(12, 16, 20),
+    }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
@@ -1140,12 +1399,12 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-        marginRight: getResponsiveSize(8, 12, 16),
-      }),
+      marginRight: getResponsiveSize(8, 12, 16),
+    }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
@@ -1282,7 +1541,7 @@ const stylesx = StyleSheet.create({
     borderRadius: getResponsiveSize(8, 10, 12),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -1295,7 +1554,7 @@ const stylesx = StyleSheet.create({
     // Sombra opcional:
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -1350,7 +1609,7 @@ const stylesx = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
   registerAlertTitle: {

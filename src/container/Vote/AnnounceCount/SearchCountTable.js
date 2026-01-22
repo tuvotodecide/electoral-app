@@ -159,7 +159,7 @@ const SearchCountTable = ({navigation, route}) => {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+       
           },
           timeout: 30000,
         },

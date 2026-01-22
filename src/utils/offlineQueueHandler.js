@@ -36,7 +36,6 @@ const fetchLatestBallotByTable = async code => {
       code,
     )}`;
     const {data} = await axios.get(url, {
-      headers: {'x-api-key': BACKEND_SECRET},
       timeout: 15000,
     });
     const list = Array.isArray(data) ? data : [];
@@ -64,7 +63,6 @@ const fetchUserAttestations = async (dniValue, electionId) => {
     : '';
   const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}${queryEID}`;
   const {data} = await axios.get(url, {
-    headers: {'x-api-key': BACKEND_SECRET},
     timeout: 15000,
   });
   return data?.data || [];
@@ -73,7 +71,7 @@ const fetchBallotById = async ballotId => {
   if (!ballotId) return null;
   const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
   const {data} = await axios.get(url, {
-    headers: {'x-api-key': BACKEND_SECRET},
+
     timeout: 15000,
   });
   return data?.data ?? data;
@@ -147,7 +145,7 @@ const uploadCertificateAndNotifyBackend = async (
       {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET,
+
         },
         timeout: 30000,
       },
@@ -392,8 +390,7 @@ export const publishActaHandler = async (item, userData) => {
               {
                 headers: {
                   'Content-Type': 'application/json',
-                  'x-api-key': apiKey,
-                },
+                   },
                 timeout: 30000,
               },
             );
@@ -507,7 +504,6 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET,
             },
             timeout: 30000,
           },
@@ -576,7 +572,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET,
+
             },
             timeout: 30000,
           },
@@ -607,7 +603,7 @@ export const publishActaHandler = async (item, userData) => {
             {
               headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': apiKey,
+              
               },
               timeout: 30000,
             },
@@ -724,7 +720,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+      
           },
           timeout: 30000,
         },
@@ -819,7 +815,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+
           },
           timeout: 30000,
         },
@@ -847,7 +843,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': apiKey,
+             
             },
             timeout: 30000,
           },

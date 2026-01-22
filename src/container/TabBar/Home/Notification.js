@@ -86,7 +86,7 @@ export default function Notification({navigation}) {
       try {
         const response = await axios.get(
           `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
-          {headers: {'x-api-key': BACKEND_SECRET}, timeout: 12000},
+          
         );
         const list = response?.data?.data || response?.data || [];
         const mapped = list

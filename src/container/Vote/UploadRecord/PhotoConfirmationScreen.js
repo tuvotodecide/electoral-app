@@ -260,7 +260,6 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET,
         },
         timeout: 30000,
       });
@@ -303,7 +302,7 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET,
+      
         },
         timeout: 30000,
       });
@@ -330,7 +329,7 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': BACKEND_SECRET,
+          
         },
         timeout: 30000,
       });
