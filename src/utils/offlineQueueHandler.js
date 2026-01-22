@@ -503,7 +503,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET,
+              'x-api-key': apiKey,
             },
             timeout: 30000,
           },
@@ -572,7 +572,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET,
+              'x-api-key': apiKey,
             },
             timeout: 30000,
           },
@@ -698,7 +698,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+            'x-api-key': apiKey,
           },
           timeout: 30000,
         },
@@ -793,7 +793,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+            'x-api-key': apiKey,
           },
           timeout: 30000,
         },
