@@ -26,6 +26,7 @@ const PhotoReviewScreen = () => {
     fromWhichIsCorrect,
     mode: incomingMode,
     actaCount,
+    electionId
   } = route.params || {};
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
@@ -210,6 +211,7 @@ const PhotoReviewScreen = () => {
       offline,
       existingRecord,
       mode,
+      electionId
     });
   };
 

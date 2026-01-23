@@ -46,7 +46,7 @@ const mockMesa = {
 export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
   const { electionId, electionType } = route.params || {};
-  console.log(electionId)
+  console.log(electionId, 'table detail electionId')
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};

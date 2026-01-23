@@ -133,7 +133,7 @@ const uploadCertificateAndNotifyBackend = async (
       console.warn('[OFFLINE-QUEUE] no hay DNI para enviar certificado');
       return;
     }
-    const electionId = normalizedAdditional?.electionConfigId || undefined;
+    const electionId = normalizedAdditional?.electionId || undefined;
 
     const res = await axios.post(
       `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
@@ -160,6 +160,7 @@ const uploadCertificateAndNotifyBackend = async (
 };
 
 export const publishActaHandler = async (item, userData) => {
+  let certificateData = null;
   try {
     const {
       imageUri,
@@ -205,6 +206,8 @@ export const publishActaHandler = async (item, userData) => {
         locationId: idRecinto,
         tableCode: String(tableCode),
         tableNumber: String(tableNumber),
+        electionId: additionalData?.electionId ?? item?.task?.payload?.electionId ?? undefined,
+        electionType: additionalData?.electionType ?? item?.task?.payload?.electionType ?? undefined,
       };
     })();
 
@@ -226,10 +229,10 @@ export const publishActaHandler = async (item, userData) => {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
-    const electionConfigId = normalizedAdditional?.electionConfigId;
+    const electionId = normalizedAdditional?.electionId;
 
-    const tableCodeForOracle = electionConfigId
-      ? `${tableCodeStrict}-${electionConfigId}`
+    const tableCodeForOracle = electionId
+      ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
 
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
@@ -237,7 +240,7 @@ export const publishActaHandler = async (item, userData) => {
       const alreadyMine = await hasUserAttestedTable(
         dniValue,
         tableCodeStrict,
-        electionConfigId,
+        electionId,
       );
       if (alreadyMine) {
         try {
@@ -390,6 +393,7 @@ export const publishActaHandler = async (item, userData) => {
               {
                 headers: {
                   'Content-Type': 'application/json',
+                  'x-api-key': BACKEND_SECRET
                 },
                 timeout: 30000,
               },
@@ -500,6 +504,7 @@ export const publishActaHandler = async (item, userData) => {
             ipfsUri: ipfsData.jsonUrl,
             recordId: 'String',
             tableIdIpfs: 'String',
+            ...(electionId ? { electionId: String(electionId) } : {}),
           },
           {
             headers: {
@@ -569,6 +574,7 @@ export const publishActaHandler = async (item, userData) => {
             ipfsUri: String(ipfsData.jsonUrl),
             recordId: String(response.returnData.recordId.toString()),
             tableIdIpfs: 'String',
+            ...(electionId ? { electionId: String(electionId) } : {}),
           },
           {
             headers: {
@@ -604,6 +610,7 @@ export const publishActaHandler = async (item, userData) => {
             {
               headers: {
                 'Content-Type': 'application/json',
+                'x-api-key': BACKEND_SECRET
 
               },
               timeout: 30000,
@@ -717,6 +724,7 @@ export const publishActaHandler = async (item, userData) => {
           ipfsUri: ipfsData.jsonUrl,
           recordId: 'String',
           tableIdIpfs: 'String',
+          ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
           headers: {
@@ -812,6 +820,7 @@ export const publishActaHandler = async (item, userData) => {
           ipfsUri: String(ipfsData.jsonUrl),
           recordId: String(nftId),
           tableIdIpfs: 'String',
+          ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
           headers: {
@@ -844,6 +853,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
+              'x-api-key': BACKEND_SECRET
 
             },
             timeout: 30000,

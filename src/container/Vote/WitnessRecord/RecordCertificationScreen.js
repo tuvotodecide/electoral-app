@@ -91,7 +91,7 @@ const RecordCertificationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-       
+       'x-api-key': BACKEND_SECRET 
         },
         timeout: 30000, // 30 segundos timeout
       });

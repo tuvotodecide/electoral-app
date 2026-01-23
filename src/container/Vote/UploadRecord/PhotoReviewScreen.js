@@ -10,12 +10,12 @@ import { StackNav } from '../../../navigation/NavigationKey';
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
-  
+
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   const { photoUri, tableData, electionId,
     electionType, } = route.params || {};
-
+console.log(electionId, 'photo review screen electionId')
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
 

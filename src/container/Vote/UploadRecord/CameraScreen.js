@@ -126,7 +126,7 @@ export default function CameraScreen({ navigation, route }) {
     message: '',
     buttons: [],
   });
-
+console.log(electionId, 'camera screen electionId');
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
   const [photoMeta, setPhotoMeta] = useState({ width: 0, height: 0 });

@@ -378,6 +378,7 @@ export default function HomeScreen({ navigation }) {
       }
     }
   }, [requestLocationPermission]);
+
   const checkAttestationAvailability = useCallback(
     async (latitude, longitude) => {
       try {
@@ -697,6 +698,22 @@ export default function HomeScreen({ navigation }) {
         message: 'Necesitas conexión para escoger tu recinto por primera vez.',
       });
     }
+  };
+  const ActionButtonsLoader = () => {
+    return (
+      <View style={stylesx.availabilityLoaderCard}>
+        <View style={stylesx.availabilityLoaderRow}>
+          <ActivityIndicator size="small" color="#41A44D" />
+          <CText style={stylesx.availabilityLoaderTitle}>
+            Verificando disponibilidad...
+          </CText>
+        </View>
+
+        <CText style={stylesx.availabilityLoaderSubtitle}>
+          Estamos validando si hay contratos activos para enviar actas en tu ubicación.
+        </CText>
+      </View>
+    );
   };
 
   const ActionButtonsGroup = () => {
@@ -1137,9 +1154,8 @@ export default function HomeScreen({ navigation }) {
                 </CText>
               </TouchableOpacity> */}
               <View style={stylesx.gridDiv1}>
-                <ActionButtonsGroup />
+                {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
-
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 <TouchableOpacity
@@ -1286,7 +1302,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
              */}
             <View style={stylesx.gridDiv1}>
-              <ActionButtonsGroup />
+              {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
             </View>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
@@ -1892,4 +1908,36 @@ const stylesx = StyleSheet.create({
     color: '#B45309',
     flexWrap: 'wrap',
   },
+  availabilityLoaderCard: {
+    backgroundColor: '#FFF',
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(14, 16, 18),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+
+  availabilityLoaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  availabilityLoaderTitle: {
+    marginLeft: 10,
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#232323',
+  },
+
+  availabilityLoaderSubtitle: {
+    marginTop: 6,
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#6B7280',
+  },
+
 });

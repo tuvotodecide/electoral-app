@@ -38,7 +38,7 @@ const SearchCountTable = ({ navigation, route }) => {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [selectedMesa, setSelectedMesa] = useState(null);
   const [sending, setSending] = useState(false);
-
+   console.log(electionId, 'search count table electionId')
   const {
     colors,
     searchText,

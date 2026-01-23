@@ -231,7 +231,7 @@ const BaseSearchTableScreen = ({
   // Styles
   styles,
 }) => {
-  console.log(electionId)
+  console.log(electionId,'base search table screen electionId')
   const navigation = useNavigation();
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);
@@ -442,6 +442,7 @@ const BaseSearchTableScreen = ({
         existingRecords: enrichedRecords,
         totalRecords: enrichedRecords.length,
         isFromUnifiedFlow: true,
+        electionId:electionId
       });
     } catch (error) {
       // Check if it's a 404 or mesa not found error
@@ -454,6 +455,7 @@ const BaseSearchTableScreen = ({
           existingRecords: [],
           totalRecords: 0,
           isFromUnifiedFlow: true,
+          electionId:electionId
         });
       } else if (
         error.response &&
@@ -472,6 +474,7 @@ const BaseSearchTableScreen = ({
             existingRecords: [],
             totalRecords: 0,
             isFromUnifiedFlow: true,
+            electionId:electionId
           });
         } else {
           // Other API error

@@ -224,7 +224,7 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const params = route?.params || {};
   const { electionId, electionType } = route?.params || {};
-
+  console.log(electionId, 'which is correct screen electionId');
   const {
     tableData: routeTableData,
     mesa,

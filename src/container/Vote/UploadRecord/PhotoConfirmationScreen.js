@@ -93,6 +93,7 @@ const PhotoConfirmationScreen = ({ route }) => {
       ],
     });
   }, [navigation]);
+  console.log(electionId, 'photo confirmation screen electionId')
   const colors = useSelector(state => state.theme.theme);
   const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
     route.params || {};
@@ -302,7 +303,7 @@ const PhotoConfirmationScreen = ({ route }) => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-
+          'x-api-key': BACKEND_SECRET
         },
         timeout: 30000,
       });
@@ -317,13 +318,14 @@ const PhotoConfirmationScreen = ({ route }) => {
     }
   };
 
-  const validateWithBackend = async ipfsJsonUrl => {
+  const validateWithBackend = async (ipfsJsonUrl, electionId) => {
     try {
       const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
       const payload = {
         ipfsUri: ipfsJsonUrl,
         recordId: 'String',
         tableIdIpfs: 'String',
+        ...(electionId ? { electionId: String(electionId) } : {}),
       };
 
       const response = await axios.post(backendUrl, payload, {
@@ -487,362 +489,10 @@ const PhotoConfirmationScreen = ({ route }) => {
     setShowConfirmModal(true);
   };
 
-  // const confirmPublishAndCertify = async () => {
-  //   setStep(1);
 
-  //   try {
-  //     const local = validateBallotLocally(
-  //       partyResults || [],
-  //       voteSummaryResults || [],
-  //     );
-  //     if (!local.ok) {
-  //       setInfoModalData({
-  //         visible: true,
-  //         title: I18nStrings.validationFailed,
-  //         message: local.errors.join('\n'),
-  //       });
-  //       setStep(0);
-  //       return;
-  //     }
-
-  //     const locationId =
-  //       route.params?.locationId ||
-  //       tableData?.location?._id ||
-  //       tableData?.idRecinto ||
-  //       tableData?.locationId ||
-  //       mesaData?.idRecinto ||
-  //       mesa?.idRecinto ||
-  //       null;
-
-  //     const tableCode = String(
-  //       tableData?.tableCode ||
-  //         tableData?.codigo ||
-  //         mesaData?.tableCode ||
-  //         mesaData?.codigo ||
-  //         mesa?.tableCode ||
-  //         mesa?.codigo ||
-  //         '',
-  //     );
-
-  //     const tableNumber = String(
-  //       tableData?.tableNumber ||
-  //         tableData?.numero ||
-  //         tableData?.number ||
-  //         mesaData?.tableNumber ||
-  //         mesaData?.numero ||
-  //         mesaData?.number ||
-  //         mesa?.tableNumber ||
-  //         mesa?.numero ||
-  //         mesa?.number ||
-  //         aiAnalysis?.table_number ||
-  //         '',
-  //     );
-
-  //     const persistedUri = await persistLocalImage(photoUri);
-
-  //     let persistedCertificateUri = null;
-  //     if (certificateUri) {
-  //       try {
-  //         persistedCertificateUri = await persistLocalImage(certificateUri);
-  //       } catch (e) {
-  //         console.error(
-  //           '[PhotoConfirmation] persist certificate error (no bloquea)',
-  //           e,
-  //         );
-  //       }
-  //     }
-
-  //     const additionalData = {
-  //       idRecinto: String(locationId ?? ''),
-  //       locationId: String(locationId ?? ''),
-  //       tableNumber: String(tableNumber),
-  //       tableCode: String(tableCode),
-  //       location: tableData?.location || 'Bolivia',
-  //       userId: userData?.id || 'unknown',
-  //       userName: userFullName,
-  //       role: 'witness',
-  //       dni: String(dni ?? ''),
-  //     };
-
-  //     const electoralData = {
-  //       partyResults: partyResults || [],
-  //       voteSummaryResults: voteSummaryResults || [],
-  //     };
-
-  //     await enqueue({
-  //       type: 'publishActa',
-  //       payload: {
-  //         imageUri: persistedUri,
-  //         certificateImageUri: persistedCertificateUri,
-  //         aiAnalysis: aiAnalysis || {},
-  //         electoralData,
-  //         additionalData,
-  //         tableData: {
-  //           codigo: String(tableCode),
-  //           idRecinto: locationId,
-  //           tableNumber: String(tableNumber),
-  //           numero: String(tableNumber),
-  //         },
-  //         tableCode: String(tableCode),
-  //         tableNumber: String(tableNumber),
-  //         locationId: String(locationId ?? ''),
-  //         createdAt: Date.now(),
-  //       },
-  //     });
-  //     setShowConfirmModal(false);
-  //     setStep(0);
-  //     navigation.replace('OfflinePendingScreen');
-  //     return;
-  //   }catch
-
-  //   setStep(1);
-  //   const tableCodeForGuard = String(
-  //     tableData?.codigo ||
-  //       tableData?.tableCode ||
-  //       mesaData?.codigo ||
-  //       mesaData?.tableCode ||
-  //       mesa?.codigo ||
-  //       mesa?.tableCode ||
-  //       '',
-  //   );
-
-  //   if (dni && tableCodeForGuard) {
-  //     const alreadyMine = await hasUserAttestedTable(dni, tableCodeForGuard);
-  //     if (alreadyMine) {
-  //       setInfoModalData({
-  //         visible: true,
-  //         title: I18nStrings.genericInfo || 'Aviso',
-  //         message:
-  //           I18nStrings.alreadyAttested ||
-  //           'Ya atestiguaste esta mesa con tu usuario.',
-  //       });
-  //       setShowConfirmModal(false);
-  //       setStep(0);
-  //       return;
-  //     }
-  //   }
-  //   try {
-  //     if (flowMode === 'attest') {
-  //       const ballot = existingRecord || duplicateBallot;
-  //       const ballotIdToCheck = ballot?._id || ballot?.id;
-  //       if (dni && ballotIdToCheck) {
-  //         const repeated = await hasUserAttestedBallot(
-  //           dni,
-  //           String(ballotIdToCheck),
-  //         );
-  //         if (repeated) {
-  //           setInfoModalData({
-  //             visible: true,
-  //             title: I18nStrings.genericInfo || 'Aviso',
-  //             message:
-  //               I18nStrings.alreadyAttested || 'Ya atestiguaste este acta.',
-  //           });
-  //           setShowConfirmModal(false);
-  //           setStep(0);
-  //           return;
-  //         }
-  //       }
-  //       if (!ballot) {
-  //         throw new Error(
-  //           I18nStrings.noExistingBallotToAttest ||
-  //             'No hay un acta previa para atestiguar en esta mesa.',
-  //         );
-  //       }
-  //       const jsonUrl = extractJsonUrlFromBallot(ballot);
-  //       if (!jsonUrl) {
-  //         throw new Error('No se encontró el JSON/IPFS del acta existente.');
-  //       }
-
-  //       const privateKey = userData?.privKey;
-  //       // asegurar registro
-  //       let isRegistered = await oracleReads.isRegistered(
-  //         CHAIN,
-  //         userData.account,
-  //         1,
-  //       );
-  //       if (!isRegistered) {
-  //         await executeOperation(
-  //           privateKey,
-  //           userData.account,
-  //           CHAIN,
-  //           oracleCalls.requestRegister(CHAIN, jsonUrl),
-  //         );
-  //         isRegistered = await oracleReads.isRegistered(
-  //           CHAIN,
-  //           userData.account,
-  //           20,
-  //         );
-  //         if (!isRegistered) throw Error(I18nStrings.oracleRegisterFail);
-  //       }
-
-  //       const response = await executeOperation(
-  //         privateKey,
-  //         userData.account,
-  //         CHAIN,
-  //         oracleCalls.attest(CHAIN, tableData.codigo, BigInt(0), jsonUrl),
-  //         oracleReads.waitForOracleEvent,
-  //         'Attested',
-  //       );
-
-  //       if (ballot?._id) {
-  //         await uploadAttestation(ballot._id);
-  //       }
-
-  //       const {explorer, nftExplorer, attestationNft} =
-  //         availableNetworks[CHAIN];
-  //       const nftId = response.returnData.recordId.toString();
-  //       const nftResult = {
-  //         txHash: response.receipt.transactionHash,
-  //         nftId,
-  //         txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-  //         nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
-  //       };
-
-  //       navigation.navigate('SuccessScreen', {
-  //         ipfsData: {
-  //           jsonUrl,
-  //           imageUrl:
-  //             existingRecord?.imageUrl || existingRecord?.actaImage || null,
-  //         },
-  //         nftData: nftResult,
-  //         tableData: tableData,
-  //       });
-  //       return;
-  //     }
-
-  //     // 1. Subir a IPFS
-  //     const ipfsResult = await uploadToIPFS();
-  //     setIpfsData(ipfsResult);
-
-  //     // 2. Validar con el nuevo endpoint
-  //     await validateWithBackend(ipfsResult.jsonUrl);
-
-  //     // 3. Obtener datos necesarios para blockchain
-  //     const privateKey = userData?.privKey;
-
-  //     // 4. Crear NFT en blockchain
-  //     let isRegistered = await oracleReads.isRegistered(
-  //       CHAIN,
-  //       userData.account,
-  //       1,
-  //     );
-
-  //     if (!isRegistered) {
-  //       await executeOperation(
-  //         privateKey,
-  //         userData.account,
-  //         CHAIN,
-  //         oracleCalls.requestRegister(CHAIN, ipfsResult.imageUrl),
-  //       );
-
-  //       isRegistered = await oracleReads.isRegistered(
-  //         CHAIN,
-  //         userData.account,
-  //         20,
-  //       );
-
-  //       if (!isRegistered) {
-  //         throw Error(I18nStrings.oracleRegisterFail);
-  //       }
-  //     }
-
-  //     let response;
-
-  //     try {
-  //       response = await executeOperation(
-  //         privateKey,
-  //         userData.account,
-  //         CHAIN,
-  //         oracleCalls.createAttestation(
-  //           CHAIN,
-  //           tableData.codigo,
-  //           ipfsResult.jsonUrl,
-  //         ),
-  //         oracleReads.waitForOracleEvent,
-  //         'AttestationCreated',
-  //       );
-  //     } catch (error) {
-  //       const message = error.message;
-  //       //check if attestation is already created
-  //       if (
-  //         message.indexOf('416c72656164792063726561746564') >= 0 ||
-  //         message.indexOf('Already created') >= 0
-  //       ) {
-  //         response = await executeOperation(
-  //           privateKey,
-  //           userData.account,
-  //           CHAIN,
-  //           oracleCalls.attest(
-  //             CHAIN,
-  //             tableData.codigo,
-  //             BigInt(0),
-  //             ipfsResult.jsonUrl,
-  //           ),
-  //           oracleReads.waitForOracleEvent,
-  //           'Attested',
-  //         );
-  //       } else {
-  //         throw error;
-  //       }
-  //     }
-
-  //     const {explorer, nftExplorer, attestationNft, chain} = availableNetworks[CHAIN];
-  //     const nftId = response.returnData.recordId.toString();
-
-  //     const nftResult = {
-  //       txHash: response.receipt.transactionHash,
-  //       nftId,
-  //       txUrl: explorer + 'tx/' + response.receipt.transactionHash,
-  //       nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId + `?chainid=${chain.id}&type=erc721`,
-  //     };
-
-  //     // 5. Subir Metadata al backend
-  //     const uploadedBackendData = await uploadMetadataToBackend(
-  //       ipfsResult.jsonUrl,
-  //       nftResult.nftId,
-  //       String(tableData.idRecinto),
-  //     );
-
-  //     if (uploadedBackendData._id) {
-  //       const attestationSuccess = await uploadAttestation(
-  //         uploadedBackendData._id,
-  //       );
-
-  //       if (!attestationSuccess) {
-  //       }
-  //     } else {
-  //     }
-
-  //     // 6. Navegar a pantalla de éxito con datos de IPFS
-  //     navigation.navigate('SuccessScreen', {
-  //       ipfsData: ipfsResult,
-  //       nftData: nftResult,
-  //       tableData: tableData,
-  //     });
-
-  //     setStep(2);
-  //   } catch (error) {
-  //     console.error(
-  //       '[PhotoConfirmation] confirmPublishAndCertify error',
-  //       error,
-  //     );
-  //     setInfoModalData({
-  //       visible: true,
-  //       title: I18nStrings.genericError,
-  //       message: error.message || 'Error al encolar el acta',
-  //     });
-  //     setShowConfirmModal(false);
-  //     setStep(0);
-  //   }
-  // };
   const confirmPublishAndCertify = async () => {
     setStep(1);
-    let electionConfigId = null;
-    try {
-      electionConfigId = await AsyncStorage.getItem(ELECTION_ID);
-    } catch (e) {
-      console.error('[PhotoConfirmation] error leyendo electionConfigId', e);
-    }
+    const eid = electionId || undefined;
     try {
       const local = validateBallotLocally(
         partyResults || [],
@@ -892,6 +542,17 @@ const PhotoConfirmationScreen = ({ route }) => {
         '',
       );
 
+      if (!photoUri) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.genericError,
+          message: 'No se encontró la foto del acta. Vuelve a capturarla.',
+        });
+        setShowConfirmModal(false);
+        setStep(0);
+        return;
+      }
+
       const persistedUri = await persistLocalImage(photoUri);
 
       let persistedCertificateUri = null;
@@ -916,7 +577,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         userName: userFullName,
         role: 'witness',
         dni: String(dni ?? ''),
-        electionConfigId: electionConfigId || undefined,
+        electionId: eid,
       };
 
       const electoralData = {
@@ -928,7 +589,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         type: 'publishActa',
         payload: {
           imageUri: persistedUri,
-          certificateImageUri: persistedCertificateUri,
           certificateImageUri: persistedCertificateUri,
           aiAnalysis: aiAnalysis || {},
           electoralData,
@@ -943,8 +603,9 @@ const PhotoConfirmationScreen = ({ route }) => {
           tableNumber: String(tableNumber),
           locationId: String(locationId ?? ''),
           createdAt: Date.now(),
-          electionId: electionId || electionConfigId || undefined,
+          electionId: eid,
           electionType: electionType || undefined,
+        
         },
       });
       setStep(2);

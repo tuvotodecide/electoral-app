@@ -74,7 +74,7 @@ const ElectoralLocations = ({ navigation, route }) => {
 
   // Get navigation target from route params
   const { targetScreen, electionId, electionType } = route.params || {};
-  
+    console.log(electionId, 'electoral locations electionId')
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -441,7 +441,6 @@ const ElectoralLocations = ({ navigation, route }) => {
         );
       }
     } catch (error) {
-      console.log(error)
       const net = await NetInfo.fetch();
       const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
       setConfigError(true);
