@@ -33,7 +33,7 @@ name: initialSetup
         id: homeMiVotoLogoTitle
     file: ../auth/login.yaml
     env:
-      PIN: ${MAESTRO_CORRECT_PIN}
+      PIN: ${PIN}
 
 - runFlow:
     when:

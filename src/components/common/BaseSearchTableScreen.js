@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import axios from 'axios';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
 import CustomModal from './CustomModal';
 import CText from './CText';
-import {StackNav} from '../../navigation/NavigationKey';
+import { StackNav } from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import {
   SearchTableHeader,
@@ -25,9 +25,9 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {BACKEND_RESULT} from '@env';
+import { BACKEND_RESULT } from '@env';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -103,7 +103,7 @@ const SortDropdown = ({
   const currentLabel = value === 'asc' ? labelAsc : labelDesc;
 
   return (
-    <View style={{marginHorizontal: getResponsiveSize(12, 16, 20)}}>
+    <View style={{ marginHorizontal: getResponsiveSize(12, 16, 20) }}>
       <TouchableOpacity
         onPress={() => setOpen(v => !v)}
         activeOpacity={0.8}
@@ -112,7 +112,7 @@ const SortDropdown = ({
           name="swap-vertical"
           size={18}
           color="#4F9858"
-          style={{marginRight: 8}}
+          style={{ marginRight: 8 }}
         />
         <CText
           style={{
@@ -126,7 +126,7 @@ const SortDropdown = ({
           name={open ? 'chevron-up' : 'chevron-down'}
           size={18}
           color="#888"
-          style={{marginLeft: 8}}
+          style={{ marginLeft: 8 }}
         />
       </TouchableOpacity>
 
@@ -148,7 +148,7 @@ const SortDropdown = ({
               name="arrow-up"
               size={16}
               color="#4F9858"
-              style={{marginRight: 8}}
+              style={{ marginRight: 8 }}
             />
             <CText
               style={{
@@ -159,7 +159,7 @@ const SortDropdown = ({
             </CText>
           </TouchableOpacity>
 
-          <View style={{height: 1, backgroundColor: '#F1F1F1'}} />
+          <View style={{ height: 1, backgroundColor: '#F1F1F1' }} />
 
           <TouchableOpacity
             activeOpacity={0.8}
@@ -177,7 +177,7 @@ const SortDropdown = ({
               name="arrow-down"
               size={16}
               color="#4F9858"
-              style={{marginRight: 8}}
+              style={{ marginRight: 8 }}
             />
             <CText
               style={{
@@ -227,10 +227,11 @@ const BaseSearchTableScreen = ({
   // Auto-verification props
   enableAutoVerification = true, // Enable automatic API verification
   //apiEndpoint = "http://192.168.1.16:3000/api/v1/mesa", // Base API endpoint
-
+  electionId, electionType,
   // Styles
   styles,
 }) => {
+  console.log(electionId)
   const navigation = useNavigation();
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);
@@ -292,7 +293,7 @@ const BaseSearchTableScreen = ({
       .toLowerCase()
       .trim();
 
-    return {tableNumber, tableCode, recinto, direccion};
+    return { tableNumber, tableCode, recinto, direccion };
   };
 
   // Función para obtener el recinto de una mesa
@@ -311,7 +312,7 @@ const BaseSearchTableScreen = ({
     if (!searchText.trim()) return true;
 
     const searchLower = searchText.toLowerCase().trim();
-    const {tableNumber, tableCode, recinto, direccion} = getSearchFields(table);
+    const { tableNumber, tableCode, recinto, direccion } = getSearchFields(table);
 
     // Buscar en todos los campos relevantes
     return (
@@ -328,7 +329,7 @@ const BaseSearchTableScreen = ({
   );
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -382,8 +383,8 @@ const BaseSearchTableScreen = ({
 
       // Check if mesa has existing attestations
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
-        {timeout: 15000}, // 10 segundos timeout
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}?electionId=${electionId}`,
+        { timeout: 15000 }, // 10 segundos timeout
       );
 
       let records = [];
@@ -397,41 +398,41 @@ const BaseSearchTableScreen = ({
 
       const enrichedRecords = Array.isArray(records)
         ? records.map(record => {
-            const cidFromImage = record.image?.startsWith('ipfs://')
-              ? record.image.replace('ipfs://', '')
-              : null;
-            const actaImagePrimary = cidFromImage
-              ? `https://ipfs.io/ipfs/${cidFromImage}`
-              : record.ipfsCid
+          const cidFromImage = record.image?.startsWith('ipfs://')
+            ? record.image.replace('ipfs://', '')
+            : null;
+          const actaImagePrimary = cidFromImage
+            ? `https://ipfs.io/ipfs/${cidFromImage}`
+            : record.ipfsCid
               ? `https://ipfs.io/ipfs/${record.ipfsCid}`
               : record.image && record.image.startsWith('http')
-              ? record.image
-              : record.ipfsUri || null;
-            const actaImage = actaImagePrimary;
-            const presidentialParties = record.votes?.parties?.partyVotes || [];
+                ? record.image
+                : record.ipfsUri || null;
+          const actaImage = actaImagePrimary;
+          const presidentialParties = record.votes?.parties?.partyVotes || [];
 
-            const partyResults = presidentialParties.map(presParty => {
-              return {
-                partyId: globalThis.String(presParty.partyId ?? '').trim().toLowerCase(),
-                presidente: presParty.votes,
-              };
-            });
-
-            const presVoteSummary = record.votes?.parties || {};
-
+          const partyResults = presidentialParties.map(presParty => {
             return {
-              ...record,
-              actaImage, // <- TableDetail ya lo usa
-              partyResults,
-              voteSummaryResults: {
-                // Presidente
-                presValidVotes: presVoteSummary.validVotes || 0,
-                presBlankVotes: presVoteSummary.blankVotes || 0,
-                presNullVotes: presVoteSummary.nullVotes || 0,
-                presTotalVotes: presVoteSummary.totalVotes || 0,
-              },
+              partyId: globalThis.String(presParty.partyId ?? '').trim().toLowerCase(),
+              presidente: presParty.votes,
             };
-          })
+          });
+
+          const presVoteSummary = record.votes?.parties || {};
+
+          return {
+            ...record,
+            actaImage, // <- TableDetail ya lo usa
+            partyResults,
+            voteSummaryResults: {
+              // Presidente
+              presValidVotes: presVoteSummary.validVotes || 0,
+              presBlankVotes: presVoteSummary.blankVotes || 0,
+              presNullVotes: presVoteSummary.nullVotes || 0,
+              presTotalVotes: presVoteSummary.totalVotes || 0,
+            },
+          };
+        })
         : [];
 
       navigation.navigate(StackNav.TableDetail, {
@@ -537,7 +538,7 @@ const BaseSearchTableScreen = ({
     const sidePadding = getResponsiveSize(56, 64, 72);
 
     return (
-      <View style={{position: 'relative'}}>
+      <View style={{ position: 'relative' }}>
         <SearchTableHeader
           colors={colors}
           onBack={onBack}
@@ -580,9 +581,9 @@ const BaseSearchTableScreen = ({
     if (!filteredTables || filteredTables.length === 0) {
       // Mostrar mensaje cuando no hay resultados
       return (
-        <View style={{flex: 1}}>
-          <View testID="baseSearchTableScreenNoResultsContainer" style={[styles.noResultsContainer, styles1.noResultsContainer, {padding: 20}]}>
-            <CText testID="baseSearchTableScreenNoResultsText" style={[styles.noResultsText, styles1.noResultsText, {fontSize: 16, color: '#666'}]}>
+        <View style={{ flex: 1 }}>
+          <View testID="baseSearchTableScreenNoResultsContainer" style={[styles.noResultsContainer, styles1.noResultsContainer, { padding: 20 }]}>
+            <CText testID="baseSearchTableScreenNoResultsText" style={[styles.noResultsText, styles1.noResultsText, { fontSize: 16, color: '#666' }]}>
               {searchText.trim()
                 ? 'No se encontraron mesas que coincidan con la búsqueda'
                 : 'No hay mesas disponibles'}
@@ -692,11 +693,11 @@ const BaseSearchTableScreen = ({
                 </View>
               ))}
               {/* Fill empty spaces for incomplete rows */}
-              {Array.from({length: layout.cardsPerRow - group.length}).map(
+              {Array.from({ length: layout.cardsPerRow - group.length }).map(
                 (_, emptyIndex) => (
                   <View
                     key={`empty-${emptyIndex}`}
-                    style={{flex: layout.cardFlex}}
+                    style={{ flex: layout.cardFlex }}
                   />
                 ),
               )}
@@ -817,7 +818,7 @@ const styles1 = {
     borderColor: '#E5E5E5',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
     marginTop: getResponsiveSize(6, 8, 10),

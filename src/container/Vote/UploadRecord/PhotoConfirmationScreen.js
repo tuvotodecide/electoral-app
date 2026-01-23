@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,31 +10,31 @@ import {
   Switch,
 } from 'react-native';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import pinataService from '../../../utils/pinataService';
-import {executeOperation} from '../../../api/account';
-import {BACKEND_RESULT, CHAIN, BACKEND_SECRET} from '@env';
+import { executeOperation } from '../../../api/account';
+import { BACKEND_RESULT, CHAIN, BACKEND_SECRET } from '@env';
 import axios from 'axios';
-import {oracleCalls, oracleReads} from '../../../api/oracle';
-import {availableNetworks} from '../../../api/params';
+import { oracleCalls, oracleReads } from '../../../api/oracle';
+import { availableNetworks } from '../../../api/params';
 import InfoModal from '../../../components/modal/InfoModal';
 import NetInfo from '@react-native-community/netinfo';
-import {enqueue} from '../../../utils/offlineQueue';
-import {persistLocalImage} from '../../../utils/persistLocalImage';
-import {validateBallotLocally} from '../../../utils/ballotValidation';
-import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import { enqueue } from '../../../utils/offlineQueue';
+import { persistLocalImage } from '../../../utils/persistLocalImage';
+import { validateBallotLocally } from '../../../utils/ballotValidation';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 import nftImage from '../../../assets/images/nft-medal.png';
-import {captureRef} from 'react-native-view-shot';
-import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import { captureRef } from 'react-native-view-shot';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {ELECTION_ID} from '../../../common/constants';
+import { ELECTION_ID } from '../../../common/constants';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -79,7 +79,8 @@ const getResponsiveModalWidth = () => {
   return screenWidth * 0.85; // Regular phones: 85% width
 };
 
-const PhotoConfirmationScreen = () => {
+const PhotoConfirmationScreen = ({ route }) => {
+  const { electionId, electionType } = route.params || {};
   const navigation = useNavigation();
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -87,14 +88,13 @@ const PhotoConfirmationScreen = () => {
       routes: [
         {
           name: StackNav.TabNavigation,
-          params: {screen: TabNav.HomeScreen},
+          params: { screen: TabNav.HomeScreen },
         },
       ],
     });
   }, [navigation]);
-  const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis} =
+  const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
     route.params || {};
 
   const existingRecord = route.params?.existingRecord || null;
@@ -171,7 +171,7 @@ const PhotoConfirmationScreen = () => {
     subject?.governmentIdentifier ??
     userData?.dni ??
     null;
-  const data = {name: subject?.fullName || '(sin nombre)'};
+  const data = { name: subject?.fullName || '(sin nombre)' };
   const userFullName = data.name || '(sin nombre)';
 
   const handleBack = () => {
@@ -190,7 +190,7 @@ const PhotoConfirmationScreen = () => {
         );
         setCertificateUri(capturedCertificateUri);
       }
-    } catch (err) {}
+    } catch (err) { }
 
     try {
       const local = validateBallotLocally(
@@ -270,13 +270,13 @@ const PhotoConfirmationScreen = () => {
         message: error?.message,
         response: error?.response
           ? {
-              status: error.response.status,
-              dataPreview: error.response.data
-                ? error.response.data._id
-                  ? {_id: error.response.data._id}
-                  : null
-                : null,
-            }
+            status: error.response.status,
+            dataPreview: error.response.data
+              ? error.response.data._id
+                ? { _id: error.response.data._id }
+                : null
+              : null,
+          }
           : null,
       });
       throw error;
@@ -302,7 +302,7 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-      
+
         },
         timeout: 30000,
       });
@@ -329,7 +329,7 @@ const PhotoConfirmationScreen = () => {
       const response = await axios.post(backendUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
-          
+
         },
         timeout: 30000,
       });
@@ -444,9 +444,9 @@ const PhotoConfirmationScreen = () => {
       const normalizedVoteSummary = (
         electoralData.voteSummaryResults || []
       ).map(r => {
-        if (r.id === 'validos') return {...r, label: 'Votos Válidos'};
-        if (r.id === 'nulos') return {...r, label: 'Votos Nulos'};
-        if (r.id === 'blancos') return {...r, label: 'Votos en Blanco'};
+        if (r.id === 'validos') return { ...r, label: 'Votos Válidos' };
+        if (r.id === 'nulos') return { ...r, label: 'Votos Nulos' };
+        if (r.id === 'blancos') return { ...r, label: 'Votos en Blanco' };
         return r;
       });
 
@@ -460,7 +460,7 @@ const PhotoConfirmationScreen = () => {
       const result = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        {...electoralData, voteSummaryResults: normalizedVoteSummary},
+        { ...electoralData, voteSummaryResults: normalizedVoteSummary },
         additionalData,
       );
       const ipfsDuration = Date.now() - startIpfs;
@@ -870,26 +870,26 @@ const PhotoConfirmationScreen = () => {
 
       const tableCode = String(
         tableData?.tableCode ||
-          tableData?.codigo ||
-          mesaData?.tableCode ||
-          mesaData?.codigo ||
-          mesa?.tableCode ||
-          mesa?.codigo ||
-          '',
+        tableData?.codigo ||
+        mesaData?.tableCode ||
+        mesaData?.codigo ||
+        mesa?.tableCode ||
+        mesa?.codigo ||
+        '',
       );
 
       const tableNumber = String(
         tableData?.tableNumber ||
-          tableData?.numero ||
-          tableData?.number ||
-          mesaData?.tableNumber ||
-          mesaData?.numero ||
-          mesaData?.number ||
-          mesa?.tableNumber ||
-          mesa?.numero ||
-          mesa?.number ||
-          aiAnalysis?.table_number ||
-          '',
+        tableData?.numero ||
+        tableData?.number ||
+        mesaData?.tableNumber ||
+        mesaData?.numero ||
+        mesaData?.number ||
+        mesa?.tableNumber ||
+        mesa?.numero ||
+        mesa?.number ||
+        aiAnalysis?.table_number ||
+        '',
       );
 
       const persistedUri = await persistLocalImage(photoUri);
@@ -943,6 +943,8 @@ const PhotoConfirmationScreen = () => {
           tableNumber: String(tableNumber),
           locationId: String(locationId ?? ''),
           createdAt: Date.now(),
+          electionId: electionId || electionConfigId || undefined,
+          electionType: electionType || undefined,
         },
       });
       setStep(2);
@@ -998,7 +1000,7 @@ const PhotoConfirmationScreen = () => {
           value={isNameVisible}
           onValueChange={setIsNameVisible}
           style={styles.infoSwitch}
-          trackColor={{false: '#D6D6D6', true: '#A5D6A7'}}
+          trackColor={{ false: '#D6D6D6', true: '#A5D6A7' }}
           thumbColor={isNameVisible ? '#4CAF50' : '#f4f3f4'}
         />
       </View>
@@ -1156,7 +1158,7 @@ const PhotoConfirmationScreen = () => {
                   testID="photoConfirmationModalFinishedButtons"
                   style={[
                     modalStyles.buttonContainer,
-                    {marginTop: getResponsiveSize(12, 16, 20)},
+                    { marginTop: getResponsiveSize(12, 16, 20) },
                   ]}>
                   <TouchableOpacity
                     testID="photoConfirmationModalGoHomeButton"
@@ -1217,7 +1219,7 @@ const PhotoConfirmationScreen = () => {
               style={modalStyles.buttonContainer}>
               <TouchableOpacity
                 testID="photoConfirmationDuplicateModalGoBackButton"
-                style={[modalStyles.cancelButton, {flex: 1}]}
+                style={[modalStyles.cancelButton, { flex: 1 }]}
                 onPress={() => setShowDuplicateModal(false)}>
                 <CText
                   testID="photoConfirmationDuplicateModalGoBackText"
@@ -1267,7 +1269,7 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     width: getResponsiveModalWidth(),
@@ -1333,7 +1335,7 @@ const modalStyles = StyleSheet.create({
   },
   loading: {
     marginBottom: getResponsiveSize(12, 16, 20),
-    transform: [{scale: getResponsiveSize(0.8, 1, 1.2)}],
+    transform: [{ scale: getResponsiveSize(0.8, 1, 1.2) }],
   },
   loadingTitle: {
     fontSize: getResponsiveSize(18, 20, 24),
@@ -1376,7 +1378,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     marginBottom: getResponsiveSize(20, 25, 30),
@@ -1468,7 +1470,7 @@ const styles = StyleSheet.create({
   },
   infoSwitch: {
     marginLeft: getResponsiveSize(8, 10, 12),
-    transform: [{scale: getResponsiveSize(1.1, 1.15, 1.2)}],
+    transform: [{ scale: getResponsiveSize(1.1, 1.15, 1.2) }],
   },
   content: {
     flex: 1,
@@ -1507,7 +1509,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(16, 20, 28),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     minWidth: getResponsiveSize(200, 250, 300), // Minimum button width

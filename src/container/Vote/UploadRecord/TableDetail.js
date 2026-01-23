@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
-  
+
   Image,
   Modal,
   Dimensions,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -18,10 +18,10 @@ import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -43,9 +43,10 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function TableDetail({navigation, route}) {
+export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
-
+  const { electionId, electionType } = route.params || {};
+  console.log(electionId)
   // Use real table data from navigation, with mockMesa as fallback
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};
@@ -59,9 +60,8 @@ export default function TableDetail({navigation, route}) {
     Array.isArray(existingRecords) && existingRecords.length > 0;
 
   const recordsCount = hasRecords ? existingRecords.length : 0;
-  const recordsMsg = `La mesa ya tiene ${recordsCount} acta${
-    recordsCount === 1 ? '' : 's'
-  } publicada${recordsCount === 1 ? '' : 's'}`;
+  const recordsMsg = `La mesa ya tiene ${recordsCount} acta${recordsCount === 1 ? '' : 's'
+    } publicada${recordsCount === 1 ? '' : 's'}`;
 
   // Normalize mesa data structure
   const mesa = {
@@ -99,7 +99,7 @@ export default function TableDetail({navigation, route}) {
       rawMesa.colegio ||
       rawMesa.escuela ||
       rawMesa.location?.name ||
-      locationFromParams?.name || 
+      locationFromParams?.name ||
       'N/A',
     direccion:
       rawMesa.address ||
@@ -152,12 +152,14 @@ export default function TableDetail({navigation, route}) {
           tableData: finalTableData,
           mesaData: finalTableData,
           mesa: finalTableData,
+          electionId, electionType
         });
       } catch {
         navigation.navigate('CameraScreen', {
           tableData: finalTableData,
           mesaData: finalTableData,
           mesa: finalTableData,
+          electionId, electionType
         });
       }
       return;
@@ -166,16 +168,16 @@ export default function TableDetail({navigation, route}) {
     if (count === 1) {
       const record = existingRecords[0];
       try {
-          navigation.navigate(StackNav.PhotoReviewScreen, {
+        navigation.navigate(StackNav.PhotoReviewScreen, {
           mesa: finalTableData,
           tableData: finalTableData,
           mesaData: finalTableData,
           existingRecord: record,
           isViewOnly: true,
           photoUri: record?.actaImage,
-          mode: 'attest',
+          mode: 'attest', electionId, electionType
         });
-        
+
       } catch {
         navigation.navigate('PhotoReviewScreen', {
           mesa: finalTableData,
@@ -185,6 +187,7 @@ export default function TableDetail({navigation, route}) {
           isViewOnly: true,
           photoUri: record?.actaImage,
           mode: 'attest',
+          electionId, electionType
         });
       }
       return;
@@ -199,6 +202,7 @@ export default function TableDetail({navigation, route}) {
         existingRecords,
         totalRecords,
         fromTableDetail: true,
+        electionId, electionType
       });
     } catch {
       navigation.navigate('WhichIsCorrectScreen', {
@@ -208,6 +212,7 @@ export default function TableDetail({navigation, route}) {
         existingRecords,
         totalRecords,
         fromTableDetail: true,
+        electionId, electionType
       });
     }
   };
@@ -218,6 +223,7 @@ export default function TableDetail({navigation, route}) {
       title: String.photoSentTitle,
       message: String.photoSentMessage,
       returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
+      electionId, electionType
     });
   };
 
@@ -239,6 +245,7 @@ export default function TableDetail({navigation, route}) {
       tableData: finalTableData,
       mesaData: finalTableData,
       mesa: finalTableData,
+      electionId, electionType
     });
   };
 
@@ -269,9 +276,9 @@ export default function TableDetail({navigation, route}) {
               <View
                 style={[
                   stylesx.instructionContainer,
-                  shouldCenter && {marginTop: 0},
+                  shouldCenter && { marginTop: 0 },
                 ]}>
-                <CText style={[stylesx.bigBold, {color: 'black'}]}>
+                <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {String.ensureAssignedTable}
                 </CText>
                 {/* <CText
@@ -319,6 +326,7 @@ export default function TableDetail({navigation, route}) {
                           mesa: mesa,
                           existingRecord: record,
                           isViewOnly: true,
+                          electionId, electionType
                         });
                       }}>
                       <View style={stylesx.recordHeader}>
@@ -330,7 +338,7 @@ export default function TableDetail({navigation, route}) {
                       {record.actaImage && (
                         <View style={stylesx.actaImageContainer}>
                           <Image
-                            source={{uri: record.actaImage}}
+                            source={{ uri: record.actaImage }}
                             style={stylesx.actaImage}
                             resizeMode="cover"
                           />
@@ -363,6 +371,7 @@ export default function TableDetail({navigation, route}) {
                   </View>
 
                   <TouchableOpacity
+                    testID='tableDetailTakePhotoButton'
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
@@ -381,9 +390,9 @@ export default function TableDetail({navigation, route}) {
               <View
                 style={[
                   stylesx.instructionContainer,
-                  shouldCenter && {marginTop: 0},
+                  shouldCenter && { marginTop: 0 },
                 ]}>
-                <CText style={[stylesx.bigBold, {color: 'black'}]}>
+                <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {String.ensureAssignedTable}
                 </CText>
                 {/* <CText
@@ -451,6 +460,7 @@ export default function TableDetail({navigation, route}) {
                   </View>
 
                   <TouchableOpacity
+                    testID='tableDetailTakePhotoButton'
                     style={stylesx.takePhotoBtn}
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
@@ -476,7 +486,7 @@ export default function TableDetail({navigation, route}) {
           {capturedImage && (
             <View style={stylesx.imageContainer}>
               <Image
-                source={{uri: capturedImage.uri}}
+                source={{ uri: capturedImage.uri }}
                 style={stylesx.previewImage}
                 resizeMode="contain"
               />
@@ -493,7 +503,7 @@ export default function TableDetail({navigation, route}) {
             <TouchableOpacity
               style={[
                 stylesx.confirmButton,
-                {backgroundColor: colors.primary || '#4F9858'},
+                { backgroundColor: colors.primary || '#4F9858' },
               ]}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
@@ -563,7 +573,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 20, 25),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -679,7 +689,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -739,7 +749,7 @@ const stylesx = StyleSheet.create({
     padding: getResponsiveSize(12, 16, 18),
     marginBottom: getResponsiveSize(12, 15, 18),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,

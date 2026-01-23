@@ -1,17 +1,17 @@
-import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View, Dimensions} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View, Dimensions } from 'react-native';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../../components/common/CustomModal';
 import CText from '../../../components/common/CText';
-import {useSearchTableLogic} from '../../../hooks/useSearchTableLogic';
-import {createSearchTableStyles} from '../../../styles/searchTableStyles';
-import {fetchMesasConteo} from '../../../data/mockMesas';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { useSearchTableLogic } from '../../../hooks/useSearchTableLogic';
+import { createSearchTableStyles } from '../../../styles/searchTableStyles';
+import { fetchMesasConteo } from '../../../data/mockMesas';
+import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import axios from 'axios';
-import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -23,7 +23,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const SearchCountTable = ({navigation, route}) => {
+const SearchCountTable = ({ navigation, route }) => {
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState(null);
@@ -34,6 +34,7 @@ const SearchCountTable = ({navigation, route}) => {
     message: '',
     buttonText: String.acceptButton,
   });
+  const { electionId, electionType } = route.params || {};
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [selectedMesa, setSelectedMesa] = useState(null);
   const [sending, setSending] = useState(false);
@@ -152,14 +153,13 @@ const SearchCountTable = ({navigation, route}) => {
             selectedMesa.originalTableData?.tableCode
           )?.toString(),
           title: 'Conteo anunciado',
-          body: `${locationData?.name || 'Recinto'} · Mesa ${
-            selectedMesa.numero
-          }`,
+          body: `${locationData?.name || 'Recinto'} · Mesa ${selectedMesa.numero
+            }`,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-       
+
           },
           timeout: 30000,
         },
@@ -219,7 +219,7 @@ const SearchCountTable = ({navigation, route}) => {
     message,
     buttonText = String.acceptButton,
   ) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -289,6 +289,7 @@ const SearchCountTable = ({navigation, route}) => {
         showLocationFirst={true} // Location bar appears before search input
         // Styles
         styles={styles}
+        electionId={electionId}
       />
 
       {/* Custom Modal */}

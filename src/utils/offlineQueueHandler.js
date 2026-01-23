@@ -1,18 +1,18 @@
 import pinataService from '../utils/pinataService';
 import axios from 'axios';
-import {BACKEND_RESULT, CHAIN, BACKEND_SECRET, VERIFIER_REQUEST_ENDPOINT} from '@env';
-import {oracleCalls, oracleReads} from '../api/oracle';
-import {availableNetworks} from '../api/params';
-import {removePersistedImage} from '../utils/persistLocalImage';
-import {executeOperation} from '../api/account';
+import { BACKEND_RESULT, CHAIN, BACKEND_SECRET, VERIFIER_REQUEST_ENDPOINT } from '@env';
+import { oracleCalls, oracleReads } from '../api/oracle';
+import { availableNetworks } from '../api/params';
+import { removePersistedImage } from '../utils/persistLocalImage';
+import { executeOperation } from '../api/account';
 import {
   displayLocalActaPublished,
   showActaDuplicateNotification,
 } from '../notifications';
-import {requestPushPermissionExplicit} from '../services/pushPermission';
+import { requestPushPermissionExplicit } from '../services/pushPermission';
 import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {ELECTION_ID} from '../common/constants';
+import { ELECTION_ID } from '../common/constants';
 
 const safeStr = v =>
   String(v ?? '')
@@ -21,12 +21,12 @@ const safeStr = v =>
 const getBallotTableCode = b =>
   safeStr(
     b?.table?.tableCode ||
-      b?.tableCode ||
-      b?.table?.code ||
-      b?.table?.codigo ||
-      b?.codigo ||
-      b?.code ||
-      '',
+    b?.tableCode ||
+    b?.table?.code ||
+    b?.table?.codigo ||
+    b?.codigo ||
+    b?.code ||
+    '',
   );
 
 const fetchLatestBallotByTable = async code => {
@@ -35,7 +35,7 @@ const fetchLatestBallotByTable = async code => {
     const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
       code,
     )}`;
-    const {data} = await axios.get(url, {
+    const { data } = await axios.get(url, {
       timeout: 15000,
     });
     const list = Array.isArray(data) ? data : [];
@@ -62,7 +62,7 @@ const fetchUserAttestations = async (dniValue, electionId) => {
     ? `?electionId=${encodeURIComponent(electionId)}`
     : '';
   const url = `${BACKEND_RESULT}/api/v1/attestations/by-user/${dniValue}${queryEID}`;
-  const {data} = await axios.get(url, {
+  const { data } = await axios.get(url, {
     timeout: 15000,
   });
   return data?.data || [];
@@ -70,7 +70,7 @@ const fetchUserAttestations = async (dniValue, electionId) => {
 const fetchBallotById = async ballotId => {
   if (!ballotId) return null;
   const url = `${BACKEND_RESULT}/api/v1/ballots/${ballotId}`;
-  const {data} = await axios.get(url, {
+  const { data } = await axios.get(url, {
 
     timeout: 15000,
   });
@@ -120,7 +120,7 @@ const uploadCertificateAndNotifyBackend = async (
       );
       return;
     }
-    const {jsonUrl, imageUrl} = nftResult.data;
+    const { jsonUrl, imageUrl } = nftResult.data;
 
     const dniValue =
       userData?.dni ||
@@ -150,7 +150,7 @@ const uploadCertificateAndNotifyBackend = async (
         timeout: 30000,
       },
     );
-    return {jsonUrl, imageUrl};
+    return { jsonUrl, imageUrl };
   } catch (err) {
     console.error(
       '[OFFLINE-QUEUE] error al subir certificado y notificar backend',
@@ -242,7 +242,7 @@ export const publishActaHandler = async (item, userData) => {
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
-        } catch {}
+        } catch { }
         await showActaDuplicateNotification({
           reason: 'Detectamos un acta igual. Se descartó el envío.',
         });
@@ -291,7 +291,7 @@ export const publishActaHandler = async (item, userData) => {
     // 1) PRIMERO: verificar duplicado por votos (idéntico a online)
     const verificationData = {
       tableNumber: tableCodeStrict,
-      votes: {parties: buildFromPayload('presidente')},
+      votes: { parties: buildFromPayload('presidente') },
     };
 
     let duplicateCheck;
@@ -305,7 +305,7 @@ export const publishActaHandler = async (item, userData) => {
           duplicateCheck.ballot ||
           (await fetchLatestBallotByTable(tableCodeStrict));
         if (!existingBallot) {
-          await removePersistedImage(imageUri).catch(() => {});
+          await removePersistedImage(imageUri).catch(() => { });
           await showActaDuplicateNotification({
             reason:
               'Acta ya creada y no se pudo recuperar. Se descartó el envío.',
@@ -321,7 +321,7 @@ export const publishActaHandler = async (item, userData) => {
           existingBallot?.ipfs?.jsonUrl ||
           null;
         if (!jsonUrl) {
-          await removePersistedImage(imageUri).catch(() => {});
+          await removePersistedImage(imageUri).catch(() => { });
           await showActaDuplicateNotification({
             reason:
               'Acta ya creada pero sin JSON accesible. Se descartó el envío.',
@@ -390,21 +390,21 @@ export const publishActaHandler = async (item, userData) => {
               {
                 headers: {
                   'Content-Type': 'application/json',
-                   },
+                },
                 timeout: 30000,
               },
             );
           }
-        } catch {}
+        } catch { }
 
         try {
           await removePersistedImage(imageUri);
-        } catch {}
+        } catch { }
         try {
           await requestPushPermissionExplicit();
-        } catch {}
+        } catch { }
 
-        const {explorer, nftExplorer, attestationNft} =
+        const { explorer, nftExplorer, attestationNft } =
           availableNetworks[CHAIN];
         const nftId = response.returnData.recordId.toString();
         const nftResult = {
@@ -431,16 +431,16 @@ export const publishActaHandler = async (item, userData) => {
 
         try {
           await displayLocalActaPublished({
-            ipfsData: {jsonUrl, imageUrl: existingBallot?.image || null},
+            ipfsData: { jsonUrl, imageUrl: existingBallot?.image || null },
             nftData: nftResult,
             tableData,
             certificateData,
           });
-        } catch {}
+        } catch { }
 
         return {
           success: true,
-          ipfsData: {jsonUrl},
+          ipfsData: { jsonUrl },
           nftData: nftResult,
           tableData,
           certificateData,
@@ -462,9 +462,9 @@ export const publishActaHandler = async (item, userData) => {
       const normalizedVoteSummary = (
         electoralData?.voteSummaryResults || []
       ).map(data => {
-        if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
-        if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
-        if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
+        if (data.id === 'validos') return { ...data, label: 'Votos Válidos' };
+        if (data.id === 'nulos') return { ...data, label: 'Votos Nulos' };
+        if (data.id === 'blancos') return { ...data, label: 'Votos en Blanco' };
         return data;
       });
 
@@ -473,7 +473,7 @@ export const publishActaHandler = async (item, userData) => {
         ipfs = await pinataService.uploadElectoralActComplete(
           imagePath,
           aiAnalysis || {},
-          {...electoralData, voteSummaryResults: normalizedVoteSummary},
+          { ...electoralData, voteSummaryResults: normalizedVoteSummary },
           normalizedAdditional,
         );
         if (!ipfs.success) {
@@ -504,6 +504,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
+              'x-api-key': apiKey,
             },
             timeout: 30000,
           },
@@ -562,7 +563,7 @@ export const publishActaHandler = async (item, userData) => {
       // Notificar backend (from-ipfs) y registrar attestation
       let backendBallot;
       try {
-        const {data} = await axios.post(
+        const { data } = await axios.post(
           `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
           {
             ipfsUri: String(ipfsData.jsonUrl),
@@ -572,7 +573,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-
+              'x-api-key': apiKey,
             },
             timeout: 30000,
           },
@@ -603,13 +604,13 @@ export const publishActaHandler = async (item, userData) => {
             {
               headers: {
                 'Content-Type': 'application/json',
-              
+
               },
               timeout: 30000,
             },
           );
         }
-      } catch (err) {}
+      } catch (err) { }
 
       try {
         await removePersistedImage(imageUri);
@@ -625,7 +626,7 @@ export const publishActaHandler = async (item, userData) => {
         );
       }
 
-      const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+      const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
       const nftId = response.returnData.recordId.toString();
       const nftResult = {
         txHash: response.receipt.transactionHash,
@@ -679,9 +680,9 @@ export const publishActaHandler = async (item, userData) => {
 
     const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
       data => {
-        if (data.id === 'validos') return {...data, label: 'Votos Válidos'};
-        if (data.id === 'nulos') return {...data, label: 'Votos Nulos'};
-        if (data.id === 'blancos') return {...data, label: 'Votos en Blanco'};
+        if (data.id === 'validos') return { ...data, label: 'Votos Válidos' };
+        if (data.id === 'nulos') return { ...data, label: 'Votos Nulos' };
+        if (data.id === 'blancos') return { ...data, label: 'Votos en Blanco' };
         return data;
       },
     );
@@ -691,7 +692,7 @@ export const publishActaHandler = async (item, userData) => {
       ipfs = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
-        {...electoralData, voteSummaryResults: normalizedVoteSummary},
+        { ...electoralData, voteSummaryResults: normalizedVoteSummary },
         normalizedAdditional,
       );
       if (!ipfs.success) {
@@ -720,7 +721,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-      
+            'x-api-key': apiKey,
           },
           timeout: 30000,
         },
@@ -794,7 +795,7 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
-    const {explorer, nftExplorer, attestationNft} = availableNetworks[CHAIN];
+    const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
     const nftId = response.returnData.recordId.toString();
     const nftResult = {
       txHash: response.receipt.transactionHash,
@@ -805,7 +806,7 @@ export const publishActaHandler = async (item, userData) => {
 
     let backendBallot;
     try {
-      const {data} = await axios.post(
+      const { data } = await axios.post(
         `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
         {
           ipfsUri: String(ipfsData.jsonUrl),
@@ -815,7 +816,7 @@ export const publishActaHandler = async (item, userData) => {
         {
           headers: {
             'Content-Type': 'application/json',
-
+            'x-api-key': apiKey,
           },
           timeout: 30000,
         },
@@ -843,13 +844,13 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-             
+
             },
             timeout: 30000,
           },
         );
       }
-    } catch (err) {}
+    } catch (err) { }
 
     console.log('[OFFLINE-QUEUE] acta publicada OK', { ipfsData, nftResult });
 
@@ -898,7 +899,7 @@ export const publishActaHandler = async (item, userData) => {
 
     console.log('[OFFLINE-QUEUE] notificacion local mostrada');
 
-    return {success: true, ipfsData, nftData: nftResult, tableData};
+    return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
     console.error('[OFFLINE-QUEUE] publishActaHandler fallo fatal', fatalErr);
     throw fatalErr;

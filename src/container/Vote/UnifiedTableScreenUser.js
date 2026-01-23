@@ -142,7 +142,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
           timeout: 15000,
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': BACKEND_SECRET,
+        
           },
         },
       );
@@ -288,6 +288,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
       <BaseSearchTableScreenUser
         // Header props
         colors={colors}
+        electionId = {electionId}
         onBack={handleBack}
         title={locationData?.name || Strings.searchTable}
         showNotification={true}
@@ -313,6 +314,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         showLocationFirst={false} // Search input appears before location bar
         // Styles
         styles={styles}
+        election
       />
 
       {/* Custom Modal */}

@@ -46,6 +46,7 @@ import {
   getVotePlace,
   processQueue,
   saveVotePlace,
+  removeById,
 } from '../../../utils/offlineQueue';
 import { ActivityIndicator } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
@@ -62,6 +63,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
+
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -253,11 +255,16 @@ export default function HomeScreen({ navigation }) {
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
   const [contractsAvailability, setContractsAvailability] = useState({
-    ALCALDE: false,
-    GOBERNADOR: false,
+    ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+    GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+    nearestLocation: null,
   });
   const contracts = contractsAvailability;
-
+  const [queueFailModal, setQueueFailModal] = useState({
+    visible: false,
+    failedItems: [],
+    message: '',
+  });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   const pendingPermissionFromSettings = useRef(false);
@@ -382,45 +389,46 @@ export default function HomeScreen({ navigation }) {
           {
             timeout: 15000,
             params: {
-              latitude: Number(latitude),
-              longitude: Number(longitude),
+              latitude: Number(longitude),
+              longitude: Number(latitude),
               maxDistance: 10000,
             },
             // Si tu backend usa x-api-key en algunos endpoints, agrega aquí:
             // headers: { 'x-api-key': BACKEND_SECRET },
           },
         );
-
         const data = res?.data || {};
+        const elections = Array.isArray(data?.availableElections) ? data.availableElections : [];
 
-        // Mapeo robusto: ajusta a la forma exacta de tu respuesta
-        // Opciones comunes:
-        // - data.ALCALDE / data.GOBERNADOR
-        // - data.mayor / data.governor
-        // - data.availability = { mayor: true, governor: false }
-        const mayor =
-          !!data?.ALCALDE ||
-          !!data?.mayor ||
-          !!data?.availability?.mayor ||
-          !!data?.canMayor ||
-          !!data?.canAttestMayor;
+        // ALCALDE -> municipal
+        const municipal = elections.find(e => e?.electionType === 'municipal');
+        const municipalEnabled = !!municipal?.canAttest;
 
-        const governor =
-          !!data?.GOBERNADOR ||
-          !!data?.governor ||
-          !!data?.availability?.governor ||
-          !!data?.canGovernor ||
-          !!data?.canAttestGovernor;
+        // GOBERNADOR -> departamental
+        const departamental = elections.find(e => e?.electionType === 'departamental');
+        const departamentalEnabled = !!departamental?.canAttest;
 
         setContractsAvailability({
-          ALCALDE: mayor,
-          GOBERNADOR: governor,
+          nearestLocation: data?.nearestLocation || null,
+          ALCALDE: {
+            enabled: municipalEnabled,
+            electionId: municipalEnabled ? municipal?.electionId : null,
+            electionName: municipal?.electionName || null,
+            reason: municipal?.reason || null,
+          },
+          GOBERNADOR: {
+            enabled: departamentalEnabled,
+            electionId: departamentalEnabled ? departamental?.electionId : null,
+            electionName: departamental?.electionName || null,
+            reason: departamental?.reason || null,
+          },
         });
       } catch (e) {
         // En error: por seguridad, deshabilitamos ambos
         setContractsAvailability({
-          ALCALDE: false,
-          GOBERNADOR: false,
+          nearestLocation: null,
+          ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+          GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
         });
       } finally {
         setLoadingAvailability(false);
@@ -494,7 +502,7 @@ export default function HomeScreen({ navigation }) {
       if (res?.data) {
         setElectionStatus(res.data);
 
-        await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
+        // await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
 
         // guardar solo el id de la config
         if (res.data?.config?.id) {
@@ -517,45 +525,148 @@ export default function HomeScreen({ navigation }) {
 
   const runOfflineQueueOnce = useCallback(async () => {
     if (processingRef.current) return;
-    // Solo si hay sesión y llaves listas
-    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account)
-      return;
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account) return;
+
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) return;
+
     processingRef.current = true;
+
     try {
       const result = await processQueue(async item => {
         await publishActaHandler(item, userData);
       });
+
+      // Actualiza badge/pending
       if (typeof result?.remaining === 'number') {
         setHasPendingActa(result.remaining > 0);
       } else {
         const listAfter = await getOfflineQueue();
-        const pendingAfter = (listAfter || []).some(
-          i => i.task?.type === 'publishActa',
-        );
+        const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
         setHasPendingActa(pendingAfter);
       }
+
+      // NUEVO: si hay fallos, abrir modal con acciones
+      if (result?.failed > 0) {
+        const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+        const first = failedItems[0];
+
+        const header =
+          `${result.failed} envío(s) no se pudieron procesar.\n` +
+          `Puedes reintentar o eliminar el fallido.\n`;
+
+        const meta =
+          first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
+
+        const type =
+          first?.type ? `\nTipo: ${first.type}` : '';
+
+        const detail =
+          first?.error ? `\n\nError:\n${first.error}` : '';
+
+        setQueueFailModal({
+          visible: true,
+          failedItems,
+          message: header + meta + type + detail,
+        });
+      }
     } catch (e) {
-      // no-op: los que fallen se quedan en cola
+      // Si aquí cae, es un fallo "global" (poco común en tu implementación)
+      setQueueFailModal({
+        visible: true,
+        failedIds: [],
+        message:
+          'Ocurrió un error procesando la cola. Puedes reintentar o cancelar.',
+      });
     } finally {
       processingRef.current = false;
     }
   }, [auth?.isAuthenticated, userData]);
 
-  const handleParticiparPress = async () => {
+  const handleRemoveFailedItem = async (id) => {
+    try {
+      await removeById(id);
+      setQueueFailModal(m => ({
+        ...m,
+        failedItems: (m.failedItems || []).filter(x => x.id !== id),
+        visible: ((m.failedItems || []).length - 1) > 0,
+      }));
+
+      const listAfter = await getOfflineQueue();
+      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      setHasPendingActa(pendingAfter);
+    } catch (e) {
+      // opcional: modal informativo
+    }
+  };
+
+  const handleRemoveAllFailed = async () => {
+    try {
+      const items = queueFailModal.failedItems || [];
+      for (const it of items) {
+        await removeById(it.id);
+      }
+
+      const listAfter = await getOfflineQueue();
+      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      setHasPendingActa(pendingAfter);
+    } finally {
+      setQueueFailModal({ visible: false, failedItems: [], message: '' });
+    }
+  };
+
+
+  const handleQueueRetry = async () => {
+    setQueueFailModal(m => ({ ...m, visible: false }));
+    // Reintento inmediato (respeta processingRef)
+    runOfflineQueueOnce();
+  };
+
+  // const handleQueueCancel = async () => {
+  //   try {
+  //     const ids = queueFailModal.failedIds || [];
+  //     // Si no tenemos ids (por error global), opcionalmente no borrar nada
+  //     for (const id of ids) {
+  //       await removeById(id);
+  //     }
+
+  //     // Refrescar estado pending
+  //     const listAfter = await getOfflineQueue();
+  //     const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+  //     setHasPendingActa(pendingAfter);
+  //   } catch (e) {
+  //     // opcional: mostrar otro modal informativo
+  //   } finally {
+  //     setQueueFailModal(m => ({ ...m, visible: false, failedIds: [] }));
+  //   }
+  // };
+  const handleQueueCancel = () => {
+    setQueueFailModal(m => ({ ...m, visible: false }));
+  };
+
+  const handleParticiparPress = async (type) => {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
+    const selected = contractsAvailability?.[type];
+    const electionId = selected?.electionId;
+    if (!electionId) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'No disponible',
+        message: selected?.reason || 'No tienes contratos activos para esta elección en tu ubicación.',
+      });
+      return;
+    }
 
     const params = {
       targetScreen: 'UnifiedParticipation',
       electionType: type,
+      electionId,
     };
     if (online) {
-      navigation.navigate(StackNav.ElectoralLocations, {
-        targetScreen: 'UnifiedParticipation',
-      });
+      navigation.navigate(StackNav.ElectoralLocations, params);
       return;
     }
     if (!dni) {
@@ -570,6 +681,7 @@ export default function HomeScreen({ navigation }) {
     const cached = await getVotePlace(dni);
     if (cached?.location?._id) {
       navigation.navigate(StackNav.UnifiedParticipationScreen, {
+        ...params,
         dni,
         locationId: cached.location._id,
         locationData: cached.location,
@@ -587,6 +699,70 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const ActionButtonsGroup = () => {
+    const showAlcalde = !!contracts?.ALCALDE?.enabled;
+    const showGobernador = !!contracts?.GOBERNADOR?.enabled;
+
+    // CASO 1: Ninguno habilitado -> Mostrar Aviso
+    if (!showAlcalde && !showGobernador) {
+      return (
+        <View style={stylesx.warningContractCard}>
+          <Ionicons name="warning-outline" size={32} color="#F59E0B" style={{ marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <CText style={stylesx.warningContractTitle}>Envío no disponible</CText>
+            <CText style={stylesx.warningContractText}>
+              No tienes contratos activos para enviar actas en esta ubicación.
+            </CText>
+          </View>
+        </View>
+      );
+    }
+
+    // CASO 2 y 3: Mostrar botones según corresponda
+    return (
+      <View style={{ width: '100%' }}>
+        {showAlcalde && (
+          <TouchableOpacity
+            style={stylesx.splitBtn}
+            activeOpacity={0.8}
+            onPress={() => handleParticiparPress('ALCALDE')}>
+
+            <View style={stylesx.splitBtnIconBox}>
+              {/* Icono Casita / Alcaldía */}
+              <Ionicons name="business-outline" size={24} color="#41A44D" />
+            </View>
+
+            <View style={stylesx.splitBtnContent}>
+              <CText style={stylesx.cardTitle}>Enviar Acta Alcalde</CText>
+              <CText style={stylesx.cardDescription}>Revisa o sube un acta municipal</CText>
+            </View>
+
+            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+          </TouchableOpacity>
+        )}
+
+        {showGobernador && (
+          <TouchableOpacity
+            style={stylesx.splitBtn}
+            activeOpacity={0.8}
+            onPress={() => handleParticiparPress('GOBERNADOR')}>
+
+            <View style={stylesx.splitBtnIconBox}>
+              {/* Icono Mapa / Gobernación */}
+              <Ionicons name="map-outline" size={24} color="#41A44D" />
+            </View>
+
+            <View style={stylesx.splitBtnContent}>
+              <CText style={stylesx.cardTitle}>Enviar Acta Gobernador</CText>
+              <CText style={stylesx.cardDescription}>Revisa o sube un acta departamental</CText>
+            </View>
+
+            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -790,6 +966,7 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
+  const firstFailedId = queueFailModal.failedItems?.[0]?.id;
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
@@ -942,7 +1119,7 @@ export default function HomeScreen({ navigation }) {
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
             <View style={stylesx.gridParent}>
               {/* Participar (arriba, ocupa dos columnas) */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[stylesx.gridDiv1, stylesx.card]}
                 activeOpacity={0.87}
                 onPress={menuItems[0].onPress}
@@ -958,7 +1135,10 @@ export default function HomeScreen({ navigation }) {
                 <CText style={stylesx.cardDescription}>
                   {menuItems[0].description}
                 </CText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
+              <View style={stylesx.gridDiv1}>
+                <ActionButtonsGroup />
+              </View>
 
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
@@ -1081,7 +1261,7 @@ export default function HomeScreen({ navigation }) {
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 stylesx.gridDiv1,
                 stylesx.card,
@@ -1104,6 +1284,10 @@ export default function HomeScreen({ navigation }) {
                 </CText>
               </View>
             </TouchableOpacity>
+             */}
+            <View style={stylesx.gridDiv1}>
+              <ActionButtonsGroup />
+            </View>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
               <TouchableOpacity
@@ -1166,6 +1350,20 @@ export default function HomeScreen({ navigation }) {
         title={infoModal.title}
         message={infoModal.message}
         buttonText={'Aceptar'}
+      />
+      <CustomModal
+        visible={queueFailModal.visible}
+        onClose={() => setQueueFailModal(m => ({ ...m, visible: false }))}
+        type="warning"
+        title="Subida de pendientes"
+        message={queueFailModal.message}
+        buttonText="Reintentar"
+        onButtonPress={handleQueueRetry}
+        secondaryButtonText="Cancelar"
+        onSecondaryPress={handleQueueCancel}
+        tertiaryButtonText={firstFailedId ? "Eliminar fallido" : undefined}
+        onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
+        tertiaryVariant="danger"
       />
     </CSafeAreaView>
   );
@@ -1642,5 +1840,56 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: 6,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+  },
+  splitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(10, 12, 14),
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  splitBtnIconBox: {
+    width: getResponsiveSize(42, 48, 54),
+    height: getResponsiveSize(42, 48, 54),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#F0FDF4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: getResponsiveSize(12, 16, 18),
+  },
+  splitBtnContent: {
+    flex: 1,
+  },
+
+  warningContractCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+    borderWidth: 1,
+    borderRadius: getResponsiveSize(12, 14, 16),
+    padding: getResponsiveSize(16, 18, 20),
+    marginBottom: getResponsiveSize(10, 12, 14),
+  },
+  warningContractTitle: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#92400E', // Marrón oscuro/dorado
+    marginBottom: 2,
+  },
+  warningContractText: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#B45309',
+    flexWrap: 'wrap',
   },
 });

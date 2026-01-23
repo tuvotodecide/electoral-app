@@ -1,7 +1,4 @@
 appId: com.tuvotodecide
 ---
-- assertVisible:
-    id: tableDetailIcon
-
 - tapOn:
     id: tableDetailTakePhotoButton

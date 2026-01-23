@@ -1,17 +1,17 @@
-import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View, Dimensions} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View, Dimensions } from 'react-native';
 import axios from 'axios';
 import BaseSearchTableScreen from '../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../components/common/CustomModal';
 import CText from '../../components/common/CText';
-import {useSearchTableLogic} from '../../hooks/useSearchTableLogic';
-import {createSearchTableStyles} from '../../styles/searchTableStyles';
-import {fetchMesas} from '../../data/mockMesas';
-import {StackNav} from '../../navigation/NavigationKey';
+import { useSearchTableLogic } from '../../hooks/useSearchTableLogic';
+import { createSearchTableStyles } from '../../styles/searchTableStyles';
+import { fetchMesas } from '../../data/mockMesas';
+import { StackNav } from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
-import {BACKEND_RESULT} from '@env';
+import { BACKEND_RESULT } from '@env';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -23,7 +23,8 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const UnifiedTableScreen = ({navigation, route}) => {
+const UnifiedTableScreen = ({ navigation, route }) => {
+  const { locationId, locationData: locFromParams, electionId, electionType } = route?.params || {};
   const [mesas, setMesas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState(null);
@@ -49,9 +50,9 @@ const UnifiedTableScreen = ({navigation, route}) => {
   async function loadTablesFromApi(locationId) {
     try {
       setIsLoading(true);
-      const {data} = await axios.get(
+      const { data } = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`,
-        {timeout: 15000},
+        { timeout: 15000 },
       );
       const list = data?.tables || data?.data?.tables || [];
       setMesas(list);
@@ -88,7 +89,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
   }, [route?.params?.locationId]);
 
   const showModal = (type, title, message, buttonText = String.accept) => {
-    setModalConfig({type, title, message, buttonText});
+    setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
 
@@ -148,6 +149,8 @@ const UnifiedTableScreen = ({navigation, route}) => {
           photoUri:
             'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
           isFromUnifiedFlow: true,
+          electionId,
+          electionType,
         });
       } else {
         navigation.navigate(StackNav.TableDetail, {
@@ -156,6 +159,8 @@ const UnifiedTableScreen = ({navigation, route}) => {
           originalTable: mesa,
           locationData: locationData,
           isFromUnifiedFlow: true,
+          electionId,
+          electionType,
         });
       }
     } catch (error) {
@@ -166,6 +171,8 @@ const UnifiedTableScreen = ({navigation, route}) => {
         originalTable: mesa,
         locationData: locationData,
         isFromUnifiedFlow: true,
+        electionId,
+        electionType,
       });
     }
   };
@@ -183,7 +190,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
       }
 
       // Try to fetch actas for this mesa
-      const {fetchActasByMesa} = require('../../data/mockMesas');
+      const { fetchActasByMesa } = require('../../data/mockMesas');
       const response = await fetchActasByMesa(numericId);
 
       if (
@@ -262,6 +269,7 @@ const UnifiedTableScreen = ({navigation, route}) => {
         showLocationFirst={false} // Search input appears before location bar
         // Styles
         styles={styles}
+        electionId ={electionId}
       />
 
       {/* Custom Modal */}

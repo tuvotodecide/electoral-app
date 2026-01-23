@@ -1,15 +1,15 @@
-import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
-import {useSelector} from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -21,9 +21,9 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const UnifiedParticipationScreen = ({navigation, route}) => {
+const UnifiedParticipationScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
-  const {locationId, locationData} = route.params || {};
+  const { locationId, locationData, electionId, electionType } = route.params || {};
   const [dots, setDots] = useState('');
 
   useEffect(() => {
@@ -37,24 +37,28 @@ const UnifiedParticipationScreen = ({navigation, route}) => {
   // Automáticamente navegar a subir acta (temporalmente)
   useEffect(() => {
     const timer = setTimeout(() => {
-      const {locationId, locationData, tableData, fromCache, offline} =
+      const { locationId, locationData, tableData, fromCache, offline } =
         route.params || {};
       if (tableData) {
         // Ir directo al detalle de mesa (subir/ver acta) sin pasar por la lista
         navigation.replace(StackNav.TableDetail, {
           tableData,
           mesa: tableData,
-          locationData: {...locationData, locationId},
+          locationData: { ...locationData, locationId },
           isFromUnifiedFlow: true,
           fromCache,
           offline,
+          electionId,
+          electionType,
         });
       } else {
+
         // Flujo normal (lista de mesas)
         navigation.replace(StackNav.UnifiedTableScreen, {
           locationId,
           locationData,
           targetScreen: 'SearchTable',
+          electionId
         });
       }
     }, 100);
@@ -123,7 +127,7 @@ const styles = StyleSheet.create({
     padding: getResponsiveSize(20, 24, 28),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,

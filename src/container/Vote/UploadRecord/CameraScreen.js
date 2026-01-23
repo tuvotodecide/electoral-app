@@ -1,4 +1,4 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -23,15 +23,15 @@ import {
 import ImageViewing from 'react-native-image-viewing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
-import {launchImageLibrary} from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 
-import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
+import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 
-const {width: windowWidth, height: windowHeight} = Dimensions.get('window');
+const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
 
@@ -39,7 +39,7 @@ const isSmallPhone = windowWidth < 350;
 const getBestCameraFormat = device => {
   if (!device?.formats) return undefined;
 
-  const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const isPortrait = screenHeight >= screenWidth;
   const screenRatio = screenWidth / screenHeight;
 
@@ -68,22 +68,22 @@ const getBestCameraFormat = device => {
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const getContainedSize = (srcW, srcH, maxW, maxH) => {
-  if (!srcW || !srcH || !maxW || !maxH) return {width: maxW, height: maxH};
+  if (!srcW || !srcH || !maxW || !maxH) return { width: maxW, height: maxH };
   const srcRatio = srcW / srcH;
   const maxRatio = maxW / maxH;
   if (srcRatio > maxRatio) {
     const width = maxW;
     const height = width / srcRatio;
-    return {width, height};
+    return { width, height };
   } else {
     const height = maxH;
     const width = height * srcRatio;
-    return {width, height};
+    return { width, height };
   }
 };
 
 // Marco de overlay reutilizable - movido fuera del componente
-const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
+const RenderFrame = ({ color = 'red', screenWidth, screenHeight }) => {
   const frameSize = Math.min(screenWidth, screenHeight) - 40;
   const topOffset = (screenHeight - frameSize) / 2;
   const leftOffset = (screenWidth - frameSize) / 2;
@@ -93,24 +93,25 @@ const RenderFrame = ({color = 'red', screenWidth, screenHeight}) => {
       pointerEvents="none"
       style={[
         styles.fullScreenOverlay,
-        {width: screenWidth, height: screenHeight},
+        { width: screenWidth, height: screenHeight },
       ]}>
-      <View style={[styles.corner, styles.topLeft, {borderColor: color}]} />
-      <View style={[styles.corner, styles.topRight, {borderColor: color}]} />
-      <View style={[styles.corner, styles.bottomLeft, {borderColor: color}]} />
-      <View style={[styles.corner, styles.bottomRight, {borderColor: color}]} />
+      <View style={[styles.corner, styles.topLeft, { borderColor: color }]} />
+      <View style={[styles.corner, styles.topRight, { borderColor: color }]} />
+      <View style={[styles.corner, styles.bottomLeft, { borderColor: color }]} />
+      <View style={[styles.corner, styles.bottomRight, { borderColor: color }]} />
       <View style={styles.fullBorder} />
     </View>
   );
 };
 
-export default function CameraScreen({navigation, route}) {
+export default function CameraScreen({ navigation, route }) {
 
   const camera = useRef(null);
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
+  const { electionId, electionType } = route.params || {};
   const device = backDevice || frontDevice;
-  const {hasPermission, requestPermission} = useCameraPermission();
+  const { hasPermission, requestPermission } = useCameraPermission();
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -128,7 +129,7 @@ export default function CameraScreen({navigation, route}) {
 
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
-  const [photoMeta, setPhotoMeta] = useState({width: 0, height: 0});
+  const [photoMeta, setPhotoMeta] = useState({ width: 0, height: 0 });
   const [imageTranslateX, setImageTranslateX] = useState(new Animated.Value(0));
   const [imageTranslateY, setImageTranslateY] = useState(new Animated.Value(0));
   const [lastScale, setLastScale] = useState(1);
@@ -136,7 +137,7 @@ export default function CameraScreen({navigation, route}) {
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
-  
+
   const initialScale = useRef(1);
   const isZooming = useRef(false);
 
@@ -180,7 +181,7 @@ export default function CameraScreen({navigation, route}) {
 
   // Detectar cambios de orientación
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({window}) => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setScreenData(window);
       const newOrientation =
         window.width > window.height ? 'landscape' : 'portrait';
@@ -198,7 +199,7 @@ export default function CameraScreen({navigation, route}) {
       buttons:
         buttons.length > 0
           ? buttons
-          : [{text: 'OK', onPress: () => setModalVisible(false)}],
+          : [{ text: 'OK', onPress: () => setModalVisible(false) }],
     });
     setModalVisible(true);
   };
@@ -241,8 +242,8 @@ export default function CameraScreen({navigation, route}) {
           if (uriForSize) {
             Image.getSize(
               uriForSize,
-              (w, h) => setPhotoMeta({width: w, height: h}),
-              () => {},
+              (w, h) => setPhotoMeta({ width: w, height: h }),
+              () => { },
             );
           }
         }
@@ -259,14 +260,14 @@ export default function CameraScreen({navigation, route}) {
     const effectiveH = draw.height * scale;
     const maxX = Math.max(0, (effectiveW - containerW) / 2);
     const maxY = Math.max(0, (effectiveH - containerH) / 2);
-    return {maxX, maxY};
+    return { maxX, maxY };
   };
 
   const getFocalPoint = touches => {
-    if (!touches || touches.length < 2) return {fx: 0, fy: 0};
+    if (!touches || touches.length < 2) return { fx: 0, fy: 0 };
     const fx = (touches[0].pageX + touches[1].pageX) / 2;
     const fy = (touches[0].pageY + touches[1].pageY) / 2;
-    return {fx, fy};
+    return { fx, fy };
   };
 
   // Funciones para manejar zoom y navegación de imagen
@@ -327,7 +328,7 @@ export default function CameraScreen({navigation, route}) {
         if (touches.length === 2) {
           isZooming.current = true;
 
-          const {fx, fy} = getFocalPoint(touches);
+          const { fx, fy } = getFocalPoint(touches);
           const dx = touches[1].pageX - touches[0].pageX;
           const dy = touches[1].pageY - touches[0].pageY;
           const distance = Math.hypot(dx, dy);
@@ -354,7 +355,7 @@ export default function CameraScreen({navigation, route}) {
           let ty1 = fy - (fy - ty0) * (s1 / s0);
 
           // límites según escala
-          const {maxX, maxY} = getMaxOffsets(
+          const { maxX, maxY } = getMaxOffsets(
             s1,
             containerW,
             containerH,
@@ -374,7 +375,7 @@ export default function CameraScreen({navigation, route}) {
         const currentScale = imageScale.__getValue
           ? imageScale.__getValue()
           : lastScale;
-        const {maxX, maxY} = getMaxOffsets(
+        const { maxX, maxY } = getMaxOffsets(
           currentScale,
           containerW,
           containerH,
@@ -428,7 +429,7 @@ export default function CameraScreen({navigation, route}) {
   // Función para tomar nueva foto
   const takeNewPhoto = () => {
     setPhoto(null);
-    setPhotoMeta({width: 0, height: 0});
+    setPhotoMeta({ width: 0, height: 0 });
     setIsActive(true);
     resetImageTransform();
   };
@@ -555,13 +556,13 @@ export default function CameraScreen({navigation, route}) {
         Image.getSize(
           `file://${result.path}`,
           (width, height) => {
-            resolve({width, height});
+            resolve({ width, height });
           },
           reject,
         );
       });
 
-      setPhoto({path: result.path}); // sin cropData
+      setPhoto({ path: result.path }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);
@@ -606,6 +607,7 @@ export default function CameraScreen({navigation, route}) {
         photoUri: `file://${photo.path}`,
         tableData: mesaInfo,
         offline: true,
+        electionId, electionType
       });
       return;
     }
@@ -624,7 +626,7 @@ export default function CameraScreen({navigation, route}) {
         showModal(
           'Error de Análisis',
           analysisResult.error || 'No se pudo analizar la imagen',
-          [{text: 'OK', onPress: () => setModalVisible(false)}],
+          [{ text: 'OK', onPress: () => setModalVisible(false) }],
         );
         setAnalyzing(false);
         return;
@@ -682,6 +684,7 @@ export default function CameraScreen({navigation, route}) {
         tableData: mesaInfo,
         aiAnalysis: aiData,
         mappedData: mappedData,
+        electionId, electionType
       });
     } catch (error) {
       console.error('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
@@ -697,6 +700,7 @@ export default function CameraScreen({navigation, route}) {
           photoUri: `file://${photo.path}`,
           tableData: mesaInfo,
           offline: true,
+          electionId, electionType
         });
         return;
       }
@@ -718,6 +722,7 @@ export default function CameraScreen({navigation, route}) {
               navigation.navigate(StackNav.PhotoReviewScreen, {
                 photoUri: `file://${photo.path}`,
                 tableData: mesaInfo,
+                electionId, electionType
               });
             },
           },
@@ -796,7 +801,7 @@ export default function CameraScreen({navigation, route}) {
           {/* Header con controles */}
           <View style={styles.fullContainer}>
             <ImageViewing
-              images={[{uri: 'file://' + photo.path}]}
+              images={[{ uri: 'file://' + photo.path }]}
               visible={true}
               onRequestClose={() => {
                 /* no cerramos, controlas tú el flujo */
@@ -868,6 +873,7 @@ export default function CameraScreen({navigation, route}) {
                           photoUri: `file://${photo.path}`,
                           tableData: mesaInfo,
                           offline: true,
+                          electionId, electionType
                         });
                       }}>
                       <Ionicons
@@ -907,9 +913,9 @@ export default function CameraScreen({navigation, route}) {
                 styles.animatedImageContainer,
                 {
                   transform: [
-                    {scale: imageScale},
-                    {translateX: imageTranslateX},
-                    {translateY: imageTranslateY},
+                    { scale: imageScale },
+                    { translateX: imageTranslateX },
+                    { translateY: imageTranslateY },
                   ],
                 },
               ]}>
@@ -924,10 +930,10 @@ export default function CameraScreen({navigation, route}) {
                 );
                 return (
                   <Image
-                    source={{uri: 'file://' + photo.path}}
+                    source={{ uri: 'file://' + photo.path }}
                     style={[
                       styles.zoomableImage,
-                      {width: draw.width, height: draw.height}, // ✅ sin márgenes "fake"
+                      { width: draw.width, height: draw.height }, // ✅ sin márgenes "fake"
                     ]}
                     resizeMode="contain"
                   />
@@ -974,8 +980,9 @@ export default function CameraScreen({navigation, route}) {
                   navigation.navigate(StackNav.PhotoReviewScreen, {
                     photoUri: `file://${photo.path}`,
                     tableData: mesaInfo,
-                    // flag opcional por si quieres mostrar un banner “modo offline”
                     offline: true,
+                    electionId, electionType
+                    // flag opcional por si quieres mostrar un banner “modo offline”
                   });
                 }}>
                 <Ionicons
@@ -1007,7 +1014,7 @@ export default function CameraScreen({navigation, route}) {
                   style={[
                     styles.modalButton,
                     index === modalConfig.buttons.length - 1 &&
-                      styles.modalButtonLast,
+                    styles.modalButtonLast,
                   ]}
                   onPress={button.onPress}>
                   <Text style={styles.modalButtonText}>{button.text}</Text>
@@ -1126,7 +1133,7 @@ const styles = StyleSheet.create({
     minWidth: 140,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -1223,7 +1230,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -1236,7 +1243,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
@@ -1265,7 +1272,7 @@ const styles = StyleSheet.create({
     width: '90%',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },

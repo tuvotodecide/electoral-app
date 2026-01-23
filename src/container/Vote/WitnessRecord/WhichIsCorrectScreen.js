@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -16,13 +16,13 @@ import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
 import Strings from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 
-import {fetchActasByMesa} from '../../../data/mockMesas';
-import {normalizeUri} from '../../../utils/normalizedUri';
-import {useFocusEffect} from '@react-navigation/native';
+import { fetchActasByMesa } from '../../../data/mockMesas';
+import { normalizeUri } from '../../../utils/normalizedUri';
+import { useFocusEffect } from '@react-navigation/native';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 350;
@@ -220,9 +220,10 @@ const transformVoteSummary = (summary, fallbackArray) => {
   return [];
 };
 
-const WhichIsCorrectScreen = ({navigation, route}) => {
+const WhichIsCorrectScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const params = route?.params || {};
+  const { electionId, electionType } = route?.params || {};
 
   const {
     tableData: routeTableData,
@@ -296,10 +297,10 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     () =>
       Boolean(
         isFromUnifiedFlow ||
-          fromTableDetail ||
-          isFromAPI ||
-          (Array.isArray(existingRecords) && existingRecords.length > 0) ||
-          (Array.isArray(existingActas) && existingActas.length > 0),
+        fromTableDetail ||
+        isFromAPI ||
+        (Array.isArray(existingRecords) && existingRecords.length > 0) ||
+        (Array.isArray(existingActas) && existingActas.length > 0),
       ),
     [
       existingActas,
@@ -312,7 +313,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
 
   const showModal = useCallback(
     (type, title, message, buttonText = Strings.accept) => {
-      setModalConfig({type, title, message, buttonText});
+      setModalConfig({ type, title, message, buttonText });
       setModalVisible(true);
     },
     [],
@@ -413,7 +414,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       );
       const partyResults =
         (Array.isArray(selectedImage.partyResults) &&
-        selectedImage.partyResults.length > 0
+          selectedImage.partyResults.length > 0
           ? selectedImage.partyResults
           : globalPartyResults) || [];
 
@@ -430,11 +431,13 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
           voteSummaryResults: voteSummary,
         },
         mode: 'attest',
+        electionId,
+        electionType,
       };
       try {
-        navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);
+        navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview, );
       } catch {
-        navigation.navigate('PhotoReviewScreen', payloadForPhotoReview);
+        navigation.navigate('PhotoReviewScreen', payloadForPhotoReview, );
       }
     },
     [
@@ -469,9 +472,9 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
 
     if (isFromUnifiedFlow && !fromTableDetail && !isFromAPI) {
       try {
-        navigation.navigate(StackNav.TableDetail, basePayload);
+        navigation.navigate(StackNav.TableDetail, basePayload, electionId, electionType);
       } catch {
-        navigation.navigate('TableDetail', basePayload);
+        navigation.navigate('TableDetail', basePayload, electionId, electionType);
       }
       return;
     }
@@ -483,9 +486,9 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     };
 
     try {
-      navigation.navigate(StackNav.CameraScreen, cameraPayload);
+      navigation.navigate(StackNav.CameraScreen, cameraPayload, electionId, electionType);
     } catch {
-      navigation.navigate('CameraScreen', cameraPayload);
+      navigation.navigate('CameraScreen', cameraPayload, electionId, electionType);
     }
   }, [
     actaImages,
@@ -510,7 +513,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
     navigation.goBack();
   }, [navigation]);
 
-  const IPFSImageComponent = ({image, testID}) => {
+  const IPFSImageComponent = ({ image, testID }) => {
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [hasError, setHasError] = useState(false);
 
@@ -566,7 +569,7 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
       <View>
         <Image
           testID={testID}
-          source={{uri: currentUri}}
+          source={{ uri: currentUri }}
           style={[styles.imageDisplay, isLoadingImage && styles.imageLoading]}
           resizeMode="contain"
           onLoadStart={() => {
@@ -609,9 +612,8 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
         testID="whichIsCorrectHeader"
         colors={colors}
         onBack={handleBack}
-        title={`${Strings.table} ${
-          mesaInfo?.tableNumber || mesaInfo?.numero || mesaInfo?.number || 'N/A'
-        }`}
+        title={`${Strings.table} ${mesaInfo?.tableNumber || mesaInfo?.numero || mesaInfo?.number || 'N/A'
+          }`}
         showNotification={true}
       />
 
@@ -670,92 +672,92 @@ const WhichIsCorrectScreen = ({navigation, route}) => {
           showsVerticalScrollIndicator={false}>
           {isTablet
             ? (() => {
-                const pairs = [];
-                for (let i = 0; i < actaImages.length; i += 2) {
-                  pairs.push(actaImages.slice(i, i + 2));
-                }
-                return pairs.map((pair, pairIndex) => (
-                  <View
-                    key={pairIndex}
-                    testID={`whichIsCorrect_tabletRow_${pairIndex}`}
-                    style={styles.tabletRow}>
-                    {pair.map((image, imageIndex) => {
-                      const globalIndex = pairIndex * 2 + imageIndex;
-                      const isSelected = selectedImageId === image.id;
-                      return (
-                        <View
-                          key={image.id}
-                          testID={`whichIsCorrect_tabletColumn_${globalIndex}`}
-                          style={styles.tabletColumn}>
-                          <TouchableOpacity
-                            testID={`whichIsCorrect_imageCard_${globalIndex}`}
-                            style={[
-                              styles.imageCard,
-                              isSelected && styles.imageCardSelected,
-                            ]}
-                            onPress={() => handleImagePress(image.id)}>
-                            <IPFSImageComponent
-                              testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
-                              image={image}
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })}
-                    {pair.length === 1 && (
+              const pairs = [];
+              for (let i = 0; i < actaImages.length; i += 2) {
+                pairs.push(actaImages.slice(i, i + 2));
+              }
+              return pairs.map((pair, pairIndex) => (
+                <View
+                  key={pairIndex}
+                  testID={`whichIsCorrect_tabletRow_${pairIndex}`}
+                  style={styles.tabletRow}>
+                  {pair.map((image, imageIndex) => {
+                    const globalIndex = pairIndex * 2 + imageIndex;
+                    const isSelected = selectedImageId === image.id;
+                    return (
                       <View
-                        testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`}
-                        style={styles.tabletColumn}
-                      />
-                    )}
-                  </View>
-                ));
-              })()
+                        key={image.id}
+                        testID={`whichIsCorrect_tabletColumn_${globalIndex}`}
+                        style={styles.tabletColumn}>
+                        <TouchableOpacity
+                          testID={`whichIsCorrect_imageCard_${globalIndex}`}
+                          style={[
+                            styles.imageCard,
+                            isSelected && styles.imageCardSelected,
+                          ]}
+                          onPress={() => handleImagePress(image.id)}>
+                          <IPFSImageComponent
+                            testID={`whichIsCorrect_IPFSImage_${globalIndex}`}
+                            image={image}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                  {pair.length === 1 && (
+                    <View
+                      testID={`whichIsCorrect_emptyTabletColumn_${pairIndex}`}
+                      style={styles.tabletColumn}
+                    />
+                  )}
+                </View>
+              ));
+            })()
             : actaImages.map((image, index) => {
-                const isSelected = selectedImageId === image.id;
-                return (
-                  <React.Fragment key={image.id}>
-                    <TouchableOpacity
-                      testID={`whichIsCorrect_phoneImageCard_${index}`}
-                      style={[
-                        styles.imageCard,
-                        isSelected && styles.imageCardSelected,
-                      ]}
-                      onPress={() => handleImagePress(image.id)}>
-                      <IPFSImageComponent
-                        testID={`whichIsCorrect_phoneIPFSImage_${index}`}
-                        image={image}
-                      />
-                      {isSelected && (
-                        <>
-                          <View
-                            testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
-                            style={[styles.cornerBorder, styles.topLeftCorner]}
-                          />
-                          <View
-                            testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
-                            style={[styles.cornerBorder, styles.topRightCorner]}
-                          />
-                          <View
-                            testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
-                            style={[
-                              styles.cornerBorder,
-                              styles.bottomLeftCorner,
-                            ]}
-                          />
-                          <View
-                            testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
-                            style={[
-                              styles.cornerBorder,
-                              styles.bottomRightCorner,
-                            ]}
-                          />
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </React.Fragment>
-                );
-              })}
+              const isSelected = selectedImageId === image.id;
+              return (
+                <React.Fragment key={image.id}>
+                  <TouchableOpacity
+                    testID={`whichIsCorrect_phoneImageCard_${index}`}
+                    style={[
+                      styles.imageCard,
+                      isSelected && styles.imageCardSelected,
+                    ]}
+                    onPress={() => handleImagePress(image.id)}>
+                    <IPFSImageComponent
+                      testID={`whichIsCorrect_phoneIPFSImage_${index}`}
+                      image={image}
+                    />
+                    {isSelected && (
+                      <>
+                        <View
+                          testID={`whichIsCorrect_phoneTopLeftCorner_${index}`}
+                          style={[styles.cornerBorder, styles.topLeftCorner]}
+                        />
+                        <View
+                          testID={`whichIsCorrect_phoneTopRightCorner_${index}`}
+                          style={[styles.cornerBorder, styles.topRightCorner]}
+                        />
+                        <View
+                          testID={`whichIsCorrect_phoneBottomLeftCorner_${index}`}
+                          style={[
+                            styles.cornerBorder,
+                            styles.bottomLeftCorner,
+                          ]}
+                        />
+                        <View
+                          testID={`whichIsCorrect_phoneBottomRightCorner_${index}`}
+                          style={[
+                            styles.cornerBorder,
+                            styles.bottomRightCorner,
+                          ]}
+                        />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </React.Fragment>
+              );
+            })}
         </ScrollView>
       )}
 
@@ -802,7 +804,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -868,7 +870,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 12, 16),
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',

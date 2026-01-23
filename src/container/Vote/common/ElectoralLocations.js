@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -13,23 +13,23 @@ import {
   Easing,
   AppState,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
+import { StackNav } from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import NetInfo from '@react-native-community/netinfo';
-import {BACKEND_RESULT} from '@env';
-import {isStateEffectivelyOnline, NET_POLICIES} from '../../../utils/networkQuality';
+import { BACKEND_RESULT } from '@env';
+import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 
-import {getVotePlace} from '../../../utils/offlineQueue';
+import { getVotePlace } from '../../../utils/offlineQueue';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -45,7 +45,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const ElectoralLocations = ({navigation, route}) => {
+const ElectoralLocations = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const dni = userData?.vc?.credentialSubject?.governmentIdentifier;
@@ -73,7 +73,8 @@ const ElectoralLocations = ({navigation, route}) => {
   const pendingPermissionFromSettings = useRef(false);
 
   // Get navigation target from route params
-  const {targetScreen} = route.params || {};
+  const { targetScreen, electionId, electionType } = route.params || {};
+  
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -156,9 +157,9 @@ const ElectoralLocations = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${longitude}&lng=${latitude}&maxDistance=500`,
+        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
         //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
-        {timeout: 15000}, // 10 segundos timeout
+        { timeout: 15000 }, // 10 segundos timeout
       );
       if (response.data && response.data.data) {
         setLocations(response.data.data);
@@ -283,9 +284,9 @@ const ElectoralLocations = ({navigation, route}) => {
         // Obtener ubicación
         Geolocation.getCurrentPosition(
           position => {
-            const {latitude, longitude} = position.coords;
+            const { latitude, longitude } = position.coords;
 
-            setUserLocation({latitude, longitude});
+            setUserLocation({ latitude, longitude });
             fetchNearbyLocations(latitude, longitude);
           },
           error => {
@@ -360,7 +361,7 @@ const ElectoralLocations = ({navigation, route}) => {
             navigation.replace(StackNav.UnifiedParticipationScreen, {
               locationId: cached.location._id,
               locationData: cached.location,
-              ...(cached.table ? {tableData: cached.table} : {}),
+              ...(cached.table ? { tableData: cached.table } : {}),
               fromCache: true,
               offline: true,
             });
@@ -412,7 +413,7 @@ const ElectoralLocations = ({navigation, route}) => {
               );
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     });
     return () => sub.remove();
@@ -424,7 +425,7 @@ const ElectoralLocations = ({navigation, route}) => {
       setConfigError(false);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        {timeout: 15000}, // 10 segundos timeout
+        { timeout: 15000 }, // 10 segundos timeout
       );
 
       if (response.data) {
@@ -442,7 +443,7 @@ const ElectoralLocations = ({navigation, route}) => {
     } catch (error) {
       console.log(error)
       const net = await NetInfo.fetch();
-      const online = isStateEffectivelyOnline(net,  NET_POLICIES.balanced);
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
@@ -534,17 +535,23 @@ const ElectoralLocations = ({navigation, route}) => {
         navigation.navigate(StackNav.SearchCountTable, {
           locationId: location._id,
           locationData: location,
+
+          electionId,
+          electionType,
         });
       } else if (targetScreen === 'UnifiedParticipation') {
         navigation.navigate(StackNav.UnifiedParticipationScreen, {
           locationId: location._id,
-          locationData: location,
+          locationData: location, electionId,
+          electionType,
         });
       } else {
         navigation.navigate(StackNav.UnifiedTableScreen, {
           locationId: location._id,
           locationData: location,
           targetScreen: targetScreen,
+          electionId,
+          electionType,
         });
       }
     } else {
@@ -557,7 +564,7 @@ const ElectoralLocations = ({navigation, route}) => {
     }
   };
 
-  const renderLocationItem = ({item}) => (
+  const renderLocationItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
@@ -717,14 +724,14 @@ const ElectoralLocations = ({navigation, route}) => {
                 position: 'absolute',
                 width: ringSize,
                 height: ringSize,
-                transform: [{rotate: spin}],
+                transform: [{ rotate: spin }],
               }}>
               <Animated.View
                 style={{
                   position: 'absolute',
                   right: -iconSize / 2,
                   top: half - iconSize / 2,
-                  transform: [{rotate: spinNeg}],
+                  transform: [{ rotate: spinNeg }],
                 }}>
                 <Ionicons name="search" size={iconSize} color="#4F9858" />
               </Animated.View>
@@ -800,7 +807,7 @@ const ElectoralLocations = ({navigation, route}) => {
 
     // Caso 4: Periodo de votación activo
     return (
-      <View style={{flex: 1}}>
+      <View style={{ flex: 1 }}>
         {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
@@ -832,7 +839,7 @@ const ElectoralLocations = ({navigation, route}) => {
             )}
 
             <FlatList
-              style={{flex: 1}}
+              style={{ flex: 1 }}
               data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
@@ -939,7 +946,7 @@ const styles = {
     padding: getResponsiveSize(16, 18, 20),
     marginBottom: getResponsiveSize(12, 16, 20),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -1137,7 +1144,7 @@ const styles = {
     paddingHorizontal: getResponsiveSize(12, 16, 20),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },

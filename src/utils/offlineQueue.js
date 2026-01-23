@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {KEY_OFFLINE} from '../common/constants';
+import { KEY_OFFLINE } from '../common/constants';
 
 let processing = false;
 const KEY = dni => `@vote-place:${dni}`;
@@ -17,7 +17,7 @@ export const enqueue = async task => {
   try {
     const list = await read();
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    list.push({id, createdAt: Date.now(), task});
+    list.push({ id, createdAt: Date.now(), task });
     await write(list);
     return id;
   } catch (err) {
@@ -41,13 +41,15 @@ export const getAll = read;
 export const processQueue = async (handler) => {
   if (processing) {
     const remaining = (await read()).length;
-    return {processed: 0, failed: 0, remaining};
+    return { processed: 0, failed: 0, remaining, failedItems: [] };
   }
   processing = true;
   let processed = 0;
   let failed = 0;
+  const failedItems = [];
+
   try {
-    const snapshot = await read(); // instantánea
+    const snapshot = await read();
     for (const item of snapshot) {
       try {
         await handler(item);
@@ -55,17 +57,68 @@ export const processQueue = async (handler) => {
         processed++;
       } catch (e) {
         failed++;
-        console.error('[OFFLINE-QUEUE] handler error for item', { id: item.id, error: e });
+
+        const msg = toErrorString(e);
+
+        const payload = item?.task?.payload || {};
+        const tableCode =
+          payload?.additionalData?.tableCode ||
+          payload?.tableData?.codigo ||
+          payload?.tableData?.tableCode ||
+          payload?.electoralData?.tableCode ||
+          null;
+
+        failedItems.push({
+          id: item.id,
+          error: msg,
+          tableCode,
+          createdAt: item.createdAt,
+          type: item?.task?.type,
+        });
+
+        console.error('[OFFLINE-QUEUE] handler error for item', {
+          id: item.id,
+          error: msg,
+        });
       }
     }
+
     const remaining = (await read()).length;
-    return {processed, failed, remaining};
+    return { processed, failed, remaining, failedItems };
   } finally {
     processing = false;
   }
 };
 
+const toErrorString = (e) => {
+  if (!e) return 'Unknown error';
 
+  const status = e?.response?.status;
+  const data = e?.response?.data;
+
+  if (status) {
+    let dataStr = '';
+    try {
+      dataStr =
+        data == null ? '' :
+          typeof data === 'string' ? data :
+            JSON.stringify(data, null, 2);
+    } catch {
+      dataStr = String(data);
+    }
+
+    const base = `HTTP ${status}${e?.message ? ` - ${e.message}` : ''}`;
+    return dataStr ? `${base}\n${dataStr}` : base;
+  }
+
+  if (e?.message) return String(e.message);
+
+  try {
+    return typeof e === 'string' ? e : JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+};
 export async function saveVotePlace(dni, value) {
   try {
     await AsyncStorage.setItem(KEY(dni), JSON.stringify(value));
