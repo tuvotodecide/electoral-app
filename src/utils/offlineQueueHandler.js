@@ -1,6 +1,6 @@
 import pinataService from '../utils/pinataService';
 import axios from 'axios';
-import { BACKEND_RESULT, CHAIN, BACKEND_SECRET, VERIFIER_REQUEST_ENDPOINT } from '@env';
+import { BACKEND_RESULT, CHAIN, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import { oracleCalls, oracleReads } from '../api/oracle';
 import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';
@@ -145,7 +145,7 @@ const uploadCertificateAndNotifyBackend = async (
       {
         headers: {
           'Content-Type': 'application/json',
-
+          'x-api-key': apiKey
         },
         timeout: 30000,
       },
@@ -176,7 +176,7 @@ export const publishActaHandler = async (item, userData) => {
       userData.did,
       userData.privKey,
     );
-
+    console.log('API Key obtenido:', apiKey);
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -393,7 +393,7 @@ export const publishActaHandler = async (item, userData) => {
               {
                 headers: {
                   'Content-Type': 'application/json',
-                  'x-api-key': BACKEND_SECRET
+                  'x-api-key': apiKey
                 },
                 timeout: 30000,
               },
@@ -610,7 +610,7 @@ export const publishActaHandler = async (item, userData) => {
             {
               headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': BACKEND_SECRET
+                'x-api-key': apiKey
 
               },
               timeout: 30000,
@@ -727,8 +727,8 @@ export const publishActaHandler = async (item, userData) => {
           ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
+          'Content-Type': 'application/json',
           headers: {
-            'Content-Type': 'application/json',
             'x-api-key': apiKey,
           },
           timeout: 30000,
@@ -853,7 +853,7 @@ export const publishActaHandler = async (item, userData) => {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': BACKEND_SECRET
+              'x-api-key': apiKey
 
             },
             timeout: 30000,

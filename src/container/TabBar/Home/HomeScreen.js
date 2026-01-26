@@ -1123,13 +1123,13 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
           {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
-          <RegisterAlertCard
+          {/* <RegisterAlertCard
             onPress={() =>
               navigation.navigate(StackNav.ElectoralLocationsSave, {
                 dni,
               })
             }
-          />
+          /> */}
           {/*)}*/}
 
           <View style={stylesx.tabletRightColumn}>
@@ -1265,7 +1265,7 @@ export default function HomeScreen({ navigation }) {
               ))}
             </View>
           </View>
-          {!checkingVotePlace && shouldShowRegisterAlert && (
+          {/* {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -1273,7 +1273,7 @@ export default function HomeScreen({ navigation }) {
                 })
               }
             />
-          )}
+          )} */}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
