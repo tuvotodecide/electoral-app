@@ -96,6 +96,7 @@ const uploadCertificateAndNotifyBackend = async (
   certificateImageUri,
   normalizedAdditional,
   userData,
+  apiKey
 ) => {
   if (!certificateImageUri) return;
 
@@ -424,6 +425,7 @@ export const publishActaHandler = async (item, userData) => {
               certificateImageUri,
               normalizedAdditional,
               userData,
+              apiKey,
             );
           } catch (err) {
             console.error(
