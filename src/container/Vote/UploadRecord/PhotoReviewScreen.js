@@ -15,7 +15,6 @@ const PhotoReviewScreen = () => {
   const colors = useSelector(state => state.theme.theme);
   const { photoUri, tableData, electionId,
     electionType, } = route.params || {};
-console.log(electionId, 'photo review screen electionId')
   // State for editable fields
   const [isEditing, setIsEditing] = useState(false);
 

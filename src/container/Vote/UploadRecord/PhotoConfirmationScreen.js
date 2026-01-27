@@ -93,7 +93,6 @@ const PhotoConfirmationScreen = ({ route }) => {
       ],
     });
   }, [navigation]);
-  console.log(electionId, 'photo confirmation screen electionId')
   const colors = useSelector(state => state.theme.theme);
   const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
     route.params || {};

@@ -177,7 +177,6 @@ export const publishActaHandler = async (item, userData) => {
       userData.did,
       userData.privKey,
     );
-    console.log('API Key obtenido:', apiKey);
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -231,11 +230,9 @@ export const publishActaHandler = async (item, userData) => {
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
     const electionId = normalizedAdditional?.electionId;
-
     const tableCodeForOracle = electionId
       ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
-
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(
@@ -302,9 +299,9 @@ export const publishActaHandler = async (item, userData) => {
     try {
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
+        electionId
       );
       if (duplicateCheck?.exists) {
-        // = Duplicado por contenido → NO subir a IPFS; attest al existente
         const existingBallot =
           duplicateCheck.ballot ||
           (await fetchLatestBallotByTable(tableCodeStrict));
@@ -379,8 +376,11 @@ export const publishActaHandler = async (item, userData) => {
               userData?.vc?.credentialSubject?.documentNumber ||
               userData?.vc?.credentialSubject?.nationalIdNumber ||
               '';
+            const queryEID = electionId
+              ? `?electionId=${encodeURIComponent(electionId)}`
+              : '';
             await axios.post(
-              `${BACKEND_RESULT}/api/v1/attestations`,
+              `${BACKEND_RESULT}/api/v1/attestations${queryEID}`,
               {
                 attestations: [
                   {
@@ -597,8 +597,11 @@ export const publishActaHandler = async (item, userData) => {
       try {
         if (backendBallot && backendBallot._id) {
           const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+          const queryEID = electionId
+            ? `?electionId=${encodeURIComponent(electionId)}`
+            : '';
           await axios.post(
-            `${BACKEND_RESULT}/api/v1/attestations`,
+            `${BACKEND_RESULT}/api/v1/attestations${queryEID}`,
             {
               attestations: [
                 {
@@ -650,6 +653,7 @@ export const publishActaHandler = async (item, userData) => {
             certificateImageUri,
             normalizedAdditional,
             userData,
+            apiKey,
           );
         } catch (err) {
           console.error(
@@ -840,8 +844,11 @@ export const publishActaHandler = async (item, userData) => {
     try {
       if (backendBallot && backendBallot._id) {
         const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+        const queryEID = electionId
+          ? `?electionId=${encodeURIComponent(electionId)}`
+          : '';
         await axios.post(
-          `${BACKEND_RESULT}/api/v1/attestations`,
+          `${BACKEND_RESULT}/api/v1/attestations${queryEID}`,
           {
             attestations: [
               {
@@ -864,7 +871,7 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) { }
 
-    console.log('[OFFLINE-QUEUE] acta publicada OK', { ipfsData, nftResult });
+
 
     try {
       await removePersistedImage(imageUri);
@@ -872,7 +879,7 @@ export const publishActaHandler = async (item, userData) => {
       console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
     }
 
-    console.log('[OFFLINE-QUEUE] imagen local eliminada');
+
 
     try {
       await requestPushPermissionExplicit();
@@ -887,6 +894,7 @@ export const publishActaHandler = async (item, userData) => {
           certificateImageUri,
           normalizedAdditional,
           userData,
+          apiKey,
         );
       } catch (err) {
         console.error(
@@ -895,8 +903,6 @@ export const publishActaHandler = async (item, userData) => {
         );
       }
     }
-
-    console.log('[OFFLINE-QUEUE] permisos de push gestionados');
 
     try {
       await displayLocalActaPublished({
@@ -909,7 +915,7 @@ export const publishActaHandler = async (item, userData) => {
       console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
     }
 
-    console.log('[OFFLINE-QUEUE] notificacion local mostrada');
+   
 
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
