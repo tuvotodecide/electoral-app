@@ -650,6 +650,7 @@ export const publishActaHandler = async (item, userData) => {
             certificateImageUri,
             normalizedAdditional,
             userData,
+            apiKey
           );
         } catch (err) {
           console.error(
@@ -887,6 +888,7 @@ export const publishActaHandler = async (item, userData) => {
           certificateImageUri,
           normalizedAdditional,
           userData,
+          apiKey
         );
       } catch (err) {
         console.error(
