@@ -74,7 +74,7 @@ const ElectoralLocations = ({ navigation, route }) => {
 
   // Get navigation target from route params
   const { targetScreen, electionId, electionType } = route.params || {};
-    console.log(electionId, 'electoral locations electionId')
+  console.log(electionId, 'electoral locations electionId')
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -423,33 +423,42 @@ const ElectoralLocations = ({ navigation, route }) => {
     try {
       setConfigLoading(true);
       setConfigError(false);
+
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 }, // 10 segundos timeout
+        { timeout: 15000 },
       );
 
-      if (response.data) {
-        setElectionStatus(response.data);
-      } else {
-        setConfigError(true);
-        showModal(
-          'error',
-          i18nString.error,
-          i18nString.electionConfigError,
-          i18nString.accept,
-          () => navigation.goBack(),
-        );
-      }
+      const raw = response.data;
+
+      // 1) elegir la elección correcta
+      const elections = raw?.elections || [];
+      const selected =
+        (electionId && elections.find(e => e.id === electionId)) ||
+        (electionType && elections.find(e => e.type === electionType)) ||
+        elections[0] ||
+        null;
+
+      // 2) normalizar a lo que tu UI espera
+      const normalized = {
+        hasActiveConfig: !!selected,                 // <- tu UI usa singular
+        currentTimeBolivia: raw?.currentTimeBolivia, // <- ya lo tienes
+        config: selected,                            // <- tu UI espera config
+        isVotingPeriod: !!selected?.isVotingPeriod,  // <- tu UI lo usa en root
+        isResultsPeriod: !!selected?.isResultsPeriod,
+        elections,                                   // opcional, por si lo necesitas
+      };
+
+      setElectionStatus(normalized);
     } catch (error) {
       const net = await NetInfo.fetch();
       const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
       setConfigError(true);
+
       let errorMessage = i18nString.electionConfigError;
-      if (error.code === 'ECONNABORTED') {
-        errorMessage = i18nString.connectionTimeout;
-      } else if (error.response) {
-        errorMessage = `${i18nString.serverError} (${error.response.status})`;
-      }
+      if (error.code === 'ECONNABORTED') errorMessage = i18nString.connectionTimeout;
+      else if (error.response) errorMessage = `${i18nString.serverError} (${error.response.status})`;
+
       if (online) {
         showModal(
           'error',
@@ -464,7 +473,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     } finally {
       setConfigLoading(false);
     }
-  }, [navigation]);
+  }, [navigation, electionId, electionType]);
 
   useEffect(() => {
     if (!offline) {
