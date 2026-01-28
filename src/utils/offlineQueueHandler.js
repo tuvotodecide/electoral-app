@@ -13,6 +13,7 @@ import { requestPushPermissionExplicit } from '../services/pushPermission';
 import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ELECTION_ID } from '../common/constants';
+import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
 
 const safeStr = v =>
   String(v ?? '')
@@ -115,10 +116,12 @@ const uploadCertificateAndNotifyBackend = async (
     });
 
     if (!nftResult.success) {
-      console.error(
-        '[OFFLINE-QUEUE] error uploadCertificateNFT',
-        nftResult.error,
-      );
+      captureError(new Error(nftResult.error || 'uploadCertificateNFT failed'), {
+        flow: 'offline_queue',
+        step: 'upload_certificate_nft',
+        critical: true,
+        tableCode: normalizedAdditional?.tableCode,
+      });
       return;
     }
     const { jsonUrl, imageUrl } = nftResult.data;
@@ -153,10 +156,12 @@ const uploadCertificateAndNotifyBackend = async (
     );
     return { jsonUrl, imageUrl };
   } catch (err) {
-    console.error(
-      '[OFFLINE-QUEUE] error al subir certificado y notificar backend',
-      err,
-    );
+    captureError(err, {
+      flow: 'offline_queue',
+      step: 'certificate_notify_backend',
+      critical: true,
+      tableCode: normalizedAdditional?.tableCode,
+    });
   }
 };
 
@@ -428,10 +433,12 @@ export const publishActaHandler = async (item, userData) => {
               apiKey,
             );
           } catch (err) {
-            console.error(
-              '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
-              err,
-            );
+            captureError(err, {
+              flow: 'offline_queue',
+              step: 'certificate_upload_attestation',
+              critical: false,
+              tableCode: normalizedAdditional?.tableCode,
+            });
           }
         }
 
@@ -453,7 +460,12 @@ export const publishActaHandler = async (item, userData) => {
         };
       }
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error al checkDuplicateBallot', err);
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'check_duplicate_ballot',
+        critical: false,
+        tableCode: tableCodeStrict,
+      });
     }
 
     // 2) NO fue duplicado por votos → mirar si ya existe acta en la mesa
@@ -483,17 +495,21 @@ export const publishActaHandler = async (item, userData) => {
           normalizedAdditional,
         );
         if (!ipfs.success) {
-          console.error(
-            '[OFFLINE-QUEUE] fallo uploadElectoralActComplete (attest-nuevo)',
-            ipfs.error,
-          );
+          captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
+            flow: 'offline_queue',
+            step: 'ipfs_upload_attest_nuevo',
+            critical: true,
+            tableCode: tableCodeStrict,
+          });
           throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
         }
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error subiendo a IPFS (attest-nuevo)',
-          err,
-        );
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'ipfs_upload_attest_nuevo',
+          critical: true,
+          tableCode: tableCodeStrict,
+        });
         throw err;
       }
       const ipfsData = ipfs.data;
@@ -517,10 +533,12 @@ export const publishActaHandler = async (item, userData) => {
           },
         );
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error en backend validation (attest-nuevo)',
-          err,
-        );
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'backend_validation_attest_nuevo',
+          critical: true,
+          tableCode: tableCodeStrict,
+        });
         throw err;
       }
 
@@ -544,9 +562,14 @@ export const publishActaHandler = async (item, userData) => {
           20,
         );
         if (!isRegistered) {
-          console.error(
-            '[OFFLINE-QUEUE] registro en oracle fallido (attest-nuevo)',
-          );
+          addBlockchainBreadcrumb('oracle_register_failed', { chain: CHAIN });
+          captureError(new Error('Oracle registration failed'), {
+            flow: 'offline_queue',
+            step: 'oracle_register_attest_nuevo',
+            critical: true,
+            tableCode: tableCodeStrict,
+            chain: CHAIN,
+          });
           throw Error(
             'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
           );
@@ -588,10 +611,12 @@ export const publishActaHandler = async (item, userData) => {
         );
         backendBallot = data;
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error notificando backend from-ipfs (attest-nuevo)',
-          err,
-        );
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'backend_from_ipfs_attest_nuevo',
+          critical: true,
+          tableCode: tableCodeStrict,
+        });
       }
 
       try {
@@ -627,15 +652,12 @@ export const publishActaHandler = async (item, userData) => {
       try {
         await removePersistedImage(imageUri);
       } catch (err) {
-        console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
+        // Error no critico - solo limpieza local
       }
       try {
         await requestPushPermissionExplicit();
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error solicitando permisos de push',
-          err,
-        );
+        // Error no critico - permisos de push
       }
 
       const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
@@ -656,10 +678,12 @@ export const publishActaHandler = async (item, userData) => {
             apiKey,
           );
         } catch (err) {
-          console.error(
-            '[OFFLINE-QUEUE] error subiendo certificado (attest-nuevo)',
-            err,
-          );
+          captureError(err, {
+            flow: 'offline_queue',
+            step: 'certificate_upload_attest_nuevo',
+            critical: false,
+            tableCode: tableCodeStrict,
+          });
         }
       }
 
@@ -671,10 +695,7 @@ export const publishActaHandler = async (item, userData) => {
           certificateData,
         });
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error mostrando notificacion local',
-          err,
-        );
+        // Error no critico - solo notificacion local
       }
 
       return {
@@ -709,14 +730,21 @@ export const publishActaHandler = async (item, userData) => {
         normalizedAdditional,
       );
       if (!ipfs.success) {
-        console.error(
-          '[OFFLINE-QUEUE] fallo uploadElectoralActComplete',
-          ipfs.error,
-        );
+        captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
+          flow: 'offline_queue',
+          step: 'ipfs_upload_create',
+          critical: true,
+          tableCode: tableCodeStrict,
+        });
         throw new Error(ipfs.error || 'uploadElectoralActComplete failed');
       }
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error subiendo a IPFS', err);
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'ipfs_upload_create',
+        critical: true,
+        tableCode: tableCodeStrict,
+      });
       throw err;
     }
     const ipfsData = ipfs.data;
@@ -741,7 +769,12 @@ export const publishActaHandler = async (item, userData) => {
         },
       );
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error en backend validation', err);
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'backend_validation_create',
+        critical: true,
+        tableCode: tableCodeStrict,
+      });
       throw err;
     }
 
@@ -765,7 +798,14 @@ export const publishActaHandler = async (item, userData) => {
         20,
       );
       if (!isRegistered) {
-        console.error('[OFFLINE-QUEUE] registro en oracle fallido');
+        addBlockchainBreadcrumb('oracle_register_failed', { chain: CHAIN });
+        captureError(new Error('Oracle registration failed'), {
+          flow: 'offline_queue',
+          step: 'oracle_register_create',
+          critical: true,
+          tableCode: tableCodeStrict,
+          chain: CHAIN,
+        });
         throw Error(
           'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
         );
@@ -787,9 +827,11 @@ export const publishActaHandler = async (item, userData) => {
         'AttestationCreated',
       );
     } catch (e) {
-      console.error('[OFFLINE-QUEUE] error createAttestation', e);
+      addBlockchainBreadcrumb('createAttestation_error', { chain: CHAIN });
       const msg = e.message || '';
+      // 416c72656164792063726561746564 = "Already created" en hex
       if (msg.indexOf('416c72656164792063726561746564') >= 0) {
+        // Fallback a attest si ya existe
         response = await executeOperation(
           privateKey,
           userData.account,
@@ -804,7 +846,13 @@ export const publishActaHandler = async (item, userData) => {
           'Attested',
         );
       } else {
-        console.error('[OFFLINE-QUEUE] error no recuperable en attestation', e);
+        captureError(e, {
+          flow: 'offline_queue',
+          step: 'create_attestation_unrecoverable',
+          critical: true,
+          tableCode: tableCodeStrict,
+          chain: CHAIN,
+        });
         throw e;
       }
     }
@@ -838,7 +886,12 @@ export const publishActaHandler = async (item, userData) => {
       );
       backendBallot = data;
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error notificando backend from-ipfs', err);
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'backend_from_ipfs_create',
+        critical: true,
+        tableCode: tableCodeStrict,
+      });
     }
 
     try {
@@ -876,7 +929,7 @@ export const publishActaHandler = async (item, userData) => {
     try {
       await removePersistedImage(imageUri);
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error eliminando imagen local', err);
+      // Error no critico - solo limpieza local
     }
 
 
@@ -884,10 +937,10 @@ export const publishActaHandler = async (item, userData) => {
     try {
       await requestPushPermissionExplicit();
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error solicitando permisos de push', err);
+      // Error no critico - permisos de push
     }
 
-    // 👉 Subir certificado y obtener enlace (si hay foto de certificado)
+    // Subir certificado y obtener enlace (si hay foto de certificado)
     if (certificateImageUri) {
       try {
         certificateData = await uploadCertificateAndNotifyBackend(
@@ -897,10 +950,12 @@ export const publishActaHandler = async (item, userData) => {
           apiKey,
         );
       } catch (err) {
-        console.error(
-          '[OFFLINE-QUEUE] error subiendo certificado (createAttestation)',
-          err,
-        );
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'certificate_upload_create',
+          critical: false,
+          tableCode: tableCodeStrict,
+        });
       }
     }
 
@@ -912,14 +967,17 @@ export const publishActaHandler = async (item, userData) => {
         certificateData,
       });
     } catch (err) {
-      console.error('[OFFLINE-QUEUE] error mostrando notificacion local', err);
+      // Error no critico - solo notificacion local
     }
-
-   
 
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
-    console.error('[OFFLINE-QUEUE] publishActaHandler fallo fatal', fatalErr);
+    captureError(fatalErr, {
+      flow: 'offline_queue',
+      step: 'publish_acta_fatal',
+      critical: true,
+      tableCode: item?.task?.payload?.tableData?.tableCode,
+    });
     throw fatalErr;
   }
 };

@@ -44,6 +44,7 @@ import {
   BUNDLER_MAIN,
   PROVIDER_NAME,
 } from '@env';
+import { captureError, setUserContext } from '../../config/sentry';
 
 const sharedSession = new wira.SharedSession(
   BACKEND_IDENTITY,
@@ -360,7 +361,11 @@ export default function LoginUser({navigation, route}) {
       })
         .catch(err => {
           logNetworkIssue('verifyPin:catch', err, {stage: 'onCodeFilled'});
-          console.error(err);
+          captureError(err, {
+            flow: 'login',
+            step: 'verify_pin',
+            critical: false,
+          });
         })
         .finally(() => {
           setLoading(false);
@@ -410,7 +415,11 @@ export default function LoginUser({navigation, route}) {
         await unlock(userData, null, '');
         setLoading(false);
       } catch (e) {
-        console.error(e);
+        captureError(e, {
+          flow: 'login',
+          step: 'biometric_auth',
+          critical: false,
+        });
         setLoading(false);
       }
     })();

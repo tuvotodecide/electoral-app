@@ -33,6 +33,7 @@ import { captureRef } from 'react-native-view-shot';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ELECTION_ID } from '../../../common/constants';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -266,18 +267,12 @@ const PhotoConfirmationScreen = ({ route }) => {
 
       return response.data;
     } catch (error) {
-      console.error('[PhotoConfirmation] uploadMetadataToBackend error', {
-        message: error?.message,
-        response: error?.response
-          ? {
-            status: error.response.status,
-            dataPreview: error.response.data
-              ? error.response.data._id
-                ? { _id: error.response.data._id }
-                : null
-              : null,
-          }
-          : null,
+      captureError(error, {
+        flow: 'vote_upload',
+        step: 'upload_metadata_backend',
+        critical: true,
+        tableCode: tableData?.tableCode || tableData?.codigo,
+        http_status: error?.response?.status,
       });
       throw error;
     }
@@ -309,10 +304,12 @@ const PhotoConfirmationScreen = ({ route }) => {
 
       return true;
     } catch (error) {
-      console.error(
-        '[PhotoConfirmation] uploadAttestation error',
-        error?.message || error,
-      );
+      captureError(error, {
+        flow: 'vote_upload',
+        step: 'upload_attestation',
+        critical: false,
+        tableCode: tableData?.tableCode || tableData?.codigo,
+      });
       return false;
     }
   };
@@ -382,9 +379,12 @@ const PhotoConfirmationScreen = ({ route }) => {
         const serverMessage =
           error.response.data?.message || error.response.data?.error || '';
 
-        console.error('[PhotoConfirmation] validateWithBackend server error', {
-          status,
-          serverMessage,
+        captureError(new Error(`Backend validation error: ${status}`), {
+          flow: 'vote_upload',
+          step: 'validate_backend',
+          critical: true,
+          tableCode: tableData?.tableCode || tableData?.codigo,
+          http_status: status,
         });
 
         throw new Error(`${statusMessage} ${serverMessage}`.trim());
@@ -469,14 +469,21 @@ const PhotoConfirmationScreen = ({ route }) => {
       if (result.success) {
         return result.data;
       } else {
-        console.error(
-          '[PhotoConfirmation] uploadToIPFS failed result:',
-          result,
-        );
+        captureError(new Error(result.error || 'uploadToIPFS failed'), {
+          flow: 'vote_upload',
+          step: 'ipfs_upload',
+          critical: true,
+          tableCode: tableData?.tableCode || tableData?.codigo,
+        });
         throw new Error(result.error || 'uploadToIPFS failed');
       }
     } catch (error) {
-      console.error('[PhotoConfirmation] uploadToIPFS error', error);
+      captureError(error, {
+        flow: 'vote_upload',
+        step: 'ipfs_upload',
+        critical: true,
+        tableCode: tableData?.tableCode || tableData?.codigo,
+      });
       throw error;
     } finally {
       setUploadingToIPFS(false);
@@ -559,10 +566,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         try {
           persistedCertificateUri = await persistLocalImage(certificateUri);
         } catch (e) {
-          console.error(
-            '[PhotoConfirmation] persist certificate error (no bloquea)',
-            e,
-          );
+          // Error no critico - solo persistencia de certificado
         }
       }
 
@@ -609,10 +613,12 @@ const PhotoConfirmationScreen = ({ route }) => {
       });
       setStep(2);
     } catch (error) {
-      console.error(
-        '[PhotoConfirmation] confirmPublishAndCertify error',
-        error,
-      );
+      captureError(error, {
+        flow: 'vote_upload',
+        step: 'confirm_publish_certify',
+        critical: true,
+        tableCode: tableData?.tableCode || tableData?.codigo,
+      });
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,

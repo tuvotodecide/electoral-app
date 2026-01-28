@@ -1,5 +1,7 @@
 import {Platform, StatusBar, View} from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
+import * as Sentry from '@sentry/react-native';
+import { captureError } from './config/sentry';
 import AppNavigator from './navigation';
 import {styles} from './themes';
 import {BACKEND_IDENTITY} from '@env';
@@ -109,7 +111,11 @@ const App = () => {
               data: msg?.data,
             });
           } catch (e) {
-            console.error('FG handler error', e, msg);
+            captureError(e, {
+              flow: 'notification',
+              step: 'foreground_handler',
+              critical: false,
+            });
           }
         },
         onOpenedFromNotification: _msg => {},
@@ -174,4 +180,5 @@ const App = () => {
   );
 };
 
-export default App;
+// Wrap con Sentry para captura automatica de errores en componentes
+export default Sentry.wrap(App);

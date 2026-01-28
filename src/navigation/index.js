@@ -6,6 +6,7 @@ import notifee from '@notifee/react-native';
 import { handleNotificationPress } from '../notifications';
 import { NavigationLogConfig, navLog } from '../config/navigationLogConfig';
 import NavigationDebugOverlay from '../components/common/NavigationDebugOverlay';
+import { addNavigationBreadcrumb } from '../config/sentry';
 
 export default function AppNavigator() {
    useEffect(() => {
@@ -52,21 +53,27 @@ export default function AppNavigator() {
 
   // Handler para logging del cambio de estado
   const onNavigationStateChange = () => {
-    if (!NavigationLogConfig.enabled) return;
-    
     const routeInfo = getRouteInfo();
-    
+
+    // ========================================================================
+    // SENTRY: Agregar breadcrumb de navegacion
+    // ========================================================================
+    addNavigationBreadcrumb(routeInfo.routeName, routeInfo.routeParams);
+    // ========================================================================
+
+    if (!NavigationLogConfig.enabled) return;
+
     // Log usando configuración
     navLog('stateChanges', `Pantalla actual: ${routeInfo.routeName}`);
-    
+
     if (NavigationLogConfig.logs.stackPath) {
       navLog('stack', `Stack path: ${routeInfo.stackInfo.join(' -> ')}`);
     }
-    
+
     if (NavigationLogConfig.logs.routeParams && Object.keys(routeInfo.routeParams).length > 0) {
       navLog('params', `Parámetros: ${routeInfo.routeName}`, routeInfo.routeParams);
     }
-    
+
     // Log simple para identificación rápida
     navLog('screen', routeInfo.routeName);
   };

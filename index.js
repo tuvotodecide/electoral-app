@@ -1,6 +1,14 @@
 /**
  * @format
  */
+
+// ============================================================================
+// SENTRY - Inicializar ANTES de cualquier otro import
+// ============================================================================
+import { initSentry } from './src/config/sentry';
+initSentry();
+// ============================================================================
+
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import 'text-encoding-polyfill';
