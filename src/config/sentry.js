@@ -44,6 +44,11 @@ export const initSentry = () => {
         delete event.extra.pin;
       }
 
+      // No permitir PII en prod aunque alguien lo setee por error
+      if (!__DEV__ && event.contexts?.user_pii) {
+        delete event.contexts.user_pii;
+      }
+
       return event;
     },
 
@@ -211,6 +216,8 @@ export const addBlockchainBreadcrumb = (operation, data = {}) => {
  * @param {boolean} context.critical - Si es critico para el usuario
  * @param {string} context.step - Paso especifico (ej: 'upload_ipfs', 'oracle_call')
  * @param {string} context.tableCode - Codigo de mesa (si aplica)
+ * @param {boolean} context.allowPii - (solo dev) permite adjuntar PII en contexto debug
+ * @param {string} context.dni - DNI para debug (solo dev si allowPii)
  *
  * @example
  * captureError(error, {
@@ -222,6 +229,8 @@ export const addBlockchainBreadcrumb = (operation, data = {}) => {
  */
 export const captureError = (error, context = {}) => {
   Sentry.withScope((scope) => {
+    const allowPii = __DEV__ && context.allowPii === true;
+
     // Tags para filtrar en dashboard
     if (context.flow) scope.setTag('flow', context.flow);
     if (context.critical) scope.setTag('critical', 'true');
@@ -234,14 +243,23 @@ export const captureError = (error, context = {}) => {
 
     // Contexto extra (sin PII)
     const safeContext = { ...context };
+    delete safeContext.allowPii;
     delete safeContext.dni;
     delete safeContext.token;
     delete safeContext.privKey;
+    delete safeContext.pin;
 
     scope.setContext('error_context', {
       ...safeContext,
       timestamp: new Date().toISOString(),
     });
+
+    // Adjuntar PII solo en desarrollo y cuando se solicite explicitamente
+    if (allowPii) {
+      scope.setContext('user_pii', {
+        dni: context.dni ?? null,
+      });
+    }
 
     // Si hay info de API debug, agregarla
     if (error.apiDebug) {

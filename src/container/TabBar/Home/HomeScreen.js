@@ -51,6 +51,7 @@ import {
 import { ActivityIndicator } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
 import { publishActaHandler } from '../../../utils/offlineQueueHandler';
+import { captureError, captureMessage } from '../../../config/sentry';
 import CustomModal from '../../../components/common/CustomModal';
 import {
   isStateEffectivelyOnline,
@@ -646,6 +647,35 @@ export default function HomeScreen({ navigation }) {
     setQueueFailModal(m => ({ ...m, visible: false }));
   };
 
+  const handleSentryTest = () => {
+    const error = new Error('Error de prueba');
+    const userDni = userData?.dni ?? null;
+    const effectiveDni = userDni ?? dni ?? null;
+    const dniSource = userDni ? 'userData' : (dni ? 'vc' : 'unknown');
+
+    captureMessage('Mensaje de prueba Sentry', 'info', {
+      flow: 'sentry_test',
+      screen: 'home',
+      dni_source: dniSource,
+    });
+
+    captureError(error, {
+      flow: 'sentry_test',
+      step: 'home_button',
+      critical: false,
+      allowPii: true,
+      dni: effectiveDni,
+      dni_source: dniSource,
+    });
+
+    setInfoModal({
+      visible: true,
+      type: 'warning',
+      title: 'Sentry',
+      message: 'Evento de prueba enviado con DNI (solo dev). Revisa Sentry en 1-2 minutos.',
+    });
+  };
+
   const handleParticiparPress = async (type) => {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
@@ -1153,6 +1183,17 @@ export default function HomeScreen({ navigation }) {
                   {menuItems[0].description}
                 </CText>
               </TouchableOpacity> */}
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={stylesx.sentryTestButton}
+                  onPress={handleSentryTest}
+                  activeOpacity={0.85}
+                  testID="sentryTestButton">
+                  <CText style={stylesx.sentryTestButtonText}>
+                    Probar Sentry
+                  </CText>
+                </TouchableOpacity>
+              )}
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
@@ -1199,6 +1240,7 @@ export default function HomeScreen({ navigation }) {
                   </CText>
                 </TouchableOpacity>
               </View>
+
             </View>
           </View>
         </View>
@@ -1345,6 +1387,17 @@ export default function HomeScreen({ navigation }) {
                 </CText>
               </TouchableOpacity>
             </View>
+            {__DEV__ && (
+              <TouchableOpacity
+                style={stylesx.sentryTestButton}
+                onPress={handleSentryTest}
+                activeOpacity={0.85}
+                testID="sentryTestButton">
+                <CText style={stylesx.sentryTestButtonText}>
+                  Probar Sentry
+                </CText>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -1857,6 +1910,20 @@ const stylesx = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
+  sentryTestButton: {
+    marginTop: getResponsiveSize(10, 12, 14),
+    alignSelf: 'flex-start',
+    backgroundColor: '#111827',
+    paddingVertical: getResponsiveSize(8, 10, 12),
+    paddingHorizontal: getResponsiveSize(12, 14, 16),
+    borderRadius: 8,
+  },
+  sentryTestButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: getResponsiveSize(12, 13, 14),
+  },
+
   splitBtn: {
     flexDirection: 'row',
     alignItems: 'center',

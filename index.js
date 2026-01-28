@@ -2,16 +2,17 @@
  * @format
  */
 
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+import 'text-encoding-polyfill';
+
 // ============================================================================
-// SENTRY - Inicializar ANTES de cualquier otro import
+// SENTRY - Inicializar ANTES de cualquier otro import de la app
 // ============================================================================
 import { initSentry } from './src/config/sentry';
 initSentry();
 // ============================================================================
 
-import 'react-native-get-random-values';
-import 'react-native-url-polyfill/auto';
-import 'text-encoding-polyfill';
 import 'react-native-gesture-handler';
 
 import crypto from 'react-native-quick-crypto';
