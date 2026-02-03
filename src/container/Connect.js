@@ -31,6 +31,7 @@ export default function Connect({navigation}) {
 
   const onPressLoginUser = async () => {
     const response = await wira.Storage.checkUserData();
+    console.log('onPressLoginUser - response:', response);
     if (!response) {
       const legacyDataExists = await checkLegacyDataExists();
       if (!legacyDataExists) {
@@ -129,7 +130,7 @@ export default function Connect({navigation}) {
             color={colors.white}
             bgColor={commonColor.gradient2}
           />
-        </View> 
+        </View>
       </View>
       <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>
