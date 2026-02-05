@@ -2,6 +2,7 @@ appId: com.tuvotodecide
 name: onboardingXButton
 onFlowStart:
   - runFlow: ../../components/setup/skipDebuger.yaml
+  
 ---
 - extendedWaitUntil:
     visible:
