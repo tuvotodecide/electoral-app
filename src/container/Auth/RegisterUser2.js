@@ -1,24 +1,24 @@
-import {StyleSheet, View, TextInput, Alert} from 'react-native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
 // Custom imports
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import {moderateScale} from '../../common/constants';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import CButton from '../../components/common/CButton';
-import {AuthNav, StackNav} from '../../navigation/NavigationKey';
-import StepIndicator from '../../components/authComponents/StepIndicator';
-import UploadCardImage from '../../components/common/UploadCardImage';
-import String from '../../i18n/String';
-import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
-import {setSecrets} from '../../redux/action/walletAction';
+import { BACKEND_IDENTITY } from '@env';
 import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
-import {BACKEND_IDENTITY} from '@env';
+import { moderateScale } from '../../common/constants';
+import StepIndicator from '../../components/authComponents/StepIndicator';
+import CButton from '../../components/common/CButton';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import UploadCardImage from '../../components/common/UploadCardImage';
+import { DEMO_SECRETS, REVIEW_DNI } from '../../config/review';
+import String from '../../i18n/String';
+import { AuthNav, StackNav } from '../../navigation/NavigationKey';
+import { setSecrets } from '../../redux/action/walletAction';
+import { styles } from '../../themes';
 
 import SimpleModal from '../../components/modal/SimpleModal';
 
@@ -135,8 +135,13 @@ export default function RegisterUser2({navigation, route}) {
         .catch(err => {
           setSubmitting(false);
           const msg =
-            err?.response?.data?.message || err.message || String.unknowerror;
-          Alert.alert(String.error, msg);
+            err?.response?.data?.message || err.message || String.error;
+
+          if (msg.includes('Network Error')) {
+            Alert.alert(String.error, String.networkError);
+          } else {
+            Alert.alert(String.error, msg);
+          }
         });
     }, 500),
     [

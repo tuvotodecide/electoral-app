@@ -47,6 +47,7 @@ export const persistLocalImage = async uri => {
 
     const savedPath = res?.path();
 
+    console.log('[persistLocalImage] http savedPath:', savedPath, 'destPath:', destPath);
 
     // 3) Validación fuerte
     if (!savedPath) {

@@ -110,10 +110,6 @@ jest.mock('../../../../src/components/common/CAlert', () => {
 });
 
 // Mock de APIs y utilidades
-jest.mock('../../../../src/api/did', () => ({
-  didFromEthAddress: jest.fn(() => 'mocked-did'),
-}));
-
 jest.mock('@noble/hashes/utils', () => ({
   bytesToHex: jest.fn(() => 'mocked-hex'),
 }));

@@ -234,7 +234,7 @@ export default function Profile({navigation}) {
               type={'B20'}
               color={color.white}
               align={'center'}>
-              {`Dirección ${data.name}`}
+              {data.name}
             </CText>
             <CHash
               testID="profileUserHashComponent"

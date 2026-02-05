@@ -231,6 +231,7 @@ const BaseSearchTableScreen = ({
   // Styles
   styles,
 }) => {
+  console.log(electionId,'base search table screen electionId')
   const navigation = useNavigation();
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);

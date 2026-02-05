@@ -1,62 +1,55 @@
 import {
-  StyleSheet,
-  TouchableOpacity,
-  View,
+  AppState,
   Dimensions,
-  Modal,
-  Linking,
-  ScrollView,
   FlatList,
   Image,
-  ImageBackground,
-  Alert,
-  AppState,
+  Linking,
+  Modal,
   PermissionsAndroid,
   Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import Geolocation from '@react-native-community/geolocation';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearAuth } from '../../../redux/slices/authSlice';
-import { clearWallet } from '../../../redux/action/walletAction';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useDispatch } from 'react-redux';
+import { clearWallet } from '../../../redux/action/walletAction';
+import { clearAuth } from '../../../redux/slices/authSlice';
 
+import { BACKEND_RESULT } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import images from '../../../assets/images';
+import {
+  ELECTION_ID,
+  JWT_KEY
+} from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import I18nStrings from '../../../i18n/String';
-import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
-import { useSelector } from 'react-redux';
-import { store } from '../../../redux/store';
+import { StackNav } from '../../../navigation/NavigationKey';
 import { clearSession } from '../../../utils/Session';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  ELECTION_ID,
-  ELECTION_STATUS,
-  JWT_KEY,
-  KEY_OFFLINE,
-} from '../../../common/constants';
-import axios from 'axios';
-import images from '../../../assets/images';
-import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
 
-import { useFocusEffect } from '@react-navigation/native';
-import {
-  getAll as getOfflineQueue,
-  getVotePlace,
-  processQueue,
-  saveVotePlace,
-  removeById,
-} from '../../../utils/offlineQueue';
-import { ActivityIndicator } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
-import { publishActaHandler } from '../../../utils/offlineQueueHandler';
-import { captureError, captureMessage } from '../../../config/sentry';
+import { useFocusEffect } from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
 } from '../../../utils/networkQuality';
+import {
+  getAll as getOfflineQueue,
+  getVotePlace,
+  processQueue,
+  removeById,
+  saveVotePlace,
+} from '../../../utils/offlineQueue';
+import { publishActaHandler } from '../../../utils/offlineQueueHandler';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -267,8 +260,6 @@ export default function HomeScreen({ navigation }) {
     message: '',
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
-  // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
-  const [locationStatus, setLocationStatus] = useState('unknown');
 
   const pendingPermissionFromSettings = useRef(false);
   const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
@@ -316,25 +307,7 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  /** Solo VERIFICA el permiso, nunca muestra diálogo del sistema */
-  const checkLocationPermissionOnly = useCallback(async () => {
-    try {
-      if (Platform.OS === 'android') {
-        const ok = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        return ok;
-      }
-      // iOS: no hay .check() puro, pero requestAuthorization con 'whenInUse'
-      // no vuelve a mostrar el diálogo si ya se contestó
-      const status = await Geolocation.requestAuthorization('whenInUse');
-      return status === 'granted';
-    } catch {
-      return false;
-    }
-  }, []);
 
-  /** Solicita el permiso al sistema (muestra diálogo nativo) */
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -369,45 +342,36 @@ export default function HomeScreen({ navigation }) {
       );
     });
 
-  /**
-   * Obtiene la ubicación SIN mostrar modales.
-   * Si el permiso no está concedido, actualiza locationStatus y retorna null.
-   */
-  const getHomeLocation = useCallback(async (silent = true) => {
-    const ok = await checkLocationPermissionOnly();
+  const getHomeLocation = useCallback(async () => {
+    const ok = await requestLocationPermission();
     if (!ok) {
-      setLocationStatus('denied');
-      if (!silent) {
-        // Solo muestra modal si el usuario pidió explícitamente activar
-        showPermissionModal(
-          'Ubicación requerida',
-          'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
-          openLocationSettings,
-        );
-      }
+      showPermissionModal(
+        'Ubicación requerida',
+        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
+        openLocationSettings,
+      );
       return null;
     }
 
-    setLocationStatus('granted');
     try {
+      // intento 1: high accuracy
       const pos = await getCurrentPositionAsync(true);
       return pos.coords;
     } catch (err1) {
+      // fallback: low accuracy si es TIMEOUT/POSITION_UNAVAILABLE
       try {
         const pos2 = await getCurrentPositionAsync(false);
         return pos2.coords;
       } catch (err2) {
-        if (!silent) {
-          showPermissionModal(
-            'No se pudo obtener ubicación',
-            'Activa la ubicación (GPS) e intenta nuevamente.',
-            openLocationSettings,
-          );
-        }
+        showPermissionModal(
+          'No se pudo obtener ubicación',
+          'Activa la ubicación (GPS) e intenta nuevamente.',
+          openLocationSettings,
+        );
         return null;
       }
     }
-  }, [checkLocationPermissionOnly]);
+  }, [requestLocationPermission]);
 
   const checkAttestationAvailability = useCallback(
     async (latitude, longitude) => {
@@ -467,99 +431,61 @@ export default function HomeScreen({ navigation }) {
     },
     [],
   );
-  /**
-   * Verificación automática (en focus / red) — modo silencioso:
-   * solo CHECK, nunca muestra diálogos del sistema ni modales.
-   */
   const requestLocationAndCheckAvailability = useCallback(async () => {
+    // evita llamar demasiado en focus
     const now = Date.now();
     if (now - (availabilityRef.current.lastCheckAt || 0) < 4000) return;
     availabilityRef.current.lastCheckAt = now;
 
+    // si estás offline, no tiene sentido pedir GPS para endpoint remoto
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) return;
 
-    // silent = true → no muestra modales, solo actualiza locationStatus
-    const coords = await getHomeLocation(true);
+    const coords = await getHomeLocation();
     if (!coords?.latitude || !coords?.longitude) return;
 
     await checkAttestationAvailability(coords.latitude, coords.longitude);
   }, [getHomeLocation, checkAttestationAvailability]);
-
-  /**
-   * Acción EXPLÍCITA del usuario: toca "Activar Ubicación".
-   * Aquí SÍ pedimos el permiso al sistema y mostramos modal si falla.
-   */
-  const handleActivateLocation = useCallback(async () => {
-    const ok = await requestLocationPermission();
-    if (!ok) {
-      setLocationStatus('denied');
-      showPermissionModal(
-        'Ubicación requerida',
-        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
-        openLocationSettings,
-      );
-      return;
-    }
-
-    setLocationStatus('granted');
-    setLoadingAvailability(true);
-
-    try {
-      let coords = null;
-      try {
-        const pos = await getCurrentPositionAsync(true);
-        coords = pos.coords;
-      } catch {
-        const pos2 = await getCurrentPositionAsync(false);
-        coords = pos2.coords;
-      }
-
-      if (coords?.latitude && coords?.longitude) {
-        await checkAttestationAvailability(coords.latitude, coords.longitude);
-      } else {
-        showPermissionModal(
-          'No se pudo obtener ubicación',
-          'Activa la ubicación (GPS) e intenta nuevamente.',
-          openLocationSettings,
-        );
-      }
-    } catch {
-      showPermissionModal(
-        'No se pudo obtener ubicación',
-        'Activa la ubicación (GPS) e intenta nuevamente.',
-        openLocationSettings,
-      );
-    } finally {
-      setLoadingAvailability(false);
-    }
-  }, [requestLocationPermission, checkAttestationAvailability]);
-
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
       if (state === 'active' && pendingPermissionFromSettings.current) {
         pendingPermissionFromSettings.current = false;
 
         try {
-          const ok = await checkLocationPermissionOnly();
-          if (ok) {
-            setLocationStatus('granted');
-            setPermissionModal(m => ({ ...m, visible: false }));
-            // Forzar re-check ahora que hay permiso
-            availabilityRef.current.lastCheckAt = 0;
-            requestLocationAndCheckAvailability();
+          if (Platform.OS === 'android') {
+            const ok = await PermissionsAndroid.check(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            );
+            if (ok) {
+              setPermissionModal(m => ({ ...m, visible: false }));
+              requestLocationAndCheckAvailability();
+            } else {
+              showPermissionModal(
+                'Ubicación requerida',
+                'Aún no se otorgó el permiso de ubicación.',
+                openLocationSettings,
+              );
+            }
           } else {
-            setLocationStatus('denied');
-            // No mostramos modal de nuevo, el botón "Activar Ubicación" ya está visible
-            setPermissionModal(m => ({ ...m, visible: false }));
+            const status = await Geolocation.requestAuthorization('whenInUse');
+            if (status === 'granted') {
+              setPermissionModal(m => ({ ...m, visible: false }));
+              requestLocationAndCheckAvailability();
+            } else {
+              showPermissionModal(
+                'Ubicación requerida',
+                'Aún no se otorgó el permiso de ubicación.',
+                openLocationSettings,
+              );
+            }
           }
         } catch (e) { }
       }
     });
 
     return () => sub.remove();
-  }, [requestLocationAndCheckAvailability, checkLocationPermissionOnly]);
+  }, [requestLocationAndCheckAvailability]);
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -714,35 +640,6 @@ export default function HomeScreen({ navigation }) {
     setQueueFailModal(m => ({ ...m, visible: false }));
   };
 
-  const handleSentryTest = () => {
-    const error = new Error('Error de prueba');
-    const userDni = userData?.dni ?? null;
-    const effectiveDni = userDni ?? dni ?? null;
-    const dniSource = userDni ? 'userData' : (dni ? 'vc' : 'unknown');
-
-    captureMessage('Mensaje de prueba Sentry', 'info', {
-      flow: 'sentry_test',
-      screen: 'home',
-      dni_source: dniSource,
-    });
-
-    captureError(error, {
-      flow: 'sentry_test',
-      step: 'home_button',
-      critical: false,
-      allowPii: true,
-      dni: effectiveDni,
-      dni_source: dniSource,
-    });
-
-    setInfoModal({
-      visible: true,
-      type: 'warning',
-      title: 'Sentry',
-      message: 'Evento de prueba enviado con DNI (solo dev). Revisa Sentry en 1-2 minutos.',
-    });
-  };
-
   const handleParticiparPress = async (type) => {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
@@ -814,27 +711,6 @@ export default function HomeScreen({ navigation }) {
   };
 
   const ActionButtonsGroup = () => {
-    // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
-    if (locationStatus !== 'granted') {
-      return (
-        <TouchableOpacity
-          style={stylesx.activateLocationBtn}
-          activeOpacity={0.8}
-          onPress={handleActivateLocation}>
-          <View style={stylesx.splitBtnIconBox}>
-            <Ionicons name="location-outline" size={24} color="#41A44D" />
-          </View>
-          <View style={stylesx.splitBtnContent}>
-            <CText style={stylesx.cardTitle}>Activar Ubicación</CText>
-            <CText style={stylesx.cardDescription}>
-              Activa tu ubicación para ver las opciones de envío de actas.
-            </CText>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-        </TouchableOpacity>
-      );
-    }
-
     const showAlcalde = !!contracts?.ALCALDE?.enabled;
     const showGobernador = !!contracts?.GOBERNADOR?.enabled;
 
@@ -951,7 +827,7 @@ export default function HomeScreen({ navigation }) {
     {
       id: 1,
       title: '¿Necesita una app blockchain?',
-      subtitle: 'Blockchain Consultora desarrolló esta aplicación, contáctelos',
+      subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
       buttonText: 'Más Info',
       backgroundColor: '#e8f5e8',
       image: require('../../../assets/images/block-con.png'),
@@ -1271,17 +1147,6 @@ export default function HomeScreen({ navigation }) {
                   {menuItems[0].description}
                 </CText>
               </TouchableOpacity> */}
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={stylesx.sentryTestButton}
-                  onPress={handleSentryTest}
-                  activeOpacity={0.85}
-                  testID="sentryTestButton">
-                  <CText style={stylesx.sentryTestButtonText}>
-                    Probar Sentry
-                  </CText>
-                </TouchableOpacity>
-              )}
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
@@ -1328,7 +1193,6 @@ export default function HomeScreen({ navigation }) {
                   </CText>
                 </TouchableOpacity>
               </View>
-
             </View>
           </View>
         </View>
@@ -1475,17 +1339,6 @@ export default function HomeScreen({ navigation }) {
                 </CText>
               </TouchableOpacity>
             </View>
-            {__DEV__ && (
-              <TouchableOpacity
-                style={stylesx.sentryTestButton}
-                onPress={handleSentryTest}
-                activeOpacity={0.85}
-                testID="sentryTestButton">
-                <CText style={stylesx.sentryTestButtonText}>
-                  Probar Sentry
-                </CText>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       )}
@@ -1997,32 +1850,6 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: 6,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-  },
-  sentryTestButton: {
-    marginTop: getResponsiveSize(10, 12, 14),
-    alignSelf: 'flex-start',
-    backgroundColor: '#111827',
-    paddingVertical: getResponsiveSize(8, 10, 12),
-    paddingHorizontal: getResponsiveSize(12, 14, 16),
-    borderRadius: 8,
-  },
-  sentryTestButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: getResponsiveSize(12, 13, 14),
-  },
-
-  activateLocationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    borderRadius: getResponsiveSize(12, 14, 16),
-    paddingVertical: getResponsiveSize(14, 16, 18),
-    paddingHorizontal: getResponsiveSize(16, 20, 24),
-    marginBottom: getResponsiveSize(10, 12, 14),
-    borderWidth: 1.5,
-    borderColor: '#41A44D',
-    borderStyle: 'dashed',
   },
   splitBtn: {
     flexDirection: 'row',

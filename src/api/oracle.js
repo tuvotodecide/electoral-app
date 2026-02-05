@@ -1,6 +1,6 @@
 import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
+import oracleAbi from '../abi/OracleAbi.json';
 import { availableNetworks } from "./params";
-import oracleAbi from '../abi/OracleAbi.json'
 
 function requestRegister(chain, imageUri) {
   return {
@@ -108,7 +108,6 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
   });
 
   for(let i = 0; i < attemps; i++) {
-
     const logs = await publicClient.getContractEvents({
       address: availableNetworks[chain].oracle,
       abi: oracleAbi,

@@ -33,7 +33,6 @@ import {
   PROVIDER_NAME,
 } from '@env';
 import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
-import { captureError } from '../../config/sentry';
 
 export default function RegisterUser10({navigation, route}) {
   const {ocrData, dni, originalPin: pin, useBiometry, isMigration} = route.params;
@@ -165,11 +164,16 @@ export default function RegisterUser10({navigation, route}) {
           account: registerer.walletData.address,
         });
       } catch (err) {
-        captureError(err, {
-          flow: 'registration',
-          step: stageRef.current,
-          critical: true,
-        });
+        if (__DEV__) {
+          const failingUrl =
+            err?.apiDebug?.url || err?.apiDebug?.requestUrl || null;
+          console.warn('[RegisterUser10] Registro fallido', {
+            failingUrl: failingUrl || '(URL no disponible)',
+            stage: stageRef.current,
+            message: err?.message,
+            apiDebug: err?.apiDebug ?? null,
+          });
+        }
         setLoading(false);
         setErrorMessage(
           err?.message || 'Ocurrió un error al registrar tu cuenta.',

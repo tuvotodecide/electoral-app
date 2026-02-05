@@ -1,20 +1,20 @@
-import {StyleSheet, View} from 'react-native';
-import React, {useState} from 'react';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
 // custom import
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../components/common/CText';
-import String from '../../i18n/String';
-import {styles} from '../../themes';
-import {moderateScale} from '../../common/constants';
-import typography from '../../themes/typography';
-import CButton from '../../components/common/CButton';
-import {AuthNav} from '../../navigation/NavigationKey';
+import { moderateScale } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
+import CButton from '../../components/common/CButton';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import String from '../../i18n/String';
+import { AuthNav } from '../../navigation/NavigationKey';
+import { styles } from '../../themes';
+import typography from '../../themes/typography';
 
 export default function CreatePin({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -45,18 +45,17 @@ export default function CreatePin({navigation}) {
             <CText testID="createPinDescription" type={'R14'} color={colors.grayScale500}>
               {String.createPINDescription}
             </CText>
-            <OTPInputView
+            <OTPTextInput
               testID="pinCreationInput"
-              pinCount={5}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={onOtpChange}
+              inputCount={5}
+              containerStyle={localStyle.otpInputViewStyle}
+              handleTextChange={onOtpChange}
               secureTextEntry={true}
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
-              codeInputFieldStyle={[
+              autoFocus={false}
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -64,7 +63,6 @@ export default function CreatePin({navigation}) {
                   borderColor: colors.inputBackground,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
             />
           </View>
           <View testID="createPinButtonsContainer">

@@ -1,22 +1,22 @@
-import {StyleSheet, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
 // Custom imports
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../../components/common/CText';
-import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
-import typography from '../../../themes/typography';
-import CButton from '../../../components/common/CButton';
-import {AuthNav} from '../../../navigation/NavigationKey';
+import { moderateScale } from '../../../common/constants';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
-import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
 import CAlert from '../../../components/common/CAlert';
+import CButton from '../../../components/common/CButton';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import String from '../../../i18n/String';
+import { AuthNav } from '../../../navigation/NavigationKey';
+import { styles } from '../../../themes';
+import typography from '../../../themes/typography';
+import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
 export default function RecoveryUser2Pin({navigation, route}) {
@@ -25,16 +25,6 @@ export default function RecoveryUser2Pin({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
-
-  
-  const otpRef = useRef(null);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      otpRef.current?.focusField(0);
-    }, 350);
-    return () => clearTimeout(timeout);
-  }, []);
 
   const handleConfirmPin = () => {
     if (otp === originalPin) {
@@ -68,12 +58,10 @@ export default function RecoveryUser2Pin({navigation, route}) {
               {String.confirmPinDescription}
             </CText>
 
-            <OTPInputView
-              ref={otpRef}
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={text => {
+            <OTPTextInput
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
+              handleTextChange={text => {
                 setOtp(text);
                 if (showError) {
                   setShowError(false);
@@ -83,8 +71,8 @@ export default function RecoveryUser2Pin({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
-              codeInputFieldStyle={[
+              autoFocus
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -92,7 +80,8 @@ export default function RecoveryUser2Pin({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
+              offTintColor={colors.grayScale500}
             />
 
             {showError && (

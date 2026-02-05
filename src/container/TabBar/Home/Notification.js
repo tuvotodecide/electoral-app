@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -8,16 +8,15 @@ import {
   RefreshControl,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import axios from 'axios';
-import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
-import { requestPushPermissionExplicit } from '../../../services/pushPermission';
-import { formatTiempoRelativo } from '../../../services/notifications';
-import { mockNotificaciones } from '../../../data/mockNotificaciones';
-import wira from 'wira-sdk';
+import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+import {requestPushPermissionExplicit} from '../../../services/pushPermission';
+import {formatTiempoRelativo} from '../../../services/notifications';
+import {mockNotificaciones} from '../../../data/mockNotificaciones';
 
-export default function Notification({ navigation }) {
+export default function Notification({navigation}) {
   const userData = useSelector(state => state.wallet.payload);
 
   const vc = userData?.vc;
@@ -31,7 +30,6 @@ export default function Notification({ navigation }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [apiKey, setApiKey] = useState(null);
 
   const mapServerToUi = useCallback(n => {
     const data = n?.data || {};
@@ -72,27 +70,9 @@ export default function Notification({ navigation }) {
     };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const key = await authenticateWithBackend(
-          userData?.did,
-          userData?.privKey,
-        );
-        if (mounted) setApiKey(key);
-      } catch (e) {
-        if (mounted) setApiKey(null);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [userData?.did, userData?.privKey]);
-
   const fetchFromBackend = useCallback(
     async (isRefresh = false) => {
-      if (!dni || !apiKey) {
+      if (!dni) {
         setItems([]);
         setLoading(false);
         setRefreshing(false);
@@ -106,13 +86,7 @@ export default function Notification({ navigation }) {
       try {
         const response = await axios.get(
           `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey
-            },
-            timeout: 30000,
-          },
+          
         );
         const list = response?.data?.data || response?.data || [];
         const mapped = list
@@ -120,7 +94,7 @@ export default function Notification({ navigation }) {
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
       } catch (error) {
-        // setItems([...mockNotificaciones]);
+        setItems([...mockNotificaciones]);
       } finally {
         if (isRefresh) {
           setRefreshing(false);
@@ -128,7 +102,7 @@ export default function Notification({ navigation }) {
         setLoading(false);
       }
     },
-    [dni, apiKey, mapServerToUi],
+    [dni, mapServerToUi],
   );
 
   useEffect(() => {
@@ -184,7 +158,7 @@ export default function Notification({ navigation }) {
     [navigation],
   );
   const renderNotificationItem = useCallback(
-    ({ item, index }) => (
+    ({item, index}) => (
       <TouchableOpacity
         testID={`notificationItem_${index}`}
         style={localStyle.notificationCard}
@@ -199,7 +173,7 @@ export default function Notification({ navigation }) {
             name={getIconName(item.tipo)}
             size={38}
             color={'#111'}
-            style={{ marginTop: 3 }}
+            style={{marginTop: 3}}
           />
           <View
             testID={`notificationContentContainer_${index}`}
@@ -254,7 +228,7 @@ export default function Notification({ navigation }) {
   return (
     <View
       testID="notificationScreenContainer"
-      style={{ flex: 1, backgroundColor: '#fff' }}>
+      style={{flex: 1, backgroundColor: '#fff'}}>
       <CStandardHeader
         testID="notificationHeader"
         title="Notificaciones"
@@ -278,7 +252,7 @@ export default function Notification({ navigation }) {
           !loading && (
             <View
               testID="notificationEmptyState"
-              style={{ marginTop: 50, alignItems: 'center' }}>
+              style={{marginTop: 50, alignItems: 'center'}}>
               <Text testID="notificationEmptyText">No hay notificaciones</Text>
             </View>
           )
@@ -289,17 +263,17 @@ export default function Notification({ navigation }) {
 }
 
 const localStyle = StyleSheet.create({
-  listContent: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 15 },
-  notificationCard: { paddingBottom: 6, backgroundColor: '#fff' },
-  cardContent: { flexDirection: 'row', alignItems: 'center' },
-  contentContainer: { flex: 1, marginLeft: 10 },
+  listContent: {paddingHorizontal: 18, paddingTop: 6, paddingBottom: 15},
+  notificationCard: {paddingBottom: 6, backgroundColor: '#fff'},
+  cardContent: {flexDirection: 'row', alignItems: 'center'},
+  contentContainer: {flex: 1, marginLeft: 10},
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 2,
   },
-  rightInfo: { alignItems: 'flex-end' },
+  rightInfo: {alignItems: 'flex-end'},
   distance: {
     color: '#2790b0',
     fontSize: 12,
@@ -314,32 +288,15 @@ const localStyle = StyleSheet.create({
     marginTop: -3,
     flex: 1,
   },
-  time: { color: '#2790b0', fontSize: 13, fontWeight: '400', marginTop: 2 },
-  subtitle: { fontSize: 16, color: '#111', marginTop: 1, fontWeight: '400' },
-  detailText: { fontSize: 14, color: '#444', marginTop: 2, fontWeight: '400' },
-  actionHint: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  time: {color: '#2790b0', fontSize: 13, fontWeight: '400', marginTop: 2},
+  subtitle: {fontSize: 16, color: '#111', marginTop: 1, fontWeight: '400'},
+  detailText: {fontSize: 14, color: '#444', marginTop: 2, fontWeight: '400'},
+  actionHint: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
   actionText: {
     color: '#2790b0',
     fontSize: 14,
     marginLeft: 6,
     fontWeight: '500',
   },
-  separator: { height: 1, backgroundColor: '#ededed', marginVertical: 10 },
+  separator: {height: 1, backgroundColor: '#ededed', marginVertical: 10},
 });
-
-export const authenticateWithBackend = async (did, privateKey) => {
-  const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
-
-  const authData = request.data;
-  if (!authData.apiKey || !authData.request) {
-    throw new Error('Invalid authentication request response: missing message');
-  }
-
-  await wira.authenticateWithVerifier(
-    JSON.stringify(authData.request),
-    did,
-    privateKey
-  );
-
-  return authData.apiKey;
-}

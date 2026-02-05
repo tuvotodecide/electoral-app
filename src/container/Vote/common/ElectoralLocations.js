@@ -74,7 +74,7 @@ const ElectoralLocations = ({ navigation, route }) => {
 
   // Get navigation target from route params
   const { targetScreen, electionId, electionType } = route.params || {};
-
+  console.log(electionId, 'electoral locations electionId')
   const filterLocations = text => {
     setSearchTerm(text);
 

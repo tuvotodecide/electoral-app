@@ -1,26 +1,25 @@
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React, {useState} from 'react';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 //custom import
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import {styles} from '../../../themes';
-import {getHeight, moderateScale} from '../../../common/constants';
-import CText from '../../../components/common/CText';
+import { useSelector } from 'react-redux';
+import { getHeight, moderateScale } from '../../../common/constants';
 import CButton from '../../../components/common/CButton';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
 import Icono from '../../../components/common/Icono';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import String from '../../../i18n/String';
-import {useSelector} from 'react-redux';
+import { styles } from '../../../themes';
 
+import axios from 'axios';
+import { ActivityIndicator } from 'react-native-paper';
 import CAlert from '../../../components/common/CAlert';
 import CInput from '../../../components/common/CInput';
-import {useKycFindPublicQuery} from '../../../data/kyc';
-import {useGuardiansInviteQuery} from '../../../data/guardians';
-import {ActivityIndicator} from 'react-native-paper';
 import InfoModal from '../../../components/modal/InfoModal';
-import axios from 'axios';
-import {getSecrets} from '../../../utils/Cifrate';
+import { useGuardiansInviteQuery } from '../../../data/guardians';
+import { useKycFindPublicQuery } from '../../../data/kyc';
 
 
 export default function AddGuardians() {
@@ -60,7 +59,11 @@ export default function AddGuardians() {
         },
         onError: err => {
           const message = err?.response?.data?.error ?? err.message;
-          setMsg(message);
+          if (message.includes('Network Error')) {
+            setMsg(String.networkError);
+          } else {
+            setMsg(message);
+          }
         },
       },
     );
@@ -95,7 +98,7 @@ export default function AddGuardians() {
 
   return (
     <CSafeAreaView testID="addGuardiansContainer" addTabPadding={false}>
-  <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
+      <CHeader testID="addGuardiansHeader" title={String.addGuardian} />
       <KeyBoardAvoidWrapper testID="addGuardiansKeyboardWrapper" contentContainerStyle={styles.ph20}>
         <CText testID="addGuardiansTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.addGuardianSubtitle}{' '}

@@ -1,50 +1,49 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Image,
-  StyleSheet,
-  View,
   ActivityIndicator,
   Dimensions,
+  Image,
   Platform,
+  StyleSheet,
+  View,
 } from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useDispatch, useSelector } from 'react-redux';
 
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import {moderateScale} from '../../common/constants';
-import typography from '../../themes/typography';
-import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
+import { moderateScale } from '../../common/constants';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import { AuthNav, StackNav } from '../../navigation/NavigationKey';
+import { styles } from '../../themes';
+import typography from '../../themes/typography';
 
-import String from '../../i18n/String';
-import {clearWallet, setSecrets} from '../../redux/action/walletAction';
-import InfoModal from '../../components/modal/InfoModal';
-import {incAttempts, isLocked, resetAttempts} from '../../utils/PinAttempts';
-import {setAddresses} from '../../redux/slices/addressSlice';
-import {clearAuth, setAuthenticated} from '../../redux/slices/authSlice';
-import {SHA256} from 'crypto-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import CButton from '../../components/common/CButton';
-import {commonColor} from '../../themes/colors';
-import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
-import {migrateIfNeeded} from '../../utils/migrateLegacy';
-import wira from 'wira-sdk';
-import {guardianApi} from '../../data/guardians';
 import {
   BACKEND,
   BACKEND_BLOCKCHAIN,
   BACKEND_IDENTITY,
   BACKEND_RESULT,
-  GATEWAY_BASE,
   BUNDLER,
   BUNDLER_MAIN,
+  GATEWAY_BASE,
   PROVIDER_NAME,
 } from '@env';
-import { captureError, setUserContext } from '../../config/sentry';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SHA256 } from 'crypto-js';
+import wira from 'wira-sdk';
+import CButton from '../../components/common/CButton';
+import InfoModal from '../../components/modal/InfoModal';
+import { guardianApi } from '../../data/guardians';
+import String from '../../i18n/String';
+import { clearWallet, setSecrets } from '../../redux/action/walletAction';
+import { setAddresses } from '../../redux/slices/addressSlice';
+import { clearAuth, setAuthenticated } from '../../redux/slices/authSlice';
+import { commonColor } from '../../themes/colors';
+import { ensureBundle, writeBundleAtomic } from '../../utils/ensureBundle';
+import { migrateIfNeeded } from '../../utils/migrateLegacy';
+import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 
 const sharedSession = new wira.SharedSession(
   BACKEND_IDENTITY,
@@ -361,11 +360,7 @@ export default function LoginUser({navigation, route}) {
       })
         .catch(err => {
           logNetworkIssue('verifyPin:catch', err, {stage: 'onCodeFilled'});
-          captureError(err, {
-            flow: 'login',
-            step: 'verify_pin',
-            critical: false,
-          });
+          console.error(err);
         })
         .finally(() => {
           setLoading(false);
@@ -385,7 +380,7 @@ export default function LoginUser({navigation, route}) {
 
   useEffect(() => {
     if (locked === false) {
-      const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+      const t = setTimeout(() => otpRef.current?.inputs?.[0]?.focus(), 350);
       return () => clearTimeout(t);
     }
   }, [locked]);
@@ -415,11 +410,7 @@ export default function LoginUser({navigation, route}) {
         await unlock(userData, null, '');
         setLoading(false);
       } catch (e) {
-        captureError(e, {
-          flow: 'login',
-          step: 'biometric_auth',
-          critical: false,
-        });
+        console.error(e);
         setLoading(false);
       }
     })();
@@ -459,21 +450,24 @@ export default function LoginUser({navigation, route}) {
               {String.login}
             </CText>
 
-            <OTPInputView
+            <OTPTextInput
               testID="textInput"
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
               keyboardType="number-pad"
-              onCodeChanged={setOtp}
-              onCodeFilled={onCodeFilled}
+              handleTextChange={code => {
+                setOtp(code);
+                if (code.length === 4) {
+                  onCodeFilled(code);
+                }
+              }}
               secureTextEntry={true}
               editable={!locked}
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
+              autoFocus={false}
               ref={otpRef}
-              codeInputFieldStyle={[
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -481,7 +475,8 @@ export default function LoginUser({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
+              offTintColor={colors.grayScale500}
             />
           </View>
         </View>

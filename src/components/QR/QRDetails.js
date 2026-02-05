@@ -7,7 +7,6 @@ import {useSelector} from 'react-redux';
 import {styles} from '../../themes';
 import CListCard from '../common/CLIstCard';
 import QRCode from 'react-native-qrcode-svg';
-import Share from 'react-native-share';
 
 export default function QRDetails({qrData, data, getRef}) {
   const colors = useSelector(state => state.theme.theme);

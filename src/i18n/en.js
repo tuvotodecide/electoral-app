@@ -1034,6 +1034,7 @@ export default {
   announceCountDescription: 'Avisar el inicio del conteo.',
   myWitnesses: `Mis${'\n'}atestiguamientos`,
   myWitnessesDescription: 'Revisa tu historial',
+  networkError: 'Error de red, revise su conexión a internet.',
 
   // Buscar Mesa Screen
   searchTable: 'Buscar mesa',

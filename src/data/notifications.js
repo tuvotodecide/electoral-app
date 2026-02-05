@@ -1,16 +1,14 @@
-import {useQuery} from 'react-query';
-import {API_ENDPOINTS} from './client/api-endpoints';
-import {notificationsClient} from './client/notifications';
+import { useQuery } from '@tanstack/react-query';
+import { API_ENDPOINTS } from './client/api-endpoints';
+import { notificationsClient } from './client/notifications';
 
 export const useNotificationsQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    [API_ENDPOINTS.PUSHLOG, options],
-    ({queryKey}) =>
+  const {data, error, isLoading} = useQuery({
+    queryKey: [API_ENDPOINTS.PUSHLOG, options],
+    queryFn: ({queryKey}) =>
       notificationsClient.paginated(Object.assign({}, queryKey[1])),
-    {
-      keepPreviousData: true,
-    },
-  );
+    keepPreviousData: true,
+  });
 
   return {
     data,

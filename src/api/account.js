@@ -1,16 +1,16 @@
-import {createPublicClient, getContract, http} from 'viem';
-import {privateKeyToAccount} from 'viem/accounts';
+import { CHAIN } from '@env';
+import { createSmartAccountClient } from 'permissionless';
+import { toSimpleSmartAccount } from 'permissionless/accounts';
+import { createPimlicoClient } from 'permissionless/clients/pimlico';
+import { createPublicClient, getContract, http } from 'viem';
+import { entryPoint07Address } from 'viem/account-abstraction';
+import { privateKeyToAccount } from 'viem/accounts';
+import walletAbi from './contracts/SimpleAccount.json';
 import {
   availableNetworks,
   FACTORY_ADDRESS,
   sponsorshipPolicyId,
 } from './params';
-import {entryPoint07Address} from 'viem/account-abstraction';
-import {toSimpleSmartAccount} from 'permissionless/accounts';
-import {CHAIN} from '@env';
-import walletAbi from './contracts/SimpleAccount.json';
-import {createPimlicoClient} from 'permissionless/clients/pimlico';
-import {createSmartAccountClient} from 'permissionless';
 
 export function getReadAccountContract(chain, address) {
   const client = createPublicClient({

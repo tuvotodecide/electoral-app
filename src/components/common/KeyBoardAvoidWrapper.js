@@ -1,13 +1,13 @@
 // Library Imports
 import React from 'react';
-import {KeyboardAvoidingView, ScrollView} from 'react-native';
+import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
 // Local Imports
-import {isIOS, moderateScale} from '../../common/constants';
-import {styles} from '../../themes';
+import { isIOS, moderateScale } from '../../common/constants';
+import { styles } from '../../themes';
 
 // KeyboardAvoidWrapper Component
-export default KeyBoardAvoidWrapper = ({
+const KeyBoardAvoidWrapper = ({
   children,
   containerStyle,
   contentContainerStyle,
@@ -27,3 +27,5 @@ export default KeyBoardAvoidWrapper = ({
     </KeyboardAvoidingView>
   );
 };
+
+export default KeyBoardAvoidWrapper;

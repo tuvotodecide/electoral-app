@@ -1,15 +1,15 @@
-import React, {useState} from 'react';
-import {StyleSheet, View, TextInput, TouchableOpacity} from 'react-native';
-import {useSelector} from 'react-redux';
+import React, { useState } from 'react';
+import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSelector } from 'react-redux';
 
-import {getHeight, moderateScale} from '../../common/constants';
-import CText from './CText';
+import { getHeight, moderateScale } from '../../common/constants';
+import { styles } from '../../themes';
+import { colors } from '../../themes/colors';
 import typography from '../../themes/typography';
-import {styles} from '../../themes';
-import {colors} from '../../themes/colors';
+import CText from './CText';
 
-export default CInput = props => {
+const CInput = props => {
   let {
     _value,
     label,
@@ -184,3 +184,5 @@ const localStyle = StyleSheet.create({
     ...styles.ml5,
   },
 });
+
+export default CInput;

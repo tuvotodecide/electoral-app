@@ -1,11 +1,12 @@
 
-import axios from 'axios';
-import { useQuery } from 'react-query';
 import { BACKEND } from '@env';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 export function usePushLog() {
-  return useQuery('pushlog', () =>
-    axios.get(`${BACKEND}pushlog`)
-         .then(res => res.data)
-  );
+  return useQuery({
+    queryKey: 'pushlog',
+    queryFn: () => axios.get(`${BACKEND}pushlog`)
+      .then(res => res.data)
+  });
 }

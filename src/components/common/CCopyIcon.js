@@ -1,4 +1,4 @@
-import Clipboard from "@react-native-clipboard/clipboard";
+import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -8,9 +8,9 @@ export function CCopyIcon({copyValue}) {
   const colors = useSelector(state => state.theme.theme);
   const [copied, setCopied] = useState(false);
 
-  const onPress = () => {
+  const onPress = async () => {
     if (copyValue) {
-      Clipboard.setString(copyValue);
+      await Clipboard.setStringAsync(copyValue);
       setCopied(true);
     }
   }

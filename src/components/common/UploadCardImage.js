@@ -1,17 +1,17 @@
 import React from 'react';
 import {
-  View,
   Image,
+  PermissionsAndroid,
+  Platform,
   StyleSheet,
   TouchableOpacity,
-  Platform,
-  PermissionsAndroid,
+  View,
 } from 'react-native';
-import {useSelector} from 'react-redux';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector } from 'react-redux';
+import { moderateScale } from '../../common/constants';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
 
 async function requestGalleryPermission() {
   if (Platform.OS !== 'android') return true;

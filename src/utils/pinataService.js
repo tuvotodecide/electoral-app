@@ -40,14 +40,14 @@ class PinataService {
     throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
   }
 
-  async checkDuplicateBallot(voteData,electionId=null) {
+  async checkDuplicateBallot(voteData) {
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}${electionId ? `?electionId=${electionId}` : ''}`,
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
         {timeout: 10000}, // 10 segundos timeout
       );
       const data = response.data;

@@ -1,26 +1,24 @@
-import {StyleSheet, View, Image, DeviceEventEmitter} from 'react-native';
-import React, {useCallback, useEffect, useState} from 'react';
-import BootSplash from 'react-native-bootsplash';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useCallback, useEffect, useState } from 'react';
+import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
 // custom import
+import images from '../assets/images';
+import { moderateScale, PENDINGRECOVERY } from '../common/constants';
 import CSafeAreaView from '../components/common/CSafeAreaView';
-import {styles} from '../themes';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
-import {AuthNav, StackNav} from '../navigation/NavigationKey';
-import {initialStorageValueGet} from '../utils/AsyncStorage';
-import {changeThemeAction} from '../redux/action/themeAction';
-import {colors} from '../themes/colors';
-import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { styles } from '../themes';
 
-import {getDraft} from '../utils/RegisterDraft';
-import {ensureBundle} from '../utils/ensureBundle';
-import wira, {config} from 'wira-sdk';
-import {GATEWAY_BASE, CIRCUITS_URL} from '@env';
+import { CIRCUITS_URL, GATEWAY_BASE } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import wira, { config } from 'wira-sdk';
 import CButton from '../components/common/CButton';
+import { AuthNav, StackNav } from '../navigation/NavigationKey';
+import { changeThemeAction } from '../redux/action/themeAction';
+import { colors } from '../themes/colors';
+import { initialStorageValueGet } from '../utils/AsyncStorage';
+import { getDraft } from '../utils/RegisterDraft';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -46,7 +44,7 @@ export default function Splash({navigation}) {
             break;
 
           case config.CircuitDownloadStatus.ERROR:
-            setDownloadMessage(String.downloadingFailed + '\nProgress cancelel: ' + info);
+            setDownloadMessage(String.downloadingFailed + '\nProgress canceled: ' + info);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
@@ -68,7 +66,6 @@ export default function Splash({navigation}) {
     const {promise: downloadComplete, cancel} = waitForCircuitDownloadCompletion();
 
     try {
-      await BootSplash.hide({fade: true});
       await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
       await config.initDownloadCircuits({
         bucketUrl: CIRCUITS_URL,
@@ -87,7 +84,7 @@ export default function Splash({navigation}) {
       });
       await downloadComplete;
     } catch (error) {
-      setDownloadMessage(String.downloadingFailed + '\n' + error.message);
+      setDownloadMessage(String.downloadingFailed);
       cancel();
       return;
     }
@@ -124,7 +121,7 @@ export default function Splash({navigation}) {
           return;
         }
 
-        await ensureBundle();
+        //await ensureBundle();
         navigation.replace(StackNav.AuthNavigation);
       } else {
         navigation.replace(StackNav.AuthNavigation);

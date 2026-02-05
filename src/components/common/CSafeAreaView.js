@@ -1,12 +1,12 @@
-import {StyleSheet} from 'react-native';
 import React from 'react';
-import {useSelector} from 'react-redux';
+import { StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
 
 // custom import
-import {styles} from '../../themes';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { styles } from '../../themes';
 
-export default CSafeAreaView = ({children, addTabPadding = true, ...props}) => {
+const CSafeAreaView = ({children, addTabPadding = true, ...props}) => {
   const colors = useSelector(state => state.theme.theme);
 
   return (
@@ -27,3 +27,5 @@ const localStyle = (colors, style, bottomPadding) =>
       ...style,
     },
   });
+
+export default CSafeAreaView;

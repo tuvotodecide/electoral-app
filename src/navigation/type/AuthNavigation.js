@@ -1,9 +1,9 @@
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {AuthNav} from '../NavigationKey';
-import {AuthRoute} from '../NavigationRoute';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AuthNav } from '../NavigationKey';
+import { AuthRoute } from '../NavigationRoute';
 
 const Stack = createNativeStackNavigator();
 

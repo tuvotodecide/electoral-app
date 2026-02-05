@@ -1,24 +1,23 @@
-import {StyleSheet, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
-import {InteractionManager} from 'react-native';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
 // Custom imports
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import {moderateScale} from '../../common/constants';
-import typography from '../../themes/typography';
-import CButton from '../../components/common/CButton';
-import {AuthNav} from '../../navigation/NavigationKey';
+import { moderateScale } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
-import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import CAlert from '../../components/common/CAlert';
+import CButton from '../../components/common/CButton';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import String from '../../i18n/String';
-import {setTmpPin} from '../../utils/TempRegister';
+import { AuthNav } from '../../navigation/NavigationKey';
+import { styles } from '../../themes';
+import typography from '../../themes/typography';
+import { setTmpPin } from '../../utils/TempRegister';
+import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 
 import CBigAlert from '../../components/common/CBigAlert';
 
@@ -28,11 +27,6 @@ export default function RegisterUser9({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
-  const otpRef = useRef(null);
-  useEffect(() => {
-    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleConfirmPin = async () => {
     const matchesOriginal = otp === originalPin;
@@ -74,13 +68,11 @@ export default function RegisterUser9({navigation, route}) {
               {String.confirmPinDescription}
             </CText>
 
-            <OTPInputView
+            <OTPTextInput
               testID="registerUser9PinInput"
-              ref={otpRef}
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={text => {
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
+              handleTextChange={text => {
                 setOtp(text);
                 if (showError) {
                   setShowError(false);
@@ -90,8 +82,8 @@ export default function RegisterUser9({navigation, route}) {
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
-              codeInputFieldStyle={[
+              autoFocus
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -99,7 +91,7 @@ export default function RegisterUser9({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
             />
 
             {showError && (

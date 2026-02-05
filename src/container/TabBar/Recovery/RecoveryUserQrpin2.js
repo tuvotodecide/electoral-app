@@ -1,31 +1,27 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin2.js
-import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, View, Alert} from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
-import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
-import CAlert from '../../../components/common/CAlert';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
+import CAlert from '../../../components/common/CAlert';
+import CButton from '../../../components/common/CButton';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
+import CText from '../../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 
-import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
-import typography from '../../../themes/typography';
-import {AuthNav} from '../../../navigation/NavigationKey';
-import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
+import { moderateScale } from '../../../common/constants';
 import String from '../../../i18n/String';
+import { AuthNav } from '../../../navigation/NavigationKey';
+import { styles } from '../../../themes';
+import typography from '../../../themes/typography';
+import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
-import {setSecrets} from '../../../redux/action/walletAction';
-import {setAddresses} from '../../../redux/slices/addressSlice';
-import {setAuthenticated} from '../../../redux/slices/authSlice';
-import {startSession} from '../../../utils/Session';
 
+import { BACKEND_IDENTITY, PROVIDER_NAME } from '@env';
 import wira from 'wira-sdk';
-import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
 import LoadingModal from '../../../components/modal/LoadingModal';
 import { resetAttempts } from '../../../utils/PinAttempts';
 
@@ -37,18 +33,11 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
   const [otp, setOtp] = useState('');
   const [showError, setShowError] = useState(false);
-  const dispatch = useDispatch();
-  const otpRef = useRef(null);
   const [modal, setModal] = useState({
     visible: false,
     message: '',
     isLoading: false,
   });
-
-  useEffect(() => {
-    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
-    return () => clearTimeout(t);
-  }, []);
 
   const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
 
@@ -130,19 +119,17 @@ export default function RecoveryUserQrPin2({navigation, route}) {
               {String.confirmPinDescription}
             </CText>
 
-            <OTPInputView
-              ref={otpRef}
-              pinCount={4}
-              code={otp}
-              onCodeChanged={text => {
+            <OTPTextInput
+              inputCount={4}
+              handleTextChange={text => {
                 setOtp(text);
                 if (showError) setShowError(false);
               }}
               secureTextEntry
               keyboardType="number-pad"
-              autoFocusOnLoad={false}
-              style={local.otpBox}
-              codeInputFieldStyle={[
+              autoFocus
+              containerStyle={local.otpBox}
+              textInputStyle={[
                 local.otpInput,
                 {
                   backgroundColor: colors.inputBackground,
@@ -150,7 +137,8 @@ export default function RecoveryUserQrPin2({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
+              offTintColor={colors.grayScale500}
             />
 
             {showError && (

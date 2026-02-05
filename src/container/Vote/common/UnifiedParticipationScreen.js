@@ -25,6 +25,7 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const { locationId, locationData, electionId, electionType } = route.params || {};
   const [dots, setDots] = useState('');
+  console.log(electionId, 'unified participation screen electionId')
   useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => (prev.length < 3 ? prev + '.' : ''));

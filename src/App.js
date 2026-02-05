@@ -1,28 +1,26 @@
-import {Platform, StatusBar, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
-import * as Sentry from '@sentry/react-native';
-import { captureError } from './config/sentry';
-import AppNavigator from './navigation';
-import {styles} from './themes';
-import {BACKEND_IDENTITY} from '@env';
-import {useDispatch, useSelector} from 'react-redux';
-import {QueryClient, QueryClientProvider} from 'react-query';
-import {migrateIfNeeded} from './utils/migrateBundle';
-import {navigate} from './navigation/RootNavigation';
-import {setPendingNav} from './redux/slices/authSlice';
-import {
-  initNotifications,
-  ensureFCMSetup,
-  subscribeToLocationTopic,
-  showLocalNotification,
-} from './services/notifications';
-import {registerNotifications} from './notifications';
-import messaging from '@react-native-firebase/messaging';
-import {LAST_TOPIC_KEY} from './common/constants';
+import { BACKEND_IDENTITY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, StatusBar, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import wira from 'wira-sdk';
+import { LAST_TOPIC_KEY } from './common/constants';
+import AppNavigator from './navigation';
+import { navigate } from './navigation/RootNavigation';
+import { registerNotifications } from './notifications';
+import { setPendingNav } from './redux/slices/authSlice';
+import {
+  ensureFCMSetup,
+  initNotifications,
+  showLocalNotification,
+  subscribeToLocationTopic,
+} from './services/notifications';
+import { styles } from './themes';
+import { migrateIfNeeded } from './utils/migrateBundle';
 
-import SpInAppUpdates, {IAUUpdateKind} from 'sp-react-native-in-app-updates';
+import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
 
 wira.initWiraSdk({appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY});
@@ -111,11 +109,7 @@ const App = () => {
               data: msg?.data,
             });
           } catch (e) {
-            captureError(e, {
-              flow: 'notification',
-              step: 'foreground_handler',
-              critical: false,
-            });
+            console.error('FG handler error', e, msg);
           }
         },
         onOpenedFromNotification: _msg => {},
@@ -180,5 +174,4 @@ const App = () => {
   );
 };
 
-// Wrap con Sentry para captura automatica de errores en componentes
-export default Sentry.wrap(App);
+export default App;

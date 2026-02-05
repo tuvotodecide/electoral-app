@@ -1,5 +1,4 @@
-import React from 'react';
-import {View, TouchableOpacity, Text, StyleSheet} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CPagination({totalPages, currentPage, onPageChange}) {
   if (totalPages <= 1) return null;

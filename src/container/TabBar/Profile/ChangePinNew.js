@@ -1,20 +1,20 @@
-import {StyleSheet, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../../components/common/CText';
-import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
-import typography from '../../../themes/typography';
+import { moderateScale } from '../../../common/constants';
 import CButton from '../../../components/common/CButton';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import String from '../../../i18n/String';
+import { StackNav } from '../../../navigation/NavigationKey';
+import { styles } from '../../../themes';
+import typography from '../../../themes/typography';
+import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
 export default function ChangePinNew({navigation, route}) {
@@ -53,18 +53,17 @@ export default function ChangePinNew({navigation, route}) {
               align={'center'}>
               {String.pinAccessDescription}
             </CText>
-            <OTPInputView
+            <OTPTextInput
               testID="textInput"
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={onOtpChange}
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
+              handleTextChange={onOtpChange}
               secureTextEntry={true}
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
-              codeInputFieldStyle={[
+              autoFocus={true}
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -72,7 +71,7 @@ export default function ChangePinNew({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
             />
           </View>
           <View testID="changePinNewButtonContainer">
