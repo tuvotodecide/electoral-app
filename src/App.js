@@ -2,7 +2,9 @@ import { BACKEND_IDENTITY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/react-native';
+import { captureError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import wira from 'wira-sdk';
@@ -23,7 +25,7 @@ import { migrateIfNeeded } from './utils/migrateBundle';
 import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
 
-wira.initWiraSdk({appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY});
+wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
 
 const queryClient = new QueryClient();
 
@@ -109,10 +111,14 @@ const App = () => {
               data: msg?.data,
             });
           } catch (e) {
-            console.error('FG handler error', e, msg);
+            captureError(e, {
+              flow: 'notification',
+              step: 'foreground_handler',
+              critical: false,
+            });
           }
         },
-        onOpenedFromNotification: _msg => {},
+        onOpenedFromNotification: _msg => { },
       });
     })();
     return () => {
@@ -127,7 +133,7 @@ const App = () => {
         const rawId = last.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) {}
+        } catch (e) { }
       }
     })();
     const unsub = messaging().onTokenRefresh(async () => {
@@ -136,7 +142,7 @@ const App = () => {
         const rawId = last.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) {}
+        } catch (e) { }
       }
     });
     return () => unsub();
@@ -162,7 +168,7 @@ const App = () => {
 
         <CustomModal
           visible={mustUpdate}
-          onClose={() => {}} // no permitir cerrarlo
+          onClose={() => { }} // no permitir cerrarlo
           title="Actualización requerida"
           message="Hay una nueva versión disponible. Debes actualizar la app para continuar."
           type="warning"
@@ -174,4 +180,5 @@ const App = () => {
   );
 };
 
-export default App;
+// Wrap con Sentry para captura automatica de errores en componentes
+export default Sentry.wrap(App);

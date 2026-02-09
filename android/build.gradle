@@ -6,10 +6,11 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-        classpath 'com.google.gms:google-services:4.4.1'
+    classpath 'com.google.gms:google-services:4.4.1'
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    classpath('io.sentry:sentry-android-gradle-plugin:4.14.1')
   }
 }
 
@@ -22,7 +23,7 @@ allprojects {
     maven { url 'https://www.jitpack.io' }
 
     // Native module repositories
-    maven { url "$rootDir/../../wira_flutter_module/build/host/outputs/repo" }
+    maven { url "C:/apps/sdk-flutter-example/build/host/outputs/repo" }
     maven { url "$storageUrl/download.flutter.io" }
     maven {
       url "$rootDir/../node_modules/@notifee/react-native/android/libs"

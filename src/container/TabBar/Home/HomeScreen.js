@@ -50,6 +50,8 @@ import {
   saveVotePlace,
 } from '../../../utils/offlineQueue';
 import { publishActaHandler } from '../../../utils/offlineQueueHandler';
+import { captureError, captureMessage } from '../../../config/sentry';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -261,6 +263,10 @@ export default function HomeScreen({ navigation }) {
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
+  // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
+  const [locationStatus, setLocationStatus] = useState('unknown');
+
+
   const pendingPermissionFromSettings = useRef(false);
   const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
 
@@ -307,6 +313,24 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  /** Solo VERIFICA el permiso, nunca muestra diálogo del sistema */
+  const checkLocationPermissionOnly = useCallback(async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const ok = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        return ok;
+      }
+      // iOS: no hay .check() puro, pero requestAuthorization con 'whenInUse'
+      // no vuelve a mostrar el diálogo si ya se contestó
+      const status = await Geolocation.requestAuthorization('whenInUse');
+      return status === 'granted';
+    } catch {
+      return false;
+    }
+  }, []);
+
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -342,17 +366,26 @@ export default function HomeScreen({ navigation }) {
       );
     });
 
-  const getHomeLocation = useCallback(async () => {
-    const ok = await requestLocationPermission();
+  /**
+* Obtiene la ubicación SIN mostrar modales.
+* Si el permiso no está concedido, actualiza locationStatus y retorna null.
+*/
+
+  const getHomeLocation = useCallback(async (silent = true) => {
+    const ok = await checkLocationPermissionOnly();
     if (!ok) {
-      showPermissionModal(
-        'Ubicación requerida',
-        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
-        openLocationSettings,
-      );
+      setLocationStatus('denied');
+      if (!silent) {
+        // Solo muestra modal si el usuario pidió explícitamente activar
+        showPermissionModal(
+          'Ubicación requerida',
+          'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
+          openLocationSettings,
+        );
+      }
       return null;
     }
-
+    setLocationStatus('granted');
     try {
       // intento 1: high accuracy
       const pos = await getCurrentPositionAsync(true);
@@ -363,15 +396,17 @@ export default function HomeScreen({ navigation }) {
         const pos2 = await getCurrentPositionAsync(false);
         return pos2.coords;
       } catch (err2) {
-        showPermissionModal(
-          'No se pudo obtener ubicación',
-          'Activa la ubicación (GPS) e intenta nuevamente.',
-          openLocationSettings,
-        );
+        if (!silent) {
+          showPermissionModal(
+            'No se pudo obtener ubicación',
+            'Activa la ubicación (GPS) e intenta nuevamente.',
+            openLocationSettings,
+          );
+        }
         return null;
       }
     }
-  }, [requestLocationPermission]);
+  }, [checkLocationPermissionOnly]);
 
   const checkAttestationAvailability = useCallback(
     async (latitude, longitude) => {
@@ -431,8 +466,11 @@ export default function HomeScreen({ navigation }) {
     },
     [],
   );
+  /**
+ * Verificación automática (en focus / red) — modo silencioso:
+ * solo CHECK, nunca muestra diálogos del sistema ni modales.
+ */
   const requestLocationAndCheckAvailability = useCallback(async () => {
-    // evita llamar demasiado en focus
     const now = Date.now();
     if (now - (availabilityRef.current.lastCheckAt || 0) < 4000) return;
     availabilityRef.current.lastCheckAt = now;
@@ -442,50 +480,98 @@ export default function HomeScreen({ navigation }) {
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) return;
 
-    const coords = await getHomeLocation();
+    const coords = await getHomeLocation(true);
     if (!coords?.latitude || !coords?.longitude) return;
 
     await checkAttestationAvailability(coords.latitude, coords.longitude);
   }, [getHomeLocation, checkAttestationAvailability]);
+
+
+  /**
+   * Acción EXPLÍCITA del usuario: toca "Activar Ubicación".
+   * Aquí SÍ pedimos el permiso al sistema y mostramos modal si falla.
+   */
+  const handleActivateLocation = useCallback(async () => {
+    const ok = await requestLocationPermission();
+    if (!ok) {
+      setLocationStatus('denied');
+
+      showPermissionModal(
+        'Ubicación requerida',
+        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
+        openLocationSettings,
+      );
+      return;
+    }
+
+
+    setLocationStatus('granted');
+    setLoadingAvailability(true);
+    try {
+      let coords = null;
+      try {
+        const pos = await getCurrentPositionAsync(true);
+        coords = pos.coords;
+      } catch {
+        const pos2 = await getCurrentPositionAsync(false);
+        coords = pos2.coords;
+      }
+
+      if (coords?.latitude && coords?.longitude) {
+        await checkAttestationAvailability(coords.latitude, coords.longitude);
+      } else {
+        showPermissionModal(
+          'No se pudo obtener ubicación',
+          'Activa la ubicación (GPS) e intenta nuevamente.',
+          openLocationSettings,
+        );
+      }
+    } catch {
+      showPermissionModal(
+        'No se pudo obtener ubicación',
+        'Activa la ubicación (GPS) e intenta nuevamente.',
+        openLocationSettings,
+      );
+    } finally {
+      setLoadingAvailability(false);
+    }
+  }, [requestLocationPermission, checkAttestationAvailability]);
+
+
+
+
+
+
+
+
+
+
+
+
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
       if (state === 'active' && pendingPermissionFromSettings.current) {
         pendingPermissionFromSettings.current = false;
-
         try {
-          if (Platform.OS === 'android') {
-            const ok = await PermissionsAndroid.check(
-              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            );
-            if (ok) {
-              setPermissionModal(m => ({ ...m, visible: false }));
-              requestLocationAndCheckAvailability();
-            } else {
-              showPermissionModal(
-                'Ubicación requerida',
-                'Aún no se otorgó el permiso de ubicación.',
-                openLocationSettings,
-              );
-            }
+          const ok = await checkLocationPermissionOnly();
+          if (ok) {
+            setLocationStatus('granted');
+            setPermissionModal(m => ({ ...m, visible: false }));
+            // Forzar re-check ahora que hay permiso
+            availabilityRef.current.lastCheckAt = 0;
+            requestLocationAndCheckAvailability();
           } else {
-            const status = await Geolocation.requestAuthorization('whenInUse');
-            if (status === 'granted') {
-              setPermissionModal(m => ({ ...m, visible: false }));
-              requestLocationAndCheckAvailability();
-            } else {
-              showPermissionModal(
-                'Ubicación requerida',
-                'Aún no se otorgó el permiso de ubicación.',
-                openLocationSettings,
-              );
-            }
+            setLocationStatus('denied');
+            // No mostramos modal de nuevo, el botón "Activar Ubicación" ya está visible
+            setPermissionModal(m => ({ ...m, visible: false }));
           }
         } catch (e) { }
       }
     });
 
     return () => sub.remove();
-  }, [requestLocationAndCheckAvailability]);
+  }, [requestLocationAndCheckAvailability, checkLocationPermissionOnly]);
+
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -640,6 +726,36 @@ export default function HomeScreen({ navigation }) {
     setQueueFailModal(m => ({ ...m, visible: false }));
   };
 
+
+  const handleSentryTest = () => {
+    const error = new Error('Error de prueba');
+    const userDni = userData?.dni ?? null;
+    const effectiveDni = userDni ?? dni ?? null;
+    const dniSource = userDni ? 'userData' : (dni ? 'vc' : 'unknown');
+
+    captureMessage('Mensaje de prueba Sentry', 'info', {
+      flow: 'sentry_test',
+      screen: 'home',
+      dni_source: dniSource,
+    });
+
+    captureError(error, {
+      flow: 'sentry_test',
+      step: 'home_button',
+      critical: false,
+      allowPii: true,
+      dni: effectiveDni,
+      dni_source: dniSource,
+    });
+
+    setInfoModal({
+      visible: true,
+      type: 'warning',
+      title: 'Sentry',
+      message: 'Evento de prueba enviado con DNI (solo dev). Revisa Sentry en 1-2 minutos.',
+    });
+  };
+
   const handleParticiparPress = async (type) => {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
@@ -711,6 +827,27 @@ export default function HomeScreen({ navigation }) {
   };
 
   const ActionButtonsGroup = () => {
+
+    // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
+    if (locationStatus !== 'granted') {
+      return (
+        <TouchableOpacity
+          style={stylesx.activateLocationBtn}
+          activeOpacity={0.8}
+          onPress={handleActivateLocation}>
+          <View style={stylesx.splitBtnIconBox}>
+            <Ionicons name="location-outline" size={24} color="#41A44D" />
+          </View>
+          <View style={stylesx.splitBtnContent}>
+            <CText style={stylesx.cardTitle}>Activar Ubicación</CText>
+            <CText style={stylesx.cardDescription}>
+              Activa tu ubicación para ver las opciones de envío de actas.
+            </CText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+        </TouchableOpacity>
+      );
+    }
     const showAlcalde = !!contracts?.ALCALDE?.enabled;
     const showGobernador = !!contracts?.GOBERNADOR?.enabled;
 
@@ -827,7 +964,7 @@ export default function HomeScreen({ navigation }) {
     {
       id: 1,
       title: '¿Necesita una app blockchain?',
-      subtitle: 'Blockchain Consultora desarrollo esta aplicación, contáctelos',
+      subtitle: 'Blockchain Consultora desarrolló esta aplicación, contáctelos',
       buttonText: 'Más Info',
       backgroundColor: '#e8f5e8',
       image: require('../../../assets/images/block-con.png'),
@@ -1147,6 +1284,7 @@ export default function HomeScreen({ navigation }) {
                   {menuItems[0].description}
                 </CText>
               </TouchableOpacity> */}
+
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
@@ -1850,6 +1988,18 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: 6,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+  },
+  activateLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(14, 16, 18),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(10, 12, 14),
+    borderWidth: 1.5,
+    borderColor: '#41A44D',
+    borderStyle: 'dashed',
   },
   splitBtn: {
     flexDirection: 'row',

@@ -1,10 +1,11 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
   Image,
   Dimensions,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 
 import ImageZoom from 'react-native-image-pan-zoom';
@@ -14,7 +15,7 @@ import {
   buildIpfsCandidates,
 } from '../../utils/normalizedUri';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = SCREEN_WIDTH >= 768;
@@ -71,8 +72,10 @@ export const PhotoContainer = ({
     [baseUri],
   );
   const [tryIndex, setTryIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     setTryIndex(0);
+    setIsLoading(true);
   }, [baseUri]);
   const withCacheBust = (url, idx) =>
     url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
@@ -83,6 +86,13 @@ export const PhotoContainer = ({
         : null,
     [candidates, tryIndex],
   );
+  useEffect(() => {
+    if (currentUri) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentUri]);
 
   return (
     <View
@@ -94,13 +104,25 @@ export const PhotoContainer = ({
       }>
       <Image
         testID={`${testID}Image`}
-        source={{uri: currentUri}}
+        source={{ uri: currentUri }}
         style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
         resizeMode="contain"
+        onLoadStart={() => setIsLoading(true)}
+        onLoad={() => setIsLoading(false)}
         onError={() => {
-          if (tryIndex < candidates.length - 1) setTryIndex(i => i + 1);
+          if (tryIndex < candidates.length - 1) {
+            setTryIndex(i => i + 1);
+            setIsLoading(true);
+          } else {
+            setIsLoading(false);
+          }
         }}
       />
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#41A44D" />
+        </View>
+      )}
       <View
         testID={`${testID}TopLeftCorner`}
         style={[styles.cornerBorder, styles.topLeftCorner]}
@@ -126,14 +148,15 @@ const ZoomablePhotoContainer = ({
   photoUri,
   useAspectRatio = false,
 }) => {
-  const [box, setBox] = useState({w: 0, h: 0});
-  const [img, setImg] = useState({w: 0, h: 0});
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const [img, setImg] = useState({ w: 0, h: 0 });
   const [rotation, setRotation] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const zoomRef = useRef(null);
 
   const onLayout = useCallback(e => {
-    const {width, height} = e.nativeEvent.layout;
-    setBox({w: Math.round(width), h: Math.round(height)});
+    const { width, height } = e.nativeEvent.layout;
+    setBox({ w: Math.round(width), h: Math.round(height) });
   }, []);
 
   const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
@@ -144,6 +167,7 @@ const ZoomablePhotoContainer = ({
   const [tryIndex, setTryIndex] = useState(0);
   useEffect(() => {
     setTryIndex(0);
+    setIsLoading(true);
   }, [baseUri]);
   const withCacheBust = (url, idx) =>
     url + (url.includes('?') ? '&' : '?') + 'v=' + idx;
@@ -156,19 +180,24 @@ const ZoomablePhotoContainer = ({
   );
 
   useEffect(() => {
-    setTryIndex(0);
-  }, [baseUri]);
+    if (currentUri) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentUri]);
 
   useEffect(() => {
     if (!currentUri) return;
     Image.getSize(
       currentUri,
-      (w, h) => setImg({w, h}),
+      (w, h) => setImg({ w, h }),
       () => {
         if (tryIndex < candidates.length - 1) {
           setTryIndex(i => i + 1);
         } else {
-          setImg({w: 1, h: 1});
+          setImg({ w: 1, h: 1 });
+          setIsLoading(false);
         }
       },
     );
@@ -180,38 +209,31 @@ const ZoomablePhotoContainer = ({
   const rotateRight = () => setRotation(prev => (prev + 90) % 360);
 
   const getContained = (iw, ih, cw, ch) => {
-    if (!iw || !ih || !cw || !ch) return {width: cw, height: ch};
+    if (!iw || !ih || !cw || !ch) return { width: cw, height: ch };
     const rImg = iw / ih;
     const rBox = cw / ch;
     if (rImg > rBox) {
       const width = cw;
       const height = width / rImg;
-      return {width, height};
+      return { width, height };
     } else {
       const height = ch;
       const width = height * rImg;
-      return {width, height};
+      return { width, height };
     }
   };
 
   const fit = getContained(baseIw, baseIh, box.w, box.h);
 
-  const coverScale =
-    Math.max(
-      (box.w || 1) / (fit.width || 1),
-      (box.h || 1) / (fit.height || 1),
-    ) || 1;
-  const initialZoom = Math.max(1, coverScale);
+  const contentW = Math.round(fit.width || box.w);
+  const contentH = Math.round(fit.height || box.h);
 
-  const contentW = Math.round((fit.width || box.w) * initialZoom);
-  const contentH = Math.round((fit.height || box.h) * initialZoom);
 
-  const minScale = 1 / initialZoom;
   const pixelScaleLimit = Math.max(
     1,
     Math.min(
-      img.w && contentW ? img.w / contentW : 1,
-      img.h && contentH ? img.h / contentH : 1,
+      baseIw && contentW ? baseIw / contentW : 1,
+      baseIh && contentH ? baseIh / contentH : 1,
     ),
   );
   const maxScale = Math.min(6, pixelScaleLimit);
@@ -219,10 +241,10 @@ const ZoomablePhotoContainer = ({
   useEffect(() => {
     // pequeño timeout para asegurar layout previo
     const id = setTimeout(() => {
-      zoomRef.current?.centerOn?.({x: 0, y: 0, scale: minScale, duration: 0});
+      zoomRef.current?.centerOn?.({ x: 0, y: 0, scale: 1, duration: 0 });
     }, 0);
     return () => clearTimeout(id);
-  }, [rotation, minScale]);
+  }, [rotation]);
 
   return (
     <View
@@ -241,7 +263,7 @@ const ZoomablePhotoContainer = ({
           cropHeight={box.h}
           imageWidth={isRotated ? contentH : contentW}
           imageHeight={isRotated ? contentW : contentH}
-          minScale={minScale}
+          minScale={1}
           maxScale={maxScale || 3}
           enableCenterFocus={false}
           pinchToZoom
@@ -249,15 +271,22 @@ const ZoomablePhotoContainer = ({
           enableDoubleClickZoom>
           <Image
             testID={`${testID}Image`}
-            source={{uri: currentUri}}
+            source={{ uri: currentUri }}
             style={{
               width: isRotated ? contentH : contentW,
               height: isRotated ? contentW : contentH,
-              transform: [{rotate: `${rotation}deg`}],
+              transform: [{ rotate: `${rotation}deg` }],
             }}
             resizeMode="contain"
+            onLoadStart={() => setIsLoading(true)}
+            onLoad={() => setIsLoading(false)}
             onError={() => {
-              if (tryIndex < candidates.length - 1) setTryIndex(i => i + 1);
+              if (tryIndex < candidates.length - 1) {
+                setTryIndex(i => i + 1);
+                setIsLoading(true);
+              } else {
+                setIsLoading(false);
+              }
             }}
           />
         </ImageZoom>
@@ -265,8 +294,13 @@ const ZoomablePhotoContainer = ({
         // Render vacío mientras medimos: sin “salto”
         <View
           testID={`${testID}PlaceholderView`}
-          style={{width: '100%', height: PHOTO_HEIGHT}}
+          style={{ width: '100%', height: PHOTO_HEIGHT }}
         />
+      )}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#41A44D" />
+        </View>
       )}
       <TouchableOpacity
         testID={`${testID}RotateLeft`}
@@ -279,7 +313,7 @@ const ZoomablePhotoContainer = ({
           name="refresh"
           size={getResponsiveSize(16, 20, 22)}
           color="#fff"
-          style={{transform: [{scaleX: -1}]}}
+          style={{ transform: [{ scaleX: -1 }] }}
         />
       </TouchableOpacity>
 
@@ -326,7 +360,7 @@ const styles = StyleSheet.create({
     marginBottom: MARGIN_BOTTOM,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -355,7 +389,7 @@ const styles = StyleSheet.create({
     marginBottom: MARGIN_BOTTOM,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: 'relative',
@@ -420,7 +454,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
     shadowRadius: 2,
   },
@@ -433,6 +467,13 @@ const styles = StyleSheet.create({
     right: getResponsiveSize(6, 8, 10),
     top: '50%',
     marginTop: -(ROTATE_BTN / 2),
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 3,
   },
 });
 

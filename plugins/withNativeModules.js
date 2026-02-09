@@ -140,7 +140,7 @@ function addRepositories(contents) {
 
   const nativeModuleRepos = `
     // Native module repositories
-    maven { url "$rootDir/../../wira_flutter_module/build/host/outputs/repo" }
+    maven { url "C:/apps/sdk-flutter-example/build/host/outputs/repo" }
     maven { url "$storageUrl/download.flutter.io" }
     maven {
       url "$rootDir/../node_modules/@notifee/react-native/android/libs"

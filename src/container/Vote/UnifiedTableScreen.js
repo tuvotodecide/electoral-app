@@ -35,7 +35,6 @@ const UnifiedTableScreen = ({ navigation, route }) => {
     message: '',
     buttonText: String.accept,
   });
-  console.log(electionId, 'unified table screen electionId')
   const {
     colors,
     searchText,

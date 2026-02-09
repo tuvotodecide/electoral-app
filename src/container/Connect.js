@@ -16,8 +16,9 @@ import { AuthNav, StackNav } from '../navigation/NavigationKey';
 import { styles } from '../themes';
 import { commonColor } from '../themes/colors';
 import { HandleModal } from './TabBar/SignIn/HandleModal';
+import { checkLegacyDataExists } from '../utils/migrateLegacy';
 
-export default function Connect({navigation}) {
+export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
 
   useEffect(() => {
@@ -41,8 +42,11 @@ export default function Connect({navigation}) {
   const onPressLoginUser = async () => {
     const response = await wira.Storage.checkUserData();
     if (!response) {
-      navigation.navigate(AuthNav.SelectRecuperation);
-      return;
+      const legacyDataExists = await checkLegacyDataExists();
+      if (!legacyDataExists) {
+        navigation.navigate(AuthNav.SelectRecuperation);
+        return;
+      }
     }
     navigation.navigate(AuthNav.LoginUser);
   };
@@ -61,7 +65,7 @@ export default function Connect({navigation}) {
       <View
         style={[
           localStyle.contentContainer,
-          {backgroundColor: colors.primary},
+          { backgroundColor: colors.primary },
         ]}
         testID="connectContentContainer">
         <CText
@@ -127,7 +131,7 @@ export default function Connect({navigation}) {
             bgColor={commonColor.gradient2}
             testID="connectLoginButton"
           />
-          
+
           {/*<CButton
             onPress={onLoginWithWira}
             title={String.signInWithWira}
@@ -136,7 +140,7 @@ export default function Connect({navigation}) {
             color={colors.white}
             bgColor={commonColor.gradient2}
           />*/}
-        </View> 
+        </View>
       </View>
       <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>

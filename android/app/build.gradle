@@ -184,6 +184,11 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+    
+    implementation platform("io.sentry:sentry-bom:8.31.0")
+    implementation "io.sentry:sentry-android"
+    implementation "io.sentry:sentry-okhttp"
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'io.sentry.android.gradle'

@@ -4,23 +4,23 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import {getHeight, moderateScale} from '../../common/constants';
+import { getHeight, moderateScale } from '../../common/constants';
 import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import {useDispatch, useSelector} from 'react-redux';
+import { styles } from '../../themes';
+import { useDispatch, useSelector } from 'react-redux';
 import images from '../../assets/images';
-import {AuthNav} from '../../navigation/NavigationKey';
+import { AuthNav } from '../../navigation/NavigationKey';
 import StepIndicator from '../../components/authComponents/StepIndicator';
-import {getSecondaryTextColor} from '../../utils/ThemeUtils';
+import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 
-import {saveDraft, clearDraft, getDraft} from '../../utils/RegisterDraft';
-import {setAddresses} from '../../redux/slices/addressSlice';
+import { saveDraft, clearDraft, getDraft } from '../../utils/RegisterDraft';
+import { setAddresses } from '../../redux/slices/addressSlice';
 import {
   normalizeOcrForUI,
 } from '../../utils/issuerClient';
@@ -33,9 +33,11 @@ import {
   PROVIDER_NAME,
 } from '@env';
 import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
+import { captureError } from '../../config/sentry';
 
-export default function RegisterUser10({navigation, route}) {
-  const {ocrData, dni, originalPin: pin, useBiometry, isMigration} = route.params;
+
+export default function RegisterUser10({ navigation, route }) {
+  const { ocrData, dni, originalPin: pin, useBiometry, isMigration } = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function RegisterUser10({navigation, route}) {
       await new Promise(r => requestAnimationFrame(() => r()));
       try {
         const yieldUI = () => new Promise(r => setTimeout(r, 50));
-        if(isMigration) {
+        if (isMigration) {
           setStage('migrate');
         } else {
           setStage('issueVC');
@@ -124,7 +126,7 @@ export default function RegisterUser10({navigation, route}) {
           availableNetworks[CHAIN].bundler,
           sponsorshipPolicyId
         );
-        
+
         await registerer.createVC(
           CHAIN,
           ocrData,
@@ -133,7 +135,7 @@ export default function RegisterUser10({navigation, route}) {
         );
 
         await yieldUI();
-        const {guardianAddress} = await withTimeout(
+        const { guardianAddress } = await withTimeout(
           registerer.createWallet(dni),
           90000,
           'registerStreamAndGuardian',
@@ -156,7 +158,7 @@ export default function RegisterUser10({navigation, route}) {
             `Error al registrar tu cuenta.`,
           );
         }
-        
+
         await clearDraft();
         setStage('done');
         setLoading(false);
@@ -164,16 +166,12 @@ export default function RegisterUser10({navigation, route}) {
           account: registerer.walletData.address,
         });
       } catch (err) {
-        if (__DEV__) {
-          const failingUrl =
-            err?.apiDebug?.url || err?.apiDebug?.requestUrl || null;
-          console.warn('[RegisterUser10] Registro fallido', {
-            failingUrl: failingUrl || '(URL no disponible)',
-            stage: stageRef.current,
-            message: err?.message,
-            apiDebug: err?.apiDebug ?? null,
-          });
-        }
+        captureError(err, {
+          flow: 'registration',
+          step: stageRef.current,
+          critical: true,
+        });
+
         setLoading(false);
         setErrorMessage(
           err?.message || 'Ocurrió un error al registrar tu cuenta.',
@@ -181,7 +179,7 @@ export default function RegisterUser10({navigation, route}) {
         setErrorModalVisible(true);
       }
     })();
-    return () => {};
+    return () => { };
   }, [pin, dni, useBiometry, navigation]);
 
   const stageMessage = {

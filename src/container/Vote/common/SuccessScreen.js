@@ -3,7 +3,7 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   BackHandler,
   Dimensions,
@@ -24,7 +24,7 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
@@ -46,7 +46,7 @@ const SuccessScreen = () => {
   const tableData = params.tableData || {};
   const certificateData = params.certificateData || {};
   const [imageLoading, setImageLoading] = useState(true);
-const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const fromNotifications = params.fromNotifications === true;
 
   const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
@@ -59,7 +59,7 @@ const [imageError, setImageError] = useState(false);
       routes: [
         {
           name: StackNav.TabNavigation,
-          params: {screen: TabNav.HomeScreen},
+          params: { screen: TabNav.HomeScreen },
         },
       ],
     });
@@ -100,7 +100,7 @@ const [imageError, setImageError] = useState(false);
         await Linking.openURL(nftData.nftUrl);
       } else {
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const handleShareNft = async () => {
@@ -123,25 +123,25 @@ const [imageError, setImageError] = useState(false);
       if (result.action === Share.sharedAction) {
       } else if (result.action === Share.dismissedAction) {
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const handleShareActa = async () => {
     try {
       // Puedes elegir imageUrl (foto del acta) o jsonUrl (metadata completa)
-      const url = ipfsData?.imageUrl || ipfsData?.jsonUrl;
-      if (!url) return;
+      const actaUrl = ipfsData?.imageUrl || ipfsData?.jsonUrl || ipfsUrl;
+      if (!actaUrl) return;
       const shareOptions = {
         title: 'Compartir acta (IPFS)',
-        message: `Acta publicada en IPFS: ${url}`,
-        url,
-        subject: 'Acta en IPFS - Elecciones Bolivia 2025',
+        message: `Acta publicada en IPFS: ${actaUrl}`,
+        url: actaUrl,
+        subject: 'Acta en IPFS',
       };
       await Share.share(shareOptions, {
         dialogTitle: 'Compartir acta (IPFS)',
-        subject: 'Acta en IPFS - Elecciones Bolivia 2025',
+        subject: 'Acta en IPFS',
       });
-    } catch (error) {}
+    } catch (error) { }
   };
 
   // Obtener nombre real del usuario desde Redux
@@ -169,7 +169,7 @@ const [imageError, setImageError] = useState(false);
               </View>
             )}
             <Image
-              source={{uri: certificateUrl}}
+              source={{ uri: certificateUrl }}
               style={styles.certificateImage}
               resizeMode="contain"
               onLoadStart={() => {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     marginBottom: getResponsiveSize(20, 25, 30),

@@ -35,20 +35,19 @@ class PinataService {
   async downloadToCache(url, preferredName = 'electoral-act.jpg') {
     const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
     const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
-    const res = await RNFS.downloadFile({fromUrl: src, toFile: target}).promise;
+    const res = await RNFS.downloadFile({ fromUrl: src, toFile: target }).promise;
     if (res.statusCode >= 200 && res.statusCode < 300) return target;
     throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
   }
-
-  async checkDuplicateBallot(voteData) {
+  async checkDuplicateBallot(voteData, electionId = null) {
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
 
       // Hacer la petición al backend
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}`,
-        {timeout: 10000}, // 10 segundos timeout
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}${electionId ? `?electionId=${electionId}` : ''}`,
+        { timeout: 10000 }, // 10 segundos timeout
       );
       const data = response.data;
 
@@ -66,7 +65,7 @@ class PinataService {
             Array.isArray(votes1.parties.partyVotes) &&
             Array.isArray(votes2.parties.partyVotes) &&
             votes1.parties.partyVotes.length ===
-              votes2.parties.partyVotes.length &&
+            votes2.parties.partyVotes.length &&
             votes1.parties.partyVotes.every(
               (p, i) =>
                 p.partyId === votes2.parties.partyVotes[i].partyId &&
@@ -197,7 +196,7 @@ class PinataService {
         },
       };
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        RNFS.unlink(fsPath).catch(() => {});
+        RNFS.unlink(fsPath).catch(() => { });
       }
 
       return out;
@@ -315,9 +314,9 @@ class PinataService {
 
       // 3. Construir attributes
       const attributes = [
-        {trait_type: 'Table Number', value: tableNumber},
-        {trait_type: 'Table Code', value: tableCode},
-        {trait_type: 'Time', value: time},
+        { trait_type: 'Table Number', value: tableNumber },
+        { trait_type: 'Table Code', value: tableCode },
+        { trait_type: 'Time', value: time },
       ];
 
       // Agregar votos por partido
@@ -462,7 +461,7 @@ class PinataService {
 
       const response = await axios.get(
         `${this.baseURL}/data/pinList?hashContains=${ipfsHash}`,
-        {headers},
+        { headers },
       );
 
       return {
@@ -505,10 +504,10 @@ class PinataService {
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/certificado/${tableCode}`,
         attributes: [
-          {trait_type: 'Nombre', value: userName},
-          {trait_type: 'Mesa', value: tableNumber},
-          {trait_type: 'Código de Mesa', value: tableCode},
-          {trait_type: 'Lugar', value: location},
+          { trait_type: 'Nombre', value: userName },
+          { trait_type: 'Mesa', value: tableNumber },
+          { trait_type: 'Código de Mesa', value: tableCode },
+          { trait_type: 'Lugar', value: location },
         ],
         _technical: {
           uploadedAt: timestamp,
@@ -517,7 +516,7 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
         },
-     
+
       };
 
       // 3) Subir el JSON a IPFS
