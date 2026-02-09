@@ -44,7 +44,7 @@ import { commonColor } from '../../themes/colors';
 import { ensureBundle, writeBundleAtomic } from '../../utils/ensureBundle';
 import { migrateIfNeeded } from '../../utils/migrateLegacy';
 import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
-import { captureError, setUserContext } from '../../config/sentry';
+import { captureError } from '../../config/sentry';
 
 
 const sharedSession = new wira.SharedSession(
@@ -131,7 +131,6 @@ export default function LoginUser({ navigation, route }) {
   const { sharedSessionId, sharedSessionSalt, isCIRecovery = false } = route.params ?? {};
 
   const colors = useSelector(state => state.theme.theme);
-  const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -292,7 +291,7 @@ export default function LoginUser({ navigation, route }) {
             await unlock(res.payload, res.jwt, code.trim());
             return;
           }
-          setOtp('');
+          otpRef.current?.clear();
           if (res.type === 'bad_pin') {
             const n = await incAttempts();
 
@@ -467,7 +466,6 @@ export default function LoginUser({ navigation, route }) {
               containerStyle={localStyle.otpInputViewStyle}
               keyboardType="number-pad"
               handleTextChange={code => {
-                setOtp(code);
                 if (code.length === 4) {
                   onCodeFilled(code);
                 }
@@ -555,7 +553,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,

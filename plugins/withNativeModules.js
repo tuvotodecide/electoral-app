@@ -138,13 +138,32 @@ function addRepositories(contents) {
 
   const storageUrlDef = `def storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"`;
 
-  const nativeModuleRepos = `
+  // Replace the entire repositories block with the new content
+  const newRepositories = `
     // Native module repositories
-    maven { url "C:/apps/sdk-flutter-example/build/host/outputs/repo" }
+    maven { url "$rootDir/../../wira_flutter_module/build/host/outputs/repo" }
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
     maven { url "$storageUrl/download.flutter.io" }
     maven {
       url "$rootDir/../node_modules/@notifee/react-native/android/libs"
     }`;
+
+  // Add storageUrl definition before allprojects block if not present
+  if (!contents.includes('FLUTTER_STORAGE_BASE_URL')) {
+    contents = contents.replace(
+      /allprojects\s*\{/,
+      `${storageUrlDef}\n\nallprojects {`
+    );
+  }
+
+  // Replace the repositories block
+  const repositoriesPattern = /allprojects\s*\{\s*repositories\s*\{[\s\S]*?\}/;
+  contents = contents.replace(
+    repositoriesPattern,
+    `allprojects {\n  repositories {${newRepositories}`
+  );
 
   // Dependency resolution strategy to map legacy package_info_plus coordinates
   const resolutionStrategy = `
@@ -160,25 +179,6 @@ subprojects {
     }
   }
 }`;
-
-  // Add storageUrl definition before allprojects block
-  if (!contents.includes('FLUTTER_STORAGE_BASE_URL')) {
-    contents = contents.replace(
-      /allprojects\s*\{/,
-      `${storageUrlDef}\n\nallprojects {`
-    );
-  }
-
-  // Add repositories after the jitpack maven line
-  // Look for the jitpack line and add after it
-  const jitpackPattern = /(maven\s*\{\s*url\s*['"]https:\/\/www\.jitpack\.io['"]\s*\})/;
-  
-  if (jitpackPattern.test(contents)) {
-    contents = contents.replace(
-      jitpackPattern,
-      `$1\n${nativeModuleRepos}`
-    );
-  }
 
   // Add resolution strategy after the apply plugin lines at the end
   if (!contents.includes('resolutionStrategy.eachDependency')) {

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
 import { useSelector } from 'react-redux';
@@ -26,7 +26,6 @@ export default function RegisterUser8({navigation, route}) {
   const onOtpChange = text => {
     setOtp(text);
   };
-  const otpRef = useRef(null);
   const onPressContinue = () => {
     const params = {
       originalPin: otp,
@@ -68,7 +67,6 @@ export default function RegisterUser8({navigation, route}) {
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
               autoFocus
-              ref={otpRef}
               textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
@@ -111,7 +109,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,

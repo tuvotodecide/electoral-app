@@ -90,12 +90,11 @@ const local = StyleSheet.create({
   otpBox: {...styles.selfCenter, height: '20%', ...styles.mt30},
   otpInput: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,
     ...typography.fontSizes.f26,
-    ...styles.mh5,
     textAlign: 'center',
     color: '#000', // bullets visibles en cualquier tema claro
     backgroundColor: '#FFF', // contraste; ajusta si usas tema oscuro

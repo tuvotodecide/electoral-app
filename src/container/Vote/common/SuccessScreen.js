@@ -24,10 +24,9 @@ import UniversalHeader from '../../../components/common/UniversalHeader';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

@@ -152,9 +152,6 @@ export default function Splash({navigation}) {
           testID="splashLogo"
         />
       </View>
-      <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
-        {String.wira}
-      </CText>
       {!!downloadMessage && (
         <CText type={'R14'} style={localStyle.downloadMessage} testID="downloadMessage">
           {downloadMessage}
@@ -178,14 +175,13 @@ const localStyle = StyleSheet.create({
     ...styles.ml15,
   },
   imageContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginHorizontal: '100%',
     marginTop: moderateScale(30),
     marginBottom: moderateScale(30),
   },
   imageStyle: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     resizeMode: 'contain',
   },
   downloadMessage: {

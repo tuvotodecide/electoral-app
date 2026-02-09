@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
 import { useSelector } from 'react-redux';
@@ -21,10 +21,9 @@ import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  const [otp, setOtp] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [modal, setModal] = useState({visible: false, msg: ''});
-  const onOtpChange = text => setOtp(text);
+  const otpRef = useRef(null);
 
   const handleFilled = async (code) => {
     setVerifying(true);
@@ -36,14 +35,14 @@ export default function ChangePinVerify({navigation}) {
     if (code.length !== 4) return;
     try {
       if (!(await wira.checkPin(code))) {
-        setOtp('');
+        otpRef.current?.clear();
         return setModal({
           visible: true,
           msg: 'PIN actual incorrecto',
         });
       }
     } catch (error) {
-      setOtp('');
+      otpRef.current?.clear();
       setModal({
         visible: true,
         msg: 'Error al verificar el PIN: ' + error.message,
@@ -78,11 +77,10 @@ export default function ChangePinVerify({navigation}) {
             </CText>
             <OTPTextInput
               testID="textInput"
-              value={otp}
+              ref={otpRef}
               inputCount={4}
               containerStyle={localStyle.otpInputViewStyle}
               handleTextChange={code => {
-                onOtpChange(code);
                 if (code.length === 4) {
                   handleFilled(code);
                 }
@@ -135,7 +133,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,
