@@ -84,6 +84,13 @@
           }
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+          "microphonePermission": false
+        }
+      ],
       ["./plugins/withAndroidKeystore", {
         "keystorePath": "./native-files/keystores/identity-release.keystore"
       }],

@@ -30,6 +30,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -543,7 +544,7 @@ export default function CameraScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      const result = await camera.current.takePhoto({
+      const firstResult = await camera.current.takePhoto({
         qualityPrioritization: 'balanced',
         flash: 'off',
         enableAutoRedEyeReduction: false,
@@ -551,17 +552,21 @@ export default function CameraScreen({ navigation, route }) {
         enableShutterSound: false,
       });
 
-      const meta = await new Promise((resolve, reject) => {
-        Image.getSize(
-          `file://${result.path}`,
-          (width, height) => {
-            resolve({ width, height });
-          },
-          reject,
-        );
+      const imageContext = ImageManipulator.manipulate(`file://${firstResult.path}`);
+      const renderedImage = await imageContext.resize({
+        height: 720,
+      }).renderAsync()
+
+      const result = await renderedImage.saveAsync({
+        format: SaveFormat.JPEG,
       });
 
-      setPhoto({ path: result.path }); // sin cropData
+      const meta = {
+        width: result.width,
+        height: result.height,
+      }
+
+      setPhoto({ path: result.uri.replace('file://', '') }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);

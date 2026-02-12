@@ -164,6 +164,11 @@ dependencies {
     // Flutter module dependencies for wira-sdk
     releaseImplementation 'com.example.wira_flutter_module:flutter_release:1.0'
 
+    // Sentry dependencies
+    implementation platform("io.sentry:sentry-bom:8.31.0")
+    implementation "io.sentry:sentry-android"
+    implementation "io.sentry:sentry-okhttp"
+
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
@@ -190,10 +195,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
-    
-    implementation platform("io.sentry:sentry-bom:8.31.0")
-    implementation "io.sentry:sentry-android"
-    implementation "io.sentry:sentry-okhttp"
 }
 
 apply plugin: 'com.google.gms.google-services'

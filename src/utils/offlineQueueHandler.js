@@ -918,7 +918,6 @@ export const publishActaHandler = async (item, userData) => {
       }
     } catch (err) { }
 
-
     try {
       await removePersistedImage(imageUri);
     } catch (err) {
@@ -949,7 +948,6 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
-
     try {
       await displayLocalActaPublished({
         ipfsData,
@@ -959,7 +957,6 @@ export const publishActaHandler = async (item, userData) => {
       });
     } catch (err) {
     }
-
 
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {

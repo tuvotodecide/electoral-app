@@ -139,53 +139,51 @@ export default function Splash({navigation}) {
     <CSafeAreaView
       style={{
         backgroundColor: color.backgroundColor,
-        ...styles.center,
-        ...styles.contentCenter,
-        ...styles.flexRow,
-        ...styles.wrap,
+        ...localStyle.splashContainer
       }}
       testID="splashContainer">
-      <View style={localStyle.imageContainer} testID="splashImageContainer">
+      <View testID="splashImageContainer">
         <Image
           source={images.logoImg}
           style={localStyle.imageStyle}
           testID="splashLogo"
         />
       </View>
-      {!!downloadMessage && (
-        <CText type={'R14'} style={localStyle.downloadMessage} testID="downloadMessage">
-          {downloadMessage}
-        </CText>
-      )}
-      {downloadMessage.startsWith(String.downloadingFailed) &&
-        <View>
+      <View style={localStyle.infoContainer}>
+        {!!downloadMessage && (
+          <CText type={'R14'} testID="downloadMessage">
+            {downloadMessage}
+          </CText>
+        )}
+        {downloadMessage.startsWith(String.downloadingFailed) &&
           <CButton
             title={String.retry}
+            containerStyle={localStyle.button}
             testID="retryDownloadButton"
             onPress={initializeApp}
           />
-        </View>
-      }
+        }
+      </View>
     </CSafeAreaView>
   );
 }
 
 const localStyle = StyleSheet.create({
-  textStyle: {
-    ...styles.ml15,
-  },
-  imageContainer: {
-    marginHorizontal: '100%',
-    marginTop: moderateScale(30),
-    marginBottom: moderateScale(30),
+  splashContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
   },
   imageStyle: {
-    width: 150,
-    height: 150,
+    width: 170,
+    height: 170,
     resizeMode: 'contain',
   },
-  downloadMessage: {
-    textAlign: 'center',
-    marginTop: moderateScale(8),
+  infoContainer: {
+    alignItems: 'center',
   },
+  button: {
+    flexDirection: 'column',
+    paddingHorizontal: moderateScale(48),
+  }
 });
