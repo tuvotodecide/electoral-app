@@ -25,6 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
+import { BACKEND_IDENTITY } from '@env';
 
 import { truncateDid } from '../../../utils/Address';
 
@@ -84,7 +85,7 @@ export default function MyGuardiansStatus({navigation}) {
     const initRecovery = async () => {
       const recoveryDni = await AsyncStorage.getItem(GUARDIAN_RECOVERY_DNI);
       if(recoveryDni && recoveryDni.length > 0) {
-        return (new wira.RecoveryService()).recoveryFromGuardians(recoveryDni);
+        return (new wira.RecoveryService()).recoveryFromGuardians(BACKEND_IDENTITY, recoveryDni);
       }
 
       setModal({

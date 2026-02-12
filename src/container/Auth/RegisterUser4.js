@@ -22,6 +22,7 @@ import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
+import { BACKEND_IDENTITY } from '@env';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
@@ -134,6 +135,7 @@ export default function RegisterUser4({navigation, route}) {
 
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
+        BACKEND_IDENTITY,
         resizedFrontImage,
         resizedBackImage,
         resizedSelfie,
