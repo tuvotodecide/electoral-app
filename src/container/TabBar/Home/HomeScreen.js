@@ -49,6 +49,10 @@ import {
   removeById,
   saveVotePlace,
 } from '../../../utils/offlineQueue';
+import {
+  getAttestationAvailabilityCache,
+  saveAttestationAvailabilityCache,
+} from '../../../utils/attestationAvailabilityCache';
 import { publishActaHandler } from '../../../utils/offlineQueueHandler';
 import { captureError, captureMessage } from '../../../config/sentry';
 
@@ -408,6 +412,37 @@ export default function HomeScreen({ navigation }) {
     }
   }, [checkLocationPermissionOnly]);
 
+  const buildContractsAvailabilityFromElections = useCallback(
+    (availableElections, nearestLocation = null) => {
+      const elections = Array.isArray(availableElections) ? availableElections : [];
+
+      // ALCALDE -> municipal
+      const municipal = elections.find(e => e?.electionType === 'municipal');
+      const municipalEnabled = !!municipal?.canAttest;
+
+      // GOBERNADOR -> departamental
+      const departamental = elections.find(e => e?.electionType === 'departamental');
+      const departamentalEnabled = !!departamental?.canAttest;
+
+      return {
+        nearestLocation: nearestLocation || null,
+        ALCALDE: {
+          enabled: municipalEnabled,
+          electionId: municipalEnabled ? municipal?.electionId : null,
+          electionName: municipal?.electionName || null,
+          reason: municipal?.reason || null,
+        },
+        GOBERNADOR: {
+          enabled: departamentalEnabled,
+          electionId: departamentalEnabled ? departamental?.electionId : null,
+          electionName: departamental?.electionName || null,
+          reason: departamental?.reason || null,
+        },
+      };
+    },
+    [],
+  );
+
   const checkAttestationAvailability = useCallback(
     async (latitude, longitude) => {
       try {
@@ -428,43 +463,48 @@ export default function HomeScreen({ navigation }) {
           },
         );
         const data = res?.data || {};
-        const elections = Array.isArray(data?.availableElections) ? data.availableElections : [];
+        const elections = Array.isArray(data?.availableElections)
+          ? data.availableElections
+          : [];
 
-        // ALCALDE -> municipal
-        const municipal = elections.find(e => e?.electionType === 'municipal');
-        const municipalEnabled = !!municipal?.canAttest;
-
-        // GOBERNADOR -> departamental
-        const departamental = elections.find(e => e?.electionType === 'departamental');
-        const departamentalEnabled = !!departamental?.canAttest;
-
-        setContractsAvailability({
+        await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
-          ALCALDE: {
-            enabled: municipalEnabled,
-            electionId: municipalEnabled ? municipal?.electionId : null,
-            electionName: municipal?.electionName || null,
-            reason: municipal?.reason || null,
-          },
-          GOBERNADOR: {
-            enabled: departamentalEnabled,
-            electionId: departamentalEnabled ? departamental?.electionId : null,
-            electionName: departamental?.electionName || null,
-            reason: departamental?.reason || null,
-          },
+          availableElections: elections,
         });
+
+        setContractsAvailability(
+          buildContractsAvailabilityFromElections(elections, data?.nearestLocation),
+        );
       } catch (e) {
-        // En error: por seguridad, deshabilitamos ambos
-        setContractsAvailability({
-          nearestLocation: null,
-          ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-          GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
-        });
+        // En error: intentar fallback a cache (útil para offline / timeouts)
+        try {
+          const cached = await getAttestationAvailabilityCache(dni);
+          if (cached?.availableElections) {
+            setContractsAvailability(
+              buildContractsAvailabilityFromElections(
+                cached.availableElections,
+                cached.nearestLocation,
+              ),
+            );
+          } else {
+            setContractsAvailability({
+              nearestLocation: null,
+              ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+              GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+            });
+          }
+        } catch {
+          setContractsAvailability({
+            nearestLocation: null,
+            ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+            GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+          });
+        }
       } finally {
         setLoadingAvailability(false);
       }
     },
-    [],
+    [dni, buildContractsAvailabilityFromElections],
   );
   /**
  * Verificación automática (en focus / red) — modo silencioso:
@@ -478,13 +518,24 @@ export default function HomeScreen({ navigation }) {
     // si estás offline, no tiene sentido pedir GPS para endpoint remoto
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-    if (!online) return;
+    if (!online) {
+      const cached = await getAttestationAvailabilityCache(dni);
+      if (cached?.availableElections) {
+        setContractsAvailability(
+          buildContractsAvailabilityFromElections(
+            cached.availableElections,
+            cached.nearestLocation,
+          ),
+        );
+      }
+      return;
+    }
 
     const coords = await getHomeLocation(true);
     if (!coords?.latitude || !coords?.longitude) return;
 
     await checkAttestationAvailability(coords.latitude, coords.longitude);
-  }, [getHomeLocation, checkAttestationAvailability]);
+  }, [dni, getHomeLocation, checkAttestationAvailability, buildContractsAvailabilityFromElections]);
 
 
   /**
@@ -628,37 +679,47 @@ export default function HomeScreen({ navigation }) {
         setHasPendingActa(pendingAfter);
       }
 
-      // NUEVO: si hay fallos, abrir modal con acciones
       if (result?.failed > 0) {
         const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-        const first = failedItems[0];
-
-        const header =
-          `${result.failed} envío(s) no se pudieron procesar.\n` +
-          `Puedes reintentar o eliminar el fallido.\n`;
-
-        const meta =
-          first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
-
-        const type =
-          first?.type ? `\nTipo: ${first.type}` : '';
-
-        const detail =
-          first?.error ? `\n\nError:\n${first.error}` : '';
 
         setQueueFailModal({
           visible: true,
           failedItems,
-          message: header + meta + type + detail,
+          message:
+            `No se pudo completar la subida de ${result.failed} pendiente(s).\n` +
+            'Puedes reintentar o eliminar el fallido.',
         });
       }
+      // if (result?.failed > 0) {
+      //   const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+      //   const first = failedItems[0];
+
+      //   const header =
+      //     `${result.failed} envío(s) no se pudieron procesar.\n` +
+      //     `Puedes reintentar o eliminar el fallido.\n`;
+
+      //   const meta =
+      //     first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
+
+      //   const type =
+      //     first?.type ? `\nTipo: ${first.type}` : '';
+
+      //   const detail =
+      //     first?.error ? `\n\nError:\n${first.error}` : '';
+
+      //   setQueueFailModal({
+      //     visible: true,
+      //     failedItems,
+      //     message: header + meta + type + detail,
+      //   });
+      // }
     } catch (e) {
       // Si aquí cae, es un fallo "global" (poco común en tu implementación)
       setQueueFailModal({
         visible: true,
         failedIds: [],
         message:
-          'Ocurrió un error procesando la cola. Puedes reintentar o cancelar.',
+          'No se pudo completar la subida de pendientes. Puedes reintentar o eliminar el fallido.',
       });
     } finally {
       processingRef.current = false;
@@ -760,7 +821,23 @@ export default function HomeScreen({ navigation }) {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     const selected = contractsAvailability?.[type];
-    const electionId = selected?.electionId;
+    let electionId = selected?.electionId;
+
+    if (!electionId && dni) {
+      try {
+        const cached = await getAttestationAvailabilityCache(dni);
+        const elections = Array.isArray(cached?.availableElections)
+          ? cached.availableElections
+          : [];
+        let wantedElectionType = null;
+        if (type === 'ALCALDE') wantedElectionType = 'municipal';
+        else if (type === 'GOBERNADOR') wantedElectionType = 'departamental';
+        const match = wantedElectionType
+          ? elections.find(e => e?.electionType === wantedElectionType && !!e?.canAttest)
+          : null;
+        electionId = match?.electionId || null;
+      } catch { }
+    }
     if (!electionId) {
       setInfoModal({
         visible: true,
@@ -857,9 +934,9 @@ export default function HomeScreen({ navigation }) {
         <View style={stylesx.warningContractCard}>
           <Ionicons name="warning-outline" size={32} color="#F59E0B" style={{ marginRight: 12 }} />
           <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>Envío no disponible</CText>
+            <CText style={stylesx.warningContractTitle}>No puedes enviar actas desde aquí</CText>
             <CText style={stylesx.warningContractText}>
-              No tienes contratos activos para enviar actas en esta ubicación.
+              Esta ubicación no está habilitada para el envío de actas. Verifica tu ubicación o muevete a otra zona.
             </CText>
           </View>
         </View>
@@ -1253,15 +1330,15 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
-          {/* <RegisterAlertCard
-            onPress={() =>
-              navigation.navigate(StackNav.ElectoralLocationsSave, {
-                dni,
-              })
-            }
-          /> */}
-          {/*)}*/}
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              onPress={() =>
+                navigation.navigate(StackNav.ElectoralLocationsSave, {
+                  dni,
+                })
+              }
+            />
+          )}
 
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
@@ -1290,7 +1367,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[stylesx.gridDiv2, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[1].onPress}
@@ -1307,10 +1384,10 @@ export default function HomeScreen({ navigation }) {
                   <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 {/* Mis atestiguamientos */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv3, stylesx.card]}
+                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
                   activeOpacity={0.87}
                   onPress={menuItems[2].onPress}
                   testID="myWitnessesButton">
@@ -1319,14 +1396,23 @@ export default function HomeScreen({ navigation }) {
                       <ActivityIndicator size="small" color="#41A44D" />
                     </View>
                   )}
-                  {React.createElement(menuItems[2].iconComponent, {
-                    name: menuItems[2].icon,
-                    size: getResponsiveSize(30, 36, 42),
-                    color: '#fff',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                  })}
-                  <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
-                  <CText style={stylesx.cardDescription}>
+                  <View style={stylesx.cardHeaderRow}>
+                    {React.createElement(menuItems[2].iconComponent, {
+                      name: menuItems[2].icon,
+                      size: getResponsiveSize(30, 36, 42),
+                      color: '#fff',
+                      style: stylesx.cardHeaderIcon,
+                    })}
+                    <CText
+                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}>
+                      {menuItems[2].title}
+                    </CText>
+                  </View>
+                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
                     {menuItems[2].description}
                   </CText>
                 </TouchableOpacity>
@@ -1397,7 +1483,7 @@ export default function HomeScreen({ navigation }) {
               ))}
             </View>
           </View>
-          {/* {!checkingVotePlace && shouldShowRegisterAlert && (
+          {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
@@ -1405,7 +1491,7 @@ export default function HomeScreen({ navigation }) {
                 })
               }
             />
-          )} */}
+          )}
           {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
           <View style={stylesx.gridParent}>
             {/* Participar (arriba, ocupa dos columnas) */}
@@ -1438,7 +1524,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={stylesx.gridRow2}>
               {/* Anunciar conteo */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[stylesx.gridDiv2, stylesx.card]}
                 activeOpacity={0.87}
                 onPress={menuItems[1].onPress}
@@ -1453,10 +1539,10 @@ export default function HomeScreen({ navigation }) {
                 <CText style={[stylesx.cardDescription]}>
                   {menuItems[1].description}
                 </CText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               {/* Mis atestiguamientos */}
               <TouchableOpacity
-                style={[stylesx.gridDiv3, stylesx.card]}
+                style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
                 activeOpacity={0.87}
                 onPress={menuItems[2].onPress}
                 testID="myWitnessesButtonRegular">
@@ -1465,14 +1551,23 @@ export default function HomeScreen({ navigation }) {
                     <ActivityIndicator size="small" color="#ff0000ff" />
                   </View>
                 )}
-                {React.createElement(menuItems[2].iconComponent, {
-                  name: menuItems[2].icon,
-                  size: getResponsiveSize(30, 36, 42),
-                  color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                })}
-                <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
-                <CText style={stylesx.cardDescription}>
+                <View style={stylesx.cardHeaderRow}>
+                  {React.createElement(menuItems[2].iconComponent, {
+                    name: menuItems[2].icon,
+                    size: getResponsiveSize(30, 36, 42),
+                    color: '#41A44D',
+                    style: stylesx.cardHeaderIcon,
+                  })}
+                  <CText
+                    style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}>
+                    {menuItems[2].title}
+                  </CText>
+                </View>
+                <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
                   {menuItems[2].description}
                 </CText>
               </TouchableOpacity>
@@ -1759,10 +1854,23 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(1, 2, 3),
   },
   cardTitle1: {
-    fontSize: getResponsiveSize(14, 16, 18),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     color: '#232323',
     marginBottom: getResponsiveSize(1, 2, 3),
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  cardHeaderIcon: {
+    marginRight: getResponsiveSize(8, 10, 12),
+  },
+  cardTitleInline: {
+    flex: 1,
+    minWidth: 0,
   },
   cardDescription: {
     fontSize: getResponsiveSize(12, 14, 16),
@@ -1771,6 +1879,14 @@ const stylesx = StyleSheet.create({
     marginTop: 1,
     marginBottom: -3,
     opacity: 0.78,
+  },
+  cardDescriptionEmph: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    opacity: 0.9,
+  },
+  myWitnessesCard: {
+    borderRightWidth: getResponsiveSize(3, 4, 5),
+    borderRightColor: '#41A44D',
   },
   // Gas Indicator Styles
   gasContainer: {

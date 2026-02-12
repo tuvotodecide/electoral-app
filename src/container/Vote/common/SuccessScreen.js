@@ -20,9 +20,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import InfoModal from '../../../components/modal/InfoModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import { normalizeUri } from '../../../utils/normalizedUri';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -46,11 +48,23 @@ const SuccessScreen = () => {
   const certificateData = params.certificateData || {};
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
+  const closeInfoModal = useCallback(
+    () => setInfoModalData({ visible: false, title: '', message: '' }),
+    [],
+  );
   const fromNotifications = params.fromNotifications === true;
 
   const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
   const certificateUrl =
     certificateData.imageUrl || certificateData.jsonUrl || null;
+  const normalizedCertificateUrl = normalizeUri(certificateUrl);
+  const actaUrl = ipfsData?.imageUrl || ipfsData?.jsonUrl || ipfsUrl || null;
+  const normalizedActaUrl = normalizeUri(actaUrl);
 
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -99,20 +113,33 @@ const SuccessScreen = () => {
         await Linking.openURL(nftData.nftUrl);
       } else {
       }
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] open nft url error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   const handleShareNft = async () => {
     try {
-      if (!certificateUrl) {
+      if (!normalizedCertificateUrl) {
+        setInfoModalData({
+          visible: true,
+          title: 'No disponible',
+          message: 'No encontramos el enlace del NFT para compartir.',
+        });
         return;
       }
       const shareOptions = {
         title: 'Compartir certificado NFT',
         message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${certificateUrl}`,
-        url: certificateUrl,
+        url: normalizedCertificateUrl,
         subject: 'Certificado NFT ',
       };
+      shareOptions.message = `He obtenido un certificado NFT por participar como testigo electoral. Puedes verlo aqui: ${normalizedCertificateUrl}`;
 
       const result = await Share.share(shareOptions, {
         dialogTitle: 'Compartir certificado NFT',
@@ -122,25 +149,44 @@ const SuccessScreen = () => {
       if (result.action === Share.sharedAction) {
       } else if (result.action === Share.dismissedAction) {
       }
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] share nft error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   const handleShareActa = async () => {
     try {
-      // Puedes elegir imageUrl (foto del acta) o jsonUrl (metadata completa)
-      const actaUrl = ipfsData?.imageUrl || ipfsData?.jsonUrl || ipfsUrl;
-      if (!actaUrl) return;
+      if (!normalizedActaUrl) {
+        setInfoModalData({
+          visible: true,
+          title: 'No disponible',
+          message: 'No encontramos el enlace del acta para compartir.',
+        });
+        return;
+      }
       const shareOptions = {
         title: 'Compartir acta (IPFS)',
-        message: `Acta publicada en IPFS: ${actaUrl}`,
-        url: actaUrl,
+        message: `Acta publicada en IPFS: ${normalizedActaUrl}`,
+        url: normalizedActaUrl,
         subject: 'Acta en IPFS',
       };
       await Share.share(shareOptions, {
         dialogTitle: 'Compartir acta (IPFS)',
         subject: 'Acta en IPFS',
       });
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] share acta error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   // Obtener nombre real del usuario desde Redux
@@ -160,7 +206,7 @@ const SuccessScreen = () => {
 
       <ScrollView contentContainerStyle={styles.mainContent} bounces={false}>
         {/* Título principal */}
-        {certificateUrl && (
+        {normalizedCertificateUrl && (
           <View style={styles.certificateImageWrapper}>
             {imageLoading && !imageError && (
               <View style={styles.imageLoaderOverlay}>
@@ -168,7 +214,7 @@ const SuccessScreen = () => {
               </View>
             )}
             <Image
-              source={{ uri: certificateUrl }}
+              source={{ uri: normalizedCertificateUrl }}
               style={styles.certificateImage}
               resizeMode="contain"
               onLoadStart={() => {
@@ -220,6 +266,12 @@ const SuccessScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <InfoModal
+        visible={infoModalData.visible}
+        title={infoModalData.title}
+        message={infoModalData.message}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };

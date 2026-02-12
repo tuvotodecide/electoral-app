@@ -57,7 +57,7 @@ export default function CHash({
             type="B18"
             color={textColor ?? getSecondaryTextColor(colors)}
             style={[localStyle.text, textStyle]}>
-            {text}
+            {` Dirección: ${text}`}
           </CText>
           <Icono
             name="content-copy"
@@ -78,7 +78,7 @@ export default function CHash({
             },
           ]}>
           <Icono name="check" size={16} color={colors.white} />
-          <Text style={[localStyle.toastText, {color: colors.white}]}>
+          <Text style={[localStyle.toastText, { color: colors.white }]}>
             Hash copiado
           </Text>
         </Animated.View>

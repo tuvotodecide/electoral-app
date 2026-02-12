@@ -236,15 +236,44 @@ const ZoomablePhotoContainer = ({
       baseIh && contentH ? baseIh / contentH : 1,
     ),
   );
-  const maxScale = Math.min(6, pixelScaleLimit);
+  const maxScaleFromPixels = Math.min(6, pixelScaleLimit);
+
+  // Renderizamos la imagen a un tamaño mayor (hasta 2x) para mejorar nitidez al hacer zoom.
+  // El usuario verá el "fit" inicial con una escala menor (zoomMinScale).
+  const decodeScale = Math.max(1, Math.min(2, pixelScaleLimit));
+  const zoomMinScale = 1 / decodeScale;
+  const zoomMaxScale = Math.max(zoomMinScale, maxScaleFromPixels / decodeScale);
+
+  /* const scaleToFill = useMemo(() => {
+    if (!box.w || !box.h || !contentW || !contentH) return 1;
+    const fillW = box.w / contentW;
+    const fillH = box.h / contentH;
+    const target = Math.max(1, Math.max(fillW, fillH));
+    return Math.min(target, maxScaleFromPixels);
+  }, [box.w, box.h, contentW, contentH, maxScaleFromPixels]); */
+
+  /* const autoScale = useMemo(() => {
+    // Evita que se vea "muy lejos" y también evita cortar demasiado.
+    // Si el usuario quiere más/menos, puede ajustar con pinch.
+    return 1;
+  }, [scaleToFill]); */
+
+  const rotatedContainerHeight = useMemo(() => {
+    // Al girar 90°, un documento "portrait" se ve pequeño si el contenedor es bajo.
+    // Preferimos aumentar altura (sin recortar) y dejar que el usuario haga pinch si desea.
+    const factor = isTablet ? 0.85 : 0.92;
+    const target = Math.round(SCREEN_HEIGHT * factor);
+    return Math.max(PHOTO_HEIGHT, target);
+  }, []);
 
   useEffect(() => {
     // pequeño timeout para asegurar layout previo
     const id = setTimeout(() => {
-      zoomRef.current?.centerOn?.({ x: 0, y: 0, scale: 1, duration: 0 });
+      const nextScale = zoomMinScale;
+      zoomRef.current?.centerOn?.({ x: 0, y: 0, scale: nextScale, duration: 0 });
     }, 0);
     return () => clearTimeout(id);
-  }, [rotation]);
+  }, [rotation, zoomMinScale]);
 
   return (
     <View
@@ -252,20 +281,21 @@ const ZoomablePhotoContainer = ({
       onLayout={onLayout}
       style={[
         useAspectRatio
-          ? styles.photoContainerAspectRatio
+          ? styles.photoContainerZoomAspectRatio
           : styles.photoContainer,
         isTablet && styles.photoContainerFill,
+        isRotated && { height: rotatedContainerHeight },
       ]}>
       {box.w > 0 && box.h > 0 && img.w > 0 && img.h > 0 ? (
         <ImageZoom
           ref={zoomRef}
           cropWidth={box.w}
           cropHeight={box.h}
-          imageWidth={isRotated ? contentH : contentW}
-          imageHeight={isRotated ? contentW : contentH}
-          minScale={1}
-          maxScale={maxScale || 3}
-          enableCenterFocus={false}
+          imageWidth={(isRotated ? contentH : contentW) * decodeScale}
+          imageHeight={(isRotated ? contentW : contentH) * decodeScale}
+          minScale={zoomMinScale}
+          maxScale={zoomMaxScale}
+          enableCenterFocus={true}
           pinchToZoom
           panToMove
           enableDoubleClickZoom>
@@ -273,8 +303,8 @@ const ZoomablePhotoContainer = ({
             testID={`${testID}Image`}
             source={{ uri: currentUri }}
             style={{
-              width: isRotated ? contentH : contentW,
-              height: isRotated ? contentW : contentH,
+              width: (isRotated ? contentH : contentW) * decodeScale,
+              height: (isRotated ? contentW : contentH) * decodeScale,
               transform: [{ rotate: `${rotation}deg` }],
             }}
             resizeMode="contain"
@@ -397,6 +427,23 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: ASPECT_HEIGHT,
     maxHeight: ASPECT_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoContainerZoomAspectRatio: {
+    backgroundColor: '#fff',
+    borderRadius: CONTAINER_BORDER_RADIUS,
+    padding: CONTAINER_PADDING,
+    marginBottom: MARGIN_BOTTOM,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    position: 'relative',
+    overflow: 'hidden',
+    width: '100%',
+    minHeight: PHOTO_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },

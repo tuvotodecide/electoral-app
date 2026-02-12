@@ -1036,7 +1036,7 @@ export default {
   witnessActaDescription: 'Valida un acta ya subida en una mesa.',
   announceCount: 'Anunciar Conteo',
   announceCountDescription: 'Avisar el inicio del conteo.',
-  myWitnesses: `Mis${'\n'}atestiguamientos`,
+  myWitnesses: `Mis atestiguamientos`,
   myWitnessesDescription: 'Revisa tu historial',
   networkError: 'Error de red, revise su conexión a internet.',
 
