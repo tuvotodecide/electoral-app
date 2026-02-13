@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
-
+  TextInput,
+  ActivityIndicator,
   Image,
   Modal,
   Dimensions,
 } from 'react-native';
+import axios from 'axios';
+import NetInfo from '@react-native-community/netinfo';
 import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -16,9 +19,9 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import CameraScreen from './CameraScreen';
 import CAlert from '../../../components/common/CAlert';
 import { StackNav } from '../../../navigation/NavigationKey';
+import { BACKEND_RESULT } from '@env';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -34,85 +37,133 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const normalizeMesaNumber = value => {
+  const raw = `${value ?? ''}`.trim();
+  if (!raw) return '';
+  const parsed = parseInt(raw, 10);
+  return Number.isNaN(parsed) ? raw : `${parsed}`;
+};
+
 
 export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
   const { electionId, electionType } = route.params || {};
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};
-  const mesaId =
-    rawMesa.tableId || rawMesa.id || rawMesa._id || route.params?.tableId; // Get existing records if they exist
-  const existingRecords = route.params?.existingRecords || [];
+  const availableTables = Array.isArray(locationFromParams?.tables)
+    ? locationFromParams.tables
+    : Array.isArray(route.params?.tables)
+      ? route.params.tables
+      : [];
+  const hasMesaSelectedFromParams = Boolean(
+    rawMesa.tableCode ||
+    rawMesa.codigo ||
+    rawMesa.code ||
+    rawMesa.tableNumber ||
+    rawMesa.numero ||
+    rawMesa.number ||
+    rawMesa._id ||
+    rawMesa.id ||
+    rawMesa.tableId,
+  );
+  const [mesaNumberInput, setMesaNumberInput] = useState('');
+  const [mesaSearchError, setMesaSearchError] = useState('');
+  const [isSearchingMesa, setIsSearchingMesa] = useState(false);
+  const [tablesForSearch, setTablesForSearch] = useState(availableTables);
+  const [selectedMesaRaw, setSelectedMesaRaw] = useState(null);
+  const [selectedMesaRecords, setSelectedMesaRecords] = useState(null);
+  const [selectedMesaTotalRecords, setSelectedMesaTotalRecords] = useState(null);
+  const [resolvedOffline, setResolvedOffline] = useState(null);
+  const routeExistingRecords = route.params?.existingRecords || [];
+
+  const normalizeMesaData = mesaSource => {
+    const source = mesaSource || {};
+    const sourceMesaId =
+      source.tableId || source.id || source._id || route.params?.tableId;
+
+    return {
+      id: sourceMesaId,
+      tableId: sourceMesaId,
+      idRecinto:
+        source.idRecinto ||
+        source.locationId ||
+        route.params?.locationId ||
+        locationFromParams?._id,
+      numero:
+        source.tableNumber ||
+        source.numero ||
+        source.number ||
+        sourceMesaId ||
+        'N/A',
+      tableNumber:
+        source.tableNumber ||
+        source.numero ||
+        source.number ||
+        sourceMesaId ||
+        'N/A',
+      number:
+        source.number ||
+        source.tableNumber ||
+        source.numero ||
+        sourceMesaId ||
+        'N/A',
+      codigo: source.tableCode || source.codigo || source.code || 'N/A',
+      colegio:
+        source.name ||
+        source.recinto ||
+        source.colegio ||
+        source.escuela ||
+        source.location?.name ||
+        locationFromParams?.name ||
+        'N/A',
+      recinto:
+        source.recinto ||
+        source.name ||
+        source.colegio ||
+        source.escuela ||
+        source.location?.name ||
+        locationFromParams?.name ||
+        'N/A',
+      direccion:
+        source.address ||
+        source.direccion ||
+        source.location?.address ||
+        locationFromParams?.address ||
+        'N/A',
+      provincia:
+        source.electoralSeatId?.municipalityId?.provinceId?.name ||
+        source.provincia ||
+        source.province ||
+        locationFromParams?.electoralSeat?.municipality?.province?.name ||
+        'N/A',
+      zone:
+        source.zone ||
+        source.district ||
+        source.zona ||
+        source.electoralZone ||
+        source.location?.zone ||
+        locationFromParams?.zone ||
+        locationFromParams?.district ||
+        'Zona no especificada',
+    };
+  };
+
+  // Normalize mesa data structure
+  const mesa = normalizeMesaData(selectedMesaRaw || rawMesa);
+  const hasMesaSelected =
+    Boolean(selectedMesaRaw) || hasMesaSelectedFromParams;
+  const existingRecords = selectedMesaRecords ?? routeExistingRecords;
+  const totalRecords =
+    selectedMesaTotalRecords ??
+    route.params?.totalRecords ??
+    (Array.isArray(existingRecords) ? existingRecords.length : 0);
+  const currentOffline = resolvedOffline ?? route.params?.offline;
   const shouldCenter = !(existingRecords && existingRecords.length > 0);
-  const mesaInfo = route.params?.mesaInfo || null;
-  const totalRecords = route.params?.totalRecords || 0;
   const hasRecords =
     Array.isArray(existingRecords) && existingRecords.length > 0;
-
   const recordsCount = hasRecords ? existingRecords.length : 0;
   const recordsMsg = `La mesa ya tiene ${recordsCount} acta${recordsCount === 1 ? '' : 's'
     } publicada${recordsCount === 1 ? '' : 's'}`;
-
-  // Normalize mesa data structure
-  const mesa = {
-    id: mesaId,
-    tableId: mesaId,
-    idRecinto:
-      rawMesa.idRecinto ||
-      rawMesa.locationId ||
-      route.params?.locationId ||
-      locationFromParams?._id,
-    numero:
-      rawMesa.tableNumber ||
-      rawMesa.numero ||
-      rawMesa.number ||
-      mesaId ||
-      'N/A',
-    tableNumber:
-      rawMesa.tableNumber ||
-      rawMesa.numero ||
-      rawMesa.number ||
-      mesaId ||
-      'N/A',
-    codigo: rawMesa.tableCode || rawMesa.codigo || rawMesa.code || 'N/A',
-    colegio:
-      rawMesa.name ||
-      rawMesa.recinto ||
-      rawMesa.colegio ||
-      rawMesa.escuela ||
-      rawMesa.location?.name ||
-      locationFromParams?.name ||
-      'N/A',
-    recinto:
-      rawMesa.recinto ||
-      rawMesa.name ||
-      rawMesa.colegio ||
-      rawMesa.escuela ||
-      rawMesa.location?.name ||
-      locationFromParams?.name ||
-      'N/A',
-    direccion:
-      rawMesa.address ||
-      rawMesa.direccion ||
-      rawMesa.location?.address ||
-      locationFromParams?.address ||
-      'N/A',
-    provincia:
-      rawMesa.electoralSeatId?.municipalityId?.provinceId?.name ||
-      rawMesa.provincia ||
-      rawMesa.province ||
-      locationFromParams?.electoralSeat?.municipality?.province?.name ||
-      'N/A',
-    zone:
-      rawMesa.zone ||
-      rawMesa.district ||
-      rawMesa.zona ||
-      rawMesa.electoralZone ||
-      rawMesa.location?.zone ||
-      locationFromParams?.zone ||
-      locationFromParams?.district ||
-      'Zona no especificada',
-  };
 
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = useState(
@@ -121,6 +172,143 @@ export default function TableDetail({ navigation, route }) {
   const [modalVisible, setModalVisible] = useState(
     !!route.params?.capturedImage,
   );
+
+  const fetchExistingRecordsByTable = async tableCode => {
+    const electionQuery = electionId
+      ? `?electionId=${encodeURIComponent(electionId)}`
+      : '';
+    const response = await axios.get(
+      `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(tableCode)}${electionQuery}`,
+      { timeout: 15000 },
+    );
+
+    let records = [];
+    if (Array.isArray(response.data)) {
+      records = response.data;
+    } else if (response.data && Array.isArray(response.data.registros)) {
+      records = response.data.registros;
+    } else if (response.data) {
+      records = [response.data];
+    }
+
+    return Array.isArray(records)
+      ? records.map(record => {
+        const cidFromImage = record.image?.startsWith('ipfs://')
+          ? record.image.replace('ipfs://', '')
+          : null;
+        const actaImagePrimary = cidFromImage
+          ? `https://ipfs.io/ipfs/${cidFromImage}`
+          : record.ipfsCid
+            ? `https://ipfs.io/ipfs/${record.ipfsCid}`
+            : record.image && record.image.startsWith('http')
+              ? record.image
+              : record.ipfsUri || null;
+        const presidentialParties = record.votes?.parties?.partyVotes || [];
+
+        const partyResults = presidentialParties.map(presParty => ({
+          partyId: global.String(presParty.partyId ?? '').trim().toLowerCase(),
+          presidente: presParty.votes,
+        }));
+
+        const presVoteSummary = record.votes?.parties || {};
+
+        return {
+          ...record,
+          actaImage: actaImagePrimary,
+          partyResults,
+          voteSummaryResults: {
+            presValidVotes: presVoteSummary.validVotes || 0,
+            presBlankVotes: presVoteSummary.blankVotes || 0,
+            presNullVotes: presVoteSummary.nullVotes || 0,
+            presTotalVotes: presVoteSummary.totalVotes || 0,
+          },
+        };
+      })
+      : [];
+  };
+
+  const handleMesaSearch = async () => {
+    const normalizedInput = normalizeMesaNumber(mesaNumberInput);
+    if (!normalizedInput) {
+      setMesaSearchError('Escribe el numero de mesa.');
+      return;
+    }
+
+    setMesaSearchError('');
+    setIsSearchingMesa(true);
+
+    try {
+      const netState = await NetInfo.fetch();
+      const isOnline = !!netState?.isConnected &&
+        netState?.isInternetReachable !== false;
+      let tablesPool = tablesForSearch;
+
+      if ((!Array.isArray(tablesPool) || tablesPool.length === 0) && isOnline) {
+        const locationId =
+          locationFromParams?._id ||
+          locationFromParams?.locationId ||
+          route.params?.locationId;
+        if (locationId) {
+          try {
+            const { data } = await axios.get(
+              `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodeURIComponent(
+                String(locationId),
+              )}/tables`,
+              { timeout: 15000 },
+            );
+            const fetched = data?.tables || data?.data?.tables || [];
+            if (Array.isArray(fetched) && fetched.length > 0) {
+              tablesPool = fetched;
+              setTablesForSearch(fetched);
+            }
+          } catch {
+            // Mantener fallback de cache.
+          }
+        }
+      }
+
+      if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
+        setMesaSearchError(
+          'No hay mesas disponibles en cache para este recinto. Conectate a internet para actualizar los datos.',
+        );
+        return;
+      }
+
+      const matchedTable = tablesPool.find(table => {
+        const candidate = normalizeMesaNumber(
+          table?.tableNumber || table?.numero || table?.number,
+        );
+        return candidate === normalizedInput;
+      });
+
+      if (!matchedTable) {
+        setMesaSearchError(
+          `La mesa ${normalizedInput} no existe en este recinto.`,
+        );
+        return;
+      }
+
+      const matchedMesa = normalizeMesaData(matchedTable);
+      let records = [];
+
+      if (isOnline) {
+        try {
+          records = await fetchExistingRecordsByTable(matchedMesa.codigo);
+        } catch (error) {
+          if (error?.response?.status !== 404) {
+            records = [];
+          }
+        }
+      }
+
+      setSelectedMesaRaw(matchedMesa);
+      setSelectedMesaRecords(records);
+      setSelectedMesaTotalRecords(records.length);
+      setResolvedOffline(!isOnline);
+    } finally {
+      setIsSearchingMesa(false);
+    }
+  };
 
 
   const handleTakePhoto = () => {
@@ -239,8 +427,15 @@ export default function TableDetail({ navigation, route }) {
     });
   };
 
+  const canSearch =
+    mesaNumberInput.trim().length > 0 &&
+    !isSearchingMesa;
+
   return (
-    <CSafeAreaView testID="tableDetailContainer" style={stylesx.container} addTabPadding={false}>
+    <CSafeAreaView
+      testID={hasMesaSelected ? 'tableDetailContainer' : 'tableDetailSearchContainer'}
+      style={stylesx.container}
+      addTabPadding={false}>
       {/* HEADER */}
       <UniversalHeader
         colors={colors}
@@ -252,12 +447,77 @@ export default function TableDetail({ navigation, route }) {
         showNotification={true}
       />
 
-      {/* SCROLLABLE CONTENT */}
       <View
         style={[
-          stylesx.scrollableContent,
-          shouldCenter && stylesx.centerVertically,
+          stylesx.searchContent,
+          hasMesaSelected && stylesx.searchContentEmbedded,
         ]}>
+        <View style={stylesx.searchLocationCard}>
+          <CText style={stylesx.searchLocationTitle}>
+            {locationFromParams?.name || 'Recinto seleccionado'}
+          </CText>
+          <CText style={stylesx.searchLocationText}>
+            {locationFromParams?.address || 'Sin direccion'}
+          </CText>
+        </View>
+
+        <CText style={stylesx.searchInstructionText}>
+          Escribe el numero de mesa
+        </CText>
+
+        <View style={stylesx.searchInputRow}>
+          <TextInput
+            value={mesaNumberInput}
+            onChangeText={value => {
+              setMesaNumberInput(value);
+              if (mesaSearchError) setMesaSearchError('');
+            }}
+            keyboardType="number-pad"
+            placeholder="Mesa"
+            placeholderTextColor="#9CA3AF"
+            style={[stylesx.mesaInput, stylesx.mesaInputInline]}
+            testID="tableDetailMesaInput"
+            maxLength={4}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              if (canSearch) handleMesaSearch();
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={handleMesaSearch}
+            disabled={!canSearch}
+            testID="tableDetailSearchMesaButton"
+            style={[
+              stylesx.searchButtonInline,
+              !canSearch && stylesx.searchButtonDisabled,
+            ]}>
+            {isSearchingMesa ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <CText style={stylesx.searchButtonText}>Buscar</CText>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {currentOffline && (
+          <CText style={stylesx.searchHintText}>
+            Sin internet: se validara en cola cuando vuelva la conexion.
+          </CText>
+        )}
+
+        {mesaSearchError ? (
+          <CText style={stylesx.searchErrorText}>{mesaSearchError}</CText>
+        ) : null}
+      </View>
+
+      {/* SCROLLABLE CONTENT */}
+      {hasMesaSelected && (
+        <View
+          style={[
+            stylesx.scrollableContent,
+            shouldCenter && stylesx.centerVertically,
+          ]}>
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
@@ -464,6 +724,7 @@ export default function TableDetail({ navigation, route }) {
           </>
         )}
       </View>
+      )}
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}
       <Modal visible={modalVisible} animationType="slide" transparent={false}>
@@ -814,6 +1075,79 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(15, 16, 17),
     fontWeight: '600',
     color: '#fff',
+  },
+  searchContent: {
+    flex: 1,
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    paddingTop: getResponsiveSize(20, 24, 28),
+  },
+  searchContentEmbedded: {
+    flex: 0,
+    paddingBottom: getResponsiveSize(10, 12, 14),
+  },
+  searchLocationCard: {
+    marginBottom: getResponsiveSize(10, 12, 14),
+  },
+  searchLocationTitle: {
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  searchLocationText: {
+    fontSize: getResponsiveSize(12, 13, 15),
+    color: '#4B5563',
+  },
+  searchInstructionText: {
+    fontSize: getResponsiveSize(12, 13, 15),
+    color: '#374151',
+    marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  searchInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mesaInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 14, 18),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    fontSize: getResponsiveSize(16, 18, 20),
+    color: '#111827',
+    backgroundColor: '#fff',
+  },
+  mesaInputInline: {
+    flex: 1,
+    marginRight: getResponsiveSize(8, 10, 12),
+  },
+  searchButtonInline: {
+    backgroundColor: '#4F9858',
+    borderRadius: getResponsiveSize(10, 12, 14),
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: getResponsiveSize(48, 52, 58),
+    minWidth: getResponsiveSize(92, 104, 116),
+    paddingHorizontal: getResponsiveSize(12, 14, 16),
+  },
+  searchButtonDisabled: {
+    opacity: 0.55,
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: getResponsiveSize(15, 16, 18),
+    fontWeight: '700',
+  },
+  searchErrorText: {
+    marginTop: getResponsiveSize(8, 10, 12),
+    color: '#B42318',
+    fontSize: getResponsiveSize(13, 14, 16),
+  },
+  searchHintText: {
+    marginTop: getResponsiveSize(8, 10, 12),
+    color: '#475467',
+    fontSize: getResponsiveSize(12, 13, 15),
+    lineHeight: getResponsiveSize(17, 18, 21),
   },
   centerVertically: {
     justifyContent: 'center',

@@ -187,7 +187,7 @@ const RegisterAlertCard = ({ onPress }) => (
     <View style={{ flex: 1 }}>
       <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
       <CText style={stylesx.registerAlertSubtitle}>
-        Registra tu recinto y mesa para recibir avisos.
+        Registra tu recinto para recibir avisos.
       </CText>
     </View>
 
@@ -873,7 +873,6 @@ export default function HomeScreen({ navigation }) {
         dni,
         locationId: cached.location._id,
         locationData: cached.location,
-        ...(cached.table ? { tableData: cached.table } : {}),
         fromCache: true,
         offline: true,
       });
@@ -1100,27 +1099,31 @@ export default function HomeScreen({ navigation }) {
   const normalizeVotePlace = srv => {
     const loc = srv?.location || {};
     const tab = srv?.table || {};
+    const hasLocation = !!(loc && Object.keys(loc).length);
+    const hasTable = !!(tab && Object.keys(tab).length);
     return {
-      location: {
-        ...loc,
-        _id: loc._id || loc.id,
-        id: loc.id || loc._id,
-      },
-      table:
-        tab && Object.keys(tab).length
-          ? {
-            ...tab,
-            _id: tab._id || tab.id,
-            id: tab.id || tab._id,
-            tableId: tab.tableId || tab._id || tab.id,
-            tableCode: tab.tableCode || tab.code || tab.codigo,
-            tableNumber: String(
-              tab.tableNumber || tab.numero || tab.number || '',
-            ),
-          }
-          : undefined,
+      location: hasLocation
+        ? {
+          ...loc,
+          _id: loc._id || loc.id,
+          id: loc.id || loc._id,
+        }
+        : undefined,
+      table: hasTable
+        ? {
+          ...tab,
+          _id: tab._id || tab.id,
+          id: tab.id || tab._id,
+          tableId: tab.tableId || tab._id || tab.id,
+          tableCode: tab.tableCode || tab.code || tab.codigo,
+          tableNumber: String(
+            tab.tableNumber || tab.numero || tab.number || '',
+          ),
+        }
+        : undefined,
     };
   };
+
   const checkUserVotePlace = useCallback(async () => {
     if (!dni) {
       setShouldShowRegisterAlert(false);
@@ -1138,20 +1141,42 @@ export default function HomeScreen({ navigation }) {
       );
 
       if (res?.data) {
-        const { location, table } = normalizeVotePlace(res.data);
+        const cachedBefore = await getVotePlace(dni);
+        const normalizedVotePlace = normalizeVotePlace(res.data);
+        const cachedLocationId =
+          cachedBefore?.location?._id || cachedBefore?.location?.id;
+        const normalizedLocationId =
+          normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id;
+        const canMergeCachedLocation =
+          !!cachedLocationId &&
+          !!normalizedLocationId &&
+          String(cachedLocationId) === String(normalizedLocationId);
+
+        const location = normalizedVotePlace.location
+          ? {
+            ...(canMergeCachedLocation ? cachedBefore?.location || {} : {}),
+            ...normalizedVotePlace.location,
+            _id: normalizedVotePlace.location._id || normalizedVotePlace.location.id,
+            id: normalizedVotePlace.location.id || normalizedVotePlace.location._id,
+          }
+          : undefined;
+
         await saveVotePlace(dni, {
           dni,
           userId: res.data.userId,
           location,
-          table,
+          table: undefined,
         });
+
+        const hasLocation = !!location?._id;
+        setShouldShowRegisterAlert(!hasLocation);
+      } else {
+        setShouldShowRegisterAlert(true);
       }
-      const hasBoth = !!res?.data?.location && !!res?.data?.table;
-      setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
       const cached = await getVotePlace(dni);
-      const hasBothCached = !!cached?.location && !!cached?.table;
-      setShouldShowRegisterAlert(!hasBothCached);
+      const hasLocationCached = !!cached?.location?._id;
+      setShouldShowRegisterAlert(!hasLocationCached);
     } finally {
       setCheckingVotePlace(false);
     }

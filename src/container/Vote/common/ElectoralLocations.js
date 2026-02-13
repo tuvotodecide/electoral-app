@@ -360,7 +360,6 @@ const ElectoralLocations = ({ navigation, route }) => {
             navigation.replace(StackNav.UnifiedParticipationScreen, {
               locationId: cached.location._id,
               locationData: cached.location,
-              ...(cached.table ? { tableData: cached.table } : {}),
               fromCache: true,
               offline: true,
             });

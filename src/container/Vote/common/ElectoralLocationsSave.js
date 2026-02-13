@@ -20,11 +20,18 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
-import {StackNav} from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
+import wira from 'wira-sdk';
 
-import {BACKEND_RESULT} from '@env';
+import {BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT} from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {LAST_TOPIC_KEY} from '../../../common/constants';
+import {saveVotePlace} from '../../../utils/offlineQueue';
+import {
+  subscribeToLocationTopic,
+  unsubscribeFromLocationTopic,
+} from '../../../services/notifications';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -44,6 +51,7 @@ const getResponsiveSize = (small, medium, large) => {
 
 const ElectoralLocationsSave = ({navigation, route}) => {
   const colors = useSelector(state => state.theme.theme);
+  const userData = useSelector(state => state.wallet.payload);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,9 +72,8 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   const [configError, setConfigError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredLocations, setFilteredLocations] = useState([]);
+  const [savingLocation, setSavingLocation] = useState(false);
   const pendingPermissionFromSettings = useRef(false);
-  // Get navigation target from route params
-  const {targetScreen} = route.params || {};
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -468,15 +475,101 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     getCurrentLocation(0, true);
   };
 
-  const handleLocationPress = location => {
-    {
-      navigation.navigate(StackNav.UnifiedTableScreenUser, {
-        locationId: location._id,
-        locationData: location,
-        targetScreen: targetScreen,
-        dni,
-      });
+  const handleLocationPress = async location => {
+    if (!dni) {
+      showModal('error', i18nString.error, 'DNI no disponible.');
+      return;
     }
+
+    const locationId = location?._id || location?.id;
+    if (!locationId) {
+      showModal('error', i18nString.error, 'Recinto no disponible.');
+      return;
+    }
+
+    try {
+      setSavingLocation(true);
+      const did = userData?.did;
+      const privateKey = userData?.privKey;
+      if (!did || !privateKey) {
+        throw new Error('No se pudo autenticar el usuario para guardar recinto.');
+      }
+      const apiKey = await authenticateWithBackend(did, privateKey);
+
+      await axios.patch(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+        {
+          locationId,
+        },
+        {
+          timeout: 15000,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+        },
+      );
+
+      const newTopic = `loc_${locationId}`;
+      try {
+        const prevTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);
+        if (prevTopic && prevTopic !== newTopic) {
+          await unsubscribeFromLocationTopic(prevTopic.replace('loc_', ''));
+        }
+        await subscribeToLocationTopic(String(locationId));
+        await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
+      } catch {}
+
+      const normalizedLocation = {
+        ...location,
+        _id: locationId,
+        id: location?.id || locationId,
+      };
+      await saveVotePlace(dni, {
+        dni,
+        location: normalizedLocation,
+      });
+
+      showModal(
+        'success',
+        'Guardado',
+        'Tu recinto fue guardado correctamente.',
+        i18nString.accept,
+        () => {
+          setModalVisible(false);
+          navigation.goBack();
+        },
+      );
+    } catch (error) {
+      const message =
+        (error?.response?.data?.message &&
+          (Array.isArray(error.response.data.message)
+            ? error.response.data.message.join('\n')
+            : error.response.data.message)) ||
+        'No se pudo guardar tu recinto.';
+      showModal('error', i18nString.error, message);
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
+  const authenticateWithBackend = async (did, privateKey) => {
+    const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
+
+    const authData = request.data;
+    if (!authData.apiKey || !authData.request) {
+      throw new Error(
+        'Invalid authentication request response: missing message',
+      );
+    }
+
+    await wira.authenticateWithVerifier(
+      JSON.stringify(authData.request),
+      did,
+      privateKey,
+    );
+
+    return authData.apiKey;
   };
 
   const renderLocationItem = ({item}) => (
@@ -606,11 +699,13 @@ const ElectoralLocationsSave = ({navigation, route}) => {
           </View>
         )}
 
-        {loading ? (
+        {loading || savingLocation ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4F9858" />
             <CText style={styles.loadingText}>
-              {i18nString.loadingNearbyLocations}
+              {savingLocation
+                ? 'Guardando recinto...'
+                : i18nString.loadingNearbyLocations}
             </CText>
           </View>
         ) : (

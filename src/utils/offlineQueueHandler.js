@@ -93,6 +93,68 @@ const hasUserAttestedTable = async (dniValue, tableCode, electionId) => {
   }
 };
 
+const normalizeTableNumber = value => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const parsed = parseInt(raw, 10);
+  return Number.isNaN(parsed) ? raw : String(parsed);
+};
+
+const assertTableExistsInLocation = async ({
+  locationId,
+  tableCode,
+  tableNumber,
+}) => {
+  if (!locationId) {
+    throw new Error('No se pudo validar la mesa: recinto no disponible.');
+  }
+
+  try {
+    const url = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodeURIComponent(
+      String(locationId),
+    )}/tables`;
+    const { data } = await axios.get(url, { timeout: 15000 });
+    const tables = data?.tables || data?.data?.tables || [];
+
+    if (!Array.isArray(tables) || tables.length === 0) {
+      throw new Error(
+        'No se pudo validar la mesa porque el recinto no devolvio mesas.',
+      );
+    }
+
+    const normalizedCode = safeStr(tableCode);
+    const normalizedNumber = normalizeTableNumber(tableNumber);
+
+    const exists = tables.some(table => {
+      const candidateCode = safeStr(
+        table?.tableCode || table?.codigo || table?.code || '',
+      );
+      const candidateNumber = normalizeTableNumber(
+        table?.tableNumber || table?.numero || table?.number,
+      );
+
+      const codeMatch = normalizedCode && candidateCode === normalizedCode;
+      const numberMatch =
+        normalizedNumber && candidateNumber === normalizedNumber;
+
+      return codeMatch || numberMatch;
+    });
+
+    if (!exists) {
+      throw new Error(
+        `La mesa ${tableNumber || tableCode || ''} no existe en el recinto seleccionado.`,
+      );
+    }
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      throw new Error(
+        'No se pudo validar la mesa porque el recinto seleccionado no existe.',
+      );
+    }
+    throw error;
+  }
+};
+
 const uploadCertificateAndNotifyBackend = async (
   certificateImageUri,
   normalizedAdditional,
@@ -228,6 +290,18 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.codigo ||
       tableData?.tableCode ||
       '';
+    const locationIdToCheck =
+      normalizedAdditional?.locationId ||
+      normalizedAdditional?.idRecinto ||
+      tableData?.idRecinto ||
+      tableData?.locationId ||
+      null;
+    const tableNumberToCheck =
+      normalizedAdditional?.tableNumber ||
+      tableData?.tableNumber ||
+      tableData?.numero ||
+      tableData?.number ||
+      '';
 
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
     if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
@@ -238,6 +312,22 @@ export const publishActaHandler = async (item, userData) => {
     const tableCodeForOracle = electionId
       ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
+    try {
+      await assertTableExistsInLocation({
+        locationId: locationIdToCheck,
+        tableCode: tableCodeStrict,
+        tableNumber: tableNumberToCheck,
+      });
+    } catch (err) {
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'validate_table_exists',
+        critical: true,
+        tableCode: tableCodeStrict,
+        locationId: locationIdToCheck,
+      });
+      throw err;
+    }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(
