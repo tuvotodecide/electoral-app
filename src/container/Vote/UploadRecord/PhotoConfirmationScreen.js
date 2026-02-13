@@ -95,8 +95,15 @@ const PhotoConfirmationScreen = ({ route }) => {
     });
   }, [navigation]);
   const colors = useSelector(state => state.theme.theme);
-  const { tableData, photoUri, partyResults, voteSummaryResults, aiAnalysis } =
-    route.params || {};
+  const {
+    tableData,
+    photoUri,
+    partyResults,
+    voteSummaryResults,
+    aiAnalysis,
+    hasObservation = false,
+    observationText = '',
+  } = route.params || {};
 
   const existingRecord = route.params?.existingRecord || null;
   const flowMode = route.params?.mode || 'upload';
@@ -194,6 +201,17 @@ const PhotoConfirmationScreen = ({ route }) => {
     } catch (err) { }
 
     try {
+      const normalizedObservationText = String(observationText || '').trim();
+      if (hasObservation && !normalizedObservationText) {
+        setInfoModalData({
+          visible: true,
+          title: I18nStrings.validationFailed,
+          message:
+            'Debes escribir la observacion del acta antes de continuar.',
+        });
+        return;
+      }
+
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
@@ -415,22 +433,11 @@ const PhotoConfirmationScreen = ({ route }) => {
         idRecinto: tableData?.idRecinto || tableData.locationId,
         tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
         tableCode: tableData?.codigo || 'N/A',
-        idRecinto: tableData?.idRecinto || tableData.locationId,
-        tableNumber: tableData?.tableNumber || tableData?.numero || 'N/A',
-        tableCode: tableData?.codigo || 'N/A',
         location: tableData?.location || 'Bolivia',
         time: new Date().toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit',
         }),
-        // userId: 'current-user-id', // Obtener del estado global
-        // userName: 'Usuario Actual', // Obtener del estado global
-        time: new Date().toLocaleTimeString('es-ES', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        // userId: 'current-user-id', // Obtener del estado global
-        // userName: 'Usuario Actual', // Obtener del estado global
         userId: userData?.id || 'unknown',
         userName: userFullName,
         role: 'witness',
@@ -440,6 +447,8 @@ const PhotoConfirmationScreen = ({ route }) => {
       const electoralData = {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
+        hasObservation: Boolean(hasObservation),
+        observationText: String(observationText || '').trim(),
       };
 
       const normalizedVoteSummary = (
@@ -582,11 +591,15 @@ const PhotoConfirmationScreen = ({ route }) => {
         role: 'witness',
         dni: String(dni ?? ''),
         electionId: eid,
+        hasObservation: Boolean(hasObservation),
+        observationText: String(observationText || '').trim(),
       };
 
       const electoralData = {
         partyResults: partyResults || [],
         voteSummaryResults: voteSummaryResults || [],
+        hasObservation: Boolean(hasObservation),
+        observationText: String(observationText || '').trim(),
       };
 
       await enqueue({

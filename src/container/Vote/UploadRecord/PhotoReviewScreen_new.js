@@ -1,4 +1,5 @@
 import React, {useMemo, useState} from 'react';
+import {StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
@@ -8,6 +9,23 @@ import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
 import {StackNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
+import CText from '../../../components/common/CText';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const normalizeComparableObservation = text =>
+  String(text ?? '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+
+const isObservationFromText = text => {
+  const normalized = normalizeComparableObservation(text);
+  if (!normalized) return false;
+  return normalized !== 'correyvale';
+};
 
 const PhotoReviewScreen = () => {
   const navigation = useNavigation();
@@ -30,6 +48,24 @@ const PhotoReviewScreen = () => {
   } = route.params || {};
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
+  const initialObservationText = String(
+    route.params?.observationText ??
+      mappedData?.observationText ??
+      aiAnalysis?.observations?.text ??
+      existingRecord?.observationText ??
+      '',
+  ).trim();
+  const initialObservationByText = isObservationFromText(initialObservationText);
+  const initialHasObservation =
+    typeof route.params?.hasObservation === 'boolean'
+      ? route.params.hasObservation
+      : typeof mappedData?.isObserved === 'boolean'
+      ? mappedData.isObserved
+      : typeof aiAnalysis?.observations?.is_observed === 'boolean'
+      ? aiAnalysis.observations.is_observed
+      : typeof existingRecord?.hasObservation === 'boolean'
+      ? existingRecord.hasObservation
+      : initialObservationByText;
   const effectivePhotoUri = useMemo(() => {
     const fromRecord =
       existingRecord?.actaImage ||
@@ -108,6 +144,8 @@ const PhotoReviewScreen = () => {
   const [voteSummaryResults, setVoteSummaryResults] = useState(
     getInitialVoteSummary(),
   );
+  const [hasObservation, setHasObservation] = useState(initialHasObservation);
+  const [observationText, setObservationText] = useState(initialObservationText);
 
   // Mostrar información de la mesa analizadas
   const getMesaInfo = () => {
@@ -163,6 +201,17 @@ const PhotoReviewScreen = () => {
       }
     }
 
+    const normalizedObservationText = String(observationText ?? '').trim();
+    if (!isViewOnly && hasObservation && !normalizedObservationText) {
+      setInfoModalData({
+        visible: true,
+        title: 'Observacion requerida',
+        message:
+          'Si marcas "Acta con observacion", debes escribir el texto de la observacion.',
+      });
+      return;
+    }
+
     const normalizedPartyResults = partyResults.map(p => ({
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
@@ -211,7 +260,9 @@ const PhotoReviewScreen = () => {
       offline,
       existingRecord,
       mode,
-      electionId
+      electionId,
+      hasObservation,
+      observationText: hasObservation ? normalizedObservationText : '',
     });
   };
 
@@ -280,6 +331,42 @@ const PhotoReviewScreen = () => {
         },
       ];
 
+  const observationSection = isViewOnly ? null : (
+    <View style={styles.observationContainer}>
+      <TouchableOpacity
+        style={styles.observationToggle}
+        onPress={() => setHasObservation(prev => !prev)}
+        activeOpacity={0.85}>
+        <View
+          style={[
+            styles.observationCheckbox,
+            hasObservation && {backgroundColor: colors.primary},
+          ]}>
+          {hasObservation ? (
+            <Ionicons name="checkmark" size={16} color="#fff" />
+          ) : (
+            <Ionicons name="square-outline" size={16} color="#8A8A8A" />
+          )}
+        </View>
+        <CText style={styles.observationToggleLabel}>Acta con observacion</CText>
+      </TouchableOpacity>
+
+      {hasObservation ? (
+        <TextInput
+          value={observationText}
+          onChangeText={setObservationText}
+          placeholder="Escribe la observacion del acta"
+          placeholderTextColor="#8A8A8A"
+          multiline
+          style={[
+            styles.observationInput,
+            {borderColor: colors.primary || '#459151'},
+          ]}
+        />
+      ) : null}
+    </View>
+  );
+
   return (
     <>
       <BaseRecordReviewScreen
@@ -310,10 +397,56 @@ const PhotoReviewScreen = () => {
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
         showDeputy={false}
         twoColumns={false}
+        extraContent={observationSection}
       />
       <InfoModal {...infoModalData} onClose={closeInfoModal} />
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  observationContainer: {
+    marginTop: moderateScale(10),
+    marginBottom: moderateScale(8),
+    borderWidth: 1,
+    borderColor: '#D9D9D9',
+    borderRadius: 8,
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(8),
+    backgroundColor: '#FFFFFF',
+  },
+  observationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  observationCheckbox: {
+    width: moderateScale(22),
+    height: moderateScale(22),
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#C7C7C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F7F7',
+  },
+  observationToggleLabel: {
+    marginLeft: moderateScale(8),
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    color: '#2F2F2F',
+  },
+  observationInput: {
+    marginTop: moderateScale(10),
+    minHeight: moderateScale(72),
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(8),
+    textAlignVertical: 'top',
+    fontSize: moderateScale(13),
+    color: '#1F1F1F',
+    backgroundColor: '#FFFFFF',
+  },
+});
 
 export default PhotoReviewScreen;

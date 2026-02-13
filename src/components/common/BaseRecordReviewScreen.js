@@ -65,6 +65,7 @@ const BaseRecordReviewScreen = ({
   showDeputy = false,
   twoColumns = false,
   PhotoComponent,
+  extraContent = null,
 }) => {
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
@@ -244,6 +245,7 @@ const BaseRecordReviewScreen = ({
               </View>
 
               {/* Action Buttons */}
+              {extraContent}
               {actionButtons && (
                 <View
                   testID={`${testID}TabletActionButtonsWrapper`}
@@ -376,6 +378,7 @@ const BaseRecordReviewScreen = ({
         />
 
         {/* Action Buttons */}
+        {extraContent}
         {actionButtons && (
           <ActionButtons
             testID={`${testID}ActionButtons`}

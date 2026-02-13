@@ -5,7 +5,6 @@ import {API_GEMINI} from '@env';
 
 class ElectoralActAnalyzer {
   constructor() {
-    // this.genAI = new GoogleGenAI({apiKey: API_GEMINI});
     this.genAI = null;
   }
 
@@ -25,55 +24,85 @@ class ElectoralActAnalyzer {
    */
   async imageToBase64(imagePath) {
     try {
-      const base64 = await RNFS.readFile(imagePath, 'base64');
-      return base64;
+      return await RNFS.readFile(imagePath, 'base64');
     } catch (error) {
       throw new Error('No se pudo procesar la imagen');
     }
   }
 
   /**
-   * Prompt específico para análisis de actas electorales bolivianas
+   * Prompt especifico para analisis de actas electorales bolivianas
    */
   getAnalysisPrompt() {
     return `Analiza la imagen proporcionada.
-PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequívocos de un acta electoral boliviana.
-Debe mostrar inequívocamente:
-  • Logotipo del OEP (esquina superior izquierda).
-  • Título exacto “ACTA ELECTORAL DE ESCRUTINIO Y CONTEO”.
-  • Leyenda “ELECCIÓN DE PRESIDENTE Y VICEPRESIDENTE DEL ESTADO PLURINACIONAL DE BOLIVIA - SEGUNDA VUELTA” debajo del título.
-  • Tabla “CÓDIGO DE MESA” con un número y un código de barras en la parte izquierda.
-  • Cuadro de resultados con solamente dos partidos políticos.
-  • Campos de resumen “VOTOS VÁLIDOS”, “VOTOS BLANCOS” y “VOTOS NULOS”.
+PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequivocos de un acta electoral boliviana.
+Debe mostrar inequivocamente:
+  - Logotipo del OEP (esquina superior izquierda).
+  - Titulo exacto "ACTA ELECTORAL DE ESCRUTINIO Y CONTEO".
+  - Leyenda "ELECCION DE PRESIDENTE Y VICEPRESIDENTE DEL ESTADO PLURINACIONAL DE BOLIVIA - SEGUNDA VUELTA" debajo del titulo.
+  - Tabla "CODIGO DE MESA" con un numero y un codigo de barras en la parte izquierda.
+  - Cuadro de resultados con solamente dos partidos politicos.
+  - Campos de resumen "VOTOS VALIDOS", "VOTOS BLANCOS" y "VOTOS NULOS".
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
-  {"if_electoral_act": false}
+{"if_electoral_act": false}
 
-Si la foto está borrosa o los campos clave no se distinguen con nitidez suficiente, responde EXCLUSIVAMENTE:
-  {"image_not_clear": true}
+Si la foto esta borrosa o los campos clave no se distinguen con nitidez suficiente, responde EXCLUSIVAMENTE:
+{"image_not_clear": true}
 
-SOLO si la imagen cumple todos los criterios y se lee claramente, responde con un ÚNICO JSON siguiendo EXACTAMENTE esta estructura.
-🔸 **Regla adicional**: si alguna casilla de votos está vacía, regístrala como "0".
+SOLO si la imagen cumple todos los criterios y se lee claramente, responde con un UNICO JSON siguiendo EXACTAMENTE esta estructura.
 
+Reglas de negocio:
+1. Si alguna casilla de votos esta vacia, registrala como "0".
+2. Observaciones: transcribe el texto del campo "OBSERVACIONES".
+3. Validacion de observacion:
+   - Marca "is_observed": false si el campo:
+     a) Esta vacio.
+     b) Contiene una LINEA DIAGONAL (/) cruzada para anular el espacio.
+     c) Contiene UNICAMENTE la frase "CORRE Y VALE" (ignorando mayusculas, tildes y puntos).
+   - Marca "is_observed": true si detectas cualquier otro texto descriptivo, incidentes o aclaraciones numéricas.
 {
   "if_electoral_act": true,
-  "table_number": "<número de mesa, parte superior izquierda>",
-  "table_code": "<código de mesa, parte superior izquierda>",
+  "table_number": "<numero de mesa, parte superior izquierda>",
+  "table_code": "<codigo de mesa, parte superior izquierda>",
   "president_vote_counts": {
     "candidate_votes": [
-      { "candidate_id": "LIBRE",      "votes": "<n o 0>" },
-      { "candidate_id": "PDC",      "votes": "<n o 0>" },
+      { "candidate_id": "LIBRE", "votes": "<n o 0>" },
+      { "candidate_id": "PDC", "votes": "<n o 0>" }
     ],
-    "blank_votes":  "<n o 0>",
-    "valid_votes":  "<n o 0>",
-    "null_votes":   "<n o 0>",
-    "total_votes":  "<n o 0>"
+    "blank_votes": "<n o 0>",
+    "valid_votes": "<n o 0>",
+    "null_votes": "<n o 0>",
+    "total_votes": "<n o 0>"
   },
-  "time": "<hora de cierre en formato HH:MM; deja cadena vacía si no aparece claramente>"
+  "time": "<hora de cierre HH:MM>",
+  "observations": {
+    "text": "<transcripcion literal del campo observaciones>",
+    "is_observed": <true o false>
+  }
 }
 
-⚠️ Devuelve SOLO el JSON solicitado, sin texto adicional, sin Markdown, sin comillas invertidas.
+Devuelve SOLO el JSON solicitado, sin texto adicional, sin Markdown, sin comillas invertidas.
 `;
+  }
+
+  normalizeObservationText(value) {
+    return String(value ?? '').trim();
+  }
+
+  normalizeComparableObservation(value) {
+    return this.normalizeObservationText(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+  }
+
+  isObservationFromText(value) {
+    const normalized = this.normalizeComparableObservation(value);
+    if (!normalized) return false;
+    return normalized !== 'correyvale';
   }
 
   /**
@@ -82,13 +111,9 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
   async analyzeElectoralAct(imagePath) {
     try {
       const genAI = await this.ensureClient();
-      // Convertir imagen a base64
       const base64Image = await this.imageToBase64(imagePath);
-
-      // Preparar el contenido para Gemini
       const prompt = this.getAnalysisPrompt();
 
-      // Usar la nueva API de genai:
       const response = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
@@ -102,13 +127,9 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
         ],
       });
 
-      // La respuesta es ahora response.text (no .text())
       const text = response.text.trim();
-
-      // Intentar parsear como JSON
       try {
         const analysisResult = JSON.parse(text);
-
         return {
           success: true,
           data: analysisResult,
@@ -117,7 +138,7 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       } catch (parseError) {
         return {
           success: false,
-          error: 'La respuesta de la IA no es un JSON válido',
+          error: 'La respuesta de la IA no es un JSON valido',
           rawResponse: text,
         };
       }
@@ -142,45 +163,50 @@ SOLO si la imagen cumple todos los criterios y se lee claramente, responde con u
       PDC: 'pdc',
     };
 
-    // Mapear resultados de partidos para presidente
-    const partyResults = aiData.president_vote_counts.candidate_votes.map(
+    const partyResults = (aiData?.president_vote_counts?.candidate_votes || []).map(
       candidate => ({
         id:
           partyMapping[candidate.candidate_id] ||
-          candidate.candidate_id.toLowerCase(),
+          String(candidate.candidate_id || '').toLowerCase(),
         partido: candidate.candidate_id,
-        presidente: candidate.votes.toString(),
-
+        presidente: String(candidate.votes ?? '0'),
       }),
     );
 
-    // Mapear resumen de votos
     const voteSummaryResults = [
       {
         id: 'validos',
-        label: 'Votos Válidos',
-        value1: aiData.president_vote_counts.valid_votes.toString(),
+        label: 'Votos Validos',
+        value1: String(aiData?.president_vote_counts?.valid_votes ?? '0'),
       },
       {
         id: 'blancos',
         label: 'Votos en Blanco',
-        value1: aiData.president_vote_counts.blank_votes.toString(),
+        value1: String(aiData?.president_vote_counts?.blank_votes ?? '0'),
       },
       {
         id: 'nulos',
         label: 'Votos Nulos',
-        value1: aiData.president_vote_counts.null_votes.toString(),
+        value1: String(aiData?.president_vote_counts?.null_votes ?? '0'),
       },
     ];
 
-    const mappedResult = {
+    const rawObservationText = aiData?.observations?.text;
+    const hasObservationFromAi = aiData?.observations?.is_observed;
+    const hasObservation =
+      typeof hasObservationFromAi === 'boolean'
+        ? hasObservationFromAi
+        : this.isObservationFromText(rawObservationText);
+
+    return {
       tableNumber: aiData.table_number,
       tableCode: aiData.table_code,
       time: aiData.time,
       partyResults,
       voteSummaryResults,
+      isObserved: hasObservation,
+      observationText: this.normalizeObservationText(rawObservationText),
     };
-    return mappedResult;
   }
 }
 

@@ -277,6 +277,32 @@ export const publishActaHandler = async (item, userData) => {
         electionType: additionalData?.electionType ?? item?.task?.payload?.electionType ?? undefined,
       };
     })();
+    const observationPayload = (() => {
+      const hasObservationCandidate =
+        typeof electoralData?.hasObservation === 'boolean'
+          ? electoralData.hasObservation
+          : typeof normalizedAdditional?.hasObservation === 'boolean'
+            ? normalizedAdditional.hasObservation
+            : undefined;
+      const observationTextCandidate = String(
+        electoralData?.observationText ??
+        normalizedAdditional?.observationText ??
+        '',
+      ).trim();
+
+      if (hasObservationCandidate === true) {
+        return {
+          hasObservation: true,
+          observationText: observationTextCandidate,
+        };
+      }
+      if (hasObservationCandidate === false) {
+        return {
+          hasObservation: false,
+        };
+      }
+      return {};
+    })();
 
     // --- Datos base del usuario / mesa (mismos nombres) ---
     const dniValue =
@@ -688,6 +714,7 @@ export const publishActaHandler = async (item, userData) => {
             ipfsUri: String(ipfsData.jsonUrl),
             recordId: String(response.returnData.recordId.toString()),
             tableIdIpfs: 'String',
+            ...observationPayload,
             ...(electionId ? { electionId: String(electionId) } : {}),
           },
           {
@@ -958,6 +985,7 @@ export const publishActaHandler = async (item, userData) => {
           ipfsUri: String(ipfsData.jsonUrl),
           recordId: String(nftId),
           tableIdIpfs: 'String',
+          ...observationPayload,
           ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
