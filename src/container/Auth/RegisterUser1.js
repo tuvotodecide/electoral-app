@@ -52,36 +52,69 @@ export default function RegisterUser1({navigation, route}) {
           {top: moderateScale(10)},
         ]}>
         <View testID="registerUser1MainContent" style={localStyle.mainContainer}>
-          <CText testID="registerUser1Title" type={'B20'}>
-            {String.titleReg + (isRecoveryFlow ? ` ${String.recoveryCIIntro}` : '')}
+          <CText style={localStyle.title} type="B20">
+            {String.titleReg}
+          </CText>
+          <CText testID="registerUser1Title">
+            {String.verificationInfo}
           </CText>
 
           <CIconText
             testID="registerUser1Step1Icon"
-            icon={<Icono name="card-account-details-outline" color={colors.primary} />}
+            containerStyle={{
+              backgroundColor: colors.stepBackgroundColor,
+              ...localStyle.card,
+            }}
+            textStyle={localStyle.cardText}
+            icon={<Icono name="card-account-details-outline" color={colors.primary} size={moderateScale(40)} />}
             text={
-              <CText testID="registerUser1Step1Text" type={'B16'}>
-                {String.connectItem1Reg}
-              </CText>
+              <View>
+                <CText testID="registerUser1Step1Text" style={localStyle.cardTitle}>
+                  {String.connectItem1Reg}
+                </CText>
+                <CText testID="registerUser1Step1Desc">
+                  {String.connectItem1Desc}
+                </CText>
+              </View>
             }
           />
           <CIconText
             testID="registerUser1Step2Icon"
-            icon={<Icono name="camera-outline" color={colors.primary} />}
+            containerStyle={{
+              backgroundColor: colors.stepBackgroundColor,
+              ...localStyle.card,
+            }}
+            textStyle={localStyle.cardText}
+            icon={<Icono name="camera-outline" color={colors.primary} size={moderateScale(40)} />}
             text={
-              <CText testID="registerUser1Step2Text" type={'B16'}>
-                {String.connectItem2Reg}
-              </CText>
+              <View>
+                <CText testID="registerUser1Step2Text" style={localStyle.cardTitle}>
+                  {String.connectItem2Reg}
+                </CText>
+                <CText testID="registerUser1Step2Desc">
+                  {String.connectItem2Desc}
+                </CText>
+              </View>
             }
           />
           {isRecoveryFlow && (
             <CIconText
               testID="registerUser1Step3Icon"
-              icon={<Icono name="form-textbox-password" color={colors.primary} />}
+              containerStyle={{
+                backgroundColor: colors.stepBackgroundColor,
+                ...localStyle.card,
+              }}
+              textStyle={localStyle.cardText}
+              icon={<Icono name="form-textbox-password" color={colors.primary} size={moderateScale(40)} />}
               text={
-                <CText testID="registerUser1Step3Text" type={'B16'}>
-                  {String.pin}
-                </CText>
+                <View>
+                  <CText testID="registerUser1Step3Text" style={localStyle.cardTitle}>
+                    {String.pin}
+                  </CText>
+                  <CText testID="registerUser1Step3Desc">
+                    {String.pinDesc}
+                  </CText>
+                </View>
               }
             />
           )}
@@ -134,6 +167,22 @@ const localStyle = StyleSheet.create({
     ...styles.ph20,
     gap: 5,
   },
+  title: {
+    fontWeight: 'bold',
+  },
+  card: {
+    width: '100%',
+    borderRadius: moderateScale(16),
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: moderateScale(15),
+  },
+  cardTitle: {
+    fontWeight: 'bold',
+    fontSize: moderateScale(15),
+  },
+  cardText: {
+    justifyContent: 'center',
+  },
   btnStyle: {
     ...styles.selfCenter,
   },
@@ -166,9 +215,9 @@ const localStyle = StyleSheet.create({
   },
   rowWithGap: {
     flexDirection: 'row',
-    columnGap: 10,
+    gap: moderateScale(8),
   },
   item: {
-    width: '95%',
+    flexShrink: 1,
   },
 });

@@ -42,48 +42,44 @@ export default function RegisterUser3({navigation, route}) {
             source={colors.dark ? images.FaceIdImage : images.FaceId_lightImage}
             style={localStyle.imageContainer}
           />
-          <CText testID="cameraTitle" type={'B20'} style={styles.boldText} align={'center'}>
+          <CText testID="cameraTitle" type={'B24'} style={styles.boldText} align={'center'}>
             {String.titleCamera}
           </CText>
 
           <CText
-            testID="cameraDescription"
-            type={'B16'}
-            color={getSecondaryTextColor(colors)}>
-            {String.description_camera}
-          </CText>
-
-          <CText
             testID="cameraNote"
-            type={'B16'}
+            align='center'
             color={getSecondaryTextColor(colors)}>
             {String.description_note}
           </CText>
         </View>
         <CIconText
           testID="tipWellLit"
-          icon={<Icono name="weather-sunny" color={colors.primary} />} 
+          icon={<Icono name="white-balance-sunny" color={colors.primary} size={moderateScale(30)} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
-              {String.tip_well_lit}
+              <CText style={styles.boldText}>{String.tip_well_lit1}</CText>
+              {String.tip_well_lit2}
             </CText>
           }
         />
         <CIconText
           testID="tipRemoveItems"
-          icon={<Icono name="account-remove-outline" color={colors.primary} />} 
+          icon={<Icono name="account-remove-outline" color={colors.primary} size={moderateScale(30)} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
-              {String.tip_remove_items}
+              <CText style={styles.boldText}>{String.tip_remove_items1}</CText>
+              {String.tip_remove_items2}
             </CText>
           }
         />
         <CIconText
           testID="tipLookCamera"
-          icon={<Icono name="camera-outline" color={colors.primary} />} 
+          icon={<Icono name="camera-outline" color={colors.primary} size={moderateScale(30)} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
-              {String.tip_look_camera}
+              <CText style={styles.boldText}>{String.tip_look_camera1}</CText>
+              {String.tip_look_camera2}
             </CText>
           }
         />
@@ -105,7 +101,7 @@ const localStyle = StyleSheet.create({
   mainContainer: {
     ...styles.ph20,
     gap: 5,
-    marginBottom: 10,
+    marginBottom: moderateScale(40),
   },
   btnStyle: {
     ...styles.selfCenter,

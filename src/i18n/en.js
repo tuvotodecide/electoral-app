@@ -17,11 +17,13 @@ export default {
 
   //Register user
   //page 1
-  titleReg:
-    'Para continuar, debes proporcionar tu carnet de identidad y acceso a tu cámara.',
+  titleReg: 'Verifica tu identidad',
+  verificationInfo: 'Antes de continuar, prepara lo siguiente:',
   connectItem1Reg: 'Tu carnet de identidad',
-  connectItem2Reg: 'Acceso a tu cámara',
-  termsPrefix: 'He leído y acepto los ',
+  connectItem1Desc: 'Tomaremos fotos de tu carnet',
+  connectItem2Reg: 'Tu cámara',
+  connectItem2Desc: 'Tomaremos una selfie para verificar que eres tú',
+  termsPrefix: 'Leí y acepto los ',
   termsLink: 'Términos y Condiciones',
   termsSuffix: ' y entiendo por qué se solicita mi carnet.',
   termsTitle: 'Términos y Condiciones de Uso',
@@ -42,7 +44,7 @@ export default {
   termsSection5Subtitle:
     'Podremos actualizar estos términos. Te notificaremos por la app. Seguir usando Libélula implica aceptar las condiciones vigentes.',
   infoMessage:
-    'Para cumplir con normas regulatorias y proteger tu cuenta, verificamos tu identidad con una foto de tu carnet.',
+    'Para cumplir con normas regulatorias, verificamos tu identidad con una foto de tu carnet.',
   continueButton: 'Continuar',
   // page 2
   idVerificationTitle: 'Verificación de identidad',
@@ -59,13 +61,14 @@ export default {
   DniNotFound1: 'El carnet:',
   DniNotFound2: 'No se ha encontrado, regístrese por favor.',
   // Page 3
-  titleCamera: 'Reconocimiento facial',
-  description_camera:
-    'Activaremos tu cámara para verificar tu identidad mediante escaneo facial.',
-  description_note: 'Por favor, ten en cuenta lo siguiente:',
-  tip_well_lit: 'Ubícate en un lugar bien iluminado',
-  tip_remove_items: 'Retira lentes, gorras o mascarillas',
-  tip_look_camera: 'Mira directamente a la cámara',
+  titleCamera: 'Verificación facial',
+  description_note: 'Prepárate para una selfie',
+  tip_well_lit1: 'Asegúrate ',
+  tip_well_lit2: 'de estar bien iluminado',
+  tip_remove_items1: 'Quítate ',
+  tip_remove_items2: 'lentes, gorra y mascarilla',
+  tip_look_camera1: 'Mira directamente ',
+  tip_look_camera2: 'a la cámara',
   button_scan_face: 'Escanear rostro',
   //page 4
   permissionDeniedTitle: 'Permiso denegado',
@@ -272,7 +275,8 @@ export default {
   recoverymethodFile: 'Usar archivo de recuperación',
   recoveryWithCI: 'Recuperar con Carnet y PIN',
   recoveryCIIntro: 'También debes tener el PIN de acceso a tu cuenta.',
-  pin: 'PIN de acceso',
+  pin: 'Tu PIN',
+  pinDesc: 'Necesitarás tu PIN de acceso',
   retryRecovery: 'Reintentar',
   recoveringData: 'Recuperando datos...',
   recoverySuccess: 'Sus datos fueron recuperados, ingrese su PIN a continuación para iniciar sesión',

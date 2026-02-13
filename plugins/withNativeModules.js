@@ -136,6 +136,16 @@ function addRepositories(contents) {
     return contents;
   }
 
+  // Add Sentry gradle plugin classpath to buildscript dependencies
+  if (!contents.includes('sentry-android-gradle-plugin')) {
+    const sentryClasspath = `classpath('io.sentry:sentry-android-gradle-plugin:4.14.1')`;
+    const buildscriptDepsPattern = /(buildscript\s*\{[\s\S]*?dependencies\s*\{[\s\S]*?)([\s]*\}[\s]*\})/;
+    contents = contents.replace(
+      buildscriptDepsPattern,
+      `$1\n    ${sentryClasspath}$2`
+    );
+  }
+
   const storageUrlDef = `def storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"`;
 
   // Replace the entire repositories block with the new content
@@ -203,6 +213,11 @@ function addDependencies(contents) {
   const flutterDeps = `
     // Flutter module dependencies for wira-sdk
     releaseImplementation 'com.example.wira_flutter_module:flutter_release:1.0'
+
+    // Sentry dependencies
+    implementation platform("io.sentry:sentry-bom:8.31.0")
+    implementation "io.sentry:sentry-android"
+    implementation "io.sentry:sentry-okhttp"
 `;
 
   // Find the dependencies block and add the Flutter dependencies
