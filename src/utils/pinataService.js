@@ -404,6 +404,23 @@ class PinataService {
         },
       };
 
+      const worksheetIpfsUri = String(
+        additionalData?.worksheetIpfsUri || '',
+      ).trim();
+      const worksheetNftLink = String(
+        additionalData?.worksheetNftLink || '',
+      ).trim();
+      const worksheetReferenceSource = String(
+        additionalData?.worksheetReferenceSource || '',
+      ).trim();
+
+      if (worksheetIpfsUri) {
+        attributes.push({
+          trait_type: 'Worksheet Reference',
+          value: worksheetIpfsUri,
+        });
+      }
+
       const observationTextRaw =
         electoralData?.observationText ??
         additionalData?.observationText ??
@@ -441,8 +458,22 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
           analysisData: analysisData,
+          worksheetReference: worksheetIpfsUri
+            ? {
+              ipfsUri: worksheetIpfsUri,
+              nftLink: worksheetNftLink || undefined,
+              source: worksheetReferenceSource || undefined,
+            }
+            : undefined,
         },
         data: dataField,
+        worksheetReference: worksheetIpfsUri
+          ? {
+            ipfsUri: worksheetIpfsUri,
+            nftLink: worksheetNftLink || undefined,
+            source: worksheetReferenceSource || undefined,
+          }
+          : undefined,
       };
 
       // 6. Subir metadata

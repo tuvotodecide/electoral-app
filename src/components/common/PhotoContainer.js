@@ -50,6 +50,7 @@ const ASPECT_HEIGHT = getResponsiveSize(170, 190, 220);
 
 const ROTATE_BTN = getResponsiveSize(32, 38, 44);
 
+
 export const PhotoContainer = ({
   testID = 'photoContainer',
   photoUri,
@@ -153,11 +154,13 @@ const ZoomablePhotoContainer = ({
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const zoomRef = useRef(null);
+  const metricsKeyRef = useRef('');
 
   const onLayout = useCallback(e => {
     const { width, height } = e.nativeEvent.layout;
-    setBox({ w: Math.round(width), h: Math.round(height) });
-  }, []);
+    const next = { w: Math.round(width), h: Math.round(height) };
+    setBox(next);
+  }, [testID]);
 
   const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
   const candidates = useMemo(
@@ -191,7 +194,10 @@ const ZoomablePhotoContainer = ({
     if (!currentUri) return;
     Image.getSize(
       currentUri,
-      (w, h) => setImg({ w, h }),
+      (w, h) => {
+        setImg({ w, h });
+
+      },
       () => {
         if (tryIndex < candidates.length - 1) {
           setTryIndex(i => i + 1);
@@ -201,7 +207,7 @@ const ZoomablePhotoContainer = ({
         }
       },
     );
-  }, [currentUri]);
+  }, [candidates.length, currentUri, testID, tryIndex]);
   const isRotated = rotation % 180 !== 0;
   const baseIw = isRotated ? img.h : img.w;
   const baseIh = isRotated ? img.w : img.h;
@@ -241,7 +247,7 @@ const ZoomablePhotoContainer = ({
   // Renderizamos la imagen a un tamaño mayor (hasta 2x) para mejorar nitidez al hacer zoom.
   // El usuario verá el "fit" inicial con una escala menor (zoomMinScale).
   const decodeScale = Math.max(1, Math.min(2, pixelScaleLimit));
-  const zoomMinScale = 1 / decodeScale;
+  const zoomMinScale = isRotated ? 1 : 1 / decodeScale;
   const zoomMaxScale = Math.max(zoomMinScale, maxScaleFromPixels / decodeScale);
 
   /* const scaleToFill = useMemo(() => {
@@ -267,13 +273,45 @@ const ZoomablePhotoContainer = ({
   }, []);
 
   useEffect(() => {
+    const metricsKey = [
+      box.w,
+      box.h,
+      img.w,
+      img.h,
+      contentW,
+      contentH,
+      rotation,
+      Number(decodeScale).toFixed(3),
+      Number(zoomMinScale).toFixed(3),
+      Number(zoomMaxScale).toFixed(3),
+      isRotated ? 1 : 0,
+    ].join('|');
+    if (metricsKeyRef.current === metricsKey) return;
+    metricsKeyRef.current = metricsKey;
+
+  }, [
+    box,
+    contentH,
+    contentW,
+    decodeScale,
+    img,
+    isRotated,
+    rotatedContainerHeight,
+    rotation,
+    testID,
+    zoomMaxScale,
+    zoomMinScale,
+  ]);
+
+  useEffect(() => {
     // pequeño timeout para asegurar layout previo
     const id = setTimeout(() => {
       const nextScale = zoomMinScale;
       zoomRef.current?.centerOn?.({ x: 0, y: 0, scale: nextScale, duration: 0 });
+
     }, 0);
     return () => clearTimeout(id);
-  }, [rotation, zoomMinScale]);
+  }, [rotation, testID, zoomMinScale]);
 
   return (
     <View
@@ -284,15 +322,15 @@ const ZoomablePhotoContainer = ({
           ? styles.photoContainerZoomAspectRatio
           : styles.photoContainer,
         isTablet && styles.photoContainerFill,
-        isRotated && { height: rotatedContainerHeight },
+        isTablet && isRotated && { height: rotatedContainerHeight },
       ]}>
       {box.w > 0 && box.h > 0 && img.w > 0 && img.h > 0 ? (
         <ImageZoom
           ref={zoomRef}
           cropWidth={box.w}
           cropHeight={box.h}
-          imageWidth={(isRotated ? contentH : contentW) * decodeScale}
-          imageHeight={(isRotated ? contentW : contentH) * decodeScale}
+          imageWidth={contentW * decodeScale}
+          imageHeight={contentH * decodeScale}
           minScale={zoomMinScale}
           maxScale={zoomMaxScale}
           enableCenterFocus={true}
@@ -303,19 +341,27 @@ const ZoomablePhotoContainer = ({
             testID={`${testID}Image`}
             source={{ uri: currentUri }}
             style={{
-              width: (isRotated ? contentH : contentW) * decodeScale,
-              height: (isRotated ? contentW : contentH) * decodeScale,
+              width: contentW * decodeScale,
+              height: contentH * decodeScale,
               transform: [{ rotate: `${rotation}deg` }],
             }}
             resizeMode="contain"
-            onLoadStart={() => setIsLoading(true)}
-            onLoad={() => setIsLoading(false)}
+            onLoadStart={() => {
+              setIsLoading(true);
+
+            }}
+            onLoad={() => {
+              setIsLoading(false);
+
+            }}
             onError={() => {
               if (tryIndex < candidates.length - 1) {
                 setTryIndex(i => i + 1);
                 setIsLoading(true);
+
               } else {
                 setIsLoading(false);
+
               }
             }}
           />
@@ -443,7 +489,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     width: '100%',
-    minHeight: PHOTO_HEIGHT,
+    minHeight: ASPECT_HEIGHT,
+    height: ASPECT_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },

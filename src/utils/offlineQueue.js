@@ -59,6 +59,7 @@ export const processQueue = async (handler) => {
         failed++;
 
         const msg = toErrorString(e);
+        const removeFromQueue = e?.removeFromQueue === true;
 
         const payload = item?.task?.payload || {};
         const tableCode =
@@ -74,7 +75,12 @@ export const processQueue = async (handler) => {
           tableCode,
           createdAt: item.createdAt,
           type: item?.task?.type,
+          removedFromQueue: removeFromQueue,
         });
+
+        if (removeFromQueue) {
+          await removeById(item.id);
+        }
 
         console.error('[OFFLINE-QUEUE] handler error for item', {
           id: item.id,

@@ -8,12 +8,18 @@ import { executeOperation } from '../api/account';
 import {
   displayLocalActaPublished,
   showActaDuplicateNotification,
+  showLocalNotification,
 } from '../notifications';
 import { requestPushPermissionExplicit } from '../services/pushPermission';
 import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ELECTION_ID } from '../common/constants';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
+import {
+  WorksheetStatus,
+  getWorksheetLocalStatus,
+  upsertWorksheetLocalStatus,
+} from './worksheetLocalStatus';
 
 const safeStr = v =>
   String(v ?? '')
@@ -30,12 +36,15 @@ const getBallotTableCode = b =>
     '',
   );
 
-const fetchLatestBallotByTable = async code => {
+const fetchLatestBallotByTable = async (code, electionId = null) => {
   try {
     if (!code) return null;
+    const electionQuery = electionId
+      ? `?electionId=${encodeURIComponent(String(electionId))}`
+      : '';
     const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
       code,
-    )}`;
+    )}${electionQuery}`;
     const { data } = await axios.get(url, {
       timeout: 15000,
     });
@@ -100,6 +109,196 @@ const normalizeTableNumber = value => {
   return Number.isNaN(parsed) ? raw : String(parsed);
 };
 
+const fetchTablesByLocationId = async locationId => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return [];
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+
+  try {
+    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch {
+    // fallback de compatibilidad
+  }
+
+  try {
+    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
+    const { data } = await axios.get(legacyUrl, { timeout: 15000 });
+    const list = data?.tables || data?.data?.tables || [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
+const extractErrorMessage = error => {
+  const responseData = error?.response?.data;
+  if (typeof responseData === 'string' && responseData.trim()) {
+    return responseData.trim();
+  }
+  if (typeof responseData?.message === 'string' && responseData.message.trim()) {
+    return responseData.message.trim();
+  }
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message.trim();
+  }
+  return 'Error no controlado';
+};
+
+const isRetriableNetworkError = error => {
+  if (!error) return false;
+  const code = String(error?.code || '').toUpperCase();
+  if (
+    code === 'ECONNABORTED' ||
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ETIMEDOUT'
+  ) {
+    return true;
+  }
+  if (error?.request && !error?.response) return true;
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('failed to fetch') ||
+    message.includes('internet')
+  );
+};
+
+const buildWorksheetVotesFromElectoralData = electoralData => {
+  const voteSummary = Array.isArray(electoralData?.voteSummaryResults)
+    ? electoralData.voteSummaryResults
+    : [];
+  const partyResults = Array.isArray(electoralData?.partyResults)
+    ? electoralData.partyResults
+    : [];
+  const normalize = value =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase();
+  const aliases = {
+    validos: ['validos', 'votos validos', 'votos válidos', 'validVotes'],
+    nulos: ['nulos', 'votos nulos', 'nullVotes'],
+    blancos: ['blancos', 'votos en blanco', 'blankVotes'],
+  };
+  const findRow = key =>
+    voteSummary.find(row => {
+      const id = normalize(row?.id);
+      const label = normalize(row?.label);
+      return id === key || aliases[key].includes(label);
+    });
+  const toNumber = raw => {
+    const value = parseInt(String(raw ?? '0'), 10);
+    return Number.isFinite(value) && value >= 0 ? value : 0;
+  };
+  const validVotes = toNumber(findRow('validos')?.value1);
+  const nullVotes = toNumber(findRow('nulos')?.value1);
+  const blankVotes = toNumber(findRow('blancos')?.value1);
+
+  return {
+    parties: {
+      validVotes,
+      nullVotes,
+      blankVotes,
+      partyVotes: partyResults.map(party => ({
+        partyId: String(
+          party?.id ?? party?.partyId ?? party?.partido ?? party?.name ?? '',
+        )
+          .trim()
+          .toLowerCase(),
+        votes: toNumber(party?.presidente),
+      })),
+      totalVotes: validVotes + nullVotes + blankVotes,
+    },
+  };
+};
+
+const normalizeWorksheetStatusValue = value => {
+  const status = String(value || '')
+    .trim()
+    .toUpperCase();
+  if (status === 'UPLOADED' || status === 'SUBIDA') {
+    return WorksheetStatus.UPLOADED;
+  }
+  if (status === 'PENDING' || status === 'PENDIENTE') {
+    return WorksheetStatus.PENDING;
+  }
+  if (status === 'FAILED' || status === 'FALLIDA' || status === 'ERROR') {
+    return WorksheetStatus.FAILED;
+  }
+  return '';
+};
+
+const getWorksheetReferenceForActa = async ({
+  dniValue,
+  electionId,
+  tableCode,
+  apiKey,
+}) => {
+  const normalizedDni = String(dniValue || '').trim();
+  const normalizedElectionId = String(electionId || '').trim();
+  const normalizedTableCode = String(tableCode || '').trim();
+  if (!normalizedDni || !normalizedElectionId || !normalizedTableCode) {
+    return null;
+  }
+
+  try {
+    const localStatus = await getWorksheetLocalStatus({
+      dni: normalizedDni,
+      electionId: normalizedElectionId,
+      tableCode: normalizedTableCode,
+    });
+    const localWorksheetStatus = normalizeWorksheetStatusValue(
+      localStatus?.status,
+    );
+    const localIpfsUri = String(localStatus?.ipfsUri || '').trim();
+    if (localWorksheetStatus === WorksheetStatus.UPLOADED && localIpfsUri) {
+      return {
+        ipfsUri: localIpfsUri,
+        nftLink: String(localStatus?.nftLink || '').trim() || undefined,
+        source: 'local',
+      };
+    }
+  } catch {
+    // fallback backend
+  }
+
+  try {
+    const { data } = await axios.get(
+      `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+        normalizedDni,
+      )}/by-table/${encodeURIComponent(
+        normalizedTableCode,
+      )}?electionId=${encodeURIComponent(normalizedElectionId)}`,
+      {
+        headers: {
+          'x-api-key': apiKey,
+        },
+        timeout: 15000,
+      },
+    );
+    const backendWorksheetStatus = normalizeWorksheetStatusValue(data?.status);
+    const backendIpfsUri = String(data?.ipfsUri || '').trim();
+    if (backendWorksheetStatus === WorksheetStatus.UPLOADED && backendIpfsUri) {
+      return {
+        ipfsUri: backendIpfsUri,
+        nftLink: String(data?.nftLink || '').trim() || undefined,
+        source: 'backend',
+      };
+    }
+  } catch {
+    // worksheet missing or backend unavailable
+  }
+
+  return null;
+};
+
 const assertTableExistsInLocation = async ({
   locationId,
   tableCode,
@@ -110,11 +309,7 @@ const assertTableExistsInLocation = async ({
   }
 
   try {
-    const url = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodeURIComponent(
-      String(locationId),
-    )}/tables`;
-    const { data } = await axios.get(url, { timeout: 15000 });
-    const tables = data?.tables || data?.data?.tables || [];
+    const tables = await fetchTablesByLocationId(locationId);
 
     if (!Array.isArray(tables) || tables.length === 0) {
       throw new Error(
@@ -338,6 +533,24 @@ export const publishActaHandler = async (item, userData) => {
     const tableCodeForOracle = electionId
       ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
+    // try {
+    //   const worksheetReference = await getWorksheetReferenceForActa({
+    //     dniValue,
+    //     electionId,
+    //     tableCode: tableCodeStrict,
+    //     apiKey,
+    //   });
+    //   if (worksheetReference?.ipfsUri) {
+    //     normalizedAdditional.worksheetIpfsUri = worksheetReference.ipfsUri;
+    //     normalizedAdditional.worksheetReferenceSource = worksheetReference.source;
+    //     if (worksheetReference?.nftLink) {
+    //       normalizedAdditional.worksheetNftLink = worksheetReference.nftLink;
+    //     }
+    //   }
+    // } catch {
+    //   // non-critical: attestation can continue without worksheet reference.
+    // }
+
     try {
       await assertTableExistsInLocation({
         locationId: locationIdToCheck,
@@ -424,7 +637,7 @@ export const publishActaHandler = async (item, userData) => {
       if (duplicateCheck?.exists) {
         const existingBallot =
           duplicateCheck.ballot ||
-          (await fetchLatestBallotByTable(tableCodeStrict));
+          (await fetchLatestBallotByTable(tableCodeStrict, electionId));
         if (!existingBallot) {
           await removePersistedImage(imageUri).catch(() => { });
           await showActaDuplicateNotification({
@@ -1086,6 +1299,270 @@ export const publishActaHandler = async (item, userData) => {
     }); throw fatalErr;
   }
 };
+
+// export const publishWorksheetHandler = async (item, userData) => {
+//   const payload = item?.task?.payload || item?.payload || {};
+//   const imageUri = payload?.imageUri;
+//   const aiAnalysis = payload?.aiAnalysis || {};
+//   const electoralData = payload?.electoralData || {};
+//   const additionalData = payload?.additionalData || {};
+//   const tableData = payload?.tableData || {};
+
+//   const dniValue =
+//     String(
+//       additionalData?.dni ||
+//       userData?.dni ||
+//       userData?.vc?.credentialSubject?.governmentIdentifier ||
+//       userData?.vc?.credentialSubject?.documentNumber ||
+//       userData?.vc?.credentialSubject?.nationalIdNumber ||
+//       '',
+//     ).trim();
+
+//   const electionId = String(
+//     additionalData?.electionId || payload?.electionId || '',
+//   ).trim();
+//   const tableCode = String(
+//     additionalData?.tableCode ||
+//     tableData?.codigo ||
+//     tableData?.tableCode ||
+//     payload?.tableCode ||
+//     '',
+//   ).trim();
+//   const tableNumber = String(
+//     additionalData?.tableNumber ||
+//     tableData?.tableNumber ||
+//     tableData?.numero ||
+//     tableData?.number ||
+//     payload?.tableNumber ||
+//     '',
+//   ).trim();
+//   const locationId = String(
+//     additionalData?.locationId ||
+//     additionalData?.idRecinto ||
+//     payload?.locationId ||
+//     tableData?.idRecinto ||
+//     tableData?.locationId ||
+//     '',
+//   ).trim();
+
+//   const worksheetIdentity = {
+//     dni: dniValue,
+//     electionId,
+//     tableCode,
+//   };
+
+//   const retryPayload = {
+//     ...payload,
+//     additionalData: {
+//       ...additionalData,
+//       dni: dniValue,
+//       electionId,
+//       tableCode,
+//       tableNumber,
+//       locationId,
+//     },
+//     tableData: {
+//       ...tableData,
+//       codigo: tableCode,
+//       tableCode,
+//       tableNumber,
+//       numero: tableNumber,
+//       idRecinto: locationId,
+//       locationId,
+//     },
+//   };
+
+//   const updateWorksheetLocalStatus = async (status, extra = {}) => {
+//     if (!dniValue || !electionId || !tableCode) return;
+//     await upsertWorksheetLocalStatus(worksheetIdentity, {
+//       status,
+//       tableCode,
+//       tableNumber,
+//       electionId,
+//       dni: dniValue,
+//       ...extra,
+//     });
+//   };
+
+//   if (!dniValue || !electionId || !tableCode || !tableNumber) {
+//     const missingFieldError = new Error(
+//       'Faltan datos obligatorios de hoja de trabajo (dni/electionId/tableCode/tableNumber).',
+//     );
+//     await updateWorksheetLocalStatus(WorksheetStatus.FAILED, {
+//       errorMessage: missingFieldError.message,
+//       retryPayload,
+//     });
+//     throw missingFieldError;
+//   }
+
+//   const latestBallot = await fetchLatestBallotByTable(tableCode, electionId);
+//   if (latestBallot) {
+//     const blockedByActaError = new Error(
+//       'No se puede subir hoja de trabajo porque esta mesa ya tiene acta registrada.',
+//     );
+//     blockedByActaError.removeFromQueue = true;
+//     await updateWorksheetLocalStatus(WorksheetStatus.FAILED, {
+//       errorMessage: blockedByActaError.message,
+//       retryPayload: null,
+//     });
+//     throw blockedByActaError;
+//   }
+
+//   let ipfsData = null;
+//   let jsonUrl = String(payload?.ipfsUri || payload?.jsonUrl || '').trim();
+//   let imageUrl = String(payload?.imageUrl || '').trim() || null;
+//   const worksheetVotes = buildWorksheetVotesFromElectoralData(electoralData);
+
+//   try {
+//     const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+
+//     if (!jsonUrl) {
+//       if (!imageUri) {
+//         throw new Error(
+//           'No se encontro la imagen local de la hoja de trabajo para subir.',
+//         );
+//       }
+//       const imagePath = imageUri.startsWith('file://')
+//         ? imageUri.substring(7)
+//         : imageUri;
+
+//       const normalizedVoteSummary = (
+//         electoralData?.voteSummaryResults || []
+//       ).map(data => {
+//         if (data.id === 'validos') return { ...data, label: 'Votos Válidos' };
+//         if (data.id === 'nulos') return { ...data, label: 'Votos Nulos' };
+//         if (data.id === 'blancos') return { ...data, label: 'Votos en Blanco' };
+//         return data;
+//       });
+
+//       const ipfs = await pinataService.uploadElectoralActComplete(
+//         imagePath,
+//         aiAnalysis || {},
+//         { ...electoralData, voteSummaryResults: normalizedVoteSummary },
+//         {
+//           ...additionalData,
+//           idRecinto: locationId,
+//           locationId,
+//           tableCode,
+//           tableNumber,
+//           role: 'worksheet',
+//         },
+//       );
+
+//       if (!ipfs?.success) {
+//         throw new Error(ipfs?.error || 'No se pudo subir la hoja a IPFS');
+//       }
+
+//       ipfsData = ipfs.data;
+//       jsonUrl = String(ipfsData?.jsonUrl || '').trim();
+//       imageUrl = String(ipfsData?.imageUrl || '').trim() || imageUrl;
+//     }
+
+//     if (!jsonUrl) {
+//       throw new Error('No se obtuvo JSON de IPFS para la hoja de trabajo.');
+//     }
+
+//     const nftLink = String(
+//       payload?.nftLink || payload?.worksheetMeta?.nftLink || jsonUrl,
+//     ).trim();
+
+//     const body = {
+//       dni: dniValue,
+//       electionId,
+//       ipfsUri: jsonUrl,
+//       tableCode,
+//       tableNumber,
+//       locationId: locationId || undefined,
+//       image: imageUrl || undefined,
+//       votes: worksheetVotes,
+//       recordId: String(payload?.recordId || ipfsData?.jsonCID || '').trim() || undefined,
+//       tableIdIpfs:
+//         String(payload?.tableIdIpfs || 'String').trim() || undefined,
+//       nftLink: nftLink || undefined,
+//     };
+
+//     const { data } = await axios.post(
+//       `${BACKEND_RESULT}/api/v1/worksheets/from-ipfs`,
+//       body,
+//       {
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'x-api-key': apiKey,
+//         },
+//         timeout: 30000,
+//       },
+//     );
+
+//     await updateWorksheetLocalStatus(WorksheetStatus.UPLOADED, {
+//       ipfsUri: data?.ipfsUri || jsonUrl,
+//       nftLink: data?.nftLink || nftLink || jsonUrl,
+//       errorMessage: undefined,
+//       retryPayload: null,
+//     });
+
+//     try {
+//       await showLocalNotification({
+//         title: 'Hoja de trabajo subida',
+//         body: `Mesa ${tableNumber}: tu hoja ya esta disponible para comparacion.`,
+//       });
+//     } catch {}
+
+//     if (imageUri) {
+//       await removePersistedImage(imageUri).catch(() => { });
+//     }
+
+//     return {
+//       success: true,
+//       ipfsData: ipfsData || { jsonUrl, imageUrl },
+//       worksheet: data,
+//     };
+//   } catch (error) {
+//     const statusCode = error?.response?.status;
+//     const backendMessage = extractErrorMessage(error);
+//     const normalizedBackendMessage = backendMessage.toLowerCase();
+
+//     if (statusCode === 409 && normalizedBackendMessage.includes('ya fue subida')) {
+//       await updateWorksheetLocalStatus(WorksheetStatus.UPLOADED, {
+//         ipfsUri: jsonUrl || undefined,
+//         nftLink: payload?.nftLink || jsonUrl || undefined,
+//         errorMessage: undefined,
+//         retryPayload: null,
+//       });
+//       if (imageUri) {
+//         await removePersistedImage(imageUri).catch(() => { });
+//       }
+//       return { success: true, alreadyUploaded: true };
+//     }
+
+//     if (statusCode === 409 && normalizedBackendMessage.includes('pendiente')) {
+//       await updateWorksheetLocalStatus(WorksheetStatus.PENDING, {
+//         ipfsUri: jsonUrl || undefined,
+//         nftLink: payload?.nftLink || jsonUrl || undefined,
+//         errorMessage: backendMessage,
+//         retryPayload,
+//       });
+//       return { success: true, alreadyPending: true };
+//     }
+
+//     const shouldRemainPending = isRetriableNetworkError(error);
+//     await updateWorksheetLocalStatus(
+//       shouldRemainPending ? WorksheetStatus.PENDING : WorksheetStatus.FAILED,
+//       {
+//         ipfsUri: jsonUrl || undefined,
+//         nftLink: payload?.nftLink || jsonUrl || undefined,
+//         errorMessage: backendMessage,
+//         retryPayload,
+//       },
+//     );
+
+//     if (!shouldRemainPending && error && typeof error === 'object') {
+//       // Let queue processor drop this item so UI can expose FAILED + manual retry.
+//       error.removeFromQueue = true;
+//     }
+
+//     throw error;
+//   }
+// };
 
 export const authenticateWithBackend = async (did, privateKey) => {
   const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);

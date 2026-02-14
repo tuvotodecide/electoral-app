@@ -23,6 +23,35 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const fetchTablesByLocationId = async locationId => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return [];
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+
+  try {
+    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch {
+    // fallback de compatibilidad
+  }
+
+  try {
+    const { data } = await axios.get(
+      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`,
+      { timeout: 15000 },
+    );
+    const list = data?.tables || data?.data?.tables || [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
 const UnifiedTableScreen = ({ navigation, route }) => {
   const { locationId, locationData: locFromParams, electionId, electionType } = route?.params || {};
   const [mesas, setMesas] = useState([]);
@@ -49,11 +78,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
   async function loadTablesFromApi(locationId) {
     try {
       setIsLoading(true);
-      const { data } = await axios.get(
-        `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${locationId}/tables`,
-        { timeout: 15000 },
-      );
-      const list = data?.tables || data?.data?.tables || [];
+      const list = await fetchTablesByLocationId(locationId);
       setMesas(list);
     } catch (e) {
       // si estás offline o falla, simplemente deja la lista como está (vacía)
