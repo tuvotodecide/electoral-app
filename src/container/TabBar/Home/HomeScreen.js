@@ -7,6 +7,7 @@ import {
   Modal,
   PermissionsAndroid,
   Platform,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View
@@ -30,6 +31,7 @@ import {
 } from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
+import RegisterAlertCard from '../../../components/home/RegisterAlertCard';
 import I18nStrings from '../../../i18n/String';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { clearSession } from '../../../utils/Session';
@@ -55,7 +57,7 @@ import {
 } from '../../../utils/attestationAvailabilityCache';
 import { publishActaHandler } from '../../../utils/offlineQueueHandler';
 import { captureError, captureMessage } from '../../../config/sentry';
-
+import { useBackupCheck } from '../../../hooks/useBackupCheck';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -182,30 +184,6 @@ const MiVotoLogo = () => (
   </View>
 );
 
-const RegisterAlertCard = ({ onPress }) => (
-  <View style={stylesx.registerAlertCard}>
-    <View style={{ flex: 1 }}>
-      <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
-      <CText style={stylesx.registerAlertSubtitle}>
-        Registra tu recinto para recibir avisos.
-      </CText>
-    </View>
-
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={stylesx.registerAlertCta}
-      accessibilityRole="button"
-      accessibilityLabel="Registrar recinto">
-      <Ionicons
-        name="arrow-forward"
-        size={getResponsiveSize(16, 18, 20)}
-        color="#fff"
-      />
-    </TouchableOpacity>
-  </View>
-);
-
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
@@ -243,8 +221,6 @@ const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
-  const wallet = useSelector(s => s.wallet.payload);
-  const account = useSelector(state => state.account);
   const auth = useSelector(s => s.auth);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
@@ -587,17 +563,6 @@ export default function HomeScreen({ navigation }) {
       setLoadingAvailability(false);
     }
   }, [requestLocationPermission, checkAttestationAvailability]);
-
-
-
-
-
-
-
-
-
-
-
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
@@ -1096,6 +1061,8 @@ export default function HomeScreen({ navigation }) {
     subject?.governmentIdentifier ??
     userData?.dni;
 
+  const { hasBackup } = useBackupCheck();
+
   const normalizeVotePlace = srv => {
     const loc = srv?.location || {};
     const tab = srv?.table || {};
@@ -1355,8 +1322,20 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
+          {!hasBackup && (
+            <RegisterAlertCard
+              title={I18nStrings.backupAccount}
+              description={I18nStrings.backupAccountDescription}
+              onPress={() =>
+                navigation.navigate(StackNav.RecuperationQR)
+              }
+            />
+          )}
+
           {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
+              title={I18nStrings.registerPlace}
+              description={I18nStrings.registerPlaceDescription}
               onPress={() =>
                 navigation.navigate(StackNav.ElectoralLocationsSave, {
                   dni,
@@ -1478,126 +1457,141 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {/* Carrusel deslizable */}
-          <View style={stylesx.carouselContainer}>
-            <FlatList
-              ref={carouselRef}
-              data={carouselData}
-              renderItem={({ item }) => <CarouselItem item={item} />}
-              keyExtractor={item => item.id.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={event => {
-                const index = Math.round(
-                  event.nativeEvent.contentOffset.x / screenWidth,
-                );
-                setCurrentCarouselIndex(index);
-              }}
-            />
-            <View style={stylesx.pageIndicators}>
-              {carouselData.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    stylesx.pageIndicator,
-                    index === currentCarouselIndex &&
-                    stylesx.activePageIndicator,
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-          {!checkingVotePlace && shouldShowRegisterAlert && (
-            <RegisterAlertCard
-              onPress={() =>
-                navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni,
-                })
-              }
-            />
-          )}
-          {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
-          <View style={stylesx.gridParent}>
-            {/* Participar (arriba, ocupa dos columnas) */}
-            {/* <TouchableOpacity
-              style={[
-                stylesx.gridDiv1,
-                stylesx.card,
-                { flexDirection: 'row', alignItems: 'center' },
-              ]}
-              activeOpacity={0.87}
-              onPress={menuItems[0].onPress}
-              testID="participateButtonRegular">
-              {React.createElement(menuItems[0].iconComponent, {
-                name: menuItems[0].icon,
-                size: getResponsiveSize(40, 50, 60),
-                color: '#41A44D',
-                style: { marginRight: getResponsiveSize(6, 8, 10) },
-              })}
-
-              <View style={{ flex: 1 }}>
-                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-                <CText style={stylesx.cardDescription}>
-                  {menuItems[0].description}
-                </CText>
+          <ScrollView>
+            {/* Carrusel deslizable */}
+            <View style={stylesx.carouselContainer}>
+              <FlatList
+                ref={carouselRef}
+                data={carouselData}
+                renderItem={({ item }) => <CarouselItem item={item} />}
+                keyExtractor={item => item.id.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={event => {
+                  const index = Math.round(
+                    event.nativeEvent.contentOffset.x / screenWidth,
+                  );
+                  setCurrentCarouselIndex(index);
+                }}
+              />
+              <View style={stylesx.pageIndicators}>
+                {carouselData.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      stylesx.pageIndicator,
+                      index === currentCarouselIndex &&
+                      stylesx.activePageIndicator,
+                    ]}
+                  />
+                ))}
               </View>
-            </TouchableOpacity>
-             */}
-            <View style={stylesx.gridDiv1}>
-              {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
             </View>
-            <View style={stylesx.gridRow2}>
-              {/* Anunciar conteo */}
+            {!hasBackup && (
+              <RegisterAlertCard
+                title={I18nStrings.backupAccount}
+                description={I18nStrings.backupAccountDescription}
+                onPress={() =>
+                  navigation.navigate(StackNav.RecuperationQR)
+                }
+              />
+            )}
+
+            {!checkingVotePlace && shouldShowRegisterAlert && (
+              <RegisterAlertCard
+                title={I18nStrings.registerPlace}
+                description={I18nStrings.registerPlaceDescription}
+                onPress={() =>
+                  navigation.navigate(StackNav.ElectoralLocationsSave, {
+                    dni,
+                  })
+                }
+              />
+            )}
+
+            {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
+            <View style={stylesx.gridParent}>
+              {/* Participar (arriba, ocupa dos columnas) */}
               {/* <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card]}
+                style={[
+                  stylesx.gridDiv1,
+                  stylesx.card,
+                  { flexDirection: 'row', alignItems: 'center' },
+                ]}
                 activeOpacity={0.87}
-                onPress={menuItems[1].onPress}
-                testID="announceCountButtonRegular">
-                {React.createElement(menuItems[1].iconComponent, {
-                  name: menuItems[1].icon,
-                  size: getResponsiveSize(30, 36, 42),
+                onPress={menuItems[0].onPress}
+                testID="participateButtonRegular">
+                {React.createElement(menuItems[0].iconComponent, {
+                  name: menuItems[0].icon,
+                  size: getResponsiveSize(40, 50, 60),
                   color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  style: { marginRight: getResponsiveSize(6, 8, 10) },
                 })}
-                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
-                <CText style={[stylesx.cardDescription]}>
-                  {menuItems[1].description}
-                </CText>
-              </TouchableOpacity> */}
-              {/* Mis atestiguamientos */}
-              <TouchableOpacity
-                style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
-                activeOpacity={0.87}
-                onPress={menuItems[2].onPress}
-                testID="myWitnessesButtonRegular">
-                {hasPendingActa && (
-                  <View style={stylesx.cardBadge}>
-                    <ActivityIndicator size="small" color="#ff0000ff" />
-                  </View>
-                )}
-                <View style={stylesx.cardHeaderRow}>
-                  {React.createElement(menuItems[2].iconComponent, {
-                    name: menuItems[2].icon,
-                    size: getResponsiveSize(30, 36, 42),
-                    color: '#41A44D',
-                    style: stylesx.cardHeaderIcon,
-                  })}
-                  <CText
-                    style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}>
-                    {menuItems[2].title}
+
+                <View style={{ flex: 1 }}>
+                  <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                  <CText style={stylesx.cardDescription}>
+                    {menuItems[0].description}
                   </CText>
                 </View>
-                <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
-                  {menuItems[2].description}
-                </CText>
               </TouchableOpacity>
+              */}
+              <View style={stylesx.gridDiv1}>
+                {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
+              </View>
+              <View style={stylesx.gridRow2}>
+                {/* Anunciar conteo */}
+                {/* <TouchableOpacity
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[1].onPress}
+                  testID="announceCountButtonRegular">
+                  {React.createElement(menuItems[1].iconComponent, {
+                    name: menuItems[1].icon,
+                    size: getResponsiveSize(30, 36, 42),
+                    color: '#41A44D',
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  })}
+                  <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                  <CText style={[stylesx.cardDescription]}>
+                    {menuItems[1].description}
+                  </CText>
+                </TouchableOpacity> */}
+                {/* Mis atestiguamientos */}
+                <TouchableOpacity
+                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[2].onPress}
+                  testID="myWitnessesButtonRegular">
+                  {hasPendingActa && (
+                    <View style={stylesx.cardBadge}>
+                      <ActivityIndicator size="small" color="#ff0000ff" />
+                    </View>
+                  )}
+                  <View style={stylesx.cardHeaderRow}>
+                    {React.createElement(menuItems[2].iconComponent, {
+                      name: menuItems[2].icon,
+                      size: getResponsiveSize(30, 36, 42),
+                      color: '#41A44D',
+                      style: stylesx.cardHeaderIcon,
+                    })}
+                    <CText
+                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}>
+                      {menuItems[2].title}
+                    </CText>
+                  </View>
+                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
+                    {menuItems[2].description}
+                  </CText>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       )}
       <CustomModal
@@ -1663,7 +1657,6 @@ const stylesx = StyleSheet.create({
     // No marginRight aquí, así queda a la derecha
   },
   bg: {
-    flex: 1,
     backgroundColor: '#FAFAFA',
     paddingHorizontal: 0,
   },
@@ -1681,7 +1674,7 @@ const stylesx = StyleSheet.create({
     paddingLeft: getResponsiveSize(8, 12, 16),
   },
   regularContainer: {
-    flex: 1,
+    height: '105%',
   },
   headerRow: {
     flexDirection: 'row',
@@ -2079,45 +2072,6 @@ const stylesx = StyleSheet.create({
   },
   disabledIcon: {
     opacity: 0.6,
-  },
-  registerAlertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2', // rojo claro
-    borderColor: '#FCA5A5', // borde rojo suave
-    borderWidth: 1,
-    borderRadius: getResponsiveSize(12, 14, 16),
-    paddingVertical: getResponsiveSize(10, 12, 14),
-    paddingHorizontal: getResponsiveSize(14, 16, 20),
-    marginHorizontal: getResponsiveSize(16, 20, 24),
-    // marginTop: getResponsiveSize(10, 12, 16),
-    marginBottom: getResponsiveSize(8, 10, 12),
-    // sombra sutil
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  registerAlertTitle: {
-    fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '700',
-    color: '#7F1D1D',
-    marginBottom: getResponsiveSize(2, 3, 4),
-  },
-  registerAlertSubtitle: {
-    fontSize: getResponsiveSize(12, 13, 14),
-    color: '#7F1D1D',
-    opacity: 0.9,
-  },
-  registerAlertCta: {
-    width: getResponsiveSize(36, 40, 44),
-    height: getResponsiveSize(36, 40, 44),
-    borderRadius: 999,
-    backgroundColor: '#E72F2F',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: getResponsiveSize(10, 12, 16),
   },
   cardBadge: {
     position: 'absolute',

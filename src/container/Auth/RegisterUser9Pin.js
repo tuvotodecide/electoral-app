@@ -19,8 +19,6 @@ import typography from '../../themes/typography';
 import { setTmpPin } from '../../utils/TempRegister';
 import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 
-import CBigAlert from '../../components/common/CBigAlert';
-
 export default function RegisterUser9({navigation, route}) {
   const {originalPin, ocrData, useBiometry, dni} = route.params;
 
@@ -99,12 +97,6 @@ export default function RegisterUser9({navigation, route}) {
                 <CAlert testID="registerUser9PinErrorAlert" status="error" message={String.incorrectPinError} />
               </View>
             )}
-
-            <CBigAlert
-              icon='information-outline'
-              title='Recomendación'
-              subttle='Al concluir, NO OLVIDE registrar al menos un guardián para poder recuperar su cuenta en caso de olvidar el pin.'
-            />
           </View>
 
           <View testID="registerUser9PinButtonContainer">

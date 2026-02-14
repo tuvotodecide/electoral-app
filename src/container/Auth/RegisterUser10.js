@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  AppState,
   Image,
   StyleSheet,
   View,
@@ -49,10 +50,40 @@ export default function RegisterUser10({ navigation, route }) {
 
   const startedRef = useRef(false);
   const stageRef = useRef(stage);
+  const wentToBackgroundRef = useRef(false);
 
   useEffect(() => {
     stageRef.current = stage;
   }, [stage]);
+
+  const restartRegister = async () => {
+    const draft = await getDraft();
+
+    if (draft) {
+      console.log('Restarting registration from draft');
+      navigation.replace(AuthNav.RegisterUser10, {
+        ...draft,
+        ocrData: draft.ocrData ?? route.params?.ocrData ?? null,
+        fromDraft: true,
+      });
+    }
+  }
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', nextState => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        console.log('App going to background, setting wentToBackgroundRef to true');
+        wentToBackgroundRef.current = true;
+      } else if (nextState === 'active') {
+        console.log('App back to active');
+        if (wentToBackgroundRef.current) {
+          console.log('App back to foreground after error, resuming registration');
+          restartRegister();
+        }
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     clearTimeout(watchdogRef.current);
@@ -75,6 +106,7 @@ export default function RegisterUser10({ navigation, route }) {
   );
 
   useEffect(() => {
+    console.log('RegisterUser10 mounted');
     (async () => {
       if (route.params?.fromDraft) {
         initRegister();
@@ -120,6 +152,7 @@ export default function RegisterUser10({ navigation, route }) {
           ocrData: normalizeOcrForUI(ocrData),
         });
 
+        console.log('Starting registration');
         const registerer = new wira.Registerer(
           BACKEND_IDENTITY,
           PROVIDER_NAME,
@@ -127,6 +160,7 @@ export default function RegisterUser10({ navigation, route }) {
           sponsorshipPolicyId
         );
 
+        console.log('Creating VC');
         await registerer.createVC(
           CHAIN,
           ocrData,
@@ -134,6 +168,7 @@ export default function RegisterUser10({ navigation, route }) {
           CRED_EXP_DAYS
         );
 
+        console.log('Creating wallet and guardian');
         await yieldUI();
         const { guardianAddress } = await withTimeout(
           registerer.createWallet(dni),
@@ -141,6 +176,7 @@ export default function RegisterUser10({ navigation, route }) {
           'registerStreamAndGuardian',
         );
 
+        console.log('setting addresses on store');
         dispatch(
           setAddresses({
             account: registerer.walletData.address,
@@ -148,10 +184,12 @@ export default function RegisterUser10({ navigation, route }) {
           }),
         );
 
+        console.log('Storing data on device');
         setStage('save');
         await yieldUI();
         await registerer.storeOnDevice(pin, useBiometry);
 
+        console.log('Storing data on server');
         const response = await registerer.storeDataOnServer();
         if (!response.ok) {
           throw new Error(
@@ -159,6 +197,7 @@ export default function RegisterUser10({ navigation, route }) {
           );
         }
 
+        console.log('Clearing draft and finishing');
         await clearDraft();
         setStage('done');
         setLoading(false);
@@ -166,6 +205,12 @@ export default function RegisterUser10({ navigation, route }) {
           account: registerer.walletData.address,
         });
       } catch (err) {
+        console.log('Error during registration');
+        if (wentToBackgroundRef.current) {
+          console.log('App back to foreground, skipping error');
+          return;
+        }
+
         captureError(err, {
           flow: 'registration',
           step: stageRef.current,
