@@ -151,7 +151,7 @@ function addRepositories(contents) {
   // Replace the entire repositories block with the new content
   const newRepositories = `
     // Native module repositories
-    maven { url "$rootDir/../../wira_flutter_module/build/host/outputs/repo" }
+    maven {url file('C:/apps/sdk-flutter-example/build/host/outputs/repo') }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }

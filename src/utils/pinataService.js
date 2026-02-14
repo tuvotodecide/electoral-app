@@ -404,6 +404,46 @@ class PinataService {
         },
       };
 
+      const worksheetIpfsUri = String(
+        additionalData?.worksheetIpfsUri || '',
+      ).trim();
+      const worksheetNftLink = String(
+        additionalData?.worksheetNftLink || '',
+      ).trim();
+      const worksheetReferenceSource = String(
+        additionalData?.worksheetReferenceSource || '',
+      ).trim();
+
+      if (worksheetIpfsUri) {
+        attributes.push({
+          trait_type: 'Worksheet Reference',
+          value: worksheetIpfsUri,
+        });
+      }
+
+      const observationTextRaw =
+        electoralData?.observationText ??
+        additionalData?.observationText ??
+        analysisData?.observations?.text ??
+        '';
+      const normalizedObservationText = String(observationTextRaw ?? '').trim();
+
+      let hasObservationResolved = false;
+      if (typeof electoralData?.hasObservation === 'boolean') {
+        hasObservationResolved = electoralData.hasObservation;
+      } else if (typeof additionalData?.hasObservation === 'boolean') {
+        hasObservationResolved = additionalData.hasObservation;
+      } else if (typeof analysisData?.observations?.is_observed === 'boolean') {
+        hasObservationResolved = analysisData.observations.is_observed;
+      }
+
+      if (hasObservationResolved) {
+        dataField.hasObservation = true;
+        dataField.observationText = normalizedObservationText;
+      } else if (normalizedObservationText) {
+        dataField.hasObservation = false;
+      }
+
       // 5. Construir metadata final
       const metadata = {
         name: `Acta Electoral Mesa ${tableNumber}`,
@@ -418,8 +458,22 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
           analysisData: analysisData,
+          worksheetReference: worksheetIpfsUri
+            ? {
+              ipfsUri: worksheetIpfsUri,
+              nftLink: worksheetNftLink || undefined,
+              source: worksheetReferenceSource || undefined,
+            }
+            : undefined,
         },
         data: dataField,
+        worksheetReference: worksheetIpfsUri
+          ? {
+            ipfsUri: worksheetIpfsUri,
+            nftLink: worksheetNftLink || undefined,
+            source: worksheetReferenceSource || undefined,
+          }
+          : undefined,
       };
 
       // 6. Subir metadata

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,11 +17,18 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
+import I18nStrings from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CAlert from '../../../components/common/CAlert';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { BACKEND_RESULT } from '@env';
+import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
+import { enqueue, getAll as getOfflineQueue } from '../../../utils/offlineQueue';
+import {
+  getWorksheetLocalStatus,
+  upsertWorksheetLocalStatus,
+  WorksheetStatus,
+} from '../../../utils/worksheetLocalStatus';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -44,9 +51,70 @@ const normalizeMesaNumber = value => {
   return Number.isNaN(parsed) ? raw : `${parsed}`;
 };
 
+const normalizeCode = value =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
+
+const fetchTablesByLocationId = async locationId => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return [];
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+  try {
+    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch {
+    // fallback de compatibilidad
+  }
+
+  try {
+    const { data } = await axios.get(
+      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`,
+      { timeout: 15000 },
+    );
+    const list = data?.tables || data?.data?.tables || [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
+const normalizeWorksheetStatus = value => {
+  const status = String(value || '')
+    .trim()
+    .toUpperCase();
+  if (status === 'UPLOADED' || status === 'SUBIDA') {
+    return WorksheetStatus.UPLOADED;
+  }
+  if (status === 'PENDING' || status === 'PENDIENTE') {
+    return WorksheetStatus.PENDING;
+  }
+  if (status === 'FAILED' || status === 'FALLIDA' || status === 'ERROR') {
+    return WorksheetStatus.FAILED;
+  }
+  return WorksheetStatus.NOT_FOUND;
+};
+
+const getUserDni = userData => {
+  const subject = userData?.vc?.credentialSubject || {};
+  return String(
+    userData?.dni ||
+    subject?.governmentIdentifier ||
+    subject?.documentNumber ||
+    subject?.nationalIdNumber ||
+    '',
+  ).trim();
+};
+
 
 export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
+  const userData = useSelector(state => state.wallet.payload);
   const { electionId, electionType } = route.params || {};
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};
@@ -74,6 +142,13 @@ export default function TableDetail({ navigation, route }) {
   const [selectedMesaRecords, setSelectedMesaRecords] = useState(null);
   const [selectedMesaTotalRecords, setSelectedMesaTotalRecords] = useState(null);
   const [resolvedOffline, setResolvedOffline] = useState(null);
+  const [worksheetStatus, setWorksheetStatus] = useState({
+    status: WorksheetStatus.NOT_FOUND,
+  });
+  const [hasPendingActaInQueue, setHasPendingActaInQueue] = useState(false);
+  const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
+  const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
+  const [worksheetFeedback, setWorksheetFeedback] = useState('');
   const routeExistingRecords = route.params?.existingRecords || [];
 
   const normalizeMesaData = mesaSource => {
@@ -164,6 +239,199 @@ export default function TableDetail({ navigation, route }) {
   const recordsCount = hasRecords ? existingRecords.length : 0;
   const recordsMsg = `La mesa ya tiene ${recordsCount} acta${recordsCount === 1 ? '' : 's'
     } publicada${recordsCount === 1 ? '' : 's'}`;
+  const currentDni = getUserDni(userData);
+  const tableCodeForWorksheet = String(
+    mesa?.codigo || mesa?.tableCode || mesa?.code || '',
+  ).trim();
+  const tableNumberForWorksheet = String(
+    mesa?.tableNumber || mesa?.numero || mesa?.number || '',
+  ).trim();
+  const worksheetIdentity = {
+    dni: currentDni,
+    electionId: String(electionId || ''),
+    tableCode: tableCodeForWorksheet,
+  };
+
+  const buildFinalTableData = useCallback(() => {
+    return {
+      ...mesa,
+      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
+      tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
+      numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
+      number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
+    };
+  }, [mesa]);
+
+  const isWorksheetTaskForCurrentTable = useCallback(
+    taskPayload => {
+      const payload = taskPayload || {};
+      const payloadDni = String(
+        payload?.additionalData?.dni || payload?.dni || '',
+      ).trim();
+      const payloadElectionId = String(
+        payload?.additionalData?.electionId || payload?.electionId || '',
+      ).trim();
+      const payloadTableCode = normalizeCode(
+        payload?.additionalData?.tableCode ||
+        payload?.tableCode ||
+        payload?.tableData?.codigo ||
+        payload?.tableData?.tableCode,
+      );
+
+      return (
+        payloadDni &&
+        payloadElectionId &&
+        payloadTableCode &&
+        payloadDni === currentDni &&
+        payloadElectionId === String(electionId || '') &&
+        payloadTableCode === normalizeCode(tableCodeForWorksheet)
+      );
+    },
+    [currentDni, electionId, tableCodeForWorksheet],
+  );
+
+  const isActaTaskForCurrentTable = useCallback(
+    taskPayload => {
+      const payload = taskPayload || {};
+      const payloadDni = String(
+        payload?.additionalData?.dni || payload?.dni || '',
+      ).trim();
+      const payloadElectionId = String(
+        payload?.additionalData?.electionId || payload?.electionId || '',
+      ).trim();
+      const payloadTableCode = normalizeCode(
+        payload?.additionalData?.tableCode ||
+        payload?.tableCode ||
+        payload?.tableData?.codigo ||
+        payload?.tableData?.tableCode,
+      );
+
+      return (
+        payloadDni &&
+        payloadElectionId &&
+        payloadTableCode &&
+        payloadDni === currentDni &&
+        payloadElectionId === String(electionId || '') &&
+        payloadTableCode === normalizeCode(tableCodeForWorksheet)
+      );
+    },
+    [currentDni, electionId, tableCodeForWorksheet],
+  );
+
+  const fetchWorksheetStatus = useCallback(async () => {
+    if (!hasMesaSelected || !currentDni || !tableCodeForWorksheet || !electionId) {
+      setHasPendingActaInQueue(false);
+      setWorksheetStatus({ status: WorksheetStatus.NOT_FOUND });
+      return;
+    }
+
+    setIsWorksheetLoading(true);
+    setWorksheetFeedback('');
+    try {
+      const identity = {
+        dni: currentDni,
+        electionId: String(electionId || ''),
+        tableCode: tableCodeForWorksheet,
+      };
+
+      let resolvedStatus = await getWorksheetLocalStatus(identity);
+      if (resolvedStatus?.status) {
+        resolvedStatus = {
+          ...resolvedStatus,
+          status: normalizeWorksheetStatus(resolvedStatus.status),
+        };
+      }
+
+      const queuedItems = await getOfflineQueue();
+      const pendingInQueue = (queuedItems || []).find(
+        item =>
+          item?.task?.type === 'publishWorksheet' &&
+          isWorksheetTaskForCurrentTable(item?.task?.payload),
+      );
+      const pendingActaInQueue = (queuedItems || []).some(
+        item =>
+          item?.task?.type === 'publishActa' &&
+          isActaTaskForCurrentTable(item?.task?.payload),
+      );
+      setHasPendingActaInQueue(Boolean(pendingActaInQueue));
+
+      if (pendingInQueue) {
+        resolvedStatus = await upsertWorksheetLocalStatus(identity, {
+          status: WorksheetStatus.PENDING,
+          tableCode: tableCodeForWorksheet,
+          tableNumber: tableNumberForWorksheet,
+          retryPayload: pendingInQueue.task?.payload,
+          errorMessage: undefined,
+        });
+      }
+
+      const netState = await NetInfo.fetch();
+      const isOnline =
+        !!netState?.isConnected && netState?.isInternetReachable !== false;
+
+      if (
+        isOnline &&
+        userData?.did &&
+        userData?.privKey &&
+        String(electionId || '').trim()
+      ) {
+        try {
+          const apiKey = await authenticateWithBackend(
+            userData.did,
+            userData.privKey,
+          );
+          const { data } = await axios.get(
+            `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+              currentDni,
+            )}/by-table/${encodeURIComponent(tableCodeForWorksheet)}?electionId=${encodeURIComponent(
+              String(electionId),
+            )}`,
+            {
+              headers: {
+                'x-api-key': apiKey,
+              },
+              timeout: 15000,
+            },
+          );
+
+          const backendStatus = normalizeWorksheetStatus(data?.status);
+          if (backendStatus !== WorksheetStatus.NOT_FOUND) {
+            resolvedStatus = await upsertWorksheetLocalStatus(identity, {
+              status: backendStatus,
+              tableCode: data.tableCode || tableCodeForWorksheet,
+              tableNumber: data.tableNumber || tableNumberForWorksheet,
+              ipfsUri: data.ipfsUri,
+              nftLink: data.nftLink,
+              errorMessage: data.errorMessage,
+            });
+          }
+        } catch {
+          // Mantener fallback local si backend no responde.
+        }
+      }
+
+      if (pendingInQueue && resolvedStatus?.status !== WorksheetStatus.UPLOADED) {
+        resolvedStatus = {
+          ...(resolvedStatus || {}),
+          status: WorksheetStatus.PENDING,
+        };
+      }
+
+      setWorksheetStatus(resolvedStatus || { status: WorksheetStatus.NOT_FOUND });
+    } finally {
+      setIsWorksheetLoading(false);
+    }
+  }, [
+    hasMesaSelected,
+    currentDni,
+    tableCodeForWorksheet,
+    electionId,
+    isWorksheetTaskForCurrentTable,
+    isActaTaskForCurrentTable,
+    tableNumberForWorksheet,
+    userData?.did,
+    userData?.privKey,
+  ]);
 
   // If an image comes from CameraScreen, use it
   const [capturedImage, setCapturedImage] = useState(
@@ -249,20 +517,10 @@ export default function TableDetail({ navigation, route }) {
           locationFromParams?.locationId ||
           route.params?.locationId;
         if (locationId) {
-          try {
-            const { data } = await axios.get(
-              `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodeURIComponent(
-                String(locationId),
-              )}/tables`,
-              { timeout: 15000 },
-            );
-            const fetched = data?.tables || data?.data?.tables || [];
-            if (Array.isArray(fetched) && fetched.length > 0) {
-              tablesPool = fetched;
-              setTablesForSearch(fetched);
-            }
-          } catch {
-            // Mantener fallback de cache.
+          const fetched = await fetchTablesByLocationId(locationId);
+          if (Array.isArray(fetched) && fetched.length > 0) {
+            tablesPool = fetched;
+            setTablesForSearch(fetched);
           }
         }
       }
@@ -310,16 +568,20 @@ export default function TableDetail({ navigation, route }) {
     }
   };
 
+  useEffect(() => {
+    fetchWorksheetStatus();
+  }, [fetchWorksheetStatus, route.params?.worksheetRefreshTs]);
+
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      fetchWorksheetStatus();
+    });
+    return unsubscribeFocus;
+  }, [navigation, fetchWorksheetStatus]);
+
 
   const handleTakePhoto = () => {
-    const finalTableData = {
-      ...mesa,
-      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      // claves redundantes para compatibilidad
-      tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
-      numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
-      number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
-    };
+    const finalTableData = buildFinalTableData();
 
     const count = Array.isArray(existingRecords) ? existingRecords.length : 0;
 
@@ -398,8 +660,8 @@ export default function TableDetail({ navigation, route }) {
   const handleConfirmPhoto = () => {
     setModalVisible(false);
     navigation.navigate(StackNav.SuccessScreen, {
-      title: String.photoSentTitle,
-      message: String.photoSentMessage,
+      title: I18nStrings.photoSentTitle,
+      message: I18nStrings.photoSentMessage,
       returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
       electionId, electionType
     });
@@ -409,14 +671,7 @@ export default function TableDetail({ navigation, route }) {
     setModalVisible(false);
     setCapturedImage(null);
 
-    const finalTableData = {
-      ...mesa,
-      ubicacion: `${mesa.recinto}, ${mesa.provincia}`,
-      // Ensure multiple ways to access mesa number
-      tableNumber: mesa.tableNumber || mesa.numero || 'Debug-1234',
-      numero: mesa.numero || mesa.tableNumber || 'Debug-1234',
-      number: mesa.number || mesa.tableNumber || mesa.numero || 'Debug-1234',
-    };
+    const finalTableData = buildFinalTableData();
 
     // Navegar de vuelta a la cámara para tomar otra foto
     navigation.navigate(StackNav.CameraScreen, {
@@ -425,6 +680,257 @@ export default function TableDetail({ navigation, route }) {
       mesa: finalTableData,
       electionId, electionType
     });
+  };
+
+  const handleTakeWorksheetPhoto = () => {
+    const blockedByBackendRule = String(
+      worksheetStatus?.errorMessage || '',
+    )
+      .toLowerCase()
+      .includes('ya tiene acta registrada');
+    const worksheetBlockedMessage = recordsCount > 0
+      ? 'La mesa ya tiene acta registrada. La hoja de trabajo solo puede subirse antes del acta.'
+      : hasPendingActaInQueue
+        ? 'Ya tienes un acta en cola para esta mesa. La hoja debe subirse antes del acta.'
+        : blockedByBackendRule
+          ? 'La hoja quedo bloqueada porque el backend detecto que ya existe un acta para esta mesa.'
+        : '';
+    if (worksheetBlockedMessage) {
+      setWorksheetFeedback(worksheetBlockedMessage);
+      return;
+    }
+
+    const finalTableData = buildFinalTableData();
+    setWorksheetFeedback('');
+    try {
+      navigation.navigate(StackNav.CameraScreen, {
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        mesa: finalTableData,
+        electionId,
+        electionType,
+        mode: 'worksheet',
+      });
+    } catch {
+      navigation.navigate('CameraScreen', {
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        mesa: finalTableData,
+        electionId,
+        electionType,
+        mode: 'worksheet',
+      });
+    }
+  };
+
+  const handleRetryWorksheet = async () => {
+    const blockedByBackendRule = String(
+      worksheetStatus?.errorMessage || '',
+    )
+      .toLowerCase()
+      .includes('ya tiene acta registrada');
+    const worksheetBlockedMessage = recordsCount > 0
+      ? 'No se puede reintentar la hoja porque la mesa ya tiene acta registrada.'
+      : hasPendingActaInQueue
+        ? 'No se puede reintentar la hoja mientras existe un acta en cola para esta mesa.'
+        : blockedByBackendRule
+          ? 'No se puede reintentar la hoja porque la mesa ya tiene acta registrada.'
+        : '';
+    if (worksheetBlockedMessage) {
+      setWorksheetFeedback(worksheetBlockedMessage);
+      return;
+    }
+
+    if (!currentDni || !electionId || !tableCodeForWorksheet) {
+      setWorksheetFeedback(
+        'No se pudo preparar el reintento. Verifica mesa, elección y usuario.',
+      );
+      return;
+    }
+
+    setIsWorksheetActionLoading(true);
+    setWorksheetFeedback('');
+    try {
+      const currentQueue = await getOfflineQueue();
+      const alreadyQueued = (currentQueue || []).some(
+        item =>
+          item?.task?.type === 'publishWorksheet' &&
+          isWorksheetTaskForCurrentTable(item?.task?.payload),
+      );
+
+      if (alreadyQueued) {
+        await upsertWorksheetLocalStatus(worksheetIdentity, {
+          status: WorksheetStatus.PENDING,
+          errorMessage: undefined,
+        });
+        setWorksheetStatus(prev => ({
+          ...(prev || {}),
+          status: WorksheetStatus.PENDING,
+        }));
+        setWorksheetFeedback('La hoja ya está en cola para reintento automático.');
+        return;
+      }
+
+      const localStatus = await getWorksheetLocalStatus(worksheetIdentity);
+      const retryPayload = localStatus?.retryPayload;
+
+      if (retryPayload) {
+        await enqueue({
+          type: 'publishWorksheet',
+          payload: retryPayload,
+        });
+        await upsertWorksheetLocalStatus(worksheetIdentity, {
+          status: WorksheetStatus.PENDING,
+          errorMessage: undefined,
+        });
+        setWorksheetStatus(prev => ({
+          ...(prev || {}),
+          status: WorksheetStatus.PENDING,
+        }));
+        setWorksheetFeedback('Reintento encolado correctamente.');
+        return;
+      }
+
+      const netState = await NetInfo.fetch();
+      const isOnline =
+        !!netState?.isConnected && netState?.isInternetReachable !== false;
+
+      if (isOnline && worksheetStatus?.ipfsUri && userData?.did && userData?.privKey) {
+        const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+        await axios.post(
+          `${BACKEND_RESULT}/api/v1/worksheets/retry`,
+          {
+            dni: currentDni,
+            electionId: String(electionId),
+            tableCode: tableCodeForWorksheet,
+            tableNumber: tableNumberForWorksheet,
+            ipfsUri: worksheetStatus.ipfsUri,
+            locationId: String(mesa?.idRecinto || mesa?.locationId || ''),
+            nftLink: worksheetStatus?.nftLink,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            timeout: 30000,
+          },
+        );
+
+        await upsertWorksheetLocalStatus(worksheetIdentity, {
+          status: WorksheetStatus.UPLOADED,
+          errorMessage: undefined,
+        });
+        setWorksheetStatus(prev => ({
+          ...(prev || {}),
+          status: WorksheetStatus.UPLOADED,
+        }));
+        setWorksheetFeedback('Hoja reintentada y subida correctamente.');
+        return;
+      }
+
+      setWorksheetFeedback(
+        'No hay datos locales para reintentar. Mantén conexión para sincronizar automáticamente.',
+      );
+    } catch (error) {
+      setWorksheetFeedback(
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo reintentar la hoja de trabajo.',
+      );
+    } finally {
+      setIsWorksheetActionLoading(false);
+    }
+  };
+
+  const renderWorksheetSection = () => {
+    if (!hasMesaSelected) return null;
+    const statusValue =
+      normalizeWorksheetStatus(worksheetStatus?.status);
+    const isUploaded = statusValue === WorksheetStatus.UPLOADED;
+    const isPending = statusValue === WorksheetStatus.PENDING;
+    const isFailed = statusValue === WorksheetStatus.FAILED;
+    const isNotFound = statusValue === WorksheetStatus.NOT_FOUND;
+    const blockedByBackendRule = String(
+      worksheetStatus?.errorMessage || '',
+    )
+      .toLowerCase()
+      .includes('ya tiene acta registrada');
+    const isWorksheetBlockedByActa =
+      recordsCount > 0 || hasPendingActaInQueue || blockedByBackendRule;
+    const worksheetBlockedMessage = recordsCount > 0
+      ? 'La mesa ya tiene acta. La hoja de trabajo solo se permite antes del acta.'
+      : hasPendingActaInQueue
+        ? 'Hay un acta en cola para esta mesa. La hoja debe subirse primero.'
+        : blockedByBackendRule
+          ? 'La hoja no puede subirse porque ya existe un acta en esta mesa.'
+        : '';
+
+    const badgeStyle = isUploaded
+      ? stylesx.worksheetBadgeSuccess
+      : isFailed
+        ? stylesx.worksheetBadgeError
+        : isPending
+          ? stylesx.worksheetBadgeWarning
+          : stylesx.worksheetBadgeNeutral;
+
+    const badgeText = isUploaded
+      ? 'Hoja de trabajo subida'
+      : isPending
+        ? 'Hoja pendiente de subida'
+        : isFailed
+          ? 'Hoja con error de subida'
+          : 'Aún no subiste tu hoja de trabajo';
+
+    return (
+      <View style={stylesx.worksheetContainer}>
+        <CText style={stylesx.worksheetTitle}>Hoja de trabajo</CText>
+
+        <View style={[stylesx.worksheetBadge, badgeStyle]}>
+          <CText style={stylesx.worksheetBadgeText}>{badgeText}</CText>
+        </View>
+
+        {isWorksheetLoading ? (
+          <ActivityIndicator size="small" color="#4F9858" style={stylesx.worksheetLoader} />
+        ) : null}
+
+        {isNotFound && !isWorksheetBlockedByActa ? (
+          <TouchableOpacity
+            style={stylesx.worksheetActionButton}
+            onPress={handleTakeWorksheetPhoto}
+            disabled={isWorksheetActionLoading}>
+            <CText style={stylesx.worksheetActionText}>
+              Subir hoja de trabajo (opcional)
+            </CText>
+          </TouchableOpacity>
+        ) : null}
+
+        {isFailed && !isWorksheetBlockedByActa ? (
+          <TouchableOpacity
+            style={[
+              stylesx.worksheetActionButton,
+              stylesx.worksheetRetryButton,
+              isWorksheetActionLoading && stylesx.searchButtonDisabled,
+            ]}
+            onPress={handleRetryWorksheet}
+            disabled={isWorksheetActionLoading}>
+            {isWorksheetActionLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <CText style={stylesx.worksheetActionText}>Reintentar subida</CText>
+            )}
+          </TouchableOpacity>
+        ) : null}
+
+        {isWorksheetBlockedByActa && (isNotFound || isFailed) ? (
+          <CText style={stylesx.worksheetFeedbackText}>{worksheetBlockedMessage}</CText>
+        ) : null}
+
+        {worksheetFeedback ? (
+          <CText style={stylesx.worksheetFeedbackText}>{worksheetFeedback}</CText>
+        ) : null}
+      </View>
+    );
   };
 
   const canSearch =
@@ -441,7 +947,7 @@ export default function TableDetail({ navigation, route }) {
         colors={colors}
         onBack={() => navigation.goBack()}
         title={
-          /*  mesa ? mesa.colegio : String.tableInformation*/
+          /*  mesa ? mesa.colegio : I18nStrings.tableInformation*/
           'Revisa'
         }
         showNotification={true}
@@ -455,9 +961,6 @@ export default function TableDetail({ navigation, route }) {
         <View style={stylesx.searchLocationCard}>
           <CText style={stylesx.searchLocationTitle}>
             {locationFromParams?.name || 'Recinto seleccionado'}
-          </CText>
-          <CText style={stylesx.searchLocationText}>
-            {locationFromParams?.address || 'Sin direccion'}
           </CText>
         </View>
 
@@ -529,14 +1032,14 @@ export default function TableDetail({ navigation, route }) {
                   shouldCenter && { marginTop: 0 },
                 ]}>
                 <CText style={[stylesx.bigBold, { color: 'black' }]}>
-                  {String.ensureAssignedTable}
+                  {I18nStrings.ensureAssignedTable}
                 </CText>
                 {/* <CText
                   style={[
                     stylesx.subtitle,
                     {color: colors.grayScale500 || '#8B9399'},
                   ]}>
-                  {String.verifyTableInformation}
+                    {I18nStrings.verifyTableInformation}
                 </CText> */}
               </View>
 
@@ -616,7 +1119,7 @@ export default function TableDetail({ navigation, route }) {
                       style={stylesx.aiIcon}
                     />
                     <CText style={stylesx.iaText}>
-                      {String.aiWillSelectClearestPhoto}
+                      {I18nStrings.aiWillSelectClearestPhoto}
                     </CText>
                   </View>
 
@@ -626,11 +1129,12 @@ export default function TableDetail({ navigation, route }) {
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
                     <CText style={stylesx.takePhotoBtnText}>
-                      {String.takePhoto}
+                      {I18nStrings.takePhoto}
                     </CText>
                   </TouchableOpacity>
                 </>
               )}
+              {renderWorksheetSection()}
             </View>
           </View>
         ) : (
@@ -643,14 +1147,14 @@ export default function TableDetail({ navigation, route }) {
                   shouldCenter && { marginTop: 0 },
                 ]}>
                 <CText style={[stylesx.bigBold, { color: 'black' }]}>
-                  {String.ensureAssignedTable}
+                  {I18nStrings.ensureAssignedTable}
                 </CText>
                 {/* <CText
                 style={[
                   stylesx.subtitle,
                   {color: colors.grayScale500 || '#8B9399'},
                 ]}>
-                {String.verifyTableInformation}
+                {I18nStrings.verifyTableInformation}
               </CText> */}
               </View>
 
@@ -664,14 +1168,14 @@ export default function TableDetail({ navigation, route }) {
                   />
                   <View style={stylesx.tableCardContent}>
                     <CText style={stylesx.tableCardTitle}>
-                      {String.table} {mesa.numero}
+                      {I18nStrings.table} {mesa.numero}
                     </CText>
                     <CText style={stylesx.tableCardDetail}>
-                      {String.tableCode}
+                      {I18nStrings.tableCode}
                       {':'} {mesa.codigo}
                     </CText>
                     <CText style={stylesx.tableCardDetail}>
-                      {String.precinct}
+                      {I18nStrings.precinct}
                       {':'} {mesa.colegio}
                     </CText>
                   </View>
@@ -705,7 +1209,7 @@ export default function TableDetail({ navigation, route }) {
                       style={stylesx.aiIcon}
                     />
                     <CText style={stylesx.iaText}>
-                      {String.aiWillSelectClearestPhoto}
+                      {I18nStrings.aiWillSelectClearestPhoto}
                     </CText>
                   </View>
 
@@ -715,11 +1219,12 @@ export default function TableDetail({ navigation, route }) {
                     activeOpacity={0.85}
                     onPress={handleTakePhoto}>
                     <CText style={stylesx.takePhotoBtnText}>
-                      {String.takePhoto}
+                      {I18nStrings.takePhoto}
                     </CText>
                   </TouchableOpacity>
                 </>
               )}
+              {renderWorksheetSection()}
             </View>
           </>
         )}
@@ -731,7 +1236,7 @@ export default function TableDetail({ navigation, route }) {
         <View style={stylesx.modalContainer}>
           <View style={stylesx.modalHeader}>
             <CText type={'B18'} color={colors.textColor || '#222'}>
-              {String.preview}
+              {I18nStrings.preview}
             </CText>
           </View>
           {capturedImage && (
@@ -748,7 +1253,7 @@ export default function TableDetail({ navigation, route }) {
               style={stylesx.retakeButton}
               onPress={handleRetakePhoto}>
               <CText type={'B14'} color={colors.grayScale600 || '#666'}>
-                {String.retakePhoto}
+                {I18nStrings.retakePhoto}
               </CText>
             </TouchableOpacity>
             <TouchableOpacity
@@ -758,7 +1263,7 @@ export default function TableDetail({ navigation, route }) {
               ]}
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
-                {String.confirmAndSend}
+                {I18nStrings.confirmAndSend}
               </CText>
             </TouchableOpacity>
           </View>
@@ -1148,6 +1653,78 @@ const stylesx = StyleSheet.create({
     color: '#475467',
     fontSize: getResponsiveSize(12, 13, 15),
     lineHeight: getResponsiveSize(17, 18, 21),
+  },
+  worksheetContainer: {
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(10, 12, 16),
+    marginBottom: getResponsiveSize(10, 12, 16),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: getResponsiveSize(12, 14, 18),
+    backgroundColor: '#FFFFFF',
+  },
+  worksheetTitle: {
+    fontSize: getResponsiveSize(15, 16, 18),
+    fontWeight: '700',
+    color: '#111827',
+  },
+  worksheetDescription: {
+    marginTop: getResponsiveSize(6, 8, 10),
+    fontSize: getResponsiveSize(12, 13, 14),
+    lineHeight: getResponsiveSize(16, 18, 20),
+    color: '#4B5563',
+  },
+  worksheetBadge: {
+    marginTop: getResponsiveSize(10, 12, 14),
+    borderRadius: 999,
+    paddingVertical: getResponsiveSize(6, 7, 8),
+    paddingHorizontal: getResponsiveSize(10, 12, 14),
+    alignSelf: 'flex-start',
+  },
+  worksheetBadgeNeutral: {
+    backgroundColor: '#F3F4F6',
+  },
+  worksheetBadgeWarning: {
+    backgroundColor: '#FEF3C7',
+  },
+  worksheetBadgeError: {
+    backgroundColor: '#FEE2E2',
+  },
+  worksheetBadgeSuccess: {
+    backgroundColor: '#DCFCE7',
+  },
+  worksheetBadgeText: {
+    fontSize: getResponsiveSize(11, 12, 13),
+    fontWeight: '600',
+    color: '#374151',
+  },
+  worksheetLoader: {
+    marginTop: getResponsiveSize(10, 12, 14),
+    alignSelf: 'flex-start',
+  },
+  worksheetActionButton: {
+    marginTop: getResponsiveSize(12, 14, 16),
+    backgroundColor: '#4F9858',
+    borderRadius: getResponsiveSize(8, 10, 12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(10, 12, 14),
+  },
+  worksheetRetryButton: {
+    backgroundColor: '#B42318',
+  },
+  worksheetActionText: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveSize(13, 14, 16),
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  worksheetFeedbackText: {
+    marginTop: getResponsiveSize(8, 10, 12),
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#475467',
   },
   centerVertically: {
     justifyContent: 'center',

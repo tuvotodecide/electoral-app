@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,7 +9,6 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
 import {
   RecordHeader,
   InstructionsContainer,
@@ -65,13 +64,37 @@ const BaseRecordReviewScreen = ({
   showDeputy = false,
   twoColumns = false,
   PhotoComponent,
+  extraContent = null,
+  highlightPhotoToggle = false,
+  photoToggleLabelCollapsed = 'Ver foto del acta',
+  photoToggleLabelExpanded = 'Ocultar foto del acta',
 }) => {
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
   const togglePhoto = () => setIsPhotoCollapsed(prev => !prev);
+  const phoneLayoutKeyRef = useRef('');
+  const tabletLayoutKeyRef = useRef('');
 
   // Use tableData or mesaData for compatibility
   const tableInfo = showTableInfo ? tableData : showMesaInfo ? mesaData : null;
+  const photoToggleLabel = isPhotoCollapsed
+    ? photoToggleLabelCollapsed
+    : photoToggleLabelExpanded;
+
+
+  const handlePhonePhotoLayout = e => {
+    const {width, height} = e.nativeEvent.layout || {};
+    const layoutKey = `${Math.round(width || 0)}x${Math.round(height || 0)}`;
+    if (phoneLayoutKeyRef.current === layoutKey) return;
+    phoneLayoutKeyRef.current = layoutKey;
+  };
+
+  const handleTabletPhotoLayout = e => {
+    const {width, height} = e.nativeEvent.layout || {};
+    const layoutKey = `${Math.round(width || 0)}x${Math.round(height || 0)}`;
+    if (tabletLayoutKeyRef.current === layoutKey) return;
+    tabletLayoutKeyRef.current = layoutKey;
+  };
 
   // Tablet layout: optimized layout based on orientation
   if (isTablet) {
@@ -92,31 +115,66 @@ const BaseRecordReviewScreen = ({
         <View
           testID={`${testID}TabletInstructionsContainer`}
           style={styles.tabletInstructionsContainer}>
-          <View style={styles.instructionsRow}>
-            <View style={styles.instructionsTextWrap}>
-              <InstructionsContainer
-                testID={`${testID}Instructions`}
-                text={instructionsText}
-                style={[instructionsStyle, styles.tabletInstructionsText]}
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.instructionsToggleBtn}
-              onPress={togglePhoto}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
-              }>
-              <Ionicons
-                name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
-                size={getResponsiveSize(14, 18, 20)}
-                color="#fff"
-              />
-            </TouchableOpacity>
+        <View style={styles.instructionsRow}>
+            {highlightPhotoToggle ? (
+              <TouchableOpacity
+                testID={`${testID}PhotoToggleCard`}
+                style={styles.photoToggleCard}
+                onPress={togglePhoto}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+                }>
+                <View style={styles.photoToggleCardLeft}>
+                  <View style={styles.photoToggleIconWrap}>
+                    <Ionicons
+                      name="eye-outline"
+                      size={getResponsiveSize(18, 22, 24)}
+                      color="#334155"
+                    />
+                  </View>
+                  <CText
+                    style={styles.photoToggleText}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                    {photoToggleLabel}
+                  </CText>
+                </View>
+                <Ionicons
+                  name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+                  size={getResponsiveSize(18, 20, 22)}
+                  color="#475569"
+                />
+              </TouchableOpacity>
+            ) : (
+              <>
+                <View style={styles.instructionsTextWrap}>
+                  <InstructionsContainer
+                    testID={`${testID}Instructions`}
+                    text={instructionsText}
+                    style={[instructionsStyle, styles.tabletInstructionsText]}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.instructionsToggleBtn}
+                  onPress={togglePhoto}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+                  }>
+                  <Ionicons
+                    name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+                    size={getResponsiveSize(14, 18, 20)}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* Table Info inline with instructions */}
-          {tableInfo && (
+          {tableInfo && !highlightPhotoToggle && (
             <View
               testID={`${testID}TabletTableInfoInline`}
               style={styles.tabletTableInfoInline}>
@@ -150,6 +208,7 @@ const BaseRecordReviewScreen = ({
           {!isPhotoCollapsed && (
             <View
               testID={`${testID}TabletPhotoSection`}
+              onLayout={handleTabletPhotoLayout}
               style={
                 isLandscape
                   ? styles.tabletPhotoSectionHorizontal
@@ -244,6 +303,7 @@ const BaseRecordReviewScreen = ({
               </View>
 
               {/* Action Buttons */}
+              {extraContent}
               {actionButtons && (
                 <View
                   testID={`${testID}TabletActionButtonsWrapper`}
@@ -277,26 +337,61 @@ const BaseRecordReviewScreen = ({
 
       {/* Instructions */}
       <View style={styles.instructionsRow}>
-        <View style={styles.instructionsTextWrap}>
-          <InstructionsContainer
-            testID={`${testID}Instructions`}
-            text={instructionsText}
-            style={instructionsStyle}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.instructionsToggleBtn}
-          onPress={togglePhoto}
-          accessibilityRole="button"
-          accessibilityLabel={
-            isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
-          }>
-          <Ionicons
-            name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
-            size={getResponsiveSize(14, 18, 20)}
-            color="#fff"
-          />
-        </TouchableOpacity>
+        {highlightPhotoToggle ? (
+          <TouchableOpacity
+            testID={`${testID}PhotoToggleCard`}
+            style={styles.photoToggleCard}
+            onPress={togglePhoto}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+            }>
+            <View style={styles.photoToggleCardLeft}>
+              <View style={styles.photoToggleIconWrap}>
+                <Ionicons
+                  name="eye-outline"
+                  size={getResponsiveSize(18, 20, 22)}
+                  color="#334155"
+                />
+              </View>
+              <CText
+                style={styles.photoToggleText}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                {photoToggleLabel}
+              </CText>
+            </View>
+            <Ionicons
+              name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+              size={getResponsiveSize(18, 20, 22)}
+              color="#475569"
+            />
+          </TouchableOpacity>
+        ) : (
+          <>
+            <View style={styles.instructionsTextWrap}>
+              <InstructionsContainer
+                testID={`${testID}Instructions`}
+                text={instructionsText}
+                style={instructionsStyle}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.instructionsToggleBtn}
+              onPress={togglePhoto}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPhotoCollapsed ? 'Mostrar foto' : 'Ocultar foto'
+              }>
+              <Ionicons
+                name={isPhotoCollapsed ? 'chevron-down' : 'chevron-up'}
+                size={getResponsiveSize(14, 18, 20)}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Table Info - only for PhotoReviewScreen */}
@@ -326,7 +421,10 @@ const BaseRecordReviewScreen = ({
       )}
       {/* Photo - Static (doesn't move with scroll) */}
       {!isPhotoCollapsed && (
-        <View testID={`${testID}PhotoSection`} style={styles.photoSection}>
+        <View
+          testID={`${testID}PhotoSection`}
+          style={styles.photoSection}
+          onLayout={handlePhonePhotoLayout}>
           {PhotoComponent ? (
             <PhotoComponent
               testID={`${testID}PhotoContainer`}
@@ -376,6 +474,7 @@ const BaseRecordReviewScreen = ({
         />
 
         {/* Action Buttons */}
+        {extraContent}
         {actionButtons && (
           <ActionButtons
             testID={`${testID}ActionButtons`}
@@ -395,7 +494,10 @@ const styles = StyleSheet.create({
   // Phone layout styles
   photoSection: {
     paddingHorizontal: getResponsiveSize(6, 16, 20),
-    // Image stays static here
+    height: getResponsiveSize(190, 214, 240),
+    minHeight: getResponsiveSize(190, 214, 240),
+    maxHeight: getResponsiveSize(190, 214, 240),
+    overflow: 'hidden',
   },
   content: {
     flex: 1,
@@ -587,6 +689,46 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  photoToggleCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D5DBE3',
+    borderRadius: getResponsiveSize(10, 12, 14),
+    paddingVertical: getResponsiveSize(8, 10, 12),
+    paddingHorizontal: getResponsiveSize(10, 14, 16),
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.14,
+    shadowRadius: 2,
+    elevation: 2,
+    marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  photoToggleCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    marginRight: getResponsiveSize(8, 10, 12),
+  },
+  photoToggleIconWrap: {
+    width: getResponsiveSize(28, 32, 36),
+    height: getResponsiveSize(28, 32, 36),
+    borderRadius: 999,
+    backgroundColor: '#EEF2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: getResponsiveSize(8, 10, 12),
+  },
+  photoToggleText: {
+    fontSize: getResponsiveSize(13, 15, 17),
+    fontWeight: '700',
+    color: '#334155',
+    flexShrink: 1,
   },
 });
 

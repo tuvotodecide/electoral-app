@@ -55,7 +55,10 @@ import {
   getAttestationAvailabilityCache,
   saveAttestationAvailabilityCache,
 } from '../../../utils/attestationAvailabilityCache';
-import { publishActaHandler } from '../../../utils/offlineQueueHandler';
+import {
+  publishActaHandler,
+  publishWorksheetHandler,
+} from '../../../utils/offlineQueueHandler';
 import { captureError, captureMessage } from '../../../config/sentry';
 import { useBackupCheck } from '../../../hooks/useBackupCheck';
 
@@ -495,6 +498,14 @@ export default function HomeScreen({ navigation }) {
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
     if (!online) {
+      // Aun offline, sincroniza estado de permiso para no mostrar
+      // "Activar Ubicacion" si ya esta concedido.
+      try {
+        const hasPermission = await checkLocationPermissionOnly();
+        setLocationStatus(hasPermission ? 'granted' : 'denied');
+      } catch {
+        setLocationStatus('unknown');
+      }
       const cached = await getAttestationAvailabilityCache(dni);
       if (cached?.availableElections) {
         setContractsAvailability(
@@ -507,11 +518,26 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    const coords = await getHomeLocation(true);
-    if (!coords?.latitude || !coords?.longitude) return;
+    // En online, mostrar loader desde el inicio de la verificación para evitar
+    // falsos negativos visuales ("No puedes enviar actas") antes de terminar.
+    setLoadingAvailability(true);
+    try {
+      const coords = await getHomeLocation(true);
+      if (!coords?.latitude || !coords?.longitude) {
+        return;
+      }
 
-    await checkAttestationAvailability(coords.latitude, coords.longitude);
-  }, [dni, getHomeLocation, checkAttestationAvailability, buildContractsAvailabilityFromElections]);
+      await checkAttestationAvailability(coords.latitude, coords.longitude);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  }, [
+    dni,
+    getHomeLocation,
+    checkAttestationAvailability,
+    buildContractsAvailabilityFromElections,
+    checkLocationPermissionOnly,
+  ]);
 
 
   /**
@@ -632,6 +658,11 @@ export default function HomeScreen({ navigation }) {
 
     try {
       const result = await processQueue(async item => {
+        const taskType = item?.task?.type;
+        if (taskType === 'publishWorksheet') {
+          await publishWorksheetHandler(item, userData);
+          return;
+        }
         await publishActaHandler(item, userData);
       });
 
@@ -640,7 +671,11 @@ export default function HomeScreen({ navigation }) {
         setHasPendingActa(result.remaining > 0);
       } else {
         const listAfter = await getOfflineQueue();
-        const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+        const pendingAfter = (listAfter || []).some(
+          i =>
+            i.task?.type === 'publishActa' ||
+            i.task?.type === 'publishWorksheet',
+        );
         setHasPendingActa(pendingAfter);
       }
 
@@ -701,7 +736,11 @@ export default function HomeScreen({ navigation }) {
       }));
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      const pendingAfter = (listAfter || []).some(
+        i =>
+          i.task?.type === 'publishActa' ||
+          i.task?.type === 'publishWorksheet',
+      );
       setHasPendingActa(pendingAfter);
     } catch (e) {
       // opcional: modal informativo
@@ -716,7 +755,11 @@ export default function HomeScreen({ navigation }) {
       }
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      const pendingAfter = (listAfter || []).some(
+        i =>
+          i.task?.type === 'publishActa' ||
+          i.task?.type === 'publishWorksheet',
+      );
       setHasPendingActa(pendingAfter);
     } finally {
       setQueueFailModal({ visible: false, failedItems: [], message: '' });
@@ -876,16 +919,16 @@ export default function HomeScreen({ navigation }) {
           style={stylesx.activateLocationBtn}
           activeOpacity={0.8}
           onPress={handleActivateLocation}>
-          <View style={stylesx.splitBtnIconBox}>
-            <Ionicons name="location-outline" size={24} color="#41A44D" />
+          <View style={stylesx.activateLocationIconBox}>
+            <Ionicons name="location-outline" size={24} color="#F59E0B" />
           </View>
           <View style={stylesx.splitBtnContent}>
-            <CText style={stylesx.cardTitle}>Activar Ubicación</CText>
-            <CText style={stylesx.cardDescription}>
+            <CText style={stylesx.activateLocationTitle}>Activar Ubicación</CText>
+            <CText style={stylesx.activateLocationDescription}>
               Activa tu ubicación para ver las opciones de envío de actas.
             </CText>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+          <Ionicons name="chevron-forward" size={20} color="#D97706" />
         </TouchableOpacity>
       );
     }
@@ -960,7 +1003,9 @@ export default function HomeScreen({ navigation }) {
           const list = await getOfflineQueue();
 
           const pending = (list || []).some(
-            i => i.task?.type === 'publishActa',
+            i =>
+              i.task?.type === 'publishActa' ||
+              i.task?.type === 'publishWorksheet',
           );
 
           if (isActive) setHasPendingActa(pending);
@@ -2087,14 +2132,34 @@ const stylesx = StyleSheet.create({
   activateLocationBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#FFFBEB',
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(14, 16, 18),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     marginBottom: getResponsiveSize(10, 12, 14),
     borderWidth: 1.5,
-    borderColor: '#41A44D',
+    borderColor: '#F59E0B',
     borderStyle: 'dashed',
+  },
+  activateLocationIconBox: {
+    width: getResponsiveSize(42, 48, 54),
+    height: getResponsiveSize(42, 48, 54),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: getResponsiveSize(12, 16, 18),
+  },
+  activateLocationTitle: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  activateLocationDescription: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#B45309',
+    lineHeight: getResponsiveSize(17, 19, 22),
   },
   splitBtn: {
     flexDirection: 'row',

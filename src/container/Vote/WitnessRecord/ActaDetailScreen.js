@@ -45,7 +45,7 @@ const ActaDetailScreen = () => {
   const partyResultsTransformed = useMemo(() => {
     try {
       return rawPartyResults.map(p => {
-        const pid = String(p.partyId ?? p.party ?? p.partido ?? '')
+        const pid = global.String(p.partyId ?? p.party ?? p.partido ?? '')
           .trim()
           .toLowerCase();
         return {

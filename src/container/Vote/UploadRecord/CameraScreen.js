@@ -111,6 +111,8 @@ export default function CameraScreen({ navigation, route }) {
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
   const { electionId, electionType } = route.params || {};
+  const flowMode = route.params?.mode || 'upload';
+  const isWorksheetMode = flowMode === 'worksheet';
   const device = backDevice || frontDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
   const [photo, setPhoto] = useState(null);
@@ -606,12 +608,26 @@ export default function CameraScreen({ navigation, route }) {
     }
     const mesaInfo = route.params?.tableData || {};
 
+    if (isWorksheetMode) {
+      navigation.navigate(StackNav.PhotoReviewScreen, {
+        photoUri: `file://${photo.path}`,
+        tableData: mesaInfo,
+        offline: !isOnline,
+        electionId,
+        electionType,
+        mode: 'worksheet',
+      });
+      return;
+    }
+
     if (!isOnline) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
         tableData: mesaInfo,
         offline: true,
-        electionId, electionType
+        electionId,
+        electionType,
+        mode: flowMode,
       });
       return;
     }
@@ -688,14 +704,16 @@ export default function CameraScreen({ navigation, route }) {
         tableData: mesaInfo,
         aiAnalysis: aiData,
         mappedData: mappedData,
-        electionId, electionType
+        electionId,
+        electionType,
+        mode: flowMode,
       });
     } catch (error) {
       console.error('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
       const isNetworkError =
         !isOnline ||
         /network|timeout|ENET|ECONN|ECONNABORTED|ECONNRESET|EAI_AGAIN/i.test(
-          String(error?.message || ''),
+          global.String(error?.message || ''),
         );
 
 
@@ -704,7 +722,9 @@ export default function CameraScreen({ navigation, route }) {
           photoUri: `file://${photo.path}`,
           tableData: mesaInfo,
           offline: true,
-          electionId, electionType
+          electionId,
+          electionType,
+          mode: flowMode,
         });
         return;
       }
@@ -726,7 +746,9 @@ export default function CameraScreen({ navigation, route }) {
               navigation.navigate(StackNav.PhotoReviewScreen, {
                 photoUri: `file://${photo.path}`,
                 tableData: mesaInfo,
-                electionId, electionType
+                electionId,
+                electionType,
+                mode: flowMode,
               });
             },
           },
@@ -849,20 +871,24 @@ export default function CameraScreen({ navigation, route }) {
                           <CText
                             testID="cameraScreenFooterAnalyzingText"
                             style={styles.actionButtonText}>
-                            Analizando...
+                            {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
                           </CText>
                         </View>
                       ) : (
                         <>
                           <Ionicons
-                            name="analytics-outline"
+                            name={
+                              isWorksheetMode
+                                ? 'arrow-forward-circle-outline'
+                                : 'analytics-outline'
+                            }
                             size={20}
                             color="#fff"
                           />
                           <CText
                             testID="cameraScreenFooterAnalyzeText"
                             style={styles.actionButtonText}>
-                            Analizar
+                            {isWorksheetMode ? 'Continuar' : 'Analizar'}
                           </CText>
                         </>
                       )}
@@ -877,7 +903,9 @@ export default function CameraScreen({ navigation, route }) {
                           photoUri: `file://${photo.path}`,
                           tableData: mesaInfo,
                           offline: true,
-                          electionId, electionType
+                          electionId,
+                          electionType,
+                          mode: flowMode,
                         });
                       }}>
                       <Ionicons
@@ -967,12 +995,24 @@ export default function CameraScreen({ navigation, route }) {
                       size="small"
                       style={styles.analyzingIcon}
                     />
-                    <CText style={styles.actionButtonText}>Analizando...</CText>
+                    <CText style={styles.actionButtonText}>
+                      {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
+                    </CText>
                   </View>
                 ) : (
                   <>
-                    <Ionicons name="analytics-outline" size={20} color="#fff" />
-                    <CText style={styles.actionButtonText}>Analizar</CText>
+                    <Ionicons
+                      name={
+                        isWorksheetMode
+                          ? 'arrow-forward-circle-outline'
+                          : 'analytics-outline'
+                      }
+                      size={20}
+                      color="#fff"
+                    />
+                    <CText style={styles.actionButtonText}>
+                      {isWorksheetMode ? 'Continuar' : 'Analizar'}
+                    </CText>
                   </>
                 )}
               </TouchableOpacity>
@@ -985,7 +1025,9 @@ export default function CameraScreen({ navigation, route }) {
                     photoUri: `file://${photo.path}`,
                     tableData: mesaInfo,
                     offline: true,
-                    electionId, electionType
+                    electionId,
+                    electionType,
+                    mode: flowMode,
                     // flag opcional por si quieres mostrar un banner “modo offline”
                   });
                 }}>
