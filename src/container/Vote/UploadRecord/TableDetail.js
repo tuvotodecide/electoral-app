@@ -851,6 +851,7 @@ export default function TableDetail({ navigation, route }) {
     const isPending = statusValue === WorksheetStatus.PENDING;
     const isFailed = statusValue === WorksheetStatus.FAILED;
     const isNotFound = statusValue === WorksheetStatus.NOT_FOUND;
+    const isLoadingStatus = isWorksheetLoading;
     const blockedByBackendRule = String(
       worksheetStatus?.errorMessage || '',
     )
@@ -866,35 +867,39 @@ export default function TableDetail({ navigation, route }) {
           ? 'La hoja no puede subirse porque ya existe un acta en esta mesa.'
         : '';
 
-    const badgeStyle = isUploaded
-      ? stylesx.worksheetBadgeSuccess
-      : isFailed
-        ? stylesx.worksheetBadgeError
-        : isPending
-          ? stylesx.worksheetBadgeWarning
-          : stylesx.worksheetBadgeNeutral;
-
-    const badgeText = isUploaded
-      ? 'Hoja de trabajo subida'
-      : isPending
-        ? 'Hoja pendiente de subida'
+    const badgeStyle = isLoadingStatus
+      ? stylesx.worksheetBadgeWarning
+      : isUploaded
+        ? stylesx.worksheetBadgeSuccess
         : isFailed
-          ? 'Hoja con error de subida'
-          : 'Aún no subiste tu hoja de trabajo';
+          ? stylesx.worksheetBadgeError
+          : isPending
+            ? stylesx.worksheetBadgeWarning
+            : stylesx.worksheetBadgeNeutral;
+
+    const badgeText = isLoadingStatus
+      ? ''
+      : isUploaded
+        ? 'Hoja de trabajo subida'
+        : isPending
+          ? 'Hoja pendiente de subida'
+          : isFailed
+            ? 'Hoja con error de subida'
+            : 'Aún no subiste tu hoja de trabajo';
 
     return (
       <View style={stylesx.worksheetContainer}>
         <CText style={stylesx.worksheetTitle}>Hoja de trabajo</CText>
 
-        <View style={[stylesx.worksheetBadge, badgeStyle]}>
+        {/* <View style={[stylesx.worksheetBadge, badgeStyle]}>
           <CText style={stylesx.worksheetBadgeText}>{badgeText}</CText>
-        </View>
+        </View> */}
 
         {isWorksheetLoading ? (
           <ActivityIndicator size="small" color="#4F9858" style={stylesx.worksheetLoader} />
         ) : null}
 
-        {isNotFound && !isWorksheetBlockedByActa ? (
+        {isNotFound && !isWorksheetBlockedByActa && !isLoadingStatus ? (
           <TouchableOpacity
             style={stylesx.worksheetActionButton}
             onPress={handleTakeWorksheetPhoto}
@@ -905,7 +910,7 @@ export default function TableDetail({ navigation, route }) {
           </TouchableOpacity>
         ) : null}
 
-        {isFailed && !isWorksheetBlockedByActa ? (
+        {isFailed && !isWorksheetBlockedByActa && !isLoadingStatus ? (
           <TouchableOpacity
             style={[
               stylesx.worksheetActionButton,
@@ -922,7 +927,7 @@ export default function TableDetail({ navigation, route }) {
           </TouchableOpacity>
         ) : null}
 
-        {isWorksheetBlockedByActa && (isNotFound || isFailed) ? (
+        {isWorksheetBlockedByActa && (isNotFound || isFailed) && !isLoadingStatus ? (
           <CText style={stylesx.worksheetFeedbackText}>{worksheetBlockedMessage}</CText>
         ) : null}
 

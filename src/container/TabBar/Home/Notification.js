@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   TouchableOpacity,
@@ -7,6 +8,7 @@ import {
   Text,
   RefreshControl,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
@@ -16,6 +18,13 @@ import { requestPushPermissionExplicit } from '../../../services/pushPermission'
 import { formatTiempoRelativo } from '../../../services/notifications';
 import { mockNotificaciones } from '../../../data/mockNotificaciones';
 import wira from 'wira-sdk';
+
+const buildNotificationSeenKey = dniValue => {
+  const normalized = String(dniValue || '')
+    .trim()
+    .toLowerCase();
+  return `@notifications:last-seen:${normalized || 'anon'}`;
+};
 
 export default function Notification({ navigation }) {
   const userData = useSelector(state => state.wallet.payload);
@@ -32,6 +41,24 @@ export default function Notification({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [apiKey, setApiKey] = useState(null);
+  const [authResolved, setAuthResolved] = useState(false);
+
+  const markNotificationsAsSeen = useCallback(
+    async notifications => {
+      if (!dni) return;
+      const seenKey = buildNotificationSeenKey(dni);
+      const latestTimestamp = Array.isArray(notifications)
+        ? notifications.reduce((max, item) => Math.max(max, item?.timestamp || 0), 0)
+        : 0;
+      const seenAt = Math.max(Date.now(), latestTimestamp || 0);
+      try {
+        await AsyncStorage.setItem(seenKey, String(seenAt));
+      } catch {
+        // No bloquear por error de storage.
+      }
+    },
+    [dni],
+  );
 
   const mapServerToUi = useCallback(n => {
     const data = n?.data || {};
@@ -74,6 +101,7 @@ export default function Notification({ navigation }) {
 
   useEffect(() => {
     let mounted = true;
+    setAuthResolved(false);
     (async () => {
       try {
         const key = await authenticateWithBackend(
@@ -83,6 +111,8 @@ export default function Notification({ navigation }) {
         if (mounted) setApiKey(key);
       } catch (e) {
         if (mounted) setApiKey(null);
+      } finally {
+        if (mounted) setAuthResolved(true);
       }
     })();
     return () => {
@@ -93,10 +123,19 @@ export default function Notification({ navigation }) {
 
   const fetchFromBackend = useCallback(
     async (isRefresh = false) => {
-      if (!dni || !apiKey) {
+      if (!dni) {
         setItems([]);
         setLoading(false);
         setRefreshing(false);
+        return;
+      }
+
+      if (!apiKey) {
+        if (authResolved) {
+          setItems([]);
+          setLoading(false);
+          setRefreshing(false);
+        }
         return;
       }
 
@@ -120,6 +159,7 @@ export default function Notification({ navigation }) {
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
+        await markNotificationsAsSeen(mapped);
       } catch (error) {
         // setItems([...mockNotificaciones]);
       } finally {
@@ -129,7 +169,7 @@ export default function Notification({ navigation }) {
         setLoading(false);
       }
     },
-    [dni, apiKey, mapServerToUi],
+    [dni, apiKey, authResolved, mapServerToUi, markNotificationsAsSeen],
   );
 
   useEffect(() => {
@@ -141,18 +181,23 @@ export default function Notification({ navigation }) {
       }
     })();
     const unsubFocus = navigation.addListener('focus', () => {
+      markNotificationsAsSeen([]);
+      setRefreshing(true);
       fetchFromBackend(true);
     });
     return () => {
       mounted = false;
       unsubFocus && unsubFocus();
     };
-  }, [navigation, fetchFromBackend]);
+  }, [navigation, fetchFromBackend, markNotificationsAsSeen]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchFromBackend(true);
   }, [fetchFromBackend]);
+
+  const showLoader =
+    loading || (!authResolved && items.length === 0) || (refreshing && items.length === 0);
 
   const getIconName = useCallback(tipo => {
     switch (tipo) {
@@ -262,34 +307,50 @@ export default function Notification({ navigation }) {
         onPressBack={() => navigation.goBack()}
       />
 
-      <FlatList
-        testID="notificationList"
-        data={items}
-        keyExtractor={item => String(item.id)}
-        renderItem={renderNotificationItem}
-        contentContainerStyle={localStyle.listContent}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => (
-          <View testID="notificationSeparator" style={localStyle.separator} />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          !loading && (
+      {showLoader ? (
+        <View testID="notificationLoader" style={localStyle.loaderContainer}>
+          <ActivityIndicator size="large" color="#2790b0" />
+          <Text style={localStyle.loaderText}>Cargando notificaciones...</Text>
+        </View>
+      ) : (
+        <FlatList
+          testID="notificationList"
+          data={items}
+          keyExtractor={item => String(item.id)}
+          renderItem={renderNotificationItem}
+          contentContainerStyle={localStyle.listContent}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => (
+            <View testID="notificationSeparator" style={localStyle.separator} />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
             <View
               testID="notificationEmptyState"
               style={{ marginTop: 50, alignItems: 'center' }}>
               <Text testID="notificationEmptyText">No hay notificaciones</Text>
             </View>
-          )
-        }
-      />
+          }
+        />
+      )}
     </View>
   );
 }
 
 const localStyle = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  loaderText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#2790b0',
+  },
   listContent: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 15 },
   notificationCard: { paddingBottom: 6, backgroundColor: '#fff' },
   cardContent: { flexDirection: 'row', alignItems: 'center' },

@@ -45,6 +45,7 @@ import { ensureBundle, writeBundleAtomic } from '../../utils/ensureBundle';
 import { migrateIfNeeded } from '../../utils/migrateLegacy';
 import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
+import {startLocalSession} from '../../utils/Session';
 
 
 const sharedSession = new wira.SharedSession(
@@ -155,6 +156,7 @@ export default function LoginUser({ navigation, route }) {
       }),
     );
     dispatch(setAuthenticated(true));
+    await startLocalSession();
     await resetAttempts();
     try {
       const safe = {

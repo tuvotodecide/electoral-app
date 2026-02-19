@@ -62,17 +62,25 @@ export const processQueue = async (handler) => {
         const removeFromQueue = e?.removeFromQueue === true;
 
         const payload = item?.task?.payload || {};
+        const additionalData = payload?.additionalData || {};
         const tableCode =
-          payload?.additionalData?.tableCode ||
+          additionalData?.tableCode ||
           payload?.tableData?.codigo ||
           payload?.tableData?.tableCode ||
           payload?.electoralData?.tableCode ||
+          null;
+        const dni =
+          String(additionalData?.dni || payload?.dni || '').trim() || null;
+        const electionId =
+          String(additionalData?.electionId || payload?.electionId || '').trim() ||
           null;
 
         failedItems.push({
           id: item.id,
           error: msg,
           tableCode,
+          dni,
+          electionId,
           createdAt: item.createdAt,
           type: item?.task?.type,
           removedFromQueue: removeFromQueue,

@@ -10,13 +10,13 @@ import {
 
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
-import {TabNav} from '../NavigationKey';
+import {getFocusedRouteNameFromRoute, useNavigation} from '@react-navigation/native';
+import {StackNav, TabNav} from '../NavigationKey';
 import {TabRoute} from '../NavigationRoute';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
-import {isSessionValid, startSession} from '../../utils/Session';
+import {isSessionValid, refreshSession} from '../../utils/Session';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -29,14 +29,10 @@ const getResponsiveSize = (small, medium, large) => {
   if (isTablet) return large;
   return medium;
 };
-
-import {useNavigation} from '@react-navigation/native';
-import {StackNav} from '../NavigationKey';
-
 function useKeepAlive() {
   const navigation = useNavigation();
   useEffect(() => {
-    const renew = () => startSession();
+    const renew = () => refreshSession();
     const sub = AppState.addEventListener('change', s => {
       if (s === 'active') renew();
     });
@@ -48,9 +44,7 @@ function useKeepAlive() {
           routes: [{name: StackNav.AuthNavigation}],
         });
       }
-      // es 15 minutos,
-      // así que lo pongo en 9 minutos
-    }, 900_000); // 900_000 ms = 15 minutos
+    }, 300_000); // 300_000 ms = 5 minutos
     return () => {
       sub.remove();
       clearInterval(id);
@@ -59,7 +53,6 @@ function useKeepAlive() {
 }
 
 function CustomTabBar({state, descriptors, navigation, colors}) {
-  useKeepAlive();
   const insets = useSafeAreaInsets();
 
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar

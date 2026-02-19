@@ -60,6 +60,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
 
   const styles = createSearchTableStyles();
   const dni = route?.params?.dni;
+  const electionId = route?.params?.electionId || null;
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);

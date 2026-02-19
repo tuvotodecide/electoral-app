@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
 import CustomModal from './CustomModal';
@@ -26,6 +27,7 @@ import {
 } from './SearchTableComponents';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {BACKEND_RESULT} from '@env';
+import {ELECTION_ID} from '../../common/constants';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -197,6 +199,7 @@ const SortDropdown = ({
 const BaseSearchTableScreenUser = ({
   // Header props
   colors,
+  electionId,
   onBack,
   title,
   showNotification = true,
@@ -382,8 +385,19 @@ const BaseSearchTableScreenUser = ({
       setIsVerifying(true);
 
       // Check if mesa has existing attestations
+      const electionIdFromStorage = String(
+        (await AsyncStorage.getItem(ELECTION_ID)) || '',
+      ).trim();
+      const effectiveElectionId = String(
+        electionId || electionIdFromStorage || '',
+      ).trim();
+      const electionQuery = effectiveElectionId
+        ? `?electionId=${encodeURIComponent(effectiveElectionId)}`
+        : '';
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}`,
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+          tableCode,
+        )}${electionQuery}`,
         {timeout: 15000}, // 10 segundos timeout
       );
 

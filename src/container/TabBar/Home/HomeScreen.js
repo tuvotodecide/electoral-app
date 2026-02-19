@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 
 import Geolocation from '@react-native-community/geolocation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -56,9 +57,11 @@ import {
   saveAttestationAvailabilityCache,
 } from '../../../utils/attestationAvailabilityCache';
 import {
+  authenticateWithBackend,
   publishActaHandler,
   publishWorksheetHandler,
 } from '../../../utils/offlineQueueHandler';
+import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
 import { captureError, captureMessage } from '../../../config/sentry';
 import { useBackupCheck } from '../../../hooks/useBackupCheck';
 
@@ -222,6 +225,29 @@ const CTA_WIDTH = getResponsiveSize(120, 140, 160);
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
 const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
+const buildNotificationSeenKey = dniValue => {
+  const normalized = String(dniValue || '')
+    .trim()
+    .toLowerCase();
+  return `@notifications:last-seen:${normalized || 'anon'}`;
+};
+
+const extractNotificationTimestamp = notification => {
+  const raw =
+    notification?.createdAt ||
+    notification?.timestamp ||
+    notification?.data?.createdAt ||
+    notification?.data?.timestamp ||
+    0;
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw > 9999999999 ? raw : raw * 1000;
+  }
+
+  const parsed = Date.parse(String(raw || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const auth = useSelector(s => s.auth);
@@ -229,7 +255,10 @@ export default function HomeScreen({ navigation }) {
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
   const [hasPendingActa, setHasPendingActa] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
+  const runOfflineQueueRef = useRef(() => {});
+  const notificationsApiKeyRef = useRef(null);
   const [checkingVotePlace, setCheckingVotePlace] = useState(true);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
@@ -592,7 +621,11 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
-      if (state === 'active' && pendingPermissionFromSettings.current) {
+      if (state !== 'active') return;
+
+      runOfflineQueueRef.current?.();
+
+      if (pendingPermissionFromSettings.current) {
         pendingPermissionFromSettings.current = false;
         try {
           const ok = await checkLocationPermissionOnly();
@@ -726,8 +759,55 @@ export default function HomeScreen({ navigation }) {
     }
   }, [auth?.isAuthenticated, userData]);
 
+  useEffect(() => {
+    runOfflineQueueRef.current = () => {
+      runOfflineQueueOnce();
+    };
+  }, [runOfflineQueueOnce]);
+
+  const buildWorksheetIdentity = payload => {
+    const dni = String(
+      payload?.dni ||
+      payload?.additionalData?.dni ||
+      '',
+    ).trim();
+    const electionId = String(
+      payload?.electionId ||
+      payload?.additionalData?.electionId ||
+      '',
+    ).trim();
+    const tableCode = String(
+      payload?.tableCode ||
+      payload?.additionalData?.tableCode ||
+      payload?.tableData?.codigo ||
+      payload?.tableData?.tableCode ||
+      '',
+    ).trim();
+
+    if (!dni || !electionId || !tableCode) return null;
+    return { dni, electionId, tableCode };
+  };
+
+  const clearWorksheetStatusForFailedItem = async failedItem => {
+    if (failedItem?.type !== 'publishWorksheet') return;
+
+    let identity = buildWorksheetIdentity(failedItem);
+    if (!identity && failedItem?.id) {
+      const queue = await getOfflineQueue();
+      const queueItem = (queue || []).find(item => item?.id === failedItem.id);
+      const queuePayload = queueItem?.task?.payload || {};
+      identity = buildWorksheetIdentity(queuePayload);
+    }
+
+    if (identity) {
+      await clearWorksheetLocalStatus(identity);
+    }
+  };
+
   const handleRemoveFailedItem = async (id) => {
     try {
+      const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
+      await clearWorksheetStatusForFailedItem(failedItem);
       await removeById(id);
       setQueueFailModal(m => ({
         ...m,
@@ -751,6 +831,7 @@ export default function HomeScreen({ navigation }) {
     try {
       const items = queueFailModal.failedItems || [];
       for (const it of items) {
+        await clearWorksheetStatusForFailedItem(it);
         await removeById(it.id);
       }
 
@@ -1106,6 +1187,121 @@ export default function HomeScreen({ navigation }) {
     subject?.governmentIdentifier ??
     userData?.dni;
 
+  const ensureNotificationsApiKey = useCallback(async () => {
+    if (notificationsApiKeyRef.current) {
+      return notificationsApiKeyRef.current;
+    }
+    if (!userData?.did || !userData?.privKey) return null;
+    try {
+      const key = await authenticateWithBackend(userData.did, userData.privKey);
+      notificationsApiKeyRef.current = key;
+      return key;
+    } catch {
+      return null;
+    }
+  }, [userData?.did, userData?.privKey]);
+
+  const refreshNotificationBadgeCount = useCallback(async () => {
+    if (!auth?.isAuthenticated || !dni) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    try {
+      const apiKey = await ensureNotificationsApiKey();
+      if (!apiKey) return;
+
+      const response = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          timeout: 15000,
+        },
+      );
+
+      const list = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      const seenKey = buildNotificationSeenKey(dni);
+      const seenRaw = await AsyncStorage.getItem(seenKey);
+      const seenAt = Number(seenRaw || 0);
+      const timestamps = list.map(extractNotificationTimestamp).filter(ts => ts > 0);
+
+      if (!seenAt) {
+        const baseline = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
+        await AsyncStorage.setItem(seenKey, String(baseline));
+        setNotificationUnreadCount(0);
+        return;
+      }
+
+      const unread = list.reduce((acc, notification) => {
+        const timestamp = extractNotificationTimestamp(notification);
+        return timestamp > seenAt ? acc + 1 : acc;
+      }, 0);
+
+      setNotificationUnreadCount(unread);
+    } catch {
+      // No bloquear Home por error de notificaciones.
+    }
+  }, [auth?.isAuthenticated, dni, ensureNotificationsApiKey]);
+
+  const handleOpenNotifications = useCallback(async () => {
+    try {
+      if (dni) {
+        const seenKey = buildNotificationSeenKey(dni);
+        await AsyncStorage.setItem(seenKey, String(Date.now()));
+      }
+    } catch {
+      // continuar navegación aunque falle el guardado local
+    }
+    setNotificationUnreadCount(0);
+    navigation.navigate(StackNav.Notification);
+  }, [dni, navigation]);
+
+  useEffect(() => {
+    notificationsApiKeyRef.current = null;
+  }, [userData?.did, userData?.privKey, dni]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const refresh = async () => {
+        if (!active) return;
+        await refreshNotificationBadgeCount();
+      };
+
+      refresh();
+      const intervalId = setInterval(refresh, 15000);
+
+      return () => {
+        active = false;
+        clearInterval(intervalId);
+      };
+    }, [refreshNotificationBadgeCount]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!auth?.isAuthenticated) return undefined;
+      const unsubscribe = messaging().onMessage(() => {
+        setNotificationUnreadCount(prev => (prev < 99 ? prev + 1 : 99));
+        setTimeout(() => {
+          refreshNotificationBadgeCount();
+        }, 1200);
+      });
+
+      return () => {
+        unsubscribe && unsubscribe();
+      };
+    }, [auth?.isAuthenticated, refreshNotificationBadgeCount]),
+  );
+
   const { hasBackup } = useBackupCheck();
 
   const normalizeVotePlace = srv => {
@@ -1310,12 +1506,22 @@ export default function HomeScreen({ navigation }) {
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate(StackNav.Notification)}>
+                  onPress={handleOpenNotifications}
+                  style={stylesx.notificationIconButton}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
                     color={'#41A44D'}
                   />
+                  {notificationUnreadCount > 0 && (
+                    <View style={stylesx.notificationBadge}>
+                      <CText style={stylesx.notificationBadgeText}>
+                        {notificationUnreadCount > 99
+                          ? '99+'
+                          : String(notificationUnreadCount)}
+                      </CText>
+                    </View>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
                   <Ionicons
@@ -1477,12 +1683,22 @@ export default function HomeScreen({ navigation }) {
             <View style={stylesx.headerIcons}>
               <TouchableOpacity
                 testID="notificationsButton"
-                onPress={() => navigation.navigate(StackNav.Notification)}>
+                onPress={handleOpenNotifications}
+                style={stylesx.notificationIconButton}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
                   color={'#41A44D'}
                 />
+                {notificationUnreadCount > 0 && (
+                  <View style={stylesx.notificationBadge} testID="notificationsBadge">
+                    <CText style={stylesx.notificationBadgeText}>
+                      {notificationUnreadCount > 99
+                        ? '99+'
+                        : String(notificationUnreadCount)}
+                    </CText>
+                  </View>
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout} testID="logoutButton">
                 <Ionicons
@@ -1989,6 +2205,30 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveSize(8, 12, 16),
+  },
+  notificationIconButton: {
+    position: 'relative',
+    padding: 2,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E72F2F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 10,
   },
   // Carousel Styles
   carouselContainer: {
