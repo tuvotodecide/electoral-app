@@ -727,26 +727,35 @@ const PhotoReviewScreen = () => {
   };
 
   const actionButtons = isViewOnly
-    ? [
-        {
-          text: 'Están correctos',
-          onPress: handleNext,
-          style: {backgroundColor: colors.primary},
-          textStyle: {color: '#fff'},
-        },
-        {
-          text:
-            fromWhichIsCorrect && (actaCount ?? 0) > 1
-              ? 'Regresar'
-              : 'Subir acta',
-          onPress:
-            fromWhichIsCorrect && (actaCount ?? 0) > 1
-              ? () => navigation.goBack()
-              : goToCamera,
-          style: {backgroundColor: '#DC2626'}, // rojo
-          textStyle: {color: '#fff'},
-        },
-      ]
+    ? isWorksheetMode
+      ? [
+          {
+            text: 'Volver',
+            onPress: () => navigation.goBack(),
+            style: {backgroundColor: colors.primary},
+            textStyle: {color: '#fff'},
+          },
+        ]
+      : [
+          {
+            text: 'Estan correctos',
+            onPress: handleNext,
+            style: {backgroundColor: colors.primary},
+            textStyle: {color: '#fff'},
+          },
+          {
+            text:
+              fromWhichIsCorrect && (actaCount ?? 0) > 1
+                ? 'Regresar'
+                : 'Subir acta',
+            onPress:
+              fromWhichIsCorrect && (actaCount ?? 0) > 1
+                ? () => navigation.goBack()
+                : goToCamera,
+            style: {backgroundColor: '#DC2626'}, // rojo
+            textStyle: {color: '#fff'},
+          },
+        ]
     : [
         {
           text: isComparingWorksheet ? 'Comparando...' : Strings.next,
@@ -1029,3 +1038,4 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoReviewScreen;
+

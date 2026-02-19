@@ -47,6 +47,7 @@ import {
 } from '../../../utils/networkQuality';
 import {
   getAll as getOfflineQueue,
+  clearVotePlace,
   getVotePlace,
   processQueue,
   removeById,
@@ -56,6 +57,7 @@ import {
   getAttestationAvailabilityCache,
   saveAttestationAvailabilityCache,
 } from '../../../utils/attestationAvailabilityCache';
+import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
 import {
   authenticateWithBackend,
   publishActaHandler,
@@ -64,6 +66,7 @@ import {
 import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
 import { captureError, captureMessage } from '../../../config/sentry';
 import { useBackupCheck } from '../../../hooks/useBackupCheck';
+import { backendProbe } from '../../../utils/networkUtils';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -77,6 +80,18 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const QUEUE_WRITE_TASK_TYPES = new Set([
+  'publishActa',
+  'publishWorksheet',
+]);
+
+const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
+const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+const logHomeTrace = (event, payload = {}) => {
+  if (!HOME_TRACE_ENABLED) return;
+  console.log(`[HOME][LOOKUP] ${event}`, payload);
 };
 
 // Responsive grid calculations
@@ -232,6 +247,20 @@ const buildNotificationSeenKey = dniValue => {
   return `@notifications:last-seen:${normalized || 'anon'}`;
 };
 
+const LOOKUP_CACHE_KEYS = {
+  electionStatus: 'home:election-config-status',
+  notifications: dniValue =>
+    `home:notifications:${String(dniValue || '').trim().toLowerCase() || 'anon'}`,
+};
+
+const LOOKUP_CACHE_TTLS = {
+  electionStatusMs: 60 * 1000,
+  notificationsMs: 60 * 1000,
+};
+const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
+const VOTE_PLACE_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
+const VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS = 15 * 1000;
+
 const extractNotificationTimestamp = notification => {
   const raw =
     notification?.createdAt ||
@@ -248,6 +277,56 @@ const extractNotificationTimestamp = notification => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const resolveElectionWindowState = status => {
+  if (!status || typeof status !== 'object') {
+    return { known: false, enabled: true, reason: null };
+  }
+
+  const elections = Array.isArray(status?.elections) ? status.elections : [];
+  const selectedConfig =
+    status?.config ||
+    elections.find(e => e?.isActive) ||
+    elections[0] ||
+    null;
+
+  if (status?.hasActiveConfig === false || !selectedConfig) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'No hay una elección activa en este momento.',
+    };
+  }
+
+  if (selectedConfig?.isActive === false) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'La elección no está activa en este momento.',
+    };
+  }
+
+  const isVotingPeriod =
+    typeof status?.isVotingPeriod === 'boolean'
+      ? status.isVotingPeriod
+      : typeof selectedConfig?.isVotingPeriod === 'boolean'
+        ? selectedConfig.isVotingPeriod
+        : null;
+
+  if (isVotingPeriod === false) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'Fuera del periodo de votación.',
+    };
+  }
+
+  if (isVotingPeriod === true) {
+    return { known: true, enabled: true, reason: null };
+  }
+
+  return { known: false, enabled: true, reason: null };
+};
+
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const auth = useSelector(s => s.auth);
@@ -259,7 +338,7 @@ export default function HomeScreen({ navigation }) {
   const processingRef = useRef(false);
   const runOfflineQueueRef = useRef(() => {});
   const notificationsApiKeyRef = useRef(null);
-  const [checkingVotePlace, setCheckingVotePlace] = useState(true);
+  const [checkingVotePlace, setCheckingVotePlace] = useState(false);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
   const [contractsAvailability, setContractsAvailability] = useState({
@@ -274,6 +353,7 @@ export default function HomeScreen({ navigation }) {
     message: '',
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [isHomeOnline, setIsHomeOnline] = useState(true);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState('unknown');
@@ -281,6 +361,7 @@ export default function HomeScreen({ navigation }) {
 
   const pendingPermissionFromSettings = useRef(false);
   const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
+  const votePlaceSyncRef = useRef({ lastSyncAt: 0, inFlight: false });
 
   const [permissionModal, setPermissionModal] = useState({
     visible: false,
@@ -452,15 +533,56 @@ export default function HomeScreen({ navigation }) {
   );
 
   const checkAttestationAvailability = useCallback(
-    async (latitude, longitude) => {
+    async (latitude, longitude, { showLoader = true } = {}) => {
+      const applyCachedAvailability = async () => {
+        try {
+          const cached = await getAttestationAvailabilityCache(dni);
+          if (cached?.availableElections) {
+            logHomeTrace('attestation-availability:cache-hit', {
+              dni,
+              electionsCount: Array.isArray(cached.availableElections)
+                ? cached.availableElections.length
+                : 0,
+            });
+            setContractsAvailability(
+              buildContractsAvailabilityFromElections(
+                cached.availableElections,
+                cached.nearestLocation,
+              ),
+            );
+            return true;
+          }
+          logHomeTrace('attestation-availability:cache-miss', { dni });
+        } catch {
+          // noop
+        }
+        return false;
+      };
+
       try {
-        setLoadingAvailability(true);
+        if (showLoader) {
+          setLoadingAvailability(true);
+        }
+        const hasCached = await applyCachedAvailability();
+        logHomeTrace('attestation-availability:cache-applied', { hasCached });
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        if (!probe?.ok) {
+          logHomeTrace('attestation-availability:probe-fail-fallback', probe);
+          if (!hasCached) {
+            setContractsAvailability({
+              nearestLocation: null,
+              ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+              GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+            });
+          }
+          return;
+        }
 
         // Si tu endpoint requiere maxDistance, lo mandamos igual que "nearby"
         const res = await axios.get(
           `${BACKEND_RESULT}/api/v1/contracts/check-attestation-availability`,
           {
-            timeout: 15000,
+            timeout: 12000,
             params: {
               latitude: Number(longitude),
               longitude: Number(latitude),
@@ -474,6 +596,9 @@ export default function HomeScreen({ navigation }) {
         const elections = Array.isArray(data?.availableElections)
           ? data.availableElections
           : [];
+        logHomeTrace('attestation-availability:backend-success', {
+          electionsCount: elections.length,
+        });
 
         await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
@@ -484,24 +609,12 @@ export default function HomeScreen({ navigation }) {
           buildContractsAvailabilityFromElections(elections, data?.nearestLocation),
         );
       } catch (e) {
-        // En error: intentar fallback a cache (útil para offline / timeouts)
-        try {
-          const cached = await getAttestationAvailabilityCache(dni);
-          if (cached?.availableElections) {
-            setContractsAvailability(
-              buildContractsAvailabilityFromElections(
-                cached.availableElections,
-                cached.nearestLocation,
-              ),
-            );
-          } else {
-            setContractsAvailability({
-              nearestLocation: null,
-              ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-              GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
-            });
-          }
-        } catch {
+        const hasCached = await applyCachedAvailability();
+        logHomeTrace('attestation-availability:error-fallback', {
+          hasCached,
+          error: e?.message || 'unknown',
+        });
+        if (!hasCached) {
           setContractsAvailability({
             nearestLocation: null,
             ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
@@ -509,7 +622,9 @@ export default function HomeScreen({ navigation }) {
           });
         }
       } finally {
-        setLoadingAvailability(false);
+        if (showLoader) {
+          setLoadingAvailability(false);
+        }
       }
     },
     [dni, buildContractsAvailabilityFromElections],
@@ -526,39 +641,65 @@ export default function HomeScreen({ navigation }) {
     // si estás offline, no tiene sentido pedir GPS para endpoint remoto
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+    const cachedAvailability = await getAttestationAvailabilityCache(dni);
+    const hasCachedAvailability = Array.isArray(
+      cachedAvailability?.availableElections,
+    );
+    if (hasCachedAvailability) {
+      setContractsAvailability(
+        buildContractsAvailabilityFromElections(
+          cachedAvailability.availableElections,
+          cachedAvailability.nearestLocation,
+        ),
+      );
+    }
+
+    let hasPermission = false;
+    try {
+      hasPermission = await checkLocationPermissionOnly();
+      setLocationStatus(hasPermission ? 'granted' : 'denied');
+    } catch {
+      setLocationStatus('unknown');
+    }
+
     if (!online) {
-      // Aun offline, sincroniza estado de permiso para no mostrar
-      // "Activar Ubicacion" si ya esta concedido.
-      try {
-        const hasPermission = await checkLocationPermissionOnly();
-        setLocationStatus(hasPermission ? 'granted' : 'denied');
-      } catch {
-        setLocationStatus('unknown');
-      }
-      const cached = await getAttestationAvailabilityCache(dni);
-      if (cached?.availableElections) {
-        setContractsAvailability(
-          buildContractsAvailabilityFromElections(
-            cached.availableElections,
-            cached.nearestLocation,
-          ),
-        );
-      }
+      logHomeTrace('attestation-availability:offline-use-cache');
       return;
     }
 
-    // En online, mostrar loader desde el inicio de la verificación para evitar
-    // falsos negativos visuales ("No puedes enviar actas") antes de terminar.
-    setLoadingAvailability(true);
+    if (!hasPermission) {
+      logHomeTrace('attestation-availability:no-permission-use-cache');
+      return;
+    }
+
+    const cachedSavedAt = Number(cachedAvailability?.savedAt || 0);
+    const cacheFresh =
+      cachedSavedAt > 0 &&
+      now - cachedSavedAt < ATT_AVAILABILITY_SYNC_COOLDOWN_MS;
+    if (cacheFresh) {
+      logHomeTrace('attestation-availability:cache-fresh-skip-backend', {
+        ageMs: now - cachedSavedAt,
+      });
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      logHomeTrace('attestation-availability:probe-fail-use-cache', probe);
+      return;
+    }
+
     try {
       const coords = await getHomeLocation(true);
       if (!coords?.latitude || !coords?.longitude) {
         return;
       }
 
-      await checkAttestationAvailability(coords.latitude, coords.longitude);
+      await checkAttestationAvailability(coords.latitude, coords.longitude, {
+        showLoader: !hasCachedAvailability,
+      });
     } finally {
-      setLoadingAvailability(false);
+      // no-op: loader is managed by checkAttestationAvailability
     }
   }, [
     dni,
@@ -649,24 +790,58 @@ export default function HomeScreen({ navigation }) {
 
 
   const fetchElectionStatus = useCallback(async () => {
+    const cachedEntry = await getCache(LOOKUP_CACHE_KEYS.electionStatus);
+    const cachedData = cachedEntry?.data || null;
+    if (cachedData) {
+      logHomeTrace('election-status:cache-hit');
+      setElectionStatus(cachedData);
+      if (cachedData?.config?.id) {
+        await AsyncStorage.setItem(ELECTION_ID, String(cachedData.config.id));
+      }
+    } else {
+      logHomeTrace('election-status:cache-miss');
+    }
+
+    const cacheFresh = await isFresh(
+      LOOKUP_CACHE_KEYS.electionStatus,
+      LOOKUP_CACHE_TTLS.electionStatusMs,
+    );
+    if (cacheFresh) {
+      logHomeTrace('election-status:cache-fresh-skip-backend');
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      logHomeTrace('election-status:probe-fail-use-cache', probe);
+      return;
+    }
+
     try {
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 },
+        { timeout: 12000 },
       );
 
-      if (res?.data) {
-        setElectionStatus(res.data);
-
-        // await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
-
-        // guardar solo el id de la config
-        if (res.data?.config?.id) {
-          await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
-        }
+      if (!res?.data) return;
+      logHomeTrace('election-status:backend-success', {
+        hasConfigId: !!res?.data?.config?.id,
+      });
+      setElectionStatus(res.data);
+      await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
+        version: 'elections-config-v1',
+      });
+      if (res.data?.config?.id) {
+        await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
       }
     } catch (err) {
-      console.error('[HOME] fetchElectionStatus error', err);
+      logHomeTrace('election-status:backend-error-fallback', {
+        hasCached: !!cachedData,
+        error: err?.message || 'unknown',
+      });
+      if (!cachedData) {
+        console.error('[HOME] fetchElectionStatus error', err);
+      }
     }
   }, []);
 
@@ -681,22 +856,40 @@ export default function HomeScreen({ navigation }) {
 
   const runOfflineQueueOnce = useCallback(async () => {
     if (processingRef.current) return;
-    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account) return;
-
-    const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-    if (!online) return;
-
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
     processingRef.current = true;
 
     try {
+      const net = await NetInfo.fetch();
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+      if (!online) {
+        logHomeTrace('queue:skip-offline');
+        return;
+      }
+
+      const probe = await backendProbe({ timeoutMs: 2000 });
+      if (!probe?.ok) {
+        console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
+        return;
+      }
+      logHomeTrace('queue:drain-start');
+
       const result = await processQueue(async item => {
         const taskType = item?.task?.type;
         if (taskType === 'publishWorksheet') {
           await publishWorksheetHandler(item, userData);
           return;
         }
-        await publishActaHandler(item, userData);
+        if (taskType === 'publishActa') {
+          await publishActaHandler(item, userData);
+          return;
+        }
+        const unknownTaskError = new Error(
+          `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
+        );
+        unknownTaskError.removeFromQueue = true;
+        unknownTaskError.errorType = 'BUSINESS_TERMINAL';
+        throw unknownTaskError;
       });
 
       // Actualiza badge/pending
@@ -705,24 +898,32 @@ export default function HomeScreen({ navigation }) {
       } else {
         const listAfter = await getOfflineQueue();
         const pendingAfter = (listAfter || []).some(
-          i =>
-            i.task?.type === 'publishActa' ||
-            i.task?.type === 'publishWorksheet',
+          i => isQueueWriteTask(i?.task?.type),
         );
         setHasPendingActa(pendingAfter);
       }
 
       if (result?.failed > 0) {
         const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+        const terminalFailedItems = failedItems.filter(
+          item => item?.removedFromQueue === true,
+        );
 
-        setQueueFailModal({
-          visible: true,
-          failedItems,
-          message:
-            `No se pudo completar la subida de ${result.failed} pendiente(s).\n` +
-            'Puedes reintentar o eliminar el fallido.',
-        });
+        if (terminalFailedItems.length > 0) {
+          setQueueFailModal({
+            visible: true,
+            failedItems: terminalFailedItems,
+            message:
+              `No se pudo completar la subida de ${terminalFailedItems.length} pendiente(s).\n` +
+              'Puedes reintentar o eliminar el fallido.',
+          });
+        }
       }
+      logHomeTrace('queue:drain-finish', {
+        remaining: result?.remaining,
+        processed: result?.processed,
+        failed: result?.failed,
+      });
       // if (result?.failed > 0) {
       //   const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
       //   const first = failedItems[0];
@@ -750,7 +951,7 @@ export default function HomeScreen({ navigation }) {
       // Si aquí cae, es un fallo "global" (poco común en tu implementación)
       setQueueFailModal({
         visible: true,
-        failedIds: [],
+        failedItems: [],
         message:
           'No se pudo completar la subida de pendientes. Puedes reintentar o eliminar el fallido.',
       });
@@ -817,9 +1018,7 @@ export default function HomeScreen({ navigation }) {
 
       const listAfter = await getOfflineQueue();
       const pendingAfter = (listAfter || []).some(
-        i =>
-          i.task?.type === 'publishActa' ||
-          i.task?.type === 'publishWorksheet',
+        i => isQueueWriteTask(i?.task?.type),
       );
       setHasPendingActa(pendingAfter);
     } catch (e) {
@@ -837,9 +1036,7 @@ export default function HomeScreen({ navigation }) {
 
       const listAfter = await getOfflineQueue();
       const pendingAfter = (listAfter || []).some(
-        i =>
-          i.task?.type === 'publishActa' ||
-          i.task?.type === 'publishWorksheet',
+        i => isQueueWriteTask(i?.task?.type),
       );
       setHasPendingActa(pendingAfter);
     } finally {
@@ -907,6 +1104,19 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleParticiparPress = async (type) => {
+    const electionWindow = resolveElectionWindowState(electionStatus);
+    if (electionWindow.known && !electionWindow.enabled) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'No disponible',
+        message:
+          electionWindow.reason ||
+          'La aplicación solo está disponible durante el periodo de votación activo.',
+      });
+      return;
+    }
+
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     const selected = contractsAvailability?.[type];
@@ -943,6 +1153,25 @@ export default function HomeScreen({ navigation }) {
       electionId,
     };
     if (online) {
+      if (dni) {
+        const cachedVotePlace = await getVotePlace(dni);
+        const cachedLocationId =
+          cachedVotePlace?.location?._id || cachedVotePlace?.location?.id;
+        if (cachedLocationId) {
+          const fastProbe = await backendProbe({ timeoutMs: 1500 });
+          if (!fastProbe?.ok) {
+            navigation.navigate(StackNav.UnifiedParticipationScreen, {
+              ...params,
+              dni,
+              locationId: cachedLocationId,
+              locationData: cachedVotePlace.location,
+              fromCache: true,
+              offline: true,
+            });
+            return;
+          }
+        }
+      }
       navigation.navigate(StackNav.ElectoralLocations, params);
       return;
     }
@@ -974,6 +1203,44 @@ export default function HomeScreen({ navigation }) {
       });
     }
   };
+
+  const handleRegisterPlacePress = useCallback(async () => {
+    if (!dni) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'No se pudo detectar tu DNI para registrar tu recinto.',
+      });
+      return;
+    }
+
+    const net = await NetInfo.fetch();
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+    if (!online) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+      });
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+      });
+      return;
+    }
+
+    navigation.navigate(StackNav.ElectoralLocationsSave, { dni });
+  }, [dni, navigation]);
+
   const ActionButtonsLoader = () => {
     return (
       <View style={stylesx.availabilityLoaderCard}>
@@ -992,6 +1259,51 @@ export default function HomeScreen({ navigation }) {
   };
 
   const ActionButtonsGroup = () => {
+    // Si está offline y no tiene recinto registrado, mostrar mensaje claro antes de acciones.
+    if (shouldShowRegisterAlert && !isHomeOnline) {
+      return (
+        <View style={stylesx.warningContractCard}>
+          <Ionicons
+            name="information-circle-outline"
+            size={32}
+            color="#F59E0B"
+            style={{ marginRight: 12 }}
+          />
+          <View style={{ flex: 1 }}>
+            <CText style={stylesx.warningContractTitle}>
+              Registra tu recinto para usar modo sin internet
+            </CText>
+            <CText style={stylesx.warningContractText}>
+              No tienes recinto registrado. Conéctate a internet para registrar tu recinto y
+              luego podrás continuar con datos locales.
+            </CText>
+          </View>
+        </View>
+      );
+    }
+
+    const electionWindow = resolveElectionWindowState(electionStatus);
+    if (electionWindow.known && !electionWindow.enabled) {
+      return (
+        <View style={stylesx.warningContractCard}>
+          <Ionicons
+            name="time-outline"
+            size={32}
+            color="#F59E0B"
+            style={{ marginRight: 12 }}
+          />
+          <View style={{ flex: 1 }}>
+            <CText style={stylesx.warningContractTitle}>
+              Envío de actas no disponible
+            </CText>
+            <CText style={stylesx.warningContractText}>
+              {electionWindow.reason ||
+                'La aplicación solo está disponible durante el periodo de votación activo.'}
+            </CText>
+          </View>
+        </View>
+      );
+    }
 
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
     if (locationStatus !== 'granted') {
@@ -1084,9 +1396,7 @@ export default function HomeScreen({ navigation }) {
           const list = await getOfflineQueue();
 
           const pending = (list || []).some(
-            i =>
-              i.task?.type === 'publishActa' ||
-              i.task?.type === 'publishWorksheet',
+            i => isQueueWriteTask(i?.task?.type),
           );
 
           if (isActive) setHasPendingActa(pending);
@@ -1101,9 +1411,28 @@ export default function HomeScreen({ navigation }) {
     }, []),
   );
 
+  useEffect(() => {
+    let active = true;
+
+    NetInfo.fetch().then(state => {
+      if (!active) return;
+      setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
+    });
+
+    const unsub = NetInfo.addEventListener(state => {
+      if (!active) return;
+      setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
+    });
+
+    return () => {
+      active = false;
+      unsub && unsub();
+    };
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      checkUserVotePlace();
+      checkUserVotePlace({ forceSync: false });
       fetchElectionStatus();
       requestLocationAndCheckAvailability();
       let alive = true;
@@ -1123,7 +1452,12 @@ export default function HomeScreen({ navigation }) {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [runOfflineQueueOnce, fetchElectionStatus, requestLocationAndCheckAvailability]),
+    }, [
+      checkUserVotePlace,
+      runOfflineQueueOnce,
+      fetchElectionStatus,
+      requestLocationAndCheckAvailability,
+    ]),
   );
 
   // Datos del carrusel
@@ -1203,32 +1537,13 @@ export default function HomeScreen({ navigation }) {
 
   const refreshNotificationBadgeCount = useCallback(async () => {
     if (!auth?.isAuthenticated || !dni) {
+      logHomeTrace('notifications:skip-no-auth');
       setNotificationUnreadCount(0);
       return;
     }
 
-    try {
-      const apiKey = await ensureNotificationsApiKey();
-      if (!apiKey) return;
-
-      const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          timeout: 15000,
-        },
-      );
-
-      const list = Array.isArray(response?.data?.data)
-        ? response.data.data
-        : Array.isArray(response?.data)
-          ? response.data
-          : [];
-
-      const seenKey = buildNotificationSeenKey(dni);
+    const seenKey = buildNotificationSeenKey(dni);
+    const applyUnreadFromList = async list => {
       const seenRaw = await AsyncStorage.getItem(seenKey);
       const seenAt = Number(seenRaw || 0);
       const timestamps = list.map(extractNotificationTimestamp).filter(ts => ts > 0);
@@ -1246,7 +1561,59 @@ export default function HomeScreen({ navigation }) {
       }, 0);
 
       setNotificationUnreadCount(unread);
-    } catch {
+    };
+
+    const cacheKey = LOOKUP_CACHE_KEYS.notifications(dni);
+    const cachedEntry = await getCache(cacheKey);
+    const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
+    if (cachedList.length > 0) {
+      logHomeTrace('notifications:cache-hit', { count: cachedList.length });
+      await applyUnreadFromList(cachedList);
+    } else {
+      logHomeTrace('notifications:cache-miss');
+    }
+
+    const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.notificationsMs);
+    if (cacheFresh) {
+      logHomeTrace('notifications:cache-fresh-skip-backend');
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      logHomeTrace('notifications:probe-fail-use-cache', probe);
+      return;
+    }
+
+    try {
+      const apiKey = await ensureNotificationsApiKey();
+      if (!apiKey) return;
+
+      const response = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          timeout: 10000,
+        },
+      );
+
+      const list = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      logHomeTrace('notifications:backend-success', { count: list.length });
+      await setCache(cacheKey, list, { version: 'notifications-v1' });
+      await applyUnreadFromList(list);
+    } catch (error) {
+      logHomeTrace('notifications:backend-error-fallback', {
+        hasCached: cachedList.length > 0,
+        error: error?.message || 'unknown',
+      });
       // No bloquear Home por error de notificaciones.
     }
   }, [auth?.isAuthenticated, dni, ensureNotificationsApiKey]);
@@ -1332,25 +1699,86 @@ export default function HomeScreen({ navigation }) {
     };
   };
 
-  const checkUserVotePlace = useCallback(async () => {
+  const checkUserVotePlace = useCallback(async ({ forceSync = false } = {}) => {
     if (!dni) {
       setShouldShowRegisterAlert(false);
       setCheckingVotePlace(false);
+      votePlaceSyncRef.current.lastSyncAt = 0;
       return;
     }
-    try {
+
+    const cachedBefore = await getVotePlace(dni);
+    const hasLocationCached = !!(cachedBefore?.location?._id || cachedBefore?.location?.id);
+    logHomeTrace('vote-place:cache-state', {
+      hasLocationCached,
+    });
+    setShouldShowRegisterAlert(!hasLocationCached);
+
+    // Si ya hay cache local, no bloqueamos la UI mientras sincroniza backend.
+    if (hasLocationCached) {
+      setCheckingVotePlace(false);
+    }
+
+    const now = Date.now();
+    const lastSyncAt = votePlaceSyncRef.current.lastSyncAt || 0;
+    const votePlaceCooldownMs = hasLocationCached
+      ? VOTE_PLACE_SYNC_COOLDOWN_MS
+      : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
+    const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
+
+    if (!forceSync && isRecentSync) {
+      logHomeTrace('vote-place:skip-backend-recent-sync', {
+        syncedAgoMs: now - lastSyncAt,
+        hasLocationCached,
+      });
+      return;
+    }
+
+    if (votePlaceSyncRef.current.inFlight) {
+      logHomeTrace('vote-place:skip-backend-inflight');
+      return;
+    }
+
+    if (!hasLocationCached) {
       setCheckingVotePlace(true);
+    }
+
+    votePlaceSyncRef.current.inFlight = true;
+
+    try {
+      const probe = await backendProbe({ timeoutMs: 2000 });
+      votePlaceSyncRef.current.lastSyncAt = Date.now();
+      if (!probe?.ok) {
+        logHomeTrace('vote-place:probe-fail-use-cache', probe);
+        setShouldShowRegisterAlert(!hasLocationCached);
+        return;
+      }
+
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
         {
-          timeout: 12000,
+          timeout: 10000,
 
         },
       );
 
       if (res?.data) {
-        const cachedBefore = await getVotePlace(dni);
         const normalizedVotePlace = normalizeVotePlace(res.data);
+        const hasLocationFromBackend =
+          !!(normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id);
+
+        if (!hasLocationFromBackend) {
+          if (hasLocationCached) {
+            logHomeTrace('vote-place:backend-null-keep-local');
+            setShouldShowRegisterAlert(false);
+            return;
+          }
+          await clearVotePlace(dni);
+          logHomeTrace('vote-place:backend-null-cleared-local');
+          setShouldShowRegisterAlert(true);
+          return;
+        }
+
         const cachedLocationId =
           cachedBefore?.location?._id || cachedBefore?.location?.id;
         const normalizedLocationId =
@@ -1377,18 +1805,50 @@ export default function HomeScreen({ navigation }) {
         });
 
         const hasLocation = !!location?._id;
+        logHomeTrace('vote-place:backend-success', {
+          hasLocation,
+        });
         setShouldShowRegisterAlert(!hasLocation);
       } else {
+        if (hasLocationCached) {
+          logHomeTrace('vote-place:backend-empty-keep-local');
+          setShouldShowRegisterAlert(false);
+          return;
+        }
+        await clearVotePlace(dni);
+        logHomeTrace('vote-place:backend-empty-use-cache');
         setShouldShowRegisterAlert(true);
       }
     } catch (e) {
-      const cached = await getVotePlace(dni);
-      const hasLocationCached = !!cached?.location?._id;
+      votePlaceSyncRef.current.lastSyncAt = Date.now();
+      const status = Number(e?.response?.status || 0);
+      if (status === 404) {
+        if (hasLocationCached) {
+          logHomeTrace('vote-place:backend-404-keep-local');
+          setShouldShowRegisterAlert(false);
+          return;
+        }
+        await clearVotePlace(dni);
+        logHomeTrace('vote-place:backend-404-cleared-local');
+        setShouldShowRegisterAlert(true);
+        return;
+      }
+      logHomeTrace('vote-place:backend-error-use-cache', {
+        error: e?.message || 'unknown',
+      });
       setShouldShowRegisterAlert(!hasLocationCached);
     } finally {
+      votePlaceSyncRef.current.inFlight = false;
       setCheckingVotePlace(false);
     }
   }, [dni]);
+
+  useEffect(() => {
+    if (!dni) return;
+    checkUserVotePlace({ forceSync: true });
+  }, [dni, checkUserVotePlace]);
+
+  
 
   const data = {
     name: subject.fullName || '(sin nombre)',
@@ -1587,11 +2047,7 @@ export default function HomeScreen({ navigation }) {
             <RegisterAlertCard
               title={I18nStrings.registerPlace}
               description={I18nStrings.registerPlaceDescription}
-              onPress={() =>
-                navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni,
-                })
-              }
+              onPress={handleRegisterPlacePress}
             />
           )}
 
@@ -1763,11 +2219,7 @@ export default function HomeScreen({ navigation }) {
               <RegisterAlertCard
                 title={I18nStrings.registerPlace}
                 description={I18nStrings.registerPlaceDescription}
-                onPress={() =>
-                  navigation.navigate(StackNav.ElectoralLocationsSave, {
-                    dni,
-                  })
-                }
+                onPress={handleRegisterPlacePress}
               />
             )}
 
