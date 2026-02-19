@@ -354,7 +354,8 @@ const uploadCertificateAndNotifyBackend = async (
   certificateImageUri,
   normalizedAdditional,
   userData,
-  apiKey
+  apiKey,
+  actaData
 ) => {
   if (!certificateImageUri) return;
 
@@ -395,6 +396,11 @@ const uploadCertificateAndNotifyBackend = async (
       return;
     }
     const electionId = normalizedAdditional?.electionId || undefined;
+    const actaJsonUrl =
+      String(actaData?.ipfsUri || actaData?.jsonUrl || '').trim() || undefined;
+    const actaImageUrl =
+      String(actaData?.actaImageUrl || actaData?.imageUrl || '').trim() ||
+      undefined;
 
     const res = await axios.post(
       `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
@@ -402,6 +408,8 @@ const uploadCertificateAndNotifyBackend = async (
         account: userData?.account,
         imageUrl,
         electionId,
+        ipfsUri: actaJsonUrl,
+        actaImageUrl,
       },
       {
         headers: {
@@ -768,6 +776,10 @@ export const publishActaHandler = async (item, userData) => {
               normalizedAdditional,
               userData,
               apiKey,
+              {
+                ipfsUri: jsonUrl,
+                actaImageUrl: existingBallot?.image || null,
+              },
             );
           } catch (err) {
             captureError(err, {
@@ -1014,7 +1026,11 @@ export const publishActaHandler = async (item, userData) => {
             certificateImageUri,
             normalizedAdditional,
             userData,
-            apiKey
+            apiKey,
+            {
+              ipfsUri: ipfsData?.jsonUrl,
+              actaImageUrl: ipfsData?.imageUrl,
+            },
           );
         } catch (err) {
           captureError(err, {
@@ -1279,7 +1295,11 @@ export const publishActaHandler = async (item, userData) => {
           certificateImageUri,
           normalizedAdditional,
           userData,
-          apiKey
+          apiKey,
+          {
+            ipfsUri: ipfsData?.jsonUrl,
+            actaImageUrl: ipfsData?.imageUrl,
+          },
         );
       } catch (err) {
         captureError(err, {
@@ -1779,6 +1799,32 @@ export const publishWorksheetHandler = async (item, userData) => {
       await showLocalNotification({
         title: 'Hoja de trabajo subida',
         body: `Mesa ${tableNumber}: tu hoja ya esta disponible para comparacion.`,
+        data: {
+          type: 'worksheet_uploaded',
+          screen: 'SuccessScreen',
+          routeParams: JSON.stringify({
+            notificationType: 'worksheet_uploaded',
+            ipfsData: {
+              jsonUrl: data?.ipfsUri || jsonUrl,
+              ipfsUri: data?.ipfsUri || jsonUrl,
+              imageUrl: data?.image || imageUrl || null,
+              url: data?.nftLink || nftLink || jsonUrl,
+            },
+            tableData: {
+              tableCode,
+              tableNumber,
+              locationId: locationId || undefined,
+              idRecinto: locationId || undefined,
+            },
+            worksheetData: {
+              electionId,
+              tableCode,
+              tableNumber,
+              ipfsUri: data?.ipfsUri || jsonUrl,
+              nftLink: data?.nftLink || nftLink || jsonUrl,
+            },
+          }),
+        },
       });
     } catch {}
 

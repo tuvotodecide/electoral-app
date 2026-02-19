@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {useSelector} from 'react-redux';
 import {
   AppState,
@@ -31,19 +31,53 @@ const getResponsiveSize = (small, medium, large) => {
 };
 function useKeepAlive() {
   const navigation = useNavigation();
+  const appStateRef = useRef(AppState.currentState);
+  const redirectingRef = useRef(false);
   useEffect(() => {
-    const renew = () => refreshSession();
-    const sub = AppState.addEventListener('change', s => {
-      if (s === 'active') renew();
+    const redirectToAuth = () => {
+      if (redirectingRef.current) return;
+      redirectingRef.current = true;
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.AuthNavigation}],
+      });
+    };
+
+    const validateOrRedirect = async () => {
+      const valid = await isSessionValid();
+      if (!valid) {
+        redirectToAuth();
+      }
+      return valid;
+    };
+
+    const renew = async () => {
+      try {
+        await refreshSession();
+      } catch {}
+    };
+    const sub = AppState.addEventListener('change', async nextState => {
+      const prevState = appStateRef.current;
+      appStateRef.current = nextState;
+
+      if (nextState === 'active') {
+        const valid = await validateOrRedirect();
+        if (valid) await renew();
+        return;
+      }
+
+      if (
+        prevState === 'active' &&
+        (nextState === 'background' || nextState === 'inactive')
+      ) {
+        // Keep full TTL when app is minimized.
+        await renew();
+      }
     });
     const id = setInterval(async () => {
-      if (!(await isSessionValid())) {
-        // Solo navegar al login, no borrar el estado automáticamente
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.AuthNavigation}],
-        });
-      }
+      if (appStateRef.current !== 'active') return;
+      await renew();
+      await validateOrRedirect();
     }, 300_000); // 300_000 ms = 5 minutos
     return () => {
       sub.remove();

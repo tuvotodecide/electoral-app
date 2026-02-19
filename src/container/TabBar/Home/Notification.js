@@ -78,6 +78,8 @@ export default function Notification({ navigation }) {
       tipo = 'Acta publicada';
     } else if (data?.type === 'participation_certificate') {
       tipo = 'Certificado de participación';
+    } else if (data?.type === 'worksheet_uploaded') {
+      tipo = 'Hoja de trabajo subida';
     }
 
     return {
@@ -131,10 +133,12 @@ export default function Notification({ navigation }) {
       }
 
       if (!apiKey) {
+        if (isRefresh) {
+          setRefreshing(false);
+        }
         if (authResolved) {
           setItems([]);
           setLoading(false);
-          setRefreshing(false);
         }
         return;
       }
@@ -175,7 +179,7 @@ export default function Notification({ navigation }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      await requestPushPermissionExplicit();
+      requestPushPermissionExplicit().catch(() => {});
       if (mounted) {
         await fetchFromBackend(false);
       }
@@ -197,7 +201,7 @@ export default function Notification({ navigation }) {
   }, [fetchFromBackend]);
 
   const showLoader =
-    loading || (!authResolved && items.length === 0) || (refreshing && items.length === 0);
+    items.length === 0 && (loading || !authResolved || refreshing);
 
   const getIconName = useCallback(tipo => {
     switch (tipo) {
@@ -212,6 +216,7 @@ export default function Notification({ navigation }) {
     item => {
       // Solo navegamos si es SuccessScreen
       if (item.screen === 'SuccessScreen') {
+        const rawData = item?.data || {};
         let paramsFromNotif = {};
         if (item.routeParams) {
           try {
@@ -221,8 +226,71 @@ export default function Notification({ navigation }) {
           }
         }
 
+        const notificationType =
+          rawData?.type || paramsFromNotif?.notificationType || null;
+
+        const rawIpfsData =
+          paramsFromNotif?.ipfsData && typeof paramsFromNotif.ipfsData === 'object'
+            ? paramsFromNotif.ipfsData
+            : {};
+        const rawCertificateData =
+          paramsFromNotif?.certificateData &&
+          typeof paramsFromNotif.certificateData === 'object'
+            ? paramsFromNotif.certificateData
+            : {};
+        const rawNftData =
+          paramsFromNotif?.nftData && typeof paramsFromNotif.nftData === 'object'
+            ? paramsFromNotif.nftData
+            : {};
+
+        // Fallback desde data cuando backend no envía routeParams completos.
+        const fallbackIpfsData = {
+          ...rawIpfsData,
+          jsonUrl:
+            rawIpfsData?.jsonUrl ||
+            rawData?.jsonUrl ||
+            rawData?.ipfsUri ||
+            null,
+          imageUrl:
+            rawIpfsData?.imageUrl ||
+            (notificationType === 'acta_published' ||
+            notificationType === 'worksheet_uploaded'
+              ? rawData?.imageUrl
+              : null),
+          ipfsUri: rawIpfsData?.ipfsUri || rawData?.ipfsUri || null,
+          url: rawIpfsData?.url || rawData?.ipfsUrl || null,
+        };
+
+        const fallbackCertificateData = {
+          ...rawCertificateData,
+          imageUrl:
+            rawCertificateData?.imageUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+          jsonUrl: rawCertificateData?.jsonUrl || null,
+          certificateUrl:
+            rawCertificateData?.certificateUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        };
+
+        const fallbackNftData = {
+          ...rawNftData,
+          nftUrl:
+            rawNftData?.nftUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        };
+
         navigation.navigate('SuccessScreen', {
           ...paramsFromNotif,
+          ipfsData: fallbackIpfsData,
+          certificateData: fallbackCertificateData,
+          nftData: fallbackNftData,
+          notificationType,
           fromNotifications: true,
         });
       }
