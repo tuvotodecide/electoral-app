@@ -107,19 +107,56 @@ async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
     transport: http(),
   });
 
-  for(let i = 0; i < attemps; i++) {
-    const logs = await publicClient.getContractEvents({
-      address: availableNetworks[chain].oracle,
-      abi: oracleAbi,
-      eventName,
-      fromBlock: txBlock,
-      toBlock: txBlock
-    });
-
-
-    if(logs.length > 0) {
-      return logs[0].args;
+  const normalizeBlockNumber = value => {
+    try {
+      if (typeof value === 'bigint') return value;
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return BigInt(Math.max(0, Math.trunc(value)));
+      }
+      const raw = String(value ?? '').trim();
+      if (!raw) return BigInt(0);
+      return raw.startsWith('0x') ? BigInt(raw) : BigInt(raw);
+    } catch {
+      return BigInt(0);
     }
+  };
+
+  const isInvalidBlockRangeError = error => {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      message.includes('invalid block range') ||
+      message.includes('missing or invalid parameters')
+    );
+  };
+
+  const targetBlock = normalizeBlockNumber(txBlock);
+
+  for(let i = 0; i < attemps; i++) {
+    try {
+      // Base RPC is load-balanced; some nodes can lag a few blocks.
+      const latestBlock = await publicClient.getBlockNumber();
+      if (latestBlock < targetBlock) {
+        await sleep(2000);
+        continue;
+      }
+
+      const logs = await publicClient.getContractEvents({
+        address: availableNetworks[chain].oracle,
+        abi: oracleAbi,
+        eventName,
+        fromBlock: targetBlock,
+        toBlock: targetBlock
+      });
+
+      if(logs.length > 0) {
+        return logs[0].args;
+      }
+    } catch (error) {
+      if (!isInvalidBlockRangeError(error) || i === attemps - 1) {
+        throw error;
+      }
+    }
+
     await sleep(2000);
   }
 

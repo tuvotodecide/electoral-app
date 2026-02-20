@@ -3,7 +3,7 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   BackHandler,
   Dimensions,
@@ -36,16 +36,38 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const parseParamObject = value => {
+  if (!value) return {};
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof value === 'object' ? value : {};
+};
+
+const pickFirstUrl = (...values) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+};
+
 const SuccessScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
 
   const params = route?.params || {};
-  const ipfsData = params.ipfsData || {};
-  const nftData = params.nftData || {};
-  const tableData = params.tableData || {};
-  const certificateData = params.certificateData || {};
+  const ipfsData = parseParamObject(params.ipfsData);
+  const nftData = parseParamObject(params.nftData);
+  const tableData = parseParamObject(params.tableData);
+  const certificateData = parseParamObject(params.certificateData);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [infoModalData, setInfoModalData] = useState({
@@ -57,14 +79,59 @@ const SuccessScreen = () => {
     () => setInfoModalData({ visible: false, title: '', message: '' }),
     [],
   );
+  console.log('route.params', route.params);
   const fromNotifications = params.fromNotifications === true;
 
-  const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
-  const certificateUrl =
-    certificateData.imageUrl || certificateData.jsonUrl || null;
+  const ipfsUrl = pickFirstUrl(
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+    params.ipfsUrl,
+    params.url,
+  );
+  const certificateUrl = pickFirstUrl(
+    certificateData.imageUrl,
+    certificateData.jsonUrl,
+    certificateData.ipfsUri,
+    certificateData.url,
+    certificateData.certificateUrl,
+    params.certificateUrl,
+    nftData.nftUrl,
+    nftData.url,
+    ipfsData.imageUrl,
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+  );
   const normalizedCertificateUrl = normalizeUri(certificateUrl);
-  const actaUrl = ipfsData?.imageUrl || ipfsData?.jsonUrl || ipfsUrl || null;
+  const actaUrl = pickFirstUrl(
+    ipfsData.imageUrl,
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+    params.actaUrl,
+    params.imageUrl,
+    tableData.imageUrl,
+    tableData.image,
+    ipfsUrl,
+  );
+
   const normalizedActaUrl = normalizeUri(actaUrl);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    try {
+      console.log('[SUCCESS] route.params', JSON.stringify(params, null, 2));
+    } catch {
+      console.log('[SUCCESS] route.params (raw)', params);
+    }
+    console.log('[SUCCESS] resolved urls', {
+      certificateUrl,
+      normalizedCertificateUrl,
+      actaUrl,
+      normalizedActaUrl,
+    });
+  }, []);
 
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -135,11 +202,10 @@ const SuccessScreen = () => {
       }
       const shareOptions = {
         title: 'Compartir mi certificado',
-        message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${certificateUrl}`,
+        message: `He obtenido un certificado NFT por participar como testigo electoral. Puedes verlo aqui: ${normalizedCertificateUrl}`,
         url: normalizedCertificateUrl,
         subject: 'Certificado NFT ',
       };
-      shareOptions.message = `He obtenido un certificado NFT por participar como testigo electoral. Puedes verlo aqui: ${normalizedCertificateUrl}`;
 
       const result = await Share.share(shareOptions, {
         dialogTitle: 'Compartir mi certificado',

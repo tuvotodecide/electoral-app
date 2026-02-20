@@ -12,12 +12,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import axios from 'axios';
 import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
+import { getLocalStoredNotifications } from '../../../notifications';
 import { mockNotificaciones } from '../../../data/mockNotificaciones';
 import wira from 'wira-sdk';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
@@ -78,6 +81,8 @@ export default function Notification({ navigation }) {
       tipo = 'Acta publicada';
     } else if (data?.type === 'participation_certificate') {
       tipo = 'Certificado de participación';
+    } else if (data?.type === 'worksheet_uploaded') {
+      tipo = 'Hoja de trabajo subida';
     }
 
     return {
@@ -131,10 +136,12 @@ export default function Notification({ navigation }) {
       }
 
       if (!apiKey) {
+        if (isRefresh) {
+          setRefreshing(false);
+        }
         if (authResolved) {
           setItems([]);
           setLoading(false);
-          setRefreshing(false);
         }
         return;
       }
@@ -155,13 +162,22 @@ export default function Notification({ navigation }) {
           },
         );
         const list = response?.data?.data || response?.data || [];
-        const mapped = list
+        const localList = await getLocalStoredNotifications(dni);
+        const mergedList = [
+          ...(Array.isArray(localList) ? localList : []),
+          ...(Array.isArray(list) ? list : []),
+        ];
+        const mapped = mergedList
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
         await markNotificationsAsSeen(mapped);
       } catch (error) {
-        // setItems([...mockNotificaciones]);
+        const localList = await getLocalStoredNotifications(dni);
+        const mappedLocal = (Array.isArray(localList) ? localList : [])
+          .map(mapServerToUi)
+          .sort((a, b) => b.timestamp - a.timestamp);
+        setItems(mappedLocal);
       } finally {
         if (isRefresh) {
           setRefreshing(false);
@@ -175,7 +191,7 @@ export default function Notification({ navigation }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      await requestPushPermissionExplicit();
+      requestPushPermissionExplicit().catch(() => {});
       if (mounted) {
         await fetchFromBackend(false);
       }
@@ -197,7 +213,7 @@ export default function Notification({ navigation }) {
   }, [fetchFromBackend]);
 
   const showLoader =
-    loading || (!authResolved && items.length === 0) || (refreshing && items.length === 0);
+    items.length === 0 && (loading || !authResolved || refreshing);
 
   const getIconName = useCallback(tipo => {
     switch (tipo) {
@@ -210,6 +226,14 @@ export default function Notification({ navigation }) {
 
   const handleNotificationPress = useCallback(
     item => {
+      const rawData = item?.data || {};
+      if (rawData?.type === 'worksheet_uploaded') {
+        navigation.navigate(StackNav.TabNavigation, {
+          screen: TabNav.HomeScreen,
+        });
+        return;
+      }
+
       // Solo navegamos si es SuccessScreen
       if (item.screen === 'SuccessScreen') {
         let paramsFromNotif = {};
@@ -221,10 +245,86 @@ export default function Notification({ navigation }) {
           }
         }
 
+        const notificationType =
+          rawData?.type || paramsFromNotif?.notificationType || null;
+
+        const rawIpfsData =
+          paramsFromNotif?.ipfsData && typeof paramsFromNotif.ipfsData === 'object'
+            ? paramsFromNotif.ipfsData
+            : {};
+        const rawCertificateData =
+          paramsFromNotif?.certificateData &&
+          typeof paramsFromNotif.certificateData === 'object'
+            ? paramsFromNotif.certificateData
+            : {};
+        const rawNftData =
+          paramsFromNotif?.nftData && typeof paramsFromNotif.nftData === 'object'
+            ? paramsFromNotif.nftData
+            : {};
+
+        // Fallback desde data cuando backend no envía routeParams completos.
+        const fallbackIpfsData = {
+          ...rawIpfsData,
+          jsonUrl:
+            rawIpfsData?.jsonUrl ||
+            rawData?.jsonUrl ||
+            rawData?.ipfsUri ||
+            null,
+          imageUrl:
+            rawIpfsData?.imageUrl ||
+            (notificationType === 'acta_published' ||
+            notificationType === 'worksheet_uploaded'
+              ? rawData?.imageUrl
+              : null),
+          ipfsUri: rawIpfsData?.ipfsUri || rawData?.ipfsUri || null,
+          url: rawIpfsData?.url || rawData?.ipfsUrl || null,
+        };
+
+        const fallbackCertificateData = {
+          ...rawCertificateData,
+          imageUrl:
+            rawCertificateData?.imageUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+          jsonUrl: rawCertificateData?.jsonUrl || null,
+          certificateUrl:
+            rawCertificateData?.certificateUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        };
+
+        const fallbackNftData = {
+          ...rawNftData,
+          nftUrl:
+            rawNftData?.nftUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        };
+
         navigation.navigate('SuccessScreen', {
           ...paramsFromNotif,
+          ipfsData: fallbackIpfsData,
+          certificateData: fallbackCertificateData,
+          nftData: fallbackNftData,
+          notificationType,
           fromNotifications: true,
         });
+        return;
+      }
+
+      if (item.screen) {
+        let paramsFromNotif = {};
+        if (item.routeParams) {
+          try {
+            paramsFromNotif = JSON.parse(item.routeParams);
+          } catch {
+            paramsFromNotif = {};
+          }
+        }
+        navigation.navigate(item.screen, paramsFromNotif);
       }
     },
     [navigation],
@@ -298,9 +398,10 @@ export default function Notification({ navigation }) {
   );
 
   return (
-    <View
+    <CSafeAreaView
       testID="notificationScreenContainer"
-      style={{ flex: 1, backgroundColor: '#fff' }}>
+      style={{ flex: 1, backgroundColor: '#fff' }}
+      addTabPadding={false}>
       <CStandardHeader
         testID="notificationHeader"
         title="Notificaciones"
@@ -335,7 +436,7 @@ export default function Notification({ navigation }) {
           }
         />
       )}
-    </View>
+    </CSafeAreaView>
   );
 }
 

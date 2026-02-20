@@ -79,6 +79,29 @@ const WorksheetCompareStatus = Object.freeze({
   ERROR: 'ERROR',
 });
 
+const normalizeCompareToken = value =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+
+const formatWorksheetDiffFieldLabel = rawField => {
+  const field = String(rawField || '').trim();
+  if (!field) return 'Campo';
+  const normalized = normalizeCompareToken(field);
+  if (normalized === 'partiesvalidvotes') return 'Votos Válidos';
+  if (normalized === 'partiestotalvotes') return 'Votos Totales';
+  if (normalized === 'partiesblankvotes') return 'Votos en Blanco';
+  if (normalized === 'partiesnullvotes') return 'Votos Nulos';
+  if (normalized.startsWith('partiespartyvotes')) {
+    const partyRaw = field.split('.').pop() || '';
+    return `Votos de ${String(partyRaw || 'partido').toUpperCase()}`;
+  }
+  return field;
+};
+
 const PhotoConfirmationScreen = ({ route }) => {
   const { electionId, electionType } = route.params || {};
   const navigation = useNavigation();
@@ -135,6 +158,31 @@ const PhotoConfirmationScreen = ({ route }) => {
       message: '',
     };
   });
+  const compareStatus = String(compareResult?.status || '')
+    .trim()
+    .toUpperCase();
+  const shownCompareWarning = route.params?.shownCompareWarning === true;
+  const shouldShowWorksheetMismatchWarning =
+    !isWorksheetMode &&
+    compareStatus === WorksheetCompareStatus.MISMATCH &&
+    !shownCompareWarning;
+  const worksheetMismatchDetails = Array.isArray(compareResult?.differences)
+    ? compareResult.differences
+      .slice(0, 5)
+      .map(diff => {
+        const field = formatWorksheetDiffFieldLabel(diff?.field);
+        const worksheetValue =
+          diff?.worksheetValue === null || diff?.worksheetValue === undefined
+            ? 'sin dato'
+            : String(diff.worksheetValue);
+        const ballotValue =
+          diff?.ballotValue === null || diff?.ballotValue === undefined
+            ? 'sin dato'
+            : String(diff.ballotValue);
+        return `- ${field}: hoja ${worksheetValue}, acta ${ballotValue}`;
+      })
+      .join('\n')
+    : '';
   const certificateRef = useRef(null);
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
@@ -514,6 +562,8 @@ const PhotoConfirmationScreen = ({ route }) => {
         location: tableData?.location || 'Bolivia',
         userId: userData?.id || 'unknown',
         userName: userFullName,
+        certificateDisplayName: isNameVisible ? userFullName : '*****',
+        showNameOnCertificate: Boolean(isNameVisible),
         role: 'witness',
         dni: String(dni ?? ''),
         electionId: eid,
@@ -638,6 +688,24 @@ const PhotoConfirmationScreen = ({ route }) => {
 
       {/* Main Content */}
       <View testID="photoConfirmationContent" style={styles.content}>
+        {shouldShowWorksheetMismatchWarning && (
+          <View
+            style={[
+              styles.compareContainer,
+              { borderColor: '#B42318', backgroundColor: '#FEF3F2' },
+            ]}>
+            <CText style={[styles.compareTitle, { color: '#B42318' }]}>
+              Aviso: la hoja de trabajo no coincide
+            </CText>
+            <CText style={styles.compareText}>
+              {compareResult?.message ||
+                'Se detectaron diferencias entre la hoja de trabajo y el acta.'}
+            </CText>
+            {worksheetMismatchDetails ? (
+              <CText style={styles.compareDiffs}>{worksheetMismatchDetails}</CText>
+            ) : null}
+          </View>
+        )}
         {!showConfirmModal && !showDuplicateModal && (
           <>
             <View style={styles.nftCertificate} ref={certificateRef}>
@@ -666,7 +734,7 @@ const PhotoConfirmationScreen = ({ route }) => {
                       />
                     </View>
                     <CText style={styles.nftName}>
-                      {isNameVisible ? userFullName : 'Sin nombre'}
+                      {isNameVisible ? userFullName : '*****'}
                     </CText>
                     <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
                     <CText style={styles.nftCertTitle}>

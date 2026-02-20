@@ -29,6 +29,7 @@ import {
   upsertWorksheetLocalStatus,
   WorksheetStatus,
 } from '../../../utils/worksheetLocalStatus';
+import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -56,19 +57,210 @@ const normalizeCode = value =>
     .trim()
     .toLowerCase();
 
+const toInt = value => {
+  const parsed = parseInt(String(value ?? '0'), 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const extractIpfsCid = ipfsUri => {
+  const raw = String(ipfsUri || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('ipfs://')) {
+    return raw.replace('ipfs://', '').split('/')[0];
+  }
+  const match = raw.match(/\/ipfs\/([a-zA-Z0-9]+)/i);
+  return match?.[1] || '';
+};
+
+const buildIpfsJsonUrls = ipfsUri => {
+  const raw = String(ipfsUri || '').trim();
+  if (!raw) return [];
+
+  const cid = extractIpfsCid(raw);
+  const urls = [raw];
+  if (cid) {
+    urls.push(`https://ipfs.io/ipfs/${cid}`);
+    urls.push(`https://cloudflare-ipfs.com/ipfs/${cid}`);
+    urls.push(`https://gateway.pinata.cloud/ipfs/${cid}`);
+  }
+  return [...new Set(urls.filter(Boolean))];
+};
+
+const mapWorksheetMetadataToExistingRecord = (metadata, worksheetStatus = {}) => {
+  const meta = metadata && typeof metadata === 'object' ? metadata : {};
+  const data = meta?.data && typeof meta.data === 'object' ? meta.data : {};
+  const votes = data?.votes && typeof data.votes === 'object' ? data.votes : {};
+  const partiesVotes =
+    votes?.parties && typeof votes.parties === 'object' ? votes.parties : {};
+  const partyVotesRows = Array.isArray(partiesVotes?.partyVotes)
+    ? partiesVotes.partyVotes
+    : [];
+
+  const partyResults = partyVotesRows.map((row, index) => {
+    const partyId = String(row?.partyId || `party-${index + 1}`).trim();
+    const normalizedId = partyId.toLowerCase();
+    const votesValue = toInt(row?.votes);
+    return {
+      id: normalizedId || `party-${index + 1}`,
+      partido: partyId ? partyId.toUpperCase() : `PARTIDO ${index + 1}`,
+      presidente: String(votesValue),
+      diputado: '0',
+    };
+  });
+
+  const voteSummaryResults = [
+    {
+      id: 'validos',
+      label: I18nStrings.validVotes || 'Votos Validos',
+      value1: String(toInt(partiesVotes?.validVotes)),
+      value2: '0',
+    },
+    {
+      id: 'blancos',
+      label: I18nStrings.blankVotes || 'Votos en Blanco',
+      value1: String(toInt(partiesVotes?.blankVotes)),
+      value2: '0',
+    },
+    {
+      id: 'nulos',
+      label: I18nStrings.nullVotes || 'Votos Nulos',
+      value1: String(toInt(partiesVotes?.nullVotes)),
+      value2: '0',
+    },
+  ];
+
+  const imageUrl = String(
+    meta?.image ||
+      data?.image ||
+      worksheetStatus?.image ||
+      '',
+  ).trim();
+
+  return {
+    partyResults,
+    voteSummaryResults,
+    actaImage: imageUrl || undefined,
+    image: imageUrl || undefined,
+    ipfsUri: String(worksheetStatus?.ipfsUri || '').trim() || undefined,
+    nftLink: String(worksheetStatus?.nftLink || '').trim() || undefined,
+    status: WorksheetStatus.UPLOADED,
+  };
+};
+
+const mapWorksheetDetailToExistingRecord = detail => {
+  const detailImage = String(detail?.image || '').trim();
+  const detailIpfsUri = String(detail?.ipfsUri || '').trim();
+  const detailNftLink = String(detail?.nftLink || '').trim();
+  return mapWorksheetMetadataToExistingRecord(
+    {
+      image: detailImage,
+      data: {
+        image: detailImage,
+        votes: detail?.votes || {},
+      },
+    },
+    {
+      image: detailImage,
+      ipfsUri: detailIpfsUri,
+      nftLink: detailNftLink,
+    },
+  );
+};
+
+const firstFulfilled = async promises => {
+  const tasks = Array.isArray(promises) ? promises : [];
+  if (!tasks.length) {
+    throw new Error('No hay fuentes disponibles.');
+  }
+  return new Promise((resolve, reject) => {
+    let rejected = 0;
+    const errors = [];
+    tasks.forEach((task, index) => {
+      Promise.resolve(task)
+        .then(resolve)
+        .catch(error => {
+          errors[index] = error;
+          rejected += 1;
+          if (rejected === tasks.length) {
+            reject(
+              errors.find(Boolean) ||
+                new Error('No se pudo obtener la hoja de trabajo.'),
+            );
+          }
+        });
+    });
+  });
+};
+
+const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
+  const candidateUrls = buildIpfsJsonUrls(ipfsUri);
+  if (!candidateUrls.length) {
+    throw new Error('No se encontro URL IPFS para la hoja de trabajo.');
+  }
+  const attempts = candidateUrls.map(url =>
+    axios
+      .get(url, {
+        timeout: 7000,
+        headers: { Accept: 'application/json' },
+      })
+      .then(({ data }) => {
+        if (data && typeof data === 'object') {
+          return data;
+        }
+        throw new Error('Respuesta invalida desde IPFS.');
+      }),
+  );
+  return firstFulfilled(attempts);
+};
+
+const LOOKUP_CACHE_TTL = {
+  tablesByLocationMs: 6 * 60 * 60 * 1000,
+};
+const WORKSHEET_STATUS_REFRESH_COOLDOWN_MS = 15000;
+const TABLE_LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+const logTableLookupTrace = (event, payload = {}) => {
+  if (!TABLE_LOOKUP_TRACE_ENABLED) return;
+  console.log(`[TABLE-DETAIL][LOOKUP] ${event}`, payload);
+};
+
 const fetchTablesByLocationId = async locationId => {
   const normalizedLocationId = String(locationId || '').trim();
   if (!normalizedLocationId) return [];
 
   const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const cacheKey = `tables-by-location:${normalizedLocationId}`;
+  const cachedEntry = await getCache(cacheKey);
+  const cachedTables = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
+  logTableLookupTrace('tables:cache-state', {
+    cacheKey,
+    cachedCount: cachedTables.length,
+  });
+  const cacheIsFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
+  if (cacheIsFresh && cachedTables.length > 0) {
+    logTableLookupTrace('tables:cache-fresh-return', {
+      cacheKey,
+      cachedCount: cachedTables.length,
+    });
+    return cachedTables;
+  }
+
   const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
   try {
     const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
     const list = data?.data || data?.tables || data?.data?.tables || [];
     if (Array.isArray(list)) {
+      logTableLookupTrace('tables:backend-primary-success', {
+        cacheKey,
+        fetchedCount: list.length,
+      });
+      await setCache(cacheKey, list, { version: 'tables-v1' });
       return list;
     }
-  } catch {
+  } catch (error) {
+    logTableLookupTrace('tables:backend-primary-error', {
+      cacheKey,
+      error: error?.message || 'unknown',
+    });
     // fallback de compatibilidad
   }
 
@@ -78,9 +270,26 @@ const fetchTablesByLocationId = async locationId => {
       { timeout: 15000 },
     );
     const list = data?.tables || data?.data?.tables || [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
+    if (Array.isArray(list) && list.length > 0) {
+      logTableLookupTrace('tables:backend-legacy-success', {
+        cacheKey,
+        fetchedCount: list.length,
+      });
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+      return list;
+    }
+    logTableLookupTrace('tables:legacy-empty-use-cache', {
+      cacheKey,
+      cachedCount: cachedTables.length,
+    });
+    return cachedTables;
+  } catch (error) {
+    logTableLookupTrace('tables:legacy-error-use-cache', {
+      cacheKey,
+      cachedCount: cachedTables.length,
+      error: error?.message || 'unknown',
+    });
+    return cachedTables;
   }
 };
 
@@ -149,6 +358,9 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
+  const worksheetStatusSyncRef = useRef({
+    lastSyncAt: 0,
+  });
   const routeExistingRecords = route.params?.existingRecords || [];
 
   const normalizeMesaData = mesaSource => {
@@ -318,15 +530,24 @@ export default function TableDetail({ navigation, route }) {
     [currentDni, electionId, tableCodeForWorksheet],
   );
 
-  const fetchWorksheetStatus = useCallback(async () => {
+  const fetchWorksheetStatus = useCallback(async ({ silent = false, force = false } = {}) => {
     if (!hasMesaSelected || !currentDni || !tableCodeForWorksheet || !electionId) {
       setHasPendingActaInQueue(false);
       setWorksheetStatus({ status: WorksheetStatus.NOT_FOUND });
       return;
     }
 
-    setIsWorksheetLoading(true);
-    setWorksheetFeedback('');
+    const now = Date.now();
+    const lastSyncAt = worksheetStatusSyncRef.current.lastSyncAt || 0;
+    if (!force && now - lastSyncAt < WORKSHEET_STATUS_REFRESH_COOLDOWN_MS) {
+      return;
+    }
+    worksheetStatusSyncRef.current.lastSyncAt = now;
+
+    if (!silent) {
+      setIsWorksheetLoading(true);
+      setWorksheetFeedback('');
+    }
     try {
       const identity = {
         dni: currentDni,
@@ -350,7 +571,8 @@ export default function TableDetail({ navigation, route }) {
       );
       const pendingActaInQueue = (queuedItems || []).some(
         item =>
-          item?.task?.type === 'publishActa' &&
+          (item?.task?.type === 'publishActa' ||
+            item?.task?.type === 'syncActaBackend') &&
           isActaTaskForCurrentTable(item?.task?.payload),
       );
       setHasPendingActaInQueue(Boolean(pendingActaInQueue));
@@ -419,7 +641,9 @@ export default function TableDetail({ navigation, route }) {
 
       setWorksheetStatus(resolvedStatus || { status: WorksheetStatus.NOT_FOUND });
     } finally {
-      setIsWorksheetLoading(false);
+      if (!silent) {
+        setIsWorksheetLoading(false);
+      }
     }
   }, [
     hasMesaSelected,
@@ -511,7 +735,7 @@ export default function TableDetail({ navigation, route }) {
         netState?.isInternetReachable !== false;
       let tablesPool = tablesForSearch;
 
-      if ((!Array.isArray(tablesPool) || tablesPool.length === 0) && isOnline) {
+      if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
         const locationId =
           locationFromParams?._id ||
           locationFromParams?.locationId ||
@@ -524,7 +748,6 @@ export default function TableDetail({ navigation, route }) {
           }
         }
       }
-
       if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
         setMesaSearchError(
           'No hay mesas disponibles en cache para este recinto. Conectate a internet para actualizar los datos.',
@@ -569,12 +792,12 @@ export default function TableDetail({ navigation, route }) {
   };
 
   useEffect(() => {
-    fetchWorksheetStatus();
+    fetchWorksheetStatus({ force: true });
   }, [fetchWorksheetStatus, route.params?.worksheetRefreshTs]);
 
   useEffect(() => {
     const unsubscribeFocus = navigation.addListener('focus', () => {
-      fetchWorksheetStatus();
+      fetchWorksheetStatus({ silent: true });
     });
     return unsubscribeFocus;
   }, [navigation, fetchWorksheetStatus]);
@@ -791,41 +1014,57 @@ export default function TableDetail({ navigation, route }) {
         return;
       }
 
-      const netState = await NetInfo.fetch();
-      const isOnline =
-        !!netState?.isConnected && netState?.isInternetReachable !== false;
-
-      if (isOnline && worksheetStatus?.ipfsUri && userData?.did && userData?.privKey) {
-        const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
-        await axios.post(
-          `${BACKEND_RESULT}/api/v1/worksheets/retry`,
-          {
-            dni: currentDni,
-            electionId: String(electionId),
-            tableCode: tableCodeForWorksheet,
-            tableNumber: tableNumberForWorksheet,
-            ipfsUri: worksheetStatus.ipfsUri,
-            locationId: String(mesa?.idRecinto || mesa?.locationId || ''),
-            nftLink: worksheetStatus?.nftLink,
+      const locationIdValue = String(mesa?.idRecinto || mesa?.locationId || '').trim();
+      const fallbackRetryPayload = worksheetStatus?.ipfsUri
+        ? {
+          aiAnalysis: {},
+          electoralData: {
+            partyResults: [],
+            voteSummaryResults: [],
           },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-            },
-            timeout: 30000,
+          additionalData: {
+            idRecinto: locationIdValue,
+            locationId: locationIdValue,
+            tableNumber: String(tableNumberForWorksheet || ''),
+            tableCode: String(tableCodeForWorksheet || ''),
+            dni: String(currentDni || ''),
+            electionId: String(electionId || ''),
           },
-        );
+          tableData: {
+            codigo: String(tableCodeForWorksheet || ''),
+            tableCode: String(tableCodeForWorksheet || ''),
+            idRecinto: locationIdValue,
+            locationId: locationIdValue,
+            tableNumber: String(tableNumberForWorksheet || ''),
+            numero: String(tableNumberForWorksheet || ''),
+          },
+          tableCode: String(tableCodeForWorksheet || ''),
+          tableNumber: String(tableNumberForWorksheet || ''),
+          locationId: locationIdValue,
+          createdAt: Date.now(),
+          electionId: String(electionId || ''),
+          electionType: electionType || undefined,
+          mode: 'worksheet',
+          ipfsUri: worksheetStatus.ipfsUri,
+          nftLink: worksheetStatus?.nftLink,
+        }
+        : null;
 
+      if (fallbackRetryPayload) {
+        await enqueue({
+          type: 'publishWorksheet',
+          payload: fallbackRetryPayload,
+        });
         await upsertWorksheetLocalStatus(worksheetIdentity, {
-          status: WorksheetStatus.UPLOADED,
+          status: WorksheetStatus.PENDING,
           errorMessage: undefined,
+          retryPayload: fallbackRetryPayload,
         });
         setWorksheetStatus(prev => ({
           ...(prev || {}),
-          status: WorksheetStatus.UPLOADED,
+          status: WorksheetStatus.PENDING,
         }));
-        setWorksheetFeedback('Hoja reintentada y subida correctamente.');
+        setWorksheetFeedback('Reintento encolado correctamente.');
         return;
       }
 
@@ -843,15 +1082,137 @@ export default function TableDetail({ navigation, route }) {
     }
   };
 
+  const handleViewWorksheet = async () => {
+    let resolvedIpfsUri = String(
+      worksheetStatus?.ipfsUri || worksheetStatus?.nftLink || '',
+    ).trim();
+    const canFetchDetailFromBackend =
+      !!userData?.did &&
+      !!userData?.privKey &&
+      !!currentDni &&
+      !!tableCodeForWorksheet &&
+      !!String(electionId || '').trim();
+
+    const loadFromIpfs = async ipfsUriValue => {
+      const metadata = await fetchWorksheetMetadataFromIpfs(ipfsUriValue);
+      return {
+        worksheetRecord: mapWorksheetMetadataToExistingRecord(metadata, {
+          ...worksheetStatus,
+          ipfsUri: ipfsUriValue,
+        }),
+        ipfsUri: ipfsUriValue,
+      };
+    };
+
+    const loadFromBackend = async () => {
+      const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+      const baseEndpoint = `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+        currentDni,
+      )}/by-table/${encodeURIComponent(tableCodeForWorksheet)}`;
+      const headers = {
+        'x-api-key': apiKey,
+      };
+
+      let data;
+      try {
+        const detailResponse = await axios.get(
+          `${baseEndpoint}/detail?electionId=${encodeURIComponent(
+            String(electionId),
+          )}`,
+          {
+            headers,
+            timeout: 8000,
+          },
+        );
+        data = detailResponse?.data;
+      } catch (detailError) {
+        const summaryResponse = await axios.get(
+          `${baseEndpoint}?electionId=${encodeURIComponent(String(electionId))}`,
+          {
+            headers,
+            timeout: 8000,
+          },
+        );
+        data = summaryResponse?.data;
+        if (!data) throw detailError;
+      }
+
+      const backendStatus = String(data?.status || '').toUpperCase();
+      if (backendStatus !== WorksheetStatus.UPLOADED) {
+        throw new Error('La hoja de trabajo aun no esta subida.');
+      }
+
+      const backendIpfsUri = String(data?.ipfsUri || data?.nftLink || '').trim();
+      const effectiveIpfsUri = backendIpfsUri || resolvedIpfsUri;
+      if (data?.votes) {
+        return {
+          worksheetRecord: mapWorksheetDetailToExistingRecord(data),
+          ipfsUri: effectiveIpfsUri,
+        };
+      }
+      if (effectiveIpfsUri) {
+        return loadFromIpfs(effectiveIpfsUri);
+      }
+      throw new Error('La hoja no tiene votos ni enlace IPFS disponible.');
+    };
+
+    setIsWorksheetActionLoading(true);
+    setWorksheetFeedback('');
+    try {
+      if (!resolvedIpfsUri && !canFetchDetailFromBackend) {
+        setWorksheetFeedback(
+          'No se encontro el enlace IPFS de la hoja de trabajo para visualizar.',
+        );
+        return;
+      }
+
+      const attempts = [];
+      if (resolvedIpfsUri) {
+        attempts.push(loadFromIpfs(resolvedIpfsUri));
+      }
+      if (canFetchDetailFromBackend) {
+        attempts.push(loadFromBackend());
+      }
+
+      const resolved = await firstFulfilled(attempts);
+      const worksheetRecord = resolved?.worksheetRecord;
+      const resolvedIpfs = String(resolved?.ipfsUri || '').trim();
+
+      if (!worksheetRecord) {
+        throw new Error('No se pudo cargar la hoja de trabajo subida.');
+      }
+      if (resolvedIpfs) {
+        resolvedIpfsUri = resolvedIpfs;
+      }
+
+      const finalTableData = buildFinalTableData();
+      navigation.navigate(StackNav.PhotoReviewScreen, {
+        mesa: finalTableData,
+        tableData: finalTableData,
+        mesaData: finalTableData,
+        existingRecord: worksheetRecord,
+        isViewOnly: true,
+        photoUri: worksheetRecord?.actaImage || worksheetRecord?.image,
+        mode: 'worksheet',
+        electionId,
+        electionType,
+      });
+    } catch (error) {
+      setWorksheetFeedback(
+        error?.message ||
+          'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
+      );
+    } finally {
+      setIsWorksheetActionLoading(false);
+    }
+  };
+
   const renderWorksheetSection = () => {
     if (!hasMesaSelected) return null;
-    const statusValue =
-      normalizeWorksheetStatus(worksheetStatus?.status);
+    const statusValue = normalizeWorksheetStatus(worksheetStatus?.status);
     const isUploaded = statusValue === WorksheetStatus.UPLOADED;
-    const isPending = statusValue === WorksheetStatus.PENDING;
     const isFailed = statusValue === WorksheetStatus.FAILED;
     const isNotFound = statusValue === WorksheetStatus.NOT_FOUND;
-    const isLoadingStatus = isWorksheetLoading;
     const blockedByBackendRule = String(
       worksheetStatus?.errorMessage || '',
     )
@@ -865,69 +1226,60 @@ export default function TableDetail({ navigation, route }) {
         ? 'Hay un acta en cola para esta mesa. La hoja debe subirse primero.'
         : blockedByBackendRule
           ? 'La hoja no puede subirse porque ya existe un acta en esta mesa.'
-        : '';
+          : '';
 
-    const badgeStyle = isLoadingStatus
-      ? stylesx.worksheetBadgeWarning
-      : isUploaded
-        ? stylesx.worksheetBadgeSuccess
-        : isFailed
-          ? stylesx.worksheetBadgeError
-          : isPending
-            ? stylesx.worksheetBadgeWarning
-            : stylesx.worksheetBadgeNeutral;
-
-    const badgeText = isLoadingStatus
-      ? ''
-      : isUploaded
-        ? 'Hoja de trabajo subida'
-        : isPending
-          ? 'Hoja pendiente de subida'
-          : isFailed
-            ? 'Hoja con error de subida'
-            : 'Aún no subiste tu hoja de trabajo';
+    const canViewWorksheet =
+      isUploaded && !!String(worksheetStatus?.ipfsUri || '').trim();
+    const canRetryWorksheet = isFailed && !isWorksheetBlockedByActa;
+    const canUploadWorksheet = isNotFound && !isWorksheetBlockedByActa;
+    const buttonDisabled =
+      isWorksheetActionLoading ||
+      isWorksheetLoading ||
+      (!canViewWorksheet && !canRetryWorksheet && !canUploadWorksheet);
+    const buttonAction = canViewWorksheet
+      ? handleViewWorksheet
+      : canRetryWorksheet
+        ? handleRetryWorksheet
+        : handleTakeWorksheetPhoto;
+    const buttonText = canViewWorksheet
+      ? 'Ver hoja de trabajo'
+      : 'Subir hoja de trabajo';
+    const showWorksheetCheckingLoader =
+      isWorksheetLoading && !isWorksheetActionLoading;
+    const showViewWorksheetLoader = canViewWorksheet && isWorksheetActionLoading;
+    const showWorksheetLoader = showWorksheetCheckingLoader || showViewWorksheetLoader;
+    const worksheetLoaderText = showWorksheetCheckingLoader
+      ? 'Espere, revisando hoja...'
+      : 'Cargando hoja...';
 
     return (
       <View style={stylesx.worksheetContainer}>
-        <CText style={stylesx.worksheetTitle}>Hoja de trabajo</CText>
+        <TouchableOpacity
+          style={[
+            stylesx.worksheetActionButton,
+            buttonDisabled
+              ? stylesx.worksheetActionButtonDisabled
+              : stylesx.worksheetActionButtonEnabled,
+          ]}
+          onPress={buttonAction}
+          disabled={buttonDisabled}>
+          {showWorksheetLoader ? (
+            <View style={stylesx.worksheetActionContent}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <CText
+                style={[
+                  stylesx.worksheetActionText,
+                  stylesx.worksheetActionTextWithMargin,
+                ]}>
+                {worksheetLoaderText}
+              </CText>
+            </View>
+          ) : (
+            <CText style={stylesx.worksheetActionText}>{buttonText}</CText>
+          )}
+        </TouchableOpacity>
 
-        {/* <View style={[stylesx.worksheetBadge, badgeStyle]}>
-          <CText style={stylesx.worksheetBadgeText}>{badgeText}</CText>
-        </View> */}
-
-        {isWorksheetLoading ? (
-          <ActivityIndicator size="small" color="#4F9858" style={stylesx.worksheetLoader} />
-        ) : null}
-
-        {isNotFound && !isWorksheetBlockedByActa && !isLoadingStatus ? (
-          <TouchableOpacity
-            style={stylesx.worksheetActionButton}
-            onPress={handleTakeWorksheetPhoto}
-            disabled={isWorksheetActionLoading}>
-            <CText style={stylesx.worksheetActionText}>
-              Subir hoja de trabajo (opcional)
-            </CText>
-          </TouchableOpacity>
-        ) : null}
-
-        {isFailed && !isWorksheetBlockedByActa && !isLoadingStatus ? (
-          <TouchableOpacity
-            style={[
-              stylesx.worksheetActionButton,
-              stylesx.worksheetRetryButton,
-              isWorksheetActionLoading && stylesx.searchButtonDisabled,
-            ]}
-            onPress={handleRetryWorksheet}
-            disabled={isWorksheetActionLoading}>
-            {isWorksheetActionLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <CText style={stylesx.worksheetActionText}>Reintentar subida</CText>
-            )}
-          </TouchableOpacity>
-        ) : null}
-
-        {isWorksheetBlockedByActa && (isNotFound || isFailed) && !isLoadingStatus ? (
+        {isWorksheetBlockedByActa && (isNotFound || isFailed) ? (
           <CText style={stylesx.worksheetFeedbackText}>{worksheetBlockedMessage}</CText>
         ) : null}
 
@@ -1026,6 +1378,7 @@ export default function TableDetail({ navigation, route }) {
             stylesx.scrollableContent,
             shouldCenter && stylesx.centerVertically,
           ]}>
+          <View style={stylesx.detailSectionDivider} />
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
@@ -1036,9 +1389,9 @@ export default function TableDetail({ navigation, route }) {
                   stylesx.instructionContainer,
                   shouldCenter && { marginTop: 0 },
                 ]}>
-                <CText style={[stylesx.bigBold, { color: 'black' }]}>
+                {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {I18nStrings.ensureAssignedTable}
-                </CText>
+                </CText> */}
                 {/* <CText
                   style={[
                     stylesx.subtitle,
@@ -1116,7 +1469,7 @@ export default function TableDetail({ navigation, route }) {
                 </View>
               ) : (
                 <>
-                  <View style={stylesx.infoAI}>
+                  {/* <View style={stylesx.infoAI}>
                     <Ionicons
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
@@ -1126,7 +1479,7 @@ export default function TableDetail({ navigation, route }) {
                     <CText style={stylesx.iaText}>
                       {I18nStrings.aiWillSelectClearestPhoto}
                     </CText>
-                  </View>
+                  </View> */}
 
                   <TouchableOpacity
                     testID='tableDetailTakePhotoButton'
@@ -1151,9 +1504,9 @@ export default function TableDetail({ navigation, route }) {
                   stylesx.instructionContainer,
                   shouldCenter && { marginTop: 0 },
                 ]}>
-                <CText style={[stylesx.bigBold, { color: 'black' }]}>
+                {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {I18nStrings.ensureAssignedTable}
-                </CText>
+                </CText> */}
                 {/* <CText
                 style={[
                   stylesx.subtitle,
@@ -1179,10 +1532,10 @@ export default function TableDetail({ navigation, route }) {
                       {I18nStrings.tableCode}
                       {':'} {mesa.codigo}
                     </CText>
-                    <CText style={stylesx.tableCardDetail}>
+                    {/* <CText style={stylesx.tableCardDetail}>
                       {I18nStrings.precinct}
                       {':'} {mesa.colegio}
-                    </CText>
+                    </CText> */}
                   </View>
                 </View>
               </View>
@@ -1206,7 +1559,7 @@ export default function TableDetail({ navigation, route }) {
               {/* Show photo taking section only if no existing records */}
               {(!existingRecords || existingRecords.length === 0) && (
                 <>
-                  <View style={stylesx.infoAI}>
+                  {/* <View style={stylesx.infoAI}>
                     <Ionicons
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
@@ -1216,7 +1569,7 @@ export default function TableDetail({ navigation, route }) {
                     <CText style={stylesx.iaText}>
                       {I18nStrings.aiWillSelectClearestPhoto}
                     </CText>
-                  </View>
+                  </View> */}
 
                   <TouchableOpacity
                     testID='tableDetailTakePhotoButton'
@@ -1286,11 +1639,19 @@ const stylesx = StyleSheet.create({
   },
   middleWrap: {
     flex: 1,
-    justifyContent: 'center', // centra vertical
+    justifyContent: 'flex-start',
+    paddingTop: getResponsiveSize(12, 16, 20),
   },
   scrollableContent: {
     flex: 1,
     paddingBottom: getResponsiveSize(15, 25, 30),
+  },
+  detailSectionDivider: {
+    height: 1,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(2, 4, 6),
+    marginBottom: getResponsiveSize(8, 12, 16),
+    backgroundColor: '#E5E7EB',
   },
   // Tablet Landscape Layout
   tabletLandscapeContainer: {
@@ -1306,7 +1667,7 @@ const stylesx = StyleSheet.create({
   rightColumn: {
     flex: 0.4,
     paddingLeft: getResponsiveSize(16, 20, 24),
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   instructionContainer: {
     marginTop: getResponsiveSize(15, 25, 35),
@@ -1446,7 +1807,7 @@ const stylesx = StyleSheet.create({
     borderRadius: getResponsiveSize(6, 8, 10),
     padding: getResponsiveSize(12, 16, 18),
     marginHorizontal: getResponsiveSize(16, 20, 24),
-    marginTop: getResponsiveSize(18, 20, 25),
+    marginTop: getResponsiveSize(14, 16, 20),
     marginBottom: getResponsiveSize(8, 12, 14),
     elevation: 2,
     shadowColor: '#000',
@@ -1663,11 +2024,6 @@ const stylesx = StyleSheet.create({
     marginHorizontal: getResponsiveSize(16, 20, 24),
     marginTop: getResponsiveSize(10, 12, 16),
     marginBottom: getResponsiveSize(10, 12, 16),
-    borderRadius: getResponsiveSize(10, 12, 14),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: getResponsiveSize(12, 14, 18),
-    backgroundColor: '#FFFFFF',
   },
   worksheetTitle: {
     fontSize: getResponsiveSize(15, 16, 18),
@@ -1709,22 +2065,38 @@ const stylesx = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   worksheetActionButton: {
-    marginTop: getResponsiveSize(12, 14, 16),
-    backgroundColor: '#4F9858',
-    borderRadius: getResponsiveSize(8, 10, 12),
+    marginTop: getResponsiveSize(2, 4, 6),
+    borderRadius: getResponsiveSize(10, 12, 14),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: getResponsiveSize(10, 12, 14),
+    minHeight: getResponsiveSize(52, 56, 62),
+    paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(10, 12, 14),
+  },
+  worksheetActionButtonEnabled: {
+    backgroundColor: '#14532D',
+    borderWidth: 1,
+    borderColor: '#0B3B1E',
+  },
+  worksheetActionButtonDisabled: {
+    backgroundColor: '#98A2B3',
   },
   worksheetRetryButton: {
     backgroundColor: '#B42318',
   },
   worksheetActionText: {
     color: '#FFFFFF',
-    fontSize: getResponsiveSize(13, 14, 16),
+    fontSize: getResponsiveSize(14, 15, 17),
     fontWeight: '700',
     textAlign: 'center',
+  },
+  worksheetActionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  worksheetActionTextWithMargin: {
+    marginLeft: getResponsiveSize(8, 10, 12),
   },
   worksheetFeedbackText: {
     marginTop: getResponsiveSize(8, 10, 12),
@@ -1732,6 +2104,8 @@ const stylesx = StyleSheet.create({
     color: '#475467',
   },
   centerVertically: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: getResponsiveSize(10, 14, 18),
   },
 });
+

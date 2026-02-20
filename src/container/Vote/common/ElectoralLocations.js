@@ -3,7 +3,6 @@ import {
   View,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   PermissionsAndroid,
   Platform,
   Dimensions,
@@ -70,7 +69,9 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [configError, setConfigError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredLocations, setFilteredLocations] = useState([]);
+  const [showCachedShortcut, setShowCachedShortcut] = useState(false);
   const pendingPermissionFromSettings = useRef(false);
+  const slowLoadTimerRef = useRef(null);
 
   // Get navigation target from route params
   const { targetScreen, electionId, electionType } = route.params || {};
@@ -158,7 +159,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
         //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
-        { timeout: 15000 }, // 10 segundos timeout
+        { timeout: 10000 }, // 10 segundos timeout
       );
       if (response.data && response.data.data) {
         setLocations(response.data.data);
@@ -286,6 +287,7 @@ const ElectoralLocations = ({ navigation, route }) => {
             const { latitude, longitude } = position.coords;
 
             setUserLocation({ latitude, longitude });
+            setLoadingLocation(false);
             fetchNearbyLocations(latitude, longitude);
           },
           error => {
@@ -327,7 +329,7 @@ const ElectoralLocations = ({ navigation, route }) => {
           },
           {
             enableHighAccuracy: useHighAccuracy,
-            timeout: useHighAccuracy ? 15000 : 30000, // menos estricto en fallback
+            timeout: useHighAccuracy ? 10000 : 15000, // menos estricto en fallback
             maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
           },
         );
@@ -343,6 +345,36 @@ const ElectoralLocations = ({ navigation, route }) => {
     },
     [fetchNearbyLocations],
   );
+  const navigateWithCachedVotePlace = useCallback(() => {
+    const cachedLocationId =
+      cachedVotePlace?.location?._id || cachedVotePlace?.location?.id;
+    if (!cachedLocationId || targetScreen !== 'UnifiedParticipation') return;
+
+    navigation.replace(StackNav.UnifiedParticipationScreen, {
+      locationId: cachedLocationId,
+      locationData: cachedVotePlace.location,
+      electionId,
+      electionType,
+      fromCache: true,
+      offline: true,
+    });
+  }, [cachedVotePlace, targetScreen, navigation, electionId, electionType]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadCachedVotePlace = async () => {
+      if (!dni) return;
+      const cached = await getVotePlace(dni);
+      if (!mounted) return;
+      setCachedVotePlace(cached);
+    };
+
+    loadCachedVotePlace();
+    return () => {
+      mounted = false;
+    };
+  }, [dni]);
+
   useEffect(() => {
     const init = async () => {
       const net = await NetInfo.fetch();
@@ -350,26 +382,20 @@ const ElectoralLocations = ({ navigation, route }) => {
       setOffline(!online);
       if (!online) {
         setConfigLoading(false);
-        if (dni) {
-          const cached = await getVotePlace(dni);
-          setCachedVotePlace(cached);
-          if (
-            route?.params?.targetScreen === 'UnifiedParticipation' &&
-            cached?.location?._id
-          ) {
-            navigation.replace(StackNav.UnifiedParticipationScreen, {
-              locationId: cached.location._id,
-              locationData: cached.location,
-              fromCache: true,
-              offline: true,
-            });
-            return;
-          }
-        }
       }
     };
     init();
-  }, [dni]);
+  }, []);
+
+  useEffect(() => {
+    if (!offline) return;
+    if (targetScreen !== 'UnifiedParticipation') return;
+    const cachedLocationId =
+      cachedVotePlace?.location?._id || cachedVotePlace?.location?.id;
+    if (!cachedLocationId) return;
+
+    navigateWithCachedVotePlace();
+  }, [offline, targetScreen, cachedVotePlace, navigateWithCachedVotePlace]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
@@ -424,7 +450,7 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 },
+        { timeout: 10000 },
       );
 
       const raw = response.data;
@@ -495,6 +521,33 @@ const ElectoralLocations = ({ navigation, route }) => {
   useEffect(() => {
     setFilteredLocations(locations);
   }, [locations]);
+
+  useEffect(() => {
+    const canOfferShortcut =
+      targetScreen === 'UnifiedParticipation' &&
+      !!(cachedVotePlace?.location?._id || cachedVotePlace?.location?.id);
+    const isStillBusy = configLoading || loading || loadingLocation;
+
+    setShowCachedShortcut(false);
+    if (!canOfferShortcut || !isStillBusy) {
+      if (slowLoadTimerRef.current) {
+        clearTimeout(slowLoadTimerRef.current);
+        slowLoadTimerRef.current = null;
+      }
+      return;
+    }
+
+    slowLoadTimerRef.current = setTimeout(() => {
+      setShowCachedShortcut(true);
+    }, 3500);
+
+    return () => {
+      if (slowLoadTimerRef.current) {
+        clearTimeout(slowLoadTimerRef.current);
+        slowLoadTimerRef.current = null;
+      }
+    };
+  }, [targetScreen, cachedVotePlace, configLoading, loading, loadingLocation]);
 
   const showModal = (
     type,
@@ -665,8 +718,10 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   };
 
+  const isAnyLoading = configLoading || loading || loadingLocation;
+
   useEffect(() => {
-    if (configLoading) {
+    if (isAnyLoading) {
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
@@ -678,7 +733,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     } else {
       rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
     }
-  }, [configLoading]);
+  }, [isAnyLoading]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -709,46 +764,59 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   }
 
-  const renderContent = () => {
-    if (configLoading) {
-      const ringSize = getResponsiveSize(84, 96, 110);
-      const iconSize = getResponsiveSize(40, 50, 60);
-      const half = ringSize / 2;
+  const renderSingleLoader = message => {
+    const ringSize = getResponsiveSize(84, 96, 110);
+    const iconSize = getResponsiveSize(40, 50, 60);
+    const half = ringSize / 2;
 
-      return (
-        <View style={styles.loadingContainer}>
-          <View
+    return (
+      <View style={styles.loadingContainer}>
+        <View
+          style={{
+            position: 'relative',
+            width: ringSize,
+            height: ringSize,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Animated.View
             style={{
-              position: 'relative',
+              position: 'absolute',
               width: ringSize,
               height: ringSize,
-              justifyContent: 'center',
-              alignItems: 'center',
+              transform: [{ rotate: spin }],
             }}>
             <Animated.View
               style={{
                 position: 'absolute',
-                width: ringSize,
-                height: ringSize,
-                transform: [{ rotate: spin }],
+                right: -iconSize / 2,
+                top: half - iconSize / 2,
+                transform: [{ rotate: spinNeg }],
               }}>
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  right: -iconSize / 2,
-                  top: half - iconSize / 2,
-                  transform: [{ rotate: spinNeg }],
-                }}>
-                <Ionicons name="search" size={iconSize} color="#4F9858" />
-              </Animated.View>
+              <Ionicons name="search" size={iconSize} color="#4F9858" />
             </Animated.View>
-          </View>
-
-          <CText style={styles.loadingText}>
-            {i18nString.findingEstablishment}
-          </CText>
+          </Animated.View>
         </View>
-      );
+
+        <CText style={styles.loadingText}>{message}</CText>
+        {showCachedShortcut && (
+          <TouchableOpacity
+            style={styles.cachedShortcutButton}
+            activeOpacity={0.85}
+            onPress={navigateWithCachedVotePlace}>
+            <Ionicons name="flash-outline" size={18} color="#fff" />
+            <CText style={styles.cachedShortcutButtonText}>
+              Continuar con recinto guardado
+            </CText>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderContent = () => {
+    if (configLoading) {
+      return renderSingleLoader(i18nString.findingEstablishment);
     }
 
     if (configError) {
@@ -815,24 +883,8 @@ const ElectoralLocations = ({ navigation, route }) => {
     return (
       <View style={{ flex: 1 }}>
         {renderSearchBar()}
-        {loadingLocation && (
-          <View style={styles.loadingLocationContainer}>
-            <ActivityIndicator size="small" color="#4F9858" />
-            <CText style={styles.loadingLocationText}>
-              {locationRetries > 0
-                ? `${i18nString.retryingLocation} (${locationRetries}/2)`
-                : i18nString.gettingLocation}
-            </CText>
-          </View>
-        )}
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4F9858" />
-            <CText style={styles.loadingText}>
-              {i18nString.loadingNearbyLocations}
-            </CText>
-          </View>
+        {loading || loadingLocation ? (
+          renderSingleLoader(i18nString.findingEstablishment)
         ) : (
           <>
             {userLocation && (
@@ -897,21 +949,6 @@ const styles = {
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
-  loadingLocationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveSize(8, 10, 12),
-    backgroundColor: '#E8F5E9',
-    marginHorizontal: getResponsiveSize(16, 20, 24),
-    marginTop: getResponsiveSize(8, 10, 12),
-    borderRadius: getResponsiveSize(8, 10, 12),
-  },
-  loadingLocationText: {
-    marginLeft: getResponsiveSize(8, 10, 12),
-    fontSize: getResponsiveSize(14, 16, 18),
-    color: '#4F9858',
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -924,6 +961,22 @@ const styles = {
     color: '#666',
     textAlign: 'center',
     fontWeight: '800',
+  },
+  cachedShortcutButton: {
+    marginTop: getResponsiveSize(16, 20, 24),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveSize(14, 18, 22),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#4F9858',
+  },
+  cachedShortcutButtonText: {
+    marginLeft: 8,
+    color: '#fff',
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
   },
   locationInfoContainer: {
     flexDirection: 'row',
@@ -1175,3 +1228,4 @@ const styles = {
 };
 
 export default ElectoralLocations;
+

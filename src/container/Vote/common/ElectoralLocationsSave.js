@@ -28,6 +28,8 @@ import {BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT} from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {LAST_TOPIC_KEY} from '../../../common/constants';
 import {saveVotePlace} from '../../../utils/offlineQueue';
+import {getCache, isFresh, setCache} from '../../../utils/lookupCache';
+import {backendProbe} from '../../../utils/networkUtils';
 import {
   subscribeToLocationTopic,
   unsubscribeFromLocationTopic,
@@ -47,6 +49,23 @@ const getResponsiveSize = (small, medium, large) => {
     return large;
   }
   return medium;
+};
+
+const LOOKUP_CACHE_TTL = {
+  nearbyLocationsMs: 10 * 60 * 1000,
+  electionStatusMs: 10 * 60 * 1000,
+};
+
+const getNearbyLocationCacheKey = (latitude, longitude) => {
+  const lat = Number(latitude || 0).toFixed(3);
+  const lng = Number(longitude || 0).toFixed(3);
+  return `electoral-locations:nearby:${lat}:${lng}`;
+};
+
+const LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+const logLookupTrace = (event, payload = {}) => {
+  if (!LOOKUP_TRACE_ENABLED) return;
+  console.log(`[ELECTORAL-LOCATIONS][LOOKUP] ${event}`, payload);
 };
 
 const ElectoralLocationsSave = ({navigation, route}) => {
@@ -153,19 +172,71 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   };
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
+    const cacheKey = getNearbyLocationCacheKey(latitude, longitude);
+    const cachedEntry = await getCache(cacheKey);
+    const cachedLocations = Array.isArray(cachedEntry?.data)
+      ? cachedEntry.data
+      : [];
+    logLookupTrace('nearby:cache-state', {
+      cacheKey,
+      cachedCount: cachedLocations.length,
+    });
+
     try {
       setLoading(true);
+      if (cachedLocations.length > 0) {
+        logLookupTrace('nearby:cache-hit', {
+          cachedCount: cachedLocations.length,
+        });
+        setLocations(cachedLocations);
+      } else {
+        logLookupTrace('nearby:cache-miss', {cacheKey});
+      }
+
+      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.nearbyLocationsMs);
+      if (cacheFresh) {
+        logLookupTrace('nearby:cache-fresh-skip-backend', {cacheKey});
+        return;
+      }
+
+      const probe = await backendProbe({timeoutMs: 2000});
+      if (!probe?.ok) {
+        logLookupTrace('nearby:probe-fail-use-cache', {
+          cacheKey,
+          ...probe,
+        });
+        if (cachedLocations.length > 0) {
+          return;
+        }
+        throw new Error(i18nString.errorFetchingLocations);
+      }
+
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
-        {timeout: 15000}, // 10 segundos timeout
+        {timeout: 12000}, // 12 segundos timeout
       );
 
       if (response.data && response.data.data) {
-        setLocations(response.data.data);
+        const nextLocations = response.data.data;
+        logLookupTrace('nearby:backend-success', {
+          cacheKey,
+          fetchedCount: Array.isArray(nextLocations) ? nextLocations.length : 0,
+        });
+        setLocations(nextLocations);
+        await setCache(cacheKey, nextLocations, {version: 'nearby-locations-v1'});
       } else {
+        logLookupTrace('nearby:backend-empty', {cacheKey});
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
+      logLookupTrace('nearby:backend-error-fallback', {
+        cacheKey,
+        hasCached: cachedLocations.length > 0,
+        error: error?.message || 'unknown',
+      });
+      if (cachedLocations.length > 0) {
+        return;
+      }
       console.error('Error fetching locations:', error);
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
@@ -392,16 +463,55 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   }, [getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
+    const cacheKey = 'electoral-locations:config-status';
+    const cachedEntry = await getCache(cacheKey);
+    const cachedData = cachedEntry?.data || null;
+    logLookupTrace('election-status:cache-state', {
+      cacheKey,
+      hasCached: !!cachedData,
+    });
+
     try {
       setConfigLoading(true);
       setConfigError(false);
+      if (cachedData) {
+        logLookupTrace('election-status:cache-hit', {cacheKey});
+        setElectionStatus(cachedData);
+      } else {
+        logLookupTrace('election-status:cache-miss', {cacheKey});
+      }
+
+      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.electionStatusMs);
+      if (cacheFresh) {
+        logLookupTrace('election-status:cache-fresh-skip-backend', {cacheKey});
+        return;
+      }
+
+      const probe = await backendProbe({timeoutMs: 2000});
+      if (!probe?.ok) {
+        logLookupTrace('election-status:probe-fail-use-cache', {
+          cacheKey,
+          ...probe,
+        });
+        if (cachedData) {
+          return;
+        }
+        throw new Error(i18nString.electionConfigError);
+      }
+
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        {timeout: 15000}, // 10 segundos timeout
+        {timeout: 12000}, // 12 segundos timeout
       );
       if (response.data) {
+        logLookupTrace('election-status:backend-success', {
+          cacheKey,
+          hasConfigId: !!response?.data?.config?.id,
+        });
         setElectionStatus(response.data);
+        await setCache(cacheKey, response.data, {version: 'election-config-v1'});
       } else {
+        logLookupTrace('election-status:backend-empty', {cacheKey});
         setConfigError(true);
         showModal(
           'error',
@@ -412,6 +522,14 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         );
       }
     } catch (error) {
+      logLookupTrace('election-status:backend-error-fallback', {
+        cacheKey,
+        hasCached: !!cachedData,
+        error: error?.message || 'unknown',
+      });
+      if (cachedData) {
+        return;
+      }
       setConfigError(true);
       let errorMessage = i18nString.electionConfigError;
       if (error.code === 'ECONNABORTED') {
@@ -476,6 +594,8 @@ const ElectoralLocationsSave = ({navigation, route}) => {
   };
 
   const handleLocationPress = async location => {
+    if (savingLocation) return;
+
     if (!dni) {
       showModal('error', i18nString.error, 'DNI no disponible.');
       return;
@@ -629,6 +749,15 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     }
   }, [configLoading]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
+      if (!savingLocation) return;
+      e.preventDefault();
+    });
+
+    return unsubscribe;
+  }, [navigation, savingLocation]);
+
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -699,13 +828,11 @@ const ElectoralLocationsSave = ({navigation, route}) => {
           </View>
         )}
 
-        {loading || savingLocation ? (
+        {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4F9858" />
             <CText style={styles.loadingText}>
-              {savingLocation
-                ? 'Guardando recinto...'
-                : i18nString.loadingNearbyLocations}
+              {i18nString.loadingNearbyLocations}
             </CText>
           </View>
         ) : (
@@ -746,7 +873,10 @@ const ElectoralLocationsSave = ({navigation, route}) => {
       {!configLoading && (
         <UniversalHeader
           title={i18nString.electoralLocations}
-          onBack={() => navigation.goBack()}
+          onBack={() => {
+            if (savingLocation) return;
+            navigation.goBack();
+          }}
           showNotification={false}
         />
       )}
@@ -763,6 +893,16 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         onButtonPress={modalConfig.onPrimaryAction}
         secondaryButtonText={modalConfig.secondaryButtonText}
         onSecondaryPress={modalConfig.onSecondaryAction}
+      />
+
+      <CustomModal
+        visible={savingLocation}
+        onClose={() => {}}
+        type="info"
+        title="Guardando recinto..."
+        message="Espera un momento. No cierres esta pantalla."
+        buttonText="Procesando..."
+        onButtonPress={() => {}}
       />
     </CSafeAreaView>
   );

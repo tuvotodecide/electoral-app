@@ -34,6 +34,31 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const isOfflineRequestError = error => {
+  const status = Number(error?.response?.status);
+  if (status) return false;
+
+  const code = String(error?.code || '').toUpperCase();
+  if (
+    code === 'ECONNABORTED' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ERR_NETWORK'
+  ) {
+    return true;
+  }
+
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    (error?.request && !error?.response) ||
+    message.includes('network') ||
+    message.includes('internet') ||
+    message.includes('timeout') ||
+    message.includes('failed to fetch')
+  );
+};
+
 const MyWitnessesListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -50,6 +75,7 @@ const MyWitnessesListScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({});
   const [hasNoAttestations, setHasNoAttestations] = useState(false);
+  const [offlineErrorMessage, setOfflineErrorMessage] = useState('');
 
   // Cargar atestiguamientos al montar el componente
   useEffect(() => {
@@ -70,6 +96,7 @@ const MyWitnessesListScreen = () => {
   const loadWitnessRecords = async () => {
     setLoading(true);
     setHasNoAttestations(false);
+    setOfflineErrorMessage('');
 
     try {
       // Paso 1: Obtener los attestations por DNI
@@ -203,6 +230,13 @@ const MyWitnessesListScreen = () => {
       if (error.response?.status === 404) {
         setHasNoAttestations(true);
         setWitnessRecords([]);
+      } else if (isOfflineRequestError(error)) {
+        setModalVisible(false);
+        setWitnessRecords([]);
+        setHasNoAttestations(false);
+        setOfflineErrorMessage(
+          'No tienes conexión a internet. Conéctate e inténtalo nuevamente.',
+        );
       } else {
         // Otros errores sí se muestran en modal
         setModalData({
@@ -251,13 +285,7 @@ const MyWitnessesListScreen = () => {
       />
 
       {/* Question Text */}
-      <View
-        testID="witnessesQuestionContainer"
-        style={styles.questionContainer}>
-        <CText testID="witnessesQuestionText" style={styles.questionText}>
-          {Strings.selectDocumentToReview}
-        </CText>
-      </View>
+
 
       {/* Content */}
       {loading ? (
@@ -272,6 +300,39 @@ const MyWitnessesListScreen = () => {
           <CText testID="witnessesLoadingText" style={styles.loadingText}>
             {Strings.loadingWitnesses}
           </CText>
+        </View>
+      ) : offlineErrorMessage ? (
+        <View
+          testID="offlineWitnessesContainer"
+          style={styles.noAttestationsContainer}>
+          <View
+            testID="offlineWitnessesIconContainer"
+            style={styles.noAttestationsIconContainer}>
+            <CText testID="offlineWitnessesIcon" style={styles.noAttestationsIcon}>
+              📶
+            </CText>
+          </View>
+          <CText testID="offlineWitnessesTitle" style={styles.noAttestationsTitle}>
+            Sin conexión a internet
+          </CText>
+          <CText
+            testID="offlineWitnessesMessage"
+            style={styles.noAttestationsMessage}>
+            {offlineErrorMessage}
+          </CText>
+          <TouchableOpacity
+            testID="retryOfflineWitnessesButton"
+            style={[
+              styles.refreshButton,
+              {backgroundColor: colors.primary || '#459151'},
+            ]}
+            onPress={loadWitnessRecords}>
+            <CText
+              testID="retryOfflineWitnessesButtonText"
+              style={styles.refreshButtonText}>
+              Reintentar
+            </CText>
+          </TouchableOpacity>
         </View>
       ) : hasNoAttestations ? (
         <View

@@ -539,6 +539,8 @@ class PinataService {
     } = {},
   ) {
     try {
+      const normalizedUserName = String(userName || '').trim();
+      const ownerLabel = normalizedUserName || '*****';
       // 1) Subir la IMAGEN del certificado
       const imageResult = await this.uploadImageToIPFS(
         certificatePath,
@@ -554,11 +556,11 @@ class PinataService {
       // 2) Metadata del certificado (SIN `data`)
       const metadata = {
         name: `Certificado de participación - Mesa ${tableNumber}`,
-        description: `Certificado de participación electoral de ${userName} en la mesa ${tableNumber} (${tableCode}) en ${location}.`,
+        description: `Certificado de participación electoral de ${ownerLabel} en la mesa ${tableNumber} (${tableCode}) en ${location}.`,
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/certificado/${tableCode}`,
         attributes: [
-          { trait_type: 'Nombre', value: userName },
+          { trait_type: 'Nombre', value: normalizedUserName || '*****' },
           { trait_type: 'Mesa', value: tableNumber },
           { trait_type: 'Código de Mesa', value: tableCode },
           { trait_type: 'Lugar', value: location },
@@ -604,3 +606,5 @@ class PinataService {
 }
 
 export default new PinataService();
+
+
