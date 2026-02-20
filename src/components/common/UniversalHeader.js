@@ -31,7 +31,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const NOTIFICATIONS_CACHE_TTL_MS = 60 * 1000;
+const NOTIFICATIONS_CACHE_TTL_MS = 10 * 1000;
 const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
 
 const buildNotificationSeenKey = dniValue => {
@@ -210,7 +210,7 @@ const UniversalHeader = ({
         await refreshNotificationBadgeCount();
       };
       refresh();
-      const intervalId = setInterval(refresh, 15000);
+      const intervalId = setInterval(refresh, 10000);
       return () => {
         active = false;
         clearInterval(intervalId);

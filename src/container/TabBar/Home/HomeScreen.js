@@ -315,7 +315,7 @@ const LOOKUP_CACHE_KEYS = {
 
 const LOOKUP_CACHE_TTLS = {
   electionStatusMs: 60 * 1000,
-  notificationsMs: 60 * 1000,
+  notificationsMs: 10 * 1000,
   tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
 const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
@@ -1717,7 +1717,7 @@ export default function HomeScreen({ navigation }) {
       };
 
       refresh();
-      const intervalId = setInterval(refresh, 15000);
+      const intervalId = setInterval(refresh, 10000);
 
       return () => {
         active = false;
