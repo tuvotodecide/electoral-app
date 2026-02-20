@@ -72,7 +72,7 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader
-        title={locationData.name}
+        title={locationData?.name || 'Recinto seleccionado'}
         onBack={handleBack}
         color={colors.white}
       />
