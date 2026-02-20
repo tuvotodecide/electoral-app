@@ -138,20 +138,41 @@ export async function showActaPublishedNotification({
   nftData,
   tableData,
   certificateData,
+  dni,
+  electionId,
 }) {
   try {
+    const tableCode = String(
+      tableData?.codigo || tableData?.tableCode || tableData?.code || '',
+    ).trim();
+    const tableNumber = String(
+      tableData?.tableNumber ||
+        tableData?.numero ||
+        tableData?.number ||
+        '',
+    ).trim();
+    const resolvedElectionId = String(
+      electionId || tableData?.electionId || '',
+    ).trim();
     await showLocalNotification({
       title: 'Acta publicada',
       body: 'Tu acta fue publicada correctamente. ',
       data: {
+        type: 'acta_published',
+        tableCode: tableCode || undefined,
+        tableNumber: tableNumber || undefined,
+        electionId: resolvedElectionId || undefined,
         screen: 'SuccessScreen',
         routeParams: JSON.stringify({
+          notificationType: 'acta_published',
           ipfsData,
           nftData,
           tableData,
           certificateData,
         }),
       },
+      persistLocal: true,
+      dni,
     });
   } catch {}
 }

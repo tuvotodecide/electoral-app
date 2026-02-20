@@ -915,6 +915,8 @@ export const publishActaHandler = async (item, userData) => {
             nftData: nftResult,
             tableData,
             certificateData,
+            dni: dniValue,
+            electionId,
           });
         } catch { }
 
@@ -1204,6 +1206,8 @@ export const publishActaHandler = async (item, userData) => {
           nftData: nftResult,
           tableData,
           certificateData,
+          dni: dniValue,
+          electionId,
         });
       } catch (err) {
 
@@ -1514,6 +1518,8 @@ export const publishActaHandler = async (item, userData) => {
         nftData: nftResult,
         tableData,
         certificateData,
+        dni: dniValue,
+        electionId,
       });
     } catch (err) {
     }

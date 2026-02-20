@@ -216,6 +216,7 @@ const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
 const LOOKUP_CACHE_TTL = {
   tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
+const WORKSHEET_STATUS_REFRESH_COOLDOWN_MS = 15000;
 const TABLE_LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 const logTableLookupTrace = (event, payload = {}) => {
   if (!TABLE_LOOKUP_TRACE_ENABLED) return;
@@ -357,6 +358,9 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
+  const worksheetStatusSyncRef = useRef({
+    lastSyncAt: 0,
+  });
   const routeExistingRecords = route.params?.existingRecords || [];
 
   const normalizeMesaData = mesaSource => {
@@ -526,15 +530,24 @@ export default function TableDetail({ navigation, route }) {
     [currentDni, electionId, tableCodeForWorksheet],
   );
 
-  const fetchWorksheetStatus = useCallback(async () => {
+  const fetchWorksheetStatus = useCallback(async ({ silent = false, force = false } = {}) => {
     if (!hasMesaSelected || !currentDni || !tableCodeForWorksheet || !electionId) {
       setHasPendingActaInQueue(false);
       setWorksheetStatus({ status: WorksheetStatus.NOT_FOUND });
       return;
     }
 
-    setIsWorksheetLoading(true);
-    setWorksheetFeedback('');
+    const now = Date.now();
+    const lastSyncAt = worksheetStatusSyncRef.current.lastSyncAt || 0;
+    if (!force && now - lastSyncAt < WORKSHEET_STATUS_REFRESH_COOLDOWN_MS) {
+      return;
+    }
+    worksheetStatusSyncRef.current.lastSyncAt = now;
+
+    if (!silent) {
+      setIsWorksheetLoading(true);
+      setWorksheetFeedback('');
+    }
     try {
       const identity = {
         dni: currentDni,
@@ -628,7 +641,9 @@ export default function TableDetail({ navigation, route }) {
 
       setWorksheetStatus(resolvedStatus || { status: WorksheetStatus.NOT_FOUND });
     } finally {
-      setIsWorksheetLoading(false);
+      if (!silent) {
+        setIsWorksheetLoading(false);
+      }
     }
   }, [
     hasMesaSelected,
@@ -733,7 +748,6 @@ export default function TableDetail({ navigation, route }) {
           }
         }
       }
-      console.log(`Tables pool for search: ${Array.isArray(tablesPool) ? tablesPool.length : 'Not an array'}`);
       if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
         setMesaSearchError(
           'No hay mesas disponibles en cache para este recinto. Conectate a internet para actualizar los datos.',
@@ -778,12 +792,12 @@ export default function TableDetail({ navigation, route }) {
   };
 
   useEffect(() => {
-    fetchWorksheetStatus();
+    fetchWorksheetStatus({ force: true });
   }, [fetchWorksheetStatus, route.params?.worksheetRefreshTs]);
 
   useEffect(() => {
     const unsubscribeFocus = navigation.addListener('focus', () => {
-      fetchWorksheetStatus();
+      fetchWorksheetStatus({ silent: true });
     });
     return unsubscribeFocus;
   }, [navigation, fetchWorksheetStatus]);
@@ -1069,7 +1083,9 @@ export default function TableDetail({ navigation, route }) {
   };
 
   const handleViewWorksheet = async () => {
-    let resolvedIpfsUri = String(worksheetStatus?.ipfsUri || '').trim();
+    let resolvedIpfsUri = String(
+      worksheetStatus?.ipfsUri || worksheetStatus?.nftLink || '',
+    ).trim();
     const canFetchDetailFromBackend =
       !!userData?.did &&
       !!userData?.privKey &&
@@ -1090,26 +1106,43 @@ export default function TableDetail({ navigation, route }) {
 
     const loadFromBackend = async () => {
       const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
-      const { data } = await axios.get(
-        `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
-          currentDni,
-        )}/by-table/${encodeURIComponent(
-          tableCodeForWorksheet,
-        )}/detail?electionId=${encodeURIComponent(String(electionId))}`,
-        {
-          headers: {
-            'x-api-key': apiKey,
+      const baseEndpoint = `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+        currentDni,
+      )}/by-table/${encodeURIComponent(tableCodeForWorksheet)}`;
+      const headers = {
+        'x-api-key': apiKey,
+      };
+
+      let data;
+      try {
+        const detailResponse = await axios.get(
+          `${baseEndpoint}/detail?electionId=${encodeURIComponent(
+            String(electionId),
+          )}`,
+          {
+            headers,
+            timeout: 8000,
           },
-          timeout: 8000,
-        },
-      );
+        );
+        data = detailResponse?.data;
+      } catch (detailError) {
+        const summaryResponse = await axios.get(
+          `${baseEndpoint}?electionId=${encodeURIComponent(String(electionId))}`,
+          {
+            headers,
+            timeout: 8000,
+          },
+        );
+        data = summaryResponse?.data;
+        if (!data) throw detailError;
+      }
 
       const backendStatus = String(data?.status || '').toUpperCase();
       if (backendStatus !== WorksheetStatus.UPLOADED) {
         throw new Error('La hoja de trabajo aun no esta subida.');
       }
 
-      const backendIpfsUri = String(data?.ipfsUri || '').trim();
+      const backendIpfsUri = String(data?.ipfsUri || data?.nftLink || '').trim();
       const effectiveIpfsUri = backendIpfsUri || resolvedIpfsUri;
       if (data?.votes) {
         return {
@@ -1211,8 +1244,13 @@ export default function TableDetail({ navigation, route }) {
     const buttonText = canViewWorksheet
       ? 'Ver hoja de trabajo'
       : 'Subir hoja de trabajo';
-    const showViewWorksheetLoader =
-      canViewWorksheet && isWorksheetActionLoading;
+    const showWorksheetCheckingLoader =
+      isWorksheetLoading && !isWorksheetActionLoading;
+    const showViewWorksheetLoader = canViewWorksheet && isWorksheetActionLoading;
+    const showWorksheetLoader = showWorksheetCheckingLoader || showViewWorksheetLoader;
+    const worksheetLoaderText = showWorksheetCheckingLoader
+      ? 'Espere, revisando hoja...'
+      : 'Cargando hoja...';
 
     return (
       <View style={stylesx.worksheetContainer}>
@@ -1225,7 +1263,7 @@ export default function TableDetail({ navigation, route }) {
           ]}
           onPress={buttonAction}
           disabled={buttonDisabled}>
-          {showViewWorksheetLoader ? (
+          {showWorksheetLoader ? (
             <View style={stylesx.worksheetActionContent}>
               <ActivityIndicator size="small" color="#FFFFFF" />
               <CText
@@ -1233,7 +1271,7 @@ export default function TableDetail({ navigation, route }) {
                   stylesx.worksheetActionText,
                   stylesx.worksheetActionTextWithMargin,
                 ]}>
-                Cargando hoja...
+                {worksheetLoaderText}
               </CText>
             </View>
           ) : (

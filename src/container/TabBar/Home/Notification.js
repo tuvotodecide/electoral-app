@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import axios from 'axios';
 import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
@@ -397,9 +398,10 @@ export default function Notification({ navigation }) {
   );
 
   return (
-    <View
+    <CSafeAreaView
       testID="notificationScreenContainer"
-      style={{ flex: 1, backgroundColor: '#fff' }}>
+      style={{ flex: 1, backgroundColor: '#fff' }}
+      addTabPadding={false}>
       <CStandardHeader
         testID="notificationHeader"
         title="Notificaciones"
@@ -434,7 +436,7 @@ export default function Notification({ navigation }) {
           }
         />
       )}
-    </View>
+    </CSafeAreaView>
   );
 }
 

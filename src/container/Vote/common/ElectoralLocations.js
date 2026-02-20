@@ -3,7 +3,6 @@ import {
   View,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   PermissionsAndroid,
   Platform,
   Dimensions,
@@ -160,7 +159,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
         //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
-        { timeout: 15000 }, // 10 segundos timeout
+        { timeout: 10000 }, // 10 segundos timeout
       );
       if (response.data && response.data.data) {
         setLocations(response.data.data);
@@ -330,7 +329,7 @@ const ElectoralLocations = ({ navigation, route }) => {
           },
           {
             enableHighAccuracy: useHighAccuracy,
-            timeout: useHighAccuracy ? 15000 : 30000, // menos estricto en fallback
+            timeout: useHighAccuracy ? 10000 : 15000, // menos estricto en fallback
             maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
           },
         );
@@ -451,7 +450,7 @@ const ElectoralLocations = ({ navigation, route }) => {
 
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 },
+        { timeout: 10000 },
       );
 
       const raw = response.data;
@@ -719,8 +718,10 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   };
 
+  const isAnyLoading = configLoading || loading || loadingLocation;
+
   useEffect(() => {
-    if (configLoading) {
+    if (isAnyLoading) {
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
@@ -732,7 +733,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     } else {
       rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
     }
-  }, [configLoading]);
+  }, [isAnyLoading]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -763,57 +764,59 @@ const ElectoralLocations = ({ navigation, route }) => {
     );
   }
 
-  const renderContent = () => {
-    if (configLoading) {
-      const ringSize = getResponsiveSize(84, 96, 110);
-      const iconSize = getResponsiveSize(40, 50, 60);
-      const half = ringSize / 2;
+  const renderSingleLoader = message => {
+    const ringSize = getResponsiveSize(84, 96, 110);
+    const iconSize = getResponsiveSize(40, 50, 60);
+    const half = ringSize / 2;
 
-      return (
-        <View style={styles.loadingContainer}>
-          <View
+    return (
+      <View style={styles.loadingContainer}>
+        <View
+          style={{
+            position: 'relative',
+            width: ringSize,
+            height: ringSize,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Animated.View
             style={{
-              position: 'relative',
+              position: 'absolute',
               width: ringSize,
               height: ringSize,
-              justifyContent: 'center',
-              alignItems: 'center',
+              transform: [{ rotate: spin }],
             }}>
             <Animated.View
               style={{
                 position: 'absolute',
-                width: ringSize,
-                height: ringSize,
-                transform: [{ rotate: spin }],
+                right: -iconSize / 2,
+                top: half - iconSize / 2,
+                transform: [{ rotate: spinNeg }],
               }}>
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  right: -iconSize / 2,
-                  top: half - iconSize / 2,
-                  transform: [{ rotate: spinNeg }],
-                }}>
-                <Ionicons name="search" size={iconSize} color="#4F9858" />
-              </Animated.View>
+              <Ionicons name="search" size={iconSize} color="#4F9858" />
             </Animated.View>
-          </View>
-
-          <CText style={styles.loadingText}>
-            {i18nString.findingEstablishment}
-          </CText>
-          {showCachedShortcut && (
-            <TouchableOpacity
-              style={styles.cachedShortcutButton}
-              activeOpacity={0.85}
-              onPress={navigateWithCachedVotePlace}>
-              <Ionicons name="flash-outline" size={18} color="#fff" />
-              <CText style={styles.cachedShortcutButtonText}>
-                Continuar con recinto guardado
-              </CText>
-            </TouchableOpacity>
-          )}
+          </Animated.View>
         </View>
-      );
+
+        <CText style={styles.loadingText}>{message}</CText>
+        {showCachedShortcut && (
+          <TouchableOpacity
+            style={styles.cachedShortcutButton}
+            activeOpacity={0.85}
+            onPress={navigateWithCachedVotePlace}>
+            <Ionicons name="flash-outline" size={18} color="#fff" />
+            <CText style={styles.cachedShortcutButtonText}>
+              Continuar con recinto guardado
+            </CText>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderContent = () => {
+    if (configLoading) {
+      return renderSingleLoader(i18nString.findingEstablishment);
     }
 
     if (configError) {
@@ -880,35 +883,8 @@ const ElectoralLocations = ({ navigation, route }) => {
     return (
       <View style={{ flex: 1 }}>
         {renderSearchBar()}
-        {loadingLocation && !loading && (
-          <View style={styles.loadingLocationContainer}>
-            <ActivityIndicator size="small" color="#4F9858" />
-            <CText style={styles.loadingLocationText}>
-              {locationRetries > 0
-                ? `${i18nString.retryingLocation} (${locationRetries}/2)`
-                : i18nString.gettingLocation}
-            </CText>
-          </View>
-        )}
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4F9858" />
-            <CText style={styles.loadingText}>
-              {i18nString.loadingNearbyLocations}
-            </CText>
-            {showCachedShortcut && (
-              <TouchableOpacity
-                style={styles.cachedShortcutButton}
-                activeOpacity={0.85}
-                onPress={navigateWithCachedVotePlace}>
-                <Ionicons name="flash-outline" size={18} color="#fff" />
-                <CText style={styles.cachedShortcutButtonText}>
-                  Continuar con recinto guardado
-                </CText>
-              </TouchableOpacity>
-            )}
-          </View>
+        {loading || loadingLocation ? (
+          renderSingleLoader(i18nString.findingEstablishment)
         ) : (
           <>
             {userLocation && (
@@ -972,21 +948,6 @@ const styles = {
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  loadingLocationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveSize(8, 10, 12),
-    backgroundColor: '#E8F5E9',
-    marginHorizontal: getResponsiveSize(16, 20, 24),
-    marginTop: getResponsiveSize(8, 10, 12),
-    borderRadius: getResponsiveSize(8, 10, 12),
-  },
-  loadingLocationText: {
-    marginLeft: getResponsiveSize(8, 10, 12),
-    fontSize: getResponsiveSize(14, 16, 18),
-    color: '#4F9858',
   },
   loadingContainer: {
     flex: 1,

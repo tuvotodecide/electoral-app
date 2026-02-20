@@ -79,6 +79,29 @@ const WorksheetCompareStatus = Object.freeze({
   ERROR: 'ERROR',
 });
 
+const normalizeCompareToken = value =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+
+const formatWorksheetDiffFieldLabel = rawField => {
+  const field = String(rawField || '').trim();
+  if (!field) return 'Campo';
+  const normalized = normalizeCompareToken(field);
+  if (normalized === 'partiesvalidvotes') return 'Votos Válidos';
+  if (normalized === 'partiestotalvotes') return 'Votos Totales';
+  if (normalized === 'partiesblankvotes') return 'Votos en Blanco';
+  if (normalized === 'partiesnullvotes') return 'Votos Nulos';
+  if (normalized.startsWith('partiespartyvotes')) {
+    const partyRaw = field.split('.').pop() || '';
+    return `Votos de ${String(partyRaw || 'partido').toUpperCase()}`;
+  }
+  return field;
+};
+
 const PhotoConfirmationScreen = ({ route }) => {
   const { electionId, electionType } = route.params || {};
   const navigation = useNavigation();
@@ -138,13 +161,16 @@ const PhotoConfirmationScreen = ({ route }) => {
   const compareStatus = String(compareResult?.status || '')
     .trim()
     .toUpperCase();
+  const shownCompareWarning = route.params?.shownCompareWarning === true;
   const shouldShowWorksheetMismatchWarning =
-    !isWorksheetMode && compareStatus === WorksheetCompareStatus.MISMATCH;
+    !isWorksheetMode &&
+    compareStatus === WorksheetCompareStatus.MISMATCH &&
+    !shownCompareWarning;
   const worksheetMismatchDetails = Array.isArray(compareResult?.differences)
     ? compareResult.differences
       .slice(0, 5)
       .map(diff => {
-        const field = String(diff?.field || 'campo');
+        const field = formatWorksheetDiffFieldLabel(diff?.field);
         const worksheetValue =
           diff?.worksheetValue === null || diff?.worksheetValue === undefined
             ? 'sin dato'

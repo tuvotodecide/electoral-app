@@ -54,22 +54,94 @@ const WorksheetCompareStatus = Object.freeze({
   ERROR: 'ERROR',
 });
 
+const normalizeCompareToken = value =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+
+const resolvePartyIdForCompare = party => {
+  const candidates = [
+    party?.partido,
+    party?.name,
+    party?.sigla,
+    party?.party,
+    party?.partyId,
+    party?.id,
+  ];
+  let fallback = '';
+  for (const candidate of candidates) {
+    const normalized = normalizeCompareToken(candidate);
+    if (!normalized) continue;
+    if (!fallback) fallback = normalized;
+    if (normalized.includes('libre')) return 'libre';
+    if (
+      normalized === 'pdc' ||
+      normalized.includes('partidodemocratacristiano') ||
+      normalized.includes('democratacristiano') ||
+      normalized.includes('democratacristiana')
+    ) {
+      return 'pdc';
+    }
+    if (!/^\d+$/.test(normalized)) return normalized;
+  }
+  return fallback;
+};
+
+const formatWorksheetDiffFieldLabel = rawField => {
+  const field = String(rawField || '').trim();
+  if (!field) return 'Campo';
+  const normalized = normalizeCompareToken(field);
+  if (normalized === 'partiesvalidvotes') return 'Votos Válidos';
+  if (normalized === 'partiestotalvotes') return 'Votos Totales';
+  if (normalized === 'partiesblankvotes') return 'Votos en Blanco';
+  if (normalized === 'partiesnullvotes') return 'Votos Nulos';
+  if (normalized.startsWith('partiespartyvotes')) {
+    const partyRaw = field.split('.').pop() || '';
+    const partyId = resolvePartyIdForCompare({
+      partyId: partyRaw,
+      partido: partyRaw,
+      name: partyRaw,
+      id: partyRaw,
+    });
+    return `Votos de ${String(partyId || partyRaw || 'partido').toUpperCase()}`;
+  }
+  return field;
+};
+
+const formatWorksheetDiffsForModal = differences => {
+  const list = Array.isArray(differences) ? differences.slice(0, 5) : [];
+  return list
+    .map(diff => {
+      const label = formatWorksheetDiffFieldLabel(diff?.field);
+      const worksheetValue =
+        diff?.worksheetValue === null || diff?.worksheetValue === undefined
+          ? 'sin dato'
+          : String(diff.worksheetValue);
+      const ballotValue =
+        diff?.ballotValue === null || diff?.ballotValue === undefined
+          ? 'sin dato'
+          : String(diff.ballotValue);
+      return `${label}: hoja **${worksheetValue}**, acta **${ballotValue}**`;
+    })
+    .join('\n');
+};
+
 const buildWorksheetCompareVotesPayload = (
   normalizedPartyResults,
   normalizedVoteSummaryResults,
 ) => {
-  const norm = s =>
-    String(s ?? '')
-      .trim()
-      .toLowerCase();
+  const norm = s => normalizeCompareToken(s);
   const aliases = {
-    validos: ['validos', 'votos validos', 'votos válidos'],
-    nulos: ['nulos', 'votos nulos'],
-    blancos: ['blancos', 'votos en blanco', 'votos blancos'],
+    validos: ['validos', 'votosvalidos', 'validvotes'],
+    nulos: ['nulos', 'votosnulos', 'nullvotes'],
+    blancos: ['blancos', 'votosenblanco', 'votosblancos', 'blankvotes'],
   };
   const pickRow = key =>
     (normalizedVoteSummaryResults || []).find(
-      r => r.id === key || aliases[key]?.includes(norm(r.label)),
+      r => norm(r?.id) === norm(key) || aliases[key]?.includes(norm(r?.label)),
     );
   const toNumber = raw => {
     const n = parseInt(String(raw ?? '0'), 10);
@@ -78,18 +150,20 @@ const buildWorksheetCompareVotesPayload = (
   const validVotes = toNumber(pickRow('validos')?.value1);
   const nullVotes = toNumber(pickRow('nulos')?.value1);
   const blankVotes = toNumber(pickRow('blancos')?.value1);
+  const partyVotesMap = (normalizedPartyResults || []).reduce((acc, party) => {
+    const partyId = resolvePartyIdForCompare(party);
+    if (!partyId) return acc;
+    acc[partyId] = (acc[partyId] || 0) + toNumber(party?.presidente);
+    return acc;
+  }, {});
   return {
     parties: {
       validVotes,
       nullVotes,
       blankVotes,
-      partyVotes: (normalizedPartyResults || []).map(party => ({
-        partyId: String(
-          party?.id ?? party?.partyId ?? party?.partido ?? party?.name ?? '',
-        )
-          .trim()
-          .toLowerCase(),
-        votes: toNumber(party?.presidente),
+      partyVotes: Object.keys(partyVotesMap).map(partyId => ({
+        partyId,
+        votes: partyVotesMap[partyId],
       })),
       totalVotes: validVotes + nullVotes + blankVotes,
     },
@@ -155,17 +229,25 @@ const PhotoReviewScreen = () => {
   });
   const [shouldGoHomeAfterInfoModal, setShouldGoHomeAfterInfoModal] =
     useState(false);
+  const [pendingConfirmationParams, setPendingConfirmationParams] =
+    useState(null);
   const [showWorksheetConfirmModal, setShowWorksheetConfirmModal] =
     useState(false);
   const [isWorksheetSubmitting, setIsWorksheetSubmitting] = useState(false);
   const [worksheetQueuePayload, setWorksheetQueuePayload] = useState(null);
   const closeInfoModal = () => {
+    const pendingParams = pendingConfirmationParams;
     setInfoModalData({
       visible: false,
       title: '',
       message: '',
       buttonText: 'OK',
     });
+    if (pendingParams) {
+      setPendingConfirmationParams(null);
+      navigation.navigate('PhotoConfirmationScreen', pendingParams);
+      return;
+    }
     if (shouldGoHomeAfterInfoModal) {
       setShouldGoHomeAfterInfoModal(false);
       navigation.reset({
@@ -182,15 +264,17 @@ const PhotoReviewScreen = () => {
 
   // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
   const getInitialPartyResults = () => {
-    if (existingRecord?.partyResults) return existingRecord.partyResults;
+    if (existingRecord?.partyResults) {
+      return existingRecord.partyResults;
+    }
     if (mappedData?.partyResults) {
       return mappedData.partyResults;
     }
     const seed = offline ? '' : '0';
 
     return [
-      {id: 'libre', partido: 'LIBRE', presidente: seed, diputado: seed},
       {id: 'pdc', partido: 'PDC', presidente: seed, diputado: seed},
+      {id: 'libre', partido: 'LIBRE', presidente: seed, diputado: seed},
     ];
   };
 
@@ -619,7 +703,7 @@ const PhotoReviewScreen = () => {
                 electionId: electionIdValue,
                 tableCode,
                 votes: buildWorksheetCompareVotesPayload(
-                  normalizedPartyResults,
+                  cleanedPartyResults,
                   normalizedVoteSummaryResults,
                 ),
               },
@@ -672,7 +756,7 @@ const PhotoReviewScreen = () => {
       }
     }
 
-    navigation.navigate('PhotoConfirmationScreen', {
+    const confirmationParams = {
       photoUri: effectivePhotoUri,
       tableData: mesaInfo,
       mesaData: mesaInfo,
@@ -692,7 +776,41 @@ const PhotoReviewScreen = () => {
       hasObservation,
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
-    });
+    };
+
+    if (
+      !isWorksheetMode &&
+      !isViewOnly &&
+      compareResult?.status === WorksheetCompareStatus.MISMATCH
+    ) {
+      const diffMessage = formatWorksheetDiffsForModal(compareResult?.differences);
+
+      setPendingConfirmationParams({
+        ...confirmationParams,
+        shownCompareWarning: true,
+      });
+      setInfoModalData({
+        visible: true,
+        title: 'Hoja de trabajo no coincide',
+        message: diffMessage
+          ? `Se detectaron diferencias con la hoja de trabajo:\n${diffMessage}`
+          : 'Se detectaron diferencias con la hoja de trabajo.',
+        buttonText: 'Continuar',
+        secondaryButtonText: 'Corregir',
+        onSecondaryPress: () => {
+          setPendingConfirmationParams(null);
+          setInfoModalData({
+            visible: false,
+            title: '',
+            message: '',
+            buttonText: 'OK',
+          });
+        },
+      });
+      return;
+    }
+
+    navigation.navigate('PhotoConfirmationScreen', confirmationParams);
   };
 
   // Handler for going back

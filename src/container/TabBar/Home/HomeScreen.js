@@ -394,6 +394,7 @@ export default function HomeScreen({ navigation }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
   const runOfflineQueueRef = useRef(() => {});
+  const refreshNotificationBadgeCountRef = useRef(async () => {});
   const notificationsApiKeyRef = useRef(null);
   const notificationsAuthRetryAtRef = useRef(0);
   const [checkingVotePlace, setCheckingVotePlace] = useState(false);
@@ -920,6 +921,14 @@ export default function HomeScreen({ navigation }) {
         setHasPendingActa(pendingAfter);
       }
 
+      if ((Number(result?.processed) || 0) > 0) {
+        try {
+          await refreshNotificationBadgeCountRef.current?.();
+        } catch {
+          // No bloquear flujo principal por error al refrescar badge.
+        }
+      }
+
       if (result?.failed > 0) {
         const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
         const modalItems = failedItems.filter(shouldShowQueueFailModal);
@@ -1293,25 +1302,8 @@ export default function HomeScreen({ navigation }) {
 
     const electionWindow = resolveElectionWindowState(electionStatus);
     if (electionWindow.known && !electionWindow.enabled) {
-      return (
-        <View style={stylesx.warningContractCard}>
-          <Ionicons
-            name="time-outline"
-            size={32}
-            color="#F59E0B"
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>
-              Envío de actas no disponible
-            </CText>
-            <CText style={stylesx.warningContractText}>
-              {electionWindow.reason ||
-                'La aplicación solo está disponible durante el periodo de votación activo.'}
-            </CText>
-          </View>
-        </View>
-      );
+      // Si no hay elección activa (o está fuera de periodo), no mostrar bloque.
+      return null;
     }
 
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
@@ -1636,6 +1628,10 @@ export default function HomeScreen({ navigation }) {
       // No bloquear Home por error de notificaciones.
     }
   }, [auth?.isAuthenticated, dni, ensureNotificationsApiKey]);
+
+  useEffect(() => {
+    refreshNotificationBadgeCountRef.current = refreshNotificationBadgeCount;
+  }, [refreshNotificationBadgeCount]);
 
   const handleOpenNotifications = useCallback(async () => {
     try {
