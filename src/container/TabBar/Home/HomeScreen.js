@@ -41,7 +41,10 @@ import NetInfo from '@react-native-community/netinfo';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
-import { getLocalStoredNotifications } from '../../../notifications';
+import {
+  getLocalStoredNotifications,
+  mergeAndDedupeNotifications,
+} from '../../../notifications';
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
@@ -312,6 +315,7 @@ const LOOKUP_CACHE_KEYS = {
 const LOOKUP_CACHE_TTLS = {
   electionStatusMs: 60 * 1000,
   notificationsMs: 60 * 1000,
+  tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
 const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
 const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
@@ -332,6 +336,51 @@ const extractNotificationTimestamp = notification => {
 
   const parsed = Date.parse(String(raw || ''));
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getTablesByLocationCacheKey = locationId =>
+  `tables-by-location:${String(locationId || '').trim()}`;
+
+const warmTablesCacheByLocationId = async ({
+  locationId,
+  seedTables = [],
+  timeoutMs = 10000,
+}) => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return;
+
+  const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
+  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.tablesByLocationMs);
+  if (cacheFresh) return;
+
+  if (Array.isArray(seedTables) && seedTables.length > 0) {
+    await setCache(cacheKey, seedTables, { version: 'tables-v1' });
+    return;
+  }
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const primaryUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+  try {
+    const { data } = await axios.get(primaryUrl, { timeout: timeoutMs });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+      return;
+    }
+  } catch {
+    // fallback legacy endpoint
+  }
+
+  try {
+    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
+    const { data } = await axios.get(legacyUrl, { timeout: timeoutMs });
+    const list = data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+    }
+  } catch {
+    // non-blocking warmup
+  }
 };
 
 const resolveElectionWindowState = status => {
@@ -1553,10 +1602,10 @@ export default function HomeScreen({ navigation }) {
     const seenKey = buildNotificationSeenKey(dni);
     const applyUnreadFromList = async list => {
       const localList = await getLocalStoredNotifications(dni);
-      const mergedList = [
-        ...localList,
-        ...(Array.isArray(list) ? list : []),
-      ];
+      const mergedList = mergeAndDedupeNotifications({
+        localList,
+        remoteList: list,
+      });
       const seenRaw = await AsyncStorage.getItem(seenKey);
       const seenAt = Number(seenRaw || 0);
       const timestamps = mergedList
@@ -1802,6 +1851,10 @@ export default function HomeScreen({ navigation }) {
           location,
           table: undefined,
         });
+        warmTablesCacheByLocationId({
+          locationId: location?._id || location?.id,
+          seedTables: location?.tables || [],
+        }).catch(() => {});
 
         const hasLocation = !!location?._id;
 

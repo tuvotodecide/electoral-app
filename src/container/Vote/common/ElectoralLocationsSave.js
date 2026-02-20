@@ -54,6 +54,7 @@ const getResponsiveSize = (small, medium, large) => {
 const LOOKUP_CACHE_TTL = {
   nearbyLocationsMs: 10 * 60 * 1000,
   electionStatusMs: 10 * 60 * 1000,
+  tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
 
 const getNearbyLocationCacheKey = (latitude, longitude) => {
@@ -62,10 +63,76 @@ const getNearbyLocationCacheKey = (latitude, longitude) => {
   return `electoral-locations:nearby:${lat}:${lng}`;
 };
 
+const getTablesByLocationCacheKey = locationId =>
+  `tables-by-location:${String(locationId || '').trim()}`;
+
 const LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 const logLookupTrace = (event, payload = {}) => {
   if (!LOOKUP_TRACE_ENABLED) return;
   console.log(`[ELECTORAL-LOCATIONS][LOOKUP] ${event}`, payload);
+};
+
+const warmTablesCacheByLocationId = async ({
+  locationId,
+  seedTables = [],
+  timeoutMs = 10000,
+}) => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return;
+
+  const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
+  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
+  if (cacheFresh) {
+    logLookupTrace('tables-by-location:cache-fresh-skip', {cacheKey});
+    return;
+  }
+
+  if (Array.isArray(seedTables) && seedTables.length > 0) {
+    await setCache(cacheKey, seedTables, {version: 'tables-v1'});
+    logLookupTrace('tables-by-location:seed-cache', {
+      cacheKey,
+      count: seedTables.length,
+    });
+    return;
+  }
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const primaryUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+  try {
+    const {data} = await axios.get(primaryUrl, {timeout: timeoutMs});
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, {version: 'tables-v1'});
+      logLookupTrace('tables-by-location:backend-primary-success', {
+        cacheKey,
+        count: list.length,
+      });
+      return;
+    }
+  } catch (error) {
+    logLookupTrace('tables-by-location:backend-primary-error', {
+      cacheKey,
+      error: error?.message || 'unknown',
+    });
+  }
+
+  try {
+    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
+    const {data} = await axios.get(legacyUrl, {timeout: timeoutMs});
+    const list = data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, {version: 'tables-v1'});
+      logLookupTrace('tables-by-location:backend-legacy-success', {
+        cacheKey,
+        count: list.length,
+      });
+    }
+  } catch (error) {
+    logLookupTrace('tables-by-location:backend-legacy-error', {
+      cacheKey,
+      error: error?.message || 'unknown',
+    });
+  }
 };
 
 const ElectoralLocationsSave = ({navigation, route}) => {
@@ -649,6 +716,10 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         dni,
         location: normalizedLocation,
       });
+      warmTablesCacheByLocationId({
+        locationId,
+        seedTables: location?.tables || [],
+      }).catch(() => {});
 
       showModal(
         'success',

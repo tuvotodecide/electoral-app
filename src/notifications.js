@@ -10,6 +10,10 @@ import {StackNav, TabNav} from './navigation/NavigationKey';
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
 const MAX_LOCAL_NOTIFICATIONS = 80;
+const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
+  'acta_published',
+  'participation_certificate',
+]);
 
 const safeParse = raw => {
   try {
@@ -20,10 +24,117 @@ const safeParse = raw => {
   }
 };
 
+const normalizeNotificationField = value =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
+
+const normalizeNotificationTypeForDedupe = typeValue => {
+  const normalized = normalizeNotificationField(typeValue);
+  if (
+    normalized === 'acta_published' ||
+    normalized === 'participation_certificate'
+  ) {
+    return 'attestation_result';
+  }
+  return normalized;
+};
+
+const extractNotificationTimestampMs = notification => {
+  const raw =
+    notification?.createdAt ||
+    notification?.timestamp ||
+    notification?.data?.createdAt ||
+    notification?.data?.timestamp ||
+    0;
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw > 9999999999 ? raw : raw * 1000;
+  }
+
+  const parsed = Date.parse(String(raw || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const isLocalNotification = notification => {
+  if (notification?.source === 'local') return true;
+  const rawId = normalizeNotificationField(notification?._id || notification?.id);
+  return rawId.startsWith('local_');
+};
+
+const shouldSuppressLocalNotification = notification => {
+  if (!isLocalNotification(notification)) return false;
+  const notificationType = normalizeNotificationField(
+    notification?.data?.type ||
+      notification?.type ||
+      notification?.notificationType,
+  );
+  return BACKEND_ONLY_NOTIFICATION_TYPES.has(notificationType);
+};
+
+const buildNotificationSemanticKey = notification => {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+
+  const notificationType = normalizeNotificationTypeForDedupe(
+    data?.type || notification?.type || notification?.notificationType,
+  );
+  const tableNumber = normalizeNotificationField(
+    data?.tableNumber ||
+      data?.table_number ||
+      notification?.tableNumber ||
+      notification?.table_number,
+  );
+  const tableCode = normalizeNotificationField(
+    data?.tableCode ||
+      data?.table_code ||
+      notification?.tableCode ||
+      notification?.table_code,
+  );
+  const electionId = normalizeNotificationField(
+    data?.electionId || data?.election_id || notification?.electionId,
+  );
+  const locationId = normalizeNotificationField(
+    data?.locationId ||
+      data?.location_id ||
+      data?.electoralLocationId ||
+      notification?.locationId,
+  );
+  const title = normalizeNotificationField(data?.title || notification?.title);
+  const body = normalizeNotificationField(data?.body || notification?.body);
+
+  if (notificationType && (tableNumber || tableCode || electionId || locationId)) {
+    return `semantic:${notificationType}:${tableNumber}:${tableCode}:${electionId}:${locationId}`;
+  }
+
+  if (notificationType || title || body || tableNumber || tableCode) {
+    return `text:${notificationType}:${tableNumber}:${tableCode}:${title}:${body}`;
+  }
+
+  return null;
+};
+
+const choosePreferredNotification = (current, candidate) => {
+  if (!current) return candidate;
+  if (!candidate) return current;
+
+  const currentIsLocal = isLocalNotification(current);
+  const candidateIsLocal = isLocalNotification(candidate);
+  if (currentIsLocal !== candidateIsLocal) {
+    return currentIsLocal ? candidate : current;
+  }
+
+  const currentTs = extractNotificationTimestampMs(current);
+  const candidateTs = extractNotificationTimestampMs(candidate);
+  return candidateTs >= currentTs ? candidate : current;
+};
+
 export async function getLocalStoredNotifications(dni) {
   try {
     const raw = await AsyncStorage.getItem(LOCAL_NOTIFICATIONS_STORAGE_KEY);
-    const list = safeParse(raw);
+    const list = safeParse(raw).filter(item => !shouldSuppressLocalNotification(item));
     const normalizedDni = String(dni || '')
       .trim()
       .toLowerCase();
@@ -37,6 +148,61 @@ export async function getLocalStoredNotifications(dni) {
   } catch {
     return [];
   }
+}
+
+export function mergeAndDedupeNotifications({
+  localList = [],
+  remoteList = [],
+} = {}) {
+  const merged = [
+    ...(Array.isArray(localList) ? localList : []),
+    ...(Array.isArray(remoteList) ? remoteList : []),
+  ];
+
+  if (merged.length <= 1) {
+    return merged;
+  }
+
+  const keyToBucket = new Map();
+  const buckets = [];
+
+  merged.forEach((notification, index) => {
+    const rawId = normalizeNotificationField(notification?._id || notification?.id);
+    const semanticKey = buildNotificationSemanticKey(notification);
+    const candidateKeys = [];
+
+    if (semanticKey) {
+      candidateKeys.push(`sem:${semanticKey}`);
+    }
+    if (rawId && !rawId.startsWith('local_')) {
+      candidateKeys.push(`id:${rawId}`);
+    }
+    if (candidateKeys.length === 0) {
+      candidateKeys.push(`opaque:${index}`);
+    }
+
+    let bucket = null;
+    for (const key of candidateKeys) {
+      const existing = keyToBucket.get(key);
+      if (existing) {
+        bucket = existing;
+        break;
+      }
+    }
+
+    if (!bucket) {
+      bucket = {value: notification};
+      buckets.push(bucket);
+    } else {
+      bucket.value = choosePreferredNotification(bucket.value, notification);
+    }
+
+    candidateKeys.forEach(key => {
+      keyToBucket.set(key, bucket);
+    });
+  });
+
+  return buckets.map(bucket => bucket.value);
 }
 
 async function appendLocalStoredNotification({title, body, data, dni}) {
@@ -154,17 +320,41 @@ export async function showActaPublishedNotification({
     const resolvedElectionId = String(
       electionId || tableData?.electionId || '',
     ).trim();
+    const hasCertificate = Boolean(
+      String(
+        certificateData?.jsonUrl ||
+          certificateData?.imageUrl ||
+          certificateData?.certificateUrl ||
+          nftData?.nftUrl ||
+          '',
+      ).trim(),
+    );
+    const notificationType = hasCertificate
+      ? 'participation_certificate'
+      : 'acta_published';
+    const notificationTitle = hasCertificate
+      ? 'Certificado de participación emitido'
+      : 'Acta publicada';
+    const mesaLabel = tableNumber || tableCode || '';
+    const notificationBody = hasCertificate
+      ? mesaLabel
+        ? `Tu certificado de participación de la mesa ${mesaLabel} fue emitido.`
+        : 'Tu certificado de participación fue emitido.'
+      : mesaLabel
+      ? `Tu acta de la mesa ${mesaLabel} fue publicada correctamente.`
+      : 'Tu acta fue publicada correctamente.';
+
     await showLocalNotification({
-      title: 'Acta publicada',
-      body: 'Tu acta fue publicada correctamente. ',
+      title: notificationTitle,
+      body: notificationBody,
       data: {
-        type: 'acta_published',
+        type: notificationType,
         tableCode: tableCode || undefined,
         tableNumber: tableNumber || undefined,
         electionId: resolvedElectionId || undefined,
         screen: 'SuccessScreen',
         routeParams: JSON.stringify({
-          notificationType: 'acta_published',
+          notificationType,
           ipfsData,
           nftData,
           tableData,

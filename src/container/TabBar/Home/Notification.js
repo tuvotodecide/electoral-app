@@ -17,8 +17,10 @@ import axios from 'axios';
 import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
-import { getLocalStoredNotifications } from '../../../notifications';
-import { mockNotificaciones } from '../../../data/mockNotificaciones';
+import {
+  getLocalStoredNotifications,
+  mergeAndDedupeNotifications,
+} from '../../../notifications';
 import wira from 'wira-sdk';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
@@ -66,23 +68,38 @@ export default function Notification({ navigation }) {
   const mapServerToUi = useCallback(n => {
     const data = n?.data || {};
     const created = n?.createdAt || n?.timestamp || new Date().toISOString();
+    const titleFromBackend = n?.title || data?.title || '';
+    const bodyFromBackend = n?.body || data?.body || '';
+    const notificationType = String(data?.type || '')
+      .trim()
+      .toLowerCase();
+    const preferBackendText =
+      notificationType === 'acta_published' ||
+      notificationType === 'participation_certificate';
+
     let mesaLabel = '';
-    if (data.tableNumber) {
+    if (preferBackendText) {
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificacion';
+    } else if (data.tableNumber) {
       mesaLabel = `Mesa ${String(data.tableNumber)}`;
     } else if (data.tableCode) {
       mesaLabel = data.tableCode;
     } else {
-      mesaLabel = n?.title || data?.title || 'Notificación';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificacion';
     }
-    let tipo = 'Notificación';
+
+    let tipo = 'Notificacion';
     if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
       tipo = 'Acta publicada';
     } else if (data?.type === 'participation_certificate') {
-      tipo = 'Certificado de participación';
+      tipo = 'Certificado de participacion';
     } else if (data?.type === 'worksheet_uploaded') {
       tipo = 'Hoja de trabajo subida';
+    }
+    if (preferBackendText && bodyFromBackend) {
+      tipo = bodyFromBackend;
     }
 
     return {
@@ -99,8 +116,8 @@ export default function Notification({ navigation }) {
 
       screen: data?.screen || null,
       routeParams: data?.routeParams || null,
-      title: n?.title || data?.title || '',
-      body: n?.body || data?.body || '',
+      title: titleFromBackend,
+      body: bodyFromBackend,
     };
   }, []);
 
@@ -163,10 +180,10 @@ export default function Notification({ navigation }) {
         );
         const list = response?.data?.data || response?.data || [];
         const localList = await getLocalStoredNotifications(dni);
-        const mergedList = [
-          ...(Array.isArray(localList) ? localList : []),
-          ...(Array.isArray(list) ? list : []),
-        ];
+        const mergedList = mergeAndDedupeNotifications({
+          localList,
+          remoteList: list,
+        });
         const mapped = mergedList
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
@@ -174,7 +191,11 @@ export default function Notification({ navigation }) {
         await markNotificationsAsSeen(mapped);
       } catch (error) {
         const localList = await getLocalStoredNotifications(dni);
-        const mappedLocal = (Array.isArray(localList) ? localList : [])
+        const dedupedLocalList = mergeAndDedupeNotifications({
+          localList,
+          remoteList: [],
+        });
+        const mappedLocal = dedupedLocalList
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mappedLocal);
@@ -506,3 +527,4 @@ export const authenticateWithBackend = async (did, privateKey) => {
 
   return authData.apiKey;
 }
+

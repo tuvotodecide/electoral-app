@@ -6,7 +6,6 @@ import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';
 import { executeOperation } from '../api/account';
 import {
-  displayLocalActaPublished,
   showActaDuplicateNotification,
   showLocalNotification,
 } from '../notifications';
@@ -909,17 +908,6 @@ export const publishActaHandler = async (item, userData) => {
           }
         }
 
-        try {
-          await displayLocalActaPublished({
-            ipfsData: { jsonUrl, imageUrl: existingBallot?.image || null },
-            nftData: nftResult,
-            tableData,
-            certificateData,
-            dni: dniValue,
-            electionId,
-          });
-        } catch { }
-
         return {
           success: true,
           ipfsData: { jsonUrl },
@@ -1198,19 +1186,6 @@ export const publishActaHandler = async (item, userData) => {
             tableCode: tableCodeStrict,
           });
         }
-      }
-
-      try {
-        await displayLocalActaPublished({
-          ipfsData,
-          nftData: nftResult,
-          tableData,
-          certificateData,
-          dni: dniValue,
-          electionId,
-        });
-      } catch (err) {
-
       }
 
       return {
@@ -1510,18 +1485,6 @@ export const publishActaHandler = async (item, userData) => {
           tableCode: tableCodeStrict,
         });
       }
-    }
-
-    try {
-      await displayLocalActaPublished({
-        ipfsData,
-        nftData: nftResult,
-        tableData,
-        certificateData,
-        dni: dniValue,
-        electionId,
-      });
-    } catch (err) {
     }
 
     return { success: true, ipfsData, nftData: nftResult, tableData };

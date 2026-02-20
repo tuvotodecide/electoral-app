@@ -12,7 +12,10 @@ import {moderateScale} from '../../common/constants';
 import {StackNav} from '../../navigation/NavigationKey';
 import {BACKEND_RESULT} from '@env';
 import {authenticateWithBackend} from '../../utils/offlineQueueHandler';
-import {getLocalStoredNotifications} from '../../notifications';
+import {
+  getLocalStoredNotifications,
+  mergeAndDedupeNotifications,
+} from '../../notifications';
 import {getCache, isFresh, setCache} from '../../utils/lookupCache';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -115,10 +118,10 @@ const UniversalHeader = ({
     const seenKey = buildNotificationSeenKey(dni);
     const applyUnreadFromList = async list => {
       const localList = await getLocalStoredNotifications(dni);
-      const mergedList = [
-        ...(Array.isArray(localList) ? localList : []),
-        ...(Array.isArray(list) ? list : []),
-      ];
+      const mergedList = mergeAndDedupeNotifications({
+        localList,
+        remoteList: list,
+      });
       const seenRaw = await AsyncStorage.getItem(seenKey);
       const seenAt = Number(seenRaw || 0);
       const timestamps = mergedList
