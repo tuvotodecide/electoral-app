@@ -11,7 +11,7 @@ import { moderateScale } from '../../common/constants';
 import CText from './CText';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function UploadCardImage({label, image, setImage, testID}) {
+export default function UploadCardImage({label, image, setImage, testID, editable = true}) {
   const colors = useSelector(state => state.theme.theme);
 
   const pickFromGallery =  async() => {
@@ -58,18 +58,19 @@ export default function UploadCardImage({label, image, setImage, testID}) {
       </CText>
 
       <TouchableOpacity
+        disabled={!editable}
         testID={testID ? `${testID}_imageBox` : undefined}
-        style={[styles.imageBox, {backgroundColor: colors.inputBackground}]}
+        style={[styles.imageBox, {backgroundColor: editable ? colors.inputBackground:colors.grayScale60}]}
         onPress={pickFromCamera}>
         {image ? (
           <Image source={{uri: image.uri}} style={styles.image} />
         ) : (
-          <Icon name="camera" size={40} color={colors.primary} />
+          <Icon name="camera" size={40} color={editable ? colors.primary : colors.grayScale200} />
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={pickFromGallery}>
-        <CText type="R14" color={colors.primary}>
+      <TouchableOpacity disabled={!editable} testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={pickFromGallery}>
+        <CText type="R14" color={editable ? colors.primary : colors.grayScale400}>
           Abrir galería
         </CText>
       </TouchableOpacity>

@@ -7,7 +7,6 @@ import * as Sentry from '@sentry/react-native';
 import { captureError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import wira from 'wira-sdk';
 import { LAST_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
@@ -24,8 +23,6 @@ import { migrateIfNeeded } from './utils/migrateBundle';
 
 import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
-
-wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
 
 const queryClient = new QueryClient();
 

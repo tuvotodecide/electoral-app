@@ -57,9 +57,10 @@ export default {
   frontLabel: 'Anverso',
   backLabel: 'Reverso',
   checking: 'Verificando...',
-  DniExists: 'Carnet ya registrado',
-  DniNotFound1: 'El carnet:',
-  DniNotFound2: 'No se ha encontrado, regístrese por favor.',
+  recoveryAccount: 'Recuperar cuenta',
+  DniExists: 'Ya fué registrado, intente recuperar su cuenta.',
+  DniIssueTitle: 'El carnet:',
+  DniNotFoundMsg: 'No se ha encontrado, regístrese por favor.',
   // Page 3
   titleCamera: 'Verificación facial',
   description_note: 'Prepárate para una selfie',

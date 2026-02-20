@@ -105,12 +105,11 @@ const CInput = props => {
           testID={testID}
           style={[
             localStyle.inputBox,
-            {color: textColor ? textColor : colors.textColor},
+            {color: _editable ? (textColor ? textColor : colors.textColor) : colors.grayScale400},
             {
               height: multiline ? getHeight(75) : getHeight(52),
             },
             inputBoxStyle,
-            _editable == false && {color: colors.inputBackground},
           ]}
           {...props}
         />

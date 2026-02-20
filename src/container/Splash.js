@@ -8,9 +8,8 @@ import { moderateScale, PENDINGRECOVERY } from '../common/constants';
 import CSafeAreaView from '../components/common/CSafeAreaView';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
-import { styles } from '../themes';
 
-import { CIRCUITS_URL, GATEWAY_BASE } from '@env';
+import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import wira, { config } from 'wira-sdk';
 import CButton from '../components/common/CButton';
@@ -34,7 +33,11 @@ export default function Splash({navigation}) {
 
         switch (status) {
           case config.CircuitDownloadStatus.DOWNLOADING:
-            setDownloadMessage(String.downloadingData + info);
+            if (info.startsWith('-')) {
+              setDownloadMessage(String.downloadingData + '-');
+            } else {
+              setDownloadMessage(String.downloadingData + info);
+            }
             break;
 
           case config.CircuitDownloadStatus.DONE:
@@ -44,7 +47,7 @@ export default function Splash({navigation}) {
             break;
 
           case config.CircuitDownloadStatus.ERROR:
-            setDownloadMessage(String.downloadingFailed + '\nProgress canceled: ' + info);
+            setDownloadMessage(String.downloadingFailed);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
@@ -132,7 +135,12 @@ export default function Splash({navigation}) {
   }, [dispatch, navigation, waitForCircuitDownloadCompletion]);
 
   useEffect(() => {
-    initializeApp();
+    const initAppWithSdk = async () => {
+      await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
+      await initializeApp();
+    }
+
+    initAppWithSdk();
   }, [initializeApp]);
 
   return (
