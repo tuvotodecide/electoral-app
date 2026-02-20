@@ -154,13 +154,13 @@ export class Http {
   }
   static getFormErrors(error) {
     if (axios.isAxiosError(error)) {
-      return error.response?.data.message;
+      return error.response?.data?.message;
     }
     return null;
   }
   static getFieldErrors(error) {
     if (axios.isAxiosError(error)) {
-      return error.response?.data.errors;
+      return error.response?.data?.errors;
     }
     return null;
   }

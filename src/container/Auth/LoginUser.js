@@ -270,7 +270,7 @@ export default function LoginUser({ navigation, route }) {
         stage: 'verifyPin',
         attemptCode: code,
       });
-      if (err?.message.includes('Invalid PIN')) {
+      if (err?.message?.includes('Invalid PIN')) {
         return { ok: false, type: 'bad_pin' };
       }
       return { ok: false, type: 'unexpected', error: err };
