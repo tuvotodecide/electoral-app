@@ -10,10 +10,13 @@ import {StackNav, TabNav} from './navigation/NavigationKey';
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
 const MAX_LOCAL_NOTIFICATIONS = 80;
+const BACKEND_ALERTED_STORAGE_PREFIX = '@backend-notifications:alerted:v1:';
+const MAX_BACKEND_ALERTED_KEYS = 200;
 const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
   'acta_published',
   'participation_certificate',
 ]);
+let backendAlertQueue = Promise.resolve(0);
 
 const safeParse = raw => {
   try {
@@ -72,6 +75,134 @@ const shouldSuppressLocalNotification = notification => {
   return BACKEND_ONLY_NOTIFICATION_TYPES.has(notificationType);
 };
 
+const safeParseObject = raw => {
+  try {
+    if (!raw || typeof raw !== 'string') return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const extractAttestationFingerprint = notification => {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+  const routeParams =
+    typeof data?.routeParams === 'string' ? safeParseObject(data.routeParams) : {};
+
+  const candidates = [
+    data?.txHash,
+    data?.transactionHash,
+    data?.hash,
+    data?.ipfsUri,
+    data?.jsonUrl,
+    data?.imageUrl,
+    data?.nftUrl,
+    routeParams?.txHash,
+    routeParams?.ipfsData?.txHash,
+    routeParams?.ipfsData?.jsonUrl,
+    routeParams?.ipfsData?.ipfsUri,
+    routeParams?.certificateData?.imageUrl,
+    routeParams?.certificateData?.jsonUrl,
+    routeParams?.nftData?.nftUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeNotificationField(candidate);
+    if (normalized) return normalized;
+  }
+  return '';
+};
+
+const buildBackendNotificationAlertKey = notification => {
+  const rawId = normalizeNotificationField(notification?._id || notification?.id);
+  if (rawId && !rawId.startsWith('local_')) {
+    return `id:${rawId}`;
+  }
+  const semanticKey = buildNotificationSemanticKey(notification);
+  if (semanticKey) {
+    return `sem:${semanticKey}`;
+  }
+  const timestamp = extractNotificationTimestampMs(notification);
+  const title = normalizeNotificationField(notification?.title || notification?.data?.title);
+  const body = normalizeNotificationField(notification?.body || notification?.data?.body);
+  return `fallback:${timestamp}:${title}:${body}`;
+};
+
+const buildNotificationTextFallback = notification => {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+  const notificationType = normalizeNotificationField(data?.type);
+  const tableLabel = String(data?.tableNumber || data?.tableCode || '')
+    .trim();
+
+  const title =
+    notification?.title ||
+    data?.title ||
+    (notificationType === 'participation_certificate'
+      ? 'Certificado de participacion emitido'
+      : notificationType === 'acta_published'
+      ? 'Acta publicada'
+      : notificationType === 'worksheet_uploaded'
+      ? 'Hoja de trabajo subida'
+      : 'Tu Voto Decide');
+
+  const body =
+    notification?.body ||
+    data?.body ||
+    (notificationType === 'participation_certificate'
+      ? tableLabel
+        ? `Tu certificado de participacion de la mesa ${tableLabel} fue emitido.`
+        : 'Tu certificado de participacion fue emitido.'
+      : notificationType === 'acta_published'
+      ? tableLabel
+        ? `Tu acta de la mesa ${tableLabel} fue publicada.`
+        : 'Tu acta fue publicada.'
+      : notificationType === 'worksheet_uploaded'
+      ? tableLabel
+        ? `Mesa ${tableLabel}: tu hoja ya esta disponible para comparacion.`
+        : 'Tu hoja de trabajo ya esta disponible para comparacion.'
+      : 'Tienes una notificacion nueva.');
+
+  return {title, body, data};
+};
+
+async function getAlertedBackendNotificationKeys(dni) {
+  try {
+    const normalizedDni = normalizeNotificationField(dni || 'anon') || 'anon';
+    const storageKey = `${BACKEND_ALERTED_STORAGE_PREFIX}${normalizedDni}`;
+    const raw = await AsyncStorage.getItem(storageKey);
+    const parsed = safeParse(raw);
+    return {
+      storageKey,
+      keys: parsed
+        .map(item => normalizeNotificationField(item))
+        .filter(Boolean),
+    };
+  } catch {
+    return {
+      storageKey: `${BACKEND_ALERTED_STORAGE_PREFIX}anon`,
+      keys: [],
+    };
+  }
+}
+
+async function setAlertedBackendNotificationKeys(storageKey, keys) {
+  try {
+    const clean = keys
+      .map(item => normalizeNotificationField(item))
+      .filter(Boolean);
+    const deduped = Array.from(new Set(clean));
+    const trimmed = deduped.slice(-MAX_BACKEND_ALERTED_KEYS);
+    await AsyncStorage.setItem(storageKey, JSON.stringify(trimmed));
+  } catch {}
+}
+
 const buildNotificationSemanticKey = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
@@ -104,6 +235,15 @@ const buildNotificationSemanticKey = notification => {
   );
   const title = normalizeNotificationField(data?.title || notification?.title);
   const body = normalizeNotificationField(data?.body || notification?.body);
+  const createdAtSec = Math.floor(extractNotificationTimestampMs(notification) / 1000);
+  const attestationFingerprint = extractAttestationFingerprint(notification);
+
+  if (notificationType === 'attestation_result') {
+    const uniquePart =
+      attestationFingerprint ||
+      (createdAtSec > 0 ? `ts:${createdAtSec}` : `${title}:${body}`);
+    return `attestation:${electionId}:${uniquePart}`;
+  }
 
   if (notificationType && (tableNumber || tableCode || electionId || locationId)) {
     return `semantic:${notificationType}:${tableNumber}:${tableCode}:${electionId}:${locationId}`;
@@ -203,6 +343,58 @@ export function mergeAndDedupeNotifications({
   });
 
   return buckets.map(bucket => bucket.value);
+}
+
+export async function alertNewBackendNotifications({
+  dni,
+  notifications = [],
+  minTimestampExclusive = 0,
+} = {}) {
+  const run = async () => {
+    const list = Array.isArray(notifications) ? notifications : [];
+    if (list.length === 0) return 0;
+
+    const {storageKey, keys} = await getAlertedBackendNotificationKeys(dni);
+    const alertedKeys = new Set(keys);
+    const minTs = Number(minTimestampExclusive || 0);
+    let shownCount = 0;
+
+    const sorted = [...list].sort(
+      (a, b) => extractNotificationTimestampMs(a) - extractNotificationTimestampMs(b),
+    );
+
+    for (const notification of sorted) {
+      if (!notification || isLocalNotification(notification)) {
+        continue;
+      }
+      const timestamp = extractNotificationTimestampMs(notification);
+      if (timestamp <= minTs) {
+        continue;
+      }
+      const alertKey = buildBackendNotificationAlertKey(notification);
+      if (!alertKey || alertedKeys.has(alertKey)) {
+        continue;
+      }
+
+      const payload = buildNotificationTextFallback(notification);
+      await showLocalNotification({
+        title: payload.title,
+        body: payload.body,
+        data: payload.data,
+      });
+      alertedKeys.add(alertKey);
+      shownCount += 1;
+    }
+
+    if (shownCount > 0) {
+      await setAlertedBackendNotificationKeys(storageKey, Array.from(alertedKeys));
+    }
+
+    return shownCount;
+  };
+
+  backendAlertQueue = backendAlertQueue.then(run, run);
+  return backendAlertQueue;
 }
 
 async function appendLocalStoredNotification({title, body, data, dni}) {

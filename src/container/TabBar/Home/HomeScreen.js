@@ -42,6 +42,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
 import {
+  alertNewBackendNotifications,
   getLocalStoredNotifications,
   mergeAndDedupeNotifications,
 } from '../../../notifications';
@@ -1664,7 +1665,14 @@ export default function HomeScreen({ navigation }) {
           ? response.data
           : [];
 
-   
+      const seenRaw = await AsyncStorage.getItem(seenKey);
+      const seenAt = Number(seenRaw || 0);
+      await alertNewBackendNotifications({
+        dni,
+        notifications: list,
+        minTimestampExclusive: seenAt,
+      });
+
       await setCache(cacheKey, list, { version: 'notifications-v1' });
       await applyUnreadFromList(list);
     } catch (error) {

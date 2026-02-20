@@ -13,6 +13,7 @@ import {StackNav} from '../../navigation/NavigationKey';
 import {BACKEND_RESULT} from '@env';
 import {authenticateWithBackend} from '../../utils/offlineQueueHandler';
 import {
+  alertNewBackendNotifications,
   getLocalStoredNotifications,
   mergeAndDedupeNotifications,
 } from '../../notifications';
@@ -175,6 +176,14 @@ const UniversalHeader = ({
         : Array.isArray(response?.data)
           ? response.data
           : [];
+
+      const seenRaw = await AsyncStorage.getItem(seenKey);
+      const seenAt = Number(seenRaw || 0);
+      await alertNewBackendNotifications({
+        dni,
+        notifications: list,
+        minTimestampExclusive: seenAt,
+      });
 
       await setCache(cacheKey, list, {version: 'notifications-v1'});
       await applyUnreadFromList(list);

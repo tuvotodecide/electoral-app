@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LAST_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
-import { registerNotifications } from './notifications';
+import { handleNotificationPress, registerNotifications } from './notifications';
 import { setPendingNav } from './redux/slices/authSlice';
 import {
   ensureFCMSetup,
@@ -115,7 +115,19 @@ const App = () => {
             });
           }
         },
-        onOpenedFromNotification: _msg => { },
+        onOpenedFromNotification: msg => {
+          try {
+            const data = msg?.data || {};
+            if (!data || Object.keys(data).length === 0) return;
+            handleNotificationPress({data});
+          } catch (e) {
+            captureError(e, {
+              flow: 'notification',
+              step: 'opened_from_notification',
+              critical: false,
+            });
+          }
+        },
       });
     })();
     return () => {

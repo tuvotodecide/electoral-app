@@ -14,14 +14,15 @@ import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import axios from 'axios';
-import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
+import { BACKEND_RESULT } from '@env';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
 import {
   getLocalStoredNotifications,
   mergeAndDedupeNotifications,
 } from '../../../notifications';
-import wira from 'wira-sdk';
+import { getCache, setCache } from '../../../utils/lookupCache';
+import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
 const buildNotificationSeenKey = dniValue => {
@@ -30,6 +31,9 @@ const buildNotificationSeenKey = dniValue => {
     .toLowerCase();
   return `@notifications:last-seen:${normalized || 'anon'}`;
 };
+
+const notificationsCacheKey = dniValue =>
+  `home:notifications:${String(dniValue || '').trim().toLowerCase() || 'anon'}`;
 
 export default function Notification({ navigation }) {
   const userData = useSelector(state => state.wallet.payload);
@@ -152,12 +156,35 @@ export default function Notification({ navigation }) {
         return;
       }
 
-      if (!apiKey) {
+      let resolvedApiKey = apiKey;
+      if (!resolvedApiKey && authResolved && userData?.did && userData?.privKey) {
+        try {
+          resolvedApiKey = await authenticateWithBackend(
+            userData.did,
+            userData.privKey,
+          );
+          setApiKey(resolvedApiKey);
+        } catch {
+          resolvedApiKey = null;
+        }
+      }
+
+      if (!resolvedApiKey) {
         if (isRefresh) {
           setRefreshing(false);
         }
         if (authResolved) {
-          setItems([]);
+          const cachedEntry = await getCache(notificationsCacheKey(dni));
+          const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
+          const localList = await getLocalStoredNotifications(dni);
+          const mergedList = mergeAndDedupeNotifications({
+            localList,
+            remoteList: cachedList,
+          });
+          const mappedCached = mergedList
+            .map(mapServerToUi)
+            .sort((a, b) => b.timestamp - a.timestamp);
+          setItems(mappedCached);
           setLoading(false);
         }
         return;
@@ -173,12 +200,13 @@ export default function Notification({ navigation }) {
           {
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': apiKey
+              'x-api-key': resolvedApiKey
             },
             timeout: 30000,
           },
         );
         const list = response?.data?.data || response?.data || [];
+        await setCache(notificationsCacheKey(dni), list, { version: 'notifications-v1' });
         const localList = await getLocalStoredNotifications(dni);
         const mergedList = mergeAndDedupeNotifications({
           localList,
@@ -190,10 +218,12 @@ export default function Notification({ navigation }) {
         setItems(mapped);
         await markNotificationsAsSeen(mapped);
       } catch (error) {
+        const cachedEntry = await getCache(notificationsCacheKey(dni));
+        const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
         const localList = await getLocalStoredNotifications(dni);
         const dedupedLocalList = mergeAndDedupeNotifications({
           localList,
-          remoteList: [],
+          remoteList: cachedList,
         });
         const mappedLocal = dedupedLocalList
           .map(mapServerToUi)
@@ -206,7 +236,15 @@ export default function Notification({ navigation }) {
         setLoading(false);
       }
     },
-    [dni, apiKey, authResolved, mapServerToUi, markNotificationsAsSeen],
+    [
+      dni,
+      apiKey,
+      authResolved,
+      mapServerToUi,
+      markNotificationsAsSeen,
+      userData?.did,
+      userData?.privKey,
+    ],
   );
 
   useEffect(() => {
@@ -510,21 +548,4 @@ const localStyle = StyleSheet.create({
   },
   separator: { height: 1, backgroundColor: '#ededed', marginVertical: 10 },
 });
-
-export const authenticateWithBackend = async (did, privateKey) => {
-  const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
-
-  const authData = request.data;
-  if (!authData.apiKey || !authData.request) {
-    throw new Error('Invalid authentication request response: missing message');
-  }
-
-  await wira.authenticateWithVerifier(
-    JSON.stringify(authData.request),
-    did,
-    privateKey
-  );
-
-  return authData.apiKey;
-}
 
