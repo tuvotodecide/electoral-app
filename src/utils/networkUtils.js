@@ -4,11 +4,6 @@ import {BACKEND, BACKEND_BLOCKCHAIN, BACKEND_RESULT} from '@env';
 
 const NETWORK_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
-const logNetworkTrace = (event, payload = {}) => {
-  if (!NETWORK_TRACE_ENABLED) return;
-  console.log(`[NETWORK] ${event}`, payload);
-};
-
 /**
  * Verifica si hay conexión a internet
  */
@@ -68,11 +63,7 @@ export const backendProbe = async ({
   const healthUrl = buildHealthUrl(baseUrl);
 
   if (!healthUrl) {
-    logNetworkTrace('PROBE_FAIL', {
-      healthUrl,
-      timeoutMs,
-      errorType: 'MISSING_BASE_URL',
-    });
+
     return {
       ok: false,
       totalMs: Date.now() - startedAt,
@@ -84,11 +75,7 @@ export const backendProbe = async ({
   const now = Date.now();
   const recent = probeRecentResultByHealthUrl.get(healthUrl);
   if (recent && now - recent.at <= PROBE_RESULT_WINDOW_MS) {
-    logNetworkTrace('PROBE_CACHE_HIT', {
-      healthUrl,
-      timeoutMs,
-      ageMs: now - recent.at,
-    });
+
     return {
       ...recent.result,
       totalMs: Date.now() - startedAt,
@@ -97,10 +84,7 @@ export const backendProbe = async ({
 
   const inflightProbe = probeInflightByHealthUrl.get(healthUrl);
   if (inflightProbe) {
-    logNetworkTrace('PROBE_JOIN', {
-      healthUrl,
-      timeoutMs,
-    });
+
     const joined = await inflightProbe;
     return {
       ...joined,
@@ -108,10 +92,7 @@ export const backendProbe = async ({
     };
   }
 
-  logNetworkTrace('PROBE_START', {
-    healthUrl,
-    timeoutMs,
-  });
+
 
   const executeProbe = async () => {
     const controller = new AbortController();
@@ -137,12 +118,7 @@ export const backendProbe = async ({
           errorType: null,
           status: response.status,
         };
-        logNetworkTrace('PROBE_OK', {
-          healthUrl,
-          timeoutMs,
-          status: response.status,
-          totalMs,
-        });
+
         probeRecentResultByHealthUrl.set(healthUrl, {
           at: Date.now(),
           result,
@@ -165,13 +141,7 @@ export const backendProbe = async ({
         errorType,
         status,
       };
-      logNetworkTrace('PROBE_FAIL', {
-        healthUrl,
-        timeoutMs,
-        status,
-        totalMs,
-        errorType,
-      });
+
       probeRecentResultByHealthUrl.set(healthUrl, {
         at: Date.now(),
         result,
@@ -187,13 +157,7 @@ export const backendProbe = async ({
         errorType,
         status: null,
       };
-      logNetworkTrace('PROBE_FAIL', {
-        healthUrl,
-        timeoutMs,
-        status: null,
-        totalMs,
-        errorType,
-      });
+
       probeRecentResultByHealthUrl.set(healthUrl, {
         at: Date.now(),
         result,

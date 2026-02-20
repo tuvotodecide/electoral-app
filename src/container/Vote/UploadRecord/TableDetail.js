@@ -167,23 +167,50 @@ const mapWorksheetDetailToExistingRecord = detail => {
   );
 };
 
+const firstFulfilled = async promises => {
+  const tasks = Array.isArray(promises) ? promises : [];
+  if (!tasks.length) {
+    throw new Error('No hay fuentes disponibles.');
+  }
+  return new Promise((resolve, reject) => {
+    let rejected = 0;
+    const errors = [];
+    tasks.forEach((task, index) => {
+      Promise.resolve(task)
+        .then(resolve)
+        .catch(error => {
+          errors[index] = error;
+          rejected += 1;
+          if (rejected === tasks.length) {
+            reject(
+              errors.find(Boolean) ||
+                new Error('No se pudo obtener la hoja de trabajo.'),
+            );
+          }
+        });
+    });
+  });
+};
+
 const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
   const candidateUrls = buildIpfsJsonUrls(ipfsUri);
-  let lastError = null;
-  for (const url of candidateUrls) {
-    try {
-      const { data } = await axios.get(url, {
-        timeout: 12000,
-        headers: { Accept: 'application/json' },
-      });
-      if (data && typeof data === 'object') {
-        return data;
-      }
-    } catch (error) {
-      lastError = error;
-    }
+  if (!candidateUrls.length) {
+    throw new Error('No se encontro URL IPFS para la hoja de trabajo.');
   }
-  throw lastError || new Error('No se pudo leer la hoja desde IPFS.');
+  const attempts = candidateUrls.map(url =>
+    axios
+      .get(url, {
+        timeout: 7000,
+        headers: { Accept: 'application/json' },
+      })
+      .then(({ data }) => {
+        if (data && typeof data === 'object') {
+          return data;
+        }
+        throw new Error('Respuesta invalida desde IPFS.');
+      }),
+  );
+  return firstFulfilled(attempts);
 };
 
 const LOOKUP_CACHE_TTL = {
@@ -1043,67 +1070,86 @@ export default function TableDetail({ navigation, route }) {
 
   const handleViewWorksheet = async () => {
     let resolvedIpfsUri = String(worksheetStatus?.ipfsUri || '').trim();
-    let worksheetRecord = null;
+    const canFetchDetailFromBackend =
+      !!userData?.did &&
+      !!userData?.privKey &&
+      !!currentDni &&
+      !!tableCodeForWorksheet &&
+      !!String(electionId || '').trim();
+
+    const loadFromIpfs = async ipfsUriValue => {
+      const metadata = await fetchWorksheetMetadataFromIpfs(ipfsUriValue);
+      return {
+        worksheetRecord: mapWorksheetMetadataToExistingRecord(metadata, {
+          ...worksheetStatus,
+          ipfsUri: ipfsUriValue,
+        }),
+        ipfsUri: ipfsUriValue,
+      };
+    };
+
+    const loadFromBackend = async () => {
+      const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+      const { data } = await axios.get(
+        `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+          currentDni,
+        )}/by-table/${encodeURIComponent(
+          tableCodeForWorksheet,
+        )}/detail?electionId=${encodeURIComponent(String(electionId))}`,
+        {
+          headers: {
+            'x-api-key': apiKey,
+          },
+          timeout: 8000,
+        },
+      );
+
+      const backendStatus = String(data?.status || '').toUpperCase();
+      if (backendStatus !== WorksheetStatus.UPLOADED) {
+        throw new Error('La hoja de trabajo aun no esta subida.');
+      }
+
+      const backendIpfsUri = String(data?.ipfsUri || '').trim();
+      const effectiveIpfsUri = backendIpfsUri || resolvedIpfsUri;
+      if (data?.votes) {
+        return {
+          worksheetRecord: mapWorksheetDetailToExistingRecord(data),
+          ipfsUri: effectiveIpfsUri,
+        };
+      }
+      if (effectiveIpfsUri) {
+        return loadFromIpfs(effectiveIpfsUri);
+      }
+      throw new Error('La hoja no tiene votos ni enlace IPFS disponible.');
+    };
 
     setIsWorksheetActionLoading(true);
     setWorksheetFeedback('');
     try {
-      const canFetchDetailFromBackend =
-        !!userData?.did &&
-        !!userData?.privKey &&
-        !!currentDni &&
-        !!tableCodeForWorksheet &&
-        !!String(electionId || '').trim();
-
-      if (canFetchDetailFromBackend) {
-        try {
-          const apiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
-          const { data } = await axios.get(
-            `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
-              currentDni,
-            )}/by-table/${encodeURIComponent(
-              tableCodeForWorksheet,
-            )}/detail?electionId=${encodeURIComponent(String(electionId))}`,
-            {
-              headers: {
-                'x-api-key': apiKey,
-              },
-              timeout: 12000,
-            },
-          );
-          const backendStatus = String(data?.status || '').toUpperCase();
-          if (backendStatus === WorksheetStatus.UPLOADED) {
-            const backendIpfsUri = String(data?.ipfsUri || '').trim();
-            if (backendIpfsUri) {
-              resolvedIpfsUri = backendIpfsUri;
-            }
-            if (data?.votes) {
-              worksheetRecord = mapWorksheetDetailToExistingRecord(data);
-            }
-          }
-        } catch {
-          // Fallback a lectura directa desde IPFS
-        }
+      if (!resolvedIpfsUri && !canFetchDetailFromBackend) {
+        setWorksheetFeedback(
+          'No se encontro el enlace IPFS de la hoja de trabajo para visualizar.',
+        );
+        return;
       }
 
+      const attempts = [];
+      if (resolvedIpfsUri) {
+        attempts.push(loadFromIpfs(resolvedIpfsUri));
+      }
+      if (canFetchDetailFromBackend) {
+        attempts.push(loadFromBackend());
+      }
+
+      const resolved = await firstFulfilled(attempts);
+      const worksheetRecord = resolved?.worksheetRecord;
+      const resolvedIpfs = String(resolved?.ipfsUri || '').trim();
+
       if (!worksheetRecord) {
-        if (!resolvedIpfsUri) {
-          setWorksheetFeedback(
-            'No se encontro el enlace IPFS de la hoja de trabajo para visualizar.',
-          );
-          return;
-        }
-        const metadata = await fetchWorksheetMetadataFromIpfs(resolvedIpfsUri);
-        worksheetRecord = mapWorksheetMetadataToExistingRecord(
-          metadata,
-          {
-            ...worksheetStatus,
-            ipfsUri: resolvedIpfsUri,
-          },
-        );
+        throw new Error('No se pudo cargar la hoja de trabajo subida.');
+      }
+      if (resolvedIpfs) {
+        resolvedIpfsUri = resolvedIpfs;
       }
 
       const finalTableData = buildFinalTableData();
@@ -1165,6 +1211,8 @@ export default function TableDetail({ navigation, route }) {
     const buttonText = canViewWorksheet
       ? 'Ver hoja de trabajo'
       : 'Subir hoja de trabajo';
+    const showViewWorksheetLoader =
+      canViewWorksheet && isWorksheetActionLoading;
 
     return (
       <View style={stylesx.worksheetContainer}>
@@ -1177,7 +1225,20 @@ export default function TableDetail({ navigation, route }) {
           ]}
           onPress={buttonAction}
           disabled={buttonDisabled}>
-          <CText style={stylesx.worksheetActionText}>{buttonText}</CText>
+          {showViewWorksheetLoader ? (
+            <View style={stylesx.worksheetActionContent}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <CText
+                style={[
+                  stylesx.worksheetActionText,
+                  stylesx.worksheetActionTextWithMargin,
+                ]}>
+                Cargando hoja...
+              </CText>
+            </View>
+          ) : (
+            <CText style={stylesx.worksheetActionText}>{buttonText}</CText>
+          )}
         </TouchableOpacity>
 
         {isWorksheetBlockedByActa && (isNotFound || isFailed) ? (
@@ -1279,6 +1340,7 @@ export default function TableDetail({ navigation, route }) {
             stylesx.scrollableContent,
             shouldCenter && stylesx.centerVertically,
           ]}>
+          <View style={stylesx.detailSectionDivider} />
         {/* For tablet landscape, use two-column layout */}
         {isTablet && isLandscape ? (
           <View style={stylesx.tabletLandscapeContainer}>
@@ -1539,11 +1601,19 @@ const stylesx = StyleSheet.create({
   },
   middleWrap: {
     flex: 1,
-    justifyContent: 'center', // centra vertical
+    justifyContent: 'flex-start',
+    paddingTop: getResponsiveSize(12, 16, 20),
   },
   scrollableContent: {
     flex: 1,
     paddingBottom: getResponsiveSize(15, 25, 30),
+  },
+  detailSectionDivider: {
+    height: 1,
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(2, 4, 6),
+    marginBottom: getResponsiveSize(8, 12, 16),
+    backgroundColor: '#E5E7EB',
   },
   // Tablet Landscape Layout
   tabletLandscapeContainer: {
@@ -1559,7 +1629,7 @@ const stylesx = StyleSheet.create({
   rightColumn: {
     flex: 0.4,
     paddingLeft: getResponsiveSize(16, 20, 24),
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   instructionContainer: {
     marginTop: getResponsiveSize(15, 25, 35),
@@ -1957,15 +2027,18 @@ const stylesx = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   worksheetActionButton: {
-    marginTop: 0,
-    borderRadius: getResponsiveSize(8, 10, 12),
+    marginTop: getResponsiveSize(2, 4, 6),
+    borderRadius: getResponsiveSize(10, 12, 14),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: getResponsiveSize(10, 12, 14),
+    minHeight: getResponsiveSize(52, 56, 62),
+    paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(10, 12, 14),
   },
   worksheetActionButtonEnabled: {
-    backgroundColor: '#2F7A43',
+    backgroundColor: '#14532D',
+    borderWidth: 1,
+    borderColor: '#0B3B1E',
   },
   worksheetActionButtonDisabled: {
     backgroundColor: '#98A2B3',
@@ -1975,9 +2048,17 @@ const stylesx = StyleSheet.create({
   },
   worksheetActionText: {
     color: '#FFFFFF',
-    fontSize: getResponsiveSize(13, 14, 16),
+    fontSize: getResponsiveSize(14, 15, 17),
     fontWeight: '700',
     textAlign: 'center',
+  },
+  worksheetActionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  worksheetActionTextWithMargin: {
+    marginLeft: getResponsiveSize(8, 10, 12),
   },
   worksheetFeedbackText: {
     marginTop: getResponsiveSize(8, 10, 12),
@@ -1985,7 +2066,8 @@ const stylesx = StyleSheet.create({
     color: '#475467',
   },
   centerVertically: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: getResponsiveSize(10, 14, 18),
   },
 });
 

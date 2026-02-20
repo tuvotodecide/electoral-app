@@ -15,22 +15,17 @@ const summarizeData = value => {
   return { kind: typeof value };
 };
 
-const logCacheTrace = (event, payload = {}) => {
-  if (!CACHE_TRACE_ENABLED) return;
-  console.log(`[LOOKUP-CACHE] ${event}`, payload);
-};
+
 
 export const getCache = async key => {
   const normalizedKey = buildKey(key);
   try {
     const raw = await AsyncStorage.getItem(normalizedKey);
     if (!raw) {
-      logCacheTrace('MISS', { key: normalizedKey });
       return null;
     }
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
-      logCacheTrace('INVALID_PAYLOAD', { key: normalizedKey });
       return null;
     }
     const entry = {
@@ -39,12 +34,7 @@ export const getCache = async key => {
       version: parsed.version ?? null,
       key: normalizedKey,
     };
-    logCacheTrace('HIT', {
-      key: normalizedKey,
-      syncedAt: entry.syncedAt,
-      version: entry.version,
-      summary: summarizeData(entry.data),
-    });
+
     return entry;
   } catch (error) {
     console.error('[LOOKUP-CACHE] getCache error', { key: normalizedKey, error });
@@ -66,12 +56,7 @@ export const setCache = async (
 
   try {
     await AsyncStorage.setItem(normalizedKey, JSON.stringify(payload));
-    logCacheTrace('SET', {
-      key: normalizedKey,
-      syncedAt: payload.syncedAt,
-      version: payload.version,
-      summary: summarizeData(payload.data),
-    });
+
     return payload;
   } catch (error) {
     console.error('[LOOKUP-CACHE] setCache error', { key: normalizedKey, error });
@@ -85,12 +70,7 @@ export const isFresh = async (key, ttlMs) => {
   const ttl = Math.max(0, Number(ttlMs) || 0);
   const ageMs = Date.now() - entry.syncedAt;
   const fresh = ageMs <= ttl;
-  logCacheTrace('FRESHNESS_CHECK', {
-    key: buildKey(key),
-    ttlMs: ttl,
-    ageMs,
-    fresh,
-  });
+
   return fresh;
 };
 
@@ -98,7 +78,6 @@ export const clearCache = async key => {
   const normalizedKey = buildKey(key);
   try {
     await AsyncStorage.removeItem(normalizedKey);
-    logCacheTrace('CLEAR', { key: normalizedKey });
   } catch (error) {
     console.error('[LOOKUP-CACHE] clearCache error', { key: normalizedKey, error });
   }

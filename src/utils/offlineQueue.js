@@ -85,7 +85,7 @@ const classifyQueueError = error => {
   if (status >= 500) return 'SERVER_5XX';
   if (status === 401 || status === 403) return 'AUTH';
   if (status === 400 || status === 422) return 'VALIDATION';
-  if (status === 404) return 'VALIDATION';
+  if (status === 404) return 'UNKNOWN';
   if (status === 409) return 'CONFLICT_IDEMPOTENT';
   if (isNetworkCode(code)) {
     if (code === 'ECONNABORTED' || code === 'ETIMEDOUT') {

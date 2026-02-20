@@ -41,6 +41,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
+import { getLocalStoredNotifications } from '../../../notifications';
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
@@ -62,6 +63,7 @@ import {
   authenticateWithBackend,
   publishActaHandler,
   publishWorksheetHandler,
+  syncActaBackendHandler,
 } from '../../../utils/offlineQueueHandler';
 import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
 import { captureError, captureMessage } from '../../../config/sentry';
@@ -85,14 +87,68 @@ const getResponsiveSize = (small, medium, large) => {
 const QUEUE_WRITE_TASK_TYPES = new Set([
   'publishActa',
   'publishWorksheet',
+  'syncActaBackend',
 ]);
 
 const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
-const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-const logHomeTrace = (event, payload = {}) => {
-  if (!HOME_TRACE_ENABLED) return;
-  console.log(`[HOME][LOOKUP] ${event}`, payload);
+const RETRIABLE_NETWORK_ERROR_TYPES = new Set([
+  'NETWORK_TIMEOUT',
+  'NETWORK_DOWN',
+  'SERVER_5XX',
+  'RATE_LIMIT',
+]);
+
+const BLOCKCHAIN_ERROR_HINTS = [
+  'blockchain',
+  'oracle',
+  'attest',
+  'attestation',
+  'createattestation',
+  'smart contract',
+  'transaction',
+  'tx ',
+  'evm',
+  'revert',
+  'nonce',
+  'gas',
+  'insufficient funds',
+  'user rejected',
+  'eth_getlogs',
+  'invalid block range',
+  'viem@',
+  'mainnet.base.org',
+  'missing or invalid parameters',
+];
+
+const shouldShowQueueFailModal = failedItem => {
+  const errorType = String(failedItem?.errorType || '')
+    .trim()
+    .toUpperCase();
+  const errorMessage = String(failedItem?.error || '')
+    .trim()
+    .toLowerCase();
+
+  if (RETRIABLE_NETWORK_ERROR_TYPES.has(errorType)) {
+    return false;
+  }
+
+  if (errorMessage.includes('status code 404')) {
+    return false;
+  }
+
+  if (errorType === 'UNKNOWN') {
+    const isLikelyBlockchainError = BLOCKCHAIN_ERROR_HINTS.some(hint =>
+      errorMessage.includes(hint),
+    );
+    if (isLikelyBlockchainError) {
+      return true;
+    }
+  }
+
+  return failedItem?.removedFromQueue === true;
 };
+const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+
 
 // Responsive grid calculations
 const getCardLayout = () => {
@@ -257,6 +313,7 @@ const LOOKUP_CACHE_TTLS = {
   electionStatusMs: 60 * 1000,
   notificationsMs: 60 * 1000,
 };
+const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
 const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS = 15 * 1000;
@@ -338,6 +395,7 @@ export default function HomeScreen({ navigation }) {
   const processingRef = useRef(false);
   const runOfflineQueueRef = useRef(() => {});
   const notificationsApiKeyRef = useRef(null);
+  const notificationsAuthRetryAtRef = useRef(0);
   const [checkingVotePlace, setCheckingVotePlace] = useState(false);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
@@ -538,12 +596,7 @@ export default function HomeScreen({ navigation }) {
         try {
           const cached = await getAttestationAvailabilityCache(dni);
           if (cached?.availableElections) {
-            logHomeTrace('attestation-availability:cache-hit', {
-              dni,
-              electionsCount: Array.isArray(cached.availableElections)
-                ? cached.availableElections.length
-                : 0,
-            });
+        
             setContractsAvailability(
               buildContractsAvailabilityFromElections(
                 cached.availableElections,
@@ -552,7 +605,7 @@ export default function HomeScreen({ navigation }) {
             );
             return true;
           }
-          logHomeTrace('attestation-availability:cache-miss', { dni });
+         
         } catch {
           // noop
         }
@@ -564,10 +617,10 @@ export default function HomeScreen({ navigation }) {
           setLoadingAvailability(true);
         }
         const hasCached = await applyCachedAvailability();
-        logHomeTrace('attestation-availability:cache-applied', { hasCached });
+       
         const probe = await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
-          logHomeTrace('attestation-availability:probe-fail-fallback', probe);
+      
           if (!hasCached) {
             setContractsAvailability({
               nearestLocation: null,
@@ -596,9 +649,7 @@ export default function HomeScreen({ navigation }) {
         const elections = Array.isArray(data?.availableElections)
           ? data.availableElections
           : [];
-        logHomeTrace('attestation-availability:backend-success', {
-          electionsCount: elections.length,
-        });
+       
 
         await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
@@ -610,10 +661,7 @@ export default function HomeScreen({ navigation }) {
         );
       } catch (e) {
         const hasCached = await applyCachedAvailability();
-        logHomeTrace('attestation-availability:error-fallback', {
-          hasCached,
-          error: e?.message || 'unknown',
-        });
+        
         if (!hasCached) {
           setContractsAvailability({
             nearestLocation: null,
@@ -662,32 +710,14 @@ export default function HomeScreen({ navigation }) {
       setLocationStatus('unknown');
     }
 
-    if (!online) {
-      logHomeTrace('attestation-availability:offline-use-cache');
-      return;
-    }
-
-    if (!hasPermission) {
-      logHomeTrace('attestation-availability:no-permission-use-cache');
-      return;
-    }
-
     const cachedSavedAt = Number(cachedAvailability?.savedAt || 0);
     const cacheFresh =
       cachedSavedAt > 0 &&
       now - cachedSavedAt < ATT_AVAILABILITY_SYNC_COOLDOWN_MS;
-    if (cacheFresh) {
-      logHomeTrace('attestation-availability:cache-fresh-skip-backend', {
-        ageMs: now - cachedSavedAt,
-      });
-      return;
-    }
+
 
     const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
-      logHomeTrace('attestation-availability:probe-fail-use-cache', probe);
-      return;
-    }
+ 
 
     try {
       const coords = await getHomeLocation(true);
@@ -793,29 +823,21 @@ export default function HomeScreen({ navigation }) {
     const cachedEntry = await getCache(LOOKUP_CACHE_KEYS.electionStatus);
     const cachedData = cachedEntry?.data || null;
     if (cachedData) {
-      logHomeTrace('election-status:cache-hit');
       setElectionStatus(cachedData);
       if (cachedData?.config?.id) {
         await AsyncStorage.setItem(ELECTION_ID, String(cachedData.config.id));
       }
     } else {
-      logHomeTrace('election-status:cache-miss');
     }
 
     const cacheFresh = await isFresh(
       LOOKUP_CACHE_KEYS.electionStatus,
       LOOKUP_CACHE_TTLS.electionStatusMs,
     );
-    if (cacheFresh) {
-      logHomeTrace('election-status:cache-fresh-skip-backend');
-      return;
-    }
+
 
     const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
-      logHomeTrace('election-status:probe-fail-use-cache', probe);
-      return;
-    }
+
 
     try {
       const res = await axios.get(
@@ -824,9 +846,7 @@ export default function HomeScreen({ navigation }) {
       );
 
       if (!res?.data) return;
-      logHomeTrace('election-status:backend-success', {
-        hasConfigId: !!res?.data?.config?.id,
-      });
+
       setElectionStatus(res.data);
       await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
         version: 'elections-config-v1',
@@ -835,10 +855,7 @@ export default function HomeScreen({ navigation }) {
         await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
       }
     } catch (err) {
-      logHomeTrace('election-status:backend-error-fallback', {
-        hasCached: !!cachedData,
-        error: err?.message || 'unknown',
-      });
+
       if (!cachedData) {
         console.error('[HOME] fetchElectionStatus error', err);
       }
@@ -862,17 +879,13 @@ export default function HomeScreen({ navigation }) {
     try {
       const net = await NetInfo.fetch();
       const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-      if (!online) {
-        logHomeTrace('queue:skip-offline');
-        return;
-      }
+
 
       const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
         console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
         return;
       }
-      logHomeTrace('queue:drain-start');
 
       const result = await processQueue(async item => {
         const taskType = item?.task?.type;
@@ -882,6 +895,10 @@ export default function HomeScreen({ navigation }) {
         }
         if (taskType === 'publishActa') {
           await publishActaHandler(item, userData);
+          return;
+        }
+        if (taskType === 'syncActaBackend') {
+          await syncActaBackendHandler(item, userData);
           return;
         }
         const unknownTaskError = new Error(
@@ -905,25 +922,18 @@ export default function HomeScreen({ navigation }) {
 
       if (result?.failed > 0) {
         const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-        const terminalFailedItems = failedItems.filter(
-          item => item?.removedFromQueue === true,
-        );
-
-        if (terminalFailedItems.length > 0) {
+        const modalItems = failedItems.filter(shouldShowQueueFailModal);
+        if (modalItems.length > 0) {
           setQueueFailModal({
             visible: true,
-            failedItems: terminalFailedItems,
-            message:
-              `No se pudo completar la subida de ${terminalFailedItems.length} pendiente(s).\n` +
-              'Puedes reintentar o eliminar el fallido.',
+            failedItems: modalItems,
+            message: 'No se pudo completar la subida. Reintenta o elimina de cola.',
           });
+        } else {
+
         }
       }
-      logHomeTrace('queue:drain-finish', {
-        remaining: result?.remaining,
-        processed: result?.processed,
-        failed: result?.failed,
-      });
+
       // if (result?.failed > 0) {
       //   const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
       //   const first = failedItems[0];
@@ -952,8 +962,7 @@ export default function HomeScreen({ navigation }) {
       setQueueFailModal({
         visible: true,
         failedItems: [],
-        message:
-          'No se pudo completar la subida de pendientes. Puedes reintentar o eliminar el fallido.',
+        message: 'No se pudo completar la subida. Reintenta nuevamente.',
       });
     } finally {
       processingRef.current = false;
@@ -1522,6 +1531,10 @@ export default function HomeScreen({ navigation }) {
     userData?.dni;
 
   const ensureNotificationsApiKey = useCallback(async () => {
+    const now = Date.now();
+    if (now < notificationsAuthRetryAtRef.current) {
+      return null;
+    }
     if (notificationsApiKeyRef.current) {
       return notificationsApiKeyRef.current;
     }
@@ -1529,24 +1542,34 @@ export default function HomeScreen({ navigation }) {
     try {
       const key = await authenticateWithBackend(userData.did, userData.privKey);
       notificationsApiKeyRef.current = key;
+      notificationsAuthRetryAtRef.current = 0;
       return key;
     } catch {
+      notificationsApiKeyRef.current = null;
+      notificationsAuthRetryAtRef.current =
+        Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
       return null;
     }
   }, [userData?.did, userData?.privKey]);
 
   const refreshNotificationBadgeCount = useCallback(async () => {
     if (!auth?.isAuthenticated || !dni) {
-      logHomeTrace('notifications:skip-no-auth');
       setNotificationUnreadCount(0);
       return;
     }
 
     const seenKey = buildNotificationSeenKey(dni);
     const applyUnreadFromList = async list => {
+      const localList = await getLocalStoredNotifications(dni);
+      const mergedList = [
+        ...localList,
+        ...(Array.isArray(list) ? list : []),
+      ];
       const seenRaw = await AsyncStorage.getItem(seenKey);
       const seenAt = Number(seenRaw || 0);
-      const timestamps = list.map(extractNotificationTimestamp).filter(ts => ts > 0);
+      const timestamps = mergedList
+        .map(extractNotificationTimestamp)
+        .filter(ts => ts > 0);
 
       if (!seenAt) {
         const baseline = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
@@ -1555,7 +1578,7 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      const unread = list.reduce((acc, notification) => {
+      const unread = mergedList.reduce((acc, notification) => {
         const timestamp = extractNotificationTimestamp(notification);
         return timestamp > seenAt ? acc + 1 : acc;
       }, 0);
@@ -1566,22 +1589,16 @@ export default function HomeScreen({ navigation }) {
     const cacheKey = LOOKUP_CACHE_KEYS.notifications(dni);
     const cachedEntry = await getCache(cacheKey);
     const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
-    if (cachedList.length > 0) {
-      logHomeTrace('notifications:cache-hit', { count: cachedList.length });
-      await applyUnreadFromList(cachedList);
-    } else {
-      logHomeTrace('notifications:cache-miss');
-    }
+    await applyUnreadFromList(cachedList);
+
 
     const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.notificationsMs);
     if (cacheFresh) {
-      logHomeTrace('notifications:cache-fresh-skip-backend');
       return;
     }
 
     const probe = await backendProbe({ timeoutMs: 2000 });
     if (!probe?.ok) {
-      logHomeTrace('notifications:probe-fail-use-cache', probe);
       return;
     }
 
@@ -1606,14 +1623,16 @@ export default function HomeScreen({ navigation }) {
           ? response.data
           : [];
 
-      logHomeTrace('notifications:backend-success', { count: list.length });
+   
       await setCache(cacheKey, list, { version: 'notifications-v1' });
       await applyUnreadFromList(list);
     } catch (error) {
-      logHomeTrace('notifications:backend-error-fallback', {
-        hasCached: cachedList.length > 0,
-        error: error?.message || 'unknown',
-      });
+      const status = Number(error?.response?.status || 0);
+      if (status === 401 || status === 403) {
+        notificationsApiKeyRef.current = null;
+        notificationsAuthRetryAtRef.current =
+          Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
+      }
       // No bloquear Home por error de notificaciones.
     }
   }, [auth?.isAuthenticated, dni, ensureNotificationsApiKey]);
@@ -1633,6 +1652,7 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     notificationsApiKeyRef.current = null;
+    notificationsAuthRetryAtRef.current = 0;
   }, [userData?.did, userData?.privKey, dni]);
 
   useFocusEffect(
@@ -1709,9 +1729,7 @@ export default function HomeScreen({ navigation }) {
 
     const cachedBefore = await getVotePlace(dni);
     const hasLocationCached = !!(cachedBefore?.location?._id || cachedBefore?.location?.id);
-    logHomeTrace('vote-place:cache-state', {
-      hasLocationCached,
-    });
+
     setShouldShowRegisterAlert(!hasLocationCached);
 
     // Si ya hay cache local, no bloqueamos la UI mientras sincroniza backend.
@@ -1726,18 +1744,9 @@ export default function HomeScreen({ navigation }) {
       : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
     const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
 
-    if (!forceSync && isRecentSync) {
-      logHomeTrace('vote-place:skip-backend-recent-sync', {
-        syncedAgoMs: now - lastSyncAt,
-        hasLocationCached,
-      });
-      return;
-    }
 
-    if (votePlaceSyncRef.current.inFlight) {
-      logHomeTrace('vote-place:skip-backend-inflight');
-      return;
-    }
+
+ 
 
     if (!hasLocationCached) {
       setCheckingVotePlace(true);
@@ -1748,11 +1757,7 @@ export default function HomeScreen({ navigation }) {
     try {
       const probe = await backendProbe({ timeoutMs: 2000 });
       votePlaceSyncRef.current.lastSyncAt = Date.now();
-      if (!probe?.ok) {
-        logHomeTrace('vote-place:probe-fail-use-cache', probe);
-        setShouldShowRegisterAlert(!hasLocationCached);
-        return;
-      }
+
 
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
@@ -1769,12 +1774,10 @@ export default function HomeScreen({ navigation }) {
 
         if (!hasLocationFromBackend) {
           if (hasLocationCached) {
-            logHomeTrace('vote-place:backend-null-keep-local');
             setShouldShowRegisterAlert(false);
             return;
           }
           await clearVotePlace(dni);
-          logHomeTrace('vote-place:backend-null-cleared-local');
           setShouldShowRegisterAlert(true);
           return;
         }
@@ -1805,18 +1808,15 @@ export default function HomeScreen({ navigation }) {
         });
 
         const hasLocation = !!location?._id;
-        logHomeTrace('vote-place:backend-success', {
-          hasLocation,
-        });
+
         setShouldShowRegisterAlert(!hasLocation);
       } else {
         if (hasLocationCached) {
-          logHomeTrace('vote-place:backend-empty-keep-local');
+
           setShouldShowRegisterAlert(false);
           return;
         }
         await clearVotePlace(dni);
-        logHomeTrace('vote-place:backend-empty-use-cache');
         setShouldShowRegisterAlert(true);
       }
     } catch (e) {
@@ -1824,18 +1824,14 @@ export default function HomeScreen({ navigation }) {
       const status = Number(e?.response?.status || 0);
       if (status === 404) {
         if (hasLocationCached) {
-          logHomeTrace('vote-place:backend-404-keep-local');
           setShouldShowRegisterAlert(false);
           return;
         }
         await clearVotePlace(dni);
-        logHomeTrace('vote-place:backend-404-cleared-local');
         setShouldShowRegisterAlert(true);
         return;
       }
-      logHomeTrace('vote-place:backend-error-use-cache', {
-        error: e?.message || 'unknown',
-      });
+
       setShouldShowRegisterAlert(!hasLocationCached);
     } finally {
       votePlaceSyncRef.current.inFlight = false;
@@ -2330,13 +2326,13 @@ export default function HomeScreen({ navigation }) {
         visible={queueFailModal.visible}
         onClose={() => setQueueFailModal(m => ({ ...m, visible: false }))}
         type="warning"
-        title="Subida de pendientes"
+        title="No se pudo completar la subida"
         message={queueFailModal.message}
         buttonText="Reintentar"
         onButtonPress={handleQueueRetry}
         secondaryButtonText="Cancelar"
         onSecondaryPress={handleQueueCancel}
-        tertiaryButtonText={firstFailedId ? "Eliminar fallido" : undefined}
+        tertiaryButtonText={firstFailedId ? "Eliminar de cola" : undefined}
         onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
         tertiaryVariant="danger"
       />

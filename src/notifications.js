@@ -1,12 +1,70 @@
 // C:\apps\electoralmobile\src\notifications.js
 
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {setPendingNav} from './redux/slices/authSlice';
 import {StackNav, TabNav} from './navigation/NavigationKey';
 
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
+const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
+const MAX_LOCAL_NOTIFICATIONS = 80;
+
+const safeParse = raw => {
+  try {
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+export async function getLocalStoredNotifications(dni) {
+  try {
+    const raw = await AsyncStorage.getItem(LOCAL_NOTIFICATIONS_STORAGE_KEY);
+    const list = safeParse(raw);
+    const normalizedDni = String(dni || '')
+      .trim()
+      .toLowerCase();
+    if (!normalizedDni) return list;
+    return list.filter(
+      item =>
+        String(item?.dni || '')
+          .trim()
+          .toLowerCase() === normalizedDni,
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function appendLocalStoredNotification({title, body, data, dni}) {
+  try {
+    const now = Date.now();
+    const current = await getLocalStoredNotifications();
+    const item = {
+      _id: `local_${now}_${Math.random().toString(16).slice(2, 8)}`,
+      title: title ?? 'Tu Voto Decide',
+      body: body ?? 'Mensaje nuevo',
+      data: data ?? {},
+      timestamp: now,
+      createdAt: new Date(now).toISOString(),
+      source: 'local',
+      dni: String(dni || '')
+        .trim()
+        .toLowerCase(),
+    };
+    const next = [item, ...current].slice(0, MAX_LOCAL_NOTIFICATIONS);
+    await AsyncStorage.setItem(
+      LOCAL_NOTIFICATIONS_STORAGE_KEY,
+      JSON.stringify(next),
+    );
+    return item;
+  } catch {
+    return null;
+  }
+}
 
 export async function ensureNotificationChannel() {
   try {
@@ -45,7 +103,14 @@ notifee.onBackgroundEvent(async ({type, detail}) => {
 /**
  * Muestra una notificación local genérica.
  */
-export async function showLocalNotification({title, body, data, android = {}}) {
+export async function showLocalNotification({
+  title,
+  body,
+  data,
+  android = {},
+  persistLocal = false,
+  dni = null,
+} = {}) {
   await ensureNotificationChannel();
   await notifee.displayNotification({
     title: title ?? 'Tu Voto Decide',
@@ -59,6 +124,9 @@ export async function showLocalNotification({title, body, data, android = {}}) {
     },
     data: data ?? {},
   });
+  if (persistLocal) {
+    await appendLocalStoredNotification({title, body, data, dni});
+  }
 }
 
 /**
@@ -136,6 +204,12 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
 function buildRouteFromNotification(notification) {
   const data = notification?.data ?? {};
   if (data?.type === 'announce_count') {
+    return {
+      name: StackNav.TabNavigation,
+      params: {screen: TabNav.HomeScreen},
+    };
+  }
+  if (data?.type === 'worksheet_uploaded') {
     return {
       name: StackNav.TabNavigation,
       params: {screen: TabNav.HomeScreen},

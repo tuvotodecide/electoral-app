@@ -16,8 +16,10 @@ import axios from 'axios';
 import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
+import { getLocalStoredNotifications } from '../../../notifications';
 import { mockNotificaciones } from '../../../data/mockNotificaciones';
 import wira from 'wira-sdk';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
@@ -159,13 +161,22 @@ export default function Notification({ navigation }) {
           },
         );
         const list = response?.data?.data || response?.data || [];
-        const mapped = list
+        const localList = await getLocalStoredNotifications(dni);
+        const mergedList = [
+          ...(Array.isArray(localList) ? localList : []),
+          ...(Array.isArray(list) ? list : []),
+        ];
+        const mapped = mergedList
           .map(mapServerToUi)
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
         await markNotificationsAsSeen(mapped);
       } catch (error) {
-        // setItems([...mockNotificaciones]);
+        const localList = await getLocalStoredNotifications(dni);
+        const mappedLocal = (Array.isArray(localList) ? localList : [])
+          .map(mapServerToUi)
+          .sort((a, b) => b.timestamp - a.timestamp);
+        setItems(mappedLocal);
       } finally {
         if (isRefresh) {
           setRefreshing(false);
@@ -214,9 +225,16 @@ export default function Notification({ navigation }) {
 
   const handleNotificationPress = useCallback(
     item => {
+      const rawData = item?.data || {};
+      if (rawData?.type === 'worksheet_uploaded') {
+        navigation.navigate(StackNav.TabNavigation, {
+          screen: TabNav.HomeScreen,
+        });
+        return;
+      }
+
       // Solo navegamos si es SuccessScreen
       if (item.screen === 'SuccessScreen') {
-        const rawData = item?.data || {};
         let paramsFromNotif = {};
         if (item.routeParams) {
           try {
@@ -293,6 +311,19 @@ export default function Notification({ navigation }) {
           notificationType,
           fromNotifications: true,
         });
+        return;
+      }
+
+      if (item.screen) {
+        let paramsFromNotif = {};
+        if (item.routeParams) {
+          try {
+            paramsFromNotif = JSON.parse(item.routeParams);
+          } catch {
+            paramsFromNotif = {};
+          }
+        }
+        navigation.navigate(item.screen, paramsFromNotif);
       }
     },
     [navigation],
