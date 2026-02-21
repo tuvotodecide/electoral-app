@@ -26,6 +26,25 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['@testing-library/jest-native/extend-expect'],
-  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/'],
+  setupFilesAfterEnv: [
+    '@testing-library/jest-native/extend-expect',
+    '<rootDir>/__tests__/setup/jest.setup.js',
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/android/',
+    '/ios/',
+    '<rootDir>/__tests__/__mocks__/',
+    '<rootDir>/__tests__/setup/',
+  ],
+  testMatch: [
+    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/__tests__/**/*.spec.{js,jsx,ts,tsx}',
+  ],
+  moduleNameMapper: {
+    '^react-native-fs$': '<rootDir>/__tests__/__mocks__/react-native-fs.js',
+    '^wira-sdk$': '<rootDir>/__tests__/__mocks__/wira-sdk.js',
+    '^@/(.*)$': '<rootDir>/$1',
+    '^~/(.*)$': '<rootDir>/$1',
+  },
 };

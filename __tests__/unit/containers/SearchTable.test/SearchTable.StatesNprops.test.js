@@ -563,19 +563,12 @@ describe('SearchTable - Tests de Estados y Props', () => {
         expect(() => renderComponent(emptyRoute)).not.toThrow();
       });
 
-      test('debe manejar navigationLogger hook', () => {
-        const mockLogAction = jest.fn();
-        const mockLogNavigation = jest.fn();
-        
-        const { useNavigationLogger } = require('../../../../src/hooks/useNavigationLogger');
-        useNavigationLogger.mockReturnValue({
-          logAction: mockLogAction,
-          logNavigation: mockLogNavigation,
-        });
-        
+      test('ya no depende del hook useNavigationLogger en el flujo actual', () => {
+        const {useNavigationLogger} = require('../../../../src/hooks/useNavigationLogger');
+
         renderComponent();
-        
-        expect(useNavigationLogger).toHaveBeenCalledWith('SearchTable', true);
+
+        expect(useNavigationLogger).not.toHaveBeenCalled();
       });
     });
 

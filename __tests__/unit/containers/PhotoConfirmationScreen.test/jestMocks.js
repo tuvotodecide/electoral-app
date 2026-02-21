@@ -157,6 +157,10 @@ jest.mock('../../../../src/utils/aesGcm', () => ({
   aesGcmDecrypt: jest.fn(() => Promise.resolve(new Uint8Array(32))),
 }));
 
+jest.mock('react-native-view-shot', () => ({
+  captureRef: jest.fn(() => Promise.resolve('file:///mock-certificate.png')),
+}));
+
 jest.mock('../../../../src/utils/BioFlag', () => ({
   getBioFlag: jest.fn(() => Promise.resolve(false)),
   setBioFlag: jest.fn(() => Promise.resolve()),

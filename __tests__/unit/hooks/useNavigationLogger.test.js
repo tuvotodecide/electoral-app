@@ -1,190 +1,123 @@
-/**
- * Tests for useNavigationLogger Hook
- * Tests específicos para el hook de logging de navegación
- */
+﻿import {renderHook} from '@testing-library/react-native';
 
-import { renderHook, act } from '@testing-library/react-native';
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+  useRoute: jest.fn(),
+}));
 
 jest.mock('../../../src/config/navigationLogConfig', () => {
-  const defaultLogs = {
+  const NavigationLogConfig = {
     enabled: true,
-    componentMount: true,
-    userActions: true,
-    routeParams: true,
-    stateChanges: true,
-    stackPath: true,
+    logs: {
+      enabled: true,
+      componentMount: true,
+      userActions: true,
+      routeParams: true,
+      stateChanges: true,
+      stackPath: true,
+    },
   };
-
-  const defaultPrefixes = {
-    navigation: '[NAV]',
-    action: '[ACTION]',
-    mount: '[MOUNT]',
-    unmount: '[UNMOUNT]',
-    navigate: '[NAVIGATE]',
-    params: '[PARAMS]',
-    screen: '[SCREEN]',
-    stack: '[STACK]',
-  };
-
-  const navLog = jest.fn();
 
   return {
-    __esModule: true,
-    NavigationLogConfig: {
-      enabled: true,
-      logs: { ...defaultLogs },
-      prefixes: { ...defaultPrefixes },
-    },
-    navLog,
+    NavigationLogConfig,
+    navLog: jest.fn(),
     updateLogConfig: jest.fn(),
-    __TEST_DEFAULTS__: {
-      defaultLogs,
-      defaultPrefixes,
-    },
   };
 });
 
-const { useNavigationLogger } = require('../../../src/hooks/useNavigationLogger');
+const {useNavigation, useRoute} = require('@react-navigation/native');
+const {useNavigationLogger} = require('../../../src/hooks/useNavigationLogger');
 const configModule = require('../../../src/config/navigationLogConfig');
-const mockNavLog = configModule.navLog;
 
-describe('useNavigationLogger Hook', () => {
-
+describe('useNavigationLogger', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockNavLog.mockClear();
 
-    const defaults = configModule.__TEST_DEFAULTS__;
+    useNavigation.mockReturnValue({navigate: jest.fn()});
+    useRoute.mockReturnValue({name: 'MockRoute', params: {}});
+
     configModule.NavigationLogConfig.enabled = true;
-    configModule.NavigationLogConfig.logs = { ...defaults.defaultLogs };
-    configModule.NavigationLogConfig.prefixes = { ...defaults.defaultPrefixes };
+    configModule.NavigationLogConfig.logs = {
+      enabled: true,
+      componentMount: true,
+      userActions: true,
+      routeParams: true,
+      stateChanges: true,
+      stackPath: true,
+    };
   });
 
-  it('debe exponer funciones establecidas y retornar datos básicos', () => {
-    const { result, rerender } = renderHook(() => useNavigationLogger('TestScreen'));
+  it('returns current screen name, route and navigation', () => {
+    const navigationRef = {goBack: jest.fn()};
+    const routeRef = {name: 'Connect', params: {from: 'test'}};
 
-    expect(result.current.currentScreenName).toBe('TestScreen');
-    expect(typeof result.current.logAction).toBe('function');
-    expect(typeof result.current.logNavigation).toBe('function');
+    useNavigation.mockReturnValue(navigationRef);
+    useRoute.mockReturnValue(routeRef);
 
-    const initialLogAction = result.current.logAction;
-    const initialLogNavigation = result.current.logNavigation;
+    const {result} = renderHook(() => useNavigationLogger(null, false, false));
 
-    // Re-render con mismas props mantiene referencias
-    rerender();
-
-    expect(result.current.logAction).toBe(initialLogAction);
-    expect(result.current.logNavigation).toBe(initialLogNavigation);
+    expect(result.current.currentScreenName).toBe('Connect');
+    expect(result.current.navigation).toBe(navigationRef);
+    expect(result.current.route).toBe(routeRef);
   });
 
-  it('debe loggear acciones y navegación cuando el logging está habilitado', () => {
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
+  it('logs mount and unmount when logMount is true', () => {
+    const {unmount} = renderHook(() => useNavigationLogger('CreatePin', false, true));
 
-    act(() => {
-      result.current.logAction('OTP Changed', 'Length: 5');
-      result.current.logNavigation('UploadDocument', { step: 2 });
-    });
+    expect(configModule.navLog).toHaveBeenCalledWith(
+      'mount',
+      'CreatePin - Componente montado',
+      null,
+    );
 
-    expect(mockNavLog).toHaveBeenCalledWith('action', 'CreatePin - OTP Changed', 'Length: 5');
-    expect(mockNavLog).toHaveBeenCalledWith('navigate', 'CreatePin -> UploadDocument', { step: 2 });
+    unmount();
+
+    expect(configModule.navLog).toHaveBeenCalledWith(
+      'unmount',
+      'CreatePin - Componente desmontado',
+      null,
+    );
   });
 
-  it('debe ignorar acciones o navegación vacías sin lanzar errores', () => {
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
+  it('logs params when enabled and params exist', () => {
+    const routeWithParams = {name: 'OTPCode', params: {title: 'forgot'}};
+    useRoute.mockReturnValue(routeWithParams);
 
-    const initialCallCount = mockNavLog.mock.calls.length;
+    renderHook(() => useNavigationLogger(null, true, true));
 
-    expect(() => {
-      act(() => {
-        result.current.logAction(null);
-        result.current.logAction(undefined);
-        result.current.logAction('');
-        result.current.logNavigation(null);
-        result.current.logNavigation(undefined);
-        result.current.logNavigation('');
-      });
-    }).not.toThrow();
-
-    expect(mockNavLog.mock.calls.length).toBe(initialCallCount);
+    expect(configModule.navLog).toHaveBeenCalledWith('params', 'OTPCode:', routeWithParams.params);
   });
 
-  it('debe registrar eventos de montaje y desmontaje cuando logMount es true', () => {
-    const { unmount } = renderHook(() => useNavigationLogger('CreatePin', true, true));
+  it('does not log when logMount is false', () => {
+    renderHook(() => useNavigationLogger('SilentScreen', true, false));
 
-    expect(mockNavLog).toHaveBeenCalledWith('mount', 'CreatePin - Componente montado', null);
-
-    act(() => {
-      unmount();
-    });
-
-    expect(mockNavLog).toHaveBeenCalledWith('unmount', 'CreatePin - Componente desmontado', null);
+    expect(configModule.navLog).not.toHaveBeenCalled();
   });
 
-  it('debe loggear parámetros cuando logParams es true y existen params en la ruta', () => {
-    const routeParams = { id: 123, source: 'deeplink' };
-
-    const nativeModule = require('@react-navigation/native');
-    const routeSpy = jest.spyOn(nativeModule, 'useRoute').mockReturnValue({
-      name: 'CreatePin',
-      params: routeParams,
-    });
-
-    try {
-      renderHook(() => useNavigationLogger(null, true, true));
-      expect(mockNavLog).toHaveBeenCalledWith('params', 'CreatePin:', routeParams);
-    } finally {
-      routeSpy.mockRestore();
-    }
-  });
-
-  it('no debe loggear cuando los logs globales están deshabilitados', () => {
+  it('does not log when global logging is disabled', () => {
     configModule.NavigationLogConfig.enabled = false;
 
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
+    renderHook(() => useNavigationLogger('DisabledScreen', true, true));
 
-    act(() => {
-      result.current.logAction('ShouldNotLog');
-    });
-
-    expect(mockNavLog).not.toHaveBeenCalled();
+    expect(configModule.navLog).not.toHaveBeenCalled();
   });
 
-  it('no debe loggear cuando logs.enabled es false', () => {
-    configModule.NavigationLogConfig.logs.enabled = false;
+  it('does not log mount events when componentMount config is disabled', () => {
+    configModule.NavigationLogConfig.logs.componentMount = false;
 
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
+    renderHook(() => useNavigationLogger('NoMountEvents', false, true));
 
-    act(() => {
-      result.current.logAction('ShouldNotLog');
-    });
-
-    expect(mockNavLog).not.toHaveBeenCalled();
+    expect(configModule.navLog).not.toHaveBeenCalled();
   });
 
-  it('debe manejar errores internos de navLog sin lanzar excepciones', () => {
-    mockNavLog.mockImplementation(() => {
-      throw new Error('Logging failed');
+  it('handles navLog exceptions without throwing', () => {
+    configModule.navLog.mockImplementation(() => {
+      throw new Error('logger failed');
     });
-
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
 
     expect(() => {
-      act(() => {
-        result.current.logAction('SafeAction');
-      });
+      const {unmount} = renderHook(() => useNavigationLogger('SafeScreen', false, true));
+      unmount();
     }).not.toThrow();
-  });
-
-  it('debe tolerar configuraciones corruptas o nulas', () => {
-  configModule.NavigationLogConfig.logs = null;
-  configModule.NavigationLogConfig.prefixes = null;
-
-    const { result } = renderHook(() => useNavigationLogger('CreatePin'));
-
-    act(() => {
-      result.current.logAction('FallbackAction');
-    });
-
-    expect(mockNavLog).toHaveBeenCalledWith('action', 'CreatePin - FallbackAction', null);
   });
 });

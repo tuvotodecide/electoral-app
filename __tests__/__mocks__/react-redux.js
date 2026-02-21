@@ -12,6 +12,22 @@ const useSelector = jest.fn(selector => {
         primaryLight: '#E8F5E8',
       },
     },
+    wallet: {
+      payload: {
+        id: 'test-user-id',
+        account: '0xtest',
+        dni: '12345678',
+        vc: {
+          credentialSubject: {
+            fullName: 'Test User',
+          },
+        },
+      },
+    },
+    auth: {
+      isAuthenticated: true,
+      pendingNav: null,
+    },
   };
   return selector(mockState);
 });

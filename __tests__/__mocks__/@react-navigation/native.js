@@ -29,16 +29,24 @@ const useRoute = jest.fn(() => ({
   name: 'MockScreen',
 }));
 
+const createNavigationContainerRef = jest.fn(() => ({
+  isReady: jest.fn(() => false),
+  navigate: jest.fn(),
+  reset: jest.fn(),
+}));
+
 module.exports = {
   __esModule: true,
   useNavigation,
   NavigationContainer,
   useFocusEffect,
   useRoute,
+  createNavigationContainerRef,
   default: {
     useNavigation,
     NavigationContainer,
     useFocusEffect,
     useRoute,
+    createNavigationContainerRef,
   },
 };

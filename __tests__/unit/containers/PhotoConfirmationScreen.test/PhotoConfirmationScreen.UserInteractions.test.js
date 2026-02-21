@@ -37,12 +37,12 @@ describe('PhotoConfirmationScreen - Interacciones de Usuario', () => {
     jest.useRealTimers();
   });
 
-  test('cuando no hay conexión encola la publicación y navega a OfflinePendingScreen', async () => {
+  test('cuando no hay conexión encola la publicación y muestra finalización local', async () => {
     NetInfo.fetch.mockResolvedValue({isConnected: false, isInternetReachable: false});
     persistLocalImage.mockResolvedValue('file:///persisted.jpg');
     enqueue.mockResolvedValue(undefined);
 
-    const {getAllByText, navigation} = renderPhotoConfirmation();
+    const {getAllByText, getByTestId, navigation} = renderPhotoConfirmation();
 
     await runAutoVerification();
 
@@ -65,10 +65,11 @@ describe('PhotoConfirmationScreen - Interacciones de Usuario', () => {
         type: 'publishActa',
       }),
     );
-    expect(navigation.replace).toHaveBeenCalledWith('OfflinePendingScreen');
+    expect(getByTestId('photoConfirmationModalFinishedSubtext')).toBeTruthy();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  test('con conexión completa ejecuta el flujo de publicación y navega a SuccessScreen', async () => {
+  test('con conexión completa ejecuta el flujo de publicación y certificación', async () => {
     NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
     pinataService.uploadElectoralActComplete.mockResolvedValue({
       success: true,

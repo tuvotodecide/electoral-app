@@ -1,29 +1,57 @@
-/**
- * @format
- */
-
 import React from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import {render} from '@testing-library/react-native';
 
-jest.mock('react-native/Libraries/NewAppScreen', () => ({
-  Colors: {
-    white: '#FFFFFF',
-    black: '#000000',
-    light: '#F3F3F3',
-    dark: '#121212',
-    darker: '#0A0A0A',
-    lighter: '#FFFFFF',
-  },
-  Header: () => null,
-  DebugInstructions: () => null,
-  ReloadInstructions: () => null,
-  LearnMoreLinks: () => null,
+jest.mock('@sentry/react-native', () => ({
+  wrap: Component => Component,
 }));
 
-import App from '../App';
+jest.mock('@env', () => ({
+  BACKEND_IDENTITY: 'https://mock.identity',
+}), {virtual: true});
 
-test('renders correctly', async () => {
-  await ReactTestRenderer.act(() => {
-    ReactTestRenderer.create(<App />);
+jest.mock('../src/navigation', () => {
+  const ReactLib = require('react');
+  return function MockNavigator() {
+    return ReactLib.createElement('View', {testID: 'appNavigator'});
+  };
+});
+
+jest.mock('../src/services/notifications', () => ({
+  ensureFCMSetup: jest.fn(() => Promise.resolve()),
+  initNotifications: jest.fn(() => Promise.resolve(jest.fn())),
+  showLocalNotification: jest.fn(() => Promise.resolve()),
+  subscribeToLocationTopic: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('../src/notifications', () => ({
+  registerNotifications: jest.fn(() => Promise.resolve()),
+  handleNotificationPress: jest.fn(),
+}));
+
+jest.mock('@react-native-firebase/messaging', () => {
+  return () => ({
+    onTokenRefresh: jest.fn(() => jest.fn()),
+  });
+});
+
+jest.mock('react-redux', () => ({
+  useDispatch: () => jest.fn(),
+  useSelector: selector =>
+    selector({
+      auth: {isAuthenticated: false, pendingNav: null},
+      theme: {theme: {dark: 'light'}},
+    }),
+}));
+
+jest.mock('../src/utils/migrateBundle', () => ({
+  migrateIfNeeded: jest.fn(),
+}));
+
+import App from '../src/App';
+
+describe('src/App', () => {
+  it('renderiza el navegador principal', () => {
+    const {getByTestId} = render(<App />);
+    expect(getByTestId('appNavigator')).toBeTruthy();
   });
 });

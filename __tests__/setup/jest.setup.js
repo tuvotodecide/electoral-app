@@ -10,6 +10,9 @@ if (typeof window === 'undefined') {
 
 // Global test setup
 global.__DEV__ = true;
+if (typeof global.requestAnimationFrame === 'undefined') {
+  global.requestAnimationFrame = callback => setTimeout(callback, 0);
+}
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -25,6 +28,12 @@ jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter');
 
 // Mock complete react-native module
 jest.mock('react-native', () => ({
+  ...(() => {
+    const React = require('react');
+    const MockImage = props => React.createElement('Image', props, props.children);
+    MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
+    return {MockImage};
+  })(),
   Platform: {
     OS: 'ios',
     Version: '14.0',
@@ -51,12 +60,21 @@ jest.mock('react-native', () => ({
   View: 'View',
   SafeAreaView: 'SafeAreaView',
   TouchableOpacity: 'TouchableOpacity',
-  Image: 'Image',
+  Image: (() => {
+    const React = require('react');
+    const MockImage = props => React.createElement('Image', props, props.children);
+    MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
+    return MockImage;
+  })(),
   ActivityIndicator: 'ActivityIndicator',
   FlatList: 'FlatList',
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
+  DeviceEventEmitter: {
+    addListener: jest.fn(() => ({remove: jest.fn()})),
+    removeAllListeners: jest.fn(),
+  },
   useColorScheme: jest.fn(() => 'light'),
   StatusBar: 'StatusBar',
   InteractionManager: {
@@ -84,6 +102,26 @@ jest.mock('react-native', () => ({
       DENIED: 'denied',
       NEVER_ASK_AGAIN: 'never_ask_again',
     },
+  },
+}));
+
+jest.mock('expo-image-manipulator', () => ({
+  SaveFormat: {
+    JPEG: 'jpeg',
+    PNG: 'png',
+  },
+  ImageManipulator: {
+    manipulate: jest.fn(() => ({
+      resize: jest.fn(() => ({
+        renderAsync: jest.fn(() =>
+          Promise.resolve({
+            saveAsync: jest.fn(() =>
+              Promise.resolve({uri: 'file://mock-image.jpg'}),
+            ),
+          }),
+        ),
+      })),
+    })),
   },
 }));
 
@@ -138,10 +176,10 @@ jest.mock('react-native/Libraries/Animated/shouldUseTurboAnimatedModule', () => 
 jest.mock('react-native/src/private/specs_DEPRECATED/modules/NativeAnimatedModule', () => ({
   __esModule: true,
   default: mockNativeAnimatedModule,
-}));
+}), {virtual: true});
 
 // Mock DevMenu specifically
-jest.mock('react-native/src/private/devmenu/DevMenu', () => ({}));
+jest.mock('react-native/src/private/devmenu/DevMenu', () => ({}), {virtual: true});
 
 // Mock Dimensions globally (redundant with above but kept for safety)
 jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
@@ -274,6 +312,85 @@ jest.mock('react-native-vision-camera', () => ({
 jest.mock('react-native-image-picker', () => ({
   launchImageLibrary: jest.fn(),
   launchCamera: jest.fn(),
+}));
+
+jest.mock('react-native-blob-util', () => ({
+  fs: {
+    dirs: {
+      CacheDir: '/mock/cache',
+      DocumentDir: '/mock/documents',
+      TemporaryDir: '/mock/tmp',
+    },
+    exists: jest.fn(() => Promise.resolve(true)),
+    mkdir: jest.fn(() => Promise.resolve()),
+    unlink: jest.fn(() => Promise.resolve()),
+    cp: jest.fn(() => Promise.resolve()),
+  },
+  config: jest.fn(() => ({
+    fetch: jest.fn(() =>
+      Promise.resolve({
+        path: () => '/mock/cache/file.jpg',
+      }),
+    ),
+  })),
+  fetch: jest.fn(() =>
+    Promise.resolve({
+      path: () => '/mock/cache/file.jpg',
+    }),
+  ),
+}));
+
+jest.mock('@notifee/react-native', () => ({
+  __esModule: true,
+  AndroidImportance: {
+    HIGH: 4,
+    DEFAULT: 3,
+    LOW: 2,
+  },
+  EventType: {
+    PRESS: 'PRESS',
+    DISMISSED: 'DISMISSED',
+  },
+  default: {
+    requestPermission: jest.fn(() => Promise.resolve()),
+    createChannel: jest.fn(() => Promise.resolve('default')),
+    displayNotification: jest.fn(() => Promise.resolve()),
+    onForegroundEvent: jest.fn(() => jest.fn()),
+    onBackgroundEvent: jest.fn(),
+    getInitialNotification: jest.fn(() => Promise.resolve(null)),
+    cancelNotification: jest.fn(() => Promise.resolve()),
+  },
+}));
+
+jest.mock('sp-react-native-in-app-updates', () => ({
+  __esModule: true,
+  IAUUpdateKind: {
+    IMMEDIATE: 'IMMEDIATE',
+    FLEXIBLE: 'FLEXIBLE',
+  },
+  default: jest.fn().mockImplementation(() => ({
+    checkNeedsUpdate: jest.fn(() => Promise.resolve({shouldUpdate: false})),
+    startUpdate: jest.fn(() => Promise.resolve()),
+  })),
+}));
+
+jest.mock('@sentry/react-native', () => ({
+  __esModule: true,
+  init: jest.fn(),
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  withScope: jest.fn(callback => {
+    const scope = {
+      setTag: jest.fn(),
+      setExtra: jest.fn(),
+      setContext: jest.fn(),
+      setLevel: jest.fn(),
+    };
+    callback?.(scope);
+  }),
+  configureScope: jest.fn(),
+  wrap: Component => Component,
+  ReactNativeTracing: jest.fn(),
 }));
 
 // Mock Permissions

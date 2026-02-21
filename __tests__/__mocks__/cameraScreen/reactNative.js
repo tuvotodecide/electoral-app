@@ -123,6 +123,7 @@ const createReactNativeMock = () => {
   define('PixelRatio', mockedPixelRatio);
   define('Platform', mockedPlatform);
   define('NativeModules', mockedNativeModules);
+  define('ActivityIndicator', 'ActivityIndicator');
 
   return reactNativeMock;
 };
