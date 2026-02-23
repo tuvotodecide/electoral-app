@@ -6,14 +6,23 @@ import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';
 import { executeOperation } from '../api/account';
 import {
-  displayLocalActaPublished,
   showActaDuplicateNotification,
+  showLocalNotification,
 } from '../notifications';
 import { requestPushPermissionExplicit } from '../services/pushPermission';
 import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ELECTION_ID } from '../common/constants';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
+import {
+  WorksheetStatus,
+  getWorksheetLocalStatus,
+  upsertWorksheetLocalStatus,
+} from './worksheetLocalStatus';
+import { enqueue, updateById } from './offlineQueue';
+
+const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
+const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
 
 const safeStr = v =>
   String(v ?? '')
@@ -30,12 +39,15 @@ const getBallotTableCode = b =>
     '',
   );
 
-const fetchLatestBallotByTable = async code => {
+const fetchLatestBallotByTable = async (code, electionId = null) => {
   try {
     if (!code) return null;
+    const electionQuery = electionId
+      ? `?electionId=${encodeURIComponent(String(electionId))}`
+      : '';
     const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
       code,
-    )}`;
+    )}${electionQuery}`;
     const { data } = await axios.get(url, {
       timeout: 15000,
     });
@@ -93,11 +105,310 @@ const hasUserAttestedTable = async (dniValue, tableCode, electionId) => {
   }
 };
 
+const normalizeTableNumber = value => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const parsed = parseInt(raw, 10);
+  return Number.isNaN(parsed) ? raw : String(parsed);
+};
+
+const fetchTablesByLocationId = async locationId => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return [];
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+
+  try {
+    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch {
+    // fallback de compatibilidad
+  }
+
+  try {
+    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
+    const { data } = await axios.get(legacyUrl, { timeout: 15000 });
+    const list = data?.tables || data?.data?.tables || [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
+const extractErrorMessage = error => {
+  const responseData = error?.response?.data;
+  if (typeof responseData === 'string' && responseData.trim()) {
+    return responseData.trim();
+  }
+  if (typeof responseData?.message === 'string' && responseData.message.trim()) {
+    return responseData.message.trim();
+  }
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message.trim();
+  }
+  return 'Error no controlado';
+};
+
+const isRetriableNetworkError = error => {
+  if (!error) return false;
+  const code = String(error?.code || '').toUpperCase();
+  if (
+    code === 'ECONNABORTED' ||
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ETIMEDOUT'
+  ) {
+    return true;
+  }
+  if (error?.request && !error?.response) return true;
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('failed to fetch') ||
+    message.includes('internet')
+  );
+};
+
+const enqueueSyncActaBackendTask = async payload => {
+  const ipfsUri = String(payload?.ipfsUri || '').trim();
+  const recordId = String(payload?.recordId || '').trim();
+  if (!ipfsUri || !recordId) return false;
+
+  await enqueue({
+    type: 'syncActaBackend',
+    payload: {
+      ipfsUri,
+      recordId,
+      electionId: payload?.electionId
+        ? String(payload.electionId).trim()
+        : undefined,
+      tableCode: payload?.tableCode ? String(payload.tableCode).trim() : undefined,
+      dni: payload?.dni ? String(payload.dni).trim() : undefined,
+      observationPayload: payload?.observationPayload || {},
+    },
+  });
+  return true;
+};
+
+const buildActaCheckpoint = payload => ({
+  stage: ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED,
+  ipfsUri: String(payload?.ipfsUri || '').trim(),
+  recordId: String(payload?.recordId || '').trim(),
+  electionId: payload?.electionId ? String(payload.electionId).trim() : '',
+  tableCode: payload?.tableCode ? String(payload.tableCode).trim() : '',
+  dni: payload?.dni ? String(payload.dni).trim() : '',
+  observationPayload: payload?.observationPayload || {},
+  updatedAt: Date.now(),
+});
+
+const persistActaCheckpoint = async (item, payload) => {
+  if (!item?.id) return;
+  const checkpoint = buildActaCheckpoint(payload);
+  if (!checkpoint.ipfsUri || !checkpoint.recordId) return;
+
+  const currentTask = item?.task || {};
+  const currentPayload = currentTask?.payload || {};
+  await updateById(item.id, {
+    task: {
+      ...currentTask,
+      payload: {
+        ...currentPayload,
+        [ACTA_CHECKPOINT_KEY]: checkpoint,
+      },
+    },
+  });
+};
+
+const buildWorksheetVotesFromElectoralData = electoralData => {
+  const voteSummary = Array.isArray(electoralData?.voteSummaryResults)
+    ? electoralData.voteSummaryResults
+    : [];
+  const partyResults = Array.isArray(electoralData?.partyResults)
+    ? electoralData.partyResults
+    : [];
+  const normalize = value =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase();
+  const aliases = {
+    validos: ['validos', 'votos validos', 'votos válidos', 'validVotes'],
+    nulos: ['nulos', 'votos nulos', 'nullVotes'],
+    blancos: ['blancos', 'votos en blanco', 'blankVotes'],
+  };
+  const findRow = key =>
+    voteSummary.find(row => {
+      const id = normalize(row?.id);
+      const label = normalize(row?.label);
+      return id === key || aliases[key].includes(label);
+    });
+  const toNumber = raw => {
+    const value = parseInt(String(raw ?? '0'), 10);
+    return Number.isFinite(value) && value >= 0 ? value : 0;
+  };
+  const validVotes = toNumber(findRow('validos')?.value1);
+  const nullVotes = toNumber(findRow('nulos')?.value1);
+  const blankVotes = toNumber(findRow('blancos')?.value1);
+
+  return {
+    parties: {
+      validVotes,
+      nullVotes,
+      blankVotes,
+      partyVotes: partyResults.map(party => ({
+        partyId: String(
+          party?.id ?? party?.partyId ?? party?.partido ?? party?.name ?? '',
+        )
+          .trim()
+          .toLowerCase(),
+        votes: toNumber(party?.presidente),
+      })),
+      totalVotes: validVotes + nullVotes + blankVotes,
+    },
+  };
+};
+
+const normalizeWorksheetStatusValue = value => {
+  const status = String(value || '')
+    .trim()
+    .toUpperCase();
+  if (status === 'UPLOADED' || status === 'SUBIDA') {
+    return WorksheetStatus.UPLOADED;
+  }
+  if (status === 'PENDING' || status === 'PENDIENTE') {
+    return WorksheetStatus.PENDING;
+  }
+  if (status === 'FAILED' || status === 'FALLIDA' || status === 'ERROR') {
+    return WorksheetStatus.FAILED;
+  }
+  return '';
+};
+
+const getWorksheetReferenceForActa = async ({
+  dniValue,
+  electionId,
+  tableCode,
+  apiKey,
+}) => {
+  const normalizedDni = String(dniValue || '').trim();
+  const normalizedElectionId = String(electionId || '').trim();
+  const normalizedTableCode = String(tableCode || '').trim();
+  if (!normalizedDni || !normalizedElectionId || !normalizedTableCode) {
+    return null;
+  }
+
+  try {
+    const localStatus = await getWorksheetLocalStatus({
+      dni: normalizedDni,
+      electionId: normalizedElectionId,
+      tableCode: normalizedTableCode,
+    });
+    const localWorksheetStatus = normalizeWorksheetStatusValue(
+      localStatus?.status,
+    );
+    const localIpfsUri = String(localStatus?.ipfsUri || '').trim();
+    if (localWorksheetStatus === WorksheetStatus.UPLOADED && localIpfsUri) {
+      return {
+        ipfsUri: localIpfsUri,
+        nftLink: String(localStatus?.nftLink || '').trim() || undefined,
+        source: 'local',
+      };
+    }
+  } catch {
+    // fallback backend
+  }
+
+  try {
+    const { data } = await axios.get(
+      `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
+        normalizedDni,
+      )}/by-table/${encodeURIComponent(
+        normalizedTableCode,
+      )}?electionId=${encodeURIComponent(normalizedElectionId)}`,
+      {
+        headers: {
+          'x-api-key': apiKey,
+        },
+        timeout: 15000,
+      },
+    );
+    const backendWorksheetStatus = normalizeWorksheetStatusValue(data?.status);
+    const backendIpfsUri = String(data?.ipfsUri || '').trim();
+    if (backendWorksheetStatus === WorksheetStatus.UPLOADED && backendIpfsUri) {
+      return {
+        ipfsUri: backendIpfsUri,
+        nftLink: String(data?.nftLink || '').trim() || undefined,
+        source: 'backend',
+      };
+    }
+  } catch {
+    // worksheet missing or backend unavailable
+  }
+
+  return null;
+};
+
+const assertTableExistsInLocation = async ({
+  locationId,
+  tableCode,
+  tableNumber,
+}) => {
+  if (!locationId) {
+    throw new Error('No se pudo validar la mesa: recinto no disponible.');
+  }
+
+  try {
+    const tables = await fetchTablesByLocationId(locationId);
+
+    if (!Array.isArray(tables) || tables.length === 0) {
+      throw new Error(
+        'No se pudo validar la mesa porque el recinto no devolvio mesas.',
+      );
+    }
+
+    const normalizedCode = safeStr(tableCode);
+    const normalizedNumber = normalizeTableNumber(tableNumber);
+
+    const exists = tables.some(table => {
+      const candidateCode = safeStr(
+        table?.tableCode || table?.codigo || table?.code || '',
+      );
+      const candidateNumber = normalizeTableNumber(
+        table?.tableNumber || table?.numero || table?.number,
+      );
+
+      const codeMatch = normalizedCode && candidateCode === normalizedCode;
+      const numberMatch =
+        normalizedNumber && candidateNumber === normalizedNumber;
+
+      return codeMatch || numberMatch;
+    });
+
+    if (!exists) {
+      throw new Error(
+        `La mesa ${tableNumber || tableCode || ''} no existe en el recinto seleccionado.`,
+      );
+    }
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      throw new Error(
+        'No se pudo validar la mesa porque el recinto seleccionado no existe.',
+      );
+    }
+    throw error;
+  }
+};
+
 const uploadCertificateAndNotifyBackend = async (
   certificateImageUri,
   normalizedAdditional,
   userData,
-  apiKey
+  apiKey,
+  actaData
 ) => {
   if (!certificateImageUri) return;
 
@@ -108,8 +419,16 @@ const uploadCertificateAndNotifyBackend = async (
       : certificateImageUri;
 
     // 1) Subir certificado a IPFS (imagen + metadata, SIN data)
+    const certificateDisplayName = String(
+      normalizedAdditional?.certificateDisplayName ??
+      normalizedAdditional?.userName ??
+      '',
+    ).trim();
+    const showNameOnCertificate =
+      normalizedAdditional?.showNameOnCertificate !== false;
+
     const nftResult = await pinataService.uploadCertificateNFT(certPath, {
-      userName: normalizedAdditional.userName || '',
+      userName: showNameOnCertificate ? certificateDisplayName : '*****',
       tableNumber: normalizedAdditional.tableNumber || '',
       tableCode: normalizedAdditional.tableCode || '',
       location: normalizedAdditional.location || 'Bolivia',
@@ -138,6 +457,11 @@ const uploadCertificateAndNotifyBackend = async (
       return;
     }
     const electionId = normalizedAdditional?.electionId || undefined;
+    const actaJsonUrl =
+      String(actaData?.ipfsUri || actaData?.jsonUrl || '').trim() || undefined;
+    const actaImageUrl =
+      String(actaData?.actaImageUrl || actaData?.imageUrl || '').trim() ||
+      undefined;
 
     const res = await axios.post(
       `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
@@ -145,6 +469,8 @@ const uploadCertificateAndNotifyBackend = async (
         account: userData?.account,
         imageUrl,
         electionId,
+        ipfsUri: actaJsonUrl,
+        actaImageUrl,
       },
       {
         headers: {
@@ -168,6 +494,7 @@ const uploadCertificateAndNotifyBackend = async (
 export const publishActaHandler = async (item, userData) => {
   let certificateData = null;
   try {
+    const taskPayload = item?.task?.payload || {};
     const {
       imageUri,
       certificateImageUri,
@@ -175,7 +502,7 @@ export const publishActaHandler = async (item, userData) => {
       electoralData,
       additionalData,
       tableData,
-    } = item.task.payload;
+    } = taskPayload;
 
     // Make zk-auth to get API key for backend for upload atestation
     const apiKey = await authenticateWithBackend(
@@ -215,6 +542,42 @@ export const publishActaHandler = async (item, userData) => {
         electionType: additionalData?.electionType ?? item?.task?.payload?.electionType ?? undefined,
       };
     })();
+    const storedElectionId = String(
+      (await AsyncStorage.getItem(ELECTION_ID)) || '',
+    ).trim();
+    const electionId = String(
+      normalizedAdditional?.electionId ||
+      item?.task?.payload?.electionId ||
+      storedElectionId ||
+      '',
+    ).trim() || undefined;
+    normalizedAdditional.electionId = electionId;
+    const observationPayload = (() => {
+      const hasObservationCandidate =
+        typeof electoralData?.hasObservation === 'boolean'
+          ? electoralData.hasObservation
+          : typeof normalizedAdditional?.hasObservation === 'boolean'
+            ? normalizedAdditional.hasObservation
+            : undefined;
+      const observationTextCandidate = String(
+        electoralData?.observationText ??
+        normalizedAdditional?.observationText ??
+        '',
+      ).trim();
+
+      if (hasObservationCandidate === true) {
+        return {
+          hasObservation: true,
+          observationText: observationTextCandidate,
+        };
+      }
+      if (hasObservationCandidate === false) {
+        return {
+          hasObservation: false,
+        };
+      }
+      return {};
+    })();
 
     // --- Datos base del usuario / mesa (mismos nombres) ---
     const dniValue =
@@ -228,16 +591,88 @@ export const publishActaHandler = async (item, userData) => {
       tableData?.codigo ||
       tableData?.tableCode ||
       '';
+    const locationIdToCheck =
+      normalizedAdditional?.locationId ||
+      normalizedAdditional?.idRecinto ||
+      tableData?.idRecinto ||
+      tableData?.locationId ||
+      null;
+    const tableNumberToCheck =
+      normalizedAdditional?.tableNumber ||
+      tableData?.tableNumber ||
+      tableData?.numero ||
+      tableData?.number ||
+      '';
 
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
     if (!tableCodeStrict || tableCodeStrict.toLowerCase() === 'n/a') {
       console.warn('[OFFLINE-QUEUE] tableCode ausente; reintento diferido');
       throw new Error('RETRY_LATER_MISSING_TABLECODE');
     }
-    const electionId = normalizedAdditional?.electionId;
+    const checkpoint = taskPayload?.[ACTA_CHECKPOINT_KEY];
+    if (
+      checkpoint?.stage === ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED &&
+      checkpoint?.ipfsUri &&
+      checkpoint?.recordId
+    ) {
+      await syncActaBackendHandler(
+        {
+          task: {
+            payload: {
+              ipfsUri: checkpoint.ipfsUri,
+              recordId: checkpoint.recordId,
+              electionId: checkpoint.electionId || electionId || '',
+              tableCode: checkpoint.tableCode || tableCodeStrict,
+              dni: checkpoint.dni || String(dniValue || '').trim(),
+              observationPayload:
+                checkpoint.observationPayload || observationPayload,
+            },
+          },
+        },
+        userData,
+      );
+      try {
+        await removePersistedImage(imageUri);
+      } catch {}
+      return { success: true, resumedFromCheckpoint: true };
+    }
     const tableCodeForOracle = electionId
       ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
+    // try {
+    //   const worksheetReference = await getWorksheetReferenceForActa({
+    //     dniValue,
+    //     electionId,
+    //     tableCode: tableCodeStrict,
+    //     apiKey,
+    //   });
+    //   if (worksheetReference?.ipfsUri) {
+    //     normalizedAdditional.worksheetIpfsUri = worksheetReference.ipfsUri;
+    //     normalizedAdditional.worksheetReferenceSource = worksheetReference.source;
+    //     if (worksheetReference?.nftLink) {
+    //       normalizedAdditional.worksheetNftLink = worksheetReference.nftLink;
+    //     }
+    //   }
+    // } catch {
+    //   // non-critical: attestation can continue without worksheet reference.
+    // }
+
+    try {
+      await assertTableExistsInLocation({
+        locationId: locationIdToCheck,
+        tableCode: tableCodeStrict,
+        tableNumber: tableNumberToCheck,
+      });
+    } catch (err) {
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'validate_table_exists',
+        critical: true,
+        tableCode: tableCodeStrict,
+        locationId: locationIdToCheck,
+      });
+      throw err;
+    }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(
@@ -304,12 +739,12 @@ export const publishActaHandler = async (item, userData) => {
     try {
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
-        electionId
+        electionId,
       );
       if (duplicateCheck?.exists) {
         const existingBallot =
           duplicateCheck.ballot ||
-          (await fetchLatestBallotByTable(tableCodeStrict));
+          (await fetchLatestBallotByTable(tableCodeStrict, electionId));
         if (!existingBallot) {
           await removePersistedImage(imageUri).catch(() => { });
           await showActaDuplicateNotification({
@@ -368,6 +803,15 @@ export const publishActaHandler = async (item, userData) => {
           oracleReads.waitForOracleEvent,
           'Attested',
         );
+        const onChainRecordId = String(response.returnData.recordId.toString());
+        await persistActaCheckpoint(item, {
+          ipfsUri: jsonUrl,
+          recordId: onChainRecordId,
+          electionId,
+          tableCode: tableCodeStrict,
+          dni: dniValue,
+          observationPayload,
+        });
 
         try {
           if (existingBallot && existingBallot._id) {
@@ -405,7 +849,25 @@ export const publishActaHandler = async (item, userData) => {
               },
             );
           }
-        } catch { }
+        } catch (err) {
+          captureError(err, {
+            flow: 'offline_queue',
+            step: 'backend_attestation_duplicate',
+            critical: true,
+            tableCode: tableCodeStrict,
+          });
+          const queued = await enqueueSyncActaBackendTask({
+            ipfsUri: jsonUrl,
+            recordId: onChainRecordId,
+            electionId,
+            tableCode: tableCodeStrict,
+            dni: dniValue,
+            observationPayload,
+          }).catch(() => false);
+          if (!queued) {
+            throw err;
+          }
+        }
 
         try {
           await removePersistedImage(imageUri);
@@ -431,6 +893,10 @@ export const publishActaHandler = async (item, userData) => {
               normalizedAdditional,
               userData,
               apiKey,
+              {
+                ipfsUri: jsonUrl,
+                actaImageUrl: existingBallot?.image || null,
+              },
             );
           } catch (err) {
             captureError(err, {
@@ -441,15 +907,6 @@ export const publishActaHandler = async (item, userData) => {
             });
           }
         }
-
-        try {
-          await displayLocalActaPublished({
-            ipfsData: { jsonUrl, imageUrl: existingBallot?.image || null },
-            nftData: nftResult,
-            tableData,
-            certificateData,
-          });
-        } catch { }
 
         return {
           success: true,
@@ -469,7 +926,10 @@ export const publishActaHandler = async (item, userData) => {
     }
 
     // 2) NO fue duplicado por votos → mirar si ya existe acta en la mesa
-    const existingByTable = await fetchLatestBallotByTable(tableCodeStrict);
+    const existingByTable = await fetchLatestBallotByTable(
+      tableCodeStrict,
+      electionId,
+    );
     if (existingByTable) {
       // HAY record en la mesa PERO votos distintos:
       // SUBIR a IPFS y luego ATESTIGUAR con el JSON NUEVO (NO createAttestation)
@@ -589,6 +1049,15 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'Attested',
       );
+      const onChainRecordId = String(response.returnData.recordId.toString());
+      await persistActaCheckpoint(item, {
+        ipfsUri: ipfsData?.jsonUrl,
+        recordId: onChainRecordId,
+        electionId,
+        tableCode: tableCodeStrict,
+        dni: dniValue,
+        observationPayload,
+      });
 
       // Notificar backend (from-ipfs) y registrar attestation
       let backendBallot;
@@ -597,8 +1066,9 @@ export const publishActaHandler = async (item, userData) => {
           `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
           {
             ipfsUri: String(ipfsData.jsonUrl),
-            recordId: String(response.returnData.recordId.toString()),
+            recordId: onChainRecordId,
             tableIdIpfs: 'String',
+            ...observationPayload,
             ...(electionId ? { electionId: String(electionId) } : {}),
           },
           {
@@ -617,6 +1087,17 @@ export const publishActaHandler = async (item, userData) => {
           critical: true,
           tableCode: tableCodeStrict,
         });
+        const queued = await enqueueSyncActaBackendTask({
+          ipfsUri: ipfsData?.jsonUrl,
+          recordId: onChainRecordId,
+          electionId,
+          tableCode: tableCodeStrict,
+          dni: dniValue,
+          observationPayload,
+        }).catch(() => false);
+        if (!queued) {
+          throw err;
+        }
       }
 
       try {
@@ -647,17 +1128,33 @@ export const publishActaHandler = async (item, userData) => {
             },
           );
         }
-      } catch (err) { }
+      } catch (err) {
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'backend_attestation_attest_nuevo',
+          critical: true,
+          tableCode: tableCodeStrict,
+        });
+        const queued = await enqueueSyncActaBackendTask({
+          ipfsUri: ipfsData?.jsonUrl,
+          recordId: onChainRecordId,
+          electionId,
+          tableCode: tableCodeStrict,
+          dni: dniValue,
+          observationPayload,
+        }).catch(() => false);
+        if (!queued) {
+          throw err;
+        }
+      }
 
       try {
         await removePersistedImage(imageUri);
       } catch (err) {
-        // Error no critico - solo limpieza local
       }
       try {
         await requestPushPermissionExplicit();
       } catch (err) {
-        // Error no critico - permisos de push
       }
 
       const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
@@ -676,6 +1173,10 @@ export const publishActaHandler = async (item, userData) => {
             normalizedAdditional,
             userData,
             apiKey,
+            {
+              ipfsUri: ipfsData?.jsonUrl,
+              actaImageUrl: ipfsData?.imageUrl,
+            },
           );
         } catch (err) {
           captureError(err, {
@@ -685,17 +1186,6 @@ export const publishActaHandler = async (item, userData) => {
             tableCode: tableCodeStrict,
           });
         }
-      }
-
-      try {
-        await displayLocalActaPublished({
-          ipfsData,
-          nftData: nftResult,
-          tableData,
-          certificateData,
-        });
-      } catch (err) {
-        // Error no critico - solo notificacion local
       }
 
       return {
@@ -829,9 +1319,11 @@ export const publishActaHandler = async (item, userData) => {
     } catch (e) {
       addBlockchainBreadcrumb('createAttestation_error', { chain: CHAIN });
       const msg = e.message || '';
-      // 416c72656164792063726561746564 = "Already created" en hex
-      if (msg.indexOf('416c72656164792063726561746564') >= 0) {
-        // Fallback a attest si ya existe
+      const normalizedMsg = String(msg).toLowerCase();
+      const isAlreadyCreatedError =
+        msg.indexOf('416c72656164792063726561746564') >= 0 ||
+        normalizedMsg.includes('already created');
+      if (isAlreadyCreatedError) {
         response = await executeOperation(
           privateKey,
           userData.account,
@@ -852,8 +1344,7 @@ export const publishActaHandler = async (item, userData) => {
           critical: true,
           tableCode: tableCodeStrict,
           chain: CHAIN,
-        });
-        throw e;
+        }); throw e;
       }
     }
 
@@ -865,6 +1356,14 @@ export const publishActaHandler = async (item, userData) => {
       txUrl: explorer + 'tx/' + response.receipt.transactionHash,
       nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
     };
+    await persistActaCheckpoint(item, {
+      ipfsUri: ipfsData?.jsonUrl,
+      recordId: String(nftId),
+      electionId,
+      tableCode: tableCodeStrict,
+      dni: dniValue,
+      observationPayload,
+    });
 
     let backendBallot;
     try {
@@ -874,6 +1373,7 @@ export const publishActaHandler = async (item, userData) => {
           ipfsUri: String(ipfsData.jsonUrl),
           recordId: String(nftId),
           tableIdIpfs: 'String',
+          ...observationPayload,
           ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
@@ -892,6 +1392,17 @@ export const publishActaHandler = async (item, userData) => {
         critical: true,
         tableCode: tableCodeStrict,
       });
+      const queued = await enqueueSyncActaBackendTask({
+        ipfsUri: ipfsData?.jsonUrl,
+        recordId: nftId,
+        electionId,
+        tableCode: tableCodeStrict,
+        dni: dniValue,
+        observationPayload,
+      }).catch(() => false);
+      if (!queued) {
+        throw err;
+      }
     }
 
     try {
@@ -922,22 +1433,35 @@ export const publishActaHandler = async (item, userData) => {
           },
         );
       }
-    } catch (err) { }
-
-
+    } catch (err) {
+      captureError(err, {
+        flow: 'offline_queue',
+        step: 'backend_attestation_create',
+        critical: true,
+        tableCode: tableCodeStrict,
+      });
+      const queued = await enqueueSyncActaBackendTask({
+        ipfsUri: ipfsData?.jsonUrl,
+        recordId: String(nftId),
+        electionId,
+        tableCode: tableCodeStrict,
+        dni: dniValue,
+        observationPayload,
+      }).catch(() => false);
+      if (!queued) {
+        throw err;
+      }
+    }
 
     try {
       await removePersistedImage(imageUri);
     } catch (err) {
-      // Error no critico - solo limpieza local
+
     }
-
-
 
     try {
       await requestPushPermissionExplicit();
     } catch (err) {
-      // Error no critico - permisos de push
     }
 
     // Subir certificado y obtener enlace (si hay foto de certificado)
@@ -948,6 +1472,10 @@ export const publishActaHandler = async (item, userData) => {
           normalizedAdditional,
           userData,
           apiKey,
+          {
+            ipfsUri: ipfsData?.jsonUrl,
+            actaImageUrl: ipfsData?.imageUrl,
+          },
         );
       } catch (err) {
         captureError(err, {
@@ -959,27 +1487,384 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
-    try {
-      await displayLocalActaPublished({
-        ipfsData,
-        nftData: nftResult,
-        tableData,
-        certificateData,
-      });
-    } catch (err) {
-      // Error no critico - solo notificacion local
-    }
-
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
     captureError(fatalErr, {
       flow: 'offline_queue',
       step: 'publish_acta_fatal',
       critical: true,
-      tableCode: item?.task?.payload?.tableData?.tableCode,
-    });
-    throw fatalErr;
+      tableCode:
+        item?.task?.payload?.additionalData?.tableCode ||
+        item?.task?.payload?.tableData?.tableCode ||
+        item?.task?.payload?.tableData?.codigo ||
+        item?.task?.payload?.tableCode,
+    }); throw fatalErr;
   }
+};
+
+
+export const publishWorksheetHandler = async (item, userData) => {
+  const payload = item?.task?.payload || item?.payload || {};
+  const imageUri = payload?.imageUri;
+  const aiAnalysis = payload?.aiAnalysis || {};
+  const electoralData = payload?.electoralData || {};
+  const additionalData = payload?.additionalData || {};
+  const tableData = payload?.tableData || {};
+
+  const dniValue = String(
+    additionalData?.dni ||
+      userData?.dni ||
+      userData?.vc?.credentialSubject?.governmentIdentifier ||
+      userData?.vc?.credentialSubject?.documentNumber ||
+      userData?.vc?.credentialSubject?.nationalIdNumber ||
+      '',
+  ).trim();
+
+  const electionId = String(
+    additionalData?.electionId || payload?.electionId || '',
+  ).trim();
+  const tableCode = String(
+    additionalData?.tableCode ||
+      tableData?.codigo ||
+      tableData?.tableCode ||
+      payload?.tableCode ||
+      '',
+  ).trim();
+  const tableNumber = String(
+    additionalData?.tableNumber ||
+      tableData?.tableNumber ||
+      tableData?.numero ||
+      tableData?.number ||
+      payload?.tableNumber ||
+      '',
+  ).trim();
+  const locationId = String(
+    additionalData?.locationId ||
+      additionalData?.idRecinto ||
+      payload?.locationId ||
+      tableData?.idRecinto ||
+      tableData?.locationId ||
+      '',
+  ).trim();
+
+  const worksheetIdentity = {
+    dni: dniValue,
+    electionId,
+    tableCode,
+  };
+
+  const retryPayload = {
+    ...payload,
+    additionalData: {
+      ...additionalData,
+      dni: dniValue,
+      electionId,
+      tableCode,
+      tableNumber,
+      locationId,
+    },
+    tableData: {
+      ...tableData,
+      codigo: tableCode,
+      tableCode,
+      tableNumber,
+      numero: tableNumber,
+      idRecinto: locationId,
+      locationId,
+    },
+  };
+
+  const updateWorksheetLocalStatus = async (status, extra = {}) => {
+    if (!dniValue || !electionId || !tableCode) return;
+    await upsertWorksheetLocalStatus(worksheetIdentity, {
+      status,
+      tableCode,
+      tableNumber,
+      electionId,
+      dni: dniValue,
+      ...extra,
+    });
+  };
+
+  if (!dniValue || !electionId || !tableCode || !tableNumber) {
+    const missingFieldError = new Error(
+      'Faltan datos obligatorios de hoja de trabajo (dni/electionId/tableCode/tableNumber).',
+    );
+    await updateWorksheetLocalStatus(WorksheetStatus.FAILED, {
+      errorMessage: missingFieldError.message,
+      retryPayload,
+    });
+    throw missingFieldError;
+  }
+
+  const latestBallot = await fetchLatestBallotByTable(tableCode, electionId);
+  if (latestBallot) {
+    const blockedByActaError = new Error(
+      'No se puede subir hoja de trabajo porque esta mesa ya tiene acta registrada.',
+    );
+    blockedByActaError.removeFromQueue = true;
+    await updateWorksheetLocalStatus(WorksheetStatus.FAILED, {
+      errorMessage: blockedByActaError.message,
+      retryPayload: null,
+    });
+    throw blockedByActaError;
+  }
+
+  let ipfsData = null;
+  let jsonUrl = String(payload?.ipfsUri || payload?.jsonUrl || '').trim();
+  let imageUrl = String(payload?.imageUrl || '').trim() || null;
+  const worksheetVotes = buildWorksheetVotesFromElectoralData(electoralData);
+
+  try {
+    const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+
+    if (!jsonUrl) {
+      if (!imageUri) {
+        throw new Error(
+          'No se encontro la imagen local de la hoja de trabajo para subir.',
+        );
+      }
+      const imagePath = imageUri.startsWith('file://')
+        ? imageUri.substring(7)
+        : imageUri;
+
+      const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
+        data => {
+          if (data.id === 'validos') return { ...data, label: 'Votos Válidos' };
+          if (data.id === 'nulos') return { ...data, label: 'Votos Nulos' };
+          if (data.id === 'blancos') return { ...data, label: 'Votos en Blanco' };
+          return data;
+        },
+      );
+
+      const ipfs = await pinataService.uploadElectoralActComplete(
+        imagePath,
+        aiAnalysis || {},
+        { ...electoralData, voteSummaryResults: normalizedVoteSummary },
+        {
+          ...additionalData,
+          idRecinto: locationId,
+          locationId,
+          tableCode,
+          tableNumber,
+          role: 'worksheet',
+        },
+      );
+
+      if (!ipfs?.success) {
+        throw new Error(ipfs?.error || 'No se pudo subir la hoja a IPFS');
+      }
+
+      ipfsData = ipfs.data;
+      jsonUrl = String(ipfsData?.jsonUrl || '').trim();
+      imageUrl = String(ipfsData?.imageUrl || '').trim() || imageUrl;
+    }
+
+    if (!jsonUrl) {
+      throw new Error('No se obtuvo JSON de IPFS para la hoja de trabajo.');
+    }
+
+    const nftLink = String(
+      payload?.nftLink || payload?.worksheetMeta?.nftLink || jsonUrl,
+    ).trim();
+
+    const body = {
+      dni: dniValue,
+      electionId,
+      ipfsUri: jsonUrl,
+      tableCode,
+      tableNumber,
+      locationId: locationId || undefined,
+      image: imageUrl || undefined,
+      votes: worksheetVotes,
+      recordId:
+        String(payload?.recordId || ipfsData?.jsonCID || '').trim() || undefined,
+      tableIdIpfs: String(payload?.tableIdIpfs || 'String').trim() || undefined,
+      nftLink: nftLink || undefined,
+    };
+
+    const { data } = await axios.post(
+      `${BACKEND_RESULT}/api/v1/worksheets/from-ipfs`,
+      body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        timeout: 30000,
+      },
+    );
+
+    await updateWorksheetLocalStatus(WorksheetStatus.UPLOADED, {
+      ipfsUri: data?.ipfsUri || jsonUrl,
+      nftLink: data?.nftLink || nftLink || jsonUrl,
+      errorMessage: undefined,
+      retryPayload: null,
+    });
+
+    try {
+      await showLocalNotification({
+        title: 'Hoja de trabajo subida',
+        body: `Mesa ${tableNumber}: tu hoja ya esta disponible para comparacion.`,
+        data: {
+          type: 'worksheet_uploaded',
+          tableCode,
+          tableNumber,
+          electionId,
+        },
+        persistLocal: true,
+        dni: dniValue,
+      });
+    } catch {}
+
+    if (imageUri) {
+      await removePersistedImage(imageUri).catch(() => {});
+    }
+
+    return {
+      success: true,
+      ipfsData: ipfsData || { jsonUrl, imageUrl },
+      worksheet: data,
+    };
+  } catch (error) {
+    const statusCode = error?.response?.status;
+    const backendMessage = extractErrorMessage(error);
+    const normalizedBackendMessage = backendMessage.toLowerCase();
+
+    if (statusCode === 409 && normalizedBackendMessage.includes('ya fue subida')) {
+      await updateWorksheetLocalStatus(WorksheetStatus.UPLOADED, {
+        ipfsUri: jsonUrl || undefined,
+        nftLink: payload?.nftLink || jsonUrl || undefined,
+        errorMessage: undefined,
+        retryPayload: null,
+      });
+      if (imageUri) {
+        await removePersistedImage(imageUri).catch(() => {});
+      }
+      return { success: true, alreadyUploaded: true };
+    }
+
+    if (statusCode === 409 && normalizedBackendMessage.includes('pendiente')) {
+      await updateWorksheetLocalStatus(WorksheetStatus.PENDING, {
+        ipfsUri: jsonUrl || undefined,
+        nftLink: payload?.nftLink || jsonUrl || undefined,
+        errorMessage: backendMessage,
+        retryPayload,
+      });
+      return { success: true, alreadyPending: true };
+    }
+
+    const shouldRemainPending = isRetriableNetworkError(error);
+    await updateWorksheetLocalStatus(
+      shouldRemainPending ? WorksheetStatus.PENDING : WorksheetStatus.FAILED,
+      {
+        ipfsUri: jsonUrl || undefined,
+        nftLink: payload?.nftLink || jsonUrl || undefined,
+        errorMessage: backendMessage,
+        retryPayload,
+      },
+    );
+
+    if (!shouldRemainPending && error && typeof error === 'object') {
+      // Let queue processor drop this item so UI can expose FAILED + manual retry.
+      error.removeFromQueue = true;
+    }
+
+    throw error;
+  }
+};
+
+export const syncActaBackendHandler = async (item, userData) => {
+  const payload = item?.task?.payload || item?.payload || {};
+  const ipfsUri = String(payload?.ipfsUri || '').trim();
+  const recordId = String(payload?.recordId || '').trim();
+  const electionId = String(payload?.electionId || '').trim();
+  const tableCode = String(payload?.tableCode || '').trim();
+  const dniValue = String(
+    payload?.dni ||
+      userData?.dni ||
+      userData?.vc?.credentialSubject?.governmentIdentifier ||
+      userData?.vc?.credentialSubject?.documentNumber ||
+      userData?.vc?.credentialSubject?.nationalIdNumber ||
+      '',
+  ).trim();
+  const observationPayload = payload?.observationPayload || {};
+
+  if (!ipfsUri || !recordId) {
+    const invalidPayloadError = new Error(
+      'syncActaBackend requiere ipfsUri y recordId.',
+    );
+    invalidPayloadError.removeFromQueue = true;
+    invalidPayloadError.errorType = 'BUSINESS_TERMINAL';
+    throw invalidPayloadError;
+  }
+
+  const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+  let backendBallot = null;
+
+  try {
+    const { data } = await axios.post(
+      `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
+      {
+        ipfsUri,
+        recordId,
+        tableIdIpfs: 'String',
+        ...observationPayload,
+        ...(electionId ? { electionId } : {}),
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        timeout: 30000,
+      },
+    );
+    backendBallot = data;
+  } catch (error) {
+    if (Number(error?.response?.status) !== 409) {
+      throw error;
+    }
+    if (tableCode) {
+      backendBallot = await fetchLatestBallotByTable(tableCode, electionId);
+    }
+  }
+
+  const ballotId = backendBallot?._id;
+  if (!ballotId || !dniValue) {
+    return { success: true, backendOnly: true };
+  }
+
+  const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+  const queryEID = electionId ? `?electionId=${encodeURIComponent(electionId)}` : '';
+  try {
+    await axios.post(
+      `${BACKEND_RESULT}/api/v1/attestations${queryEID}`,
+      {
+        attestations: [
+          {
+            ballotId,
+            support: true,
+            isJury,
+            dni: dniValue,
+          },
+        ],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        timeout: 30000,
+      },
+    );
+  } catch (error) {
+    if (Number(error?.response?.status) !== 409) {
+      throw error;
+    }
+  }
+
+  return { success: true, backendBallotId: ballotId };
 };
 
 export const authenticateWithBackend = async (did, privateKey) => {

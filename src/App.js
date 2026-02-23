@@ -1,31 +1,28 @@
-import {Platform, StatusBar, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
+import { BACKEND_IDENTITY } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { captureError } from './config/sentry';
+import { Platform, StatusBar, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { LAST_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
-import {styles} from './themes';
-import {BACKEND_IDENTITY} from '@env';
-import {useDispatch, useSelector} from 'react-redux';
-import {QueryClient, QueryClientProvider} from 'react-query';
-import {migrateIfNeeded} from './utils/migrateBundle';
-import {navigate} from './navigation/RootNavigation';
-import {setPendingNav} from './redux/slices/authSlice';
+import { navigate } from './navigation/RootNavigation';
+import { handleNotificationPress, registerNotifications } from './notifications';
+import { setPendingNav } from './redux/slices/authSlice';
 import {
-  initNotifications,
   ensureFCMSetup,
-  subscribeToLocationTopic,
+  initNotifications,
   showLocalNotification,
+  subscribeToLocationTopic,
 } from './services/notifications';
-import {registerNotifications} from './notifications';
-import messaging from '@react-native-firebase/messaging';
-import {LAST_TOPIC_KEY} from './common/constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import wira from 'wira-sdk';
+import { styles } from './themes';
+import { migrateIfNeeded } from './utils/migrateBundle';
 
-import SpInAppUpdates, {IAUUpdateKind} from 'sp-react-native-in-app-updates';
+import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
-
-wira.initWiraSdk({appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY});
 
 const queryClient = new QueryClient();
 
@@ -118,7 +115,19 @@ const App = () => {
             });
           }
         },
-        onOpenedFromNotification: _msg => {},
+        onOpenedFromNotification: msg => {
+          try {
+            const data = msg?.data || {};
+            if (!data || Object.keys(data).length === 0) return;
+            handleNotificationPress({data});
+          } catch (e) {
+            captureError(e, {
+              flow: 'notification',
+              step: 'opened_from_notification',
+              critical: false,
+            });
+          }
+        },
       });
     })();
     return () => {
@@ -133,7 +142,7 @@ const App = () => {
         const rawId = last.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) {}
+        } catch (e) { }
       }
     })();
     const unsub = messaging().onTokenRefresh(async () => {
@@ -142,7 +151,7 @@ const App = () => {
         const rawId = last.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) {}
+        } catch (e) { }
       }
     });
     return () => unsub();
@@ -168,7 +177,7 @@ const App = () => {
 
         <CustomModal
           visible={mustUpdate}
-          onClose={() => {}} // no permitir cerrarlo
+          onClose={() => { }} // no permitir cerrarlo
           title="Actualización requerida"
           message="Hay una nueva versión disponible. Debes actualizar la app para continuar."
           type="warning"

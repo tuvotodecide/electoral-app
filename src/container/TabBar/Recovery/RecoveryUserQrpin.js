@@ -1,22 +1,22 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin.js
-import React, {useEffect, useRef, useState} from 'react';
-import {InteractionManager, StyleSheet, View} from 'react-native';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
-import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
 import StepIndicator from '../../../components/authComponents/StepIndicator';
+import CButton from '../../../components/common/CButton';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
+import CText from '../../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 
-import {styles} from '../../../themes';
-import typography from '../../../themes/typography';
-import {moderateScale} from '../../../common/constants';
-import {AuthNav} from '../../../navigation/NavigationKey';
-import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
+import { moderateScale } from '../../../common/constants';
 import String from '../../../i18n/String';
+import { AuthNav } from '../../../navigation/NavigationKey';
+import { styles } from '../../../themes';
+import typography from '../../../themes/typography';
+import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 export default function RecoveryUserQrPin({navigation, route}) {
   // ───── params de navegación
@@ -25,7 +25,6 @@ export default function RecoveryUserQrPin({navigation, route}) {
 
   // ───── estado & refs
   const [otp, setOtp] = useState('');
-  const otpRef = useRef(null);
 
   // ───── handlers
   const onPressContinue = () => {
@@ -34,12 +33,6 @@ export default function RecoveryUserQrPin({navigation, route}) {
       payload, // ← lo pasas a la siguiente
     });
   };
-
-  // ───── enfocar al montar
-  useEffect(() => {
-    const t = setTimeout(() => otpRef.current?.focusField(0), 350);
-    return () => clearTimeout(t);
-  }, []);
 
   return (
     <CSafeAreaViewAuth>
@@ -58,16 +51,14 @@ export default function RecoveryUserQrPin({navigation, route}) {
               {String.pinAccessDescription}
             </CText>
 
-            <OTPInputView
-              ref={otpRef}
-              pinCount={4}
+            <OTPTextInput
+              inputCount={4}
               keyboardType="number-pad"
-              autoFocusOnLoad={false}
+              autoFocus
               secureTextEntry
-              code={otp}
-              onCodeChanged={setOtp}
-              style={local.otpBox}
-              codeInputFieldStyle={[
+              handleTextChange={setOtp}
+              containerStyle={local.otpBox}
+              textInputStyle={[
                 local.otpInput,
                 {
                   backgroundColor: colors.inputBackground,
@@ -75,7 +66,8 @@ export default function RecoveryUserQrPin({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
+              offTintColor={colors.grayScale500}
             />
           </View>
 
@@ -98,12 +90,11 @@ const local = StyleSheet.create({
   otpBox: {...styles.selfCenter, height: '20%', ...styles.mt30},
   otpInput: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,
     ...typography.fontSizes.f26,
-    ...styles.mh5,
     textAlign: 'center',
     color: '#000', // bullets visibles en cualquier tema claro
     backgroundColor: '#FFF', // contraste; ajusta si usas tema oscuro

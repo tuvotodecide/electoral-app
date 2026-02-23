@@ -3,11 +3,10 @@
  * Tests de integración para la pantalla CreatePin
  */
 
-import React from 'react';
 import { fireEvent, waitFor } from '@testing-library/react-native';
 import CreatePin from '../../../src/container/Auth/CreatePin';
-import { renderWithProviders, mockNavigation } from '../../setup/test-utils';
 import { AuthNav } from '../../../src/navigation/NavigationKey';
+import { mockNavigation, renderWithProviders } from '../../setup/test-utils';
 
 if (!CreatePin) {
   throw new Error('CreatePin component failed to import');
@@ -75,7 +74,7 @@ jest.mock('../../../src/hooks/useNavigationLogger', () => ({
 }));
 
 // Mock más realista del OTP Input
-jest.mock('@twotalltotems/react-native-otp-input', () => {
+jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const { View, TextInput } = require('react-native');
   
@@ -84,9 +83,9 @@ jest.mock('@twotalltotems/react-native-otp-input', () => {
     
     const handleChange = (text) => {
       // Simular comportamiento real del OTP: solo números y longitud máxima
-      const cleanText = text.replace(/[^0-9]/g, '').slice(0, props.pinCount);
+      const cleanText = text.replace(/[^0-9]/g, '').slice(0, props.inputCount);
       setInternalValue(cleanText);
-      props.onCodeChanged && props.onCodeChanged(cleanText);
+      props.handleTextChange && props.handleTextChange(cleanText);
     };
 
     return (
@@ -96,7 +95,7 @@ jest.mock('@twotalltotems/react-native-otp-input', () => {
           value={internalValue}
           onChangeText={handleChange}
           secureTextEntry={props.secureTextEntry}
-          maxLength={props.pinCount}
+          maxLength={props.inputCount}
           keyboardType="numeric"
         />
       </View>

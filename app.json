@@ -1,4 +1,105 @@
 {
-  "name": "tuvotodecide",
-  "displayName": "TU VOTO DECIDE"
+  "expo": {
+    "name": "TU VOTO DECIDE",
+    "slug": "electoral-app-expo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/ic_launcher.png",
+    "scheme": "electoralappexpo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tuvotodecide"
+    },
+    "android": {
+      "versionCode": 42,
+      "googleServicesFile": "./native-files/google-services.json",
+      "package": "com.tuvotodecide",
+      "usesFeatures": [
+        { "name": "android.hardware.camera", "required": true },
+        { "name": "android.hardware.camera.autofocus", "required": false }
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/ic_launcher_foreground.png",
+        "backgroundImage": "./assets/images/ic_launcher_background.png",
+        "monochromeImage": "./assets/images/ic_launcher_monochrome.png"
+      },
+      "permissions": [
+        "INTERNET",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "VIBRATE",
+        "FOREGROUND_SERVICE",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            { "scheme": "com.appelectoral", "host": "shared.request" },
+            { "scheme": "com.appelectoral", "host": "shared.response" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "useLegacyPackaging": false
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+          "microphonePermission": false
+        }
+      ],
+      ["./plugins/withAndroidKeystore", {
+        "keystorePath": "./native-files/keystores/identity-release.keystore"
+      }],
+      "@react-native-firebase/app",
+      "./plugins/withNativeModules"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
 }

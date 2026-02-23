@@ -1,24 +1,47 @@
-buildscript {
-    ext {
-        buildToolsVersion = "35.0.0"
-        minSdkVersion = 24
-        compileSdkVersion = 35
-        targetSdkVersion = 35
-        ndkVersion = "26.1.10909125"
-        kotlinVersion = "2.2.20"
-    }
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.6.0")
-        classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-        classpath("com.google.gms:google-services:4.4.2")
-        classpath('io.sentry:sentry-android-gradle-plugin:4.14.1')
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-    }
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'com.google.gms:google-services:4.4.1'
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    classpath('io.sentry:sentry-android-gradle-plugin:4.14.1')
+  }
 }
 
+def storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"
+
+allprojects {
+  repositories {
+    // Native module repositories
+    maven { url file('C:/apps/sdk-flutter-example/build/host/outputs/repo') }
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+    maven { url "$storageUrl/download.flutter.io" }
+    maven {
+      url "$rootDir/../node_modules/@notifee/react-native/android/libs"
+    }
+  }
+}
+
+apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// Map the legacy package_info_plus coordinates to the actual published group in the local Flutter repo.
+// This is needed because polygonid_flutter_sdk transitively depends on package_info_plus with old coordinates.
+subprojects {
+  configurations.all { config ->
+    config.resolutionStrategy.eachDependency { details ->
+      if (details.requested.group == 'io.flutter.plugins.packageinfo' &&
+          details.requested.name == 'package_info_plus_release') {
+        details.useTarget('dev.fluttercommunity.plus.packageinfo:package_info_plus_release:1.0')
+      }
+    }
+  }
+}

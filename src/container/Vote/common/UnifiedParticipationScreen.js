@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { useSelector } from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
 import { StackNav } from '../../../navigation/NavigationKey';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -23,7 +21,7 @@ const getResponsiveSize = (small, medium, large) => {
 
 const UnifiedParticipationScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
-  const { locationId, locationData, electionId, electionType } = route.params || {};
+  const { locationData, electionId, electionType } = route.params || {};
   const [dots, setDots] = useState('');
   useEffect(() => {
     const interval = setInterval(() => {
@@ -51,18 +49,21 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
           electionType,
         });
       } else {
-
-        // Flujo normal (lista de mesas)
-        navigation.replace(StackNav.UnifiedTableScreen, {
+        // Nuevo flujo: tras seleccionar recinto, ir directo a TableDetail
+        // y pedir numero de mesa en esa pantalla.
+        navigation.replace(StackNav.TableDetail, {
           locationId,
-          locationData,
-          targetScreen: 'SearchTable',
-          electionId
+          locationData: { ...locationData, locationId },
+          isFromUnifiedFlow: true,
+          fromCache,
+          offline,
+          electionId,
+          electionType,
         });
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [navigation, route?.params]);
+  }, [navigation, route?.params, electionId, electionType]);
 
   const handleBack = () => {
     navigation.goBack();
@@ -71,7 +72,7 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader
-        title={locationData.name}
+        title={locationData?.name || 'Recinto seleccionado'}
         onBack={handleBack}
         color={colors.white}
       />

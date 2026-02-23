@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {useSelector} from 'react-redux';
 import {
   AppState,
@@ -10,13 +10,13 @@ import {
 
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
-import {TabNav} from '../NavigationKey';
+import {getFocusedRouteNameFromRoute, useNavigation} from '@react-navigation/native';
+import {StackNav, TabNav} from '../NavigationKey';
 import {TabRoute} from '../NavigationRoute';
 import CText from '../../components/common/CText';
 import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
-import {isSessionValid, startSession} from '../../utils/Session';
+import {isSessionValid, refreshSession} from '../../utils/Session';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -29,28 +29,56 @@ const getResponsiveSize = (small, medium, large) => {
   if (isTablet) return large;
   return medium;
 };
-
-import {useNavigation} from '@react-navigation/native';
-import {StackNav} from '../NavigationKey';
-
 function useKeepAlive() {
   const navigation = useNavigation();
+  const appStateRef = useRef(AppState.currentState);
+  const redirectingRef = useRef(false);
   useEffect(() => {
-    const renew = () => startSession();
-    const sub = AppState.addEventListener('change', s => {
-      if (s === 'active') renew();
+    const redirectToAuth = () => {
+      if (redirectingRef.current) return;
+      redirectingRef.current = true;
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.AuthNavigation}],
+      });
+    };
+
+    const validateOrRedirect = async () => {
+      const valid = await isSessionValid();
+      if (!valid) {
+        redirectToAuth();
+      }
+      return valid;
+    };
+
+    const renew = async () => {
+      try {
+        await refreshSession();
+      } catch {}
+    };
+    const sub = AppState.addEventListener('change', async nextState => {
+      const prevState = appStateRef.current;
+      appStateRef.current = nextState;
+
+      if (nextState === 'active') {
+        const valid = await validateOrRedirect();
+        if (valid) await renew();
+        return;
+      }
+
+      if (
+        prevState === 'active' &&
+        (nextState === 'background' || nextState === 'inactive')
+      ) {
+        // Keep full TTL when app is minimized.
+        await renew();
+      }
     });
     const id = setInterval(async () => {
-      if (!(await isSessionValid())) {
-        // Solo navegar al login, no borrar el estado automáticamente
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.AuthNavigation}],
-        });
-      }
-      // es 15 minutos,
-      // así que lo pongo en 9 minutos
-    }, 900_000); // 900_000 ms = 15 minutos
+      if (appStateRef.current !== 'active') return;
+      await renew();
+      await validateOrRedirect();
+    }, 300_000); // 300_000 ms = 5 minutos
     return () => {
       sub.remove();
       clearInterval(id);
@@ -59,7 +87,6 @@ function useKeepAlive() {
 }
 
 function CustomTabBar({state, descriptors, navigation, colors}) {
-  useKeepAlive();
   const insets = useSafeAreaInsets();
 
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar

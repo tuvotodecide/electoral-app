@@ -1,62 +1,78 @@
 import {
-  StyleSheet,
-  TouchableOpacity,
-  View,
+  AppState,
   Dimensions,
-  Modal,
-  Linking,
-  ScrollView,
   FlatList,
   Image,
-  ImageBackground,
-  Alert,
-  AppState,
+  Linking,
+  Modal,
   PermissionsAndroid,
   Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 
 import Geolocation from '@react-native-community/geolocation';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearAuth } from '../../../redux/slices/authSlice';
-import { clearWallet } from '../../../redux/action/walletAction';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useDispatch } from 'react-redux';
+import { clearWallet } from '../../../redux/action/walletAction';
+import { clearAuth } from '../../../redux/slices/authSlice';
 
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CText from '../../../components/common/CText';
-import I18nStrings from '../../../i18n/String';
-import { AuthNav, StackNav } from '../../../navigation/NavigationKey';
-import { useSelector } from 'react-redux';
-import { store } from '../../../redux/store';
-import { clearSession } from '../../../utils/Session';
+import { BACKEND_RESULT } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import images from '../../../assets/images';
 import {
   ELECTION_ID,
-  ELECTION_STATUS,
-  JWT_KEY,
-  KEY_OFFLINE,
+  JWT_KEY
 } from '../../../common/constants';
-import axios from 'axios';
-import images from '../../../assets/images';
-import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
+import RegisterAlertCard from '../../../components/home/RegisterAlertCard';
+import I18nStrings from '../../../i18n/String';
+import { StackNav } from '../../../navigation/NavigationKey';
+import { clearSession } from '../../../utils/Session';
 
-import { useFocusEffect } from '@react-navigation/native';
-import {
-  getAll as getOfflineQueue,
-  getVotePlace,
-  processQueue,
-  saveVotePlace,
-  removeById,
-} from '../../../utils/offlineQueue';
-import { ActivityIndicator } from 'react-native-paper';
 import NetInfo from '@react-native-community/netinfo';
-import { publishActaHandler } from '../../../utils/offlineQueueHandler';
-import { captureError, captureMessage } from '../../../config/sentry';
+import { useFocusEffect } from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
+import {
+  alertNewBackendNotifications,
+  getLocalStoredNotifications,
+  mergeAndDedupeNotifications,
+} from '../../../notifications';
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
 } from '../../../utils/networkQuality';
+import {
+  getAll as getOfflineQueue,
+  clearVotePlace,
+  getVotePlace,
+  processQueue,
+  removeById,
+  saveVotePlace,
+} from '../../../utils/offlineQueue';
+import {
+  getAttestationAvailabilityCache,
+  saveAttestationAvailabilityCache,
+} from '../../../utils/attestationAvailabilityCache';
+import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
+import {
+  authenticateWithBackend,
+  publishActaHandler,
+  publishWorksheetHandler,
+  syncActaBackendHandler,
+} from '../../../utils/offlineQueueHandler';
+import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
+import { captureError, captureMessage } from '../../../config/sentry';
+import { useBackupCheck } from '../../../hooks/useBackupCheck';
+import { backendProbe } from '../../../utils/networkUtils';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -71,6 +87,72 @@ const getResponsiveSize = (small, medium, large) => {
   if (isTablet) return large;
   return medium;
 };
+
+const QUEUE_WRITE_TASK_TYPES = new Set([
+  'publishActa',
+  'publishWorksheet',
+  'syncActaBackend',
+]);
+
+const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
+const RETRIABLE_NETWORK_ERROR_TYPES = new Set([
+  'NETWORK_TIMEOUT',
+  'NETWORK_DOWN',
+  'SERVER_5XX',
+  'RATE_LIMIT',
+]);
+
+const BLOCKCHAIN_ERROR_HINTS = [
+  'blockchain',
+  'oracle',
+  'attest',
+  'attestation',
+  'createattestation',
+  'smart contract',
+  'transaction',
+  'tx ',
+  'evm',
+  'revert',
+  'nonce',
+  'gas',
+  'insufficient funds',
+  'user rejected',
+  'eth_getlogs',
+  'invalid block range',
+  'viem@',
+  'mainnet.base.org',
+  'missing or invalid parameters',
+];
+
+const shouldShowQueueFailModal = failedItem => {
+  const errorType = String(failedItem?.errorType || '')
+    .trim()
+    .toUpperCase();
+  const errorMessage = String(failedItem?.error || '')
+    .trim()
+    .toLowerCase();
+
+  if (RETRIABLE_NETWORK_ERROR_TYPES.has(errorType)) {
+    return false;
+  }
+
+  if (errorMessage.includes('status code 404')) {
+    return false;
+  }
+
+  if (errorType === 'UNKNOWN') {
+    const isLikelyBlockchainError = BLOCKCHAIN_ERROR_HINTS.some(hint =>
+      errorMessage.includes(hint),
+    );
+    if (isLikelyBlockchainError) {
+      return true;
+    }
+  }
+
+  return failedItem?.removedFromQueue === true;
+};
+const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+
 
 // Responsive grid calculations
 const getCardLayout = () => {
@@ -183,30 +265,6 @@ const MiVotoLogo = () => (
   </View>
 );
 
-const RegisterAlertCard = ({ onPress }) => (
-  <View style={stylesx.registerAlertCard}>
-    <View style={{ flex: 1 }}>
-      <CText style={stylesx.registerAlertTitle}>Registrar recinto</CText>
-      <CText style={stylesx.registerAlertSubtitle}>
-        Registra tu recinto y mesa para recibir avisos.
-      </CText>
-    </View>
-
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={stylesx.registerAlertCta}
-      accessibilityRole="button"
-      accessibilityLabel="Registrar recinto">
-      <Ionicons
-        name="arrow-forward"
-        size={getResponsiveSize(16, 18, 20)}
-        color="#fff"
-      />
-    </TouchableOpacity>
-  </View>
-);
-
 // === Banner Blockchain Consultora ===
 const BlockchainConsultoraBanner = () => (
   <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
@@ -242,17 +300,154 @@ const CTA_WIDTH = getResponsiveSize(120, 140, 160);
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
 const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
+const buildNotificationSeenKey = dniValue => {
+  const normalized = String(dniValue || '')
+    .trim()
+    .toLowerCase();
+  return `@notifications:last-seen:${normalized || 'anon'}`;
+};
+
+const LOOKUP_CACHE_KEYS = {
+  electionStatus: 'home:election-config-status',
+  notifications: dniValue =>
+    `home:notifications:${String(dniValue || '').trim().toLowerCase() || 'anon'}`,
+};
+
+const LOOKUP_CACHE_TTLS = {
+  electionStatusMs: 60 * 1000,
+  notificationsMs: 10 * 1000,
+  tablesByLocationMs: 6 * 60 * 60 * 1000,
+};
+const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
+const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
+const VOTE_PLACE_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
+const VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS = 15 * 1000;
+
+const extractNotificationTimestamp = notification => {
+  const raw =
+    notification?.createdAt ||
+    notification?.timestamp ||
+    notification?.data?.createdAt ||
+    notification?.data?.timestamp ||
+    0;
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw > 9999999999 ? raw : raw * 1000;
+  }
+
+  const parsed = Date.parse(String(raw || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getTablesByLocationCacheKey = locationId =>
+  `tables-by-location:${String(locationId || '').trim()}`;
+
+const warmTablesCacheByLocationId = async ({
+  locationId,
+  seedTables = [],
+  timeoutMs = 10000,
+}) => {
+  const normalizedLocationId = String(locationId || '').trim();
+  if (!normalizedLocationId) return;
+
+  const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
+  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.tablesByLocationMs);
+  if (cacheFresh) return;
+
+  if (Array.isArray(seedTables) && seedTables.length > 0) {
+    await setCache(cacheKey, seedTables, { version: 'tables-v1' });
+    return;
+  }
+
+  const encodedLocationId = encodeURIComponent(normalizedLocationId);
+  const primaryUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
+  try {
+    const { data } = await axios.get(primaryUrl, { timeout: timeoutMs });
+    const list = data?.data || data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+      return;
+    }
+  } catch {
+    // fallback legacy endpoint
+  }
+
+  try {
+    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
+    const { data } = await axios.get(legacyUrl, { timeout: timeoutMs });
+    const list = data?.tables || data?.data?.tables || [];
+    if (Array.isArray(list) && list.length > 0) {
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+    }
+  } catch {
+    // non-blocking warmup
+  }
+};
+
+const resolveElectionWindowState = status => {
+  if (!status || typeof status !== 'object') {
+    return { known: false, enabled: true, reason: null };
+  }
+
+  const elections = Array.isArray(status?.elections) ? status.elections : [];
+  const selectedConfig =
+    status?.config ||
+    elections.find(e => e?.isActive) ||
+    elections[0] ||
+    null;
+
+  if (status?.hasActiveConfig === false || !selectedConfig) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'No hay una elección activa en este momento.',
+    };
+  }
+
+  if (selectedConfig?.isActive === false) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'La elección no está activa en este momento.',
+    };
+  }
+
+  const isVotingPeriod =
+    typeof status?.isVotingPeriod === 'boolean'
+      ? status.isVotingPeriod
+      : typeof selectedConfig?.isVotingPeriod === 'boolean'
+        ? selectedConfig.isVotingPeriod
+        : null;
+
+  if (isVotingPeriod === false) {
+    return {
+      known: true,
+      enabled: false,
+      reason: 'Fuera del periodo de votación.',
+    };
+  }
+
+  if (isVotingPeriod === true) {
+    return { known: true, enabled: true, reason: null };
+  }
+
+  return { known: false, enabled: true, reason: null };
+};
+
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
-  const wallet = useSelector(s => s.wallet.payload);
-  const account = useSelector(state => state.account);
   const auth = useSelector(s => s.auth);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
   const [hasPendingActa, setHasPendingActa] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
-  const [checkingVotePlace, setCheckingVotePlace] = useState(true);
+  const runOfflineQueueRef = useRef(() => {});
+  const refreshNotificationBadgeCountRef = useRef(async () => {});
+  const notificationsApiKeyRef = useRef(null);
+  const notificationsAuthRetryAtRef = useRef(0);
+  const [checkingVotePlace, setCheckingVotePlace] = useState(false);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
   const [contractsAvailability, setContractsAvailability] = useState({
@@ -267,11 +462,15 @@ export default function HomeScreen({ navigation }) {
     message: '',
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [isHomeOnline, setIsHomeOnline] = useState(true);
+
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState('unknown');
 
+
   const pendingPermissionFromSettings = useRef(false);
   const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
+  const votePlaceSyncRef = useRef({ lastSyncAt: 0, inFlight: false });
 
   const [permissionModal, setPermissionModal] = useState({
     visible: false,
@@ -334,7 +533,7 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
-  /** Solicita el permiso al sistema (muestra diálogo nativo) */
+
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -370,9 +569,10 @@ export default function HomeScreen({ navigation }) {
     });
 
   /**
-   * Obtiene la ubicación SIN mostrar modales.
-   * Si el permiso no está concedido, actualiza locationStatus y retorna null.
-   */
+* Obtiene la ubicación SIN mostrar modales.
+* Si el permiso no está concedido, actualiza locationStatus y retorna null.
+*/
+
   const getHomeLocation = useCallback(async (silent = true) => {
     const ok = await checkLocationPermissionOnly();
     if (!ok) {
@@ -387,12 +587,13 @@ export default function HomeScreen({ navigation }) {
       }
       return null;
     }
-
     setLocationStatus('granted');
     try {
+      // intento 1: high accuracy
       const pos = await getCurrentPositionAsync(true);
       return pos.coords;
     } catch (err1) {
+      // fallback: low accuracy si es TIMEOUT/POSITION_UNAVAILABLE
       try {
         const pos2 = await getCurrentPositionAsync(false);
         return pos2.coords;
@@ -409,16 +610,83 @@ export default function HomeScreen({ navigation }) {
     }
   }, [checkLocationPermissionOnly]);
 
+  const buildContractsAvailabilityFromElections = useCallback(
+    (availableElections, nearestLocation = null) => {
+      const elections = Array.isArray(availableElections) ? availableElections : [];
+
+      // ALCALDE -> municipal
+      const municipal = elections.find(e => e?.electionType === 'municipal');
+      const municipalEnabled = !!municipal?.canAttest;
+
+      // GOBERNADOR -> departamental
+      const departamental = elections.find(e => e?.electionType === 'departamental');
+      const departamentalEnabled = !!departamental?.canAttest;
+
+      return {
+        nearestLocation: nearestLocation || null,
+        ALCALDE: {
+          enabled: municipalEnabled,
+          electionId: municipalEnabled ? municipal?.electionId : null,
+          electionName: municipal?.electionName || null,
+          reason: municipal?.reason || null,
+        },
+        GOBERNADOR: {
+          enabled: departamentalEnabled,
+          electionId: departamentalEnabled ? departamental?.electionId : null,
+          electionName: departamental?.electionName || null,
+          reason: departamental?.reason || null,
+        },
+      };
+    },
+    [],
+  );
+
   const checkAttestationAvailability = useCallback(
-    async (latitude, longitude) => {
+    async (latitude, longitude, { showLoader = true } = {}) => {
+      const applyCachedAvailability = async () => {
+        try {
+          const cached = await getAttestationAvailabilityCache(dni);
+          if (cached?.availableElections) {
+        
+            setContractsAvailability(
+              buildContractsAvailabilityFromElections(
+                cached.availableElections,
+                cached.nearestLocation,
+              ),
+            );
+            return true;
+          }
+         
+        } catch {
+          // noop
+        }
+        return false;
+      };
+
       try {
-        setLoadingAvailability(true);
+        if (showLoader) {
+          setLoadingAvailability(true);
+        }
+        const hasCached = await applyCachedAvailability();
+       
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        if (!probe?.ok) {
+      
+          if (!hasCached) {
+            setContractsAvailability({
+              nearestLocation: null,
+              ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+              GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+            });
+          }
+          return;
+        }
 
         // Si tu endpoint requiere maxDistance, lo mandamos igual que "nearby"
         const res = await axios.get(
           `${BACKEND_RESULT}/api/v1/contracts/check-attestation-availability`,
           {
-            timeout: 15000,
+            timeout: 12000,
             params: {
               latitude: Number(longitude),
               longitude: Number(latitude),
@@ -429,63 +697,99 @@ export default function HomeScreen({ navigation }) {
           },
         );
         const data = res?.data || {};
-        const elections = Array.isArray(data?.availableElections) ? data.availableElections : [];
+        const elections = Array.isArray(data?.availableElections)
+          ? data.availableElections
+          : [];
+       
 
-        // ALCALDE -> municipal
-        const municipal = elections.find(e => e?.electionType === 'municipal');
-        const municipalEnabled = !!municipal?.canAttest;
-
-        // GOBERNADOR -> departamental
-        const departamental = elections.find(e => e?.electionType === 'departamental');
-        const departamentalEnabled = !!departamental?.canAttest;
-
-        setContractsAvailability({
+        await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
-          ALCALDE: {
-            enabled: municipalEnabled,
-            electionId: municipalEnabled ? municipal?.electionId : null,
-            electionName: municipal?.electionName || null,
-            reason: municipal?.reason || null,
-          },
-          GOBERNADOR: {
-            enabled: departamentalEnabled,
-            electionId: departamentalEnabled ? departamental?.electionId : null,
-            electionName: departamental?.electionName || null,
-            reason: departamental?.reason || null,
-          },
+          availableElections: elections,
         });
+
+        setContractsAvailability(
+          buildContractsAvailabilityFromElections(elections, data?.nearestLocation),
+        );
       } catch (e) {
-        // En error: por seguridad, deshabilitamos ambos
-        setContractsAvailability({
-          nearestLocation: null,
-          ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-          GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
-        });
+        const hasCached = await applyCachedAvailability();
+        
+        if (!hasCached) {
+          setContractsAvailability({
+            nearestLocation: null,
+            ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
+            GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+          });
+        }
       } finally {
-        setLoadingAvailability(false);
+        if (showLoader) {
+          setLoadingAvailability(false);
+        }
       }
     },
-    [],
+    [dni, buildContractsAvailabilityFromElections],
   );
   /**
-   * Verificación automática (en focus / red) — modo silencioso:
-   * solo CHECK, nunca muestra diálogos del sistema ni modales.
-   */
+ * Verificación automática (en focus / red) — modo silencioso:
+ * solo CHECK, nunca muestra diálogos del sistema ni modales.
+ */
   const requestLocationAndCheckAvailability = useCallback(async () => {
     const now = Date.now();
     if (now - (availabilityRef.current.lastCheckAt || 0) < 4000) return;
     availabilityRef.current.lastCheckAt = now;
 
+    // si estás offline, no tiene sentido pedir GPS para endpoint remoto
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-    if (!online) return;
+    const cachedAvailability = await getAttestationAvailabilityCache(dni);
+    const hasCachedAvailability = Array.isArray(
+      cachedAvailability?.availableElections,
+    );
+    if (hasCachedAvailability) {
+      setContractsAvailability(
+        buildContractsAvailabilityFromElections(
+          cachedAvailability.availableElections,
+          cachedAvailability.nearestLocation,
+        ),
+      );
+    }
 
-    // silent = true → no muestra modales, solo actualiza locationStatus
-    const coords = await getHomeLocation(true);
-    if (!coords?.latitude || !coords?.longitude) return;
+    let hasPermission = false;
+    try {
+      hasPermission = await checkLocationPermissionOnly();
+      setLocationStatus(hasPermission ? 'granted' : 'denied');
+    } catch {
+      setLocationStatus('unknown');
+    }
 
-    await checkAttestationAvailability(coords.latitude, coords.longitude);
-  }, [getHomeLocation, checkAttestationAvailability]);
+    const cachedSavedAt = Number(cachedAvailability?.savedAt || 0);
+    const cacheFresh =
+      cachedSavedAt > 0 &&
+      now - cachedSavedAt < ATT_AVAILABILITY_SYNC_COOLDOWN_MS;
+
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+ 
+
+    try {
+      const coords = await getHomeLocation(true);
+      if (!coords?.latitude || !coords?.longitude) {
+        return;
+      }
+
+      await checkAttestationAvailability(coords.latitude, coords.longitude, {
+        showLoader: !hasCachedAvailability,
+      });
+    } finally {
+      // no-op: loader is managed by checkAttestationAvailability
+    }
+  }, [
+    dni,
+    getHomeLocation,
+    checkAttestationAvailability,
+    buildContractsAvailabilityFromElections,
+    checkLocationPermissionOnly,
+  ]);
+
 
   /**
    * Acción EXPLÍCITA del usuario: toca "Activar Ubicación".
@@ -495,6 +799,7 @@ export default function HomeScreen({ navigation }) {
     const ok = await requestLocationPermission();
     if (!ok) {
       setLocationStatus('denied');
+
       showPermissionModal(
         'Ubicación requerida',
         'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
@@ -503,9 +808,9 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
+
     setLocationStatus('granted');
     setLoadingAvailability(true);
-
     try {
       let coords = null;
       try {
@@ -538,9 +843,12 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', async state => {
-      if (state === 'active' && pendingPermissionFromSettings.current) {
-        pendingPermissionFromSettings.current = false;
+      if (state !== 'active') return;
 
+      runOfflineQueueRef.current?.();
+
+      if (pendingPermissionFromSettings.current) {
+        pendingPermissionFromSettings.current = false;
         try {
           const ok = await checkLocationPermissionOnly();
           if (ok) {
@@ -561,25 +869,47 @@ export default function HomeScreen({ navigation }) {
     return () => sub.remove();
   }, [requestLocationAndCheckAvailability, checkLocationPermissionOnly]);
 
+
   const fetchElectionStatus = useCallback(async () => {
+    const cachedEntry = await getCache(LOOKUP_CACHE_KEYS.electionStatus);
+    const cachedData = cachedEntry?.data || null;
+    if (cachedData) {
+      setElectionStatus(cachedData);
+      if (cachedData?.config?.id) {
+        await AsyncStorage.setItem(ELECTION_ID, String(cachedData.config.id));
+      }
+    } else {
+    }
+
+    const cacheFresh = await isFresh(
+      LOOKUP_CACHE_KEYS.electionStatus,
+      LOOKUP_CACHE_TTLS.electionStatusMs,
+    );
+
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+
+
     try {
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        { timeout: 15000 },
+        { timeout: 12000 },
       );
 
-      if (res?.data) {
-        setElectionStatus(res.data);
+      if (!res?.data) return;
 
-        // await AsyncStorage.setItem(ELECTION_STATUS, JSON.stringify(res.data));
-
-        // guardar solo el id de la config
-        if (res.data?.config?.id) {
-          await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
-        }
+      setElectionStatus(res.data);
+      await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
+        version: 'elections-config-v1',
+      });
+      if (res.data?.config?.id) {
+        await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
       }
     } catch (err) {
-      console.error('[HOME] fetchElectionStatus error', err);
+
+      if (!cachedData) {
+        console.error('[HOME] fetchElectionStatus error', err);
+      }
     }
   }, []);
 
@@ -594,17 +924,40 @@ export default function HomeScreen({ navigation }) {
 
   const runOfflineQueueOnce = useCallback(async () => {
     if (processingRef.current) return;
-    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account) return;
-
-    const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-    if (!online) return;
-
+    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
     processingRef.current = true;
 
     try {
+      const net = await NetInfo.fetch();
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+
+
+      const probe = await backendProbe({ timeoutMs: 2000 });
+      if (!probe?.ok) {
+        console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
+        return;
+      }
+
       const result = await processQueue(async item => {
-        await publishActaHandler(item, userData);
+        const taskType = item?.task?.type;
+        if (taskType === 'publishWorksheet') {
+          await publishWorksheetHandler(item, userData);
+          return;
+        }
+        if (taskType === 'publishActa') {
+          await publishActaHandler(item, userData);
+          return;
+        }
+        if (taskType === 'syncActaBackend') {
+          await syncActaBackendHandler(item, userData);
+          return;
+        }
+        const unknownTaskError = new Error(
+          `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
+        );
+        unknownTaskError.removeFromQueue = true;
+        unknownTaskError.errorType = 'BUSINESS_TERMINAL';
+        throw unknownTaskError;
       });
 
       // Actualiza badge/pending
@@ -612,49 +965,118 @@ export default function HomeScreen({ navigation }) {
         setHasPendingActa(result.remaining > 0);
       } else {
         const listAfter = await getOfflineQueue();
-        const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+        const pendingAfter = (listAfter || []).some(
+          i => isQueueWriteTask(i?.task?.type),
+        );
         setHasPendingActa(pendingAfter);
       }
 
-      // NUEVO: si hay fallos, abrir modal con acciones
+      if ((Number(result?.processed) || 0) > 0) {
+        try {
+          await refreshNotificationBadgeCountRef.current?.();
+        } catch {
+          // No bloquear flujo principal por error al refrescar badge.
+        }
+      }
+
       if (result?.failed > 0) {
         const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-        const first = failedItems[0];
+        const modalItems = failedItems.filter(shouldShowQueueFailModal);
+        if (modalItems.length > 0) {
+          setQueueFailModal({
+            visible: true,
+            failedItems: modalItems,
+            message: 'No se pudo completar la subida. Reintenta o elimina de cola.',
+          });
+        } else {
 
-        const header =
-          `${result.failed} envío(s) no se pudieron procesar.\n` +
-          `Puedes reintentar o eliminar el fallido.\n`;
-
-        const meta =
-          first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
-
-        const type =
-          first?.type ? `\nTipo: ${first.type}` : '';
-
-        const detail =
-          first?.error ? `\n\nError:\n${first.error}` : '';
-
-        setQueueFailModal({
-          visible: true,
-          failedItems,
-          message: header + meta + type + detail,
-        });
+        }
       }
+
+      // if (result?.failed > 0) {
+      //   const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+      //   const first = failedItems[0];
+
+      //   const header =
+      //     `${result.failed} envío(s) no se pudieron procesar.\n` +
+      //     `Puedes reintentar o eliminar el fallido.\n`;
+
+      //   const meta =
+      //     first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
+
+      //   const type =
+      //     first?.type ? `\nTipo: ${first.type}` : '';
+
+      //   const detail =
+      //     first?.error ? `\n\nError:\n${first.error}` : '';
+
+      //   setQueueFailModal({
+      //     visible: true,
+      //     failedItems,
+      //     message: header + meta + type + detail,
+      //   });
+      // }
     } catch (e) {
       // Si aquí cae, es un fallo "global" (poco común en tu implementación)
       setQueueFailModal({
         visible: true,
-        failedIds: [],
-        message:
-          'Ocurrió un error procesando la cola. Puedes reintentar o cancelar.',
+        failedItems: [],
+        message: 'No se pudo completar la subida. Reintenta nuevamente.',
       });
     } finally {
       processingRef.current = false;
     }
   }, [auth?.isAuthenticated, userData]);
 
+  useEffect(() => {
+    runOfflineQueueRef.current = () => {
+      runOfflineQueueOnce();
+    };
+  }, [runOfflineQueueOnce]);
+
+  const buildWorksheetIdentity = payload => {
+    const dni = String(
+      payload?.dni ||
+      payload?.additionalData?.dni ||
+      '',
+    ).trim();
+    const electionId = String(
+      payload?.electionId ||
+      payload?.additionalData?.electionId ||
+      '',
+    ).trim();
+    const tableCode = String(
+      payload?.tableCode ||
+      payload?.additionalData?.tableCode ||
+      payload?.tableData?.codigo ||
+      payload?.tableData?.tableCode ||
+      '',
+    ).trim();
+
+    if (!dni || !electionId || !tableCode) return null;
+    return { dni, electionId, tableCode };
+  };
+
+  const clearWorksheetStatusForFailedItem = async failedItem => {
+    if (failedItem?.type !== 'publishWorksheet') return;
+
+    let identity = buildWorksheetIdentity(failedItem);
+    if (!identity && failedItem?.id) {
+      const queue = await getOfflineQueue();
+      const queueItem = (queue || []).find(item => item?.id === failedItem.id);
+      const queuePayload = queueItem?.task?.payload || {};
+      identity = buildWorksheetIdentity(queuePayload);
+    }
+
+    if (identity) {
+      await clearWorksheetLocalStatus(identity);
+    }
+  };
+
   const handleRemoveFailedItem = async (id) => {
     try {
+      const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
+      await clearWorksheetStatusForFailedItem(failedItem);
       await removeById(id);
       setQueueFailModal(m => ({
         ...m,
@@ -663,7 +1085,9 @@ export default function HomeScreen({ navigation }) {
       }));
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      const pendingAfter = (listAfter || []).some(
+        i => isQueueWriteTask(i?.task?.type),
+      );
       setHasPendingActa(pendingAfter);
     } catch (e) {
       // opcional: modal informativo
@@ -674,11 +1098,14 @@ export default function HomeScreen({ navigation }) {
     try {
       const items = queueFailModal.failedItems || [];
       for (const it of items) {
+        await clearWorksheetStatusForFailedItem(it);
         await removeById(it.id);
       }
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
+      const pendingAfter = (listAfter || []).some(
+        i => isQueueWriteTask(i?.task?.type),
+      );
       setHasPendingActa(pendingAfter);
     } finally {
       setQueueFailModal({ visible: false, failedItems: [], message: '' });
@@ -714,6 +1141,7 @@ export default function HomeScreen({ navigation }) {
     setQueueFailModal(m => ({ ...m, visible: false }));
   };
 
+
   const handleSentryTest = () => {
     const error = new Error('Error de prueba');
     const userDni = userData?.dni ?? null;
@@ -744,10 +1172,39 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleParticiparPress = async (type) => {
+    const electionWindow = resolveElectionWindowState(electionStatus);
+    if (electionWindow.known && !electionWindow.enabled) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'No disponible',
+        message:
+          electionWindow.reason ||
+          'La aplicación solo está disponible durante el periodo de votación activo.',
+      });
+      return;
+    }
+
     const net = await NetInfo.fetch();
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     const selected = contractsAvailability?.[type];
-    const electionId = selected?.electionId;
+    let electionId = selected?.electionId;
+
+    if (!electionId && dni) {
+      try {
+        const cached = await getAttestationAvailabilityCache(dni);
+        const elections = Array.isArray(cached?.availableElections)
+          ? cached.availableElections
+          : [];
+        let wantedElectionType = null;
+        if (type === 'ALCALDE') wantedElectionType = 'municipal';
+        else if (type === 'GOBERNADOR') wantedElectionType = 'departamental';
+        const match = wantedElectionType
+          ? elections.find(e => e?.electionType === wantedElectionType && !!e?.canAttest)
+          : null;
+        electionId = match?.electionId || null;
+      } catch { }
+    }
     if (!electionId) {
       setInfoModal({
         visible: true,
@@ -764,6 +1221,25 @@ export default function HomeScreen({ navigation }) {
       electionId,
     };
     if (online) {
+      if (dni) {
+        const cachedVotePlace = await getVotePlace(dni);
+        const cachedLocationId =
+          cachedVotePlace?.location?._id || cachedVotePlace?.location?.id;
+        if (cachedLocationId) {
+          const fastProbe = await backendProbe({ timeoutMs: 1500 });
+          if (!fastProbe?.ok) {
+            navigation.navigate(StackNav.UnifiedParticipationScreen, {
+              ...params,
+              dni,
+              locationId: cachedLocationId,
+              locationData: cachedVotePlace.location,
+              fromCache: true,
+              offline: true,
+            });
+            return;
+          }
+        }
+      }
       navigation.navigate(StackNav.ElectoralLocations, params);
       return;
     }
@@ -783,7 +1259,6 @@ export default function HomeScreen({ navigation }) {
         dni,
         locationId: cached.location._id,
         locationData: cached.location,
-        ...(cached.table ? { tableData: cached.table } : {}),
         fromCache: true,
         offline: true,
       });
@@ -796,6 +1271,44 @@ export default function HomeScreen({ navigation }) {
       });
     }
   };
+
+  const handleRegisterPlacePress = useCallback(async () => {
+    if (!dni) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'No se pudo detectar tu DNI para registrar tu recinto.',
+      });
+      return;
+    }
+
+    const net = await NetInfo.fetch();
+    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+    if (!online) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+      });
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      setInfoModal({
+        visible: true,
+        type: 'warning',
+        title: 'Sin conexión',
+        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+      });
+      return;
+    }
+
+    navigation.navigate(StackNav.ElectoralLocationsSave, { dni });
+  }, [dni, navigation]);
+
   const ActionButtonsLoader = () => {
     return (
       <View style={stylesx.availabilityLoaderCard}>
@@ -814,6 +1327,35 @@ export default function HomeScreen({ navigation }) {
   };
 
   const ActionButtonsGroup = () => {
+    // Si está offline y no tiene recinto registrado, mostrar mensaje claro antes de acciones.
+    if (shouldShowRegisterAlert && !isHomeOnline) {
+      return (
+        <View style={stylesx.warningContractCard}>
+          <Ionicons
+            name="information-circle-outline"
+            size={32}
+            color="#F59E0B"
+            style={{ marginRight: 12 }}
+          />
+          <View style={{ flex: 1 }}>
+            <CText style={stylesx.warningContractTitle}>
+              Registra tu recinto para usar modo sin internet
+            </CText>
+            <CText style={stylesx.warningContractText}>
+              No tienes recinto registrado. Conéctate a internet para registrar tu recinto y
+              luego podrás continuar con datos locales.
+            </CText>
+          </View>
+        </View>
+      );
+    }
+
+    const electionWindow = resolveElectionWindowState(electionStatus);
+    if (electionWindow.known && !electionWindow.enabled) {
+      // Si no hay elección activa (o está fuera de periodo), no mostrar bloque.
+      return null;
+    }
+
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
     if (locationStatus !== 'granted') {
       return (
@@ -821,20 +1363,19 @@ export default function HomeScreen({ navigation }) {
           style={stylesx.activateLocationBtn}
           activeOpacity={0.8}
           onPress={handleActivateLocation}>
-          <View style={stylesx.splitBtnIconBox}>
-            <Ionicons name="location-outline" size={24} color="#41A44D" />
+          <View style={stylesx.activateLocationIconBox}>
+            <Ionicons name="location-outline" size={24} color="#F59E0B" />
           </View>
           <View style={stylesx.splitBtnContent}>
-            <CText style={stylesx.cardTitle}>Activar Ubicación</CText>
-            <CText style={stylesx.cardDescription}>
+            <CText style={stylesx.activateLocationTitle}>Activar Ubicación</CText>
+            <CText style={stylesx.activateLocationDescription}>
               Activa tu ubicación para ver las opciones de envío de actas.
             </CText>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+          <Ionicons name="chevron-forward" size={20} color="#D97706" />
         </TouchableOpacity>
       );
     }
-
     const showAlcalde = !!contracts?.ALCALDE?.enabled;
     const showGobernador = !!contracts?.GOBERNADOR?.enabled;
 
@@ -844,9 +1385,9 @@ export default function HomeScreen({ navigation }) {
         <View style={stylesx.warningContractCard}>
           <Ionicons name="warning-outline" size={32} color="#F59E0B" style={{ marginRight: 12 }} />
           <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>Envío no disponible</CText>
+            <CText style={stylesx.warningContractTitle}>No puedes enviar actas desde aquí</CText>
             <CText style={stylesx.warningContractText}>
-              No tienes contratos activos para enviar actas en esta ubicación.
+              Esta ubicación no está habilitada para el envío de actas. Verifica tu ubicación o muevete a otra zona.
             </CText>
           </View>
         </View>
@@ -906,7 +1447,7 @@ export default function HomeScreen({ navigation }) {
           const list = await getOfflineQueue();
 
           const pending = (list || []).some(
-            i => i.task?.type === 'publishActa',
+            i => isQueueWriteTask(i?.task?.type),
           );
 
           if (isActive) setHasPendingActa(pending);
@@ -921,9 +1462,28 @@ export default function HomeScreen({ navigation }) {
     }, []),
   );
 
+  useEffect(() => {
+    let active = true;
+
+    NetInfo.fetch().then(state => {
+      if (!active) return;
+      setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
+    });
+
+    const unsub = NetInfo.addEventListener(state => {
+      if (!active) return;
+      setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
+    });
+
+    return () => {
+      active = false;
+      unsub && unsub();
+    };
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      checkUserVotePlace();
+      checkUserVotePlace({ forceSync: false });
       fetchElectionStatus();
       requestLocationAndCheckAvailability();
       let alive = true;
@@ -943,7 +1503,12 @@ export default function HomeScreen({ navigation }) {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [runOfflineQueueOnce, fetchElectionStatus, requestLocationAndCheckAvailability]),
+    }, [
+      checkUserVotePlace,
+      runOfflineQueueOnce,
+      fetchElectionStatus,
+      requestLocationAndCheckAvailability,
+    ]),
   );
 
   // Datos del carrusel
@@ -1007,65 +1572,336 @@ export default function HomeScreen({ navigation }) {
     subject?.governmentIdentifier ??
     userData?.dni;
 
+  const ensureNotificationsApiKey = useCallback(async () => {
+    const now = Date.now();
+    if (now < notificationsAuthRetryAtRef.current) {
+      return null;
+    }
+    if (notificationsApiKeyRef.current) {
+      return notificationsApiKeyRef.current;
+    }
+    if (!userData?.did || !userData?.privKey) return null;
+    try {
+      const key = await authenticateWithBackend(userData.did, userData.privKey);
+      notificationsApiKeyRef.current = key;
+      notificationsAuthRetryAtRef.current = 0;
+      return key;
+    } catch {
+      notificationsApiKeyRef.current = null;
+      notificationsAuthRetryAtRef.current =
+        Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
+      return null;
+    }
+  }, [userData?.did, userData?.privKey]);
+
+  const refreshNotificationBadgeCount = useCallback(async () => {
+    if (!auth?.isAuthenticated || !dni) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    const seenKey = buildNotificationSeenKey(dni);
+    const applyUnreadFromList = async list => {
+      const localList = await getLocalStoredNotifications(dni);
+      const mergedList = mergeAndDedupeNotifications({
+        localList,
+        remoteList: list,
+      });
+      const seenRaw = await AsyncStorage.getItem(seenKey);
+      const seenAt = Number(seenRaw || 0);
+      const timestamps = mergedList
+        .map(extractNotificationTimestamp)
+        .filter(ts => ts > 0);
+
+      if (!seenAt) {
+        const baseline = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
+        await AsyncStorage.setItem(seenKey, String(baseline));
+        setNotificationUnreadCount(0);
+        return;
+      }
+
+      const unread = mergedList.reduce((acc, notification) => {
+        const timestamp = extractNotificationTimestamp(notification);
+        return timestamp > seenAt ? acc + 1 : acc;
+      }, 0);
+
+      setNotificationUnreadCount(unread);
+    };
+
+    const cacheKey = LOOKUP_CACHE_KEYS.notifications(dni);
+    const cachedEntry = await getCache(cacheKey);
+    const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
+    await applyUnreadFromList(cachedList);
+
+
+    const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.notificationsMs);
+    if (cacheFresh) {
+      return;
+    }
+
+    const probe = await backendProbe({ timeoutMs: 2000 });
+    if (!probe?.ok) {
+      return;
+    }
+
+    try {
+      const apiKey = await ensureNotificationsApiKey();
+      if (!apiKey) return;
+
+      const response = await axios.get(
+        `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          timeout: 10000,
+        },
+      );
+
+      const list = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      const seenRaw = await AsyncStorage.getItem(seenKey);
+      const seenAt = Number(seenRaw || 0);
+      await alertNewBackendNotifications({
+        dni,
+        notifications: list,
+        minTimestampExclusive: seenAt,
+      });
+
+      await setCache(cacheKey, list, { version: 'notifications-v1' });
+      await applyUnreadFromList(list);
+    } catch (error) {
+      const status = Number(error?.response?.status || 0);
+      if (status === 401 || status === 403) {
+        notificationsApiKeyRef.current = null;
+        notificationsAuthRetryAtRef.current =
+          Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
+      }
+      // No bloquear Home por error de notificaciones.
+    }
+  }, [auth?.isAuthenticated, dni, ensureNotificationsApiKey]);
+
+  useEffect(() => {
+    refreshNotificationBadgeCountRef.current = refreshNotificationBadgeCount;
+  }, [refreshNotificationBadgeCount]);
+
+  const handleOpenNotifications = useCallback(async () => {
+    try {
+      if (dni) {
+        const seenKey = buildNotificationSeenKey(dni);
+        await AsyncStorage.setItem(seenKey, String(Date.now()));
+      }
+    } catch {
+      // continuar navegación aunque falle el guardado local
+    }
+    setNotificationUnreadCount(0);
+    navigation.navigate(StackNav.Notification);
+  }, [dni, navigation]);
+
+  useEffect(() => {
+    notificationsApiKeyRef.current = null;
+    notificationsAuthRetryAtRef.current = 0;
+  }, [userData?.did, userData?.privKey, dni]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const refresh = async () => {
+        if (!active) return;
+        await refreshNotificationBadgeCount();
+      };
+
+      refresh();
+      const intervalId = setInterval(refresh, 10000);
+
+      return () => {
+        active = false;
+        clearInterval(intervalId);
+      };
+    }, [refreshNotificationBadgeCount]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!auth?.isAuthenticated) return undefined;
+      const unsubscribe = messaging().onMessage(() => {
+        setNotificationUnreadCount(prev => (prev < 99 ? prev + 1 : 99));
+        setTimeout(() => {
+          refreshNotificationBadgeCount();
+        }, 1200);
+      });
+
+      return () => {
+        unsubscribe && unsubscribe();
+      };
+    }, [auth?.isAuthenticated, refreshNotificationBadgeCount]),
+  );
+
+  const { hasBackup } = useBackupCheck();
+
   const normalizeVotePlace = srv => {
     const loc = srv?.location || {};
     const tab = srv?.table || {};
+    const hasLocation = !!(loc && Object.keys(loc).length);
+    const hasTable = !!(tab && Object.keys(tab).length);
     return {
-      location: {
-        ...loc,
-        _id: loc._id || loc.id,
-        id: loc.id || loc._id,
-      },
-      table:
-        tab && Object.keys(tab).length
-          ? {
-            ...tab,
-            _id: tab._id || tab.id,
-            id: tab.id || tab._id,
-            tableId: tab.tableId || tab._id || tab.id,
-            tableCode: tab.tableCode || tab.code || tab.codigo,
-            tableNumber: String(
-              tab.tableNumber || tab.numero || tab.number || '',
-            ),
-          }
-          : undefined,
+      location: hasLocation
+        ? {
+          ...loc,
+          _id: loc._id || loc.id,
+          id: loc.id || loc._id,
+        }
+        : undefined,
+      table: hasTable
+        ? {
+          ...tab,
+          _id: tab._id || tab.id,
+          id: tab.id || tab._id,
+          tableId: tab.tableId || tab._id || tab.id,
+          tableCode: tab.tableCode || tab.code || tab.codigo,
+          tableNumber: String(
+            tab.tableNumber || tab.numero || tab.number || '',
+          ),
+        }
+        : undefined,
     };
   };
-  const checkUserVotePlace = useCallback(async () => {
+
+  const checkUserVotePlace = useCallback(async ({ forceSync = false } = {}) => {
     if (!dni) {
       setShouldShowRegisterAlert(false);
       setCheckingVotePlace(false);
+      votePlaceSyncRef.current.lastSyncAt = 0;
       return;
     }
-    try {
+
+    const cachedBefore = await getVotePlace(dni);
+    const hasLocationCached = !!(cachedBefore?.location?._id || cachedBefore?.location?.id);
+
+    setShouldShowRegisterAlert(!hasLocationCached);
+
+    // Si ya hay cache local, no bloqueamos la UI mientras sincroniza backend.
+    if (hasLocationCached) {
+      setCheckingVotePlace(false);
+    }
+
+    const now = Date.now();
+    const lastSyncAt = votePlaceSyncRef.current.lastSyncAt || 0;
+    const votePlaceCooldownMs = hasLocationCached
+      ? VOTE_PLACE_SYNC_COOLDOWN_MS
+      : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
+    const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
+
+
+
+ 
+
+    if (!hasLocationCached) {
       setCheckingVotePlace(true);
+    }
+
+    votePlaceSyncRef.current.inFlight = true;
+
+    try {
+      const probe = await backendProbe({ timeoutMs: 2000 });
+      votePlaceSyncRef.current.lastSyncAt = Date.now();
+
+
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
         {
-          timeout: 12000,
+          timeout: 10000,
 
         },
       );
 
       if (res?.data) {
-        const { location, table } = normalizeVotePlace(res.data);
+        const normalizedVotePlace = normalizeVotePlace(res.data);
+        const hasLocationFromBackend =
+          !!(normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id);
+
+        if (!hasLocationFromBackend) {
+          if (hasLocationCached) {
+            setShouldShowRegisterAlert(false);
+            return;
+          }
+          await clearVotePlace(dni);
+          setShouldShowRegisterAlert(true);
+          return;
+        }
+
+        const cachedLocationId =
+          cachedBefore?.location?._id || cachedBefore?.location?.id;
+        const normalizedLocationId =
+          normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id;
+        const canMergeCachedLocation =
+          !!cachedLocationId &&
+          !!normalizedLocationId &&
+          String(cachedLocationId) === String(normalizedLocationId);
+
+        const location = normalizedVotePlace.location
+          ? {
+            ...(canMergeCachedLocation ? cachedBefore?.location || {} : {}),
+            ...normalizedVotePlace.location,
+            _id: normalizedVotePlace.location._id || normalizedVotePlace.location.id,
+            id: normalizedVotePlace.location.id || normalizedVotePlace.location._id,
+          }
+          : undefined;
+
         await saveVotePlace(dni, {
           dni,
           userId: res.data.userId,
           location,
-          table,
+          table: undefined,
         });
+        warmTablesCacheByLocationId({
+          locationId: location?._id || location?.id,
+          seedTables: location?.tables || [],
+        }).catch(() => {});
+
+        const hasLocation = !!location?._id;
+
+        setShouldShowRegisterAlert(!hasLocation);
+      } else {
+        if (hasLocationCached) {
+
+          setShouldShowRegisterAlert(false);
+          return;
+        }
+        await clearVotePlace(dni);
+        setShouldShowRegisterAlert(true);
       }
-      const hasBoth = !!res?.data?.location && !!res?.data?.table;
-      setShouldShowRegisterAlert(!hasBoth);
     } catch (e) {
-      const cached = await getVotePlace(dni);
-      const hasBothCached = !!cached?.location && !!cached?.table;
-      setShouldShowRegisterAlert(!hasBothCached);
+      votePlaceSyncRef.current.lastSyncAt = Date.now();
+      const status = Number(e?.response?.status || 0);
+      if (status === 404) {
+        if (hasLocationCached) {
+          setShouldShowRegisterAlert(false);
+          return;
+        }
+        await clearVotePlace(dni);
+        setShouldShowRegisterAlert(true);
+        return;
+      }
+
+      setShouldShowRegisterAlert(!hasLocationCached);
     } finally {
+      votePlaceSyncRef.current.inFlight = false;
       setCheckingVotePlace(false);
     }
   }, [dni]);
+
+  useEffect(() => {
+    if (!dni) return;
+    checkUserVotePlace({ forceSync: true });
+  }, [dni, checkUserVotePlace]);
+
+  
 
   const data = {
     name: subject.fullName || '(sin nombre)',
@@ -1183,12 +2019,22 @@ export default function HomeScreen({ navigation }) {
               <MiVotoLogo />
               <View style={stylesx.headerIcons}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate(StackNav.Notification)}>
+                  onPress={handleOpenNotifications}
+                  style={stylesx.notificationIconButton}>
                   <Ionicons
                     name={'notifications-outline'}
                     size={getResponsiveSize(24, 28, 32)}
                     color={'#41A44D'}
                   />
+                  {notificationUnreadCount > 0 && (
+                    <View style={stylesx.notificationBadge}>
+                      <CText style={stylesx.notificationBadgeText}>
+                        {notificationUnreadCount > 99
+                          ? '99+'
+                          : String(notificationUnreadCount)}
+                      </CText>
+                    </View>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onPressLogout}>
                   <Ionicons
@@ -1240,15 +2086,23 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {/* {!checkingVotePlace && shouldShowRegisterAlert && (*/}
-          {/* <RegisterAlertCard
-            onPress={() =>
-              navigation.navigate(StackNav.ElectoralLocationsSave, {
-                dni,
-              })
-            }
-          /> */}
-          {/*)}*/}
+          {!hasBackup && (
+            <RegisterAlertCard
+              title={I18nStrings.backupAccount}
+              description={I18nStrings.backupAccountDescription}
+              onPress={() =>
+                navigation.navigate(StackNav.RecuperationQR)
+              }
+            />
+          )}
+
+          {!checkingVotePlace && shouldShowRegisterAlert && (
+            <RegisterAlertCard
+              title={I18nStrings.registerPlace}
+              description={I18nStrings.registerPlaceDescription}
+              onPress={handleRegisterPlacePress}
+            />
+          )}
 
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
@@ -1271,23 +2125,13 @@ export default function HomeScreen({ navigation }) {
                   {menuItems[0].description}
                 </CText>
               </TouchableOpacity> */}
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={stylesx.sentryTestButton}
-                  onPress={handleSentryTest}
-                  activeOpacity={0.85}
-                  testID="sentryTestButton">
-                  <CText style={stylesx.sentryTestButtonText}>
-                    Probar Sentry
-                  </CText>
-                </TouchableOpacity>
-              )}
+
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[stylesx.gridDiv2, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[1].onPress}
@@ -1304,10 +2148,10 @@ export default function HomeScreen({ navigation }) {
                   <CText style={[stylesx.cardDescription]}>
                     {menuItems[1].description}
                   </CText>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 {/* Mis atestiguamientos */}
                 <TouchableOpacity
-                  style={[stylesx.gridDiv3, stylesx.card]}
+                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
                   activeOpacity={0.87}
                   onPress={menuItems[2].onPress}
                   testID="myWitnessesButton">
@@ -1316,19 +2160,27 @@ export default function HomeScreen({ navigation }) {
                       <ActivityIndicator size="small" color="#41A44D" />
                     </View>
                   )}
-                  {React.createElement(menuItems[2].iconComponent, {
-                    name: menuItems[2].icon,
-                    size: getResponsiveSize(30, 36, 42),
-                    color: '#fff',
-                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                  })}
-                  <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
-                  <CText style={stylesx.cardDescription}>
+                  <View style={stylesx.cardHeaderRow}>
+                    {React.createElement(menuItems[2].iconComponent, {
+                      name: menuItems[2].icon,
+                      size: getResponsiveSize(30, 36, 42),
+                      color: '#fff',
+                      style: stylesx.cardHeaderIcon,
+                    })}
+                    <CText
+                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}>
+                      {menuItems[2].title}
+                    </CText>
+                  </View>
+                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
                     {menuItems[2].description}
                   </CText>
                 </TouchableOpacity>
               </View>
-
             </View>
           </View>
         </View>
@@ -1340,12 +2192,22 @@ export default function HomeScreen({ navigation }) {
             <View style={stylesx.headerIcons}>
               <TouchableOpacity
                 testID="notificationsButton"
-                onPress={() => navigation.navigate(StackNav.Notification)}>
+                onPress={handleOpenNotifications}
+                style={stylesx.notificationIconButton}>
                 <Ionicons
                   name={'notifications-outline'}
                   size={getResponsiveSize(24, 28, 32)}
                   color={'#41A44D'}
                 />
+                {notificationUnreadCount > 0 && (
+                  <View style={stylesx.notificationBadge} testID="notificationsBadge">
+                    <CText style={stylesx.notificationBadgeText}>
+                      {notificationUnreadCount > 99
+                        ? '99+'
+                        : String(notificationUnreadCount)}
+                    </CText>
+                  </View>
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={onPressLogout} testID="logoutButton">
                 <Ionicons
@@ -1365,128 +2227,137 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {/* Carrusel deslizable */}
-          <View style={stylesx.carouselContainer}>
-            <FlatList
-              ref={carouselRef}
-              data={carouselData}
-              renderItem={({ item }) => <CarouselItem item={item} />}
-              keyExtractor={item => item.id.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={event => {
-                const index = Math.round(
-                  event.nativeEvent.contentOffset.x / screenWidth,
-                );
-                setCurrentCarouselIndex(index);
-              }}
-            />
-            <View style={stylesx.pageIndicators}>
-              {carouselData.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    stylesx.pageIndicator,
-                    index === currentCarouselIndex &&
-                    stylesx.activePageIndicator,
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-          {/* {!checkingVotePlace && shouldShowRegisterAlert && (
-            <RegisterAlertCard
-              onPress={() =>
-                navigation.navigate(StackNav.ElectoralLocationsSave, {
-                  dni,
-                })
-              }
-            />
-          )} */}
-          {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
-          <View style={stylesx.gridParent}>
-            {/* Participar (arriba, ocupa dos columnas) */}
-            {/* <TouchableOpacity
-              style={[
-                stylesx.gridDiv1,
-                stylesx.card,
-                { flexDirection: 'row', alignItems: 'center' },
-              ]}
-              activeOpacity={0.87}
-              onPress={menuItems[0].onPress}
-              testID="participateButtonRegular">
-              {React.createElement(menuItems[0].iconComponent, {
-                name: menuItems[0].icon,
-                size: getResponsiveSize(40, 50, 60),
-                color: '#41A44D',
-                style: { marginRight: getResponsiveSize(6, 8, 10) },
-              })}
-
-              <View style={{ flex: 1 }}>
-                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-                <CText style={stylesx.cardDescription}>
-                  {menuItems[0].description}
-                </CText>
+          <ScrollView>
+            {/* Carrusel deslizable */}
+            <View style={stylesx.carouselContainer}>
+              <FlatList
+                ref={carouselRef}
+                data={carouselData}
+                renderItem={({ item }) => <CarouselItem item={item} />}
+                keyExtractor={item => item.id.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={event => {
+                  const index = Math.round(
+                    event.nativeEvent.contentOffset.x / screenWidth,
+                  );
+                  setCurrentCarouselIndex(index);
+                }}
+              />
+              <View style={stylesx.pageIndicators}>
+                {carouselData.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      stylesx.pageIndicator,
+                      index === currentCarouselIndex &&
+                      stylesx.activePageIndicator,
+                    ]}
+                  />
+                ))}
               </View>
-            </TouchableOpacity>
-             */}
-            <View style={stylesx.gridDiv1}>
-              {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
             </View>
-            <View style={stylesx.gridRow2}>
-              {/* Anunciar conteo */}
-              <TouchableOpacity
-                style={[stylesx.gridDiv2, stylesx.card]}
-                activeOpacity={0.87}
-                onPress={menuItems[1].onPress}
-                testID="announceCountButtonRegular">
-                {React.createElement(menuItems[1].iconComponent, {
-                  name: menuItems[1].icon,
-                  size: getResponsiveSize(30, 36, 42),
-                  color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                })}
-                <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
-                <CText style={[stylesx.cardDescription]}>
-                  {menuItems[1].description}
-                </CText>
-              </TouchableOpacity>
-              {/* Mis atestiguamientos */}
-              <TouchableOpacity
-                style={[stylesx.gridDiv3, stylesx.card]}
-                activeOpacity={0.87}
-                onPress={menuItems[2].onPress}
-                testID="myWitnessesButtonRegular">
-                {hasPendingActa && (
-                  <View style={stylesx.cardBadge}>
-                    <ActivityIndicator size="small" color="#ff0000ff" />
-                  </View>
-                )}
-                {React.createElement(menuItems[2].iconComponent, {
-                  name: menuItems[2].icon,
-                  size: getResponsiveSize(30, 36, 42),
-                  color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                })}
-                <CText style={stylesx.cardTitle1}>{menuItems[2].title}</CText>
-                <CText style={stylesx.cardDescription}>
-                  {menuItems[2].description}
-                </CText>
-              </TouchableOpacity>
-            </View>
-            {__DEV__ && (
-              <TouchableOpacity
-                style={stylesx.sentryTestButton}
-                onPress={handleSentryTest}
-                activeOpacity={0.85}
-                testID="sentryTestButton">
-                <CText style={stylesx.sentryTestButtonText}>
-                  Probar Sentry
-                </CText>
-              </TouchableOpacity>
+            {!hasBackup && (
+              <RegisterAlertCard
+                title={I18nStrings.backupAccount}
+                description={I18nStrings.backupAccountDescription}
+                onPress={() =>
+                  navigation.navigate(StackNav.RecuperationQR)
+                }
+              />
             )}
-          </View>
+
+            {!checkingVotePlace && shouldShowRegisterAlert && (
+              <RegisterAlertCard
+                title={I18nStrings.registerPlace}
+                description={I18nStrings.registerPlaceDescription}
+                onPress={handleRegisterPlacePress}
+              />
+            )}
+
+            {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
+            <View style={stylesx.gridParent}>
+              {/* Participar (arriba, ocupa dos columnas) */}
+              {/* <TouchableOpacity
+                style={[
+                  stylesx.gridDiv1,
+                  stylesx.card,
+                  { flexDirection: 'row', alignItems: 'center' },
+                ]}
+                activeOpacity={0.87}
+                onPress={menuItems[0].onPress}
+                testID="participateButtonRegular">
+                {React.createElement(menuItems[0].iconComponent, {
+                  name: menuItems[0].icon,
+                  size: getResponsiveSize(40, 50, 60),
+                  color: '#41A44D',
+                  style: { marginRight: getResponsiveSize(6, 8, 10) },
+                })}
+
+                <View style={{ flex: 1 }}>
+                  <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                  <CText style={stylesx.cardDescription}>
+                    {menuItems[0].description}
+                  </CText>
+                </View>
+              </TouchableOpacity>
+              */}
+              <View style={stylesx.gridDiv1}>
+                {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
+              </View>
+              <View style={stylesx.gridRow2}>
+                {/* Anunciar conteo */}
+                {/* <TouchableOpacity
+                  style={[stylesx.gridDiv2, stylesx.card]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[1].onPress}
+                  testID="announceCountButtonRegular">
+                  {React.createElement(menuItems[1].iconComponent, {
+                    name: menuItems[1].icon,
+                    size: getResponsiveSize(30, 36, 42),
+                    color: '#41A44D',
+                    style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                  })}
+                  <CText style={[stylesx.cardTitle]}>{menuItems[1].title}</CText>
+                  <CText style={[stylesx.cardDescription]}>
+                    {menuItems[1].description}
+                  </CText>
+                </TouchableOpacity> */}
+                {/* Mis atestiguamientos */}
+                <TouchableOpacity
+                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
+                  activeOpacity={0.87}
+                  onPress={menuItems[2].onPress}
+                  testID="myWitnessesButtonRegular">
+                  {hasPendingActa && (
+                    <View style={stylesx.cardBadge}>
+                      <ActivityIndicator size="small" color="#ff0000ff" />
+                    </View>
+                  )}
+                  <View style={stylesx.cardHeaderRow}>
+                    {React.createElement(menuItems[2].iconComponent, {
+                      name: menuItems[2].icon,
+                      size: getResponsiveSize(30, 36, 42),
+                      color: '#41A44D',
+                      style: stylesx.cardHeaderIcon,
+                    })}
+                    <CText
+                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}>
+                      {menuItems[2].title}
+                    </CText>
+                  </View>
+                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
+                    {menuItems[2].description}
+                  </CText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </View>
       )}
       <CustomModal
@@ -1512,13 +2383,13 @@ export default function HomeScreen({ navigation }) {
         visible={queueFailModal.visible}
         onClose={() => setQueueFailModal(m => ({ ...m, visible: false }))}
         type="warning"
-        title="Subida de pendientes"
+        title="No se pudo completar la subida"
         message={queueFailModal.message}
         buttonText="Reintentar"
         onButtonPress={handleQueueRetry}
         secondaryButtonText="Cancelar"
         onSecondaryPress={handleQueueCancel}
-        tertiaryButtonText={firstFailedId ? "Eliminar fallido" : undefined}
+        tertiaryButtonText={firstFailedId ? "Eliminar de cola" : undefined}
         onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
         tertiaryVariant="danger"
       />
@@ -1552,7 +2423,6 @@ const stylesx = StyleSheet.create({
     // No marginRight aquí, así queda a la derecha
   },
   bg: {
-    flex: 1,
     backgroundColor: '#FAFAFA',
     paddingHorizontal: 0,
   },
@@ -1570,7 +2440,7 @@ const stylesx = StyleSheet.create({
     paddingLeft: getResponsiveSize(8, 12, 16),
   },
   regularContainer: {
-    flex: 1,
+    height: '105%',
   },
   headerRow: {
     flexDirection: 'row',
@@ -1768,10 +2638,23 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(1, 2, 3),
   },
   cardTitle1: {
-    fontSize: getResponsiveSize(14, 16, 18),
+    fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     color: '#232323',
     marginBottom: getResponsiveSize(1, 2, 3),
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  cardHeaderIcon: {
+    marginRight: getResponsiveSize(8, 10, 12),
+  },
+  cardTitleInline: {
+    flex: 1,
+    minWidth: 0,
   },
   cardDescription: {
     fontSize: getResponsiveSize(12, 14, 16),
@@ -1780,6 +2663,14 @@ const stylesx = StyleSheet.create({
     marginTop: 1,
     marginBottom: -3,
     opacity: 0.78,
+  },
+  cardDescriptionEmph: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    opacity: 0.9,
+  },
+  myWitnessesCard: {
+    borderRightWidth: getResponsiveSize(3, 4, 5),
+    borderRightColor: '#41A44D',
   },
   // Gas Indicator Styles
   gasContainer: {
@@ -1819,6 +2710,30 @@ const stylesx = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveSize(8, 12, 16),
+  },
+  notificationIconButton: {
+    position: 'relative',
+    padding: 2,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E72F2F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 10,
   },
   // Carousel Styles
   carouselContainer: {
@@ -1948,45 +2863,6 @@ const stylesx = StyleSheet.create({
   disabledIcon: {
     opacity: 0.6,
   },
-  registerAlertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2', // rojo claro
-    borderColor: '#FCA5A5', // borde rojo suave
-    borderWidth: 1,
-    borderRadius: getResponsiveSize(12, 14, 16),
-    paddingVertical: getResponsiveSize(10, 12, 14),
-    paddingHorizontal: getResponsiveSize(14, 16, 20),
-    marginHorizontal: getResponsiveSize(16, 20, 24),
-    // marginTop: getResponsiveSize(10, 12, 16),
-    marginBottom: getResponsiveSize(8, 10, 12),
-    // sombra sutil
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  registerAlertTitle: {
-    fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '700',
-    color: '#7F1D1D',
-    marginBottom: getResponsiveSize(2, 3, 4),
-  },
-  registerAlertSubtitle: {
-    fontSize: getResponsiveSize(12, 13, 14),
-    color: '#7F1D1D',
-    opacity: 0.9,
-  },
-  registerAlertCta: {
-    width: getResponsiveSize(36, 40, 44),
-    height: getResponsiveSize(36, 40, 44),
-    borderRadius: 999,
-    backgroundColor: '#E72F2F',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: getResponsiveSize(10, 12, 16),
-  },
   cardBadge: {
     position: 'absolute',
     top: getResponsiveSize(10, 12, 14),
@@ -1998,31 +2874,37 @@ const stylesx = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  sentryTestButton: {
-    marginTop: getResponsiveSize(10, 12, 14),
-    alignSelf: 'flex-start',
-    backgroundColor: '#111827',
-    paddingVertical: getResponsiveSize(8, 10, 12),
-    paddingHorizontal: getResponsiveSize(12, 14, 16),
-    borderRadius: 8,
-  },
-  sentryTestButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: getResponsiveSize(12, 13, 14),
-  },
-
   activateLocationBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#FFFBEB',
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(14, 16, 18),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     marginBottom: getResponsiveSize(10, 12, 14),
     borderWidth: 1.5,
-    borderColor: '#41A44D',
+    borderColor: '#F59E0B',
     borderStyle: 'dashed',
+  },
+  activateLocationIconBox: {
+    width: getResponsiveSize(42, 48, 54),
+    height: getResponsiveSize(42, 48, 54),
+    borderRadius: getResponsiveSize(10, 12, 14),
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: getResponsiveSize(12, 16, 18),
+  },
+  activateLocationTitle: {
+    fontSize: getResponsiveSize(14, 16, 18),
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  activateLocationDescription: {
+    fontSize: getResponsiveSize(12, 13, 14),
+    color: '#B45309',
+    lineHeight: getResponsiveSize(17, 19, 22),
   },
   splitBtn: {
     flexDirection: 'row',

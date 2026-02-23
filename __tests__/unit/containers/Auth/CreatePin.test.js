@@ -3,10 +3,9 @@
  * Siguiendo las buenas prácticas de Jest y React Native Testing Library
  */
 
-import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
-import { renderWithProviders, mockNavigation } from '../../../setup/test-utils';
 import { AuthNav } from '../../../../src/navigation/NavigationKey';
+import { mockNavigation, renderWithProviders } from '../../../setup/test-utils';
 
 // Mock del componente bajo test
 const CreatePin = require('../../../../src/container/Auth/CreatePin').default;
@@ -21,7 +20,7 @@ jest.mock('../../../../src/hooks/useNavigationLogger', () => ({
 }));
 
 // Mock del componente OTP Input
-jest.mock('@twotalltotems/react-native-otp-input', () => {
+jest.mock('react-native-otp-textinput', () => {
   const mockReact = require('react');
   return mockReact.forwardRef((props, ref) => {
     mockReact.useImperativeHandle(ref, () => ({
@@ -31,11 +30,11 @@ jest.mock('@twotalltotems/react-native-otp-input', () => {
     return mockReact.createElement('TextInput', {
       testID: props.testID || 'pinCreationInput',
       value: props.code,
-      onChangeText: props.onCodeChanged,
-      maxLength: props.pinCount,
+      onChangeText: props.handleTextChange,
+      maxLength: props.inputCount,
       secureTextEntry: props.secureTextEntry,
       placeholder: 'Enter PIN',
-      'data-pin-count': props.pinCount,
+      'data-pin-count': props.inputCount,
     });
   });
 });

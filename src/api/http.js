@@ -1,6 +1,7 @@
 import axios from 'axios';
-import {BACKEND_IDENTITY} from '@env';
+import { BACKEND_IDENTITY } from '@env';
 import { captureError, addHttpBreadcrumb } from '../config/sentry';
+
 
 const formatDebugPayload = (payload) => {
   if (payload == null) {
@@ -40,6 +41,7 @@ API.interceptors.request.use(
 // ============================================================================
 // Interceptor de RESPONSE - capturar errores en Sentry
 // ============================================================================
+
 API.interceptors.response.use(
   (response) => {
     // Breadcrumb para requests exitosos
@@ -65,7 +67,6 @@ API.interceptors.response.use(
       status,
       duration
     );
-
     const debugPayload = {
       method: config.method,
       status: status,
@@ -73,7 +74,7 @@ API.interceptors.response.use(
       requestData: formatDebugPayload(config.data),
       responseData: formatDebugPayload(e?.response?.data),
     };
-
+    
     // ========================================================================
     // SENTRY: Capturar errores HTTP significativos
     // ========================================================================
@@ -95,6 +96,7 @@ API.interceptors.response.use(
       });
     }
     // ========================================================================
+
 
     if (__DEV__) {
       console.warn(

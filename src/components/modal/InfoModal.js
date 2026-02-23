@@ -13,13 +13,44 @@ export default function InfoModal({
   title,
   message,
   buttonText = 'OK',
+  secondaryButtonText = '',
   closeCornerBtn = false,
   onClose,
+  onSecondaryPress,
   testID = 'infoModal',
   onCloseCorner,
 }) {
   const colors = useSelector(state => state.theme.theme);
   const handleCornerClose = onCloseCorner || onClose;
+  const messageText = typeof message === 'string' ? message : String(message ?? '');
+
+  const renderMessageWithBold = text => {
+    const lines = String(text || '').split('\n');
+    return lines.map((line, lineIndex) => {
+      const parts = line.split(/(\*\*.*?\*\*)/g).filter(Boolean);
+      return (
+        <CText
+          key={`info-modal-line-${lineIndex}`}
+          testID={`${testID}MessageLine_${lineIndex}`}
+          type="M16"
+          align="center"
+          style={lineIndex < lines.length - 1 ? base.messageLine : undefined}>
+          {parts.map((part, partIndex) => {
+            const boldMatch = part.match(/^\*\*(.*)\*\*$/);
+            if (!boldMatch) return part;
+            return (
+              <CText
+                key={`info-modal-part-${lineIndex}-${partIndex}`}
+                type="M16"
+                style={base.messageBold}>
+                {boldMatch[1]}
+              </CText>
+            );
+          })}
+        </CText>
+      );
+    });
+  };
 
   return (
     <Modal testID={testID} visible={visible} animationType="fade" transparent>
@@ -37,22 +68,41 @@ export default function InfoModal({
             style={base.scroll}
             contentContainerStyle={{alignItems: 'center'}}
             showsVerticalScrollIndicator={true}>
-            <CText testID={`${testID}Message`} type="M16" align="center">
-              {message}
-            </CText>
+            <View testID={`${testID}Message`}>{renderMessageWithBold(messageText)}</View>
           </ScrollView>
           {closeCornerBtn && 
             <TouchableOpacity style={base.closeButton} onPress={handleCornerClose}>
               <Ionicons name="close" size={24} color={colors.textColor} />
             </TouchableOpacity>
           }
-          <CButton
-            testID={`${testID}Button`}
-            title={buttonText}
-            type="M16"
-            containerStyle={base.button}
-            onPress={onClose}
-          />
+          {secondaryButtonText ? (
+            <View style={base.buttonRow}>
+              <TouchableOpacity
+                testID={`${testID}SecondaryButton`}
+                style={base.secondaryButton}
+                onPress={onSecondaryPress || onClose}>
+                <CText type="M16" style={base.secondaryButtonText}>
+                  {secondaryButtonText}
+                </CText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID={`${testID}Button`}
+                style={[base.primaryButton, {backgroundColor: colors.primary}]}
+                onPress={onClose}>
+                <CText type="M16" style={base.primaryButtonText}>
+                  {buttonText}
+                </CText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <CButton
+              testID={`${testID}Button`}
+              title={buttonText}
+              type="M16"
+              containerStyle={base.button}
+              onPress={onClose}
+            />
+          )}
         </View>
       </View>
     </Modal>
@@ -80,6 +130,43 @@ const base = StyleSheet.create({
   button: {
     width: '60%',
     marginTop: moderateScale(10),
+  },
+  buttonRow: {
+    width: '100%',
+    marginTop: moderateScale(10),
+    flexDirection: 'row',
+    columnGap: moderateScale(10),
+  },
+  secondaryButton: {
+    flex: 1,
+    minHeight: moderateScale(46),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(8),
+  },
+  secondaryButtonText: {
+    color: '#1F2937',
+    fontWeight: '700',
+  },
+  primaryButton: {
+    flex: 1,
+    minHeight: moderateScale(46),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(8),
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  messageLine: {
+    marginBottom: moderateScale(4),
+  },
+  messageBold: {
+    fontWeight: '700',
   },
   closeButton: {
     position: 'absolute',

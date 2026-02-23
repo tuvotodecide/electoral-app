@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import StackNavigation from './type/StackNavigation';
-import {navigationRef} from './RootNavigation';
+import { navigationRef } from './RootNavigation';
 import notifee from '@notifee/react-native';
 import { handleNotificationPress } from '../notifications';
 import { NavigationLogConfig, navLog } from '../config/navigationLogConfig';
@@ -9,11 +9,11 @@ import NavigationDebugOverlay from '../components/common/NavigationDebugOverlay'
 import { addNavigationBreadcrumb } from '../config/sentry';
 
 export default function AppNavigator() {
-   useEffect(() => {
+  useEffect(() => {
     (async () => {
       const initial = await notifee.getInitialNotification();
       if (initial) {
-     handleNotificationPress(initial.notification);
+        handleNotificationPress(initial.notification);
       }
     })();
   }, []);
@@ -23,7 +23,7 @@ export default function AppNavigator() {
     if (navigationRef.isReady()) {
       const state = navigationRef.getRootState();
       const route = navigationRef.getCurrentRoute();
-      
+
       return {
         routeName: route?.name || 'Unknown',
         routeParams: route?.params || {},
@@ -37,7 +37,7 @@ export default function AppNavigator() {
   const getStackPath = (state) => {
     const path = [];
     let currentState = state;
-    
+
     while (currentState) {
       if (currentState.routes && currentState.index !== undefined) {
         const route = currentState.routes[currentState.index];
@@ -47,7 +47,7 @@ export default function AppNavigator() {
         break;
       }
     }
-    
+
     return path;
   };
 
@@ -61,7 +61,10 @@ export default function AppNavigator() {
     addNavigationBreadcrumb(routeInfo.routeName, routeInfo.routeParams);
     // ========================================================================
 
+
     if (!NavigationLogConfig.enabled) return;
+
+
 
     // Log usando configuración
     navLog('stateChanges', `Pantalla actual: ${routeInfo.routeName}`);
@@ -80,16 +83,16 @@ export default function AppNavigator() {
 
   return (
     <>
-      <NavigationContainer 
+      <NavigationContainer
         ref={navigationRef}
         onStateChange={onNavigationStateChange}
       >
         <StackNavigation />
       </NavigationContainer>
-      
+
       {/* Overlay de debug opcional */}
       {NavigationLogConfig.visual.showOverlay && (
-        <NavigationDebugOverlay 
+        <NavigationDebugOverlay
           position={NavigationLogConfig.visual.overlayPosition}
         />
       )}

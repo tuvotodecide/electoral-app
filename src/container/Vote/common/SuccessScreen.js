@@ -1,42 +1,61 @@
-import React, { useCallback, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-  Image,
-  Linking,
-  Share,
-  BackHandler,
-  ScrollView,
-} from 'react-native';
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import CText from '../../../components/common/CText';
-import String from '../../../i18n/String';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { StackNav, TabNav } from '../../../navigation/NavigationKey';
-import UniversalHeader from '../../../components/common/UniversalHeader';
-import nftImage from '../../../assets/images/nft-medal.png';
-import { title } from 'process';
-import { url } from 'inspector';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  BackHandler,
+  Dimensions,
+  Image,
+  Linking,
+  ScrollView,
+  Share,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSelector } from 'react-redux';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
+import InfoModal from '../../../components/modal/InfoModal';
+import UniversalHeader from '../../../components/common/UniversalHeader';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
+import { normalizeUri } from '../../../utils/normalizedUri';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const parseParamObject = value => {
+  if (!value) return {};
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof value === 'object' ? value : {};
+};
+
+const pickFirstUrl = (...values) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
 };
 
 const SuccessScreen = () => {
@@ -45,17 +64,74 @@ const SuccessScreen = () => {
   const colors = useSelector(state => state.theme.theme);
 
   const params = route?.params || {};
-  const ipfsData = params.ipfsData || {};
-  const nftData = params.nftData || {};
-  const tableData = params.tableData || {};
-  const certificateData = params.certificateData || {};
+  const ipfsData = parseParamObject(params.ipfsData);
+  const nftData = parseParamObject(params.nftData);
+  const tableData = parseParamObject(params.tableData);
+  const certificateData = parseParamObject(params.certificateData);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [infoModalData, setInfoModalData] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
+  const closeInfoModal = useCallback(
+    () => setInfoModalData({ visible: false, title: '', message: '' }),
+    [],
+  );
+  console.log('route.params', route.params);
   const fromNotifications = params.fromNotifications === true;
 
-  const ipfsUrl = ipfsData.jsonUrl || ipfsData.ipfsUri || ipfsData.url || null;
-  const certificateUrl =
-    certificateData.imageUrl || certificateData.jsonUrl || null;
+  const ipfsUrl = pickFirstUrl(
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+    params.ipfsUrl,
+    params.url,
+  );
+  const certificateUrl = pickFirstUrl(
+    certificateData.imageUrl,
+    certificateData.jsonUrl,
+    certificateData.ipfsUri,
+    certificateData.url,
+    certificateData.certificateUrl,
+    params.certificateUrl,
+    nftData.nftUrl,
+    nftData.url,
+    ipfsData.imageUrl,
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+  );
+  const normalizedCertificateUrl = normalizeUri(certificateUrl);
+  const actaUrl = pickFirstUrl(
+    ipfsData.imageUrl,
+    ipfsData.jsonUrl,
+    ipfsData.ipfsUri,
+    ipfsData.url,
+    params.actaUrl,
+    params.imageUrl,
+    tableData.imageUrl,
+    tableData.image,
+    ipfsUrl,
+  );
+
+  const normalizedActaUrl = normalizeUri(actaUrl);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    try {
+      console.log('[SUCCESS] route.params', JSON.stringify(params, null, 2));
+    } catch {
+      console.log('[SUCCESS] route.params (raw)', params);
+    }
+    console.log('[SUCCESS] resolved urls', {
+      certificateUrl,
+      normalizedCertificateUrl,
+      actaUrl,
+      normalizedActaUrl,
+    });
+  }, []);
 
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -104,49 +180,79 @@ const SuccessScreen = () => {
         await Linking.openURL(nftData.nftUrl);
       } else {
       }
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] open nft url error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   const handleShareNft = async () => {
     try {
-      if (!certificateUrl) {
+      if (!normalizedCertificateUrl) {
+        setInfoModalData({
+          visible: true,
+          title: 'No disponible',
+          message: 'No encontramos el enlace del NFT para compartir.',
+        });
         return;
       }
       const shareOptions = {
-        title: 'Compartir certificado NFT',
-        message: `¡He obtenido un certificado NFT por participar como testigo electoral! Puedes verlo aquí: ${certificateUrl}`,
-        url: certificateUrl,
+        title: 'Compartir mi certificado',
+        message: `He obtenido un certificado NFT por participar como testigo electoral. Puedes verlo aqui: ${normalizedCertificateUrl}`,
+        url: normalizedCertificateUrl,
         subject: 'Certificado NFT ',
       };
 
       const result = await Share.share(shareOptions, {
-        dialogTitle: 'Compartir certificado NFT',
+        dialogTitle: 'Compartir mi certificado',
         subject: 'Certificado NFT',
       });
 
       if (result.action === Share.sharedAction) {
       } else if (result.action === Share.dismissedAction) {
       }
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] share nft error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   const handleShareActa = async () => {
     try {
-      // Puedes elegir imageUrl (foto del acta) o jsonUrl (metadata completa)
-      // Fallback a ipfsUrl si viene como ipfsUri/url en lugar de imageUrl/jsonUrl.
-      const actaUrl = ipfsData?.imageUrl || ipfsData?.jsonUrl || ipfsUrl;
-      if (!actaUrl) return;
+      if (!normalizedActaUrl) {
+        setInfoModalData({
+          visible: true,
+          title: 'No disponible',
+          message: 'No encontramos el enlace del acta para compartir.',
+        });
+        return;
+      }
       const shareOptions = {
-        title: 'Compartir acta (IPFS)',
-        message: `Acta publicada en IPFS: ${actaUrl}`,
-        url: actaUrl,
+        title: 'Compartir acta (resultados)',
+        message: `Acta publicada en IPFS: ${normalizedActaUrl}`,
+        url: normalizedActaUrl,
         subject: 'Acta en IPFS',
       };
       await Share.share(shareOptions, {
-        dialogTitle: 'Compartir acta (IPFS)',
+        dialogTitle: 'Compartir acta (resultados)',
         subject: 'Acta en IPFS',
       });
-    } catch (error) { }
+    } catch (error) {
+      console.error('[SUCCESS] share acta error', error);
+      setInfoModalData({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo abrir el menú de compartir.',
+      });
+    }
   };
 
   // Obtener nombre real del usuario desde Redux
@@ -166,7 +272,7 @@ const SuccessScreen = () => {
 
       <ScrollView contentContainerStyle={styles.mainContent} bounces={false}>
         {/* Título principal */}
-        {certificateUrl && (
+        {normalizedCertificateUrl && (
           <View style={styles.certificateImageWrapper}>
             {imageLoading && !imageError && (
               <View style={styles.imageLoaderOverlay}>
@@ -174,7 +280,7 @@ const SuccessScreen = () => {
               </View>
             )}
             <Image
-              source={{ uri: certificateUrl }}
+              source={{ uri: normalizedCertificateUrl }}
               style={styles.certificateImage}
               resizeMode="contain"
               onLoadStart={() => {
@@ -197,27 +303,31 @@ const SuccessScreen = () => {
             <CText style={styles.nftButtonText}>Ver mi NFT</CText>
           </TouchableOpacity> */}
 
-          <TouchableOpacity style={styles.shareButton} onPress={handleShareNft}>
+          <TouchableOpacity
+            style={styles.sharePrimaryButton}
+            onPress={handleShareNft}>
             <Ionicons
               name="share-outline"
               size={20}
               color="#fff"
               style={styles.shareIcon}
             />
-            <CText style={styles.shareButtonText}>Compartir NFT</CText>
+            <CText style={styles.sharePrimaryButtonText}>
+              Compartir mi certificado
+            </CText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.shareButton}
+            style={styles.shareSecondaryButton}
             onPress={handleShareActa}>
             <Ionicons
               name="document-text-outline"
               size={20}
-              color="#fff"
+              color="#17694A"
               style={styles.shareIcon}
             />
-            <CText style={styles.shareButtonText}>
-              Compartir NFT del acta{' '}
+            <CText style={styles.shareSecondaryButtonText}>
+              Compartir acta (resultados)
             </CText>
           </TouchableOpacity>
 
@@ -226,6 +336,12 @@ const SuccessScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <InfoModal
+        visible={infoModalData.visible}
+        title={infoModalData.title}
+        message={infoModalData.message}
+        onClose={closeInfoModal}
+      />
     </CSafeAreaView>
   );
 };
@@ -236,8 +352,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   certificateImageWrapper: {
-    width: '100%',
-    borderRadius: 12,
     width: '100%',
     maxWidth: isTablet ? 500 : 380,
     aspectRatio: 3 / 4,
@@ -371,7 +485,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(16, 18, 20),
     textAlign: 'center',
   },
-  shareButton: {
+  sharePrimaryButton: {
     backgroundColor: '#17694A',
     borderRadius: 12,
     paddingVertical: getResponsiveSize(12, 14, 16),
@@ -382,27 +496,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: '#17694A',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
   },
   shareIcon: {
     marginRight: 8,
   },
-  shareButtonText: {
+  sharePrimaryButtonText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: getResponsiveSize(14, 16, 18),
     textAlign: 'center',
   },
-  backHomeButton: {
-    backgroundColor: '#a5bdb4',
+  shareSecondaryButton: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(30, 36, 42),
     width: '85%',
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#17694A',
+  },
+  shareSecondaryButtonText: {
+    color: '#17694A',
+    fontWeight: '700',
+    fontSize: getResponsiveSize(14, 16, 18),
+    textAlign: 'center',
+  },
+  backHomeButton: {
+    backgroundColor: '#D1D5DB',
+    borderRadius: 12,
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(30, 36, 42),
+    width: '85%',
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#B8BEC8',
   },
   backHomeButtonText: {
-    color: '#2a2a2a',
+    color: '#374151',
     fontWeight: '700',
     fontSize: getResponsiveSize(14, 16, 18),
     textAlign: 'center',

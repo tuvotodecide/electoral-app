@@ -1,10 +1,10 @@
-import React, {useState, useRef} from 'react';
-import {View, StyleSheet, TouchableOpacity, Text, Animated} from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
-import {useSelector} from 'react-redux';
+import * as Clipboard from 'expo-clipboard';
+import { useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import { moderateScale } from '../../common/constants';
+import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
-import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import Icono from './Icono';
 
 export default function CHash({
@@ -40,8 +40,8 @@ export default function CHash({
     });
   };
 
-  const handleCopy = () => {
-    Clipboard.setString(title);
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(title);
     showToast();
   };
 
@@ -57,7 +57,7 @@ export default function CHash({
             type="B18"
             color={textColor ?? getSecondaryTextColor(colors)}
             style={[localStyle.text, textStyle]}>
-            {text}
+            {` Dirección: ${text}`}
           </CText>
           <Icono
             name="content-copy"
@@ -78,7 +78,7 @@ export default function CHash({
             },
           ]}>
           <Icono name="check" size={16} color={colors.white} />
-          <Text style={[localStyle.toastText, {color: colors.white}]}>
+          <Text style={[localStyle.toastText, { color: colors.white }]}>
             Hash copiado
           </Text>
         </Animated.View>

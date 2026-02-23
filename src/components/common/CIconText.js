@@ -43,7 +43,7 @@ const localStyle = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: moderateScale(12),
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   text: {
     flex: 1,

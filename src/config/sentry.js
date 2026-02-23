@@ -14,60 +14,61 @@ const SENTRY_DSN = SENTRY_DSN_KEY;
  */
 export const initSentry = () => {
 
-  Sentry.init({
-    dsn: SENTRY_DSN,
+    Sentry.init({
+        dsn: SENTRY_DSN,
 
-    // Entorno para filtrar en dashboard
-    environment: __DEV__ ? 'development' : 'production',
+        // Entorno para filtrar en dashboard
+        environment: __DEV__ ? 'development' : 'production',
 
-    // Capturar transacciones (performance)
-    // En dev 100%, en prod 20% para no sobrecargar
-    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+        // Capturar transacciones (performance)
+        // En dev 100%, en prod 20% para no sobrecargar
+        tracesSampleRate: __DEV__ ? 1.0 : 0.2,
 
-    // NO enviar PII (datos personales) por defecto
-    sendDefaultPii: false,
+        // NO enviar PII (datos personales) por defecto
+        sendDefaultPii: false,
 
-    // Tracking de sesiones
-    enableAutoSessionTracking: true,
-    sessionTrackingIntervalMillis: 30000,
+        // Tracking de sesiones
+        enableAutoSessionTracking: true,
+        sessionTrackingIntervalMillis: 30000,
 
-    // Adjuntar stack traces a todos los mensajes
-    attachStacktrace: true,
+        // Adjuntar stack traces a todos los mensajes
+        attachStacktrace: true,
 
-    // Filtrar eventos antes de enviar
-    beforeSend(event) {
-      // Limpiar cualquier dato sensible que pudiera filtrarse
-      if (event.extra) {
-        delete event.extra.dni;
-        delete event.extra.token;
-        delete event.extra.privKey;
-        delete event.extra.pin;
-      }
+        // Filtrar eventos antes de enviar
+        beforeSend(event) {
+            // Limpiar cualquier dato sensible que pudiera filtrarse
+            if (event.extra) {
+                delete event.extra.dni;
+                delete event.extra.token;
+                delete event.extra.privKey;
+                delete event.extra.pin;
+            }
 
-      // No permitir PII en prod aunque alguien lo setee por error
-      if (!__DEV__ && event.contexts?.user_pii) {
-        delete event.contexts.user_pii;
-      }
 
-      return event;
-    },
+            // No permitir PII en prod aunque alguien lo setee por error
+            if (!__DEV__ && event.contexts?.user_pii) {
+                delete event.contexts.user_pii;
+            }
 
-    // Filtrar breadcrumbs sensibles
-    beforeBreadcrumb(breadcrumb) {
-      // No loggear requests a endpoints sensibles
-      if (breadcrumb.category === 'http') {
-        const url = breadcrumb.data?.url || '';
-        if (url.includes('/auth') || url.includes('/login')) {
-          // Remover body de requests de auth
-          if (breadcrumb.data) {
-            delete breadcrumb.data.request_body;
-            delete breadcrumb.data.response_body;
-          }
-        }
-      }
-      return breadcrumb;
-    },
-  });
+            return event;
+        },
+
+        // Filtrar breadcrumbs sensibles
+        beforeBreadcrumb(breadcrumb) {
+            // No loggear requests a endpoints sensibles
+            if (breadcrumb.category === 'http') {
+                const url = breadcrumb.data?.url || '';
+                if (url.includes('/auth') || url.includes('/login')) {
+                    // Remover body de requests de auth
+                    if (breadcrumb.data) {
+                        delete breadcrumb.data.request_body;
+                        delete breadcrumb.data.response_body;
+                    }
+                }
+            }
+            return breadcrumb;
+        },
+    });
 };
 
 // ============================================================================
@@ -80,31 +81,31 @@ export const initSentry = () => {
  * @param {Object} userData - Datos del usuario
  */
 export const setUserContext = (userData) => {
-  if (!userData) {
-    Sentry.setUser(null);
-    return;
-  }
+    if (!userData) {
+        Sentry.setUser(null);
+        return;
+    }
 
-  // Solo ID anonimo, nunca DNI real
-  Sentry.setUser({
-    id: userData.account || userData.did?.substring(0, 20) || 'anonymous',
-  });
+    // Solo ID anonimo, nunca DNI real
+    Sentry.setUser({
+        id: userData.account || userData.did?.substring(0, 20) || 'anonymous',
+    });
 
-  // Contexto electoral sin PII
-  Sentry.setContext('user_context', {
-    user_role: userData.role || 'voter',
-    has_wallet: !!userData.account,
-    has_guardian: !!userData.guardian,
-  });
+    // Contexto electoral sin PII
+    Sentry.setContext('user_context', {
+        user_role: userData.role || 'voter',
+        has_wallet: !!userData.account,
+        has_guardian: !!userData.guardian,
+    });
 };
 
 /**
  * Limpiar contexto de usuario (logout)
  */
 export const clearUserContext = () => {
-  Sentry.setUser(null);
-  Sentry.setContext('user_context', null);
-  Sentry.setContext('electoral_location', null);
+    Sentry.setUser(null);
+    Sentry.setContext('user_context', null);
+    Sentry.setContext('electoral_location', null);
 };
 
 /**
@@ -112,12 +113,12 @@ export const clearUserContext = () => {
  * @param {Object} data - Datos de ubicacion
  */
 export const setElectoralContext = (data) => {
-  Sentry.setContext('electoral_location', {
-    province_code: data.provinceCode || data.province,
-    table_code: data.tableCode,
-    election_id: data.electionId,
-    location_id: data.locationId || data.idRecinto,
-  });
+    Sentry.setContext('electoral_location', {
+        province_code: data.provinceCode || data.province,
+        table_code: data.tableCode,
+        election_id: data.electionId,
+        location_id: data.locationId || data.idRecinto,
+    });
 };
 
 // ============================================================================
@@ -130,18 +131,18 @@ export const setElectoralContext = (data) => {
  * @param {Object} params - Parametros de navegacion (solo seguros)
  */
 export const addNavigationBreadcrumb = (routeName, params = {}) => {
-  // Solo incluir params que no sean PII
-  const safeParams = {};
-  if (params.tableCode) safeParams.tableCode = params.tableCode;
-  if (params.step) safeParams.step = params.step;
-  if (params.electionId) safeParams.electionId = params.electionId;
+    // Solo incluir params que no sean PII
+    const safeParams = {};
+    if (params.tableCode) safeParams.tableCode = params.tableCode;
+    if (params.step) safeParams.step = params.step;
+    if (params.electionId) safeParams.electionId = params.electionId;
 
-  Sentry.addBreadcrumb({
-    category: 'navigation',
-    message: `Screen: ${routeName}`,
-    level: 'info',
-    data: safeParams,
-  });
+    Sentry.addBreadcrumb({
+        category: 'navigation',
+        message: `Screen: ${routeName}`,
+        level: 'info',
+        data: safeParams,
+    });
 };
 
 /**
@@ -150,12 +151,12 @@ export const addNavigationBreadcrumb = (routeName, params = {}) => {
  * @param {Object} data - Datos adicionales (sin PII)
  */
 export const addActionBreadcrumb = (action, data = {}) => {
-  Sentry.addBreadcrumb({
-    category: 'user.action',
-    message: action,
-    level: 'info',
-    data,
-  });
+    Sentry.addBreadcrumb({
+        category: 'user.action',
+        message: action,
+        level: 'info',
+        data,
+    });
 };
 
 /**
@@ -166,22 +167,22 @@ export const addActionBreadcrumb = (action, data = {}) => {
  * @param {number} duration - Duracion en ms
  */
 export const addHttpBreadcrumb = (method, url, statusCode, duration) => {
-  // Limpiar URL de posibles datos sensibles
-  const cleanUrl = url
-    .replace(/dni=[^&]+/gi, 'dni=***')
-    .replace(/token=[^&]+/gi, 'token=***');
+    // Limpiar URL de posibles datos sensibles
+    const cleanUrl = url
+        .replace(/dni=[^&]+/gi, 'dni=***')
+        .replace(/token=[^&]+/gi, 'token=***');
 
-  Sentry.addBreadcrumb({
-    category: 'http',
-    message: `${method} ${cleanUrl}`,
-    level: statusCode >= 400 ? 'error' : 'info',
-    data: {
-      method,
-      url: cleanUrl,
-      status_code: statusCode,
-      duration_ms: duration,
-    },
-  });
+    Sentry.addBreadcrumb({
+        category: 'http',
+        message: `${method} ${cleanUrl}`,
+        level: statusCode >= 400 ? 'error' : 'info',
+        data: {
+            method,
+            url: cleanUrl,
+            status_code: statusCode,
+            duration_ms: duration,
+        },
+    });
 };
 
 /**
@@ -190,16 +191,16 @@ export const addHttpBreadcrumb = (method, url, statusCode, duration) => {
  * @param {Object} data - Datos de contexto
  */
 export const addBlockchainBreadcrumb = (operation, data = {}) => {
-  Sentry.addBreadcrumb({
-    category: 'blockchain',
-    message: `Blockchain: ${operation}`,
-    level: 'info',
-    data: {
-      operation,
-      chain: data.chain,
-      success: data.success,
-    },
-  });
+    Sentry.addBreadcrumb({
+        category: 'blockchain',
+        message: `Blockchain: ${operation}`,
+        level: 'info',
+        data: {
+            operation,
+            chain: data.chain,
+            success: data.success,
+        },
+    });
 };
 
 // ============================================================================
@@ -217,7 +218,7 @@ export const addBlockchainBreadcrumb = (operation, data = {}) => {
  * @param {string} context.step - Paso especifico (ej: 'upload_ipfs', 'oracle_call')
  * @param {string} context.tableCode - Codigo de mesa (si aplica)
  * @param {boolean} context.allowPii - (solo dev) permite adjuntar PII en contexto debug
- * @param {string} context.dni - DNI para debug (solo dev si allowPii)
+ * @param {string} context.dni
  *
  * @example
  * captureError(error, {
@@ -228,55 +229,53 @@ export const addBlockchainBreadcrumb = (operation, data = {}) => {
  * });
  */
 export const captureError = (error, context = {}) => {
-  Sentry.withScope((scope) => {
-    const allowPii = __DEV__ && context.allowPii === true;
+    Sentry.withScope((scope) => {
+        const allowPii = __DEV__ && context.allowPii === true;
+        // Tags para filtrar en dashboard
+        if (context.flow) scope.setTag('flow', context.flow);
+        if (context.critical) scope.setTag('critical', 'true');
+        if (context.step) scope.setTag('step', context.step);
+        if (context.tableCode) scope.setTag('table_code', context.tableCode);
+        if (context.chain) scope.setTag('blockchain_chain', context.chain);
 
-    // Tags para filtrar en dashboard
-    if (context.flow) scope.setTag('flow', context.flow);
-    if (context.critical) scope.setTag('critical', 'true');
-    if (context.step) scope.setTag('step', context.step);
-    if (context.tableCode) scope.setTag('table_code', context.tableCode);
-    if (context.chain) scope.setTag('blockchain_chain', context.chain);
+        // Nivel segun criticidad
+        scope.setLevel(context.critical ? 'error' : 'warning');
 
-    // Nivel segun criticidad
-    scope.setLevel(context.critical ? 'error' : 'warning');
+        // Contexto extra (sin PII)
+        const safeContext = { ...context };
+        delete safeContext.allowPii;
+        delete safeContext.token;
+        delete safeContext.privKey;
+        delete safeContext.pin;
 
-    // Contexto extra (sin PII)
-    const safeContext = { ...context };
-    delete safeContext.allowPii;
-    delete safeContext.dni;
-    delete safeContext.token;
-    delete safeContext.privKey;
-    delete safeContext.pin;
+        scope.setContext('error_context', {
+            ...safeContext,
+            timestamp: new Date().toISOString(),
+        });
 
-    scope.setContext('error_context', {
-      ...safeContext,
-      timestamp: new Date().toISOString(),
+        // Adjuntar PII solo en desarrollo y cuando se solicite explicitamente
+        if (allowPii) {
+            scope.setContext('user_pii', {
+                dni: context.dni ?? null,
+            });
+        }
+
+        // Si hay info de API debug, agregarla
+        if (error.apiDebug) {
+            scope.setContext('api_debug', {
+                url: error.apiDebug.url,
+                method: error.apiDebug.method,
+                status: error.apiDebug.status,
+            });
+        }
+
+        Sentry.captureException(error);
     });
 
-    // Adjuntar PII solo en desarrollo y cuando se solicite explicitamente
-    if (allowPii) {
-      scope.setContext('user_pii', {
-        dni: context.dni ?? null,
-      });
+    // Mantener console.error en dev para debugging local
+    if (__DEV__) {
+        console.error(`[${context.flow || 'ERROR'}]`, error.message, context);
     }
-
-    // Si hay info de API debug, agregarla
-    if (error.apiDebug) {
-      scope.setContext('api_debug', {
-        url: error.apiDebug.url,
-        method: error.apiDebug.method,
-        status: error.apiDebug.status,
-      });
-    }
-
-    Sentry.captureException(error);
-  });
-
-  // Mantener console.error en dev para debugging local
-  if (__DEV__) {
-    console.error(`[${context.flow || 'ERROR'}]`, error.message, context);
-  }
 };
 
 /**
@@ -286,13 +285,13 @@ export const captureError = (error, context = {}) => {
  * @param {Object} context - Contexto adicional
  */
 export const captureMessage = (message, level = 'info', context = {}) => {
-  Sentry.withScope((scope) => {
-    if (context.flow) scope.setTag('flow', context.flow);
+    Sentry.withScope((scope) => {
+        if (context.flow) scope.setTag('flow', context.flow);
 
-    scope.setContext('message_context', context);
+        scope.setContext('message_context', context);
 
-    Sentry.captureMessage(message, level);
-  });
+        Sentry.captureMessage(message, level);
+    });
 };
 
 // ============================================================================
@@ -306,25 +305,25 @@ export const captureMessage = (message, level = 'info', context = {}) => {
  * @returns {Function} Funcion wrapped
  */
 export const withErrorCapture = (fn, context = {}) => {
-  return async (...args) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      captureError(error, context);
-      throw error; // Re-throw para que el caller pueda manejarlo
-    }
-  };
+    return async (...args) => {
+        try {
+            return await fn(...args);
+        } catch (error) {
+            captureError(error, context);
+            throw error; // Re-throw para que el caller pueda manejarlo
+        }
+    };
 };
 
 /**
  * Forzar un crash para testing (solo usar en desarrollo)
  */
 export const testCrash = () => {
-  if (!__DEV__) {
-    console.warn('testCrash solo debe usarse en desarrollo');
-    return;
-  }
-  throw new Error('Sentry Test Crash - Ignorar este error');
+    if (!__DEV__) {
+        console.warn('testCrash solo debe usarse en desarrollo');
+        return;
+    }
+    throw new Error('Sentry Test Crash - Ignorar este error');
 };
 
 export default Sentry;

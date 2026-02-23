@@ -8,7 +8,6 @@ import {useSelector} from 'react-redux';
 import {styles} from '../../themes';
 import CText from '../common/CText';
 import String from '../../i18n/String';
-import {loadLocalRawResource} from 'react-native-svg';
 
 export default function WalletPreview(props) {
   const colors = useSelector(state => state.theme.theme);

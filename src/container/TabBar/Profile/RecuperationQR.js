@@ -22,6 +22,7 @@ import {styles} from '../../../themes';
 
 import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
+import { useBackupCheck } from '@/src/hooks/useBackupCheck';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -29,13 +30,15 @@ export default function RecuperationQR() {
   const [saving, setSaving] = useState(false);
   const userData = useSelector(state => state.wallet.payload);
   const colors = useSelector(state => state.theme.theme);
+  const { checkBackupAsStored } = useBackupCheck()
 
   const initSaveQr = async () => {
     if (saving) return;
 
     setSaving(true);
     try {
-      saveData();
+      await saveData();
+      await checkBackupAsStored();
     } catch (err) {
       Alert.alert('Error', errorMessage, [
         {text: 'OK', style: 'default'},

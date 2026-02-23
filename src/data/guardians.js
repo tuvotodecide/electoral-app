@@ -1,13 +1,14 @@
-import {useMutation, useQuery, useQueryClient} from 'react-query';
+import { BACKEND_IDENTITY } from '@env';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import wira from 'wira-sdk';
-import {BACKEND_IDENTITY} from '@env';
 
 export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY);
 
 export const useGuardiansInviteQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.invite(input), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.invite(input),
     onSuccess: data => {
       return data;
     },
@@ -21,7 +22,8 @@ export const useGuardiansInviteQuery = () => {
 };
 export const useGuardiansRecoveryRequestQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.requestRecovery(input), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.requestRecovery(input),
     onSuccess: data => {
       return data;
     },
@@ -40,10 +42,11 @@ export const useGuardiansRecoveryRequestQuery = () => {
 
 export const useGuardianDeleteQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.removeGuardian(
-    input.invId,
-    input.ownerDid
-  ), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.removeGuardian(
+      input.invId,
+      input.ownerDid
+    ),
     onSuccess: data => {
       return data;
     },
@@ -59,13 +62,14 @@ export const useGuardianDeleteQuery = () => {
 };
 export const useGuardianPatchQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.updateGuardianNickname(
-    input.invId,
-    {
-      ownerDid: input.ownerDid,
-      nickname: input.nickname
-    }
-  ), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.updateGuardianNickname(
+      input.invId,
+      {
+        ownerDid: input.ownerDid,
+        nickname: input.nickname
+      }
+    ),
     onSuccess: data => {
       return data;
     },
@@ -81,11 +85,12 @@ export const useGuardianPatchQuery = () => {
 };
 export const useGuardianInvitationActionQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.respondInvitation(
-    input.id,
-    input.did,
-    input.action
-  ), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.respondInvitation(
+      input.id,
+      input.did,
+      input.action
+    ), 
     onSuccess: data => {
       return data;
     },
@@ -101,13 +106,14 @@ export const useGuardianInvitationActionQuery = () => {
 };
 export const useRecoveryActionQuery = () => {
   const queryClient = useQueryClient();
-  return useMutation((input) => guardianApi.respondRecovery(
-    input.id,
-    input.action,
-    {
-      guardianDid: input.did
-    }
-  ), {
+  return useMutation({
+    mutationFn: (input) => guardianApi.respondRecovery(
+      input.id,
+      input.action,
+      {
+        guardianDid: input.did
+      }
+    ),
     onSuccess: data => {
       return data;
     },
@@ -123,53 +129,45 @@ export const useRecoveryActionQuery = () => {
 };
 
 export function useHasGuardiansQuery(carnet, enabled) {
-  const {data, isLoading, refetch} = useQuery(
-    ['guardians', 'has', carnet],
-    () => guardianApi.hasGuardians(carnet),
-    {
-      enabled,
-      select: res => res.has,
-    },
-  );
+  const {data, isLoading, refetch} = useQuery({
+    queryKey: ['guardians', 'has', carnet],
+    queryFn: () => guardianApi.hasGuardians(carnet),
+    enabled,
+    select: res => res.has,
+  });
   return {has: data ?? false, loading: isLoading, refetch};
 }
 
 export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
-  const {data, isLoading, remove} = useQuery(
-    ['recovery-detail', deviceId],
-    () => guardianApi.recoveryDetail(deviceId),
-    {
-      enabled: !!deviceId && enabled,
-      refetchInterval: 10000,
-      refetchIntervalInBackground: true,
-    },
-  );
+  const {data, isLoading, remove} = useQuery({
+    queryKey: ['recovery-detail', deviceId],
+    queryFn: () => guardianApi.recoveryDetail(deviceId),
+    enabled: !!deviceId && enabled,
+    refetchInterval: 10000,
+    refetchIntervalInBackground: true,
+  });
   return {data: data, loading: isLoading, remove};
 }
 export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
-  const {data, isLoading} = useQuery(
-    ['recovery-detail', deviceId],
-    () => guardianApi.recoveryStatus(deviceId),
-    {
-      enabled: !!deviceId && enabled,
-      refetchInterval: 5000,
-      refetchIntervalInBackground: true,
-    },
-  );
+  const {data, isLoading} = useQuery({
+    queryKey: ['recovery-detail', deviceId],
+    queryFn: () => guardianApi.recoveryStatus(deviceId),
+    enabled: !!deviceId && enabled,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+  });
   return {data: data, loading: isLoading};
 }
 
 export const useMyGuardiansAllListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    ['myGuardiansAll'],
-    () => guardianApi.myGuardians(options.did),
-    {
-      keepPreviousData: true,
-      staleTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-    },
-  );
+  const {data, error, isLoading} = useQuery({
+    queryKey: ['myGuardiansAll'],
+    queryFn: () => guardianApi.myGuardians(options.did),
+    keepPreviousData: true,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     data: data?.guardians,
@@ -178,18 +176,16 @@ export const useMyGuardiansAllListQuery = options => {
   };
 };
 export const useMyGuardianInvitationsListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    ['myGuardiansAll'],
-    () => {
+  const {data, error, isLoading} = useQuery({
+    queryKey: ['myGuardiansAll'],
+    queryFn: () => {
       return guardianApi.listInvitations(options.did)
     },
-    {
-      keepPreviousData: true,
-      staleTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-    },
-  );
+    keepPreviousData: true,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     data: data?.invitations,
@@ -198,16 +194,14 @@ export const useMyGuardianInvitationsListQuery = options => {
   };
 };
 export const useMyGuardianRecoveryListQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    ['guardiansRecovery'],
-    () => guardianApi.listRecoveries(options.did, options.status),
-    {
-      keepPreviousData: true,
-      staleTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-    },
-  );
+  const {data, error, isLoading} = useQuery({
+    queryKey: ['guardiansRecovery'],
+    queryFn: () => guardianApi.listRecoveries(options.did, options.status),
+    keepPreviousData: true,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     data: data?.requests,
@@ -216,16 +210,14 @@ export const useMyGuardianRecoveryListQuery = options => {
   };
 };
 export const useGuardiansThresholdQuery = options => {
-  const {data, error, isLoading} = useQuery(
-    ['guardiansThreshold', options.did],
-    () => guardianApi.getThreshold(options.did),
-    {
-      keepPreviousData: true,
-      staleTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-    },
-  );
+  const {data, error, isLoading} = useQuery({
+    queryKey: ['guardiansThreshold', options.did],
+    queryFn: () => guardianApi.getThreshold(options.did),
+    keepPreviousData: true,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     data: data?.threshold,

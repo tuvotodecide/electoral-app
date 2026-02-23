@@ -30,6 +30,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -110,6 +111,8 @@ export default function CameraScreen({ navigation, route }) {
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
   const { electionId, electionType } = route.params || {};
+  const flowMode = route.params?.mode || 'upload';
+  const isWorksheetMode = flowMode === 'worksheet';
   const device = backDevice || frontDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
   const [photo, setPhoto] = useState(null);
@@ -543,7 +546,7 @@ export default function CameraScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      const result = await camera.current.takePhoto({
+      const firstResult = await camera.current.takePhoto({
         qualityPrioritization: 'balanced',
         flash: 'off',
         enableAutoRedEyeReduction: false,
@@ -551,17 +554,21 @@ export default function CameraScreen({ navigation, route }) {
         enableShutterSound: false,
       });
 
-      const meta = await new Promise((resolve, reject) => {
-        Image.getSize(
-          `file://${result.path}`,
-          (width, height) => {
-            resolve({ width, height });
-          },
-          reject,
-        );
+      const imageContext = ImageManipulator.manipulate(`file://${firstResult.path}`);
+      const renderedImage = await imageContext.resize({
+        height: 720,
+      }).renderAsync()
+
+      const result = await renderedImage.saveAsync({
+        format: SaveFormat.JPEG,
       });
 
-      setPhoto({ path: result.path }); // sin cropData
+      const meta = {
+        width: result.width,
+        height: result.height,
+      }
+
+      setPhoto({ path: result.uri.replace('file://', '') }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);
@@ -601,12 +608,26 @@ export default function CameraScreen({ navigation, route }) {
     }
     const mesaInfo = route.params?.tableData || {};
 
+    if (isWorksheetMode) {
+      navigation.navigate(StackNav.PhotoReviewScreen, {
+        photoUri: `file://${photo.path}`,
+        tableData: mesaInfo,
+        offline: !isOnline,
+        electionId,
+        electionType,
+        mode: 'worksheet',
+      });
+      return;
+    }
+
     if (!isOnline) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
         tableData: mesaInfo,
         offline: true,
-        electionId, electionType
+        electionId,
+        electionType,
+        mode: flowMode,
       });
       return;
     }
@@ -683,14 +704,16 @@ export default function CameraScreen({ navigation, route }) {
         tableData: mesaInfo,
         aiAnalysis: aiData,
         mappedData: mappedData,
-        electionId, electionType
+        electionId,
+        electionType,
+        mode: flowMode,
       });
     } catch (error) {
       console.error('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
       const isNetworkError =
         !isOnline ||
         /network|timeout|ENET|ECONN|ECONNABORTED|ECONNRESET|EAI_AGAIN/i.test(
-          String(error?.message || ''),
+          global.String(error?.message || ''),
         );
 
 
@@ -699,7 +722,9 @@ export default function CameraScreen({ navigation, route }) {
           photoUri: `file://${photo.path}`,
           tableData: mesaInfo,
           offline: true,
-          electionId, electionType
+          electionId,
+          electionType,
+          mode: flowMode,
         });
         return;
       }
@@ -721,7 +746,9 @@ export default function CameraScreen({ navigation, route }) {
               navigation.navigate(StackNav.PhotoReviewScreen, {
                 photoUri: `file://${photo.path}`,
                 tableData: mesaInfo,
-                electionId, electionType
+                electionId,
+                electionType,
+                mode: flowMode,
               });
             },
           },
@@ -844,20 +871,24 @@ export default function CameraScreen({ navigation, route }) {
                           <CText
                             testID="cameraScreenFooterAnalyzingText"
                             style={styles.actionButtonText}>
-                            Analizando...
+                            {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
                           </CText>
                         </View>
                       ) : (
                         <>
                           <Ionicons
-                            name="analytics-outline"
+                            name={
+                              isWorksheetMode
+                                ? 'arrow-forward-circle-outline'
+                                : 'analytics-outline'
+                            }
                             size={20}
                             color="#fff"
                           />
                           <CText
                             testID="cameraScreenFooterAnalyzeText"
                             style={styles.actionButtonText}>
-                            Analizar
+                            {isWorksheetMode ? 'Continuar' : 'Analizar'}
                           </CText>
                         </>
                       )}
@@ -872,7 +903,9 @@ export default function CameraScreen({ navigation, route }) {
                           photoUri: `file://${photo.path}`,
                           tableData: mesaInfo,
                           offline: true,
-                          electionId, electionType
+                          electionId,
+                          electionType,
+                          mode: flowMode,
                         });
                       }}>
                       <Ionicons
@@ -962,12 +995,24 @@ export default function CameraScreen({ navigation, route }) {
                       size="small"
                       style={styles.analyzingIcon}
                     />
-                    <CText style={styles.actionButtonText}>Analizando...</CText>
+                    <CText style={styles.actionButtonText}>
+                      {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
+                    </CText>
                   </View>
                 ) : (
                   <>
-                    <Ionicons name="analytics-outline" size={20} color="#fff" />
-                    <CText style={styles.actionButtonText}>Analizar</CText>
+                    <Ionicons
+                      name={
+                        isWorksheetMode
+                          ? 'arrow-forward-circle-outline'
+                          : 'analytics-outline'
+                      }
+                      size={20}
+                      color="#fff"
+                    />
+                    <CText style={styles.actionButtonText}>
+                      {isWorksheetMode ? 'Continuar' : 'Analizar'}
+                    </CText>
                   </>
                 )}
               </TouchableOpacity>
@@ -980,7 +1025,9 @@ export default function CameraScreen({ navigation, route }) {
                     photoUri: `file://${photo.path}`,
                     tableData: mesaInfo,
                     offline: true,
-                    electionId, electionType
+                    electionId,
+                    electionType,
+                    mode: flowMode,
                     // flag opcional por si quieres mostrar un banner “modo offline”
                   });
                 }}>

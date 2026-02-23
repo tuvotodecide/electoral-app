@@ -1,26 +1,28 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  Alert,
   Image,
-  StyleSheet,
   PermissionsAndroid,
   Platform,
-  Alert,
+  StyleSheet,
+  View,
 } from 'react-native';
-import {launchCamera} from 'react-native-image-picker';
-import {useSelector} from 'react-redux';
-import {check, RESULTS, openSettings} from 'react-native-permissions';
+import { launchCamera } from 'react-native-image-picker';
+import { check, openSettings, RESULTS } from 'react-native-permissions';
+import { useSelector } from 'react-redux';
 // Custom imports
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import {moderateScale} from '../../common/constants';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import CButton from '../../components/common/CButton';
-import {AuthNav} from '../../navigation/NavigationKey';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { moderateScale } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
+import CButton from '../../components/common/CButton';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import String from '../../i18n/String';
+import { AuthNav } from '../../navigation/NavigationKey';
+import { styles } from '../../themes';
+import { BACKEND_IDENTITY } from '@env';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
@@ -105,6 +107,19 @@ export default function RegisterUser4({navigation, route}) {
 
   const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
 
+  const resizeImage = async (uri) => {
+    const imageContext = ImageManipulator.manipulate(uri);
+    const renderedImage = await imageContext.resize({
+      height: 300,
+    }).renderAsync()
+
+    const result = await renderedImage.saveAsync({
+      format: SaveFormat.JPEG,
+    });
+
+    return result;
+  }
+
   const triggerRecovery = async () => {
     setModal({
       visible: true,
@@ -114,11 +129,16 @@ export default function RegisterUser4({navigation, route}) {
     await yieldUI();
 
     try {
+      const resizedFrontImage = await resizeImage(frontImage.uri);
+      const resizedBackImage = await resizeImage(backImage.uri);
+      const resizedSelfie = await resizeImage(selfie.uri);
+
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
-        frontImage,
-        backImage,
-        selfie,
+        BACKEND_IDENTITY,
+        resizedFrontImage,
+        resizedBackImage,
+        resizedSelfie,
         dni,
       );
 

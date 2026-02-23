@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -14,24 +14,24 @@ import Feather from 'react-native-vector-icons/Feather';
 import Entypo from 'react-native-vector-icons/Entypo';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import {THEME, getHeight, moderateScale} from '../../../common/constants';
-import {styles} from '../../../themes';
-import {useDispatch, useSelector} from 'react-redux';
+import { THEME, getHeight, moderateScale } from '../../../common/constants';
+import { styles } from '../../../themes';
+import { useDispatch, useSelector } from 'react-redux';
 import CHeader from '../../../components/common/CHeader';
 import images from '../../../assets/images';
 import CText from '../../../components/common/CText';
-import {ProfileDataV2} from '../../../api/constant';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {colors} from '../../../themes/colors';
-import {changeThemeAction} from '../../../redux/action/themeAction';
-import {setAsyncStorageData} from '../../../utils/AsyncStorage';
+import { ProfileDataV2 } from '../../../api/constant';
+import { StackNav } from '../../../navigation/NavigationKey';
+import { colors } from '../../../themes/colors';
+import { changeThemeAction } from '../../../redux/action/themeAction';
+import { setAsyncStorageData } from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
 
-import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
+import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
-export default function Profile({navigation}) {
+export default function Profile({ navigation }) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -74,13 +74,13 @@ export default function Profile({navigation}) {
   // Sección adicional (ProfileDataV2)
   const onPressItem = item => {
     if (!!item.route) {
-      navigation.navigate(item.route, {item: item});
+      navigation.navigate(item.route, { item: item });
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }
   };
 
-  const RenderSectionHeader = ({section: {section}}) => {
+  const RenderSectionHeader = ({ section: { section } }) => {
     return (
       <CText testID={`profileSectionHeader_${section.replace(/\s+/g, '')}`} type={'B16'} style={styles.mv10}>
         {section}
@@ -117,7 +117,7 @@ export default function Profile({navigation}) {
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{name: StackNav.AuthNavigation}],
+          routes: [{ name: StackNav.AuthNavigation }],
         });
       }, 500);
       return true;
@@ -126,7 +126,7 @@ export default function Profile({navigation}) {
     }
   };
 
-  const RenderItem = ({item, index}) => {
+  const RenderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
         testID={`profileMenuItem_${item.id || index}`}
@@ -216,8 +216,8 @@ export default function Profile({navigation}) {
         {/* Header perfil */}
         <LinearGradient
           testID="profileHeaderGradient"
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 2.1}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 2.1 }}
           style={localStyle.activityHeader}
           colors={['#4A5568', '#2D3748', '#1A202C']}>
           <CHeader testID="profileHeaderComponent" color={color.white} />
@@ -234,12 +234,12 @@ export default function Profile({navigation}) {
               type={'B20'}
               color={color.white}
               align={'center'}>
-              {`Dirección ${data.name}`}
+              {`${data.name}`}
             </CText>
             <CHash
               testID="profileUserHashComponent"
               text={data.hash}
-              title={userData?.account}
+              title={`${data.account}`}
               textColor={'#fff'}
             />
           </View>

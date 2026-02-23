@@ -1,26 +1,23 @@
-import {StyleSheet, View, Image, DeviceEventEmitter} from 'react-native';
-import React, {useCallback, useEffect, useState} from 'react';
-import BootSplash from 'react-native-bootsplash';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useCallback, useEffect, useState } from 'react';
+import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
 // custom import
+import images from '../assets/images';
+import { moderateScale, PENDINGRECOVERY } from '../common/constants';
 import CSafeAreaView from '../components/common/CSafeAreaView';
-import {styles} from '../themes';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
-import {AuthNav, StackNav} from '../navigation/NavigationKey';
-import {initialStorageValueGet} from '../utils/AsyncStorage';
-import {changeThemeAction} from '../redux/action/themeAction';
-import {colors} from '../themes/colors';
-import images from '../assets/images';
-import {moderateScale, PENDINGRECOVERY} from '../common/constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {getDraft} from '../utils/RegisterDraft';
-import {ensureBundle} from '../utils/ensureBundle';
-import wira, {config} from 'wira-sdk';
-import {GATEWAY_BASE, CIRCUITS_URL} from '@env';
+import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import wira, { config } from 'wira-sdk';
 import CButton from '../components/common/CButton';
+import { AuthNav, StackNav } from '../navigation/NavigationKey';
+import { changeThemeAction } from '../redux/action/themeAction';
+import { colors } from '../themes/colors';
+import { initialStorageValueGet } from '../utils/AsyncStorage';
+import { getDraft } from '../utils/RegisterDraft';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -36,7 +33,11 @@ export default function Splash({navigation}) {
 
         switch (status) {
           case config.CircuitDownloadStatus.DOWNLOADING:
-            setDownloadMessage(String.downloadingData + info);
+            if (info.startsWith('-')) {
+              setDownloadMessage(String.downloadingData + '-');
+            } else {
+              setDownloadMessage(String.downloadingData + info);
+            }
             break;
 
           case config.CircuitDownloadStatus.DONE:
@@ -46,7 +47,7 @@ export default function Splash({navigation}) {
             break;
 
           case config.CircuitDownloadStatus.ERROR:
-            setDownloadMessage(String.downloadingFailed + '\nProgress cancelel: ' + info);
+            setDownloadMessage(String.downloadingFailed);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
@@ -68,7 +69,6 @@ export default function Splash({navigation}) {
     const {promise: downloadComplete, cancel} = waitForCircuitDownloadCompletion();
 
     try {
-      await BootSplash.hide({fade: true});
       await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
       await config.initDownloadCircuits({
         bucketUrl: CIRCUITS_URL,
@@ -87,7 +87,7 @@ export default function Splash({navigation}) {
       });
       await downloadComplete;
     } catch (error) {
-      setDownloadMessage(String.downloadingFailed + '\n' + error.message);
+      setDownloadMessage(String.downloadingFailed);
       cancel();
       return;
     }
@@ -124,7 +124,7 @@ export default function Splash({navigation}) {
           return;
         }
 
-        await ensureBundle();
+        //await ensureBundle();
         navigation.replace(StackNav.AuthNavigation);
       } else {
         navigation.replace(StackNav.AuthNavigation);
@@ -135,64 +135,63 @@ export default function Splash({navigation}) {
   }, [dispatch, navigation, waitForCircuitDownloadCompletion]);
 
   useEffect(() => {
-    initializeApp();
+    const initAppWithSdk = async () => {
+      await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
+      await initializeApp();
+    }
+
+    initAppWithSdk();
   }, [initializeApp]);
 
   return (
     <CSafeAreaView
       style={{
         backgroundColor: color.backgroundColor,
-        ...styles.center,
-        ...styles.contentCenter,
-        ...styles.flexRow,
-        ...styles.wrap,
+        ...localStyle.splashContainer
       }}
       testID="splashContainer">
-      <View style={localStyle.imageContainer} testID="splashImageContainer">
+      <View testID="splashImageContainer">
         <Image
           source={images.logoImg}
           style={localStyle.imageStyle}
           testID="splashLogo"
         />
       </View>
-      <CText type={'B30'} style={localStyle.textStyle} testID="splashTitle">
-        {String.wira}
-      </CText>
-      {!!downloadMessage && (
-        <CText type={'R14'} style={localStyle.downloadMessage} testID="downloadMessage">
-          {downloadMessage}
-        </CText>
-      )}
-      {downloadMessage.startsWith(String.downloadingFailed) &&
-        <View>
+      <View style={localStyle.infoContainer}>
+        {!!downloadMessage && (
+          <CText type={'R14'} testID="downloadMessage">
+            {downloadMessage}
+          </CText>
+        )}
+        {downloadMessage.startsWith(String.downloadingFailed) &&
           <CButton
             title={String.retry}
+            containerStyle={localStyle.button}
             testID="retryDownloadButton"
             onPress={initializeApp}
           />
-        </View>
-      }
+        }
+      </View>
     </CSafeAreaView>
   );
 }
 
 const localStyle = StyleSheet.create({
-  textStyle: {
-    ...styles.ml15,
-  },
-  imageContainer: {
+  splashContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: moderateScale(30),
-    marginBottom: moderateScale(30),
   },
   imageStyle: {
-    width: 100,
-    height: 100,
+    width: 170,
+    height: 170,
     resizeMode: 'contain',
   },
-  downloadMessage: {
-    textAlign: 'center',
-    marginTop: moderateScale(8),
+  infoContainer: {
+    alignItems: 'center',
   },
+  button: {
+    flexDirection: 'column',
+    paddingHorizontal: moderateScale(48),
+  }
 });

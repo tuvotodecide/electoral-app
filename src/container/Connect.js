@@ -1,25 +1,35 @@
-import {Image, StyleSheet, View} from 'react-native';
-import React from 'react';
-import {useSelector} from 'react-redux';
+import React, { useEffect } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import { useSelector } from 'react-redux';
 
 // custom import
-import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
-import {deviceWidth, moderateScale} from '../common/constants';
-import {styles} from '../themes';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import wira from 'wira-sdk';
 import images from '../assets/images';
+import { deviceWidth, moderateScale } from '../common/constants';
+import CButton from '../components/common/CButton';
+import CIconText from '../components/common/CIconText';
+import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
-import CButton from '../components/common/CButton';
-import {AuthNav, StackNav} from '../navigation/NavigationKey';
-import CIconText from '../components/common/CIconText';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {commonColor} from '../themes/colors';
-import wira from 'wira-sdk';
-import { checkLegacyDataExists } from '../utils/migrateLegacy';
+import { AuthNav, StackNav } from '../navigation/NavigationKey';
+import { styles } from '../themes';
+import { commonColor } from '../themes/colors';
 import { HandleModal } from './TabBar/SignIn/HandleModal';
+import { checkLegacyDataExists } from '../utils/migrateLegacy';
 
-export default function Connect({navigation}) {
+export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
+
+  useEffect(() => {
+    const checkUserData = async () => {
+      const response = await wira.Storage.checkUserData();
+      if (response) {
+        navigation.replace(AuthNav.LoginUser);
+      }
+    };
+    checkUserData();
+  }, []);
 
   const onLoginWithWira = () => {
     navigation.navigate(AuthNav.FindSession);
@@ -31,7 +41,6 @@ export default function Connect({navigation}) {
 
   const onPressLoginUser = async () => {
     const response = await wira.Storage.checkUserData();
-    console.log('onPressLoginUser - response:', response);
     if (!response) {
       const legacyDataExists = await checkLegacyDataExists();
       if (!legacyDataExists) {
@@ -56,7 +65,7 @@ export default function Connect({navigation}) {
       <View
         style={[
           localStyle.contentContainer,
-          {backgroundColor: colors.primary},
+          { backgroundColor: colors.primary },
         ]}
         testID="connectContentContainer">
         <CText
@@ -122,14 +131,15 @@ export default function Connect({navigation}) {
             bgColor={commonColor.gradient2}
             testID="connectLoginButton"
           />
-          <CButton
+
+          {/*<CButton
             onPress={onLoginWithWira}
             title={String.signInWithWira}
             type={'B16'}
             containerStyle={localStyle.btnStyle}
             color={colors.white}
             bgColor={commonColor.gradient2}
-          />
+          />*/}
         </View>
       </View>
       <HandleModal navigation={navigation} />

@@ -1,12 +1,13 @@
-import {useMutation, useQuery, useQueryClient} from 'react-query';
-import {API_ENDPOINTS} from './client/api-endpoints';
-import {kycClient} from './client/kyc';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { API_ENDPOINTS } from './client/api-endpoints';
+import { kycClient } from './client/kyc';
 
 export const useKycFindQuery = () => {
   const queryClient = useQueryClient();
 
-  return useMutation(kycClient.postFind, {
+  return useMutation({
+    mutationFn: kycClient.postFind,
     onSuccess: data => {
       return data;
     },
@@ -24,7 +25,8 @@ export const useKycFindQuery = () => {
   });
 };
 export const useKycFindPublicQuery = () => {
-  return useMutation(kycClient.postFindPublic, {
+  return useMutation({
+    mutationFn: kycClient.postFindPublic, 
     onSuccess: data => {
       return data;
     },
@@ -39,7 +41,8 @@ export const useKycFindPublicQuery = () => {
 export const useKycRegisterQuery = () => {
   const queryClient = useQueryClient();
 
-  return useMutation(kycClient.postStore, {
+  return useMutation({
+    mutationFn: kycClient.postStore,
     onSuccess: data => {
       return data;
     },

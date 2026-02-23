@@ -1,191 +1,181 @@
-# Guía de Instalación y Ejecución - React Native en Windows
+# TU VOTO DECIDE - Expo App
 
-> Esta guía asume que ya tienes Node.js, JDK 17, Android Studio y Git instalados y configurados correctamente.
-
----
-
-## ✅ Requisitos Previos (verifica con los siguientes comandos)
-
-
-node -v
-npm -v
-java -version
-git --version
-
-Asegúrate también de tener configuradas correctamente las variables de entorno:
-
-- JAVA_HOME → ruta del JDK 17
-- ANDROID_HOME → ruta del SDK de Android
-- %ANDROID_HOME%\platform-tools → debe estar en tu Path
+> Aplicación móvil desarrollada con Expo (React Native) para votación electoral.
 
 ---
 
-## 🚀 Pasos de Instalación y Ejecución
+## ✅ Requisitos Previos
 
-### 1. Clonar el repositorio
-cd C:\proyectos
-Clonar el repositorio Actual
-
-
----
-
-### 2. Crear archivo .env
-
-
-type nul > .env
-
-Luego edítalo manualmente con las variables necesarias (usa .env.example si existe).
-
----
-
-### 3. Instalar dependencias
-
-
-npm install
-
----
-
-### 4. Configurar local.properties
-
-
-cd android
-type nul > local.properties
-
-Edita el archivo y añade (ajusta la ruta a la de tu SDK):
-
-sdk.dir = C\\:\\Users\\TuUsuario\\AppData\\Local\\Android\\sdk
-
-Luego vuelve a la raíz del proyecto:
-
-cd ..
-
----
-
-### 5. Limpiar build de Android
-
-
-cd android
-
-
-gradlew.bat clean  o ./gradlew clean
-cd ..
-
----
-
-### 6. Iniciar Metro Bundler (nueva terminal)
-
-
-npx react-native start --reset-cache
-
-> Deja esta terminal abierta.
-
----
-
-### 7. Ejecutar app en Android (otra terminal)
-
-
-npx react-native run-android
-
-Si ves el error "Unable to load script", ejecuta:
-
-adb reverse tcp:8081 tcp:8081
-
----
-
-## 🧪 Notas adicionales
-
-- Usa Android Studio para iniciar tu emulador, o conecta tu dispositivo con _depuración USB_.
-- Puedes recargar la app presionando R dos veces o Ctrl+M.
-
-
-
----
-
-# Compatibilidad iOS - React Native
-
-Pasos para adaptar y ejecutar este proyecto en dispositivos iOS.
-
----
-
-### Requisitos
-
-- **macOS**: Recomendado macOS 12 (Monterey) o superior.
-- **Chip**: Compatible con Intel o Apple Silicon (M1/M2).
-
-###  Software
+### Software requerido
 
 | Herramienta       | Versión recomendada      |
 |-------------------|--------------------------|
 | **Node.js**       | ≥ 18.x                   |
 | **npm** o `yarn`  | npm ≥ 8.x (o yarn ≥ 1.22)|
-| **Xcode**         | ≥ 14.x                   |
-| **CocoaPods**     | ≥ 1.12.1                 |
+| **Expo CLI**      | Última versión           |
+| **Git**           | Última versión           |
 
-### 1. Revisar dependencias compatibles
-Abrir `package.json` y asegúrate de que todas las librerías utilizadas sean compatibles con iOS. Si alguna solo funciona en Android, busca alternativas o verifica documentación oficial.
-Se revisó que las posibles dependencias que podrían tener problemas son:
+### Para desarrollo nativo (builds locales)
 
-- react-native-quick-crypto
-- react-native-keychain
-- react-native-image-picker
-- react-native-image-crop-picker
-- react-native-vision-camera
+| Herramienta       | Android                  |
+|-------------------|--------------------------|
+| **JDK**           | JDK 17                   |
+| **Android Studio**| Última versión           |
 
-Pero se verificó que no son necesarios cambios en los archivos donde se usan.
+### Verificar instalación
 
-### 2. Agregar permisos a `Info.plist`
-Edita el archivo:
-
-```xml
-ios/[NOMBRE DE LA APP]/Info.plist
-```
-Agrega los permisos requeridos, por ejemplo:
-```xml
-<key>NSCameraUsageDescription</key>
-<string>Esta app necesita acceso a la cámara para tomar fotos.</string>
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Permite seleccionar imágenes desde la galería.</string>
+```bash
+node -v
+npm -v
+git --version
 ```
 
-### 3. Verificar si es necesario ajustar codigo por plataformas
-```js
-import { Platform } from 'react-native';
+### Variables de entorno (Android)
 
-if (Platform.OS === 'ios') {
-  // Código específico para iOS
+- `JAVA_HOME` → ruta del JDK 17
+- `ANDROID_HOME` → ruta del SDK de Android
+- `$ANDROID_HOME/platform-tools` → debe estar en tu PATH
+
+---
+
+## 🚀 Instalación
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <url-del-repositorio>
+cd electoral-app-expo
+```
+
+### 2. Crear archivo .env
+
+```bash
+cp .env.example .env
+```
+
+Edita el archivo `.env` con las variables necesarias para tu entorno.
+
+### 3. Instalar dependencias
+
+```bash
+npm install
+```
+
+---
+
+## 📱 Ejecución
+
+### Development Build
+
+Para funcionalidades nativas (cámara, notificaciones, etc.), necesitas un development build:
+
+```bash
+# Crear build de desarrollo para Android
+npx expo run:android
+
+```
+
+### Comandos disponibles
+
+| Comando             | Descripción                              |
+|---------------------|------------------------------------------|
+| `npm start`         | Inicia el servidor de desarrollo Expo    |
+| `npm run android`   | Ejecuta en Android (build nativo)        |
+| `npm run lint`      | Ejecuta el linter                        |
+
+---
+
+## 🔧 Configuración Android
+
+### Configuración de Firebase y keystore
+
+En la raíz del proyecto, crea la carpeta native-files, y añade el keystore y el archivo JSON de Firebase
+
+```
+native-files
+│
+└───keystore
+│   │   identity-release.keystore
+|
+|   google-services.json
+```
+
+Añade las credenciales del keystore en el archivo credentials.json en la raíz del proyecto
+```json
+{
+  "android": {
+    "keystore": {
+      "keystorePath": "android/app/keystore/identity-release.keystore",
+      "keystorePassword": "my-password",
+      "keyAlias": "my-key-alias",
+      "keyPassword": "my-keypassword"
+    }
+  }
 }
 ```
-O agregar equivalencias de estilos, por ejemplo 
 
-| Elevation (Android) | `shadowOffset`            | `shadowOpacity` | `shadowRadius` |
-|---------------------|---------------------------|------------------|-----------------|
-| 0                   | `{ width: 0, height: 0 }` | `0`              | `0`             |
-| 1                   | `{ width: 0, height: 1 }` | `0.18`           | `1.0`           |
-| 3                   | `{ width: 0, height: 2 }` | `0.2`            | `2.0`           |
-| 4                   | `{ width: 0, height: 2 }` | `0.22`           | `2.62`          |
-| 5                   | `{ width: 0, height: 3 }` | `0.25`           | `3.0`           |
-| 6                   | `{ width: 0, height: 3 }` | `0.26`           | `3.5`           |
-| 10                  | `{ width: 0, height: 5 }` | `0.3`            | `5.0`           |
-| 14                  | `{ width: 0, height: 6 }` | `0.34`           | `6.5`           |
 
-### 4. Ejecutar en iOS
+### Generar folder android
 
-Instalar pods (la primera vez):
- ```bash
-cd ios
-pod install
+```bash
+npx expo prebuild --clean --platform android
+```
+
+### Limpiar build de Android
+
+```bash
+cd android
+./gradlew clean
 cd ..
 ```
 
-### 5. Iniciar el Metro Bundler
+## 📦 Builds de Producción
+
+### Usando EAS Build
 
 ```bash
-npx react-native start
+# Instalar EAS CLI
+npm install -g eas-cli
+
+# Iniciar sesión en Expo
+eas login
+
+# Build para Android
+eas build --platform android
 ```
 
-### 6. Ejecutar la app en un simulador iOS
+### Build local
 
- Correr los siguientes comando:
- ```bash
-npx react-native run-ios
+```bash
+# Android AAB
+cd android && ./gradlew bundleRelease
+
 ```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Ejecutar tests
+npm test
+
+# Ejecutar tests en modo watch
+npm test -- --watch
+```
+
+---
+
+## 📝 Notas adicionales
+
+- La app usa **Expo SDK 54** con la nueva arquitectura habilitada.
+- Para funcionalidades nativas como cámara, biometría o notificaciones push, se requiere un **development build**.
+- Consulta `TESTING_GUIDE.md` para más información sobre testing.
+
+---
+
+## 🔗 Enlaces útiles
+
+- [Documentación de Expo](https://docs.expo.dev/)
+- [Expo SDK 54](https://docs.expo.dev/versions/latest/)
+- [EAS Build](https://docs.expo.dev/build/introduction/)

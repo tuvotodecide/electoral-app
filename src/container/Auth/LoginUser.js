@@ -1,50 +1,52 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Image,
-  StyleSheet,
-  View,
   ActivityIndicator,
   Dimensions,
+  Image,
   Platform,
+  StyleSheet,
+  View,
 } from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useDispatch, useSelector } from 'react-redux';
 
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import {moderateScale} from '../../common/constants';
-import typography from '../../themes/typography';
-import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import images from '../../assets/images';
+import { moderateScale } from '../../common/constants';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import { AuthNav, StackNav } from '../../navigation/NavigationKey';
+import { styles } from '../../themes';
+import typography from '../../themes/typography';
 
-import String from '../../i18n/String';
-import {clearWallet, setSecrets} from '../../redux/action/walletAction';
-import InfoModal from '../../components/modal/InfoModal';
-import {incAttempts, isLocked, resetAttempts} from '../../utils/PinAttempts';
-import {setAddresses} from '../../redux/slices/addressSlice';
-import {clearAuth, setAuthenticated} from '../../redux/slices/authSlice';
-import {SHA256} from 'crypto-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import CButton from '../../components/common/CButton';
-import {commonColor} from '../../themes/colors';
-import {ensureBundle, writeBundleAtomic} from '../../utils/ensureBundle';
-import {migrateIfNeeded} from '../../utils/migrateLegacy';
-import wira from 'wira-sdk';
-import {guardianApi} from '../../data/guardians';
 import {
   BACKEND,
   BACKEND_BLOCKCHAIN,
   BACKEND_IDENTITY,
   BACKEND_RESULT,
-  GATEWAY_BASE,
   BUNDLER,
   BUNDLER_MAIN,
+  GATEWAY_BASE,
   PROVIDER_NAME,
 } from '@env';
-import { captureError, setUserContext } from '../../config/sentry';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SHA256 } from 'crypto-js';
+import wira from 'wira-sdk';
+import CButton from '../../components/common/CButton';
+import InfoModal from '../../components/modal/InfoModal';
+import { guardianApi } from '../../data/guardians';
+import String from '../../i18n/String';
+import { clearWallet, setSecrets } from '../../redux/action/walletAction';
+import { setAddresses } from '../../redux/slices/addressSlice';
+import { clearAuth, setAuthenticated } from '../../redux/slices/authSlice';
+import { commonColor } from '../../themes/colors';
+import { ensureBundle, writeBundleAtomic } from '../../utils/ensureBundle';
+import { migrateIfNeeded } from '../../utils/migrateLegacy';
+import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
+import { captureError } from '../../config/sentry';
+import {startLocalSession} from '../../utils/Session';
+
 
 const sharedSession = new wira.SharedSession(
   BACKEND_IDENTITY,
@@ -126,17 +128,16 @@ const logNetworkIssue = (label, error, extra = {}) => {
   });
 };
 
-export default function LoginUser({navigation, route}) {
+export default function LoginUser({ navigation, route }) {
   const { sharedSessionId, sharedSessionSalt, isCIRecovery = false } = route.params ?? {};
 
   const colors = useSelector(state => state.theme.theme);
-  const [otp, setOtp] = useState('');
   const [locked, setLocked] = useState(null);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(String.loading);
-  const [modal, setModal] = useState({visible: false, msg: '', btn: String.understand, onClose: null});
-  const hideModal = () => setModal({visible: false, msg: '', btn: String.understand, onClose: null});
+  const [modal, setModal] = useState({ visible: false, msg: '', btn: String.understand, onClose: null });
+  const hideModal = () => setModal({ visible: false, msg: '', btn: String.understand, onClose: null });
 
   const otpRef = useRef(null);
 
@@ -145,7 +146,7 @@ export default function LoginUser({navigation, route}) {
       if (payload?.vc?.vc && !payload?.vc?.credentialSubject) {
         payload.vc = payload.vc.vc;
       }
-    } catch {}
+    } catch { }
     dispatch(setSecrets(payload));
 
     dispatch(
@@ -155,6 +156,7 @@ export default function LoginUser({navigation, route}) {
       }),
     );
     dispatch(setAuthenticated(true));
+    await startLocalSession();
     await resetAttempts();
     try {
       const safe = {
@@ -168,7 +170,7 @@ export default function LoginUser({navigation, route}) {
       if (safe.cipherHex && safe.saltHex) {
         await writeBundleAtomic(JSON.stringify(safe));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
     if (!exists && typeof pin === 'string' && pin.length) {
@@ -182,7 +184,7 @@ export default function LoginUser({navigation, route}) {
       );
     }
 
-    navigation.reset({index: 0, routes: [{name: StackNav.TabNavigation}]});
+    navigation.reset({ index: 0, routes: [{ name: StackNav.TabNavigation }] });
   }
 
   const onPressLoginUser1 = () => {
@@ -191,7 +193,7 @@ export default function LoginUser({navigation, route}) {
 
   async function verifyPin(code) {
     try {
-      if(sharedSessionId && sharedSessionSalt) {
+      if (sharedSessionId && sharedSessionSalt) {
         await sharedSession.signInWithSharedSession(
           sharedSessionId,
           sharedSessionSalt,
@@ -200,7 +202,7 @@ export default function LoginUser({navigation, route}) {
       }
 
       let signInOptions = null;
-      if(isCIRecovery) {
+      if (isCIRecovery) {
         signInOptions = {
           registryUrl: BACKEND_IDENTITY,
           sharedSessionSchema: PROVIDER_NAME,
@@ -223,7 +225,7 @@ export default function LoginUser({navigation, route}) {
             context: 'deviceToken',
           });
         }
-        return {ok: true, payload: userData, jwt: null};
+        return { ok: true, payload: userData, jwt: null };
       }
 
       setLoadingMessage(String.migratingOnLogin);
@@ -231,25 +233,25 @@ export default function LoginUser({navigation, route}) {
       setLoadingMessage(String.loading);
       if (mig.ok) {
         const hasUserData = await wira.Storage.checkUserData();
-        if(!hasUserData) {
-          return {ok: false, type: 'unexpected'};
+        if (!hasUserData) {
+          return { ok: false, type: 'unexpected' };
         }
         const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
-        return {ok: true, payload: userData, jwt: null};
+        return { ok: true, payload: userData, jwt: null };
       }
 
       const reason = mig.reason || 'unknown';
       if (reason === 'bad_pin') {
-        return {ok: false, type: 'bad_pin'};
+        return { ok: false, type: 'bad_pin' };
       }
 
-      
+
       if (reason === 'no_local_secrets') {
         logNetworkIssue('migrateIfNeeded:no_local', null, {
           stage: 'verifyPin',
           reason,
         });
-        return {ok: false, type: 'no_local_secrets'};
+        return { ok: false, type: 'no_local_secrets' };
       }
 
       logNetworkIssue('migrateIfNeeded_failed', mig.error ?? null, {
@@ -268,10 +270,10 @@ export default function LoginUser({navigation, route}) {
         stage: 'verifyPin',
         attemptCode: code,
       });
-      if (err?.message.includes('Invalid PIN')) {
-        return {ok: false, type: 'bad_pin'};
+      if (err?.message?.includes('Invalid PIN')) {
+        return { ok: false, type: 'bad_pin' };
       }
-      return {ok: false, type: 'unexpected', error: err};
+      return { ok: false, type: 'unexpected', error: err };
     }
   }
 
@@ -286,86 +288,87 @@ export default function LoginUser({navigation, route}) {
     setLoading(true);
     setTimeout(() => {
       verifyPin(code.trim())
-      .then(async (res) => {
-        if (res.ok) {
-          await unlock(res.payload, res.jwt, code.trim());
-          return;
-        }
-        setOtp('');
-        if (res.type === 'bad_pin') {
-          const n = await incAttempts();
-
-          setModal({
-            visible: true,
-            msg:
-              n >= 5
-                ? 'Has agotado tus 5 intentos.\n¿Olvidaste tu PIN?, Recupera tu cuenta.'
-                : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
-            onClose: n >= 5
-              ? () => navigation.replace(AuthNav.SelectRecuperation, {disableCI: true})
-              : undefined
-          });
-          if (n >= 5) {
-            dispatch(clearWallet());
-            dispatch(clearAuth());
+        .then(async (res) => {
+          if (res.ok) {
+            await unlock(res.payload, res.jwt, code.trim());
+            return;
           }
-          return;
-        }
+          otpRef.current?.clear();
+          if (res.type === 'bad_pin') {
+            const n = await incAttempts();
 
-        if (res.type === 'migrate_failed') {
-          logNetworkIssue('migrate_failed', res.error ?? null, {
-            reason: res.reason,
+            setModal({
+              visible: true,
+              msg:
+                n >= 5
+                  ? 'Has agotado tus 5 intentos.\n¿Olvidaste tu PIN?, Recupera tu cuenta.'
+                  : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
+              onClose: n >= 5
+                ? () => navigation.replace(AuthNav.SelectRecuperation, { disableCI: true })
+                : undefined
+            });
+            if (n >= 5) {
+              dispatch(clearWallet());
+              dispatch(clearAuth());
+            }
+            return;
+          }
+
+          if (res.type === 'migrate_failed') {
+            logNetworkIssue('migrate_failed', res.error ?? null, {
+              reason: res.reason,
+            });
+            setModal({
+              visible: true,
+              msg:
+                'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
+                'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
+              onClose: hideModal,
+            });
+            return;
+          }
+
+          if (res.type === 'no_local_secrets') {
+            logNetworkIssue('no_local_secrets', null, {
+              message: 'No se encontraron datos locales de billetera.',
+            });
+            setModal({
+              visible: true,
+              msg: String.notRegistered,
+              btn: String.ok,
+              onClose: () => {
+                hideModal();
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: StackNav.AuthNavigation,
+                      params: { screen: AuthNav.RegisterUser1 },
+                    },
+                  ],
+                });
+              },
+            });
+            return;
+          }
+
+          logNetworkIssue('unexpected_verify_result', res.error ?? null, {
+            resultType: res.type,
           });
           setModal({
             visible: true,
-            msg:
-              'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
-              'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
+            msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
             onClose: hideModal,
           });
-          return;
-        }
-
-        if (res.type === 'no_local_secrets') {
-          logNetworkIssue('no_local_secrets', null, {
-            message: 'No se encontraron datos locales de billetera.',
-          });
-          setModal({
-            visible: true,
-            msg: String.notRegistered,
-            btn: String.ok,
-            onClose: () => {
-              hideModal();
-              navigation.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: StackNav.AuthNavigation,
-                    params: {screen: AuthNav.RegisterUser1},
-                  },
-                ],
-              });
-            },
-          });
-          return;
-        }
-
-        logNetworkIssue('unexpected_verify_result', res.error ?? null, {
-          resultType: res.type,
-        });
-        setModal({
-          visible: true,
-          msg: 'Ocurrió un error inesperado al verificar tu credencial. Intenta de nuevo en unos minutos.',
-          onClose: hideModal,
-        });
-      })
+        })
         .catch(err => {
-          logNetworkIssue('verifyPin:catch', err, {stage: 'onCodeFilled'});
+          logNetworkIssue('verifyPin:catch', err, { stage: 'onCodeFilled' });
           captureError(err, {
             flow: 'login',
             step: 'verify_pin',
             critical: false,
           });
+          console.error(err);
         })
         .finally(() => {
           setLoading(false);
@@ -385,7 +388,7 @@ export default function LoginUser({navigation, route}) {
 
   useEffect(() => {
     if (locked === false) {
-      const t = setTimeout(() => otpRef.current?.focusField(0), 350);
+      const t = setTimeout(() => otpRef.current?.inputs?.[0]?.focus(), 350);
       return () => clearTimeout(t);
     }
   }, [locked]);
@@ -394,7 +397,7 @@ export default function LoginUser({navigation, route}) {
     (async () => {
       setLoading(true);
       try {
-        const {error, userData} = await wira.checkBiometricAuth();
+        const { error, userData } = await wira.checkBiometricAuth();
 
         if (!userData) {
           if (error === 'No credentials stored') {
@@ -437,7 +440,7 @@ export default function LoginUser({navigation, route}) {
     <CSafeAreaViewAuth testID="loginUserSafeArea">
       <View
         testID="loginUserBackground"
-        style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
+        style={[localStyle.ovalBackground, { backgroundColor: colors.primary }]}
       />
 
       <CHeader color={colors.white} isHideBack testID="loginUserHeader" />
@@ -459,21 +462,23 @@ export default function LoginUser({navigation, route}) {
               {String.login}
             </CText>
 
-            <OTPInputView
+            <OTPTextInput
               testID="textInput"
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
               keyboardType="number-pad"
-              onCodeChanged={setOtp}
-              onCodeFilled={onCodeFilled}
+              handleTextChange={code => {
+                if (code.length === 4) {
+                  onCodeFilled(code);
+                }
+              }}
               secureTextEntry={true}
               editable={!locked}
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={false}
+              autoFocus={false}
               ref={otpRef}
-              codeInputFieldStyle={[
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -481,7 +486,8 @@ export default function LoginUser({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
+              offTintColor={colors.grayScale500}
             />
           </View>
         </View>
@@ -519,7 +525,7 @@ export default function LoginUser({navigation, route}) {
   );
 }
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const localStyle = StyleSheet.create({
   bottomButtons: {
@@ -549,7 +555,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,
@@ -587,7 +593,7 @@ const localStyle = StyleSheet.create({
     zIndex: 0,
     elevation: 6,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.26,
     shadowRadius: 3.5,
   },

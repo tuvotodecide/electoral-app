@@ -1,26 +1,28 @@
-import {StyleSheet, View, TextInput, Alert} from 'react-native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
 // Custom imports
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import {moderateScale} from '../../common/constants';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import CButton from '../../components/common/CButton';
-import {AuthNav, StackNav} from '../../navigation/NavigationKey';
-import StepIndicator from '../../components/authComponents/StepIndicator';
-import UploadCardImage from '../../components/common/UploadCardImage';
-import String from '../../i18n/String';
-import {DEMO_SECRETS, REVIEW_DNI} from '../../config/review';
-import {setSecrets} from '../../redux/action/walletAction';
+import { BACKEND_IDENTITY } from '@env';
 import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
-import {BACKEND_IDENTITY} from '@env';
+import { moderateScale } from '../../common/constants';
+import StepIndicator from '../../components/authComponents/StepIndicator';
+import CButton from '../../components/common/CButton';
+import CHeader from '../../components/common/CHeader';
+import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
+import CText from '../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import UploadCardImage from '../../components/common/UploadCardImage';
+import { DEMO_SECRETS, REVIEW_DNI } from '../../config/review';
+import String from '../../i18n/String';
+import { AuthNav, StackNav } from '../../navigation/NavigationKey';
+import { setSecrets } from '../../redux/action/walletAction';
+import { styles } from '../../themes';
 
 import SimpleModal from '../../components/modal/SimpleModal';
+import CInput from '@/src/components/common/CInput';
+import CIconButton from '@/src/components/common/CIconButton';
 
 export default function RegisterUser2({navigation, route}) {
   const isRecovery = !!route?.params?.isRecovery;
@@ -40,6 +42,10 @@ export default function RegisterUser2({navigation, route}) {
 
   const closeModal = () => {
     setModalVisible({visible: false, message: null});
+  };
+
+  const navigateToAlternateScreen = () => {
+    setModalVisible({visible: false, message: null});
     if(isRecovery) {
       navigation.reset({
         index: 1,
@@ -52,8 +58,20 @@ export default function RegisterUser2({navigation, route}) {
           },
         ],
       });
+    } else {
+      navigation.reset({
+        index: 1,
+        routes: [
+          {
+            name: AuthNav.Connect,
+          },
+          {
+            name: AuthNav.SelectRecuperation,
+          },
+        ],
+      });
     }
-  };
+  }
 
   useEffect(() => {
     const trimmed = idNumber.trim();
@@ -93,28 +111,21 @@ export default function RegisterUser2({navigation, route}) {
         .then(({exists}) => {
           setSubmitting(false);
 
-          if (exists && !isRecovery) {
-            setModalVisible({
-              visible: true,
-              message: <CText type="B18" align="center" style={styles.mb20}>
-                {String.DniExists}
-              </CText>,
-            });
-            return;
-          }
+          const dniExistsOnRegisterTry = exists && !isRecovery;
+          const dniNotFoundOnRecoveryTry = !exists && isRecovery;
 
-          if (!exists && isRecovery) {
+          if (dniExistsOnRegisterTry || dniNotFoundOnRecoveryTry) {
             setModalVisible({
               visible: true,
               message: <View style={{display: 'flex', alignItems: 'center'}}>
                 <CText type="B18" align="center">
-                  {String.DniNotFound1}
+                  {String.DniIssueTitle}
                 </CText>
                 <CText type="B18" align="center" style={{fontWeight: 'bold'}}>
                   {trimmedId}
                 </CText>
                 <CText type="B18" align="center" style={styles.mb20}>
-                  {String.DniNotFound2}
+                  {dniExistsOnRegisterTry ? String.DniExists : String.DniNotFoundMsg}
                 </CText>
               </View>
             });
@@ -135,8 +146,13 @@ export default function RegisterUser2({navigation, route}) {
         .catch(err => {
           setSubmitting(false);
           const msg =
-            err?.response?.data?.message || err.message || String.unknowerror;
-          Alert.alert(String.error, msg);
+            err?.response?.data?.message || err.message || String.error;
+
+          if (msg.includes('Network Error')) {
+            Alert.alert(String.error, String.networkError);
+          } else {
+            Alert.alert(String.error, msg);
+          }
         });
     }, 500),
     [
@@ -148,6 +164,13 @@ export default function RegisterUser2({navigation, route}) {
       isRecovery,
     ],
   );
+
+  const renderInputLoader = () => {
+    if (submitting) {
+      return <CIconButton name='loading' color={colors.primary} size={moderateScale(25)} rotate={true} />
+    }
+    return null;
+  }
 
   return (
     <CSafeAreaViewAuth testID="registerUser2Container">
@@ -177,27 +200,18 @@ export default function RegisterUser2({navigation, route}) {
             {String.idVerificationSubtitle}
           </CText>
 
-          <CText
-            testID="idLabel"
-            type="B14"
-            style={styles.mt10}>
-            {String.idLabel}
-          </CText>
-          <TextInput
+          <CInput
+            _value={idNumber}
             testID="idNumberInput"
-            value={idNumber}
-            onChangeText={setIdNumber}
+            label={String.idLabel}
+            typeText="B14"
+            labelTextColor={colors.textColor}
+            toGetTextFieldValue={setIdNumber}
             onEndEditing={handleCheckAndNext}
-            placeholder={String.idPlaceholder}
-            placeholderTextColor={colors.grayScale500}
-            style={[
-              localStyle.input,
-              {
-                borderColor: colors.grayScale300,
-                color: colors.textColor,
-                backgroundColor: colors.inputBackground,
-              },
-            ]}
+            placeHolder={String.idPlaceholder}
+            rightAccessory={renderInputLoader}
+            _editable={!submitting}
+            input
           />
 
           <UploadCardImage
@@ -205,6 +219,7 @@ export default function RegisterUser2({navigation, route}) {
             label={String.frontLabel}
             image={frontImage}
             setImage={setFrontImage}
+            editable={!submitting}
           />
 
           <UploadCardImage
@@ -212,6 +227,7 @@ export default function RegisterUser2({navigation, route}) {
             label={String.backLabel}
             image={backImage}
             setImage={setBackImage}
+            editable={!submitting}
           />
         </View>
       </KeyBoardAvoidWrapper>
@@ -231,7 +247,9 @@ export default function RegisterUser2({navigation, route}) {
         testID="registerUser2DniExistsModal"
         visible={isModalVisible.visible}
         message={isModalVisible.message}
-        closeBtn={isRecovery ? String.register : String.ok}
+        okBtn={isRecovery ? String.register : String.recoveryAccount}
+        onPressOk={navigateToAlternateScreen}
+        closeCornerBtn
         onClose={closeModal}
       />
     </CSafeAreaViewAuth>

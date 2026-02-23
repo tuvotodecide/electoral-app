@@ -1,14 +1,13 @@
 
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSelector } from 'react-redux';
-import CText from '../common/CText';
 import CButton from '../common/CButton';
-import { styles } from '../../themes';
 import { moderateScale } from '../../common/constants';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 
-export default function SimpleModal({ visible, message, closeBtn, onClose }) {
+export default function SimpleModal({ visible, message, okBtn, onPressOk, closeCornerBtn, onClose }) {
   const colors = useSelector((state) => state.theme.theme);
 
   return (
@@ -17,12 +16,18 @@ export default function SimpleModal({ visible, message, closeBtn, onClose }) {
         <View style={[localStyles.container, { backgroundColor: colors.backgroundColor }]}>
           {message}
 
+          {closeCornerBtn && 
+            <TouchableOpacity testID="simpleModalCloseBtn" style={localStyles.closeButton} onPress={onClose}>
+              <Ionicons name="close" size={24} color={colors.textColor} />
+            </TouchableOpacity>
+          }
+
           <CButton
-            title={closeBtn ?? "Cerrar"}
-            testID="simpleModalCloseBtn"
+            title={okBtn ?? "OK"}
+            testID="simpleModalOkBtn"
             type="M16"
             containerStyle={localStyles.button}
-            onPress={onClose}
+            onPress={onPressOk}
           />
         </View>
       </View>
@@ -46,5 +51,10 @@ const localStyles = StyleSheet.create({
   button: {
     width: '60%',
     marginTop: moderateScale(10),
+  },
+  closeButton: {
+    position: 'absolute',
+    top: moderateScale(10),
+    right: moderateScale(10),
   },
 });

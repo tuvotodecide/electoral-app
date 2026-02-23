@@ -35,12 +35,11 @@ class PinataService {
   async downloadToCache(url, preferredName = 'electoral-act.jpg') {
     const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
     const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
-    const res = await RNFS.downloadFile({fromUrl: src, toFile: target}).promise;
+    const res = await RNFS.downloadFile({ fromUrl: src, toFile: target }).promise;
     if (res.statusCode >= 200 && res.statusCode < 300) return target;
     throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
   }
-
-  async checkDuplicateBallot(voteData,electionId=null) {
+  async checkDuplicateBallot(voteData, electionId = null) {
     try {
       // Extraer número de mesa
       const tableNumber = voteData.tableNumber || 'N/A';
@@ -48,7 +47,7 @@ class PinataService {
       // Hacer la petición al backend
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableNumber}${electionId ? `?electionId=${electionId}` : ''}`,
-        {timeout: 10000}, // 10 segundos timeout
+        { timeout: 10000 }, // 10 segundos timeout
       );
       const data = response.data;
 
@@ -66,7 +65,7 @@ class PinataService {
             Array.isArray(votes1.parties.partyVotes) &&
             Array.isArray(votes2.parties.partyVotes) &&
             votes1.parties.partyVotes.length ===
-              votes2.parties.partyVotes.length &&
+            votes2.parties.partyVotes.length &&
             votes1.parties.partyVotes.every(
               (p, i) =>
                 p.partyId === votes2.parties.partyVotes[i].partyId &&
@@ -197,7 +196,7 @@ class PinataService {
         },
       };
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        RNFS.unlink(fsPath).catch(() => {});
+        RNFS.unlink(fsPath).catch(() => { });
       }
 
       return out;
@@ -315,9 +314,9 @@ class PinataService {
 
       // 3. Construir attributes
       const attributes = [
-        {trait_type: 'Table Number', value: tableNumber},
-        {trait_type: 'Table Code', value: tableCode},
-        {trait_type: 'Time', value: time},
+        { trait_type: 'Table Number', value: tableNumber },
+        { trait_type: 'Table Code', value: tableCode },
+        { trait_type: 'Time', value: time },
       ];
 
       // Agregar votos por partido
@@ -405,6 +404,46 @@ class PinataService {
         },
       };
 
+      const worksheetIpfsUri = String(
+        additionalData?.worksheetIpfsUri || '',
+      ).trim();
+      const worksheetNftLink = String(
+        additionalData?.worksheetNftLink || '',
+      ).trim();
+      const worksheetReferenceSource = String(
+        additionalData?.worksheetReferenceSource || '',
+      ).trim();
+
+      if (worksheetIpfsUri) {
+        attributes.push({
+          trait_type: 'Worksheet Reference',
+          value: worksheetIpfsUri,
+        });
+      }
+
+      const observationTextRaw =
+        electoralData?.observationText ??
+        additionalData?.observationText ??
+        analysisData?.observations?.text ??
+        '';
+      const normalizedObservationText = String(observationTextRaw ?? '').trim();
+
+      let hasObservationResolved = false;
+      if (typeof electoralData?.hasObservation === 'boolean') {
+        hasObservationResolved = electoralData.hasObservation;
+      } else if (typeof additionalData?.hasObservation === 'boolean') {
+        hasObservationResolved = additionalData.hasObservation;
+      } else if (typeof analysisData?.observations?.is_observed === 'boolean') {
+        hasObservationResolved = analysisData.observations.is_observed;
+      }
+
+      if (hasObservationResolved) {
+        dataField.hasObservation = true;
+        dataField.observationText = normalizedObservationText;
+      } else if (normalizedObservationText) {
+        dataField.hasObservation = false;
+      }
+
       // 5. Construir metadata final
       const metadata = {
         name: `Acta Electoral Mesa ${tableNumber}`,
@@ -419,8 +458,22 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
           analysisData: analysisData,
+          worksheetReference: worksheetIpfsUri
+            ? {
+              ipfsUri: worksheetIpfsUri,
+              nftLink: worksheetNftLink || undefined,
+              source: worksheetReferenceSource || undefined,
+            }
+            : undefined,
         },
         data: dataField,
+        worksheetReference: worksheetIpfsUri
+          ? {
+            ipfsUri: worksheetIpfsUri,
+            nftLink: worksheetNftLink || undefined,
+            source: worksheetReferenceSource || undefined,
+          }
+          : undefined,
       };
 
       // 6. Subir metadata
@@ -462,7 +515,7 @@ class PinataService {
 
       const response = await axios.get(
         `${this.baseURL}/data/pinList?hashContains=${ipfsHash}`,
-        {headers},
+        { headers },
       );
 
       return {
@@ -486,6 +539,8 @@ class PinataService {
     } = {},
   ) {
     try {
+      const normalizedUserName = String(userName || '').trim();
+      const ownerLabel = normalizedUserName || '*****';
       // 1) Subir la IMAGEN del certificado
       const imageResult = await this.uploadImageToIPFS(
         certificatePath,
@@ -501,14 +556,14 @@ class PinataService {
       // 2) Metadata del certificado (SIN `data`)
       const metadata = {
         name: `Certificado de participación - Mesa ${tableNumber}`,
-        description: `Certificado de participación electoral de ${userName} en la mesa ${tableNumber} (${tableCode}) en ${location}.`,
+        description: `Certificado de participación electoral de ${ownerLabel} en la mesa ${tableNumber} (${tableCode}) en ${location}.`,
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/certificado/${tableCode}`,
         attributes: [
-          {trait_type: 'Nombre', value: userName},
-          {trait_type: 'Mesa', value: tableNumber},
-          {trait_type: 'Código de Mesa', value: tableCode},
-          {trait_type: 'Lugar', value: location},
+          { trait_type: 'Nombre', value: normalizedUserName || '*****' },
+          { trait_type: 'Mesa', value: tableNumber },
+          { trait_type: 'Código de Mesa', value: tableCode },
+          { trait_type: 'Lugar', value: location },
         ],
         _technical: {
           uploadedAt: timestamp,
@@ -517,7 +572,7 @@ class PinataService {
           imageSize: imageResult.data.size,
           imageCID: imageResult.data.ipfsHash,
         },
-     
+
       };
 
       // 3) Subir el JSON a IPFS
@@ -551,3 +606,5 @@ class PinataService {
 }
 
 export default new PinataService();
+
+

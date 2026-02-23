@@ -60,16 +60,18 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
 
   const styles = createSearchTableStyles();
   const dni = route?.params?.dni;
+  const electionId = route?.params?.electionId || null;
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);
+      const routeLocationData = route?.params?.locationData || {};
       setLocationData({
         locationId: route?.params?.locationId,
-        name: route?.params?.locationData.name,
-        address: route?.params?.locationData.address,
-        code: route?.params?.locationData.code,
+        name: routeLocationData?.name,
+        address: routeLocationData?.address,
+        code: routeLocationData?.code,
       });
-      setMesas(route?.params?.locationData.tables ?? []);
+      setMesas(routeLocationData?.tables ?? []);
       setIsLoading(false);
     } else {
       loadTables();

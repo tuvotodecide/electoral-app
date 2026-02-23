@@ -1,23 +1,23 @@
-import {StyleSheet, View} from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
-import OTPInputView from '@twotalltotems/react-native-otp-input';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { useSelector } from 'react-redux';
 
 // custom import
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
-import CText from '../../../components/common/CText';
-import {styles} from '../../../themes';
-import {moderateScale} from '../../../common/constants';
-import typography from '../../../themes/typography';
-import CButton from '../../../components/common/CButton';
-import {StackNav} from '../../../navigation/NavigationKey';
-import {getSecondaryTextColor} from '../../../utils/ThemeUtils';
-import String from '../../../i18n/String';
+import { BACKEND_IDENTITY } from '@env';
 import wira from 'wira-sdk';
-import {BACKEND_IDENTITY} from '@env';
+import { moderateScale } from '../../../common/constants';
+import CButton from '../../../components/common/CButton';
+import CHeader from '../../../components/common/CHeader';
+import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CText from '../../../components/common/CText';
+import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import LoadingModal from '../../../components/modal/LoadingModal';
+import String from '../../../i18n/String';
+import { StackNav } from '../../../navigation/NavigationKey';
+import { styles } from '../../../themes';
+import typography from '../../../themes/typography';
+import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
 export default function ChangePinNewConfirm({navigation, route}) {
@@ -31,7 +31,6 @@ export default function ChangePinNewConfirm({navigation, route}) {
   });
   const [otp, setOtp] = useState('');
   const onOtpChange = text => setOtp(text);
-  const otpRef = useRef(null);
   const finish = async () => {
     if (otp !== newPin) {
       return setModal({
@@ -68,13 +67,6 @@ export default function ChangePinNewConfirm({navigation, route}) {
     setModal({visible: false, message: '', success: false, isLoading: false});
   };
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      otpRef.current?.focusField(0);
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, []);
 
   return (
     <CSafeAreaView testID="changePinNewConfirmContainer">
@@ -96,18 +88,17 @@ export default function ChangePinNewConfirm({navigation, route}) {
               align={'center'}>
               {String.pinAccessDescription1}
             </CText>
-            <OTPInputView
+            <OTPTextInput
               testID="textInput"
-              pinCount={4}
-              style={localStyle.otpInputViewStyle}
-              code={otp}
-              onCodeChanged={onOtpChange}
+              inputCount={4}
+              containerStyle={localStyle.otpInputViewStyle}
+              handleTextChange={onOtpChange}
               secureTextEntry={true}
               editable
               keyboardAppearance={'dark'}
               placeholderTextColor={colors.textColor}
-              autoFocusOnLoad={true}
-              codeInputFieldStyle={[
+              autoFocus={true}
+              textInputStyle={[
                 localStyle.underlineStyleBase,
                 {
                   backgroundColor: colors.inputBackground,
@@ -115,7 +106,7 @@ export default function ChangePinNewConfirm({navigation, route}) {
                   borderColor: colors.grayScale500,
                 },
               ]}
-              codeInputHighlightStyle={{borderColor: colors.primary}}
+              tintColor={colors.primary}
             />
           </View>
           <View testID="changePinNewConfirmButtonContainer">
@@ -155,7 +146,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,

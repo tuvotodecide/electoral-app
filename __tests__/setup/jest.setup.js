@@ -313,12 +313,6 @@ jest.mock('react-native-reanimated', () => {
 // Mock Gesture Handler
 import 'react-native-gesture-handler/jestSetup';
 
-// Mock Toast
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
-  hide: jest.fn(),
-}));
-
 // Silence console warnings during tests
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
