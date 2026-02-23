@@ -69,11 +69,13 @@ export default function UploadCardImage({label, image, setImage, testID, editabl
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity disabled={!editable} testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={pickFromGallery}>
-        <CText type="R14" color={editable ? colors.primary : colors.grayScale400}>
-          Abrir galería
-        </CText>
-      </TouchableOpacity>
+      {__DEV__ && (
+        <TouchableOpacity disabled={!editable} testID={testID ? `${testID}_photoButton` : undefined} style={styles.photoButton} onPress={pickFromGallery}>
+          <CText type="R14" color={editable ? colors.primary : colors.grayScale400}>
+            Abrir galería
+          </CText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

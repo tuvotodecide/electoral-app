@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
+import { Alert, DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 // custom import
@@ -28,6 +28,7 @@ export default function Splash({navigation}) {
   const waitForCircuitDownloadCompletion = useCallback(() => {
     let subscription;
     const promise = new Promise((resolve, reject) => {
+      DeviceEventEmitter.removeAllListeners('downloadInfo');
       subscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
         const {status, info} = JSON.parse(data);
 
@@ -64,31 +65,55 @@ export default function Splash({navigation}) {
     return {promise, cancel};
   }, []);
 
+  const isDownloadAlreadyInProgress = useCallback(() => {
+    return new Promise((resolve) => {
+      const probeSubscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
+        const {status} = JSON.parse(data);
+        if (status === config.CircuitDownloadStatus.DOWNLOADING ||
+            status === config.CircuitDownloadStatus.DONE) {
+          probeSubscription.remove();
+          resolve(true);
+        }
+      });
+      setTimeout(() => {
+        probeSubscription.remove();
+        resolve(false);
+      }, 1500);
+    });
+  }, []);
+
   const initializeApp = useCallback(async () => {
     setDownloadMessage('');
-    const {promise: downloadComplete, cancel} = waitForCircuitDownloadCompletion();
 
     try {
       await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
-      await config.initDownloadCircuits({
-        bucketUrl: CIRCUITS_URL,
-        zipFileName: 'circuits',
-        circuitsWithChecksum: [
-          {
-            fileName: 'authV2.dat',
-            circuitId: 'authV2',
-            checksum: null,
-          },{
-            fileName: 'credentialAtomicQuerySigV2.dat',
-            circuitId: 'credentialAtomicQuerySigV2',
-            checksum: null,
-          },
-        ],
-      });
+
+      // check if a native download survived from a previous
+      // app lifecycle (observed on MIUI/Redmi devices).
+      const alreadyDownloading = await isDownloadAlreadyInProgress();
+
+      const {promise: downloadComplete} = waitForCircuitDownloadCompletion();
+
+      if (!alreadyDownloading) {
+        await config.initDownloadCircuits({
+          bucketUrl: CIRCUITS_URL,
+          zipFileName: 'circuits',
+          circuitsWithChecksum: [
+            {
+              fileName: 'authV2.dat',
+              circuitId: 'authV2',
+              checksum: null,
+            },{
+              fileName: 'credentialAtomicQuerySigV2.dat',
+              circuitId: 'credentialAtomicQuerySigV2',
+              checksum: null,
+            },
+          ],
+        });
+      }
       await downloadComplete;
     } catch (error) {
       setDownloadMessage(String.downloadingFailed);
-      cancel();
       return;
     }
 
@@ -132,15 +157,26 @@ export default function Splash({navigation}) {
     } catch (e) {
       navigation.replace(StackNav.AuthNavigation);
     }
-  }, [dispatch, navigation, waitForCircuitDownloadCompletion]);
+  }, [dispatch, navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress]);
 
   useEffect(() => {
     const initAppWithSdk = async () => {
-      await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
+      try {
+        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
+      } catch (error) {
+        if (!error.message.includes('Type FilterMapper is already registered')) {
+          Alert.alert('Error', String.sdkInitError, [
+            {text: 'OK', style: 'default'},
+          ]);
+        }
+      }
       await initializeApp();
     }
 
     initAppWithSdk();
+    return () => {
+      DeviceEventEmitter.removeAllListeners('downloadInfo');
+    };
   }, [initializeApp]);
 
   return (
