@@ -47,12 +47,12 @@ export default {
     'Para cumplir con normas regulatorias, verificamos tu identidad con una foto de tu carnet.',
   continueButton: 'Continuar',
   // page 2
-  idVerificationTitle: 'Verificación de identidad',
+  idVerificationTitle: 'Carnet de identidad',
   toRecovery: 'Para recuperar tu cuenta, ',
   toContinue: 'Para continuar, ',
   idVerificationSubtitle:
     'necesitamos que subas fotos claras de tu carnet de identidad:',
-  idLabel: 'Carnet de identidad',
+  idLabel: 'Número de carnet',
   idPlaceholder: 'Escribe tu número de CI',
   frontLabel: 'Anverso',
   backLabel: 'Reverso',
@@ -207,6 +207,7 @@ export default {
     'Guarda los datos de tu identidad en un archivo. Si pierdes acceso a tu cuenta, podrás usarla para recuperarla.',
   backupFileWarning:
     'Guarda este archivo en un lugar seguro.',
+  backupFileSuccess: 'Archivo guardado exitosamente',
   downloadBackup: ' Descargar respaldo',
   downloadingBackup: 'Descargando respaldo…',
   qrPermissionDenied: 'Permiso denegado',

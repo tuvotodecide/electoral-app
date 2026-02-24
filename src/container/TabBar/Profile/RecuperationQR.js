@@ -23,17 +23,23 @@ import {styles} from '../../../themes';
 import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
 import { useBackupCheck } from '@/src/hooks/useBackupCheck';
+import { StackNav } from '@/src/navigation/NavigationKey';
 
 const recoveryService = new wira.RecoveryService();
 
-export default function RecuperationQR() {
+export default function RecuperationQR({ navigation }) {
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const userData = useSelector(state => state.wallet.payload);
   const colors = useSelector(state => state.theme.theme);
   const { checkBackupAsStored } = useBackupCheck()
 
   const initSaveQr = async () => {
     if (saving) return;
+    if (saveSuccess) {
+      navigation.reset({ index: 0, routes: [{ name: StackNav.TabNavigation }] });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -58,6 +64,7 @@ export default function RecuperationQR() {
         did: userData.did,
       });
 
+      setSaveSuccess(true);
       if (savedOn === 'downloads') {
         Alert.alert(
           String.backed,
@@ -115,14 +122,20 @@ export default function RecuperationQR() {
         <CAlert testID="recuperationFileWarning" status="warning" message={String.backupFileWarning} />
         <CButton
           testID="recuperationFileSaveButton"
-          title={saving ? String.downloadingBackup : String.downloadBackup}
+          title={saving ? String.downloadingBackup : saveSuccess ? String.backupFileSuccess : String.downloadBackup}
           onPress={initSaveQr}
           disabled={saving}
+          variant={saveSuccess ? 'outlined' : 'default'}
           frontIcon={
             saving ? (
               <ActivityIndicator testID="recuperationFileSaveLoading" size={20} color="#fff" />
             ) : (
-              <Icono testID="recuperationFileSaveIcon" name="download-outline" size={20} color="#fff" />
+              <Icono
+                testID="recuperationFileSaveIcon"
+                name={saveSuccess ? "check-circle-outline" : "download-outline"}
+                size={20}
+                color={saveSuccess ? colors.primary : "#fff"}
+              />
             )
           }
           containerStyle={{marginVertical: 20}}
