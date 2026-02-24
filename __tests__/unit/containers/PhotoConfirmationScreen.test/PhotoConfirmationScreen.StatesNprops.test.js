@@ -1,14 +1,14 @@
 import './jestMocks';
 
+import {fireEvent} from '@testing-library/react-native';
 import {
+  act,
+  buildRouteParams,
+  flushPromises,
+  NetInfo,
   renderPhotoConfirmation,
   resetMocks,
-  pinataService,
   validateBallotLocally,
-  flushPromises,
-  String,
-  act,
-  NetInfo,
 } from './testUtils';
 
 jest.mock('@env', () => ({
@@ -21,14 +21,17 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     resetMocks();
-    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
+    NetInfo.fetch.mockResolvedValue({
+      isConnected: true,
+      isInternetReachable: true,
+    });
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test('muestra el InfoModal cuando la validación local encuentra errores', async () => {
+  test('muestra InfoModal cuando la validacion local falla al presionar Siguiente', async () => {
     validateBallotLocally.mockReturnValue({
       ok: false,
       errors: ['Totales inconsistentes', 'Faltan datos'],
@@ -36,7 +39,10 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
 
     const {getByTestId} = renderPhotoConfirmation();
 
-    await flushAsyncTasks();
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
+    });
 
     expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
     const infoModalMessage = getByTestId('photoConfirmationInfoModalMessage');
@@ -47,50 +53,57 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
     expect(messageText).toContain('Faltan datos');
   });
 
-  test('presenta el modal de duplicado cuando el backend lo detecta', async () => {
+  test('abre el modal de confirmacion cuando la validacion local es correcta', async () => {
     validateBallotLocally.mockReturnValue({ok: true});
-    pinataService.checkDuplicateBallot.mockResolvedValue({
-      exists: true,
-      ballot: {id: 'ballot-1'},
+
+    const {getByTestId} = renderPhotoConfirmation();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
     });
 
-    const {getByText} = renderPhotoConfirmation();
-
-    await flushAsyncTasks();
-
-    expect(getByText(String.duplicateBallotTitle)).toBeTruthy();
-    expect(getByText(String.duplicateBallotMessage)).toBeTruthy();
+    expect(getByTestId('photoConfirmationModalBody')).toBeTruthy();
+    expect(getByTestId('photoConfirmationModalConfirmButton')).toBeTruthy();
   });
 
-  test('abre el modal de confirmación cuando no existen duplicados', async () => {
+  test('muestra InfoModal cuando hay observacion marcada sin texto', async () => {
     validateBallotLocally.mockReturnValue({ok: true});
-    pinataService.checkDuplicateBallot.mockResolvedValue({exists: false});
+    const params = buildRouteParams();
+    params.mode = 'upload';
+    params.hasObservation = true;
+    params.observationText = '   ';
 
-  const {getAllByText, getByText} = renderPhotoConfirmation();
+    const {getByTestId} = renderPhotoConfirmation({params});
 
-    await flushAsyncTasks();
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
+    });
 
-  const nameMatches = getAllByText(/Test User/);
-  expect(nameMatches.length).toBeGreaterThan(0);
-    expect(
-      getByText(
-        /Certifico que los datos que ingreso coinciden con la foto del acta de la mesa/,
-      ),
-    ).toBeTruthy();
+    expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
+    const infoModalMessage = getByTestId('photoConfirmationInfoModalMessage');
+    const messageText = Array.isArray(infoModalMessage.props.children)
+      ? infoModalMessage.props.children.join(' ')
+      : String(infoModalMessage.props.children);
+    expect(messageText).toContain('observacion del acta');
+  });
+
+  test('al confirmar encola el acta y muestra finalizacion del proceso', async () => {
+    validateBallotLocally.mockReturnValue({ok: true});
+
+    const {getByTestId} = renderPhotoConfirmation();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
+    });
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
+    });
+
+    expect(getByTestId('photoConfirmationModalFinishedSubtext')).toBeTruthy();
   });
 });
-
-const flushAsyncTasks = async () => {
-  await actAsync(async () => {
-    jest.runAllTimers();
-  });
-  await actAsync(async () => {
-    await flushPromises();
-  });
-};
-
-const actAsync = async callback => {
-  await act(async () => {
-    await callback();
-  });
-};

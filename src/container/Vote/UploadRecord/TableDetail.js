@@ -131,9 +131,9 @@ const mapWorksheetMetadataToExistingRecord = (metadata, worksheetStatus = {}) =>
 
   const imageUrl = String(
     meta?.image ||
-      data?.image ||
-      worksheetStatus?.image ||
-      '',
+    data?.image ||
+    worksheetStatus?.image ||
+    '',
   ).trim();
 
   return {
@@ -184,7 +184,7 @@ const firstFulfilled = async promises => {
           if (rejected === tasks.length) {
             reject(
               errors.find(Boolean) ||
-                new Error('No se pudo obtener la hoja de trabajo.'),
+              new Error('No se pudo obtener la hoja de trabajo.'),
             );
           }
         });
@@ -195,7 +195,7 @@ const firstFulfilled = async promises => {
 const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
   const candidateUrls = buildIpfsJsonUrls(ipfsUri);
   if (!candidateUrls.length) {
-    throw new Error('No se encontro URL IPFS para la hoja de trabajo.');
+    throw new Error('No se encontró URL IPFS para la hoja de trabajo.');
   }
   const attempts = candidateUrls.map(url =>
     axios
@@ -207,7 +207,7 @@ const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
         if (data && typeof data === 'object') {
           return data;
         }
-        throw new Error('Respuesta invalida desde IPFS.');
+        throw new Error('Respuesta inválida desde IPFS.');
       }),
   );
   return firstFulfilled(attempts);
@@ -218,10 +218,6 @@ const LOOKUP_CACHE_TTL = {
 };
 const WORKSHEET_STATUS_REFRESH_COOLDOWN_MS = 15000;
 const TABLE_LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-const logTableLookupTrace = (event, payload = {}) => {
-  if (!TABLE_LOOKUP_TRACE_ENABLED) return;
-  console.log(`[TABLE-DETAIL][LOOKUP] ${event}`, payload);
-};
 
 const fetchTablesByLocationId = async locationId => {
   const normalizedLocationId = String(locationId || '').trim();
@@ -231,16 +227,9 @@ const fetchTablesByLocationId = async locationId => {
   const cacheKey = `tables-by-location:${normalizedLocationId}`;
   const cachedEntry = await getCache(cacheKey);
   const cachedTables = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
-  logTableLookupTrace('tables:cache-state', {
-    cacheKey,
-    cachedCount: cachedTables.length,
-  });
+
   const cacheIsFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
   if (cacheIsFresh && cachedTables.length > 0) {
-    logTableLookupTrace('tables:cache-fresh-return', {
-      cacheKey,
-      cachedCount: cachedTables.length,
-    });
     return cachedTables;
   }
 
@@ -249,18 +238,12 @@ const fetchTablesByLocationId = async locationId => {
     const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
     const list = data?.data || data?.tables || data?.data?.tables || [];
     if (Array.isArray(list)) {
-      logTableLookupTrace('tables:backend-primary-success', {
-        cacheKey,
-        fetchedCount: list.length,
-      });
+
       await setCache(cacheKey, list, { version: 'tables-v1' });
       return list;
     }
   } catch (error) {
-    logTableLookupTrace('tables:backend-primary-error', {
-      cacheKey,
-      error: error?.message || 'unknown',
-    });
+
     // fallback de compatibilidad
   }
 
@@ -271,24 +254,14 @@ const fetchTablesByLocationId = async locationId => {
     );
     const list = data?.tables || data?.data?.tables || [];
     if (Array.isArray(list) && list.length > 0) {
-      logTableLookupTrace('tables:backend-legacy-success', {
-        cacheKey,
-        fetchedCount: list.length,
-      });
+
       await setCache(cacheKey, list, { version: 'tables-v1' });
       return list;
     }
-    logTableLookupTrace('tables:legacy-empty-use-cache', {
-      cacheKey,
-      cachedCount: cachedTables.length,
-    });
+
     return cachedTables;
   } catch (error) {
-    logTableLookupTrace('tables:legacy-error-use-cache', {
-      cacheKey,
-      cachedCount: cachedTables.length,
-      error: error?.message || 'unknown',
-    });
+
     return cachedTables;
   }
 };
@@ -722,7 +695,7 @@ export default function TableDetail({ navigation, route }) {
   const handleMesaSearch = async () => {
     const normalizedInput = normalizeMesaNumber(mesaNumberInput);
     if (!normalizedInput) {
-      setMesaSearchError('Escribe el numero de mesa.');
+      setMesaSearchError('Escribe el número de mesa.');
       return;
     }
 
@@ -916,8 +889,8 @@ export default function TableDetail({ navigation, route }) {
       : hasPendingActaInQueue
         ? 'Ya tienes un acta en cola para esta mesa. La hoja debe subirse antes del acta.'
         : blockedByBackendRule
-          ? 'La hoja quedo bloqueada porque el backend detecto que ya existe un acta para esta mesa.'
-        : '';
+          ? 'La hoja quedó bloqueada porque el backend detectó que ya existe un acta para esta mesa.'
+          : '';
     if (worksheetBlockedMessage) {
       setWorksheetFeedback(worksheetBlockedMessage);
       return;
@@ -958,7 +931,7 @@ export default function TableDetail({ navigation, route }) {
         ? 'No se puede reintentar la hoja mientras existe un acta en cola para esta mesa.'
         : blockedByBackendRule
           ? 'No se puede reintentar la hoja porque la mesa ya tiene acta registrada.'
-        : '';
+          : '';
     if (worksheetBlockedMessage) {
       setWorksheetFeedback(worksheetBlockedMessage);
       return;
@@ -1139,7 +1112,7 @@ export default function TableDetail({ navigation, route }) {
 
       const backendStatus = String(data?.status || '').toUpperCase();
       if (backendStatus !== WorksheetStatus.UPLOADED) {
-        throw new Error('La hoja de trabajo aun no esta subida.');
+        throw new Error('La hoja de trabajo aún no está subida.');
       }
 
       const backendIpfsUri = String(data?.ipfsUri || data?.nftLink || '').trim();
@@ -1161,7 +1134,7 @@ export default function TableDetail({ navigation, route }) {
     try {
       if (!resolvedIpfsUri && !canFetchDetailFromBackend) {
         setWorksheetFeedback(
-          'No se encontro el enlace IPFS de la hoja de trabajo para visualizar.',
+          'No se encontró el enlace IPFS de la hoja de trabajo para visualizar.',
         );
         return;
       }
@@ -1200,7 +1173,7 @@ export default function TableDetail({ navigation, route }) {
     } catch (error) {
       setWorksheetFeedback(
         error?.message ||
-          'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
+        'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
       );
     } finally {
       setIsWorksheetActionLoading(false);
@@ -1322,7 +1295,7 @@ export default function TableDetail({ navigation, route }) {
         </View>
 
         <CText style={stylesx.searchInstructionText}>
-          Escribe el numero de mesa
+          Escribe el número de mesa
         </CText>
 
         <View style={stylesx.searchInputRow}>
@@ -1362,7 +1335,7 @@ export default function TableDetail({ navigation, route }) {
 
         {currentOffline && (
           <CText style={stylesx.searchHintText}>
-            Sin internet: se validara en cola cuando vuelva la conexion.
+            Sin internet: se validará en cola cuando vuelva la conexión.
           </CText>
         )}
 
@@ -1379,97 +1352,97 @@ export default function TableDetail({ navigation, route }) {
             shouldCenter && stylesx.centerVertically,
           ]}>
           <View style={stylesx.detailSectionDivider} />
-        {/* For tablet landscape, use two-column layout */}
-        {isTablet && isLandscape ? (
-          <View style={stylesx.tabletLandscapeContainer}>
-            {/* Left Column: Instructions and Table Data */}
-            <View style={stylesx.leftColumn}>
-              <View
-                style={[
-                  stylesx.instructionContainer,
-                  shouldCenter && { marginTop: 0 },
-                ]}>
-                {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
+          {/* For tablet landscape, use two-column layout */}
+          {isTablet && isLandscape ? (
+            <View style={stylesx.tabletLandscapeContainer}>
+              {/* Left Column: Instructions and Table Data */}
+              <View style={stylesx.leftColumn}>
+                <View
+                  style={[
+                    stylesx.instructionContainer,
+                    shouldCenter && { marginTop: 0 },
+                  ]}>
+                  {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {I18nStrings.ensureAssignedTable}
                 </CText> */}
-                {/* <CText
+                  {/* <CText
                   style={[
                     stylesx.subtitle,
                     {color: colors.grayScale500 || '#8B9399'},
                   ]}>
                     {I18nStrings.verifyTableInformation}
                 </CText> */}
-              </View>
+                </View>
 
-              <View style={stylesx.tableCard}>
-                <View style={stylesx.tableCardHeader}>
-                  <View style={stylesx.tableCardContent}>
-                    <CText style={stylesx.tableCardTitle}>
-                      Mesa {mesa.numero}
-                    </CText>
-                    <CText style={stylesx.tableCardDetail}>
-                      Código de Mesa: {mesa.codigo}
-                    </CText>
+                <View style={stylesx.tableCard}>
+                  <View style={stylesx.tableCardHeader}>
+                    <View style={stylesx.tableCardContent}>
+                      <CText style={stylesx.tableCardTitle}>
+                        Mesa {mesa.numero}
+                      </CText>
+                      <CText style={stylesx.tableCardDetail}>
+                        Código de Mesa: {mesa.codigo}
+                      </CText>
+                    </View>
+                    <MaterialIcons
+                      name="how-to-vote"
+                      size={getResponsiveSize(40, 48, 56)}
+                      color="#000"
+                      style={stylesx.downloadIcon}
+                    />
                   </View>
-                  <MaterialIcons
-                    name="how-to-vote"
-                    size={getResponsiveSize(40, 48, 56)}
-                    color="#000"
-                    style={stylesx.downloadIcon}
-                  />
                 </View>
               </View>
-            </View>
 
-            {/* Right Column: AI Info and Photo Button OR Existing Records */}
-            <View style={stylesx.rightColumn}>
-              {recordsCount > 0 ? (
-                <View style={stylesx.existingRecordsContainer}>
-                  <CAlert status="success" message={recordsMsg} />
+              {/* Right Column: AI Info and Photo Button OR Existing Records */}
+              <View style={stylesx.rightColumn}>
+                {recordsCount > 0 ? (
+                  <View style={stylesx.existingRecordsContainer}>
+                    <CAlert status="success" message={recordsMsg} />
 
-                  {existingRecords.map((record, index) => (
-                    <TouchableOpacity
-                      key={`${record.recordId}-${index}`}
-                      testID={`tableDetailExistingRecord_${index}`}
-                      style={stylesx.recordCard}
-                      onPress={() => {
-                        navigation.navigate(StackNav.PhotoReviewScreen, {
-                          mesa: mesa,
-                          existingRecord: record,
-                          isViewOnly: true,
-                          electionId, electionType
-                        });
-                      }}>
-                      <View style={stylesx.recordHeader}>
-                        <CText style={stylesx.recordTitle}>
-                          Acta #{index + 1}
-                        </CText>
-                      </View>
-
-                      {record.actaImage && (
-                        <View style={stylesx.actaImageContainer}>
-                          <Image
-                            source={{ uri: record.actaImage }}
-                            style={stylesx.actaImage}
-                            resizeMode="cover"
-                          />
-                          <View style={stylesx.imageOverlay}>
-                            <Ionicons name="eye" size={20} color="#fff" />
-                          </View>
+                    {existingRecords.map((record, index) => (
+                      <TouchableOpacity
+                        key={`${record.recordId}-${index}`}
+                        testID={`tableDetailExistingRecord_${index}`}
+                        style={stylesx.recordCard}
+                        onPress={() => {
+                          navigation.navigate(StackNav.PhotoReviewScreen, {
+                            mesa: mesa,
+                            existingRecord: record,
+                            isViewOnly: true,
+                            electionId, electionType
+                          });
+                        }}>
+                        <View style={stylesx.recordHeader}>
+                          <CText style={stylesx.recordTitle}>
+                            Acta #{index + 1}
+                          </CText>
                         </View>
-                      )}
-                    </TouchableOpacity>
-                  ))}
 
-                  <TouchableOpacity
-                    style={stylesx.addNewRecordBtn}
-                    onPress={handleTakePhoto}>
-                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  {/* <View style={stylesx.infoAI}>
+                        {record.actaImage && (
+                          <View style={stylesx.actaImageContainer}>
+                            <Image
+                              source={{ uri: record.actaImage }}
+                              style={stylesx.actaImage}
+                              resizeMode="cover"
+                            />
+                            <View style={stylesx.imageOverlay}>
+                              <Ionicons name="eye" size={20} color="#fff" />
+                            </View>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+
+                    <TouchableOpacity
+                      style={stylesx.addNewRecordBtn}
+                      onPress={handleTakePhoto}>
+                      <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    {/* <View style={stylesx.infoAI}>
                     <Ionicons
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
@@ -1481,85 +1454,85 @@ export default function TableDetail({ navigation, route }) {
                     </CText>
                   </View> */}
 
-                  <TouchableOpacity
-                    testID='tableDetailTakePhotoButton'
-                    style={stylesx.takePhotoBtn}
-                    activeOpacity={0.85}
-                    onPress={handleTakePhoto}>
-                    <CText style={stylesx.takePhotoBtnText}>
-                      {I18nStrings.takePhoto}
-                    </CText>
-                  </TouchableOpacity>
-                </>
-              )}
-              {renderWorksheetSection()}
+                    <TouchableOpacity
+                      testID='tableDetailTakePhotoButton'
+                      style={stylesx.takePhotoBtn}
+                      activeOpacity={0.85}
+                      onPress={handleTakePhoto}>
+                      <CText style={stylesx.takePhotoBtnText}>
+                        {I18nStrings.takePhoto}
+                      </CText>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {renderWorksheetSection()}
+              </View>
             </View>
-          </View>
-        ) : (
-          /* Regular Layout: Phones and Tablet Portrait */
-          <>
-            <View style={stylesx.middleWrap}>
-              <View
-                style={[
-                  stylesx.instructionContainer,
-                  shouldCenter && { marginTop: 0 },
-                ]}>
-                {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
+          ) : (
+            /* Regular Layout: Phones and Tablet Portrait */
+            <>
+              <View style={stylesx.middleWrap}>
+                <View
+                  style={[
+                    stylesx.instructionContainer,
+                    shouldCenter && { marginTop: 0 },
+                  ]}>
+                  {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
                   {I18nStrings.ensureAssignedTable}
                 </CText> */}
-                {/* <CText
+                  {/* <CText
                 style={[
                   stylesx.subtitle,
                   {color: colors.grayScale500 || '#8B9399'},
                 ]}>
                 {I18nStrings.verifyTableInformation}
               </CText> */}
-              </View>
+                </View>
 
-              <View style={stylesx.tableCard}>
-                <View style={stylesx.tableCardHeader}>
-                  <MaterialIcons
-                    name="how-to-vote"
-                    size={getResponsiveSize(40, 48, 56)}
-                    color="#000"
-                    style={stylesx.downloadIcon}
-                  />
-                  <View style={stylesx.tableCardContent}>
-                    <CText style={stylesx.tableCardTitle}>
-                      {I18nStrings.table} {mesa.numero}
-                    </CText>
-                    <CText style={stylesx.tableCardDetail}>
-                      {I18nStrings.tableCode}
-                      {':'} {mesa.codigo}
-                    </CText>
-                    {/* <CText style={stylesx.tableCardDetail}>
+                <View style={stylesx.tableCard}>
+                  <View style={stylesx.tableCardHeader}>
+                    <MaterialIcons
+                      name="how-to-vote"
+                      size={getResponsiveSize(40, 48, 56)}
+                      color="#000"
+                      style={stylesx.downloadIcon}
+                    />
+                    <View style={stylesx.tableCardContent}>
+                      <CText style={stylesx.tableCardTitle}>
+                        {I18nStrings.table} {mesa.numero}
+                      </CText>
+                      <CText style={stylesx.tableCardDetail}>
+                        {I18nStrings.tableCode}
+                        {':'} {mesa.codigo}
+                      </CText>
+                      {/* <CText style={stylesx.tableCardDetail}>
                       {I18nStrings.precinct}
                       {':'} {mesa.colegio}
                     </CText> */}
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              {/* Show existing attestations if available */}
-              {recordsCount > 0 && (
-                <View style={stylesx.existingRecordsContainer}>
-                  {/* <CText style={stylesx.existingRecordsSubtitle}>
+                {/* Show existing attestations if available */}
+                {recordsCount > 0 && (
+                  <View style={stylesx.existingRecordsContainer}>
+                    {/* <CText style={stylesx.existingRecordsSubtitle}>
                   Esta mesa ya tiene actas registradas en el sistema
                 </CText> */}
 
-                  <CAlert status="success" message={recordsMsg} />
-                  <TouchableOpacity
-                    style={stylesx.addNewRecordBtn}
-                    onPress={handleTakePhoto}>
-                    <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
-                  </TouchableOpacity>
-                </View>
-              )}
+                    <CAlert status="success" message={recordsMsg} />
+                    <TouchableOpacity
+                      style={stylesx.addNewRecordBtn}
+                      onPress={handleTakePhoto}>
+                      <CText style={stylesx.addNewRecordText}>Atestiguar</CText>
+                    </TouchableOpacity>
+                  </View>
+                )}
 
-              {/* Show photo taking section only if no existing records */}
-              {(!existingRecords || existingRecords.length === 0) && (
-                <>
-                  {/* <View style={stylesx.infoAI}>
+                {/* Show photo taking section only if no existing records */}
+                {(!existingRecords || existingRecords.length === 0) && (
+                  <>
+                    {/* <View style={stylesx.infoAI}>
                     <Ionicons
                       name="sparkles"
                       size={getResponsiveSize(16, 19, 22)}
@@ -1571,22 +1544,22 @@ export default function TableDetail({ navigation, route }) {
                     </CText>
                   </View> */}
 
-                  <TouchableOpacity
-                    testID='tableDetailTakePhotoButton'
-                    style={stylesx.takePhotoBtn}
-                    activeOpacity={0.85}
-                    onPress={handleTakePhoto}>
-                    <CText style={stylesx.takePhotoBtnText}>
-                      {I18nStrings.takePhoto}
-                    </CText>
-                  </TouchableOpacity>
-                </>
-              )}
-              {renderWorksheetSection()}
-            </View>
-          </>
-        )}
-      </View>
+                    <TouchableOpacity
+                      testID='tableDetailTakePhotoButton'
+                      style={stylesx.takePhotoBtn}
+                      activeOpacity={0.85}
+                      onPress={handleTakePhoto}>
+                      <CText style={stylesx.takePhotoBtnText}>
+                        {I18nStrings.takePhoto}
+                      </CText>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {renderWorksheetSection()}
+              </View>
+            </>
+          )}
+        </View>
       )}
 
       {/* MODAL DE PREVISUALIZACIÓN DE FOTO */}

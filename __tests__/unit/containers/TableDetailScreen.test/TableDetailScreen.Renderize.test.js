@@ -14,22 +14,18 @@ describe('TableDetailScreen - Renderizado', () => {
     jest.clearAllMocks();
   });
 
-  const buildPrecinctMatcher = value =>
-    new RegExp(
-      `${String.precinct}\\s*:?[\\s\\n]+${value.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}`,
-    );
-
-  test('muestra los detalles principales de la mesa y la acción de captura sin actas previas', () => {
+  test('muestra los controles base de mesa y acción de captura', () => {
     const {getByTestId, getByText} = renderTableDetail();
 
     expect(getByTestId('tableDetailContainer')).toBeTruthy();
-    expect(getByText(String.ensureAssignedTable)).toBeTruthy();
+    expect(getByTestId('tableDetailMesaInput')).toBeTruthy();
+    expect(getByTestId('tableDetailSearchMesaButton')).toBeTruthy();
+    expect(getByText('Escribe el número de mesa')).toBeTruthy();
     expect(getByText(`${String.table} ${defaultMesa.tableNumber}`)).toBeTruthy();
     expect(
       getByText(`${String.tableCode}: ${defaultMesa.codigo}`),
     ).toBeTruthy();
-    expect(getByText(buildPrecinctMatcher(defaultMesa.recinto))).toBeTruthy();
-    expect(getByText(String.aiWillSelectClearestPhoto)).toBeTruthy();
+    expect(getByTestId('tableDetailTakePhotoButton')).toBeTruthy();
     expect(getByText(String.takePhoto)).toBeTruthy();
   });
 
@@ -67,7 +63,7 @@ describe('TableDetailScreen - Renderizado', () => {
     );
   });
 
-  test('utiliza valores por defecto cuando la mesa carece de identificadores', () => {
+  test('cuando no hay mesa válida muestra el modo de búsqueda', () => {
     const emptyMesaRoute = buildRoute({
       mesa: {
         tableNumber: undefined,
@@ -79,10 +75,10 @@ describe('TableDetailScreen - Renderizado', () => {
       },
     });
 
-    const {getByText} = renderTableDetail({route: emptyMesaRoute});
+    const {getByTestId, getByText} = renderTableDetail({route: emptyMesaRoute});
 
-  expect(getByText(`${String.table} N/A`)).toBeTruthy();
-  expect(getByText(`${String.tableCode}: N/A`)).toBeTruthy();
-    expect(getByText(buildPrecinctMatcher('N/A'))).toBeTruthy();
+    expect(getByTestId('tableDetailSearchContainer')).toBeTruthy();
+    expect(getByTestId('tableDetailMesaInput')).toBeTruthy();
+    expect(getByText('Escribe el número de mesa')).toBeTruthy();
   });
 });

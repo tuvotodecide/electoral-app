@@ -3,7 +3,7 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   BackHandler,
   Dimensions,
@@ -79,7 +79,6 @@ const SuccessScreen = () => {
     () => setInfoModalData({ visible: false, title: '', message: '' }),
     [],
   );
-  console.log('route.params', route.params);
   const fromNotifications = params.fromNotifications === true;
 
   const ipfsUrl = pickFirstUrl(
@@ -117,21 +116,6 @@ const SuccessScreen = () => {
   );
 
   const normalizedActaUrl = normalizeUri(actaUrl);
-
-  useEffect(() => {
-    if (!__DEV__) return;
-    try {
-      console.log('[SUCCESS] route.params', JSON.stringify(params, null, 2));
-    } catch {
-      console.log('[SUCCESS] route.params (raw)', params);
-    }
-    console.log('[SUCCESS] resolved urls', {
-      certificateUrl,
-      normalizedCertificateUrl,
-      actaUrl,
-      normalizedActaUrl,
-    });
-  }, []);
 
   const navigateHome = useCallback(() => {
     navigation.reset({

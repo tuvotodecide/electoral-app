@@ -58,7 +58,7 @@ export default {
   backLabel: 'Reverso',
   checking: 'Verificando...',
   recoveryAccount: 'Recuperar cuenta',
-  DniExists: 'Ya fué registrado, intente recuperar su cuenta.',
+  DniExists: 'Ya fue registrado, intente recuperar su cuenta.',
   DniIssueTitle: 'El carnet:',
   DniNotFoundMsg: 'No se ha encontrado, regístrese por favor.',
   // Page 3
@@ -164,7 +164,7 @@ export default {
   qrValid: 'Qr válido',
   legacyDataFound: 'Los datos de este QR son antiguos, se realizará un proceso de migración',
   notEnoughLegacyData: 'Este QR no tiene suficientes datos',
-  alreadyMigrated: 'Esta cuenta ya fué migrada, intente recuperar usando su Carnet y PIN',
+  alreadyMigrated: 'Esta cuenta ya fue migrada, intente recuperar usando su Carnet y PIN',
   myProtectedInfo: 'Personas de las cuales soy guardián',
   myInvitations: 'Mis invitaciones',
   myRecovery: 'Solicitudes de recuperación',
@@ -206,7 +206,7 @@ export default {
   backupFileDescription:
     'Guarda los datos de tu identidad en un archivo. Si pierdes acceso a tu cuenta, podrás usarla para recuperarla.',
   backupFileWarning:
-    'Guárda este archivo en un lugar seguro.',
+    'Guarda este archivo en un lugar seguro.',
   downloadBackup: ' Descargar respaldo',
   downloadingBackup: 'Descargando respaldo…',
   qrPermissionDenied: 'Permiso denegado',
@@ -310,7 +310,7 @@ export default {
   moreConfig: 'Configuración',
   moreConfig1Title: 'Ajustes de seguridad',
   moreConfig1Subtitle: 'autenticación de dos factores',
-  moreConfig2Title: 'Limite de compras',
+  moreConfig2Title: 'Límite de compras',
   moreConfig2Subtitle: 'Diarias o temporales',
   moreConfig3Title: 'Modo oscuro',
   moreConfig3Subtitle: 'Claro u oscuro',
@@ -329,7 +329,7 @@ export default {
   security1Subtitle: 'Actualiza tu PIN de acceso',
   security2Title: 'Face ID',
   security2Subtitle: 'Usa tu rostro para login',
-  security3Title: 'Correo electronico',
+  security3Title: 'Correo electrónico',
   security3Subtitle: 'Crear tu correo',
   security4Title: 'Huella dactilar',
   security4Subtitle: 'Activar huella',
@@ -337,7 +337,7 @@ export default {
   showNameValue: 'Tu nombre será visible para otros usuarios',
 
   //Limite
-  limitTitle: 'Limite de compras',
+  limitTitle: 'Límite de compras',
   limitSubtitle:
     'Configura un control adicional para tus transacciones diarias o temporales.',
   //suport
@@ -357,7 +357,7 @@ export default {
   generateQr: 'Generar QR',
 
   //Wallet bottom sheet
-  selectOption: 'Elije una opción',
+  selectOption: 'Elige una opción',
   walletSend: 'Pagar',
   walletReceive: 'Cobrar',
 
@@ -1258,11 +1258,11 @@ export default {
   sendRecovery: 'Solicitar recuperación',
   learnMore: 'Más info',
   blockchainConsultBanner:
-    'Blockchain Consultora desarrollo esta aplicación, contáctelos',
+    'Blockchain Consultora desarrolló esta aplicación, contáctelos',
   needBlockchainApp: '¿Necesitas una aplicación en Blockchain?',
 
   connectTitle: 'Aplicación Electoral',
-  connectItem1: 'Obten tu identidad digital soberana',
+  connectItem1: 'Obtén tu identidad digital soberana',
   connectItem2: 'Convierte actas electorales en NFTs',
   connectItem3: 'Valida con tu firma electrónica',
   // connectBtnInfo: 'Más información',
@@ -1287,7 +1287,7 @@ export default {
   selectFileError: 'Error al procesar el archivo',
   processingSuccess: 'Archivo procesado correctamente',
   debtHelp:
-    'La creación de la billetera tiene un pequeño costo que sera cobrado en su primera transacción',
+    'La creación de la billetera tiene un pequeño costo que será cobrado en su primera transacción',
   sendInvitation: ' Enviar invitación',
   finishingRecovery: 'Finalizando recuperación',
   return: 'Regresar',
@@ -1312,7 +1312,7 @@ export default {
   locationError: 'Error al obtener la ubicación',
   locationPermissionError: 'Error al solicitar permisos de ubicación',
   askMeLater: 'Preguntar después',
-  notRegistered: 'Aún no estas registrado, registrarse?',
+  notRegistered: 'Aún no estás registrado, ¿registrarte?',
   ok: 'OK',
   tables: 'mesas',
   code: 'Código',

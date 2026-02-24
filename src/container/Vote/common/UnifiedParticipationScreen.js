@@ -50,7 +50,7 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
         });
       } else {
         // Nuevo flujo: tras seleccionar recinto, ir directo a TableDetail
-        // y pedir numero de mesa en esa pantalla.
+        // y pedir número de mesa en esa pantalla.
         navigation.replace(StackNav.TableDetail, {
           locationId,
           locationData: { ...locationData, locationId },

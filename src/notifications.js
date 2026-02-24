@@ -145,7 +145,7 @@ const buildNotificationTextFallback = notification => {
     notification?.title ||
     data?.title ||
     (notificationType === 'participation_certificate'
-      ? 'Certificado de participacion emitido'
+      ? 'Certificado de participación emitido'
       : notificationType === 'acta_published'
       ? 'Acta publicada'
       : notificationType === 'worksheet_uploaded'
@@ -157,17 +157,17 @@ const buildNotificationTextFallback = notification => {
     data?.body ||
     (notificationType === 'participation_certificate'
       ? tableLabel
-        ? `Tu certificado de participacion de la mesa ${tableLabel} fue emitido.`
-        : 'Tu certificado de participacion fue emitido.'
+        ? `Tu certificado de participación de la mesa ${tableLabel} fue emitido.`
+        : 'Tu certificado de participación fue emitido.'
       : notificationType === 'acta_published'
       ? tableLabel
         ? `Tu acta de la mesa ${tableLabel} fue publicada.`
         : 'Tu acta fue publicada.'
       : notificationType === 'worksheet_uploaded'
       ? tableLabel
-        ? `Mesa ${tableLabel}: tu hoja ya esta disponible para comparacion.`
-        : 'Tu hoja de trabajo ya esta disponible para comparacion.'
-      : 'Tienes una notificacion nueva.');
+        ? `Mesa ${tableLabel}: tu hoja ya está disponible para comparación.`
+        : 'Tu hoja de trabajo ya está disponible para comparación.'
+      : 'Tienes una notificación nueva.');
 
   return {title, body, data};
 };

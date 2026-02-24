@@ -83,22 +83,22 @@ export default function Notification({ navigation }) {
 
     let mesaLabel = '';
     if (preferBackendText) {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificacion';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificación';
     } else if (data.tableNumber) {
       mesaLabel = `Mesa ${String(data.tableNumber)}`;
     } else if (data.tableCode) {
       mesaLabel = data.tableCode;
     } else {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificacion';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificación';
     }
 
-    let tipo = 'Notificacion';
+    let tipo = 'Notificación';
     if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
       tipo = 'Acta publicada';
     } else if (data?.type === 'participation_certificate') {
-      tipo = 'Certificado de participacion';
+      tipo = 'Certificado de participación';
     } else if (data?.type === 'worksheet_uploaded') {
       tipo = 'Hoja de trabajo subida';
     }

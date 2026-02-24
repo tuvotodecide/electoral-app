@@ -60,6 +60,7 @@ jest.mock('react-native', () => ({
   View: 'View',
   SafeAreaView: 'SafeAreaView',
   TouchableOpacity: 'TouchableOpacity',
+  Switch: 'Switch',
   Image: (() => {
     const React = require('react');
     const MockImage = props => React.createElement('Image', props, props.children);
@@ -436,7 +437,9 @@ const originalConsoleWarn = console.warn;
 
 beforeAll(() => {
   console.error = (...args) => {
-    const message = typeof args[0] === 'string' ? args[0] : '';
+    const message = args
+      .map(arg => (typeof arg === 'string' ? arg : arg?.message || ''))
+      .join(' ');
 
     if (message.includes('Warning: ReactDOM.render is no longer supported')) {
       return;
@@ -452,17 +455,31 @@ beforeAll(() => {
     if (message.includes('Encountered two children with the same key')) {
       return;
     }
+
+    // Expected error-path logs covered by dedicated unit tests.
+    if (
+      message.includes('[CAMERA-SCREEN]') ||
+      message.includes('[vote_upload]')
+    ) {
+      return;
+    }
     originalConsoleError.call(console, ...args);
   };
   
   console.warn = (...args) => {
-    const message = typeof args[0] === 'string' ? args[0] : '';
+    const message = args
+      .map(arg => (typeof arg === 'string' ? arg : arg?.message || ''))
+      .join(' ');
 
     if (
       message.includes('Warning:') ||
       message.includes('[WARN]') ||
       message.includes('[NavigationLogger]')
     ) {
+      return;
+    }
+
+    if (message.includes('An error occurred in the <SearchTable> component.')) {
       return;
     }
     originalConsoleWarn.call(console, ...args);

@@ -137,7 +137,7 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [isNameVisible, setIsNameVisible] = useState(true);
   const [certificateUri, setCertificateUri] = useState(null);
   const [finalStepMessage, setFinalStepMessage] = useState(
-    'Acta guardada. Se subira en segundo plano.',
+    'Acta guardada. Se subirá en segundo plano.',
   );
   const [compareResult] = useState(() => {
     const fromRoute = route.params?.compareResult;
@@ -317,7 +317,7 @@ const PhotoConfirmationScreen = ({ route }) => {
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
-        message: 'Error en validacion local.',
+        message: 'Error en validación local.',
       });
     }
   };
@@ -349,7 +349,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         setInfoModalData({
           visible: true,
           title: I18nStrings.genericError,
-          message: 'No se encontro la foto de la hoja de trabajo.',
+          message: 'No se encontró la foto de la hoja de trabajo.',
         });
         setStep(0);
         return;
@@ -409,7 +409,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           errorMessage: undefined,
         });
         setFinalStepMessage(
-          'La hoja ya estaba en cola. Se subira en segundo plano.',
+          'La hoja ya estaba en cola. Se subirá en segundo plano.',
         );
         setStep(2);
         return;
@@ -464,7 +464,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         retryPayload: worksheetTaskPayload,
       });
       setFinalStepMessage(
-        'Hoja encolada correctamente. Se subira en segundo plano.',
+        'Hoja encolada correctamente. Se subirá en segundo plano.',
       );
       setStep(2);
     } catch (error) {
@@ -535,7 +535,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         setInfoModalData({
           visible: true,
           title: I18nStrings.genericError,
-          message: 'No se encontro la foto del acta. Vuelve a capturarla.',
+          message: 'No se encontró la foto del acta. Vuelve a capturarla.',
         });
         setShowConfirmModal(false);
         setStep(0);
@@ -601,7 +601,7 @@ const PhotoConfirmationScreen = ({ route }) => {
 
         },
       });
-      setFinalStepMessage('Acta guardada. Se subira en segundo plano.');
+      setFinalStepMessage('Acta guardada. Se subirá en segundo plano.');
       setStep(2);
     } catch (error) {
       captureError(error, {
@@ -738,7 +738,7 @@ const PhotoConfirmationScreen = ({ route }) => {
                     </CText>
                     <CText style={styles.nftCertTitle}>CERTIFICADO DE</CText>
                     <CText style={styles.nftCertTitle}>
-                      PARTICIPACION ELECTORAL
+                      PARTICIPACIÓN ELECTORAL
                     </CText>
                     <CText style={styles.nftCertDetail}>
                       {(tableLocationLabel || '').toUpperCase()}
@@ -805,7 +805,7 @@ const PhotoConfirmationScreen = ({ route }) => {
                   <CText style={modalStyles.boldText}>
                     inventado ni modificado
                   </CText>{' '}
-                  informacion.
+                  información.
                 </CText>
 
                 <View

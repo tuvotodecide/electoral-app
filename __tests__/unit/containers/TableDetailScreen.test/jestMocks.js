@@ -53,6 +53,51 @@ jest.mock(
   () => require('../../../__mocks__/components/common/CAlert').default,
 );
 
+jest.mock('axios', () => ({
+  get: jest.fn(),
+  post: jest.fn(),
+}));
+
+jest.mock('@react-native-community/netinfo', () => {
+  const fetch = jest.fn(() =>
+    Promise.resolve({isConnected: false, isInternetReachable: false}),
+  );
+  return {
+    fetch,
+    default: {fetch},
+  };
+});
+
+jest.mock('../../../../src/utils/offlineQueue', () => ({
+  enqueue: jest.fn(),
+  getAll: jest.fn(),
+}));
+
+jest.mock('../../../../src/utils/offlineQueueHandler', () => ({
+  authenticateWithBackend: jest.fn(),
+}));
+
+jest.mock('../../../../src/utils/lookupCache', () => ({
+  getCache: jest.fn(() => Promise.resolve(null)),
+  isFresh: jest.fn(() => Promise.resolve(false)),
+  setCache: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('../../../../src/utils/worksheetLocalStatus', () => ({
+  WorksheetStatus: {
+    NOT_FOUND: 'NOT_FOUND',
+    PENDING: 'PENDING',
+    FAILED: 'FAILED',
+    UPLOADED: 'UPLOADED',
+  },
+  getWorksheetLocalStatus: jest.fn(() =>
+    Promise.resolve({status: 'NOT_FOUND'}),
+  ),
+  upsertWorksheetLocalStatus: jest.fn(payload =>
+    Promise.resolve(payload || {status: 'NOT_FOUND'}),
+  ),
+}));
+
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {

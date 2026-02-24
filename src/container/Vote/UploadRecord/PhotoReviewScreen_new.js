@@ -369,7 +369,7 @@ const PhotoReviewScreen = () => {
       setInfoModalData({
         visible: true,
         title: 'Error',
-        message: 'No se encontro la informacion de la hoja para encolar.',
+        message: 'No se encontró la información de la hoja para encolar.',
       });
       return;
     }
@@ -394,7 +394,7 @@ const PhotoReviewScreen = () => {
         setInfoModalData({
           visible: true,
           title: 'Error',
-          message: 'No se encontro la foto de la hoja de trabajo.',
+          message: 'No se encontró la foto de la hoja de trabajo.',
         });
         setShowWorksheetConfirmModal(false);
         return;
@@ -487,7 +487,7 @@ const PhotoReviewScreen = () => {
         setInfoModalData({
           visible: true,
           title: 'Hoja de trabajo',
-          message: 'La hoja ya estaba en cola. Se subira en segundo plano.',
+          message: 'La hoja ya estaba en cola. Se subirá en segundo plano.',
           buttonText: 'Ir al Inicio',
         });
         return;
@@ -544,7 +544,7 @@ const PhotoReviewScreen = () => {
       setInfoModalData({
         visible: true,
         title: 'Hoja de trabajo',
-        message: 'Hoja guardada. Se subira en segundo plano.',
+        message: 'Hoja guardada. Se subirá en segundo plano.',
         buttonText: 'Ir al Inicio',
       });
     } catch (error) {
@@ -689,7 +689,7 @@ const PhotoReviewScreen = () => {
           if (!isOnline) {
             compareResult = buildResult(
               WorksheetCompareStatus.SKIPPED_OFFLINE,
-              'Sin conexion. No se pudo comparar con la hoja de trabajo.',
+              'Sin conexión. No se pudo comparar con la hoja de trabajo.',
             );
           } else {
             const apiKey = await authenticateWithBackend(
@@ -856,7 +856,7 @@ const PhotoReviewScreen = () => {
         ]
       : [
           {
-            text: 'Estan correctos',
+            text: 'Están correctos',
             onPress: handleNext,
             style: {backgroundColor: colors.primary},
             textStyle: {color: '#fff'},

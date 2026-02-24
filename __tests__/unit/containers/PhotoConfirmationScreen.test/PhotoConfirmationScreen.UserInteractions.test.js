@@ -1,23 +1,21 @@
 import './jestMocks';
 
+import {fireEvent} from '@testing-library/react-native';
 import {
-  renderPhotoConfirmation,
-  resetMocks,
-  pinataService,
-  NetInfo,
-  validateBallotLocally,
-  persistLocalImage,
+  act,
+  buildRouteParams,
   enqueue,
   flushPromises,
-  act,
-  axios,
-  executeOperation,
-  oracleCalls,
-  oracleReads,
-  availableNetworks,
-  String,
+  getOfflineQueue,
+  NetInfo,
+  persistLocalImage,
+  renderPhotoConfirmation,
+  resetMocks,
+  upsertWorksheetLocalStatus,
+  validateBallotLocally,
+  WorksheetStatus,
 } from './testUtils';
-import {fireEvent} from '@testing-library/react-native';
+import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://test-backend.com',
@@ -29,33 +27,31 @@ describe('PhotoConfirmationScreen - Interacciones de Usuario', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     resetMocks();
+    NetInfo.fetch.mockResolvedValue({
+      isConnected: false,
+      isInternetReachable: false,
+    });
     validateBallotLocally.mockReturnValue({ok: true});
-    pinataService.checkDuplicateBallot.mockResolvedValue({exists: false});
+    persistLocalImage.mockResolvedValue('file:///persisted.jpg');
+    enqueue.mockResolvedValue(undefined);
+    getOfflineQueue.mockResolvedValue([]);
+    upsertWorksheetLocalStatus.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test('cuando no hay conexión encola la publicación y muestra finalización local', async () => {
-    NetInfo.fetch.mockResolvedValue({isConnected: false, isInternetReachable: false});
-    persistLocalImage.mockResolvedValue('file:///persisted.jpg');
-    enqueue.mockResolvedValue(undefined);
-
-    const {getAllByText, getByTestId, navigation} = renderPhotoConfirmation();
-
-    await runAutoVerification();
+  test('encola el acta al confirmar y muestra paso final', async () => {
+    const {getByTestId, navigation} = renderPhotoConfirmation();
 
     await act(async () => {
-      firePressOnConfirm(getAllByText(String.publishAndCertify));
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
       await flushPromises();
     });
 
     await act(async () => {
-      jest.runAllTimers();
-    });
-
-    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
       await flushPromises();
     });
 
@@ -66,95 +62,97 @@ describe('PhotoConfirmationScreen - Interacciones de Usuario', () => {
       }),
     );
     expect(getByTestId('photoConfirmationModalFinishedSubtext')).toBeTruthy();
-    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.reset).not.toHaveBeenCalled();
   });
 
-  test('con conexión completa ejecuta el flujo de publicación y certificación', async () => {
-    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
-    pinataService.uploadElectoralActComplete.mockResolvedValue({
-      success: true,
-      data: {
-        jsonUrl: 'https://ipfs/json',
-        imageUrl: 'https://ipfs/image',
-      },
-    });
-
-    axios.post.mockImplementation(async url => {
-      if (url.endsWith('/validate-ballot-data')) {
-        return {data: true};
-      }
-      if (url.endsWith('/from-ipfs')) {
-        return {data: {_id: 'backend-id'}};
-      }
-      if (url.endsWith('/attestations')) {
-        return {data: {success: true}};
-      }
-      return {data: {}};
-    });
-
-    oracleReads.isUserJury.mockResolvedValue(true);
-    oracleReads.isRegistered
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
-    oracleCalls.requestRegister.mockReturnValue('request-register');
-    oracleCalls.createAttestation.mockReturnValue('create-attestation');
-    oracleCalls.attest.mockReturnValue('attest');
-    oracleReads.waitForOracleEvent.mockResolvedValue(true);
-    executeOperation
-      .mockResolvedValueOnce({receipt: {transactionHash: '0xreg'}})
-      .mockResolvedValueOnce({
-        receipt: {transactionHash: '0xatt'},
-        returnData: {
-          recordId: {
-            toString: () => '55',
-          },
-        },
-      });
-
-    const {getAllByText, navigation} = renderPhotoConfirmation();
-
-    await runAutoVerification();
+  test('al presionar Ir al Inicio resetea navegacion al Home', async () => {
+    const {getByTestId, navigation} = renderPhotoConfirmation();
 
     await act(async () => {
-      firePressOnConfirm(getAllByText(String.publishAndCertify));
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
       await flushPromises();
     });
 
-    const uploadArgs = pinataService.uploadElectoralActComplete.mock.calls[0];
-    expect(uploadArgs[0]).toContain('acta.jpg');
-    expect(uploadArgs[1]).toEqual(expect.any(Object));
-    expect(uploadArgs[2]).toMatchObject({
-      partyResults: expect.any(Array),
-      voteSummaryResults: expect.any(Array),
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
     });
-  expect(typeof uploadArgs[3].userId).toBe('string');
-  expect(typeof uploadArgs[3].userName).toBe('string');
 
-    const validateCall = axios.post.mock.calls.find(([url]) =>
-      url.includes('/validate-ballot-data'),
-    );
-    expect(validateCall).toBeDefined();
-    expect(validateCall[1]).toEqual(
-      expect.objectContaining({
-        ipfsUri: 'https://ipfs/json',
-      }),
-    );
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalGoHomeButton'));
+      await flushPromises();
+    });
 
-    expect(executeOperation).toHaveBeenCalledTimes(2);
-    expect(executeOperation.mock.calls[1][3]).toBe('create-attestation');
+    expect(navigation.reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+  });
+
+  test('en modo worksheet deduplica cola y evita encolar duplicado', async () => {
+    const params = buildRouteParams({
+      photoUri: 'file:///worksheet.jpg',
+      tableData: {
+        tableNumber: '1234',
+        numero: '1234',
+        codigo: 'C-1234',
+      },
+    });
+    params.mode = 'worksheet';
+    params.electionId = 'e-1';
+    params.electionType = 'general';
+
+    getOfflineQueue.mockResolvedValue([
+      {
+        task: {
+          type: 'publishWorksheet',
+          payload: {
+            additionalData: {
+              dni: '789456',
+              electionId: 'e-1',
+              tableCode: 'C-1234',
+            },
+          },
+        },
+      },
+    ]);
+
+    const {getByTestId} = renderPhotoConfirmation({params});
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
+    });
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
+    });
+
+    expect(upsertWorksheetLocalStatus).toHaveBeenCalledWith(
+      {
+        dni: '789456',
+        electionId: 'e-1',
+        tableCode: 'C-1234',
+      },
+      {
+        status: WorksheetStatus.PENDING,
+        errorMessage: undefined,
+      },
+    );
+    expect(persistLocalImage).not.toHaveBeenCalledWith('file:///worksheet.jpg');
+    expect(enqueue).not.toHaveBeenCalledWith(
+      expect.objectContaining({type: 'publishWorksheet'}),
+    );
+    const doneText = getByTestId('photoConfirmationModalFinishedSubtext');
+    const finalMessage = Array.isArray(doneText.props.children)
+      ? doneText.props.children.join(' ')
+      : String(doneText.props.children);
+    expect(finalMessage).toContain('ya estaba en cola');
   });
 });
-
-const runAutoVerification = async () => {
-  await act(async () => {
-    jest.runAllTimers();
-  });
-  await act(async () => {
-    await flushPromises();
-  });
-};
-
-const firePressOnConfirm = buttons => {
-  const modalButton = buttons[buttons.length - 1];
-  fireEvent.press(modalButton);
-};

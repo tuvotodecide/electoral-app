@@ -23,18 +23,15 @@ describe('PhotoConfirmationScreen - Renderizado', () => {
     jest.useRealTimers();
   });
 
-  test('muestra la cabecera, el saludo al testigo y la confirmación principal', () => {
-  const {getByText, getAllByText} = renderPhotoConfirmation();
+  test('muestra certificado preliminar y acción principal de avance', () => {
+    const {getByText, getByTestId} = renderPhotoConfirmation();
 
-    expect(getByText('Mesa 1234')).toBeTruthy();
-    expect(getByText(String.infoReadyToLoad)).toBeTruthy();
-  expect(getAllByText(String.publishAndCertify)[0]).toBeTruthy();
-    expect(
-      getByText(
-        'Confirma que el acta de la mesa 1234 en Colegio Central es correcta.',
-      ),
-    ).toBeTruthy();
+    expect(getByTestId('photoConfirmationContainer')).toBeTruthy();
+    expect(getByText('Este será tu certificado de participación')).toBeTruthy();
     expect(getByText('Test User')).toBeTruthy();
+    expect(getByText('MESA 1234')).toBeTruthy();
+    expect(getByTestId('photoConfirmationPublishButton')).toBeTruthy();
+    expect(getByText('Siguiente')).toBeTruthy();
   });
 
   test('utiliza alternativas del número de mesa cuando tableData no lo provee', () => {
@@ -51,6 +48,6 @@ describe('PhotoConfirmationScreen - Renderizado', () => {
 
     const {getByText} = renderPhotoConfirmation({params});
 
-    expect(getByText('Mesa 4321')).toBeTruthy();
+    expect(getByText('MESA 4321')).toBeTruthy();
   });
 });

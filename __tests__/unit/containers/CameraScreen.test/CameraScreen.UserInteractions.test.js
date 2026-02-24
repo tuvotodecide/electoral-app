@@ -84,6 +84,10 @@ describe('CameraScreen - Interacciones de Usuario', () => {
 
     mockNavigation = createMockNavigation();
     setupCameraBaseMocks({navigation: mockNavigation});
+    netInfoModule.fetch.mockResolvedValue({
+      isConnected: true,
+      isInternetReachable: true,
+    });
 
     Dimensions.addEventListener.mockImplementation(() => ({remove: jest.fn()}));
     AppState.addEventListener.mockImplementation(() => ({remove: jest.fn()}));
@@ -125,6 +129,10 @@ describe('CameraScreen - Interacciones de Usuario', () => {
   });
 
   test('navega al flujo offline cuando no hay conexión', async () => {
+    netInfoModule.fetch.mockResolvedValue({
+      isConnected: false,
+      isInternetReachable: false,
+    });
     netInfoModule.addEventListener.mockImplementation(callback => {
       callback?.({isConnected: false, isInternetReachable: false});
       return jest.fn();
@@ -142,12 +150,16 @@ describe('CameraScreen - Interacciones de Usuario', () => {
       StackNav.PhotoReviewScreen,
       expect.objectContaining({
         offline: true,
-        photoUri: 'file://mock-photo-path.jpg',
+        photoUri: expect.stringMatching(/^file:\/\/.*\.jpg$/),
       }),
     );
   });
 
   test('muestra modal de error cuando análisis falla', async () => {
+    netInfoModule.fetch.mockResolvedValue({
+      isConnected: true,
+      isInternetReachable: true,
+    });
     analyzer.analyzeElectoralAct.mockResolvedValueOnce({
       success: false,
       error: 'No se pudo analizar',

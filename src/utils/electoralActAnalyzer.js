@@ -38,10 +38,10 @@ class ElectoralActAnalyzer {
 PRIMERO, comprueba si la imagen exhibe TODOS estos rasgos inequivocos de un acta electoral boliviana.
 Debe mostrar inequivocamente:
   - Logotipo del OEP (esquina superior izquierda).
-  - Titulo exacto "ACTA ELECTORAL DE ESCRUTINIO Y CONTEO".
-  - Leyenda "ELECCION DE PRESIDENTE Y VICEPRESIDENTE DEL ESTADO PLURINACIONAL DE BOLIVIA - SEGUNDA VUELTA" debajo del titulo.
-  - Tabla "CODIGO DE MESA" con un numero y un codigo de barras en la parte izquierda.
-  - Cuadro de resultados con solamente dos partidos politicos.
+  - Título exacto "ACTA ELECTORAL DE ESCRUTINIO Y CONTEO".
+  - Leyenda "ELECCIÓN DE PRESIDENTE Y VICEPRESIDENTE DEL ESTADO PLURINACIONAL DE BOLIVIA - SEGUNDA VUELTA" debajo del título.
+  - Tabla "CÓDIGO DE MESA" con un número y un código de barras en la parte izquierda.
+  - Cuadro de resultados con solamente dos partidos políticos.
   - Campos de resumen "VOTOS VALIDOS", "VOTOS BLANCOS" y "VOTOS NULOS".
 
 Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
@@ -53,18 +53,18 @@ Si la foto esta borrosa o los campos clave no se distinguen con nitidez suficien
 SOLO si la imagen cumple todos los criterios y se lee claramente, responde con un UNICO JSON siguiendo EXACTAMENTE esta estructura.
 
 Reglas de negocio:
-1. Si alguna casilla de votos esta vacia, registrala como "0".
+1. Si alguna casilla de votos está vacía, regístrala como "0".
 2. Observaciones: transcribe el texto del campo "OBSERVACIONES".
-3. Validacion de observacion:
+3. Validación de observación:
    - Marca "is_observed": false si el campo:
-     a) Esta vacio.
+     a) Está vacío.
      b) Contiene una LINEA DIAGONAL (/) cruzada para anular el espacio.
-     c) Contiene UNICAMENTE la frase "CORRE Y VALE" (ignorando mayusculas, tildes y puntos).
+     c) Contiene ÚNICAMENTE la frase "CORRE Y VALE" (ignorando mayúsculas, tildes y puntos).
    - Marca "is_observed": true si detectas cualquier otro texto descriptivo, incidentes o aclaraciones numéricas.
 {
   "if_electoral_act": true,
-  "table_number": "<numero de mesa, parte superior izquierda>",
-  "table_code": "<codigo de mesa, parte superior izquierda>",
+  "table_number": "<número de mesa, parte superior izquierda>",
+  "table_code": "<código de mesa, parte superior izquierda>",
   "president_vote_counts": {
     "candidate_votes": [
       { "candidate_id": "LIBRE", "votes": "<n o 0>" },
@@ -77,7 +77,7 @@ Reglas de negocio:
   },
   "time": "<hora de cierre HH:MM>",
   "observations": {
-    "text": "<transcripcion literal del campo observaciones>",
+    "text": "<transcripción literal del campo observaciones>",
     "is_observed": <true o false>
   }
 }

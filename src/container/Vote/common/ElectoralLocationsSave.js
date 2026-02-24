@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -13,7 +13,7 @@ import {
   Easing,
   AppState,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import Geolocation from '@react-native-community/geolocation';
 import axios from 'axios';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,18 +24,18 @@ import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import wira from 'wira-sdk';
 
-import {BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT} from '@env';
+import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {LAST_TOPIC_KEY} from '../../../common/constants';
-import {saveVotePlace} from '../../../utils/offlineQueue';
-import {getCache, isFresh, setCache} from '../../../utils/lookupCache';
-import {backendProbe} from '../../../utils/networkUtils';
+import { LAST_TOPIC_KEY } from '../../../common/constants';
+import { saveVotePlace } from '../../../utils/offlineQueue';
+import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
+import { backendProbe } from '../../../utils/networkUtils';
 import {
   subscribeToLocationTopic,
   unsubscribeFromLocationTopic,
 } from '../../../services/notifications';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -67,10 +67,6 @@ const getTablesByLocationCacheKey = locationId =>
   `tables-by-location:${String(locationId || '').trim()}`;
 
 const LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-const logLookupTrace = (event, payload = {}) => {
-  if (!LOOKUP_TRACE_ENABLED) return;
-  console.log(`[ELECTORAL-LOCATIONS][LOOKUP] ${event}`, payload);
-};
 
 const warmTablesCacheByLocationId = async ({
   locationId,
@@ -82,60 +78,42 @@ const warmTablesCacheByLocationId = async ({
 
   const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
   const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
-  if (cacheFresh) {
-    logLookupTrace('tables-by-location:cache-fresh-skip', {cacheKey});
-    return;
-  }
+
 
   if (Array.isArray(seedTables) && seedTables.length > 0) {
-    await setCache(cacheKey, seedTables, {version: 'tables-v1'});
-    logLookupTrace('tables-by-location:seed-cache', {
-      cacheKey,
-      count: seedTables.length,
-    });
+    await setCache(cacheKey, seedTables, { version: 'tables-v1' });
+
     return;
   }
 
   const encodedLocationId = encodeURIComponent(normalizedLocationId);
   const primaryUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
   try {
-    const {data} = await axios.get(primaryUrl, {timeout: timeoutMs});
+    const { data } = await axios.get(primaryUrl, { timeout: timeoutMs });
     const list = data?.data || data?.tables || data?.data?.tables || [];
     if (Array.isArray(list) && list.length > 0) {
-      await setCache(cacheKey, list, {version: 'tables-v1'});
-      logLookupTrace('tables-by-location:backend-primary-success', {
-        cacheKey,
-        count: list.length,
-      });
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+
       return;
     }
   } catch (error) {
-    logLookupTrace('tables-by-location:backend-primary-error', {
-      cacheKey,
-      error: error?.message || 'unknown',
-    });
+
   }
 
   try {
     const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
-    const {data} = await axios.get(legacyUrl, {timeout: timeoutMs});
+    const { data } = await axios.get(legacyUrl, { timeout: timeoutMs });
     const list = data?.tables || data?.data?.tables || [];
     if (Array.isArray(list) && list.length > 0) {
-      await setCache(cacheKey, list, {version: 'tables-v1'});
-      logLookupTrace('tables-by-location:backend-legacy-success', {
-        cacheKey,
-        count: list.length,
-      });
+      await setCache(cacheKey, list, { version: 'tables-v1' });
+
     }
   } catch (error) {
-    logLookupTrace('tables-by-location:backend-legacy-error', {
-      cacheKey,
-      error: error?.message || 'unknown',
-    });
+
   }
 };
 
-const ElectoralLocationsSave = ({navigation, route}) => {
+const ElectoralLocationsSave = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
@@ -244,34 +222,23 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     const cachedLocations = Array.isArray(cachedEntry?.data)
       ? cachedEntry.data
       : [];
-    logLookupTrace('nearby:cache-state', {
-      cacheKey,
-      cachedCount: cachedLocations.length,
-    });
+
 
     try {
       setLoading(true);
       if (cachedLocations.length > 0) {
-        logLookupTrace('nearby:cache-hit', {
-          cachedCount: cachedLocations.length,
-        });
+
         setLocations(cachedLocations);
       } else {
-        logLookupTrace('nearby:cache-miss', {cacheKey});
+
       }
 
       const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.nearbyLocationsMs);
-      if (cacheFresh) {
-        logLookupTrace('nearby:cache-fresh-skip-backend', {cacheKey});
-        return;
-      }
 
-      const probe = await backendProbe({timeoutMs: 2000});
+
+      const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
-        logLookupTrace('nearby:probe-fail-use-cache', {
-          cacheKey,
-          ...probe,
-        });
+
         if (cachedLocations.length > 0) {
           return;
         }
@@ -280,27 +247,20 @@ const ElectoralLocationsSave = ({navigation, route}) => {
 
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=10000`,
-        {timeout: 12000}, // 12 segundos timeout
+        { timeout: 12000 }, // 12 segundos timeout
       );
 
       if (response.data && response.data.data) {
         const nextLocations = response.data.data;
-        logLookupTrace('nearby:backend-success', {
-          cacheKey,
-          fetchedCount: Array.isArray(nextLocations) ? nextLocations.length : 0,
-        });
+
         setLocations(nextLocations);
-        await setCache(cacheKey, nextLocations, {version: 'nearby-locations-v1'});
+        await setCache(cacheKey, nextLocations, { version: 'nearby-locations-v1' });
       } else {
-        logLookupTrace('nearby:backend-empty', {cacheKey});
+
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
-      logLookupTrace('nearby:backend-error-fallback', {
-        cacheKey,
-        hasCached: cachedLocations.length > 0,
-        error: error?.message || 'unknown',
-      });
+
       if (cachedLocations.length > 0) {
         return;
       }
@@ -423,9 +383,9 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         // Obtener ubicación
         Geolocation.getCurrentPosition(
           position => {
-            const {latitude, longitude} = position.coords;
+            const { latitude, longitude } = position.coords;
 
-            setUserLocation({latitude, longitude});
+            setUserLocation({ latitude, longitude });
             fetchNearbyLocations(latitude, longitude);
           },
           error => {
@@ -523,7 +483,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
               );
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     });
     return () => sub.remove();
@@ -533,33 +493,22 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     const cacheKey = 'electoral-locations:config-status';
     const cachedEntry = await getCache(cacheKey);
     const cachedData = cachedEntry?.data || null;
-    logLookupTrace('election-status:cache-state', {
-      cacheKey,
-      hasCached: !!cachedData,
-    });
+
 
     try {
       setConfigLoading(true);
       setConfigError(false);
       if (cachedData) {
-        logLookupTrace('election-status:cache-hit', {cacheKey});
+
         setElectionStatus(cachedData);
-      } else {
-        logLookupTrace('election-status:cache-miss', {cacheKey});
       }
 
       const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.electionStatusMs);
-      if (cacheFresh) {
-        logLookupTrace('election-status:cache-fresh-skip-backend', {cacheKey});
-        return;
-      }
 
-      const probe = await backendProbe({timeoutMs: 2000});
+
+      const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
-        logLookupTrace('election-status:probe-fail-use-cache', {
-          cacheKey,
-          ...probe,
-        });
+
         if (cachedData) {
           return;
         }
@@ -568,17 +517,14 @@ const ElectoralLocationsSave = ({navigation, route}) => {
 
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
-        {timeout: 12000}, // 12 segundos timeout
+        { timeout: 12000 }, // 12 segundos timeout
       );
       if (response.data) {
-        logLookupTrace('election-status:backend-success', {
-          cacheKey,
-          hasConfigId: !!response?.data?.config?.id,
-        });
+
         setElectionStatus(response.data);
-        await setCache(cacheKey, response.data, {version: 'election-config-v1'});
+        await setCache(cacheKey, response.data, { version: 'election-config-v1' });
       } else {
-        logLookupTrace('election-status:backend-empty', {cacheKey});
+
         setConfigError(true);
         showModal(
           'error',
@@ -589,11 +535,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         );
       }
     } catch (error) {
-      logLookupTrace('election-status:backend-error-fallback', {
-        cacheKey,
-        hasCached: !!cachedData,
-        error: error?.message || 'unknown',
-      });
+
       if (cachedData) {
         return;
       }
@@ -705,7 +647,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
         }
         await subscribeToLocationTopic(String(locationId));
         await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
-      } catch {}
+      } catch { }
 
       const normalizedLocation = {
         ...location,
@@ -719,7 +661,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
       warmTablesCacheByLocationId({
         locationId,
         seedTables: location?.tables || [],
-      }).catch(() => {});
+      }).catch(() => { });
 
       showModal(
         'success',
@@ -763,7 +705,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     return authData.apiKey;
   };
 
-  const renderLocationItem = ({item}) => (
+  const renderLocationItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.locationCard, isTablet && styles.locationCardTablet]}
       onPress={() => handleLocationPress(item)}
@@ -860,14 +802,14 @@ const ElectoralLocationsSave = ({navigation, route}) => {
                 position: 'absolute',
                 width: ringSize,
                 height: ringSize,
-                transform: [{rotate: spin}],
+                transform: [{ rotate: spin }],
               }}>
               <Animated.View
                 style={{
                   position: 'absolute',
                   right: -iconSize / 2,
                   top: half - iconSize / 2,
-                  transform: [{rotate: spinNeg}],
+                  transform: [{ rotate: spinNeg }],
                 }}>
                 <Ionicons name="search" size={iconSize} color="#4F9858" />
               </Animated.View>
@@ -886,7 +828,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
     }
 
     return (
-      <View style={{flex: 1}}>
+      <View style={{ flex: 1 }}>
         {renderSearchBar()}
         {loadingLocation && (
           <View style={styles.loadingLocationContainer}>
@@ -918,7 +860,7 @@ const ElectoralLocationsSave = ({navigation, route}) => {
             )}
 
             <FlatList
-              style={{flex: 1}}
+              style={{ flex: 1 }}
               data={filteredLocations}
               renderItem={renderLocationItem}
               keyExtractor={item => item._id}
@@ -968,12 +910,12 @@ const ElectoralLocationsSave = ({navigation, route}) => {
 
       <CustomModal
         visible={savingLocation}
-        onClose={() => {}}
+        onClose={() => { }}
         type="info"
         title="Guardando recinto..."
         message="Espera un momento. No cierres esta pantalla."
         buttonText="Procesando..."
-        onButtonPress={() => {}}
+        onButtonPress={() => { }}
       />
     </CSafeAreaView>
   );
@@ -1039,7 +981,7 @@ const styles = {
     padding: getResponsiveSize(16, 18, 20),
     marginBottom: getResponsiveSize(12, 16, 20),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -1237,7 +1179,7 @@ const styles = {
     paddingHorizontal: getResponsiveSize(12, 16, 20),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },

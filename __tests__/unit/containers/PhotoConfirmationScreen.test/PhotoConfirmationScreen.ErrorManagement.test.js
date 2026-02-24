@@ -1,17 +1,15 @@
 import './jestMocks';
 
+import {fireEvent} from '@testing-library/react-native';
 import {
   renderPhotoConfirmation,
   resetMocks,
-  pinataService,
   NetInfo,
   validateBallotLocally,
   flushPromises,
   act,
-  axios,
-  String,
+  enqueue,
 } from './testUtils';
-import {fireEvent} from '@testing-library/react-native';
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://test-backend.com',
@@ -19,83 +17,62 @@ jest.mock('@env', () => ({
   CHAIN: 'test-chain',
 }));
 
-const INFO_MODAL_ID = 'photoConfirmationInfoModal';
-
 describe('PhotoConfirmationScreen - Manejo de Errores', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     resetMocks();
-    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
+    NetInfo.fetch.mockResolvedValue({isConnected: false, isInternetReachable: false});
     validateBallotLocally.mockReturnValue({ok: true});
-    pinataService.checkDuplicateBallot.mockResolvedValue({exists: false});
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test('muestra error genérico cuando la subida a IPFS falla', async () => {
-    pinataService.uploadElectoralActComplete.mockRejectedValue(
-      new Error('pinata down'),
-    );
-
-    const {getAllByText, getByTestId, getByText} = renderPhotoConfirmation();
-
-    await runAutoVerification();
-
-    await act(async () => {
-      fireEvent.press(getAllByText(String.publishAndCertify).slice(-1)[0]);
-      await flushPromises();
-    });
-
-  expect(getByTestId(INFO_MODAL_ID)).toBeTruthy();
-    expect(getByText(String.genericError)).toBeTruthy();
-    expect(getByText('pinata down')).toBeTruthy();
-  });
-
-  test('propaga mensajes específicos cuando el backend responde con 404', async () => {
-    pinataService.uploadElectoralActComplete.mockResolvedValue({
-      success: true,
-      data: {
-        jsonUrl: 'https://ipfs/json',
-        imageUrl: 'https://ipfs/image',
+  test('muestra error cuando falta la foto del acta en params', async () => {
+    const {getByTestId, getByText} = renderPhotoConfirmation({
+      params: {
+        tableData: {
+          tableNumber: '1234',
+          codigo: 'C-1234',
+          idRecinto: 'loc-001',
+        },
+        photoUri: '',
+        partyResults: [{partido: 'unidad', presidente: '1', diputado: '1'}],
+        voteSummaryResults: [{id: 'validos', value1: '1', value2: '1'}],
       },
     });
 
-    axios.post.mockImplementation(async url => {
-      if (url.endsWith('/validate-ballot-data')) {
-        const error = new Error('Not found');
-        error.response = {
-          status: 404,
-          data: {message: 'Acta no encontrada'},
-        };
-        throw error;
-      }
-      return {data: {}};
-    });
-
-    const {getAllByText, getByTestId, getByText} = renderPhotoConfirmation();
-
-    await runAutoVerification();
-
     await act(async () => {
-      fireEvent.press(getAllByText(String.publishAndCertify).slice(-1)[0]);
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
       await flushPromises();
     });
 
-  expect(getByTestId(INFO_MODAL_ID)).toBeTruthy();
-    expect(getByText(String.genericError)).toBeTruthy();
-    expect(
-      getByText(`${String.validationError404} Acta no encontrada`),
-    ).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
+    });
+
+    expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
+    expect(getByText('No se encontró la foto del acta. Vuelve a capturarla.')).toBeTruthy();
+  });
+
+  test('muestra error específico cuando falla la cola offline', async () => {
+    enqueue.mockRejectedValue(new Error('queue down'));
+
+    const {getByTestId, getByText} = renderPhotoConfirmation();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationPublishButton'));
+      await flushPromises();
+    });
+
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
+    });
+
+    expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
+    expect(getByText('queue down')).toBeTruthy();
   });
 });
-
-const runAutoVerification = async () => {
-  await act(async () => {
-    jest.runAllTimers();
-  });
-  await act(async () => {
-    await flushPromises();
-  });
-};

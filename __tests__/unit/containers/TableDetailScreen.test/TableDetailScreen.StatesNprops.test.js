@@ -1,19 +1,30 @@
 import './jestMocks';
 
-import {act, fireEvent} from '@testing-library/react-native';
+import {act, fireEvent, waitFor} from '@testing-library/react-native';
 import String from '../../../__mocks__/String';
 import {
-  renderTableDetail,
+  axios,
   buildRoute,
+  getOfflineQueue,
+  getWorksheetLocalStatus,
+  NetInfo,
+  renderTableDetail,
   StackNav,
 } from './testUtils';
 
 describe('TableDetailScreen - Estados y Props', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getWorksheetLocalStatus.mockResolvedValue({status: 'NOT_FOUND'});
+    getOfflineQueue.mockResolvedValue([]);
+    NetInfo.fetch.mockResolvedValue({
+      isConnected: false,
+      isInternetReachable: false,
+    });
+    axios.get.mockResolvedValue({data: {}});
   });
 
-  test('usa el totalRecords entregado en la ruta aun cuando difiere del número de actas', () => {
+  test('usa el totalRecords entregado en la ruta aun cuando difiere del numero de actas', () => {
     const existingRecords = [{recordId: 'rec-1'}];
 
     const {getByText} = renderTableDetail({
@@ -23,11 +34,10 @@ describe('TableDetailScreen - Estados y Props', () => {
       },
     });
 
-    // El componente muestra el conteo de actas existentes basado en el array, no en totalRecords
     expect(getByText(/La mesa ya tiene 1 acta publicada/)).toBeTruthy();
   });
 
-  test('abre el modal de previsualización cuando la ruta incluye una imagen capturada', () => {
+  test('abre el modal de previsualizacion cuando la ruta incluye una imagen capturada', () => {
     const route = buildRoute({
       capturedImage: {uri: 'file:///photo-test.jpg'},
     });
@@ -39,7 +49,7 @@ describe('TableDetailScreen - Estados y Props', () => {
     expect(getByText(String.retakePhoto)).toBeTruthy();
   });
 
-  test('normaliza los campos de mesa y los reutiliza al navegar a la cámara', () => {
+  test('normaliza los campos de mesa y los reutiliza al navegar a la camara', () => {
     const route = buildRoute({
       mesa: {
         id: 'mesa-9',
@@ -56,7 +66,6 @@ describe('TableDetailScreen - Estados y Props', () => {
 
     expect(getByText(`${String.table} mesa-9`)).toBeTruthy();
     expect(getByText(`${String.tableCode}: C-999`)).toBeTruthy();
-    expect(getByText(`${String.precinct}: Escuela Modelo`)).toBeTruthy();
 
     act(() => {
       fireEvent.press(getByText(String.takePhoto));
@@ -73,5 +82,74 @@ describe('TableDetailScreen - Estados y Props', () => {
         }),
       }),
     );
+  });
+
+  test('bloquea la hoja de trabajo cuando la mesa ya tiene acta', () => {
+    const existingRecords = [{recordId: 'rec-1', actaImage: 'https://image/1.jpg'}];
+    const {getByText, navigation} = renderTableDetail({
+      routeParams: {
+        existingRecords,
+        totalRecords: existingRecords.length,
+      },
+    });
+
+    expect(
+      getByText(
+        'La mesa ya tiene acta. La hoja de trabajo solo se permite antes del acta.',
+      ),
+    ).toBeTruthy();
+
+    fireEvent.press(getByText('Subir hoja de trabajo'));
+    expect(navigation.navigate).not.toHaveBeenCalledWith(
+      StackNav.CameraScreen,
+      expect.objectContaining({mode: 'worksheet'}),
+    );
+  });
+
+  test('si worksheet esta uploaded habilita ver hoja y navega a revision', async () => {
+    getWorksheetLocalStatus.mockResolvedValue({
+      status: 'UPLOADED',
+      ipfsUri: 'ipfs://cid123',
+    });
+    axios.get.mockResolvedValue({
+      data: {
+        image: 'https://ipfs.io/ipfs/cid123',
+        data: {
+          votes: {
+            parties: {
+              validVotes: 10,
+              blankVotes: 1,
+              nullVotes: 0,
+              partyVotes: [{partyId: 'libre', votes: 10}],
+            },
+          },
+        },
+      },
+    });
+
+    const {getByText, navigation} = renderTableDetail({
+      routeParams: {
+        extraParams: {
+          electionId: 'e-1',
+          electionType: 'general',
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(getByText('Ver hoja de trabajo')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Ver hoja de trabajo'));
+
+    await waitFor(() => {
+      expect(navigation.navigate).toHaveBeenCalledWith(
+        StackNav.PhotoReviewScreen,
+        expect.objectContaining({
+          mode: 'worksheet',
+          isViewOnly: true,
+        }),
+      );
+    });
   });
 });

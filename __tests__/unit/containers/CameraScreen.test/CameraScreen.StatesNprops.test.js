@@ -143,13 +143,13 @@ describe('CameraScreen - Estados y Props', () => {
     await flushAsync();
 
     expect(analyzer.analyzeElectoralAct).toHaveBeenCalledWith(
-      'mock-photo-path.jpg',
+      expect.stringMatching(/\.jpg$/),
     );
     expect(analyzer.mapToAppFormat).toHaveBeenCalled();
     expect(mockNavigation.navigate).toHaveBeenCalledWith(
       StackNav.PhotoReviewScreen,
       expect.objectContaining({
-        photoUri: 'file://mock-photo-path.jpg',
+        photoUri: expect.stringMatching(/^file:\/\/.*\.jpg$/),
         aiAnalysis: expect.any(Object),
         mappedData: {mapped: true},
       }),

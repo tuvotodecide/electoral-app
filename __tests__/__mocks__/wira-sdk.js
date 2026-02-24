@@ -8,23 +8,31 @@ class SharedSession {
   onShareSession = jest.fn(async () => undefined);
 }
 
+const registryCheckByDniMock = jest.fn(async () => ({exists: false}));
+
 class RegistryApi {
   constructor() {}
 
-  registryCheckByDni = jest.fn(async () => ({exists: false}));
+  registryCheckByDni = registryCheckByDniMock;
 }
+
+const recoveryFromBackupMock = jest.fn(async () => ({
+  identity: true,
+  dni: '00000000',
+}));
+const recoveryAndSaveMock = jest.fn(async () => undefined);
+const saveBackupDataMock = jest.fn(async () => undefined);
+const recoveryFromGuardiansMock = jest.fn(async () => JSON.stringify({}));
+const saveRecoveryDataFromGuardiansMock = jest.fn(async () => undefined);
 
 class RecoveryService {
   constructor() {}
 
-  recoveryFromBackup = jest.fn(async () => ({
-    identity: true,
-    dni: '00000000',
-  }));
-  recoveryAndSave = jest.fn(async () => undefined);
-  saveBackupData = jest.fn(async () => undefined);
-  recoveryFromGuardians = jest.fn(async () => JSON.stringify({}));
-  saveRecoveryDataFromGuardians = jest.fn(async () => undefined);
+  recoveryFromBackup = recoveryFromBackupMock;
+  recoveryAndSave = recoveryAndSaveMock;
+  saveBackupData = saveBackupDataMock;
+  recoveryFromGuardians = recoveryFromGuardiansMock;
+  saveRecoveryDataFromGuardians = saveRecoveryDataFromGuardiansMock;
 }
 
 class Registerer {

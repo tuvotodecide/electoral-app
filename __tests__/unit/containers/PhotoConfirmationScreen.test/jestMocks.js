@@ -90,6 +90,7 @@ jest.mock('../../../../src/api/params', () => ({
 
 jest.mock('../../../../src/utils/offlineQueue', () => ({
   enqueue: jest.fn(),
+  getAll: jest.fn(),
 }));
 
 jest.mock('../../../../src/utils/persistLocalImage', () => ({
@@ -100,9 +101,25 @@ jest.mock('../../../../src/utils/ballotValidation', () => ({
   validateBallotLocally: jest.fn(),
 }));
 
-jest.mock('@react-native-community/netinfo', () => ({
-  fetch: jest.fn(),
+jest.mock('../../../../src/utils/worksheetLocalStatus', () => ({
+  WorksheetStatus: {
+    NOT_FOUND: 'NOT_FOUND',
+    PENDING: 'PENDING',
+    FAILED: 'FAILED',
+    UPLOADED: 'UPLOADED',
+  },
+  upsertWorksheetLocalStatus: jest.fn(),
 }));
+
+jest.mock('@react-native-community/netinfo', () => {
+  const fetchMock = jest.fn();
+  return {
+    fetch: fetchMock,
+    default: {
+      fetch: fetchMock,
+    },
+  };
+});
 
 jest.mock('react-native-quick-crypto', () => ({
   randomBytes: jest.fn((size) => {

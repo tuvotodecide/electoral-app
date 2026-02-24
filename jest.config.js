@@ -26,6 +26,7 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
+  collectCoverage: false,
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
     '<rootDir>/__tests__/setup/jest.setup.js',

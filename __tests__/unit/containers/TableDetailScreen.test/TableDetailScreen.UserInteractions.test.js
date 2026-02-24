@@ -22,6 +22,8 @@ describe('TableDetailScreen - Interacciones de Usuario', () => {
         })
         .mockImplementationOnce(() => {}),
       goBack: jest.fn(),
+      addListener: jest.fn(() => jest.fn()),
+      isFocused: jest.fn(() => true),
     };
 
     const {getByText} = renderTableDetail({navigation});

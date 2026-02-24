@@ -1,5 +1,16 @@
 const React = require('react');
 const {render, act} = require('@testing-library/react-native');
+const axios = require('axios');
+const NetInfo = require('@react-native-community/netinfo');
+const {
+  enqueue,
+  getAll: getOfflineQueue,
+} = require('../../../../src/utils/offlineQueue');
+const {
+  WorksheetStatus,
+  getWorksheetLocalStatus,
+  upsertWorksheetLocalStatus,
+} = require('../../../../src/utils/worksheetLocalStatus');
 const TableDetailModule = require('../../../../src/container/Vote/UploadRecord/TableDetail');
 const TableDetail = TableDetailModule.default ?? TableDetailModule;
 
@@ -24,6 +35,8 @@ const buildNavigation = overrides => ({
   navigate: jest.fn(),
   goBack: jest.fn(),
   replace: jest.fn(),
+  addListener: jest.fn(() => jest.fn()),
+  isFocused: jest.fn(() => true),
   ...overrides,
 });
 
@@ -76,5 +89,12 @@ module.exports = {
   buildNavigation,
   renderTableDetail,
   flushPromises,
+  axios,
+  NetInfo,
+  enqueue,
+  getOfflineQueue,
+  WorksheetStatus,
+  getWorksheetLocalStatus,
+  upsertWorksheetLocalStatus,
   act,
 };

@@ -9,9 +9,13 @@ const pinataService = require('../../../../src/utils/pinataService');
 const {executeOperation} = require('../../../../src/api/account');
 const {oracleCalls, oracleReads} = require('../../../../src/api/oracle');
 const {availableNetworks} = require('../../../../src/api/params');
-const {enqueue} = require('../../../../src/utils/offlineQueue');
+const {enqueue, getAll: getOfflineQueue} = require('../../../../src/utils/offlineQueue');
 const {persistLocalImage} = require('../../../../src/utils/persistLocalImage');
 const {validateBallotLocally} = require('../../../../src/utils/ballotValidation');
+const {
+  WorksheetStatus,
+  upsertWorksheetLocalStatus,
+} = require('../../../../src/utils/worksheetLocalStatus');
 const {
   useNavigation,
   useRoute,
@@ -91,6 +95,7 @@ const setupNavigation = overrides => {
     navigate: jest.fn(),
     goBack: jest.fn(),
     replace: jest.fn(),
+    reset: jest.fn(),
     ...overrides,
   };
   useNavigation.mockReturnValue(navigation);
@@ -103,7 +108,11 @@ const renderPhotoConfirmation = ({params, navigationOverrides, selectorOverrides
   const navigation = setupNavigation(navigationOverrides);
   mockSelectors(selectorOverrides);
 
-  const utils = render(React.createElement(PhotoConfirmationScreen));
+  const utils = render(
+    React.createElement(PhotoConfirmationScreen, {
+      route: {params: finalParams},
+    }),
+  );
 
   return {
     params: finalParams,
@@ -125,7 +134,9 @@ const resetMocks = () => {
   NetInfo.fetch.mockReset();
   validateBallotLocally.mockReset();
   enqueue.mockReset();
+  getOfflineQueue.mockReset();
   persistLocalImage.mockReset();
+  upsertWorksheetLocalStatus.mockReset();
   executeOperation.mockReset();
   oracleCalls.requestRegister.mockReset();
   oracleCalls.createAttestation.mockReset();
@@ -154,8 +165,11 @@ module.exports = {
   oracleReads,
   availableNetworks,
   enqueue,
+  getOfflineQueue,
   persistLocalImage,
   validateBallotLocally,
+  upsertWorksheetLocalStatus,
+  WorksheetStatus,
   String,
   act,
 };

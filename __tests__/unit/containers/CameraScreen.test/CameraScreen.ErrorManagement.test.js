@@ -100,9 +100,9 @@ describe('CameraScreen - Manejo de Errores', () => {
 
     await advanceCameraReady();
 
-    Image.getSize.mockImplementationOnce((uri, success, failure) => {
-      failure?.(new Error('No se pudo cargar'));
-    });
+    cameraModule.__takePhotoMock.mockRejectedValueOnce(
+      new Error('No se pudo capturar'),
+    );
 
     await pressCaptureButton(queries);
     await flushAsync();
