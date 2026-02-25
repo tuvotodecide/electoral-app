@@ -1320,7 +1320,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <CText style={stylesx.availabilityLoaderSubtitle}>
-          Estamos validando si hay contratos activos para enviar actas en tu ubicación.
+          Estamos validando si hay eventos electorales activos para enviar actas desde tu ubicación.
         </CText>
       </View>
     );

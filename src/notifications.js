@@ -18,6 +18,22 @@ const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
 ]);
 let backendAlertQueue = Promise.resolve(0);
 
+// In-memory cache to prevent duplicate alerts within a short time window
+const recentlyAlertedKeys = new Set();
+const RECENT_ALERT_TTL_MS = 30000; // 30 seconds
+
+const markKeyAsRecentlyAlerted = key => {
+  if (!key) return;
+  recentlyAlertedKeys.add(key);
+  setTimeout(() => {
+    recentlyAlertedKeys.delete(key);
+  }, RECENT_ALERT_TTL_MS);
+};
+
+const isKeyRecentlyAlerted = key => {
+  return key && recentlyAlertedKeys.has(key);
+};
+
 const safeParse = raw => {
   try {
     const parsed = raw ? JSON.parse(raw) : [];
@@ -145,9 +161,9 @@ const buildNotificationTextFallback = notification => {
     notification?.title ||
     data?.title ||
     (notificationType === 'participation_certificate'
-      ? 'Certificado de participación emitido'
+      ? 'Acta subida exitosamente'
       : notificationType === 'acta_published'
-      ? 'Acta publicada'
+      ? 'Acta subida exitosamente'
       : notificationType === 'worksheet_uploaded'
       ? 'Hoja de trabajo subida'
       : 'Tu Voto Decide');
@@ -157,12 +173,12 @@ const buildNotificationTextFallback = notification => {
     data?.body ||
     (notificationType === 'participation_certificate'
       ? tableLabel
-        ? `Tu certificado de participación de la mesa ${tableLabel} fue emitido.`
-        : 'Tu certificado de participación fue emitido.'
+        ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
+        : 'Tu acta fue publicada correctamente.'
       : notificationType === 'acta_published'
       ? tableLabel
-        ? `Tu acta de la mesa ${tableLabel} fue publicada.`
-        : 'Tu acta fue publicada.'
+        ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
+        : 'Tu acta fue publicada correctamente.'
       : notificationType === 'worksheet_uploaded'
       ? tableLabel
         ? `Mesa ${tableLabel}: tu hoja ya está disponible para comparación.`
@@ -372,7 +388,7 @@ export async function alertNewBackendNotifications({
         continue;
       }
       const alertKey = buildBackendNotificationAlertKey(notification);
-      if (!alertKey || alertedKeys.has(alertKey)) {
+      if (!alertKey || alertedKeys.has(alertKey) || isKeyRecentlyAlerted(alertKey)) {
         continue;
       }
 
@@ -383,6 +399,7 @@ export async function alertNewBackendNotifications({
         data: payload.data,
       });
       alertedKeys.add(alertKey);
+      markKeyAsRecentlyAlerted(alertKey);
       shownCount += 1;
     }
 
@@ -521,18 +538,10 @@ export async function showActaPublishedNotification({
           '',
       ).trim(),
     );
-    const notificationType = hasCertificate
-      ? 'participation_certificate'
-      : 'acta_published';
-    const notificationTitle = hasCertificate
-      ? 'Certificado de participación emitido'
-      : 'Acta publicada';
+    const notificationType = 'acta_published';
+    const notificationTitle = 'Acta subida exitosamente';
     const mesaLabel = tableNumber || tableCode || '';
-    const notificationBody = hasCertificate
-      ? mesaLabel
-        ? `Tu certificado de participación de la mesa ${mesaLabel} fue emitido.`
-        : 'Tu certificado de participación fue emitido.'
-      : mesaLabel
+    const notificationBody = mesaLabel
       ? `Tu acta de la mesa ${mesaLabel} fue publicada correctamente.`
       : 'Tu acta fue publicada correctamente.';
 

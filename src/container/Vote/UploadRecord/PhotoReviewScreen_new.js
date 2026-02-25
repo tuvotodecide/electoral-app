@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   StyleSheet,
+  Switch,
   TextInput,
   TouchableOpacity,
   View,
@@ -890,23 +891,52 @@ const PhotoReviewScreen = () => {
 
   const observationSection = isViewOnly || isWorksheetMode ? null : (
     <View style={styles.observationContainer}>
-      <TouchableOpacity
-        style={styles.observationToggle}
-        onPress={() => setHasObservation(prev => !prev)}
-        activeOpacity={0.85}>
-        <View
+      <CText style={styles.observationQuestionLabel}>¿Está el acta observada?</CText>
+      <View style={styles.observationSwitchRow}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setHasObservation(false)}
           style={[
-            styles.observationCheckbox,
-            hasObservation && {backgroundColor: colors.primary},
+            styles.observationChoicePill,
+            !hasObservation && {
+              borderColor: colors.primary || '#459151',
+              backgroundColor: '#EAF6EC',
+            },
           ]}>
-          {hasObservation ? (
-            <Ionicons name="checkmark" size={16} color="#fff" />
-          ) : (
-            <Ionicons name="square-outline" size={16} color="#8A8A8A" />
-          )}
-        </View>
-        <CText style={styles.observationToggleLabel}>Acta con observacion</CText>
-      </TouchableOpacity>
+          <CText
+            style={[
+              styles.observationChoiceText,
+              !hasObservation && {color: colors.primary || '#459151'},
+            ]}>
+            No
+          </CText>
+        </TouchableOpacity>
+        {/* <Switch
+          value={hasObservation}
+          onValueChange={setHasObservation}
+          trackColor={{false: '#D6D6D6', true: '#A5D6A7'}}
+          thumbColor={hasObservation ? '#4CAF50' : '#f4f3f4'}
+          style={styles.observationSwitch}
+        /> */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setHasObservation(true)}
+          style={[
+            styles.observationChoicePill,
+            hasObservation && {
+              borderColor: colors.primary || '#459151',
+              backgroundColor: '#EAF6EC',
+            },
+          ]}>
+          <CText
+            style={[
+              styles.observationChoiceText,
+              hasObservation && {color: colors.primary || '#459151'},
+            ]}>
+            Sí
+          </CText>
+        </TouchableOpacity>
+      </View>
 
       {hasObservation ? (
         <TextInput
@@ -1140,6 +1170,37 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontWeight: '600',
     color: '#2F2F2F',
+  },
+  observationQuestionLabel: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: '#2F2F2F',
+    marginBottom: moderateScale(10),
+  },
+  observationSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: moderateScale(10),
+  },
+  observationChoicePill: {
+    minWidth: moderateScale(54),
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(6),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D0D0D0',
+    backgroundColor: '#F7F7F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  observationChoiceText: {
+    fontSize: moderateScale(15),
+    fontWeight: '800',
+    color: '#6A6A6A',
+  },
+  observationSwitch: {
+    transform: [{scaleX: 1.05}, {scaleY: 1.05}],
   },
   observationInput: {
     marginTop: moderateScale(10),

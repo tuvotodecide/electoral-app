@@ -8,6 +8,7 @@ import {
   Image,
   Modal,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
@@ -29,7 +30,6 @@ import {
   upsertWorksheetLocalStatus,
   WorksheetStatus,
 } from '../../../utils/worksheetLocalStatus';
-import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -213,58 +213,7 @@ const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
   return firstFulfilled(attempts);
 };
 
-const LOOKUP_CACHE_TTL = {
-  tablesByLocationMs: 6 * 60 * 60 * 1000,
-};
 const WORKSHEET_STATUS_REFRESH_COOLDOWN_MS = 15000;
-const TABLE_LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-
-const fetchTablesByLocationId = async locationId => {
-  const normalizedLocationId = String(locationId || '').trim();
-  if (!normalizedLocationId) return [];
-
-  const encodedLocationId = encodeURIComponent(normalizedLocationId);
-  const cacheKey = `tables-by-location:${normalizedLocationId}`;
-  const cachedEntry = await getCache(cacheKey);
-  const cachedTables = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
-
-  const cacheIsFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
-  if (cacheIsFresh && cachedTables.length > 0) {
-    return cachedTables;
-  }
-
-  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
-  try {
-    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
-    const list = data?.data || data?.tables || data?.data?.tables || [];
-    if (Array.isArray(list)) {
-
-      await setCache(cacheKey, list, { version: 'tables-v1' });
-      return list;
-    }
-  } catch (error) {
-
-    // fallback de compatibilidad
-  }
-
-  try {
-    const { data } = await axios.get(
-      `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`,
-      { timeout: 15000 },
-    );
-    const list = data?.tables || data?.data?.tables || [];
-    if (Array.isArray(list) && list.length > 0) {
-
-      await setCache(cacheKey, list, { version: 'tables-v1' });
-      return list;
-    }
-
-    return cachedTables;
-  } catch (error) {
-
-    return cachedTables;
-  }
-};
 
 const normalizeWorksheetStatus = value => {
   const status = String(value || '')
@@ -300,11 +249,6 @@ export default function TableDetail({ navigation, route }) {
   const { electionId, electionType } = route.params || {};
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};
-  const availableTables = Array.isArray(locationFromParams?.tables)
-    ? locationFromParams.tables
-    : Array.isArray(route.params?.tables)
-      ? route.params.tables
-      : [];
   const hasMesaSelectedFromParams = Boolean(
     rawMesa.tableCode ||
     rawMesa.codigo ||
@@ -319,7 +263,6 @@ export default function TableDetail({ navigation, route }) {
   const [mesaNumberInput, setMesaNumberInput] = useState('');
   const [mesaSearchError, setMesaSearchError] = useState('');
   const [isSearchingMesa, setIsSearchingMesa] = useState(false);
-  const [tablesForSearch, setTablesForSearch] = useState(availableTables);
   const [selectedMesaRaw, setSelectedMesaRaw] = useState(null);
   const [selectedMesaRecords, setSelectedMesaRecords] = useState(null);
   const [selectedMesaTotalRecords, setSelectedMesaTotalRecords] = useState(null);
@@ -331,6 +274,7 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
+  const [tableCodeHelpVisible, setTableCodeHelpVisible] = useState(false);
   const worksheetStatusSyncRef = useRef({
     lastSyncAt: 0,
   });
@@ -706,49 +650,37 @@ export default function TableDetail({ navigation, route }) {
       const netState = await NetInfo.fetch();
       const isOnline = !!netState?.isConnected &&
         netState?.isInternetReachable !== false;
-      let tablesPool = tablesForSearch;
 
-      if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
-        const locationId =
-          locationFromParams?._id ||
-          locationFromParams?.locationId ||
-          route.params?.locationId;
-        if (locationId) {
-          const fetched = await fetchTablesByLocationId(locationId);
-          if (Array.isArray(fetched) && fetched.length > 0) {
-            tablesPool = fetched;
-            setTablesForSearch(fetched);
-          }
-        }
-      }
-      if (!Array.isArray(tablesPool) || tablesPool.length === 0) {
-        setMesaSearchError(
-          'No hay mesas disponibles en cache para este recinto. Conectate a internet para actualizar los datos.',
-        );
-        return;
-      }
+      // Crear mesa con los datos ingresados por el usuario (sin validar contra caché)
+      const locationId =
+        locationFromParams?._id ||
+        locationFromParams?.locationId ||
+        route.params?.locationId;
 
-      const matchedTable = tablesPool.find(table => {
-        const candidate = normalizeMesaNumber(
-          table?.tableNumber || table?.numero || table?.number,
-        );
-        return candidate === normalizedInput;
-      });
+      const manualMesa = {
+        tableNumber: normalizedInput,
+        numero: normalizedInput,
+        number: normalizedInput,
+        tableCode: normalizedInput, // El código se asignará después si es necesario
+        codigo: normalizedInput,
+        locationId: locationId,
+        idRecinto: locationId,
+        name: locationFromParams?.name || 'Recinto',
+        recinto: locationFromParams?.name || 'Recinto',
+        colegio: locationFromParams?.name || 'Recinto',
+        address: locationFromParams?.address || '',
+        direccion: locationFromParams?.address || '',
+      };
 
-      if (!matchedTable) {
-        setMesaSearchError(
-          `La mesa ${normalizedInput} no existe en este recinto.`,
-        );
-        return;
-      }
-
-      const matchedMesa = normalizeMesaData(matchedTable);
+      const matchedMesa = normalizeMesaData(manualMesa);
       let records = [];
 
-      if (isOnline) {
+      // Intentar buscar registros existentes si hay internet
+      if (isOnline && matchedMesa.codigo) {
         try {
           records = await fetchExistingRecordsByTable(matchedMesa.codigo);
         } catch (error) {
+          // Si no encuentra registros, continuar sin error
           if (error?.response?.status !== 404) {
             records = [];
           }
@@ -1294,9 +1226,18 @@ export default function TableDetail({ navigation, route }) {
           </CText>
         </View>
 
-        <CText style={stylesx.searchInstructionText}>
-          Escribe el número de mesa
-        </CText>
+        <View style={stylesx.searchInstructionRow}>
+          <CText style={stylesx.searchInstructionText}>
+            Escribe el código de mesa
+          </CText>
+          <TouchableOpacity
+            onPress={() => setTableCodeHelpVisible(true)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={stylesx.helpIconButton}
+          >
+            <Ionicons name="information-circle-outline" size={22} color="#4F9858" />
+          </TouchableOpacity>
+        </View>
 
         <View style={stylesx.searchInputRow}>
           <TextInput
@@ -1379,9 +1320,6 @@ export default function TableDetail({ navigation, route }) {
                     <View style={stylesx.tableCardContent}>
                       <CText style={stylesx.tableCardTitle}>
                         Mesa {mesa.numero}
-                      </CText>
-                      <CText style={stylesx.tableCardDetail}>
-                        Código de Mesa: {mesa.codigo}
                       </CText>
                     </View>
                     <MaterialIcons
@@ -1501,10 +1439,10 @@ export default function TableDetail({ navigation, route }) {
                       <CText style={stylesx.tableCardTitle}>
                         {I18nStrings.table} {mesa.numero}
                       </CText>
-                      <CText style={stylesx.tableCardDetail}>
+                      {/* <CText style={stylesx.tableCardDetail}>
                         {I18nStrings.tableCode}
                         {':'} {mesa.codigo}
-                      </CText>
+                      </CText> */}
                       {/* <CText style={stylesx.tableCardDetail}>
                       {I18nStrings.precinct}
                       {':'} {mesa.colegio}
@@ -1595,6 +1533,59 @@ export default function TableDetail({ navigation, route }) {
               onPress={handleConfirmPhoto}>
               <CText type={'B14'} color={colors.white || '#fff'}>
                 {I18nStrings.confirmAndSend}
+              </CText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de ayuda para código de mesa */}
+      <Modal
+        visible={tableCodeHelpVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setTableCodeHelpVisible(false)}
+      >
+        <View style={stylesx.helpModalOverlay}>
+          <View style={stylesx.helpModalContainer}>
+            {/* Icono de información */}
+            <View style={stylesx.helpModalIconContainer}>
+              <Ionicons name="information-circle" size={48} color="#4F9858" />
+            </View>
+
+            {/* Título */}
+            <CText style={stylesx.helpModalTitle}>
+              ¿Dónde está el código de mesa?
+            </CText>
+
+            {/* ScrollView para contenido */}
+            <ScrollView
+              style={stylesx.helpModalScrollView}
+              contentContainerStyle={stylesx.helpModalScrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              {/* Imagen del acta */}
+              <View style={stylesx.helpModalImageContainer}>
+                <Image
+                  source={require('../../../assets/images/acta.png')}
+                  style={stylesx.helpModalImage}
+                  resizeMode="contain"
+                />
+              </View>
+
+              {/* Descripción corta */}
+              <CText style={stylesx.helpModalDescription}>
+                Busca el número en la parte superior izquierda del acta junto al código de barras.
+              </CText>
+            </ScrollView>
+
+            {/* Botón cerrar */}
+            <TouchableOpacity
+              style={stylesx.helpModalButton}
+              onPress={() => setTableCodeHelpVisible(false)}
+            >
+              <CText style={stylesx.helpModalButtonText}>
+                {I18nStrings.understood || 'Entendido'}
               </CText>
             </TouchableOpacity>
           </View>
@@ -1942,10 +1933,19 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(12, 13, 15),
     color: '#4B5563',
   },
-  searchInstructionText: {
-    fontSize: getResponsiveSize(12, 13, 15),
-    color: '#374151',
+  searchInstructionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  searchInstructionText: {
+    fontSize: getResponsiveSize(14, 18, 20),
+    color: '#374151',
+    fontWeight: '700',
+  },
+  helpIconButton: {
+    marginLeft: getResponsiveSize(6, 8, 10),
+    padding: 2,
   },
   searchInputRow: {
     flexDirection: 'row',
@@ -2079,6 +2079,86 @@ const stylesx = StyleSheet.create({
   centerVertically: {
     justifyContent: 'flex-start',
     paddingTop: getResponsiveSize(10, 14, 18),
+  },
+  // Estilos del modal de ayuda (similar a CustomModal)
+  helpModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  helpModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingTop: 30,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    maxWidth: screenWidth * 0.9,
+    minWidth: screenWidth * 0.8,
+    maxHeight: screenHeight * 0.85,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  helpModalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#c8dfcf',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  helpModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2F2F2F',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  helpModalScrollView: {
+    width: '100%',
+    maxHeight: 250,
+    marginBottom: 24,
+    flexGrow: 0,
+  },
+  helpModalScrollContent: {
+    flexGrow: 0,
+    alignItems: 'center',
+  },
+  helpModalImageContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  helpModalImage: {
+    width: getResponsiveSize(200, 240, 280),
+    height: getResponsiveSize(140, 170, 200),
+    borderRadius: 8,
+  },
+  helpModalDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  helpModalButton: {
+    backgroundColor: '#4F9858',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

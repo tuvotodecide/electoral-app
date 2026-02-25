@@ -657,22 +657,27 @@ export const publishActaHandler = async (item, userData) => {
     //   // non-critical: attestation can continue without worksheet reference.
     // }
 
-    try {
-      await assertTableExistsInLocation({
-        locationId: locationIdToCheck,
-        tableCode: tableCodeStrict,
-        tableNumber: tableNumberToCheck,
-      });
-    } catch (err) {
-      captureError(err, {
-        flow: 'offline_queue',
-        step: 'validate_table_exists',
-        critical: true,
-        tableCode: tableCodeStrict,
-        locationId: locationIdToCheck,
-      });
-      throw err;
-    }
+    // NOTA: Ya no validamos que la mesa exista previamente en electoral_tables
+    // porque ahora el tableCode lo ingresa el usuario del acta física.
+    // Las validaciones de duplicados (ya atestiguó, ya existe acta) siguen
+    // funcionando porque buscan directamente en ballots/worksheets por tableCode.
+    //
+    // try {
+    //   await assertTableExistsInLocation({
+    //     locationId: locationIdToCheck,
+    //     tableCode: tableCodeStrict,
+    //     tableNumber: tableNumberToCheck,
+    //   });
+    // } catch (err) {
+    //   captureError(err, {
+    //     flow: 'offline_queue',
+    //     step: 'validate_table_exists',
+    //     critical: true,
+    //     tableCode: tableCodeStrict,
+    //     locationId: locationIdToCheck,
+    //   });
+    //   throw err;
+    // }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
       const alreadyMine = await hasUserAttestedTable(

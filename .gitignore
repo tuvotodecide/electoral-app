@@ -50,3 +50,7 @@ app-example
 # inserted by Expo
 /native-files
 credentials.json
+
+#claude
+.claude
+.claude\settings.local.json

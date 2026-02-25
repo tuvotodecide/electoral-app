@@ -1145,7 +1145,7 @@ export default {
   loadingCountTables: 'Cargando mesas de conteo...',
   searchTableForCount: 'Buscar Mesa para Conteo',
   chooseTablePlease: 'Elije una mesa por favor:',
-  tableCodePlaceholder: 'Código de mesa',
+  tableCodePlaceholder: 'Escribe el código de mesa del acta',
   listBasedOnLocation: 'La siguiente lista se basa en su ubicación',
 
   // My Witnesses Detail Screen
@@ -1204,6 +1204,8 @@ export default {
     '¿Estás seguro de que deseas publicar y certificar la información?',
 
   // MyWitnesses
+  actaUploading: 'Acta subiendo...',
+  actaUploadingDescription: 'Tu acta se está subiendo en segundo plano',
   loadingWitnesses: 'Cargando atestiguamientos...',
   seeMore: 'Ver más',
   understood: 'Entendido',

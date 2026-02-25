@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -21,6 +21,7 @@ import {StackNav} from '../../../navigation/NavigationKey';
 
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
+import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -76,6 +77,52 @@ const MyWitnessesListScreen = () => {
   const [modalData, setModalData] = useState({});
   const [hasNoAttestations, setHasNoAttestations] = useState(false);
   const [offlineErrorMessage, setOfflineErrorMessage] = useState('');
+  const [hasPendingActa, setHasPendingActa] = useState(false);
+
+  // Tipos de tareas que indican subida de acta
+  const QUEUE_WRITE_TASK_TYPES = new Set([
+    'publishActa',
+    'publishWorksheet',
+    'syncActaBackend',
+  ]);
+
+  const isQueueWriteTask = type => QUEUE_WRITE_TASK_TYPES.has(type);
+
+  // Verificar si hay actas pendientes de subir
+  const checkPendingActas = React.useCallback(async () => {
+    try {
+      const list = await getOfflineQueue();
+      const pending = (list || []).some(i => isQueueWriteTask(i?.task?.type));
+      setHasPendingActa(pending);
+    } catch (error) {
+      setHasPendingActa(false);
+    }
+  }, []);
+
+  // Verificar actas pendientes cuando la pantalla obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      (async () => {
+        if (isActive) {
+          await checkPendingActas();
+        }
+      })();
+
+      // Intervalo para actualizar el estado periódicamente mientras la pantalla está enfocada
+      const interval = setInterval(() => {
+        if (isActive) {
+          checkPendingActas();
+        }
+      }, 5000); // Verificar cada 5 segundos
+
+      return () => {
+        isActive = false;
+        clearInterval(interval);
+      };
+    }, [checkPendingActas]),
+  );
 
   // Cargar atestiguamientos al montar el componente
   useEffect(() => {
@@ -284,8 +331,25 @@ const MyWitnessesListScreen = () => {
         showNotification={true}
       />
 
-      {/* Question Text */}
-
+      {/* Banner de acta subiendo */}
+      {hasPendingActa && (
+        <View testID="pendingActaBanner" style={styles.pendingActaBanner}>
+          <ActivityIndicator
+            testID="pendingActaIndicator"
+            size="small"
+            color="#ff0000"
+            style={styles.pendingActaIndicator}
+          />
+          <View style={styles.pendingActaTextContainer}>
+            <CText testID="pendingActaTitle" style={styles.pendingActaTitle}>
+              {Strings.actaUploading}
+            </CText>
+            <CText testID="pendingActaDescription" style={styles.pendingActaDescription}>
+              {Strings.actaUploadingDescription}
+            </CText>
+          </View>
+        </View>
+      )}
 
       {/* Content */}
       {loading ? (
@@ -659,6 +723,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  // Estilos para el banner de acta subiendo
+  pendingActaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: getResponsiveSize(8, 10, 12),
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    paddingHorizontal: getResponsiveSize(12, 14, 16),
+    marginHorizontal: getResponsiveSize(12, 16, 24),
+    marginTop: getResponsiveSize(8, 10, 12),
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  pendingActaIndicator: {
+    marginRight: getResponsiveSize(10, 12, 14),
+  },
+  pendingActaTextContainer: {
+    flex: 1,
+  },
+  pendingActaTitle: {
+    fontSize: getResponsiveSize(13, 14, 16),
+    fontWeight: '700',
+    color: '#DC2626',
+    marginBottom: 2,
+  },
+  pendingActaDescription: {
+    fontSize: getResponsiveSize(11, 12, 14),
+    color: '#991B1B',
   },
 });
 
