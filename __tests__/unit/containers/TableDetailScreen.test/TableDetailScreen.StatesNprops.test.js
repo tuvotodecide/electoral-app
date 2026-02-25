@@ -64,8 +64,8 @@ describe('TableDetailScreen - Estados y Props', () => {
 
     const {getByText, navigation} = renderTableDetail({route});
 
+    // El componente muestra "Mesa {numero}" - el tableCode ya no se muestra en la UI
     expect(getByText(`${String.table} mesa-9`)).toBeTruthy();
-    expect(getByText(`${String.tableCode}: C-999`)).toBeTruthy();
 
     act(() => {
       fireEvent.press(getByText(String.takePhoto));

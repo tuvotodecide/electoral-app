@@ -25,11 +25,14 @@
 
 module.exports = {
   preset: 'jest-expo',
-  testEnvironment: 'node',
+
   collectCoverage: false,
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
     '<rootDir>/__tests__/setup/jest.setup.js',
+  ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|react-native-biometrics|react-native-keychain|@twotalltotems|react-redux|@reduxjs|immer|jest-expo|expo-modules-core|expo|expo-router|expo-font|expo-haptics|expo-image|expo-linking|expo-splash-screen|expo-status-bar|expo-system-ui|expo-web-browser)/)',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
