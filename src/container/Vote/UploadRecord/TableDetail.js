@@ -267,6 +267,7 @@ export default function TableDetail({ navigation, route }) {
   const [selectedMesaRecords, setSelectedMesaRecords] = useState(null);
   const [selectedMesaTotalRecords, setSelectedMesaTotalRecords] = useState(null);
   const [resolvedOffline, setResolvedOffline] = useState(null);
+  const [netIsOnline, setNetIsOnline] = useState(null);
   const [worksheetStatus, setWorksheetStatus] = useState({
     status: WorksheetStatus.NOT_FOUND,
   });
@@ -506,6 +507,7 @@ export default function TableDetail({ navigation, route }) {
       const netState = await NetInfo.fetch();
       const isOnline =
         !!netState?.isConnected && netState?.isInternetReachable !== false;
+      setNetIsOnline(isOnline);
 
       if (
         isOnline &&
@@ -694,6 +696,23 @@ export default function TableDetail({ navigation, route }) {
       setIsSearchingMesa(false);
     }
   };
+
+  useEffect(() => {
+    let isActive = true;
+    NetInfo.fetch()
+      .then(netState => {
+        if (!isActive) return;
+        const isOnline =
+          !!netState?.isConnected && netState?.isInternetReachable !== false;
+        setNetIsOnline(isOnline);
+      })
+      .catch(() => {
+        // Si NetInfo falla, mantener estado previo.
+      });
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchWorksheetStatus({ force: true });
@@ -1117,6 +1136,10 @@ export default function TableDetail({ navigation, route }) {
     const isUploaded = statusValue === WorksheetStatus.UPLOADED;
     const isFailed = statusValue === WorksheetStatus.FAILED;
     const isNotFound = statusValue === WorksheetStatus.NOT_FOUND;
+
+    if (netIsOnline === true && recordsCount > 0 && !isUploaded) {
+      return null;
+    }
     const blockedByBackendRule = String(
       worksheetStatus?.errorMessage || '',
     )
@@ -1219,28 +1242,31 @@ export default function TableDetail({ navigation, route }) {
           stylesx.searchContent,
           hasMesaSelected && stylesx.searchContentEmbedded,
         ]}>
-        <View style={stylesx.searchLocationCard}>
+        {/* <View style={stylesx.searchLocationCard}>
           <CText style={stylesx.searchLocationTitle}>
             {locationFromParams?.name || 'Recinto seleccionado'}
           </CText>
-        </View>
+        </View> */}
 
 
         <View style={stylesx.sideBySideHelpContainer}>
-            <Image
-              source={require('../../../assets/images/acta.png')}
-              style={stylesx.sideBySideHelpImage}
-              resizeMode="contain"
-            />
-          <CText style={stylesx.sideBySideHelpText}>
+          <Image
+            source={require('../../../assets/images/acta.png')}
+            style={stylesx.sideBySideHelpImage}
+            resizeMode="contain"
+          />
+          {/* <CText style={stylesx.sideBySideHelpText}>
             Busca el número en la parte superior izquierda del acta junto al código de barras.
-          </CText>
+          </CText> */}
         </View>
-        <View style={stylesx.searchInstructionRow}>
+        <CText style={[stylesx.bigBold1, { color: 'black', marginBottom: getResponsiveSize(10, 15, 20) }]}>
+          {locationFromParams?.name || 'Recinto seleccionado'}
+        </CText>
+        {/* <View style={stylesx.searchInstructionRow}>
           <CText style={stylesx.searchInstructionText}>
             Escribe el código de mesa
           </CText>
-        </View>
+        </View> */}
 
         <View style={stylesx.searchInputRow}>
           <TextInput
@@ -1250,7 +1276,7 @@ export default function TableDetail({ navigation, route }) {
               if (mesaSearchError) setMesaSearchError('');
             }}
             keyboardType="number-pad"
-            placeholder="Mesa"
+            placeholder="Código de mesa"
             placeholderTextColor="#9CA3AF"
             style={[stylesx.mesaInput, stylesx.mesaInputInline]}
             testID="tableDetailMesaInput"
@@ -1412,25 +1438,26 @@ export default function TableDetail({ navigation, route }) {
           ) : (
             /* Regular Layout: Phones and Tablet Portrait */
             <>
+              <View style={stylesx.searchLocationCard}>
+
+              </View>
               <View style={stylesx.middleWrap}>
                 <View
                   style={[
-                    stylesx.instructionContainer,
-                    shouldCenter && { marginTop: 0 },
+                    shouldCenter && { marginTop: 0, marginBottom: getResponsiveSize(10, 25, 40) }
                   ]}>
-                  {/* <CText style={[stylesx.bigBold, { color: 'black' }]}>
-                  {I18nStrings.ensureAssignedTable}
-                </CText> */}
+
+
                   {/* <CText
-                style={[
-                  stylesx.subtitle,
-                  {color: colors.grayScale500 || '#8B9399'},
-                ]}>
-                {I18nStrings.verifyTableInformation}
-              </CText> */}
+                    style={[
+                      stylesx.subtitle,
+                      {color: colors.grayScale500 || '#8B9399'},
+                    ]}>
+                    {I18nStrings.verifyTableInformation}
+                  </CText> */}
                 </View>
 
-                <View style={stylesx.tableCard}>
+                {/* <View style={stylesx.tableCard}>
                   <View style={stylesx.tableCardHeader}>
                     <MaterialIcons
                       name="how-to-vote"
@@ -1442,17 +1469,14 @@ export default function TableDetail({ navigation, route }) {
                       <CText style={stylesx.tableCardTitle}>
                         {I18nStrings.table} {mesa.numero}
                       </CText>
-                      {/* <CText style={stylesx.tableCardDetail}>
-                        {I18nStrings.tableCode}
-                        {':'} {mesa.codigo}
-                      </CText> */}
-                      {/* <CText style={stylesx.tableCardDetail}>
-                      {I18nStrings.precinct}
-                      {':'} {mesa.colegio}
-                    </CText> */}
+
+                      <CText style={stylesx.tableCardDetail}>
+                        {I18nStrings.precinct}
+
+                      </CText>
                     </View>
                   </View>
-                </View>
+                </View> */}
 
                 {/* Show existing attestations if available */}
                 {recordsCount > 0 && (
@@ -1585,7 +1609,7 @@ const stylesx = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   instructionContainer: {
-    marginTop: getResponsiveSize(15, 25, 35),
+    marginTop: getResponsiveSize(10, 25, 35),
     marginBottom: 0,
     paddingHorizontal: getResponsiveSize(16, 20, 24),
   },
@@ -1593,6 +1617,13 @@ const stylesx = StyleSheet.create({
     fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: 'bold',
     marginBottom: getResponsiveSize(6, 8, 10),
+    color: '#222',
+    textAlign: 'center',
+    lineHeight: getResponsiveSize(24, 26, 30),
+  },
+  bigBold1: {
+    fontSize: getResponsiveSize(16, 20, 24),
+    fontWeight: 'bold',
     color: '#222',
     textAlign: 'center',
     lineHeight: getResponsiveSize(24, 26, 30),
@@ -1763,7 +1794,7 @@ const stylesx = StyleSheet.create({
   // Existing records styles
   existingRecordsContainer: {
     marginHorizontal: getResponsiveSize(16, 20, 24),
-    marginTop: getResponsiveSize(15, 20, 25),
+    marginTop: getResponsiveSize(2, 6, 8),
     marginBottom: getResponsiveSize(15, 20, 25),
   },
   existingRecordsTitle: {
@@ -1865,7 +1896,7 @@ const stylesx = StyleSheet.create({
   searchContent: {
     flex: 1,
     paddingHorizontal: getResponsiveSize(16, 20, 24),
-    paddingTop: getResponsiveSize(4, 10, 14),
+    paddingTop: getResponsiveSize(2, 8, 10),
   },
   searchContentEmbedded: {
     flex: 0,
@@ -1890,7 +1921,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 10, 12),
   },
   searchInstructionText: {
-    fontSize: getResponsiveSize(16, 20, 22),
+    fontSize: getResponsiveSize(14, 20, 22),
     color: '#374151',
     fontWeight: '700',
   },
@@ -1917,7 +1948,7 @@ const stylesx = StyleSheet.create({
     marginRight: getResponsiveSize(8, 10, 12),
   },
   searchButtonInline: {
-    backgroundColor: '#4F9858',
+    backgroundColor: '#075a10',
     borderRadius: getResponsiveSize(10, 12, 14),
     alignItems: 'center',
     justifyContent: 'center',
@@ -2041,15 +2072,15 @@ const stylesx = StyleSheet.create({
     marginHorizontal: getResponsiveSize(16, 20, 24),
   },
   sideBySideHelpImage: {
-    flex: 0.65,
+    flex: 1,
     height: getResponsiveSize(140, 180, 200),
     marginRight: getResponsiveSize(12, 16, 18),
   },
-  sideBySideHelpText: {
-    flex: 0.35,
-    fontSize: getResponsiveSize(13, 14, 16),
-    color: '#374151',
-    lineHeight: getResponsiveSize(18, 20, 22),
-  },
+  // sideBySideHelpText: {
+  //   flex: 0.35,
+  //   fontSize: getResponsiveSize(13, 14, 16),
+  //   color: '#374151',
+  //   lineHeight: getResponsiveSize(18, 20, 22),
+  // },
 });
 

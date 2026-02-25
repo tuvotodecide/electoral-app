@@ -1315,12 +1315,12 @@ export default function HomeScreen({ navigation }) {
         <View style={stylesx.availabilityLoaderRow}>
           <ActivityIndicator size="small" color="#41A44D" />
           <CText style={stylesx.availabilityLoaderTitle}>
-            Verificando disponibilidad...
+            Buscando eventos electorales...
           </CText>
         </View>
 
         <CText style={stylesx.availabilityLoaderSubtitle}>
-          Estamos validando si hay eventos electorales activos para enviar actas desde tu ubicación.
+          Verificando acceso según tu ubicación actual.
         </CText>
       </View>
     );

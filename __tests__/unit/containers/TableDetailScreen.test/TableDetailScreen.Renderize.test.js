@@ -3,10 +3,14 @@ import './jestMocks';
 import {fireEvent} from '@testing-library/react-native';
 import String from '../../../__mocks__/String';
 import {
+  act,
   renderTableDetail,
   defaultMesa,
   buildRoute,
   StackNav,
+  NetInfo,
+  flushPromises,
+  getWorksheetLocalStatus,
 } from './testUtils';
 
 describe('TableDetailScreen - Renderizado', () => {
@@ -59,6 +63,51 @@ describe('TableDetailScreen - Renderizado', () => {
         totalRecords: existingRecords.length,
       }),
     );
+  });
+
+  test('cuando hay acta pero no hoja (online) oculta controles de hoja de trabajo', async () => {
+    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
+
+    const existingRecords = [{recordId: 'rec-1', actaImage: 'https://image/1.jpg'}];
+
+    const {getByText, queryByText} = renderTableDetail({
+      routeParams: {
+        existingRecords,
+        totalRecords: existingRecords.length,
+      },
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(getByText('Atestiguar')).toBeTruthy();
+    expect(queryByText('Subir hoja de trabajo')).toBeNull();
+    expect(queryByText(/La mesa ya tiene acta.*hoja de trabajo/i)).toBeNull();
+  });
+
+  test('si hay hoja subida (online) mantiene botón para verla aunque ya exista acta', async () => {
+    NetInfo.fetch.mockResolvedValue({isConnected: true, isInternetReachable: true});
+    getWorksheetLocalStatus.mockResolvedValueOnce({
+      status: 'UPLOADED',
+      ipfsUri: 'ipfs://cid',
+    });
+
+    const existingRecords = [{recordId: 'rec-1', actaImage: 'https://image/1.jpg'}];
+
+    const {getByText} = renderTableDetail({
+      routeParams: {
+        existingRecords,
+        totalRecords: existingRecords.length,
+        extraParams: {electionId: 'election-1'},
+      },
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(getByText('Ver hoja de trabajo')).toBeTruthy();
   });
 
   test('cuando no hay mesa válida muestra el modo de búsqueda', () => {

@@ -21,8 +21,16 @@ jest.mock('react-native-safe-area-context');
 jest.mock('@react-navigation/native');
 
 // Mock vector icons
-jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
-jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
+jest.mock('react-native-vector-icons/MaterialIcons', () => {
+  const React = require('react');
+  return ({name, testID, ...props}) =>
+    React.createElement('Text', {testID: testID || `icon-${name}`, ...props}, name);
+});
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  return ({name, testID, ...props}) =>
+    React.createElement('Text', {testID: testID || `icon-${name}`, ...props}, name);
+});
 
 // Mock custom components
 jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => 
