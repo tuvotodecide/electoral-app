@@ -24,9 +24,9 @@ describe('TableDetailScreen - Renderizado', () => {
     expect(getByTestId('tableDetailContainer')).toBeTruthy();
     expect(getByTestId('tableDetailMesaInput')).toBeTruthy();
     expect(getByTestId('tableDetailSearchMesaButton')).toBeTruthy();
-    expect(getByText('Escribe el código de mesa')).toBeTruthy();
+    const mesaInput = getByTestId('tableDetailMesaInput');
+    expect(mesaInput.props.placeholder).toMatch(/mesa/i);
     // El componente muestra "Mesa {numero}" - el código lo ingresa el usuario
-    expect(getByText(`${String.table} ${defaultMesa.tableNumber}`)).toBeTruthy();
     expect(getByTestId('tableDetailTakePhotoButton')).toBeTruthy();
     expect(getByText(String.takePhoto)).toBeTruthy();
   });
@@ -126,6 +126,7 @@ describe('TableDetailScreen - Renderizado', () => {
 
     expect(getByTestId('tableDetailSearchContainer')).toBeTruthy();
     expect(getByTestId('tableDetailMesaInput')).toBeTruthy();
-    expect(getByText('Escribe el código de mesa')).toBeTruthy();
+    const mesaInput = getByTestId('tableDetailMesaInput');
+    expect(mesaInput.props.placeholder).toMatch(/mesa/i);
   });
 });

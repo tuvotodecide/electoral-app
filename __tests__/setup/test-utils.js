@@ -35,6 +35,7 @@ export function createMockStore(initialState = {}) {
     auth: { isAuthenticated: false },
     user: { profile: null },
     voting: { currentVote: null },
+    wallet: { payload: {} },
     theme: defaultTheme,
     ...initialState
   };
@@ -46,6 +47,7 @@ export function createMockStore(initialState = {}) {
       auth: (state = { isAuthenticated: false }, action) => state,
       user: (state = { profile: null }, action) => state,
       voting: (state = { currentVote: null }, action) => state,
+      wallet: (state = { payload: {} }, action) => state,
       theme: (state = defaultTheme, action) => state,
     },
     preloadedState: mergedInitialState,

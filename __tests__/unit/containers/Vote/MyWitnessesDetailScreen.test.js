@@ -9,11 +9,38 @@ import MyWitnessesDetailScreen from '../../../../src/container/Vote/MyWitnesses/
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../setup/test-utils';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
+const mockRouteWithParams = {
+  ...mockRoute,
+  params: {
+    photoUri: 'file://photo.jpg',
+    mesaData: {
+      mesa: 'Mesa 001',
+      tableNumber: '001',
+      fecha: '2025-05-10',
+    },
+    partyResults: [
+      {party: 'Party A', votes: 100, percentage: 50},
+      {party: 'Party B', votes: 100, percentage: 50},
+    ],
+    voteSummaryResults: [
+      {label: 'Total', value: 200},
+      {label: 'Válidos', value: 195},
+    ],
+    attestationData: {
+      tableNumber: '001',
+      fecha: '2025-05-10',
+      certificateUrl: 'https://example.com/certificate.pdf',
+    },
+    certificateUrl: 'https://example.com/certificate.pdf',
+  },
+};
+
 // Mocks
 jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => mockNavigation,
-  useRoute: () => routeWithParams,
+  useRoute: () => mockRouteWithParams,
+  useFocusEffect: jest.fn(),
+  NavigationContainer: ({children}) => children,
 }));
 
 jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
@@ -43,32 +70,6 @@ jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
       ),
     );
 });
-
-const routeWithParams = {
-  ...mockRoute,
-  params: {
-    photoUri: 'file://photo.jpg',
-    mesaData: {
-      mesa: 'Mesa 001',
-      tableNumber: '001',
-      fecha: '2025-05-10',
-    },
-    partyResults: [
-      {party: 'Party A', votes: 100, percentage: 50},
-      {party: 'Party B', votes: 100, percentage: 50},
-    ],
-    voteSummaryResults: [
-      {label: 'Total', value: 200},
-      {label: 'Válidos', value: 195},
-    ],
-    attestationData: {
-      tableNumber: '001',
-      fecha: '2025-05-10',
-      certificateUrl: 'https://example.com/certificate.pdf',
-    },
-    certificateUrl: 'https://example.com/certificate.pdf',
-  },
-};
 
 describe('MyWitnessesDetailScreen', () => {
   const mockStore = {
@@ -135,13 +136,7 @@ describe('MyWitnessesDetailScreen', () => {
     });
 
     it('navega a SuccessScreen al presionar ver certificado', () => {
-      const localNavigation = {...mockNavigation, navigate: jest.fn()};
-
-      jest.mock('@react-navigation/native', () => ({
-        ...jest.requireActual('@react-navigation/native'),
-        useNavigation: () => localNavigation,
-        useRoute: () => routeWithParams,
-      }));
+      mockNavigation.navigate = jest.fn();
 
       const {getByTestId} = renderWithProviders(
         <MyWitnessesDetailScreen />,
@@ -151,7 +146,7 @@ describe('MyWitnessesDetailScreen', () => {
       const certButton = getByTestId('viewCertificateButton');
       fireEvent.press(certButton);
 
-      expect(localNavigation.navigate).toHaveBeenCalledWith(
+      expect(mockNavigation.navigate).toHaveBeenCalledWith(
         StackNav.SuccessScreen,
         expect.objectContaining({
           certificateData: expect.any(Object),
@@ -161,13 +156,7 @@ describe('MyWitnessesDetailScreen', () => {
     });
 
     it('navega hacia atrás al presionar volver', () => {
-      const localNavigation = {...mockNavigation, goBack: jest.fn()};
-
-      jest.mock('@react-navigation/native', () => ({
-        ...jest.requireActual('@react-navigation/native'),
-        useNavigation: () => localNavigation,
-        useRoute: () => routeWithParams,
-      }));
+      mockNavigation.goBack = jest.fn();
 
       const {getByTestId} = renderWithProviders(
         <MyWitnessesDetailScreen />,
@@ -177,29 +166,14 @@ describe('MyWitnessesDetailScreen', () => {
       const backButton = getByTestId('myWitnessesDetailGoBackButton');
       fireEvent.press(backButton);
 
-      expect(localNavigation.goBack).toHaveBeenCalled();
+      expect(mockNavigation.goBack).toHaveBeenCalled();
     });
   });
 
   describe('Sin Certificado', () => {
     it('no muestra botón de certificado cuando no hay URL', () => {
-      const routeWithoutCertificate = {
-        ...routeWithParams,
-        params: {
-          ...routeWithParams.params,
-          certificateUrl: null,
-          attestationData: {
-            ...routeWithParams.params.attestationData,
-            certificateUrl: null,
-          },
-        },
-      };
-
-      jest.mock('@react-navigation/native', () => ({
-        ...jest.requireActual('@react-navigation/native'),
-        useNavigation: () => mockNavigation,
-        useRoute: () => routeWithoutCertificate,
-      }));
+      mockRouteWithParams.params.certificateUrl = null;
+      mockRouteWithParams.params.attestationData.certificateUrl = null;
 
       const {queryByTestId} = renderWithProviders(
         <MyWitnessesDetailScreen />,
@@ -209,6 +183,10 @@ describe('MyWitnessesDetailScreen', () => {
       // El botón de certificado no debería aparecer
       // pero el de volver sí
       expect(queryByTestId('myWitnessesDetailGoBackButton')).toBeTruthy();
+
+      mockRouteWithParams.params.certificateUrl = 'https://example.com/certificate.pdf';
+      mockRouteWithParams.params.attestationData.certificateUrl =
+        'https://example.com/certificate.pdf';
     });
   });
 
@@ -223,19 +201,8 @@ describe('MyWitnessesDetailScreen', () => {
     });
 
     it('usa mesaData como fallback cuando no hay attestationData', () => {
-      const routeWithMesaData = {
-        ...routeWithParams,
-        params: {
-          ...routeWithParams.params,
-          attestationData: null,
-        },
-      };
-
-      jest.mock('@react-navigation/native', () => ({
-        ...jest.requireActual('@react-navigation/native'),
-        useNavigation: () => mockNavigation,
-        useRoute: () => routeWithMesaData,
-      }));
+      const previousAttestation = mockRouteWithParams.params.attestationData;
+      mockRouteWithParams.params.attestationData = null;
 
       const {getByTestId} = renderWithProviders(
         <MyWitnessesDetailScreen />,
@@ -243,6 +210,8 @@ describe('MyWitnessesDetailScreen', () => {
       );
 
       expect(getByTestId('headerTitle')).toBeTruthy();
+
+      mockRouteWithParams.params.attestationData = previousAttestation;
     });
   });
 });

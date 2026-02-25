@@ -14,9 +14,21 @@ jest.mock('../../../../../src/data/guardians', () => ({
     data: [
       {
         id: 'inv1',
+        governmentIdentifier: 'inv1',
         ownerDid: 'did:example:owner1',
+        inviterDid: 'did:example:inviter1',
+        inviter: {displayNamePublic: 'Inviter Uno'},
         nickname: 'Owner 1',
         status: 'PENDING',
+      },
+      {
+        id: 'prot1',
+        governmentIdentifier: 'prot1',
+        ownerDid: 'did:example:owner3',
+        inviterDid: 'did:example:inviter3',
+        inviter: {displayNamePublic: 'Guardian Aceptado'},
+        nickname: 'Owner 3',
+        status: 'ACCEPTED',
       },
     ],
     isLoading: false,
@@ -25,8 +37,12 @@ jest.mock('../../../../../src/data/guardians', () => ({
     data: [
       {
         id: 'rec1',
+        requestId: 'rec1',
+        governmentIdentifier: 'rec1',
         ownerDid: 'did:example:owner2',
-        nickname: 'Owner 2',
+        targetDid: 'did:example:target2',
+        publicFullName: 'Owner 2',
+        createdAt: 1710000000,
         status: 'PENDING',
       },
     ],
@@ -41,7 +57,7 @@ jest.mock('../../../../../src/data/guardians', () => ({
 }));
 
 jest.mock('../../../../../src/utils/Address', () => ({
-  truncateDid: jest.fn(did => did.slice(0, 15) + '...'),
+  truncateDid: jest.fn(did => (did ? did.slice(0, 15) + '...' : '')),
 }));
 
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
@@ -89,7 +105,7 @@ jest.mock('../../../../../src/components/common/Icono', () => {
     React.createElement('Icono', {testID, name});
 });
 
-jest.mock('../../../../../src/components/modal/GuardianInfoActionModal', () => {
+jest.mock('../../../../../src/components/modal/GuardianInfoModal', () => {
   const React = require('react');
   const {View, TouchableOpacity, Text} = require('react-native');
   return ({testID, visible, onClose}) =>
@@ -233,10 +249,14 @@ describe('GuardiansAdmin Screen', () => {
         {initialState: mockStore},
       );
 
-      const approveBtn = getByTestId('guardiansAdminInvitationItemApprove_inv1');
-      fireEvent.press(approveBtn);
+      const acceptBtn = getByTestId('guardiansAdminInvitationItemAccept_inv1');
+      fireEvent.press(acceptBtn);
 
-      expect(mockMutate).toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith({
+        id: 'inv1',
+        did: 'did:example:123',
+        action: 'accept',
+      });
     });
 
     it('llama a rechazar invitación al presionar el botón', () => {
@@ -252,7 +272,11 @@ describe('GuardiansAdmin Screen', () => {
       const rejectBtn = getByTestId('guardiansAdminInvitationItemReject_inv1');
       fireEvent.press(rejectBtn);
 
-      expect(mockMutate).toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith({
+        id: 'inv1',
+        did: 'did:example:123',
+        action: 'reject',
+      });
     });
   });
 
@@ -270,7 +294,11 @@ describe('GuardiansAdmin Screen', () => {
       const approveBtn = getByTestId('guardiansAdminRecoveryItemApprove_rec1');
       fireEvent.press(approveBtn);
 
-      expect(mockMutate).toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith({
+        id: 'rec1',
+        action: 'approve',
+        did: 'did:example:123',
+      });
     });
 
     it('llama a rechazar recuperación al presionar el botón', () => {
@@ -286,7 +314,11 @@ describe('GuardiansAdmin Screen', () => {
       const rejectBtn = getByTestId('guardiansAdminRecoveryItemReject_rec1');
       fireEvent.press(rejectBtn);
 
-      expect(mockMutate).toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith({
+        id: 'rec1',
+        action: 'reject',
+        did: 'did:example:123',
+      });
     });
   });
 

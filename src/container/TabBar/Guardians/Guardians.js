@@ -144,14 +144,6 @@ export default function Guardians({navigation}) {
       },
     );
   };
-  if (isLoading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primaryColor} />
-      </View>
-    );
-  }
-
   const RightIcon = () => (
     <View testID="guardiansRightIcons" style={localStyle.rightIcons}>
       <TouchableOpacity testID="guardiansInfoButton" onPress={onPressWatchInfoGuardian}>

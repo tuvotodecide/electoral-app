@@ -13,10 +13,11 @@ const useSelector = jest.fn(selector => {
       },
     },
     wallet: {
-      payload: {
-        id: 'test-user-id',
-        account: '0xtest',
-        dni: '12345678',
+        payload: {
+          did: 'did:example:123',
+          id: 'test-user-id',
+          account: '0xtest',
+          dni: '12345678',
         vc: {
           credentialSubject: {
             fullName: 'Test User',

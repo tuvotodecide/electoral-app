@@ -32,17 +32,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('react-native', () => {
-  const RN = jest.requireActual('react-native');
-  return {
-    ...RN,
-    DeviceEventEmitter: {
-      addListener: jest.fn(() => ({remove: jest.fn()})),
-      removeAllListeners: jest.fn(),
-    },
-  };
-});
-
 const mockReplace = jest.fn();
 const mockNavigate = jest.fn();
 

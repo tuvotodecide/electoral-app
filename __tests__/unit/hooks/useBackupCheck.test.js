@@ -16,14 +16,17 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 // Mock useFocusEffect to execute immediately
-jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
-  useFocusEffect: jest.fn(callback => {
-    React.useEffect(() => {
-      callback();
-    }, []);
-  }),
-}));
+jest.mock('@react-navigation/native', () => {
+  const React = require('react');
+  return {
+    ...jest.requireActual('@react-navigation/native'),
+    useFocusEffect: jest.fn(callback => {
+      React.useEffect(() => {
+        callback();
+      }, []);
+    }),
+  };
+});
 
 describe('useBackupCheck hook', () => {
   beforeEach(() => {

@@ -48,6 +48,7 @@ module.exports = {
   moduleNameMapper: {
     '^react-native-fs$': '<rootDir>/__tests__/__mocks__/react-native-fs.js',
     '^wira-sdk$': '<rootDir>/__tests__/__mocks__/wira-sdk.js',
+    '^.+\\.svg$': '<rootDir>/__tests__/__mocks__/svgMock.js',
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
   },

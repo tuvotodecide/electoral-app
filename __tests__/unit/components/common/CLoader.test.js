@@ -43,11 +43,13 @@ describe('CLoader component', () => {
     it('no renderiza contenido cuando la pantalla no está enfocada', () => {
       mockUseIsFocused.mockReturnValue(false);
       const CLoader = require('../../../../src/components/common/CLoader').default;
-      const {UNSAFE_root} = render(<CLoader />);
+      const {toJSON} = render(<CLoader />);
+      const tree = toJSON();
 
       // Cuando no está enfocado, retorna solo un View vacío
-      expect(UNSAFE_root).toBeTruthy();
-      expect(UNSAFE_root.children).toBeNull();
+      expect(tree).toBeTruthy();
+      expect(tree.type).toBe('View');
+      expect(tree.children).toBeNull();
     });
   });
 
@@ -63,11 +65,13 @@ describe('CLoader component', () => {
     it('oculta el loader cuando isFocused es false', () => {
       mockUseIsFocused.mockReturnValue(false);
       const CLoader = require('../../../../src/components/common/CLoader').default;
-      const {UNSAFE_root} = render(<CLoader />);
+      const {toJSON} = render(<CLoader />);
+      const tree = toJSON();
 
       // Retorna View vacío
-      expect(UNSAFE_root).toBeTruthy();
-      expect(UNSAFE_root.children).toBeNull();
+      expect(tree).toBeTruthy();
+      expect(tree.type).toBe('View');
+      expect(tree.children).toBeNull();
     });
   });
 

@@ -32,7 +32,46 @@ jest.mock('react-native', () => ({
     const React = require('react');
     const MockImage = props => React.createElement('Image', props, props.children);
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
-    return {MockImage};
+    const Pressable = ({children, ...props}) =>
+      React.createElement('View', props, children);
+    const FlatList = ({data = [], renderItem, keyExtractor, ...props}) => {
+      const children = (data || []).map((item, index) => {
+        const key = keyExtractor ? keyExtractor(item, index) : index;
+        const element = renderItem ? renderItem({item, index}) : null;
+        return React.createElement(React.Fragment, {key}, element);
+      });
+      return React.createElement('View', props, children);
+    };
+    const SectionList = ({
+      sections = [],
+      renderItem,
+      renderSectionHeader,
+      keyExtractor,
+      ...props
+    }) => {
+      const children = [];
+      (sections || []).forEach((section, sectionIndex) => {
+        if (renderSectionHeader) {
+          children.push(
+            React.createElement(
+              React.Fragment,
+              {key: `section-${sectionIndex}`},
+              renderSectionHeader({section}),
+            ),
+          );
+        }
+        const data = section?.data || [];
+        data.forEach((item, index) => {
+          const key = keyExtractor
+            ? keyExtractor(item, index)
+            : `${sectionIndex}-${index}`;
+          const element = renderItem ? renderItem({item, index, section}) : null;
+          children.push(React.createElement(React.Fragment, {key}, element));
+        });
+      });
+      return React.createElement('View', props, children);
+    };
+    return {MockImage, Pressable, FlatList, SectionList};
   })(),
   Platform: {
     OS: 'ios',
@@ -67,8 +106,14 @@ jest.mock('react-native', () => ({
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
     return MockImage;
   })(),
+  ImageBackground: (() => {
+    const React = require('react');
+    const MockImageBackground = props =>
+      React.createElement('ImageBackground', props, props.children);
+    MockImageBackground.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
+    return MockImageBackground;
+  })(),
   ActivityIndicator: 'ActivityIndicator',
-  FlatList: 'FlatList',
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
@@ -261,6 +306,22 @@ jest.mock('react-native-keychain', () => ({
 // Mock Vector Icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('react-native-vector-icons/FontAwesome', () => 'Icon');
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{ fontSize: size, color }, style],
+      onPress,
+      children: name,
+    });
+  };
+  MockIcon.loadFont = jest.fn(() => Promise.resolve());
+  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
+  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
+  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
+  return MockIcon;
+});
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
@@ -276,6 +337,26 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
   MockIcon.getRawGlyphMap = jest.fn(() => ({}));
   return MockIcon;
+});
+
+// Mock react-native-localization to avoid native module usage
+jest.mock('react-native-localization', () => {
+  return class LocalizedStrings {
+    constructor(strings = {}) {
+      this._strings = strings;
+      const initial =
+        strings.en || strings.es || strings['es-ES'] || Object.values(strings)[0] || {};
+      Object.assign(this, initial);
+    }
+    setLanguage(lang) {
+      const next = this._strings[lang] || this._strings.en || {};
+      Object.assign(this, next);
+      return next;
+    }
+    getLanguage() {
+      return 'en';
+    }
+  };
 });
 
 // Mock react-native-quick-crypto
@@ -426,6 +507,25 @@ jest.mock('react-native-reanimated', () => {
   const Reanimated = require('react-native-reanimated/mock');
   Reanimated.default.call = () => {};
   return Reanimated;
+});
+
+// Mock Gesture Handler components used in tests
+jest.mock('react-native-gesture-handler', () => {
+  const { View, TouchableOpacity, FlatList, ScrollView } = require('react-native');
+  return {
+    Swipeable: View,
+    DrawerLayout: View,
+    State: {},
+    TapGestureHandler: View,
+    PanGestureHandler: View,
+    LongPressGestureHandler: View,
+    ForceTouchGestureHandler: View,
+    NativeViewGestureHandler: View,
+    GestureHandlerRootView: View,
+    TouchableOpacity,
+    FlatList,
+    ScrollView,
+  };
 });
 
 // Mock Gesture Handler
