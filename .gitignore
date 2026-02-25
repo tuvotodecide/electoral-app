@@ -54,3 +54,7 @@ credentials.json
 #claude
 .claude
 .claude\settings.local.json
+
+
+test-results.json
+jest-results.json
