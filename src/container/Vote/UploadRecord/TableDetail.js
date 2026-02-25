@@ -46,7 +46,7 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const normalizeMesaNumber = value => {
-  const raw = `${value ?? ''}`.trim();
+  const raw = `${value ?? ''}`.replace(/-/g, '').trim();
   if (!raw) return '';
   const parsed = parseInt(raw, 10);
   return Number.isNaN(parsed) ? raw : `${parsed}`;
@@ -274,7 +274,6 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
-  const [tableCodeHelpVisible, setTableCodeHelpVisible] = useState(false);
   const worksheetStatusSyncRef = useRef({
     lastSyncAt: 0,
   });
@@ -1226,17 +1225,21 @@ export default function TableDetail({ navigation, route }) {
           </CText>
         </View>
 
+
+        <View style={stylesx.sideBySideHelpContainer}>
+            <Image
+              source={require('../../../assets/images/acta.png')}
+              style={stylesx.sideBySideHelpImage}
+              resizeMode="contain"
+            />
+          <CText style={stylesx.sideBySideHelpText}>
+            Busca el número en la parte superior izquierda del acta junto al código de barras.
+          </CText>
+        </View>
         <View style={stylesx.searchInstructionRow}>
           <CText style={stylesx.searchInstructionText}>
             Escribe el código de mesa
           </CText>
-          <TouchableOpacity
-            onPress={() => setTableCodeHelpVisible(true)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={stylesx.helpIconButton}
-          >
-            <Ionicons name="information-circle-outline" size={22} color="#4F9858" />
-          </TouchableOpacity>
         </View>
 
         <View style={stylesx.searchInputRow}>
@@ -1251,7 +1254,7 @@ export default function TableDetail({ navigation, route }) {
             placeholderTextColor="#9CA3AF"
             style={[stylesx.mesaInput, stylesx.mesaInputInline]}
             testID="tableDetailMesaInput"
-            maxLength={4}
+            maxLength={9}
             returnKeyType="search"
             onSubmitEditing={() => {
               if (canSearch) handleMesaSearch();
@@ -1269,7 +1272,7 @@ export default function TableDetail({ navigation, route }) {
             {isSearchingMesa ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <CText style={stylesx.searchButtonText}>Buscar</CText>
+              <CText style={stylesx.searchButtonText}>Confirmar</CText>
             )}
           </TouchableOpacity>
         </View>
@@ -1539,58 +1542,6 @@ export default function TableDetail({ navigation, route }) {
         </View>
       </Modal>
 
-      {/* Modal de ayuda para código de mesa */}
-      <Modal
-        visible={tableCodeHelpVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setTableCodeHelpVisible(false)}
-      >
-        <View style={stylesx.helpModalOverlay}>
-          <View style={stylesx.helpModalContainer}>
-            {/* Icono de información */}
-            <View style={stylesx.helpModalIconContainer}>
-              <Ionicons name="information-circle" size={48} color="#4F9858" />
-            </View>
-
-            {/* Título */}
-            <CText style={stylesx.helpModalTitle}>
-              ¿Dónde está el código de mesa?
-            </CText>
-
-            {/* ScrollView para contenido */}
-            <ScrollView
-              style={stylesx.helpModalScrollView}
-              contentContainerStyle={stylesx.helpModalScrollContent}
-              showsVerticalScrollIndicator={true}
-            >
-              {/* Imagen del acta */}
-              <View style={stylesx.helpModalImageContainer}>
-                <Image
-                  source={require('../../../assets/images/acta.png')}
-                  style={stylesx.helpModalImage}
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* Descripción corta */}
-              <CText style={stylesx.helpModalDescription}>
-                Busca el número en la parte superior izquierda del acta junto al código de barras.
-              </CText>
-            </ScrollView>
-
-            {/* Botón cerrar */}
-            <TouchableOpacity
-              style={stylesx.helpModalButton}
-              onPress={() => setTableCodeHelpVisible(false)}
-            >
-              <CText style={stylesx.helpModalButtonText}>
-                {I18nStrings.understood || 'Entendido'}
-              </CText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </CSafeAreaView>
   );
 }
@@ -1914,7 +1865,7 @@ const stylesx = StyleSheet.create({
   searchContent: {
     flex: 1,
     paddingHorizontal: getResponsiveSize(16, 20, 24),
-    paddingTop: getResponsiveSize(20, 24, 28),
+    paddingTop: getResponsiveSize(4, 10, 14),
   },
   searchContentEmbedded: {
     flex: 0,
@@ -1939,7 +1890,7 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(8, 10, 12),
   },
   searchInstructionText: {
-    fontSize: getResponsiveSize(14, 18, 20),
+    fontSize: getResponsiveSize(16, 20, 22),
     color: '#374151',
     fontWeight: '700',
   },
@@ -2080,85 +2031,25 @@ const stylesx = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: getResponsiveSize(10, 14, 18),
   },
-  // Estilos del modal de ayuda (similar a CustomModal)
-  helpModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+  sideBySideHelpContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveSize(8, 10, 12),
+    padding: getResponsiveSize(12, 16, 18),
+    marginVertical: getResponsiveSize(12, 16, 20),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
   },
-  helpModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingTop: 30,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    maxWidth: screenWidth * 0.9,
-    minWidth: screenWidth * 0.8,
-    maxHeight: screenHeight * 0.85,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+  sideBySideHelpImage: {
+    flex: 0.65,
+    height: getResponsiveSize(140, 180, 200),
+    marginRight: getResponsiveSize(12, 16, 18),
   },
-  helpModalIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#c8dfcf',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  helpModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2F2F2F',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  helpModalScrollView: {
-    width: '100%',
-    maxHeight: 250,
-    marginBottom: 24,
-    flexGrow: 0,
-  },
-  helpModalScrollContent: {
-    flexGrow: 0,
-    alignItems: 'center',
-  },
-  helpModalImageContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  helpModalImage: {
-    width: getResponsiveSize(200, 240, 280),
-    height: getResponsiveSize(140, 170, 200),
-    borderRadius: 8,
-  },
-  helpModalDescription: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  helpModalButton: {
-    backgroundColor: '#4F9858',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpModalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  sideBySideHelpText: {
+    flex: 0.35,
+    fontSize: getResponsiveSize(13, 14, 16),
+    color: '#374151',
+    lineHeight: getResponsiveSize(18, 20, 22),
   },
 });
 

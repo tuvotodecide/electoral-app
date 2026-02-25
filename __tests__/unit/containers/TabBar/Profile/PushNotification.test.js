@@ -8,8 +8,19 @@ import {render, fireEvent} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock dependencies
-jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
+// Mock Ionicons as proper component
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({name, size, color, style, testID}) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{fontSize: size, color}, style],
+      children: name,
+    });
+  };
+  return MockIcon;
+});
+
 jest.mock('../../../../../src/assets/svg', () => ({
   Email_Dark: () => null,
   Email_Light: () => null,
@@ -28,10 +39,16 @@ jest.mock('../../../../../src/assets/svg', () => ({
 const mockGoBack = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
     goBack: mockGoBack,
     canGoBack: () => true,
+    navigate: jest.fn(),
   }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: jest.fn(),
 }));
 
 describe('PushNotification screen', () => {

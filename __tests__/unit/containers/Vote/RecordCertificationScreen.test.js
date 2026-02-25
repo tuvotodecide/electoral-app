@@ -8,12 +8,25 @@ import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock dependencies
-jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
-jest.mock('react-native-vector-icons/MaterialIcons', () => 'MaterialIcons');
+// Mock Ionicons as proper component
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({name, size, color, style, testID}) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{fontSize: size, color}, style],
+      children: name,
+    });
+  };
+  return MockIcon;
+});
+
+// MaterialIcons uses global mock from jest.setup.js
+
 jest.mock('../../../../src/api/account', () => ({
   executeOperation: jest.fn(() => Promise.resolve({})),
 }));
+
 jest.mock('../../../../src/api/oracle', () => ({
   oracleCalls: {
     requestRegister: jest.fn(),
@@ -25,6 +38,7 @@ jest.mock('../../../../src/api/oracle', () => ({
     waitForOracleEvent: jest.fn(),
   },
 }));
+
 jest.mock('axios');
 
 const mockGoBack = jest.fn();
@@ -32,10 +46,12 @@ const mockPopToTop = jest.fn();
 const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
     goBack: mockGoBack,
     popToTop: mockPopToTop,
     navigate: mockNavigate,
+    canGoBack: () => true,
   }),
   useRoute: () => ({
     params: {
@@ -51,6 +67,11 @@ jest.mock('@react-navigation/native', () => ({
       },
     },
   }),
+  useFocusEffect: jest.fn(),
+  createNavigationContainerRef: jest.fn(() => ({
+    isReady: jest.fn(() => true),
+    navigate: jest.fn(),
+  })),
 }));
 
 describe('RecordCertificationScreen', () => {
@@ -138,7 +159,7 @@ describe('RecordCertificationScreen', () => {
   describe('Interacciones', () => {
     it('abre modal de confirmación al presionar certificar', () => {
       const RecordCertificationScreen = require('../../../../src/container/Vote/WitnessRecord/RecordCertificationScreen').default;
-      const {getByTestId, queryByTestId} = renderWithProvider(<RecordCertificationScreen />);
+      const {getByTestId} = renderWithProvider(<RecordCertificationScreen />);
 
       fireEvent.press(getByTestId('certifyButton'));
 
@@ -149,11 +170,9 @@ describe('RecordCertificationScreen', () => {
       const RecordCertificationScreen = require('../../../../src/container/Vote/WitnessRecord/RecordCertificationScreen').default;
       const {getByTestId} = renderWithProvider(<RecordCertificationScreen />);
 
-      // Open modal
       fireEvent.press(getByTestId('certifyButton'));
       expect(getByTestId('confirmModal')).toBeTruthy();
 
-      // Cancel
       fireEvent.press(getByTestId('cancelCertificationButton'));
     });
   });
@@ -163,7 +182,6 @@ describe('RecordCertificationScreen', () => {
       const RecordCertificationScreen = require('../../../../src/container/Vote/WitnessRecord/RecordCertificationScreen').default;
       const {getByTestId} = renderWithProvider(<RecordCertificationScreen />);
 
-      // The user name should be displayed in the certification text
       expect(getByTestId('certificationText')).toBeTruthy();
     });
   });

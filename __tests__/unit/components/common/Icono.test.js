@@ -8,15 +8,7 @@ import {render} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock Icon
-jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
-  const {View} = require('react-native');
-  return ({name, size, color, style, testID}) =>
-    React.createElement(View, {
-      testID: testID || `icon-${name}`,
-      accessibilityLabel: `icon-${name}`,
-    });
-});
+// Uses global mock from jest.setup.js for react-native-vector-icons/MaterialCommunityIcons
 
 describe('Icono component', () => {
   const mockTheme = {
@@ -45,89 +37,89 @@ describe('Icono component', () => {
   describe('Renderizado Básico', () => {
     it('renderiza icono correctamente', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="home" />
       );
 
-      expect(getByLabelText('icon-home')).toBeTruthy();
+      expect(getByTestId('icon-home')).toBeTruthy();
     });
 
     it('renderiza con nombre diferente', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="settings" />
       );
 
-      expect(getByLabelText('icon-settings')).toBeTruthy();
+      expect(getByTestId('icon-settings')).toBeTruthy();
     });
   });
 
   describe('Tamaño', () => {
     it('usa tamaño 24 por defecto', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="check" />
       );
 
-      expect(getByLabelText('icon-check')).toBeTruthy();
+      expect(getByTestId('icon-check')).toBeTruthy();
     });
 
     it('acepta tamaño personalizado', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="star" size={32} />
       );
 
-      expect(getByLabelText('icon-star')).toBeTruthy();
+      expect(getByTestId('icon-star')).toBeTruthy();
     });
 
     it('acepta tamaño pequeño', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="heart" size={16} />
       );
 
-      expect(getByLabelText('icon-heart')).toBeTruthy();
+      expect(getByTestId('icon-heart')).toBeTruthy();
     });
   });
 
   describe('Color', () => {
     it('usa color del tema por defecto', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="bell" />
       );
 
-      expect(getByLabelText('icon-bell')).toBeTruthy();
+      expect(getByTestId('icon-bell')).toBeTruthy();
     });
 
     it('acepta color personalizado', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="alert" color="#FF0000" />
       );
 
-      expect(getByLabelText('icon-alert')).toBeTruthy();
+      expect(getByTestId('icon-alert')).toBeTruthy();
     });
   });
 
   describe('Estilos', () => {
     it('acepta estilos adicionales', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="menu" style={{marginRight: 10}} />
       );
 
-      expect(getByLabelText('icon-menu')).toBeTruthy();
+      expect(getByTestId('icon-menu')).toBeTruthy();
     });
 
     it('usa objeto vacío por defecto para estilos', () => {
       const Icono = require('../../../../src/components/common/Icono').default;
-      const {getByLabelText} = renderWithProvider(
+      const {getByTestId} = renderWithProvider(
         <Icono name="close" />
       );
 
-      expect(getByLabelText('icon-close')).toBeTruthy();
+      expect(getByTestId('icon-close')).toBeTruthy();
     });
   });
 
@@ -146,11 +138,11 @@ describe('Icono component', () => {
     iconNames.forEach(name => {
       it(`renderiza icono ${name}`, () => {
         const Icono = require('../../../../src/components/common/Icono').default;
-        const {getByLabelText} = renderWithProvider(
+        const {getByTestId} = renderWithProvider(
           <Icono name={name} />
         );
 
-        expect(getByLabelText(`icon-${name}`)).toBeTruthy();
+        expect(getByTestId(`icon-${name}`)).toBeTruthy();
       });
     });
   });

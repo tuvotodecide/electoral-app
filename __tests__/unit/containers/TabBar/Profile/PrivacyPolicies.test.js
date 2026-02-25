@@ -8,15 +8,25 @@ import {render} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock dependencies
-jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
+// Mock Ionicons as proper component
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({name, size, color, style, testID}) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{fontSize: size, color}, style],
+      children: name,
+    });
+  };
+  return MockIcon;
+});
+
 jest.mock('react-native-webview', () => ({
   WebView: ({source, testID}) => {
+    const React = require('react');
     const {View, Text} = require('react-native');
-    return (
-      <View testID={testID || 'webview'}>
-        <Text>WebView: {source?.uri}</Text>
-      </View>
+    return React.createElement(View, {testID: testID || 'webview'},
+      React.createElement(Text, null, `WebView: ${source?.uri}`)
     );
   },
 }));
@@ -24,10 +34,16 @@ jest.mock('react-native-webview', () => ({
 const mockGoBack = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
     goBack: mockGoBack,
     canGoBack: () => true,
+    navigate: jest.fn(),
   }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: jest.fn(),
 }));
 
 describe('PrivacyPolicies screen', () => {

@@ -9,13 +9,7 @@ import {Text} from 'react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock SafeAreaView
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({children, style, ...props}) => {
-    const {View} = require('react-native');
-    return React.createElement(View, {style, ...props}, children);
-  },
-}));
+// Uses global mock from jest.setup.js for react-native-safe-area-context
 
 describe('CSafeAreaView component', () => {
   const mockTheme = {

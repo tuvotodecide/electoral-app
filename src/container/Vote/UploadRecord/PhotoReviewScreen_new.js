@@ -1176,6 +1176,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2F2F2F',
     marginBottom: moderateScale(10),
+    textAlign: 'center',
   },
   observationSwitchRow: {
     flexDirection: 'row',

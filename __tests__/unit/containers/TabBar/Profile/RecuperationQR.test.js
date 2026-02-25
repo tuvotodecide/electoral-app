@@ -8,12 +8,21 @@ import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
-// Mock dependencies
-jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
-jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'MaterialCommunityIcons');
-jest.mock('react-native-permissions', () => ({
-  openSettings: jest.fn(),
-}));
+// Mock Ionicons as a proper component
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({name, size, color, style, testID}) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{fontSize: size, color}, style],
+      children: name,
+    });
+  };
+  return MockIcon;
+});
+
+// Uses global mock for MaterialCommunityIcons from jest.setup.js
+
 jest.mock('wira-sdk', () => ({
   __esModule: true,
   default: {
@@ -26,6 +35,7 @@ jest.mock('wira-sdk', () => ({
     })),
   },
 }));
+
 jest.mock('@/src/hooks/useBackupCheck', () => ({
   useBackupCheck: () => ({
     checkBackupAsStored: jest.fn(() => Promise.resolve()),
@@ -37,12 +47,17 @@ const mockReset = jest.fn();
 const mockGoBack = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
   useNavigation: () => ({
     navigate: mockNavigate,
     reset: mockReset,
     goBack: mockGoBack,
     canGoBack: () => true,
   }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: jest.fn(),
 }));
 
 describe('RecuperationQR screen', () => {
@@ -146,7 +161,6 @@ describe('RecuperationQR screen', () => {
       );
 
       fireEvent.press(getByTestId('recuperationFileSaveButton'));
-      // Async operation starts
     });
   });
 });

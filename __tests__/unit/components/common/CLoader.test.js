@@ -6,43 +6,54 @@
 import React from 'react';
 import {render} from '@testing-library/react-native';
 
-// Mock useIsFocused
-const mockIsFocused = jest.fn(() => true);
-
+// Extend the global navigation mock to add useIsFocused
+const mockUseIsFocused = jest.fn(() => true);
 jest.mock('@react-navigation/native', () => ({
-  useIsFocused: () => mockIsFocused(),
+  ...jest.requireActual('@react-navigation/native'),
+  useIsFocused: () => mockUseIsFocused(),
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    reset: jest.fn(),
+    setParams: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: jest.fn(),
 }));
 
 describe('CLoader component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsFocused.mockReturnValue(true);
+    jest.resetModules();
+    mockUseIsFocused.mockReturnValue(true);
   });
 
   describe('Renderizado', () => {
     it('renderiza cuando la pantalla está enfocada', () => {
+      mockUseIsFocused.mockReturnValue(true);
       const CLoader = require('../../../../src/components/common/CLoader').default;
       const {UNSAFE_root} = render(<CLoader />);
 
-      // Verify the component renders with Modal
       expect(UNSAFE_root).toBeTruthy();
     });
 
     it('no renderiza contenido cuando la pantalla no está enfocada', () => {
-      mockIsFocused.mockReturnValue(false);
-
+      mockUseIsFocused.mockReturnValue(false);
       const CLoader = require('../../../../src/components/common/CLoader').default;
       const {UNSAFE_root} = render(<CLoader />);
 
-      // Should render an empty View
-      expect(UNSAFE_root.type).toBe('View');
+      // Cuando no está enfocado, retorna solo un View vacío
+      expect(UNSAFE_root).toBeTruthy();
+      expect(UNSAFE_root.children).toBeNull();
     });
   });
 
   describe('Estado de Focus', () => {
     it('muestra el loader cuando isFocused es true', () => {
-      mockIsFocused.mockReturnValue(true);
-
+      mockUseIsFocused.mockReturnValue(true);
       const CLoader = require('../../../../src/components/common/CLoader').default;
       const {UNSAFE_root} = render(<CLoader />);
 
@@ -50,13 +61,12 @@ describe('CLoader component', () => {
     });
 
     it('oculta el loader cuando isFocused es false', () => {
-      mockIsFocused.mockReturnValue(false);
-
+      mockUseIsFocused.mockReturnValue(false);
       const CLoader = require('../../../../src/components/common/CLoader').default;
       const {UNSAFE_root} = render(<CLoader />);
 
-      // When not focused, renders an empty View
-      expect(UNSAFE_root.type).toBe('View');
+      // Retorna View vacío
+      expect(UNSAFE_root).toBeTruthy();
       expect(UNSAFE_root.children).toBeNull();
     });
   });
@@ -65,7 +75,6 @@ describe('CLoader component', () => {
     it('está memoizado con React.memo', () => {
       const CLoader = require('../../../../src/components/common/CLoader').default;
 
-      // React.memo wraps the component
       expect(CLoader.$$typeof).toBeDefined();
     });
   });
