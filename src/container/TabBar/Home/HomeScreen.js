@@ -598,6 +598,8 @@ export default function HomeScreen({ navigation }) {
         const pos2 = await getCurrentPositionAsync(false);
         return pos2.coords;
       } catch (err2) {
+        // GPS desactivado: marcar como 'denied' para mostrar botón "Activar Ubicación"
+        setLocationStatus('denied');
         if (!silent) {
           showPermissionModal(
             'No se pudo obtener ubicación',
@@ -824,6 +826,7 @@ export default function HomeScreen({ navigation }) {
       if (coords?.latitude && coords?.longitude) {
         await checkAttestationAvailability(coords.latitude, coords.longitude);
       } else {
+        setLocationStatus('denied');
         showPermissionModal(
           'No se pudo obtener ubicación',
           'Activa la ubicación (GPS) e intenta nuevamente.',
@@ -831,6 +834,7 @@ export default function HomeScreen({ navigation }) {
         );
       }
     } catch {
+      setLocationStatus('denied');
       showPermissionModal(
         'No se pudo obtener ubicación',
         'Activa la ubicación (GPS) e intenta nuevamente.',
