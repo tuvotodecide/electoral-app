@@ -18,6 +18,7 @@ import { changeThemeAction } from '../redux/action/themeAction';
 import { colors } from '../themes/colors';
 import { initialStorageValueGet } from '../utils/AsyncStorage';
 import { getDraft } from '../utils/RegisterDraft';
+import { captureError } from '../config/sentry';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -48,12 +49,22 @@ export default function Splash({navigation}) {
             break;
 
           case config.CircuitDownloadStatus.ERROR:
+            captureError(new Error('Circuit Download Error: ' + info), {
+              flow: 'init_app',
+              step: 'download_circuits',
+              critical: false,
+            });
             setDownloadMessage(String.downloadingFailed);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
 
           default:
+            captureError(new Error('Download Status Unknown: ' + status), {
+              flow: 'init_app',
+              step: 'download_circuits',
+              critical: false,
+            });
             subscription?.remove();
             reject(new Error('Download Status Unknown: ' + status));
             break;
