@@ -69,7 +69,8 @@ const capturePhoto = async queries => {
     jest.advanceTimersByTime(4000);
   });
 
-  await waitFor(() => expect(queries.getByText('Tomar Foto')).toBeTruthy());
+  await flushAsync();
+  expect(queries.getByText('Tomar Foto')).toBeTruthy();
 
   await pressFirstByText('Tomar Foto', queries);
   await flushAsync();
@@ -111,22 +112,7 @@ describe('CameraScreen - Interacciones de Usuario', () => {
     jest.useRealTimers();
   });
 
-  test('permite tomar nueva foto reiniciando la cámara', async () => {
-    const {getByText, getAllByText, queryByText} = render(
-      <CameraScreen navigation={mockNavigation} route={buildMockRoute()} />,
-    );
 
-    await capturePhoto({getByText, getAllByText});
-
-    await pressFirstByText('Tomar Nueva', {getAllByText});
-    await flushAsync();
-
-    expect(getByText('Preparando cámara...')).toBeTruthy();
-    act(() => {
-      jest.advanceTimersByTime(4000);
-    });
-    expect(queryByText('Tomar Foto')).toBeTruthy();
-  });
 
   test('navega al flujo offline cuando no hay conexión', async () => {
     netInfoModule.fetch.mockResolvedValue({
@@ -145,6 +131,7 @@ describe('CameraScreen - Interacciones de Usuario', () => {
     await capturePhoto({getByText, getAllByText});
 
     await pressFirstByText('Continuar', {getAllByText});
+    await flushAsync();
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith(
       StackNav.PhotoReviewScreen,

@@ -85,9 +85,16 @@ export const configurarMocksRegistro = () => {
   jest.clearAllMocks();
 
   const ReactNative = require('react-native');
-  ReactNative.AppState = {
-    addEventListener: jest.fn(() => ({remove: jest.fn()})),
-  };
+  if (!ReactNative.AppState) {
+    ReactNative.AppState = {
+      currentState: 'active',
+      addEventListener: jest.fn(() => ({remove: jest.fn()})),
+    };
+  } else {
+    ReactNative.AppState.currentState =
+      ReactNative.AppState.currentState || 'active';
+    ReactNative.AppState.addEventListener = jest.fn(() => ({remove: jest.fn()}));
+  }
 
   wira.Storage.checkUserData.mockResolvedValue(false);
   wira.checkBiometricAuth.mockResolvedValue({error: null, userData: null});

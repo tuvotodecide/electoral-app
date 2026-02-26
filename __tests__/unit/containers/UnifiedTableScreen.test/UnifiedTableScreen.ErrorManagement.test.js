@@ -62,9 +62,6 @@ jest.mock('../../../../src/data/mockMesas', () => ({
   fetchActasByMesa: (...args) => mockFetchActasByMesa(...args),
 }));
 
-// Mock environment variable
-jest.mock('@env', () => require('../../../__mocks__/@env'));
-
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {
   const { configureStore } = require('@reduxjs/toolkit');

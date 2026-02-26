@@ -54,3 +54,7 @@ credentials.json
 #claude
 .claude
 .claude\settings.local.json
+
+
+jest-results.json
+docs\ui\universty_election

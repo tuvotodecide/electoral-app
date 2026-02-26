@@ -986,42 +986,19 @@ export default function HomeScreen({ navigation }) {
           setQueueFailModal({
             visible: true,
             failedItems: modalItems,
-            message: 'No se pudo completar la subida. Reintenta o elimina de cola.',
+            message: 'Reintenta o elimina para subir otra acta.',
           });
         } else {
 
         }
       }
 
-      // if (result?.failed > 0) {
-      //   const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-      //   const first = failedItems[0];
-
-      //   const header =
-      //     `${result.failed} envío(s) no se pudieron procesar.\n` +
-      //     `Puedes reintentar o eliminar el fallido.\n`;
-
-      //   const meta =
-      //     first?.tableCode ? `\nMesa: ${first.tableCode}` : '';
-
-      //   const type =
-      //     first?.type ? `\nTipo: ${first.type}` : '';
-
-      //   const detail =
-      //     first?.error ? `\n\nError:\n${first.error}` : '';
-
-      //   setQueueFailModal({
-      //     visible: true,
-      //     failedItems,
-      //     message: header + meta + type + detail,
-      //   });
-      // }
     } catch (e) {
-      // Si aquí cae, es un fallo "global" (poco común en tu implementación)
+
       setQueueFailModal({
         visible: true,
         failedItems: [],
-        message: 'No se pudo completar la subida. Reintenta nuevamente.',
+        message: ' Reintenta nuevamente.',
       });
     } finally {
       processingRef.current = false;
@@ -1115,28 +1092,9 @@ export default function HomeScreen({ navigation }) {
 
   const handleQueueRetry = async () => {
     setQueueFailModal(m => ({ ...m, visible: false }));
-    // Reintento inmediato (respeta processingRef)
     runOfflineQueueOnce();
   };
 
-  // const handleQueueCancel = async () => {
-  //   try {
-  //     const ids = queueFailModal.failedIds || [];
-  //     // Si no tenemos ids (por error global), opcionalmente no borrar nada
-  //     for (const id of ids) {
-  //       await removeById(id);
-  //     }
-
-  //     // Refrescar estado pending
-  //     const listAfter = await getOfflineQueue();
-  //     const pendingAfter = (listAfter || []).some(i => i.task?.type === 'publishActa');
-  //     setHasPendingActa(pendingAfter);
-  //   } catch (e) {
-  //     // opcional: mostrar otro modal informativo
-  //   } finally {
-  //     setQueueFailModal(m => ({ ...m, visible: false, failedIds: [] }));
-  //   }
-  // };
   const handleQueueCancel = () => {
     setQueueFailModal(m => ({ ...m, visible: false }));
   };
@@ -2387,9 +2345,7 @@ export default function HomeScreen({ navigation }) {
         message={queueFailModal.message}
         buttonText="Reintentar"
         onButtonPress={handleQueueRetry}
-        secondaryButtonText="Cancelar"
-        onSecondaryPress={handleQueueCancel}
-        tertiaryButtonText={firstFailedId ? "Eliminar de cola" : undefined}
+        tertiaryButtonText={firstFailedId ? "Eliminar" : undefined}
         onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
         tertiaryVariant="danger"
       />

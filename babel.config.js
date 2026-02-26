@@ -3,7 +3,9 @@ const path = require('path');
 const envPath = path.resolve(__dirname, '.env');
 
 module.exports = function (api) {
+  const isTest = api.env('test');
   api.cache(true);
+  const dotenvPlugin = ['module:react-native-dotenv', { moduleName: '@env', path: envPath }];
   return {
     presets: [
       [
@@ -17,7 +19,7 @@ module.exports = function (api) {
     plugins: [
       // Replace import.meta with a plain object (works in release/Hermes)
       require('./babel/plugins/transformImportMetaToObject'),
-      ['module:react-native-dotenv', { moduleName: '@env', path: envPath }],
+      ...(isTest ? [] : [dotenvPlugin]),
       ['@babel/plugin-transform-export-namespace-from', { allowNamespaces: true }],
       ['babel-plugin-transform-define', { '__filename': '""', '__dirname': '""' }],
 

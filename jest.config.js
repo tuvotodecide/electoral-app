@@ -23,6 +23,9 @@
 // };
 
 
+const coverageInclude = require('./coverage.include.json');
+const coverageExclude = require('./coverage.exclude.json');
+
 module.exports = {
   preset: 'jest-expo',
 
@@ -49,7 +52,9 @@ module.exports = {
     '^react-native-fs$': '<rootDir>/__tests__/__mocks__/react-native-fs.js',
     '^wira-sdk$': '<rootDir>/__tests__/__mocks__/wira-sdk.js',
     '^.+\\.svg$': '<rootDir>/__tests__/__mocks__/svgMock.js',
+    '^@env$': '<rootDir>/__tests__/__mocks__/@env.js',
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
   },
+  collectCoverageFrom: [...coverageInclude, ...coverageExclude],
 };

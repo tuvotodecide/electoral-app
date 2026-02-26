@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start",
     "test": "node scripts/run-jest.js --coverage=false",
+    "test:coverage:json": "node scripts/run-jest.js --coverage --json --outputFile=jest-results.json",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",

@@ -8,7 +8,7 @@ import { useSearchTableLogic } from '../../hooks/useSearchTableLogic';
 import { createSearchTableStyles } from '../../styles/searchTableStyles';
 import { fetchMesas } from '../../data/mockMesas';
 import { StackNav } from '../../navigation/NavigationKey';
-import String from '../../i18n/String';
+import Strings from '../../i18n/String';
 import { BACKEND_RESULT } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -62,7 +62,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
     type: 'info',
     title: '',
     message: '',
-    buttonText: String.accept,
+    buttonText: Strings.accept,
   });
   const {
     colors,
@@ -112,7 +112,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
     }
   }, [route?.params?.locationId]);
 
-  const showModal = (type, title, message, buttonText = String.accept) => {
+  const showModal = (type, title, message, buttonText = Strings.accept) => {
     setModalConfig({ type, title, message, buttonText });
     setModalVisible(true);
   };
@@ -257,7 +257,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
             textAlign: 'center',
             paddingHorizontal: getResponsiveSize(20, 30, 40),
           }}>
-          {String.loadingTables}
+          {Strings.loadingTables}
         </CText>
       </View>
     );
@@ -270,17 +270,17 @@ const UnifiedTableScreen = ({ navigation, route }) => {
         // Header props
         colors={colors}
         onBack={handleBack}
-        title={locationData?.name || String.searchTable}
+        title={locationData?.name || Strings.searchTable}
         showNotification={true}
         onNotificationPress={handleNotificationPress}
         // Choose table text props
-        chooseTableText={String.chooseTablePlease}
+        chooseTableText={Strings.chooseTablePlease}
         // Search input props
-        searchPlaceholder={String.searchTablePlaceholder}
+        searchPlaceholder={Strings.searchTablePlaceholder}
         searchValue={searchText}
         onSearchChange={setSearchText}
         // Location info props
-        locationText={String.listBasedOnLocation}
+        locationText={Strings.listBasedOnLocation}
         locationIconColor="#0C5460"
         locationData={locationData}
         // Table list props

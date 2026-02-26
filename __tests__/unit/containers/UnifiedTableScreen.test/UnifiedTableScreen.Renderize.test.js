@@ -58,9 +58,6 @@ jest.mock('../../../../src/data/mockMesas', () =>
   require('../../../__mocks__/data/mockMesas')
 );
 
-// Mock environment variable
-jest.mock('@env', () => require('../../../__mocks__/@env'));
-
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {
   const { configureStore } = require('@reduxjs/toolkit');

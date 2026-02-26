@@ -171,7 +171,7 @@ export const TableCard = ({
   const codigo =
     table.tableCode || table.codigo || table.code || table.id || 'N/A';
 
-  const locationId = locationData.locationId;
+  const locationId = locationData?.locationId;
 
   const highlightMatch = (text, query) => {
     if (!query || !text) return text;

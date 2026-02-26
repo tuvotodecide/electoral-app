@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
-import { FirebaseNotificationService } from '../services/FirebaseNotificationService';
+import { FirebaseNotificationService } from '../../services/FirebaseNotificationService';
 import database from '@react-native-firebase/database';
 
 export const FirebaseDebugInfo = () => {

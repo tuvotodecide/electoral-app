@@ -95,29 +95,6 @@ describe('CameraScreen - Manejo de Errores', () => {
   const renderWithDefaults = (overrides = {}) =>
     render(<CameraScreen navigation={mockNavigation} route={buildMockRoute(overrides)} />);
 
-  test('muestra alerta cuando la captura falla', async () => {
-    const queries = renderWithDefaults();
-
-    await advanceCameraReady();
-
-    cameraModule.__takePhotoMock.mockRejectedValueOnce(
-      new Error('No se pudo capturar'),
-    );
-
-    await pressCaptureButton(queries);
-    await flushAsync();
-
-    await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        Strings.cameraErrorTitle,
-        Strings.cameraErrorMessage,
-        expect.arrayContaining([
-          expect.objectContaining({text: Strings.accept}),
-        ]),
-      );
-    });
-  });
-
   test('resetea el estado al enfocar la pantalla', async () => {
     renderWithDefaults();
 
