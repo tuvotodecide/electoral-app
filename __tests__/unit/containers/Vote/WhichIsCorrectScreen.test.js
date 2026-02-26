@@ -9,22 +9,29 @@ import WhichIsCorrectScreen from '../../../../src/container/Vote/WitnessRecord/W
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../setup/test-utils';
 
 // Mocks
-jest.mock('../../../../src/container/Vote/WitnessRecord/actasData', () => ({
+jest.mock('../../../../src/data/mockMesas', () => ({
   fetchActasByMesa: jest.fn(() =>
-    Promise.resolve([
-      {
-        _id: 'acta1',
-        image: 'ipfs://QmTest123',
+    Promise.resolve({
+      success: true,
+      data: {
+        images: [
+          {
+            _id: 'acta1',
+            image: 'ipfs://QmTest123',
+            partyResults: [{party: 'Party A', votes: 100}],
+            voteSummaryResults: {total: 100, valid: 95},
+          },
+          {
+            _id: 'acta2',
+            image: 'https://example.com/acta2.jpg',
+            partyResults: [{party: 'Party B', votes: 50}],
+            voteSummaryResults: {total: 50, valid: 48},
+          },
+        ],
         partyResults: [{party: 'Party A', votes: 100}],
-        voteSummaryResults: {total: 100, valid: 95},
+        voteSummaryResults: [{label: 'Total', value: 100}],
       },
-      {
-        _id: 'acta2',
-        image: 'https://example.com/acta2.jpg',
-        partyResults: [{party: 'Party B', votes: 50}],
-        voteSummaryResults: {total: 50, valid: 48},
-      },
-    ]),
+    }),
   ),
 }));
 
@@ -66,7 +73,7 @@ jest.mock('../../../../src/components/common/CButton', () => {
     );
 });
 
-jest.mock('../../../../src/components/modal/CustomModal', () => {
+jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
   return ({testID, visible, title, message, onConfirm}) =>
@@ -175,7 +182,7 @@ describe('WhichIsCorrectScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByTestId('whichIsCorrect_imageCard_0')).toBeTruthy();
+        expect(getByTestId('whichIsCorrect_phoneImageCard_0')).toBeTruthy();
       });
     });
   });
@@ -191,7 +198,7 @@ describe('WhichIsCorrectScreen', () => {
       );
 
       await waitFor(() => {
-        const imageCard = getByTestId('whichIsCorrect_imageCard_0');
+        const imageCard = getByTestId('whichIsCorrect_phoneImageCard_0');
         fireEvent.press(imageCard);
       });
     });
@@ -241,8 +248,8 @@ describe('WhichIsCorrectScreen', () => {
 
       await waitFor(() => {
         // Debería manejar tanto ipfs:// como https://
-        expect(getByTestId('whichIsCorrect_imageCard_0')).toBeTruthy();
-        expect(getByTestId('whichIsCorrect_imageCard_1')).toBeTruthy();
+        expect(getByTestId('whichIsCorrect_phoneImageCard_0')).toBeTruthy();
+        expect(getByTestId('whichIsCorrect_phoneImageCard_1')).toBeTruthy();
       });
     });
   });
@@ -259,7 +266,7 @@ describe('WhichIsCorrectScreen', () => {
       );
 
       await waitFor(() => {
-        const imageCard = getByTestId('whichIsCorrect_imageCard_0');
+        const imageCard = getByTestId('whichIsCorrect_phoneImageCard_0');
         fireEvent.press(imageCard);
       });
 

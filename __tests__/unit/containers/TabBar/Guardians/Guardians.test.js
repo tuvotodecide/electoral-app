@@ -355,7 +355,7 @@ describe('Guardians Screen', () => {
   describe('Estado de Carga', () => {
     it('muestra loader cuando está cargando', () => {
       const {useMyGuardiansAllListQuery} = require('../../../../../src/data/guardians');
-      useMyGuardiansAllListQuery.mockReturnValueOnce({
+      useMyGuardiansAllListQuery.mockReturnValue({
         data: [],
         error: null,
         isLoading: true,
@@ -373,7 +373,7 @@ describe('Guardians Screen', () => {
   describe('Lista Vacía', () => {
     it('muestra info card cuando no hay guardianes', () => {
       const {useMyGuardiansAllListQuery} = require('../../../../../src/data/guardians');
-      useMyGuardiansAllListQuery.mockReturnValueOnce({
+      useMyGuardiansAllListQuery.mockReturnValue({
         data: [],
         error: null,
         isLoading: false,
@@ -391,7 +391,7 @@ describe('Guardians Screen', () => {
   describe('Alerta de Guardianes Requeridos', () => {
     it('muestra alerta cuando hay menos de 2 guardianes', () => {
       const {useMyGuardiansAllListQuery} = require('../../../../../src/data/guardians');
-      useMyGuardiansAllListQuery.mockReturnValueOnce({
+      useMyGuardiansAllListQuery.mockReturnValue({
         data: [
           {
             id: 'guardian1',

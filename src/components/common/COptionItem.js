@@ -1,5 +1,6 @@
 import { StyleSheet, Switch, TouchableOpacity, View } from "react-native";
 import Icons from 'react-native-vector-icons/Entypo';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from "./CText";
 import { moderateScale } from "../../common/constants";
 import { styles } from "../../themes";

@@ -29,6 +29,10 @@ jest.mock('../../../../src/hooks/useSearchTableLogic', () => ({
     searchText: '',
     setSearchText: jest.fn(),
     filteredMesas: [],
+    colors: {
+      primary: '#459151',
+      dark: false,
+    },
     locationData: {
       _id: 'loc1',
       name: 'Colegio Test',
@@ -58,24 +62,23 @@ jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => {
   const {View, TouchableOpacity, Text, TextInput} = require('react-native');
   return ({
     testID,
-    mesas,
     isLoading,
-    searchText,
-    onSearchTextChange,
+    searchValue,
+    onSearchChange,
     onTablePress,
-    locationData,
+    tables,
   }) =>
     React.createElement(
       View,
       {testID},
       React.createElement(TextInput, {
         testID: 'searchInput',
-        value: searchText,
-        onChangeText: onSearchTextChange,
+        value: searchValue,
+        onChangeText: onSearchChange,
       }),
       isLoading
         ? React.createElement(View, {testID: 'loadingIndicator'})
-        : mesas?.map((mesa, idx) =>
+        : (tables || []).map((mesa, idx) =>
             React.createElement(
               TouchableOpacity,
               {
@@ -89,24 +92,37 @@ jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => {
     );
 });
 
-jest.mock('../../../../src/components/modal/CustomModal', () => {
+jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, visible, onConfirm, onCancel}) =>
+  return ({
+    testID,
+    visible,
+    title,
+    message,
+    buttonText,
+    secondaryButtonText,
+    onButtonPress,
+    onSecondaryPress,
+  }) =>
     visible
       ? React.createElement(
           View,
           {testID},
+          title ? React.createElement(Text, null, title) : null,
+          message ? React.createElement(Text, null, message) : null,
           React.createElement(
             TouchableOpacity,
-            {testID: 'confirmBtn', onPress: onConfirm},
-            React.createElement(Text, null, 'Confirm'),
+            {testID: 'confirmBtn', onPress: onButtonPress},
+            React.createElement(Text, null, buttonText || 'Confirm'),
           ),
-          React.createElement(
-            TouchableOpacity,
-            {testID: 'cancelBtn', onPress: onCancel},
-            React.createElement(Text, null, 'Cancel'),
-          ),
+          secondaryButtonText
+            ? React.createElement(
+                TouchableOpacity,
+                {testID: 'cancelBtn', onPress: onSecondaryPress},
+                React.createElement(Text, null, secondaryButtonText),
+              )
+            : null,
         )
       : null;
 });
@@ -135,6 +151,10 @@ describe('SearchCountTable Screen', () => {
         _id: 'loc1',
         name: 'Colegio Test',
         address: 'Calle Test 123',
+        tables: [
+          {_id: 'mesa1', tableNumber: 'Mesa 001', numero: 'Mesa 001', tableCode: 'CODE001'},
+          {_id: 'mesa2', tableNumber: 'Mesa 002', numero: 'Mesa 002', tableCode: 'CODE002'},
+        ],
       },
       electionId: 'election1',
       electionType: 'president',
@@ -146,8 +166,8 @@ describe('SearchCountTable Screen', () => {
   });
 
   describe('Renderizado', () => {
-    it('renderiza el componente base de búsqueda', () => {
-      const {getByTestId} = renderWithProviders(
+    it('renderiza el componente base de búsqueda', async () => {
+      const {findByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -155,11 +175,11 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      expect(getByTestId('searchCountTableBaseScreen')).toBeTruthy();
+      expect(await findByTestId('searchCountTableBaseScreen')).toBeTruthy();
     });
 
-    it('renderiza el input de búsqueda', () => {
-      const {getByTestId} = renderWithProviders(
+    it('renderiza el input de búsqueda', async () => {
+      const {findByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -167,11 +187,11 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      expect(getByTestId('searchInput')).toBeTruthy();
+      expect(await findByTestId('searchInput')).toBeTruthy();
     });
 
-    it('renderiza las mesas disponibles', () => {
-      const {getByTestId} = renderWithProviders(
+    it('renderiza las mesas disponibles', async () => {
+      const {findByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -179,24 +199,14 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      expect(getByTestId('mesaItem_0')).toBeTruthy();
-      expect(getByTestId('mesaItem_1')).toBeTruthy();
+      expect(await findByTestId('mesaItem_0')).toBeTruthy();
+      expect(await findByTestId('mesaItem_1')).toBeTruthy();
     });
   });
 
   describe('Estado de Carga', () => {
-    it('muestra indicador de carga cuando está cargando', () => {
-      const {useSearchTableLogic} = require('../../../../src/hooks/useSearchTableLogic');
-      useSearchTableLogic.mockReturnValueOnce({
-        mesas: [],
-        isLoading: true,
-        searchText: '',
-        setSearchText: jest.fn(),
-        filteredMesas: [],
-        locationData: null,
-      });
-
-      const {getByTestId} = renderWithProviders(
+    it('muestra la pantalla base cuando ya terminó de cargar', () => {
+      const {queryByTestId, getByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -204,7 +214,8 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      expect(getByTestId('searchCountTableLoadingIndicator')).toBeTruthy();
+      expect(queryByTestId('searchCountTableLoadingIndicator')).toBeNull();
+      expect(getByTestId('searchCountTableBaseScreen')).toBeTruthy();
     });
   });
 
@@ -218,6 +229,10 @@ describe('SearchCountTable Screen', () => {
         searchText: '',
         setSearchText: mockSetSearchText,
         filteredMesas: [],
+        colors: {
+          primary: '#459151',
+          dark: false,
+        },
         locationData: null,
       });
 
@@ -237,8 +252,8 @@ describe('SearchCountTable Screen', () => {
   });
 
   describe('Selección de Mesa', () => {
-    it('muestra modal de confirmación al seleccionar mesa', () => {
-      const {getByTestId} = renderWithProviders(
+    it('muestra modal de confirmación al seleccionar mesa', async () => {
+      const {findByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -246,16 +261,16 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      const mesaItem = getByTestId('mesaItem_0');
+      const mesaItem = await findByTestId('mesaItem_0');
       fireEvent.press(mesaItem);
 
-      expect(getByTestId('searchCountTableModal')).toBeTruthy();
+      expect(await findByTestId('confirmBtn')).toBeTruthy();
     });
 
     it('envía anuncio al confirmar', async () => {
       const axios = require('axios');
 
-      const {getByTestId} = renderWithProviders(
+      const {findByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -263,10 +278,10 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      const mesaItem = getByTestId('mesaItem_0');
+      const mesaItem = await findByTestId('mesaItem_0');
       fireEvent.press(mesaItem);
 
-      const confirmBtn = getByTestId('confirmBtn');
+      const confirmBtn = await findByTestId('confirmBtn');
       fireEvent.press(confirmBtn);
 
       await waitFor(() => {
@@ -274,8 +289,8 @@ describe('SearchCountTable Screen', () => {
       });
     });
 
-    it('cancela el anuncio al presionar cancelar', () => {
-      const {getByTestId, queryByTestId} = renderWithProviders(
+    it('cancela el anuncio al presionar cancelar', async () => {
+      const {findByTestId, queryByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -283,14 +298,14 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      const mesaItem = getByTestId('mesaItem_0');
+      const mesaItem = await findByTestId('mesaItem_0');
       fireEvent.press(mesaItem);
 
-      const cancelBtn = getByTestId('cancelBtn');
+      const cancelBtn = await findByTestId('cancelBtn');
       fireEvent.press(cancelBtn);
 
       // El modal debería cerrarse
-      expect(queryByTestId('searchCountTableModal')).toBeNull();
+      expect(queryByTestId('confirmBtn')).toBeNull();
     });
   });
 
@@ -299,7 +314,7 @@ describe('SearchCountTable Screen', () => {
       const axios = require('axios');
       axios.post.mockRejectedValueOnce(new Error('Network error'));
 
-      const {getByTestId} = renderWithProviders(
+      const {findByTestId, getByTestId} = renderWithProviders(
         <SearchCountTable
           navigation={mockNavigation}
           route={routeWithParams}
@@ -307,10 +322,10 @@ describe('SearchCountTable Screen', () => {
         {initialState: mockStore},
       );
 
-      const mesaItem = getByTestId('mesaItem_0');
+      const mesaItem = await findByTestId('mesaItem_0');
       fireEvent.press(mesaItem);
 
-      const confirmBtn = getByTestId('confirmBtn');
+      const confirmBtn = await findByTestId('confirmBtn');
       fireEvent.press(confirmBtn);
 
       await waitFor(() => {

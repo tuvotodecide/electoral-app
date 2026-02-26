@@ -1,0 +1,15 @@
+[
+  "src/container/**/*.{js,jsx,ts,tsx}",
+  "src/components/**/*.{js,jsx,ts,tsx}",
+  "src/hooks/**/*.{js,jsx,ts,tsx}",
+  "src/utils/**/*.{js,jsx,ts,tsx}",
+  "src/redux/**/*.{js,jsx,ts,tsx}",
+  "src/App.{js,jsx,ts,tsx}",
+  "src/styles/**",
+  "src/navigation/**",
+  "src/services/**",
+  "src/i18n/**",
+
+  "src/**/assets/**"
+
+]

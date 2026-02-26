@@ -128,9 +128,10 @@ const ElectoralLocationsScreen = () => {
         'https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations',
       );
 
-      if (response.data) {
+      if (Array.isArray(response.data)) {
         setLocations(response.data);
       } else {
+        setLocations([]);
         showModal('error', String.error, String.errorFetchingLocations);
       }
     } catch (error) {

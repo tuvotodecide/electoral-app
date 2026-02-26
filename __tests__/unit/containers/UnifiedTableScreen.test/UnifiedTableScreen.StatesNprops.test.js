@@ -58,9 +58,6 @@ jest.mock('../../../../src/data/mockMesas', () =>
   require('../../../__mocks__/data/mockMesas')
 );
 
-// Mock environment variable
-jest.mock('@env', () => require('../../../__mocks__/@env'));
-
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {
   const { configureStore } = require('@reduxjs/toolkit');
@@ -527,7 +524,9 @@ describe('UnifiedTableScreen - Tests de Estados y Props', () => {
         
         await waitFor(() => {
           expect(mockedAxios.get).toHaveBeenCalledWith(
-            expect.stringContaining('/api/v1/geographic/electoral-locations/new-location-456/tables'),
+            expect.stringContaining(
+              '/api/v1/geographic/electoral-tables?electoralLocationId=new-location-456',
+            ),
             { timeout: 15000 }
           );
         });

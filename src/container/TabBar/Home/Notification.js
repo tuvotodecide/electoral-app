@@ -112,7 +112,7 @@ export default function Notification({ navigation }) {
       data,
       tipo,
       mesa: mesaLabel,
-      colegio: data?.locationName || n?.locationName || 'Recinto',
+      colegio: data?.locationName || n?.locationName || '',
       direccion: data?.locationAddress || n?.locationAddress || '',
       distancia: data?.distance ?? null,
       timestamp: new Date(created).getTime(),
@@ -439,11 +439,11 @@ export default function Notification({ navigation }) {
               style={localStyle.subtitle}>
               {item.tipo}
             </Text>
-            <Text
+            {/* <Text
               testID={`notificationCollege_${index}`}
               style={localStyle.detailText}>
               {item.colegio}
-            </Text>
+            </Text> */}
             <Text
               testID={`notificationAddress_${index}`}
               style={localStyle.detailText}>

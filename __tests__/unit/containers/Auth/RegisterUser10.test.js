@@ -22,6 +22,7 @@ describe('RegisterUser10', () => {
   let originalRegisterer;
 
   beforeEach(() => {
+    jest.useRealTimers();
     configurarMocksRegistro();
     originalRegisterer = wira.Registerer;
   });

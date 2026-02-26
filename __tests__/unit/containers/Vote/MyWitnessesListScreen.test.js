@@ -8,22 +8,66 @@ import {fireEvent, waitFor} from '@testing-library/react-native';
 import MyWitnessesListScreen from '../../../../src/container/Vote/MyWitnesses/MyWitnessesListScreen';
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../setup/test-utils';
 
+let mockNavigationRef;
+let mockRouteRef;
+const mockFocusCleanups = [];
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => mockNavigationRef,
+  useRoute: () => mockRouteRef,
+  useFocusEffect: callback => {
+    const React = require('react');
+    React.useEffect(() => {
+      const cleanup = callback();
+      if (typeof cleanup === 'function') {
+        mockFocusCleanups.push(cleanup);
+      }
+    }, []);
+  },
+  NavigationContainer: ({children}) => children,
+}));
+
 // Mocks
 jest.mock('axios', () => ({
-  get: jest.fn(() =>
-    Promise.resolve({
-      data: {
-        data: [
-          {
-            _id: 'attestation1',
-            ballotId: 'ballot1',
-            tableNumber: '001',
-            timestamp: new Date().toISOString(),
+  get: jest.fn(url => {
+    const target = String(url || '');
+    if (target.includes('/attestations/by-user/')) {
+      return Promise.resolve({
+        data: {
+          data: [
+            {
+              _id: 'attestation1',
+              ballotId: 'ballot1',
+              tableNumber: '001',
+              timestamp: new Date().toISOString(),
+              certificateUrl: 'https://example.com/cert.pdf',
+            },
+          ],
+        },
+      });
+    }
+    if (target.includes('/ballots/')) {
+      return Promise.resolve({
+        data: {
+          _id: 'ballot1',
+          tableNumber: '001',
+          tableCode: 'CODE001',
+          image: 'ipfs://QmTest123',
+          createdAt: new Date().toISOString(),
+          votes: {
+            parties: {
+              partyVotes: [{partyId: 'partyA', votes: 100}],
+              validVotes: 95,
+              blankVotes: 3,
+              nullVotes: 2,
+              totalVotes: 100,
+            },
           },
-        ],
-      },
-    }),
-  ),
+        },
+      });
+    }
+    return Promise.resolve({data: {data: []}});
+  }),
 }));
 
 jest.mock('../../../../src/utils/offlineQueueHandler', () => ({
@@ -31,7 +75,7 @@ jest.mock('../../../../src/utils/offlineQueueHandler', () => ({
 }));
 
 jest.mock('../../../../src/utils/offlineQueue', () => ({
-  getOfflineQueue: jest.fn(() => Promise.resolve([])),
+  getAll: jest.fn(() => Promise.resolve([])),
 }));
 
 jest.mock('react-native-paper', () => ({
@@ -55,17 +99,17 @@ jest.mock('../../../../src/components/common/CSafeAreaView', () => {
     React.createElement(View, {testID}, children);
 });
 
-jest.mock('../../../../src/components/common/CStandardHeader', () => {
+jest.mock('../../../../src/components/common/UniversalHeader', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, title, onPressBack}) =>
+  return ({testID = 'universalHeader', title, onBack}) =>
     React.createElement(
       View,
       {testID},
-      React.createElement(Text, null, title),
+      React.createElement(Text, {testID: `${testID}Title`}, title),
       React.createElement(
         TouchableOpacity,
-        {testID: 'backButton', onPress: onPressBack},
+        {testID: `${testID}BackButton`, onPress: onBack},
         React.createElement(Text, null, 'Back'),
       ),
     );
@@ -78,7 +122,7 @@ jest.mock('../../../../src/components/common/CText', () => {
     React.createElement(Text, {testID}, children);
 });
 
-jest.mock('../../../../src/components/modal/CustomModal', () => {
+jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View} = require('react-native');
   return ({testID, visible}) =>
@@ -97,6 +141,7 @@ describe('MyWitnessesListScreen', () => {
       payload: {
         did: 'did:example:123',
         privKey: 'mockPrivKey',
+        dni: '12345678',
         vc: {
           credentialSubject: {
             nationalIdNumber: '12345678',
@@ -113,6 +158,15 @@ describe('MyWitnessesListScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigationRef = navigationWithListener;
+    mockRouteRef = mockRoute;
+  });
+
+  afterEach(() => {
+    while (mockFocusCleanups.length) {
+      const cleanup = mockFocusCleanups.pop();
+      cleanup?.();
+    }
   });
 
   describe('Renderizado', () => {
@@ -194,9 +248,9 @@ describe('MyWitnessesListScreen', () => {
 
   describe('Banner de Acta Pendiente', () => {
     it('muestra banner cuando hay acta pendiente', async () => {
-      const {getOfflineQueue} = require('../../../../src/utils/offlineQueue');
-      getOfflineQueue.mockResolvedValueOnce([
-        {type: 'ballot', status: 'pending'},
+      const {getAll} = require('../../../../src/utils/offlineQueue');
+      getAll.mockResolvedValueOnce([
+        {task: {type: 'publishActa'}},
       ]);
 
       const {getByTestId} = renderWithProviders(
@@ -222,6 +276,7 @@ describe('MyWitnessesListScreen', () => {
         ...navigationWithListener,
         goBack: jest.fn(),
       };
+      mockNavigationRef = localNavigation;
 
       const {getByTestId} = renderWithProviders(
         <MyWitnessesListScreen
@@ -231,7 +286,7 @@ describe('MyWitnessesListScreen', () => {
         {initialState: mockStore},
       );
 
-      const backButton = getByTestId('backButton');
+      const backButton = getByTestId('myWitnessesHeaderBackButton');
       fireEvent.press(backButton);
 
       expect(localNavigation.goBack).toHaveBeenCalled();
@@ -242,6 +297,7 @@ describe('MyWitnessesListScreen', () => {
         ...navigationWithListener,
         navigate: jest.fn(),
       };
+      mockNavigationRef = localNavigation;
 
       const {getByTestId} = renderWithProviders(
         <MyWitnessesListScreen
@@ -251,13 +307,11 @@ describe('MyWitnessesListScreen', () => {
         {initialState: mockStore},
       );
 
-      await waitFor(
-        () => {
-          const witnessRecord = getByTestId('witnessRecord_0');
-          fireEvent.press(witnessRecord);
-        },
-        {timeout: 3000},
-      );
+      await waitFor(() => {
+        expect(getByTestId('phoneWitnessRecord_0')).toBeTruthy();
+      });
+
+      fireEvent.press(getByTestId('phoneWitnessRecord_0'));
 
       expect(localNavigation.navigate).toHaveBeenCalled();
     });
@@ -302,7 +356,7 @@ describe('MyWitnessesListScreen', () => {
 
       await waitFor(
         () => {
-          expect(getByTestId('witnessesErrorModal')).toBeTruthy();
+          expect(getByTestId('offlineWitnessesContainer')).toBeTruthy();
         },
         {timeout: 3000},
       );

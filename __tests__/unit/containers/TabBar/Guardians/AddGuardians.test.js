@@ -10,22 +10,15 @@ import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils'
 
 // Mocks
 jest.mock('../../../../../src/data/guardians', () => ({
-  useKycFindPublicQuery: jest.fn(() => ({
-    mutateAsync: jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        data: {
-          did: 'did:example:guardian123',
-          fullName: 'Guardian Test',
-          accountAddress: '0x123456789',
-          guardianAddress: '0x987654321',
-        },
-      }),
-    ),
-    isLoading: false,
-  })),
   useGuardiansInviteQuery: jest.fn(() => ({
     mutateAsync: jest.fn(() => Promise.resolve({ok: true})),
+    isLoading: false,
+  })),
+}));
+
+jest.mock('../../../../../src/data/kyc', () => ({
+  useKycFindPublicQuery: jest.fn(() => ({
+    mutate: jest.fn(),
     isLoading: false,
   })),
 }));
@@ -201,22 +194,56 @@ describe('AddGuardians Screen', () => {
       expect(getByTestId('addGuardiansSearchButton')).toBeTruthy();
     });
 
-    it('renderiza el input de nombre (deshabilitado)', () => {
+    it('renderiza el input de nombre (deshabilitado) cuando hay candidato', async () => {
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      useKycFindPublicQuery.mockReturnValue({
+        mutate: jest.fn((vars, options) => {
+          options?.onSuccess?.({
+            ok: true,
+            did: 'did:example:guardian123',
+            displayNamePublic: 'Guardian Test',
+          });
+        }),
+        isLoading: false,
+      });
+
       const {getByTestId} = renderWithProviders(
         <AddGuardians navigation={mockNavigation} />,
         {initialState: mockStore},
       );
 
-      expect(getByTestId('addGuardiansNameInput')).toBeTruthy();
+      fireEvent.changeText(getByTestId('addGuardiansCarnetInput'), '12345678');
+      fireEvent.press(getByTestId('addGuardiansSearchButton'));
+
+      await waitFor(() => {
+        expect(getByTestId('addGuardiansNameInput')).toBeTruthy();
+      });
     });
 
-    it('renderiza el input de apodo', () => {
+    it('renderiza el input de apodo cuando hay candidato', async () => {
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      useKycFindPublicQuery.mockReturnValue({
+        mutate: jest.fn((vars, options) => {
+          options?.onSuccess?.({
+            ok: true,
+            did: 'did:example:guardian123',
+            displayNamePublic: 'Guardian Test',
+          });
+        }),
+        isLoading: false,
+      });
+
       const {getByTestId} = renderWithProviders(
         <AddGuardians navigation={mockNavigation} />,
         {initialState: mockStore},
       );
 
-      expect(getByTestId('addGuardiansNicknameInput')).toBeTruthy();
+      fireEvent.changeText(getByTestId('addGuardiansCarnetInput'), '12345678');
+      fireEvent.press(getByTestId('addGuardiansSearchButton'));
+
+      await waitFor(() => {
+        expect(getByTestId('addGuardiansNicknameInput')).toBeTruthy();
+      });
     });
 
     it('renderiza el botón de enviar', () => {
@@ -240,18 +267,16 @@ describe('AddGuardians Screen', () => {
 
   describe('Búsqueda de Guardián', () => {
     it('busca guardián al presionar el botón de búsqueda', async () => {
-      const {useKycFindPublicQuery} = require('../../../../../src/data/guardians');
-      const mockMutateAsync = jest.fn(() =>
-        Promise.resolve({
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      const mockMutate = jest.fn((vars, options) => {
+        options?.onSuccess?.({
           ok: true,
-          data: {
-            did: 'did:example:guardian123',
-            fullName: 'Guardian Test',
-          },
-        }),
-      );
+          did: 'did:example:guardian123',
+          displayNamePublic: 'Guardian Test',
+        });
+      });
       useKycFindPublicQuery.mockReturnValue({
-        mutateAsync: mockMutateAsync,
+        mutate: mockMutate,
         isLoading: false,
       });
 
@@ -260,30 +285,31 @@ describe('AddGuardians Screen', () => {
         {initialState: mockStore},
       );
 
-      const carnetInput = getByTestId('addGuardiansCarnetInput');
-      fireEvent.changeText(carnetInput, '12345678');
+      fireEvent.changeText(getByTestId('addGuardiansCarnetInput'), '12345678');
+      fireEvent.press(getByTestId('addGuardiansSearchButton'));
 
       const searchButton = getByTestId('addGuardiansSearchButton');
       fireEvent.press(searchButton);
 
       await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalledWith('12345678');
+        expect(mockMutate).toHaveBeenCalledWith(
+          {identifier: '12345678'},
+          expect.any(Object),
+        );
       });
     });
 
     it('muestra el nombre del guardián encontrado', async () => {
-      const {useKycFindPublicQuery} = require('../../../../../src/data/guardians');
-      const mockMutateAsync = jest.fn(() =>
-        Promise.resolve({
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      const mockMutate = jest.fn((vars, options) => {
+        options?.onSuccess?.({
           ok: true,
-          data: {
-            did: 'did:example:guardian123',
-            fullName: 'Guardian Test',
-          },
-        }),
-      );
+          did: 'did:example:guardian123',
+          displayNamePublic: 'Guardian Test',
+        });
+      });
       useKycFindPublicQuery.mockReturnValue({
-        mutateAsync: mockMutateAsync,
+        mutate: mockMutate,
         isLoading: false,
       });
 
@@ -305,15 +331,15 @@ describe('AddGuardians Screen', () => {
     });
 
     it('muestra error cuando no se encuentra el guardián', async () => {
-      const {useKycFindPublicQuery} = require('../../../../../src/data/guardians');
-      const mockMutateAsync = jest.fn(() =>
-        Promise.resolve({
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      const mockMutate = jest.fn((vars, options) => {
+        options?.onSuccess?.({
           ok: false,
-          error: 'Usuario no encontrado',
-        }),
-      );
+          message: 'Usuario no encontrado',
+        });
+      });
       useKycFindPublicQuery.mockReturnValue({
-        mutateAsync: mockMutateAsync,
+        mutate: mockMutate,
         isLoading: false,
       });
 
@@ -337,9 +363,20 @@ describe('AddGuardians Screen', () => {
   describe('Envío de Invitación', () => {
     it('envía invitación al presionar el botón de enviar', async () => {
       const {useGuardiansInviteQuery} = require('../../../../../src/data/guardians');
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
       const mockMutateAsync = jest.fn(() => Promise.resolve({ok: true}));
       useGuardiansInviteQuery.mockReturnValue({
         mutateAsync: mockMutateAsync,
+        isLoading: false,
+      });
+      useKycFindPublicQuery.mockReturnValue({
+        mutate: jest.fn((vars, options) => {
+          options?.onSuccess?.({
+            ok: true,
+            did: 'did:example:guardian123',
+            displayNamePublic: 'Guardian Test',
+          });
+        }),
         isLoading: false,
       });
 
@@ -348,15 +385,15 @@ describe('AddGuardians Screen', () => {
         {initialState: mockStore},
       );
 
-      // Primero simular que se encontró un guardián
-      const carnetInput = getByTestId('addGuardiansCarnetInput');
-      fireEvent.changeText(carnetInput, '12345678');
+      fireEvent.changeText(getByTestId('addGuardiansCarnetInput'), '12345678');
+      fireEvent.press(getByTestId('addGuardiansSearchButton'));
 
-      const nicknameInput = getByTestId('addGuardiansNicknameInput');
-      fireEvent.changeText(nicknameInput, 'Mi Guardián');
+      await waitFor(() => {
+        expect(getByTestId('addGuardiansNicknameInput')).toBeTruthy();
+      });
 
-      const sendButton = getByTestId('addGuardiansSendButton');
-      fireEvent.press(sendButton);
+      fireEvent.changeText(getByTestId('addGuardiansNicknameInput'), 'Mi Guardián');
+      fireEvent.press(getByTestId('addGuardiansSendButton'));
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalled();
@@ -365,9 +402,20 @@ describe('AddGuardians Screen', () => {
 
     it('muestra modal de éxito después de enviar invitación', async () => {
       const {useGuardiansInviteQuery} = require('../../../../../src/data/guardians');
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
       const mockMutateAsync = jest.fn(() => Promise.resolve({ok: true}));
       useGuardiansInviteQuery.mockReturnValue({
         mutateAsync: mockMutateAsync,
+        isLoading: false,
+      });
+      useKycFindPublicQuery.mockReturnValue({
+        mutate: jest.fn((vars, options) => {
+          options?.onSuccess?.({
+            ok: true,
+            did: 'did:example:guardian123',
+            displayNamePublic: 'Guardian Test',
+          });
+        }),
         isLoading: false,
       });
 
@@ -376,14 +424,15 @@ describe('AddGuardians Screen', () => {
         {initialState: mockStore},
       );
 
-      const carnetInput = getByTestId('addGuardiansCarnetInput');
-      fireEvent.changeText(carnetInput, '12345678');
+      fireEvent.changeText(getByTestId('addGuardiansCarnetInput'), '12345678');
+      fireEvent.press(getByTestId('addGuardiansSearchButton'));
 
-      const nicknameInput = getByTestId('addGuardiansNicknameInput');
-      fireEvent.changeText(nicknameInput, 'Mi Guardián');
+      await waitFor(() => {
+        expect(getByTestId('addGuardiansNicknameInput')).toBeTruthy();
+      });
 
-      const sendButton = getByTestId('addGuardiansSendButton');
-      fireEvent.press(sendButton);
+      fireEvent.changeText(getByTestId('addGuardiansNicknameInput'), 'Mi Guardián');
+      fireEvent.press(getByTestId('addGuardiansSendButton'));
 
       await waitFor(() => {
         expect(getByTestId('addGuardiansSuccessModal')).toBeTruthy();
@@ -392,11 +441,11 @@ describe('AddGuardians Screen', () => {
   });
 
   describe('Validaciones', () => {
-    it('no busca si el carnet está vacío', () => {
-      const {useKycFindPublicQuery} = require('../../../../../src/data/guardians');
-      const mockMutateAsync = jest.fn();
+    it('busca incluso si el carnet está vacío', () => {
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
+      const mockMutate = jest.fn();
       useKycFindPublicQuery.mockReturnValue({
-        mutateAsync: mockMutateAsync,
+        mutate: mockMutate,
         isLoading: false,
       });
 
@@ -408,7 +457,10 @@ describe('AddGuardians Screen', () => {
       const searchButton = getByTestId('addGuardiansSearchButton');
       fireEvent.press(searchButton);
 
-      expect(mockMutateAsync).not.toHaveBeenCalled();
+      expect(mockMutate).toHaveBeenCalledWith(
+        {identifier: ''},
+        expect.any(Object),
+      );
     });
 
     it('el botón de enviar está deshabilitado sin guardián seleccionado', () => {
@@ -424,9 +476,9 @@ describe('AddGuardians Screen', () => {
 
   describe('Estado de Carga', () => {
     it('muestra indicador de carga durante la búsqueda', () => {
-      const {useKycFindPublicQuery} = require('../../../../../src/data/guardians');
+      const {useKycFindPublicQuery} = require('../../../../../src/data/kyc');
       useKycFindPublicQuery.mockReturnValue({
-        mutateAsync: jest.fn(),
+        mutate: jest.fn(),
         isLoading: true,
       });
 

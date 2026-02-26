@@ -21,6 +21,9 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(() => Promise.resolve()),
   clear: jest.fn(() => Promise.resolve()),
   getAllKeys: jest.fn(() => Promise.resolve([])),
+  multiGet: jest.fn(() => Promise.resolve([])),
+  multiSet: jest.fn(() => Promise.resolve()),
+  multiRemove: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock React Native modules
@@ -32,7 +35,46 @@ jest.mock('react-native', () => ({
     const React = require('react');
     const MockImage = props => React.createElement('Image', props, props.children);
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
-    return {MockImage};
+    const Pressable = ({children, ...props}) =>
+      React.createElement('View', props, children);
+    const FlatList = ({data = [], renderItem, keyExtractor, ...props}) => {
+      const children = (data || []).map((item, index) => {
+        const key = keyExtractor ? keyExtractor(item, index) : index;
+        const element = renderItem ? renderItem({item, index}) : null;
+        return React.createElement(React.Fragment, {key}, element);
+      });
+      return React.createElement('View', props, children);
+    };
+    const SectionList = ({
+      sections = [],
+      renderItem,
+      renderSectionHeader,
+      keyExtractor,
+      ...props
+    }) => {
+      const children = [];
+      (sections || []).forEach((section, sectionIndex) => {
+        if (renderSectionHeader) {
+          children.push(
+            React.createElement(
+              React.Fragment,
+              {key: `section-${sectionIndex}`},
+              renderSectionHeader({section}),
+            ),
+          );
+        }
+        const data = section?.data || [];
+        data.forEach((item, index) => {
+          const key = keyExtractor
+            ? keyExtractor(item, index)
+            : `${sectionIndex}-${index}`;
+          const element = renderItem ? renderItem({item, index, section}) : null;
+          children.push(React.createElement(React.Fragment, {key}, element));
+        });
+      });
+      return React.createElement('View', props, children);
+    };
+    return {MockImage, Pressable, FlatList, SectionList};
   })(),
   Platform: {
     OS: 'ios',
@@ -67,14 +109,46 @@ jest.mock('react-native', () => ({
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
     return MockImage;
   })(),
+  ImageBackground: (() => {
+    const React = require('react');
+    const MockImageBackground = props =>
+      React.createElement('ImageBackground', props, props.children);
+    MockImageBackground.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
+    return MockImageBackground;
+  })(),
   ActivityIndicator: 'ActivityIndicator',
-  FlatList: 'FlatList',
+  Animated: (() => {
+    class AnimatedValue {
+      constructor(value) {
+        this._value = value;
+      }
+      setValue = jest.fn(value => {
+        this._value = value;
+      });
+      stopAnimation = jest.fn();
+      interpolate = jest.fn(() => '0deg');
+    }
+    return {
+      View: 'AnimatedView',
+      Value: AnimatedValue,
+      timing: jest.fn(() => ({
+        start: jest.fn(cb => cb && cb()),
+      })),
+      loop: jest.fn(() => ({
+        start: jest.fn(),
+      })),
+    };
+  })(),
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
   DeviceEventEmitter: {
     addListener: jest.fn(() => ({remove: jest.fn()})),
     removeAllListeners: jest.fn(),
+  },
+  AppState: {
+    currentState: 'active',
+    addEventListener: jest.fn(() => ({remove: jest.fn()})),
   },
   useColorScheme: jest.fn(() => 'light'),
   StatusBar: 'StatusBar',
@@ -88,6 +162,15 @@ jest.mock('react-native', () => ({
   },
   Alert: {
     alert: jest.fn(),
+  },
+  Linking: {
+    openURL: jest.fn(() => Promise.resolve()),
+    canOpenURL: jest.fn(() => Promise.resolve(true)),
+  },
+  NativeModules: {
+    IdentityBridge: {
+      requestBundle: jest.fn(() => Promise.resolve(true)),
+    },
   },
   PermissionsAndroid: {
     request: jest.fn(() => Promise.resolve('granted')),
@@ -211,10 +294,62 @@ jest.mock('@react-navigation/native', () => ({
     params: {},
   }),
   useFocusEffect: jest.fn(),
+  getFocusedRouteNameFromRoute: jest.fn(() => ''),
   NavigationContainer: ({ children }) => children,
   createNavigationContainerRef: () => ({
     current: null,
+    isReady: jest.fn(() => true),
+    navigate: jest.fn(),
   }),
+}));
+
+jest.mock('@react-navigation/stack', () => ({
+  createStackNavigator: () => {
+    const Navigator = ({children}) => children;
+    const Screen = ({children}) => children || null;
+    return {Navigator, Screen};
+  },
+}));
+
+jest.mock('@react-navigation/native-stack', () => ({
+  createNativeStackNavigator: () => {
+    const Navigator = ({children}) => children;
+    const Screen = ({children}) => children || null;
+    return {Navigator, Screen};
+  },
+}));
+
+jest.mock('@react-navigation/bottom-tabs', () => ({
+  createBottomTabNavigator: () => {
+    const React = require('react');
+    const Navigator = ({children, tabBar}) => {
+      if (typeof tabBar === 'function') {
+        const childArray = React.Children.toArray(children);
+        const routes = childArray.map((child, index) => ({
+          key: child.key || `route-${index}`,
+          name: child.props?.name || `route-${index}`,
+        }));
+        const descriptors = {};
+        childArray.forEach((child, index) => {
+          const key = routes[index].key;
+          descriptors[key] = {options: child.props?.options || {}};
+        });
+        const navigation = {
+          emit: jest.fn(() => ({defaultPrevented: false})),
+          navigate: jest.fn(),
+        };
+        const state = {index: 0, routes};
+        return React.createElement(
+          React.Fragment,
+          null,
+          tabBar({state, descriptors, navigation}),
+        );
+      }
+      return children;
+    };
+    const Screen = () => null;
+    return {Navigator, Screen};
+  },
 }));
 
 // Mock Firebase
@@ -233,15 +368,44 @@ jest.mock('@react-native-firebase/auth', () => ({
   }),
 }));
 
-jest.mock('@react-native-firebase/messaging', () => ({
-  default: () => ({
+jest.mock('@react-native-firebase/messaging', () => {
+  const messaging = () => ({
     hasPermission: jest.fn(() => Promise.resolve(true)),
     subscribeToTopic: jest.fn(),
     unsubscribeFromTopic: jest.fn(),
     requestPermission: jest.fn(() => Promise.resolve(true)),
     getToken: jest.fn(() => Promise.resolve('fcm-token')),
-  }),
-}));
+    onMessage: jest.fn(),
+    setBackgroundMessageHandler: jest.fn(),
+  });
+  messaging.AuthorizationStatus = {
+    AUTHORIZED: 1,
+    PROVISIONAL: 2,
+    DENIED: 0,
+  };
+  return messaging;
+});
+
+jest.mock('@react-native-firebase/database', () => {
+  const database = () => ({
+    ref: jest.fn(() => ({
+      once: jest.fn(() => Promise.resolve({val: () => null})),
+      set: jest.fn(() => Promise.resolve()),
+      update: jest.fn(() => Promise.resolve()),
+      on: jest.fn(),
+      off: jest.fn(),
+    })),
+  });
+  database.ServerValue = {TIMESTAMP: 0};
+  return database;
+});
+
+jest.mock('@react-native-firebase/functions', () => {
+  const functions = () => ({
+    httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({data: {}}))),
+  });
+  return functions;
+});
 
 // Mock Biometrics
 jest.mock('react-native-biometrics', () => ({
@@ -256,11 +420,36 @@ jest.mock('react-native-keychain', () => ({
   setInternetCredentials: jest.fn(() => Promise.resolve()),
   getInternetCredentials: jest.fn(() => Promise.resolve({ username: 'test', password: 'test' })),
   resetInternetCredentials: jest.fn(() => Promise.resolve()),
+  setGenericPassword: jest.fn(() => Promise.resolve()),
+  getGenericPassword: jest.fn(() => Promise.resolve(null)),
+  resetGenericPassword: jest.fn(() => Promise.resolve()),
+  ACCESSIBLE: {
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+  },
+  ACCESS_CONTROL: {
+    BIOMETRY_CURRENT_SET: 'BIOMETRY_CURRENT_SET',
+  },
 }));
 
 // Mock Vector Icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('react-native-vector-icons/FontAwesome', () => 'Icon');
+jest.mock('react-native-vector-icons/Ionicons', () => {
+  const React = require('react');
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{ fontSize: size, color }, style],
+      onPress,
+      children: name,
+    });
+  };
+  MockIcon.loadFont = jest.fn(() => Promise.resolve());
+  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
+  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
+  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
+  return MockIcon;
+});
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
@@ -276,6 +465,39 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
   MockIcon.getRawGlyphMap = jest.fn(() => ({}));
   return MockIcon;
+});
+jest.mock('react-native-vector-icons/Entypo', () => {
+  const React = require('react');
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
+    return React.createElement('Text', {
+      testID: testID || `icon-${name}`,
+      style: [{ fontSize: size, color }, style],
+      onPress,
+      children: name,
+    });
+  };
+  MockIcon.loadFont = jest.fn(() => Promise.resolve());
+  return MockIcon;
+});
+
+// Mock react-native-localization to avoid native module usage
+jest.mock('react-native-localization', () => {
+  return class LocalizedStrings {
+    constructor(strings = {}) {
+      this._strings = strings;
+      const initial =
+        strings.en || strings.es || strings['es-ES'] || Object.values(strings)[0] || {};
+      Object.assign(this, initial);
+    }
+    setLanguage(lang) {
+      const next = this._strings[lang] || this._strings.en || {};
+      Object.assign(this, next);
+      return next;
+    }
+    getLanguage() {
+      return 'en';
+    }
+  };
 });
 
 // Mock react-native-quick-crypto
@@ -421,11 +643,73 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(),
 }));
 
+// Mock Geolocation
+jest.mock('@react-native-community/geolocation', () => ({
+  getCurrentPosition: jest.fn(),
+  watchPosition: jest.fn(() => 1),
+  clearWatch: jest.fn(),
+}));
+
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
+  const Reanimated = {
+    __esModule: true,
+    default: {},
+    View: 'ReanimatedView',
+    Text: 'ReanimatedText',
+    Image: 'ReanimatedImage',
+    createAnimatedComponent: Component => Component,
+    useSharedValue: value => ({value}),
+    useAnimatedStyle: fn => (typeof fn === 'function' ? fn() : {}),
+    useAnimatedGestureHandler: handlers => handlers,
+    withTiming: value => value,
+    withSpring: value => value,
+    withDelay: (_delay, value) => value,
+    withRepeat: (value) => value,
+    runOnJS: fn => fn,
+    clamp: (value, lower, upper) => Math.min(Math.max(value, lower), upper),
+    Easing: {
+      inOut: jest.fn(),
+      quad: jest.fn(),
+      linear: jest.fn(),
+    },
+  };
+  Reanimated.default = Reanimated;
   return Reanimated;
+});
+
+jest.mock('react-native-image-pan-zoom', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: ({children, ...props}) =>
+      React.createElement('View', props, children),
+  };
+});
+
+jest.mock('react-native-otp-textinput', () => {
+  const React = require('react');
+  return ({children, ...props}) => React.createElement('View', props, children);
+});
+
+// Mock Gesture Handler components used in tests
+jest.mock('react-native-gesture-handler', () => {
+  const { View, TouchableOpacity, FlatList, ScrollView } = require('react-native');
+  return {
+    Swipeable: View,
+    DrawerLayout: View,
+    State: {},
+    TapGestureHandler: View,
+    PanGestureHandler: View,
+    PinchGestureHandler: View,
+    LongPressGestureHandler: View,
+    ForceTouchGestureHandler: View,
+    NativeViewGestureHandler: View,
+    GestureHandlerRootView: View,
+    TouchableOpacity,
+    FlatList,
+    ScrollView,
+  };
 });
 
 // Mock Gesture Handler
@@ -434,8 +718,17 @@ import 'react-native-gesture-handler/jestSetup';
 // Silence console warnings during tests
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
+const originalSetInterval = global.setInterval;
 
 beforeAll(() => {
+  global.setInterval = (...args) => {
+    const timer = originalSetInterval(...args);
+    if (timer && typeof timer.unref === 'function') {
+      timer.unref();
+    }
+    return timer;
+  };
+
   console.error = (...args) => {
     const message = args
       .map(arg => (typeof arg === 'string' ? arg : arg?.message || ''))
@@ -453,6 +746,18 @@ beforeAll(() => {
     }
 
     if (message.includes('Encountered two children with the same key')) {
+      return;
+    }
+
+    if (message.includes('The current testing environment is not configured to support act')) {
+      return;
+    }
+
+    if (message.includes('Recovery finalization error')) {
+      return;
+    }
+
+    if (message.includes('Network request failed')) {
       return;
     }
 
@@ -479,6 +784,10 @@ beforeAll(() => {
       return;
     }
 
+    if (message.includes('[LoginUser] Error de red detectado')) {
+      return;
+    }
+
     if (message.includes('An error occurred in the <SearchTable> component.')) {
       return;
     }
@@ -489,6 +798,7 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalConsoleError;
   console.warn = originalConsoleWarn;
+  global.setInterval = originalSetInterval;
 });
 
 // Global test timeout

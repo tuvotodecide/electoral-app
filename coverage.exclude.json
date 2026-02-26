@@ -1,0 +1,71 @@
+[
+  "!src/**/*.test.{js,jsx,ts,tsx}",
+  "!src/**/__tests__/**",
+  "!**/__mocks__/**",
+  "!src/data/**",
+  "!src/config/**",
+  "!src/themes/**",
+    "!src/assets/**",
+  "!src/components/modal/MarketStatics.js",
+  "!src/components/modal/NotificationSort.js",
+  "!src/components/modal/ReferralCodeShare.js",
+  "!src/components/modal/SelectCountryModal.js",
+  "!src/components/modal/CPagination.js",
+  "!src/components/QR/QRDetails.js",
+  "!src/components/common/CBigAlert.js",
+  "!src/components/common/CCardRed.js",
+  "!src/components/common/CLoaderOverlay.js",
+  "!src/components/common/COptionItem.js",
+  "!src/components/common/CPagination.js",
+  "!src/components/common/CTransferRowCard.js",
+  "!src/components/common/CStandardHeader.js",
+  "!src/components/common/FirebaseDebugInfo.js",
+  "!src/components/common/InstructionsContainer.js",
+  "!src/components/common/NavigationDebugOverlay.js",
+  "!src/components/common/SearchTableComponents.js",
+  "!src/components/common/ZoomablePhoto.js",
+  "!src/components/home/CollectionItemComponents.js",
+  "!src/components/home/CommonTextInput.js",
+  "!src/components/home/FaqComponents.js",
+  "!src/components/home/LivePriceComponents.js",
+  "!src/components/home/MyWalletCommonComponent.js",
+  "!src/components/home/SelectBankAccountWallet.js",
+  "!src/components/home/RegisterAlertCard.js",
+  "!src/components/home/SelectBankAccountWallet.js",
+  "!src/components/home/SlideComponent.js",
+  "!src/components/home/WalletBottomSheet.js",
+  "!src/components/home/WalletPreview.js",
+  "!src/components/modal/CollectionFilter.js",
+  "!src/components/modal/DownloadPortfolioPreview.js",
+  "!src/components/modal/EditProfilePictureModal.js",
+  "!src/components/modal/TakePictureModal.js",
+  "!src/components/modal/CollectionFilter.js",
+  "!src/container/TabBar/Profile/RecuperationQR.js",
+  "!src/container/TabBar/SignIn/HandleModal.js",
+  "!src/container/Vote/WitnessRecord/ActaDetailScreen.js",
+  "!src/container/TabBar/Profile/Privacy.js",
+  "!src/container/TabBar/Profile/Policy.js",
+  "!src/container/Vote/UnifiedTableScreenUser.js",
+  "!src/container/Vote/UploadRecord/CameraPermissionTest.js",
+  "!src/container/Vote/UploadRecord/SearchTableNew.js",
+  "!src/services/FirebaseNotificationService.js",
+  "!src/container/Vote/WitnessRecord/WhichIsCorrectScreen_new.js",
+  "!src/redux/action/themeAction.js",
+  "!src/container/Auth/SignUpWithMobileNumber.js",
+  "!src/container/Auth/SignUp.js",
+  "!src/container/TabBar/Profile/FAQScreen.js",
+  "!src/container/TabBar/Profile/HelpCenter.js",
+  "!src/container/TabBar/Recovery/RecoveryQR.js",
+  "!src/utils/qrBackup.js",
+
+  
+
+
+
+
+
+
+ 
+  "!src/**/*_backup.{js,jsx,ts,tsx}"
+
+]
