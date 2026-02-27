@@ -61,6 +61,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
   const styles = createSearchTableStyles();
   const dni = route?.params?.dni;
   const electionId = route?.params?.electionId || null;
+  const electionType = route?.params?.electionType || null;
   useEffect(() => {
     if (route?.params) {
       setIsLoading(true);
@@ -291,6 +292,7 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         // Header props
         colors={colors}
         electionId = {electionId}
+        electionType={electionType}
         onBack={handleBack}
         title={locationData?.name || Strings.searchTable}
         showNotification={true}

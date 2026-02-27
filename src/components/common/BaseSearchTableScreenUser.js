@@ -200,6 +200,7 @@ const BaseSearchTableScreenUser = ({
   // Header props
   colors,
   electionId,
+  electionType,
   onBack,
   title,
   showNotification = true,
@@ -411,6 +412,13 @@ const BaseSearchTableScreenUser = ({
       }
 
       if (records.length > 0) {
+        const resolvedElectionId = String(
+          effectiveElectionId ||
+            records[0]?.electionId ||
+            records[0]?.election_id ||
+            '',
+        ).trim();
+
         const actaImages = records.map(record => {
           const imageCid = record.image?.replace('ipfs://', '') || '';
           const imageUrl = `https://ipfs.io/ipfs/${imageCid}`;
@@ -462,6 +470,8 @@ const BaseSearchTableScreenUser = ({
           mesaInfo: records[0],
           totalRecords: records.length,
           isFromAPI: true,
+          electionId: resolvedElectionId || undefined,
+          electionType,
         });
       } else {
         // No hay registros, ir a TableDetail
@@ -471,6 +481,8 @@ const BaseSearchTableScreenUser = ({
           mesa: enrichedMesa,
           mesaData: enrichedMesa,
           isFromUnifiedFlow: true,
+          electionId: effectiveElectionId || undefined,
+          electionType,
         });
       }
     } catch (error) {
@@ -482,6 +494,8 @@ const BaseSearchTableScreenUser = ({
           mesa: enrichedMesa,
           mesaData: enrichedMesa,
           isFromUnifiedFlow: true,
+          electionId: effectiveElectionId || undefined,
+          electionType,
         });
       } else if (
         error.response &&
@@ -498,6 +512,8 @@ const BaseSearchTableScreenUser = ({
             mesa: enrichedMesa,
             mesaData: enrichedMesa,
             isFromUnifiedFlow: true,
+            electionId: effectiveElectionId || undefined,
+            electionType,
           });
         } else {
           // Other API error

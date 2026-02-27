@@ -434,9 +434,9 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
         electionType,
       };
       try {
-        navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview, );
+        navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);
       } catch {
-        navigation.navigate('PhotoReviewScreen', payloadForPhotoReview, );
+        navigation.navigate('PhotoReviewScreen', payloadForPhotoReview);
       }
     },
     [
@@ -447,6 +447,8 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
       navigation,
       selectedImageId,
       showModal,
+      electionId,
+      electionType,
     ],
   );
 
@@ -467,13 +469,15 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
       totalRecords: actaImages.length,
       locationData,
       originalTable,
+      electionId,
+      electionType,
     };
 
     if (isFromUnifiedFlow && !fromTableDetail && !isFromAPI) {
       try {
-        navigation.navigate(StackNav.TableDetail, basePayload, electionId, electionType);
+        navigation.navigate(StackNav.TableDetail, basePayload);
       } catch {
-        navigation.navigate('TableDetail', basePayload, electionId, electionType);
+        navigation.navigate('TableDetail', basePayload);
       }
       return;
     }
@@ -485,9 +489,9 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
     };
 
     try {
-      navigation.navigate(StackNav.CameraScreen, cameraPayload, electionId, electionType);
+      navigation.navigate(StackNav.CameraScreen, cameraPayload);
     } catch {
-      navigation.navigate('CameraScreen', cameraPayload, electionId, electionType);
+      navigation.navigate('CameraScreen', cameraPayload);
     }
   }, [
     actaImages,
@@ -498,6 +502,8 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
     mesaInfo,
     navigation,
     originalTable,
+    electionId,
+    electionType,
   ]);
 
   const handleDatosNoCorrectos = useCallback(() => {
