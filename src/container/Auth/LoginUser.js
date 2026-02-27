@@ -5,6 +5,7 @@ import {
   Image,
   Platform,
   StyleSheet,
+  
   View,
 } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
