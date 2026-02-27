@@ -27,10 +27,11 @@ export function getReadAccountContract(chain, address) {
 
 export async function getAccount(privateKey, address, chain) {
   const owner = privateKeyToAccount(privateKey);
+  const {chain: chainConfig, bundler} = availableNetworks[chain];
 
   const publicClient = createPublicClient({
-    chain: availableNetworks[chain].chain,
-    transport: http(),
+    chain: chainConfig,
+    transport: http(bundler),
   });
 
   const account = await toSimpleSmartAccount({

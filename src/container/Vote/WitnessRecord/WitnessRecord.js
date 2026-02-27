@@ -45,6 +45,8 @@ const WitnessRecordScreen = ({navigation, route}) => {
   } = useSearchTableLogic(StackNav.WhichIsCorrectScreen);
 
   const styles = createSearchTableStyles();
+  const electionId = route?.params?.electionId || null;
+  const electionType = route?.params?.electionType || null;
 
   // Load tables when component mounts
 
@@ -167,6 +169,8 @@ const WitnessRecordScreen = ({navigation, route}) => {
         locationData: locationData,
         photoUri:
           'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+        electionId,
+        electionType,
       });
  
     } catch (error) {
@@ -211,6 +215,8 @@ const WitnessRecordScreen = ({navigation, route}) => {
         testID="witnessRecordBaseScreen"
         // Header props
         colors={colors}
+        electionId={electionId}
+        electionType={electionType}
         onBack={handleBack}
         title={String.searchTable}
         showNotification={true}

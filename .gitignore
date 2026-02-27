@@ -56,5 +56,6 @@ credentials.json
 .claude\settings.local.json
 
 
+test-results.json
 jest-results.json
 docs\ui\universty_election

@@ -39,12 +39,12 @@ function attest(chain, tableId, recordId, newJsonUri = "") {
 }
 
 async function isRegistered(chainId, accountAddress, attemps = 3) {
-  const {chain, oracle, userRole, juryRole} = availableNetworks[chainId];
+  const {chain, oracle, userRole, juryRole, bundler} = availableNetworks[chainId];
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
   const publicClient = createPublicClient({
     chain,
-    transport: http(),
+    transport: http(bundler),
   });
 
   const oracleContract = getContract({
@@ -79,11 +79,11 @@ async function isRegistered(chainId, accountAddress, attemps = 3) {
 }
 
 async function isUserJury(chainId, address) {
-  const {chain, oracle, juryRole} = availableNetworks[chainId];
+  const {chain, oracle, juryRole, bundler} = availableNetworks[chainId];
 
   const publicClient = createPublicClient({
     chain: chain,
-    transport: http(),
+    transport: http(bundler),
   });
 
   const oracleContract = getContract({
@@ -100,11 +100,12 @@ async function isUserJury(chainId, address) {
 }
 
 async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));   
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
+  const {chain: chainConfig, bundler} = availableNetworks[chain];
 
   const publicClient = createPublicClient({
-    chain: availableNetworks[chain].chain,
-    transport: http(),
+    chain: chainConfig,
+    transport: http(bundler),
   });
 
   const normalizeBlockNumber = value => {

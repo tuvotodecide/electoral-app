@@ -381,8 +381,14 @@ const BaseSearchTableScreen = ({
       setIsVerifying(true);
 
       // Check if mesa has existing attestations
+      const effectiveElectionId = String(electionId || '').trim();
+      const electionQuery = effectiveElectionId
+        ? `?electionId=${encodeURIComponent(effectiveElectionId)}`
+        : '';
       const response = await axios.get(
-        `${BACKEND_RESULT}/api/v1/ballots/by-table/${tableCode}?electionId=${electionId}`,
+        `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+          tableCode,
+        )}${electionQuery}`,
         { timeout: 15000 }, // 10 segundos timeout
       );
 
