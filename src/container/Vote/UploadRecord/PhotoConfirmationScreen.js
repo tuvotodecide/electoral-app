@@ -123,6 +123,7 @@ const PhotoConfirmationScreen = ({ route }) => {
     partyResults,
     voteSummaryResults,
     aiAnalysis,
+    existingRecord,
     hasObservation = false,
     observationText = '',
   } = route.params || {};
@@ -598,7 +599,19 @@ const PhotoConfirmationScreen = ({ route }) => {
           createdAt: Date.now(),
           electionId: eid,
           electionType: electionType || undefined,
-
+          mode: flowMode,
+          existingRecord: existingRecord || null,
+          recordId:
+            existingRecord?.recordId ||
+            existingRecord?.rawData?.recordId ||
+            existingRecord?.raw?.recordId ||
+            undefined,
+          ballotId:
+            existingRecord?._id ||
+            existingRecord?.ballotId ||
+            existingRecord?.rawData?._id ||
+            existingRecord?.raw?._id ||
+            undefined,
         },
       });
       setFinalStepMessage('Acta guardada. Se subirá en segundo plano.');

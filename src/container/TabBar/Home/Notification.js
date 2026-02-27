@@ -77,9 +77,7 @@ export default function Notification({ navigation }) {
     const notificationType = String(data?.type || '')
       .trim()
       .toLowerCase();
-    const preferBackendText =
-      notificationType === 'acta_published' ||
-      notificationType === 'participation_certificate';
+    const preferBackendText = notificationType === 'acta_published';
 
     let mesaLabel = '';
     if (preferBackendText) {

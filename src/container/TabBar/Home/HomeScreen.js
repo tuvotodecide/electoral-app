@@ -151,6 +151,22 @@ const shouldShowQueueFailModal = failedItem => {
 
   return failedItem?.removedFromQueue === true;
 };
+
+const deriveQueueFailMessage = failedItems => {
+  const list = Array.isArray(failedItems) ? failedItems : [];
+  const joinedErrors = list
+    .map(item => String(item?.error || '').toLowerCase())
+    .join(' | ');
+  const alreadyAttested =
+    joinedErrors.includes('already attested') ||
+    joinedErrors.includes('616c7265616479206174746573746564') ||
+    joinedErrors.includes('acta ya atestiguada');
+
+  if (alreadyAttested) {
+    return 'Acta ya atestiguada.';
+  }
+  return 'Reintenta o elimina para subir otra acta.';
+};
 const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 
@@ -990,7 +1006,7 @@ export default function HomeScreen({ navigation }) {
           setQueueFailModal({
             visible: true,
             failedItems: modalItems,
-            message: 'Reintenta o elimina para subir otra acta.',
+            message: deriveQueueFailMessage(modalItems),
           });
         } else {
 

@@ -174,6 +174,71 @@ const isRetriableNetworkError = error => {
   );
 };
 
+const ALREADY_ATTESTED_HEX = '616c7265616479206174746573746564';
+const isAlreadyAttestedOracleError = error => {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes(ALREADY_ATTESTED_HEX) ||
+    message.includes('already attested')
+  );
+};
+
+const buildAlreadyAttestedError = () => {
+  const error = new Error('Acta ya atestiguada.');
+  error.removeFromQueue = true;
+  error.errorType = 'BUSINESS_TERMINAL';
+  return error;
+};
+
+const parseRecordIdToBigInt = value => {
+  try {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    return raw.startsWith('0x') ? BigInt(raw) : BigInt(raw);
+  } catch {
+    return null;
+  }
+};
+
+const fetchBallotByTableAndRecordId = async (
+  tableCode,
+  electionId = null,
+  recordId = null,
+) => {
+  try {
+    const normalizedTableCode = String(tableCode || '').trim();
+    if (!normalizedTableCode) return null;
+    const electionQuery = electionId
+      ? `?electionId=${encodeURIComponent(String(electionId))}`
+      : '';
+    const url = `${BACKEND_RESULT}/api/v1/ballots/by-table/${encodeURIComponent(
+      normalizedTableCode,
+    )}${electionQuery}`;
+    const { data } = await axios.get(url, { timeout: 15000 });
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.registros)
+      ? data.registros
+      : [];
+    if (!list.length) return null;
+
+    const normalizedRecordId = String(recordId || '').trim();
+    if (normalizedRecordId) {
+      const byRecord = list.find(
+        ballot => String(ballot?.recordId || '').trim() === normalizedRecordId,
+      );
+      if (byRecord) return byRecord;
+    }
+
+    return (
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
 const enqueueSyncActaBackendTask = async payload => {
   const ipfsUri = String(payload?.ipfsUri || '').trim();
   const recordId = String(payload?.recordId || '').trim();
@@ -503,6 +568,8 @@ export const publishActaHandler = async (item, userData) => {
       additionalData,
       tableData,
     } = taskPayload;
+    const flowMode = String(taskPayload?.mode || '').trim().toLowerCase();
+    const isAttestMode = flowMode === 'attest';
 
     // Make zk-auth to get API key for backend for upload atestation
     const apiKey = await authenticateWithBackend(
@@ -639,6 +706,173 @@ export const publishActaHandler = async (item, userData) => {
     const tableCodeForOracle = electionId
       ? `${tableCodeStrict}-${electionId}`
       : tableCodeStrict;
+
+    if (isAttestMode) {
+      const existingRecord = taskPayload?.existingRecord || {};
+      const recordIdBigInt = parseRecordIdToBigInt(
+        taskPayload?.recordId ??
+          existingRecord?.recordId ??
+          existingRecord?.rawData?.recordId ??
+          existingRecord?.raw?.recordId,
+      );
+      if (dniValue && tableCodeStrict) {
+        const alreadyMine = await hasUserAttestedTable(
+          dniValue,
+          tableCodeStrict,
+          electionId,
+        );
+        if (alreadyMine) {
+          throw buildAlreadyAttestedError();
+        }
+      }
+
+      if (!recordIdBigInt) {
+        const missingRecordError = new Error(
+          'No se encontró el recordId del acta para atestiguar.',
+        );
+        missingRecordError.removeFromQueue = true;
+        missingRecordError.errorType = 'BUSINESS_TERMINAL';
+        throw missingRecordError;
+      }
+
+      const privateKey = userData?.privKey;
+      let isRegistered = await oracleReads.isRegistered(
+        CHAIN,
+        userData.account,
+        1,
+      );
+      if (!isRegistered) {
+        await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.requestRegister(CHAIN, ''),
+        );
+        isRegistered = await oracleReads.isRegistered(
+          CHAIN,
+          userData.account,
+          20,
+        );
+        if (!isRegistered) {
+          throw Error(
+            'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
+          );
+        }
+      }
+
+      let response;
+      try {
+        response = await executeOperation(
+          privateKey,
+          userData.account,
+          CHAIN,
+          oracleCalls.attest(CHAIN, tableCodeForOracle, recordIdBigInt, ''),
+          oracleReads.waitForOracleEvent,
+          'Attested',
+        );
+      } catch (error) {
+        if (isAlreadyAttestedOracleError(error)) {
+          throw buildAlreadyAttestedError();
+        }
+        throw error;
+      }
+
+      const ballotIdFromPayload = String(
+        taskPayload?.ballotId ??
+          existingRecord?._id ??
+          existingRecord?.ballotId ??
+          existingRecord?.rawData?._id ??
+          existingRecord?.raw?._id ??
+          '',
+      ).trim();
+      let backendBallot = ballotIdFromPayload
+        ? {_id: ballotIdFromPayload}
+        : await fetchBallotByTableAndRecordId(
+            tableCodeStrict,
+            electionId,
+            recordIdBigInt.toString(),
+          );
+
+      try {
+        const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+        const queryEID = electionId
+          ? `?electionId=${encodeURIComponent(electionId)}`
+          : '';
+        if (backendBallot?._id) {
+          await axios.post(
+            `${BACKEND_RESULT}/api/v1/attestations${queryEID}`,
+            {
+              attestations: [
+                {
+                  ballotId: backendBallot._id,
+                  support: true,
+                  isJury,
+                  dni: String(dniValue),
+                },
+              ],
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+              },
+              timeout: 30000,
+            },
+          );
+        }
+      } catch (err) {
+        captureError(err, {
+          flow: 'offline_queue',
+          step: 'backend_attestation_existing_record',
+          critical: false,
+          tableCode: tableCodeStrict,
+        });
+      }
+
+      if (certificateImageUri) {
+        try {
+          if (!backendBallot?.ipfsUri && !backendBallot?.jsonUrl) {
+            backendBallot = await fetchBallotByTableAndRecordId(
+              tableCodeStrict,
+              electionId,
+              recordIdBigInt.toString(),
+            );
+          }
+          certificateData = await uploadCertificateAndNotifyBackend(
+            certificateImageUri,
+            normalizedAdditional,
+            userData,
+            apiKey,
+            {
+              ipfsUri: extractJsonUrlFromBallot(backendBallot),
+              actaImageUrl: backendBallot?.image || null,
+            },
+          );
+        } catch (err) {
+          captureError(err, {
+            flow: 'offline_queue',
+            step: 'certificate_upload_existing_attestation',
+            critical: false,
+            tableCode: tableCodeStrict,
+          });
+        }
+      }
+
+      const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
+      const nftId = response.returnData.recordId.toString();
+      return {
+        success: true,
+        attestMode: true,
+        nftData: {
+          txHash: response.receipt.transactionHash,
+          nftId,
+          txUrl: explorer + 'tx/' + response.receipt.transactionHash,
+          nftUrl: nftExplorer + '/' + attestationNft + '/' + nftId,
+        },
+        tableData,
+        certificateData,
+      };
+    }
     // try {
     //   const worksheetReference = await getWorksheetReferenceForActa({
     //     dniValue,
@@ -1494,6 +1728,9 @@ export const publishActaHandler = async (item, userData) => {
 
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
+    if (isAlreadyAttestedOracleError(fatalErr)) {
+      throw buildAlreadyAttestedError();
+    }
     captureError(fatalErr, {
       flow: 'offline_queue',
       step: 'publish_acta_fatal',

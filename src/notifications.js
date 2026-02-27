@@ -161,7 +161,7 @@ const buildNotificationTextFallback = notification => {
     notification?.title ||
     data?.title ||
     (notificationType === 'participation_certificate'
-      ? 'Acta subida exitosamente'
+      ? 'Atestiguamiento exitoso'
       : notificationType === 'acta_published'
       ? 'Acta subida exitosamente'
       : notificationType === 'worksheet_uploaded'
@@ -173,8 +173,8 @@ const buildNotificationTextFallback = notification => {
     data?.body ||
     (notificationType === 'participation_certificate'
       ? tableLabel
-        ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
-        : 'Tu acta fue publicada correctamente.'
+        ? `Tu atestiguamiento de la mesa ${tableLabel} se registró correctamente.`
+        : 'Tu atestiguamiento se registró correctamente.'
       : notificationType === 'acta_published'
       ? tableLabel
         ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
