@@ -325,7 +325,7 @@ export default function GuardiansAdmin() {
         <FlatList
           testID="guardiansAdminRecoveryList"
           data={recoveries}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.requestId}
           renderItem={renderRevoceryOption}
           contentContainerStyle={styles.mt20}
           scrollEnabled={false} 
