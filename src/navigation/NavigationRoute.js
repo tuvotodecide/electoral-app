@@ -56,6 +56,9 @@ import MyWitnessesDetailScreen from '../container/Vote/MyWitnesses/MyWitnessesDe
 import UnifiedParticipationScreen from '../container/Vote/common/UnifiedParticipationScreen';
 import OracleParticipation from '../container/TabBar/Profile/OracleParticipation';
 
+// University Election Feature
+import { CandidateScreen as UniversityElectionCandidateScreen } from '../features/universityElection';
+
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
 import AuthNavigation from './type/AuthNavigation';
@@ -136,6 +139,9 @@ export const StackRoute = {
   // Nuevas pantallas
   UnifiedParticipationScreen,
   OracleParticipation,
+
+  // University Election Feature
+  UniversityElectionCandidateScreen,
 
   // Profile y configuración
   PersonalDetails,

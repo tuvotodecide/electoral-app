@@ -44,6 +44,9 @@ export const StackNav = {
   UnifiedParticipationScreen: 'UnifiedParticipationScreen',
   OracleParticipation: 'OracleParticipation',
 
+  // University Election Feature
+  UniversityElectionCandidateScreen: 'UniversityElectionCandidateScreen',
+
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
   RecuperationQR: 'RecuperationQR',

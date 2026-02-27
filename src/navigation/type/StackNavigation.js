@@ -200,6 +200,13 @@ export default function StackNavigation() {
         component={StackRoute.OracleParticipation}
         options={{headerShown: false}}
       />
+
+      {/* University Election Feature */}
+      <Stack.Screen
+        name={StackNav.UniversityElectionCandidateScreen}
+        component={StackRoute.UniversityElectionCandidateScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }
