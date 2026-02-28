@@ -2078,7 +2078,7 @@ export default function HomeScreen({ navigation }) {
               hasVoted={univElectionState.hasVoted}
               voteSynced={univElectionState.voteSynced}
               onVotePress={() => navigation.navigate(StackNav.UniversityElectionCandidateScreen)}
-              onDetailsPress={() => navigation.navigate(StackNav.UnifiedParticipationScreen)}
+              onDetailsPress={() => navigation.navigate(StackNav.UniversityElectionReceiptScreen, { participationId: 'participation_1' })}
             />
           )}
 
@@ -2261,7 +2261,7 @@ export default function HomeScreen({ navigation }) {
                 hasVoted={univElectionState.hasVoted}
                 voteSynced={univElectionState.voteSynced}
                 onVotePress={() => navigation.navigate(StackNav.UniversityElectionCandidateScreen)}
-                onDetailsPress={() => navigation.navigate(StackNav.UnifiedParticipationScreen)}
+                onDetailsPress={() => navigation.navigate(StackNav.UniversityElectionReceiptScreen, { participationId: 'participation_1' })}
               />
             )}
 

@@ -46,6 +46,9 @@ export const StackNav = {
 
   // University Election Feature
   UniversityElectionCandidateScreen: 'UniversityElectionCandidateScreen',
+  UniversityElectionReceiptScreen: 'UniversityElectionReceiptScreen',
+  UniversityElectionParticipationsScreen: 'UniversityElectionParticipationsScreen',
+  UniversityElectionNotificationDetailScreen: 'UniversityElectionNotificationDetailScreen',
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',

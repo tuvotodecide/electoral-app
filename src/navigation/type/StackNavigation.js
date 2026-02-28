@@ -207,6 +207,21 @@ export default function StackNavigation() {
         component={StackRoute.UniversityElectionCandidateScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.UniversityElectionReceiptScreen}
+        component={StackRoute.UniversityElectionReceiptScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.UniversityElectionParticipationsScreen}
+        component={StackRoute.UniversityElectionParticipationsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.UniversityElectionNotificationDetailScreen}
+        component={StackRoute.UniversityElectionNotificationDetailScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

@@ -12,6 +12,8 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS, MOCK_ELECTION } from '../data/mockData';
+import { useCountdown } from '../utils/useCountdown';
+import { DEV_FLAGS } from '../../../config/featureFlags';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -42,7 +44,33 @@ const ElectionCard = ({
 }) => {
   const colors = useSelector((state) => state.theme.theme);
 
+  // Countdown dinámico (si DEV_FLAGS está habilitado)
+  const { countdownLabel, isStarting, isEnded } = useCountdown(election);
+
+  // Determinar el texto del timer
+  const timerLabel = DEV_FLAGS.ENABLE_DYNAMIC_COUNTDOWN
+    ? countdownLabel
+    : election.closesInLabel;
+
   const getButtonConfig = () => {
+    // Si la elección terminó
+    if (isEnded && !hasVoted) {
+      return {
+        title: 'Votación cerrada',
+        disabled: true,
+        onPress: () => {},
+      };
+    }
+
+    // Si la elección no ha empezado
+    if (isStarting) {
+      return {
+        title: UI_STRINGS.voteNow,
+        disabled: true,
+        onPress: () => {},
+      };
+    }
+
     if (!hasVoted) {
       return {
         title: UI_STRINGS.voteNow,
@@ -91,10 +119,10 @@ const ElectionCard = ({
           </CText>
         </View>
       ) : (
-        <View style={styles.closesContainer}>
-          <View style={styles.redDot} />
-          <CText type="S14" style={styles.closesText}>
-            {election.closesInLabel}
+        <View style={[styles.closesContainer, isStarting && styles.startsContainer]}>
+          <View style={[styles.redDot, isStarting && styles.blueDot]} />
+          <CText type="S14" style={[styles.closesText, isStarting && styles.startsText]}>
+            {timerLabel}
           </CText>
         </View>
       )}
@@ -185,6 +213,16 @@ const styles = StyleSheet.create({
     color: '#E72F2F',
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '600',
+  },
+  // Estilos para "Inicia en" (azul)
+  startsContainer: {
+    backgroundColor: '#E3F2FD', // Fondo azul claro
+  },
+  blueDot: {
+    backgroundColor: '#2563EB', // Azul
+  },
+  startsText: {
+    color: '#2563EB', // Azul
   },
   votedMessageContainer: {
     flexDirection: 'row',

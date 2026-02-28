@@ -33,4 +33,10 @@ export const isFeatureEnabled = (flagName) => {
  */
 export const DEV_FLAGS = {
   FORCE_OFFLINE_UNIVERSITY_ELECTION: false,
+  /**
+   * Habilita el countdown dinámico en la tarjeta de elección
+   * true = usa timestamps reales para countdown
+   * false = usa labels estáticos del mock
+   */
+  ENABLE_DYNAMIC_COUNTDOWN: true,
 };

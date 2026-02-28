@@ -57,7 +57,12 @@ import UnifiedParticipationScreen from '../container/Vote/common/UnifiedParticip
 import OracleParticipation from '../container/TabBar/Profile/OracleParticipation';
 
 // University Election Feature
-import { CandidateScreen as UniversityElectionCandidateScreen } from '../features/universityElection';
+import {
+  CandidateScreen as UniversityElectionCandidateScreen,
+  VoteReceiptScreen as UniversityElectionReceiptScreen,
+  ParticipationsListScreen as UniversityElectionParticipationsScreen,
+  NotificationDetailScreen as UniversityElectionNotificationDetailScreen,
+} from '../features/universityElection';
 
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
@@ -142,6 +147,9 @@ export const StackRoute = {
 
   // University Election Feature
   UniversityElectionCandidateScreen,
+  UniversityElectionReceiptScreen,
+  UniversityElectionParticipationsScreen,
+  UniversityElectionNotificationDetailScreen,
 
   // Profile y configuración
   PersonalDetails,
