@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FEATURE_FLAGS } from '../../../config/featureFlags';
+import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -146,10 +146,14 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
     }
   }, []);
 
+  // DEV_FLAG: Forzar estado "no ha votado" para testing
+  const effectiveHasVoted = DEV_FLAGS.FORCE_HAS_NOT_VOTED ? false : hasVoted;
+  const effectiveVoteSynced = DEV_FLAGS.FORCE_HAS_NOT_VOTED ? false : voteSynced;
+
   return {
     isLoading,
-    hasVoted,
-    voteSynced,
+    hasVoted: effectiveHasVoted,
+    voteSynced: effectiveVoteSynced,
     selectedCandidateId,
     recordVote,
     markVoteSynced,

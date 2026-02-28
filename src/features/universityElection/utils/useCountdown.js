@@ -2,66 +2,88 @@
  * useCountdown Hook
  *
  * Hook para calcular y mostrar el tiempo restante para inicio/cierre de una elección.
- * Se actualiza cada minuto para optimizar rendimiento.
+ * Se actualiza cada segundo cuando es "Inicia en" para mostrar HH:MM:SS.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { UI_STRINGS } from '../data/mockData';
+import { DEV_FLAGS } from '../../../config/featureFlags';
 
 /**
- * Formatea milisegundos a string legible
+ * Formatea milisegundos a HH:MM:SS
  * @param {number} ms - milisegundos restantes
- * @param {boolean} isStarting - si es para "Inicia en" o "Cierra en"
+ * @returns {string} formato "HH:MM:SS"
+ */
+const formatToHHMMSS = (ms) => {
+  if (ms <= 0) return '00:00:00';
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
+/**
+ * Formatea milisegundos a string legible (para "Cierra en")
+ * @param {number} ms - milisegundos restantes
  * @returns {string}
  */
-const formatCountdown = (ms, isStarting = false) => {
-  if (ms <= 0) {
-    return isStarting ? '' : 'Cerrada';
-  }
+const formatCountdownShort = (ms) => {
+  if (ms <= 0) return 'Cerrada';
 
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  const prefix = isStarting ? UI_STRINGS.startsIn : UI_STRINGS.closesIn;
-
   if (days > 0) {
-    return `${prefix} ${days}d ${hours % 24}h`;
+    return `${UI_STRINGS.closesIn} ${days}d ${hours % 24}h`;
   }
 
   if (hours > 0) {
-    return `${prefix} ${hours}h ${minutes % 60}m`;
+    return `${UI_STRINGS.closesIn} ${hours}h ${minutes % 60}m`;
   }
 
   if (minutes > 0) {
-    return `${prefix} ${minutes}m`;
+    return `${UI_STRINGS.closesIn} ${minutes}m`;
   }
 
-  return `${prefix} <1m`;
+  return `${UI_STRINGS.closesIn} <1m`;
 };
 
 /**
  * @param {Object} election - Datos de la elección
  * @param {number|null} election.startsAt - Timestamp de inicio (null si ya empezó)
  * @param {number} election.closesAt - Timestamp de cierre
- * @param {number} [updateInterval=60000] - Intervalo de actualización en ms (default: 1 minuto)
  * @returns {{
  *   countdownLabel: string,
+ *   countdownTime: string,
  *   isStarting: boolean,
  *   isEnded: boolean,
  *   remainingMs: number
  * }}
  */
-export const useCountdown = (election, updateInterval = 60000) => {
+export const useCountdown = (election) => {
+  // DEV_FLAG: Forzar "inicia en X minutos"
+  const effectiveStartsAt = useMemo(() => {
+    if (DEV_FLAGS.FORCE_STARTS_IN_MINUTES > 0) {
+      return Date.now() + DEV_FLAGS.FORCE_STARTS_IN_MINUTES * 60 * 1000;
+    }
+    return election.startsAt;
+  }, [election.startsAt]);
+
   const calculateState = useCallback(() => {
     const now = Date.now();
 
     // Si hay startsAt y aún no ha empezado
-    if (election.startsAt && election.startsAt > now) {
-      const remaining = election.startsAt - now;
+    if (effectiveStartsAt && effectiveStartsAt > now) {
+      const remaining = effectiveStartsAt - now;
       return {
-        countdownLabel: formatCountdown(remaining, true),
+        countdownLabel: UI_STRINGS.startsIn,
+        countdownTime: formatToHHMMSS(remaining),
         isStarting: true,
         isEnded: false,
         remainingMs: remaining,
@@ -72,7 +94,8 @@ export const useCountdown = (election, updateInterval = 60000) => {
     if (election.closesAt) {
       const remaining = election.closesAt - now;
       return {
-        countdownLabel: formatCountdown(remaining, false),
+        countdownLabel: formatCountdownShort(remaining),
+        countdownTime: '',
         isStarting: false,
         isEnded: remaining <= 0,
         remainingMs: remaining,
@@ -82,11 +105,12 @@ export const useCountdown = (election, updateInterval = 60000) => {
     // Fallback: usar label estático si no hay timestamps
     return {
       countdownLabel: election.closesInLabel || '',
+      countdownTime: '',
       isStarting: false,
       isEnded: false,
       remainingMs: 0,
     };
-  }, [election]);
+  }, [effectiveStartsAt, election.closesAt, election.closesInLabel]);
 
   const [state, setState] = useState(calculateState);
 
@@ -94,13 +118,14 @@ export const useCountdown = (election, updateInterval = 60000) => {
     // Actualizar inmediatamente
     setState(calculateState());
 
-    // Configurar intervalo de actualización
+    // Intervalo: 1 segundo si "Inicia en", 60 segundos si "Cierra en"
     const interval = setInterval(() => {
-      setState(calculateState());
-    }, updateInterval);
+      const newState = calculateState();
+      setState(newState);
+    }, state.isStarting ? 1000 : 60000);
 
     return () => clearInterval(interval);
-  }, [calculateState, updateInterval]);
+  }, [calculateState, state.isStarting]);
 
   return state;
 };

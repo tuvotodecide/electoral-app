@@ -1919,7 +1919,11 @@ export default function HomeScreen({ navigation }) {
         ? UnivElectionStrings.myParticipations
         : I18nStrings.myWitnesses,
       description: I18nStrings.myWitnessesDescription,
-      onPress: () => navigation.navigate(StackNav.MyWitnessesListScreen),
+      onPress: () => navigation.navigate(
+        FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
+          ? StackNav.UniversityElectionParticipationsScreen
+          : StackNav.MyWitnessesListScreen
+      ),
       iconComponent: Ionicons,
     },
   ];

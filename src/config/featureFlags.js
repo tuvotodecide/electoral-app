@@ -32,11 +32,29 @@ export const isFeatureEnabled = (flagName) => {
  * NO usar en producción
  */
 export const DEV_FLAGS = {
-  FORCE_OFFLINE_UNIVERSITY_ELECTION: false,
+  FORCE_OFFLINE_UNIVERSITY_ELECTION: true,
   /**
    * Habilita el countdown dinámico en la tarjeta de elección
    * true = usa timestamps reales para countdown
    * false = usa labels estáticos del mock
    */
   ENABLE_DYNAMIC_COUNTDOWN: true,
+  /**
+   * Fuerza el estado de "no ha votado" para poder probar el flujo de votación
+   * true = siempre muestra que el usuario NO ha votado
+   * false = usa el estado real del storage
+   */
+  FORCE_HAS_NOT_VOTED: true,
+  /**
+   * Fuerza el estado "no habilitado" para probar el card inhabilitado (foto 11)
+   * true = muestra "Usted no está habilitado para participar"
+   * false = usa el estado real
+   */
+  FORCE_NOT_ELIGIBLE: false,
+  /**
+   * Fuerza que la elección "aún no empezó" para probar countdown de inicio (foto 12)
+   * Valor en minutos desde ahora. Ej: 180 = inicia en 3 horas
+   * 0 = desactivado, usa el estado real
+   */
+  FORCE_STARTS_IN_MINUTES: 0,
 };

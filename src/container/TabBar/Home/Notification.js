@@ -24,6 +24,7 @@ import {
 import { getCache, setCache } from '../../../utils/lookupCache';
 import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
+import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
@@ -271,6 +272,30 @@ export default function Notification({ navigation }) {
     fetchFromBackend(true);
   }, [fetchFromBackend]);
 
+  // DEV: Mock notification para probar NotificationDetailScreen
+  const mockElectionResultsNotification = DEV_FLAGS.FORCE_HAS_NOT_VOTED && FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
+    ? {
+        id: 'mock_election_results',
+        mesa: 'Resultados Disponibles',
+        tipo: 'Elección Universitaria',
+        direccion: 'Resultados preliminares de la votación',
+        timestamp: Date.now(),
+        data: {
+          type: 'election_results',
+          title: 'Resultados Disponibles',
+          bannerTitle: 'Resultados Preliminares',
+          bannerSubtitle: 'Conteo en tiempo real',
+          body: 'Ya están disponibles los primeros resultados preliminares de la votación para "Elección Directiva 2026".',
+          actionUrl: 'https://results.tuvotodecide.com',
+        },
+      }
+    : null;
+
+  // Combinar mock con items reales
+  const displayItems = mockElectionResultsNotification
+    ? [mockElectionResultsNotification, ...items]
+    : items;
+
   const showLoader =
     items.length === 0 && (loading || !authResolved || refreshing);
 
@@ -286,6 +311,15 @@ export default function Notification({ navigation }) {
   const handleNotificationPress = useCallback(
     item => {
       const rawData = item?.data || {};
+
+      // University Election: Navegación a pantalla de resultados
+      if (rawData?.type === 'election_results' && FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
+        navigation.navigate(StackNav.UniversityElectionNotificationDetailScreen, {
+          notification: rawData,
+        });
+        return;
+      }
+
       if (rawData?.type === 'worksheet_uploaded') {
         navigation.navigate(StackNav.TabNavigation, {
           screen: TabNav.HomeScreen,
@@ -475,7 +509,7 @@ export default function Notification({ navigation }) {
       ) : (
         <FlatList
           testID="notificationList"
-          data={items}
+          data={displayItems}
           keyExtractor={item => String(item.id)}
           renderItem={renderNotificationItem}
           contentContainerStyle={localStyle.listContent}

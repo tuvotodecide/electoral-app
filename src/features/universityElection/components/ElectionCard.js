@@ -2,7 +2,7 @@
  * Election Card Component
  *
  * Card principal que se muestra en Home cuando ENABLE_UNIVERSITY_ELECTION = true
- * Reutiliza estilos existentes del repo.
+ * Soporta estados: activa, inhabilitado, inicia en, ya votó
  */
 
 import React from 'react';
@@ -31,6 +31,7 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {Object} props
  * @param {boolean} props.hasVoted - Si el usuario ya votó
  * @param {boolean} props.voteSynced - Si el voto ya fue sincronizado
+ * @param {boolean} [props.isEligible=true] - Si el usuario está habilitado para votar
  * @param {() => void} props.onVotePress - Handler para botón "Votar ahora"
  * @param {() => void} props.onDetailsPress - Handler para botón "Ver detalles"
  * @param {Object} [props.election] - Datos de la elección (opcional, usa mock si no se provee)
@@ -38,21 +39,40 @@ const getResponsiveSize = (small, medium, large) => {
 const ElectionCard = ({
   hasVoted = false,
   voteSynced = false,
+  isEligible = true,
   onVotePress,
   onDetailsPress,
   election = MOCK_ELECTION,
 }) => {
   const colors = useSelector((state) => state.theme.theme);
 
-  // Countdown dinámico (si DEV_FLAGS está habilitado)
-  const { countdownLabel, isStarting, isEnded } = useCountdown(election);
+  // DEV_FLAG: Forzar estado "no habilitado"
+  const effectiveIsEligible = DEV_FLAGS.FORCE_NOT_ELIGIBLE ? false : isEligible;
+
+  // Countdown dinámico
+  const { countdownLabel, countdownTime, isStarting, isEnded } = useCountdown(election);
 
   // Determinar el texto del timer
-  const timerLabel = DEV_FLAGS.ENABLE_DYNAMIC_COUNTDOWN
-    ? countdownLabel
-    : election.closesInLabel;
+  const getTimerDisplay = () => {
+    if (!DEV_FLAGS.ENABLE_DYNAMIC_COUNTDOWN) {
+      return { label: election.closesInLabel, time: '' };
+    }
+
+    if (isStarting && countdownTime) {
+      return { label: countdownLabel, time: countdownTime };
+    }
+
+    return { label: countdownLabel, time: '' };
+  };
+
+  const timerDisplay = getTimerDisplay();
 
   const getButtonConfig = () => {
+    // Si no está habilitado, no mostrar botón
+    if (!effectiveIsEligible) {
+      return null;
+    }
+
     // Si la elección terminó
     if (isEnded && !hasVoted) {
       return {
@@ -65,9 +85,9 @@ const ElectionCard = ({
     // Si la elección no ha empezado
     if (isStarting) {
       return {
-        title: UI_STRINGS.voteNow,
-        disabled: true,
-        onPress: () => {},
+        title: UI_STRINGS.viewDetails || 'Ver detalle',
+        disabled: false,
+        onPress: onDetailsPress,
       };
     }
 
@@ -96,6 +116,58 @@ const ElectionCard = ({
 
   const buttonConfig = getButtonConfig();
 
+  // Renderizar contenido según estado
+  const renderStatusContent = () => {
+    // Estado: Ya votó
+    if (hasVoted) {
+      return (
+        <View style={styles.votedMessageContainer}>
+          <View style={styles.greenDot} />
+          <CText type="M14" style={styles.votedMessage}>
+            {UI_STRINGS.alreadyVoted}
+          </CText>
+        </View>
+      );
+    }
+
+    // Estado: No habilitado
+    if (!effectiveIsEligible) {
+      return (
+        <View style={styles.notEligibleContainer}>
+          <View style={styles.redDot} />
+          <CText type="M14" style={styles.notEligibleText}>
+            Usted no está habilitado{'\n'}para participar en esta{'\n'}votación
+          </CText>
+        </View>
+      );
+    }
+
+    // Estado: Inicia en (con countdown HH:MM:SS)
+    if (isStarting && timerDisplay.time) {
+      return (
+        <View style={styles.startsInContainer}>
+          <View style={styles.redDot} />
+          <CText type="S14" style={styles.startsInLabel}>
+            {timerDisplay.label}
+          </CText>
+          <CText type="B16" style={styles.startsInTime}>
+            {timerDisplay.time}
+          </CText>
+        </View>
+      );
+    }
+
+    // Estado: Cierra en (normal)
+    return (
+      <View style={styles.closesContainer}>
+        <View style={styles.redDot} />
+        <CText type="S14" style={styles.closesText}>
+          {timerDisplay.label}
+        </CText>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header: Título + Badge */}
@@ -110,43 +182,31 @@ const ElectionCard = ({
         </View>
       </View>
 
-      {/* Aviso de cierre o mensaje post-voto */}
-      {hasVoted ? (
-        <View style={styles.votedMessageContainer}>
-          <View style={styles.greenDot} />
-          <CText type="M14" style={styles.votedMessage}>
-            {UI_STRINGS.alreadyVoted}
-          </CText>
-        </View>
-      ) : (
-        <View style={[styles.closesContainer, isStarting && styles.startsContainer]}>
-          <View style={[styles.redDot, isStarting && styles.blueDot]} />
-          <CText type="S14" style={[styles.closesText, isStarting && styles.startsText]}>
-            {timerLabel}
-          </CText>
-        </View>
-      )}
+      {/* Status content (votó, inhabilitado, countdown) */}
+      {renderStatusContent()}
 
-      {/* Nombre del instituto */}
-      {!hasVoted && (
+      {/* Nombre del instituto - solo si no votó y está habilitado y no está en "inicia en" */}
+      {!hasVoted && effectiveIsEligible && !isStarting && (
         <CText type="R14" style={styles.instituteName}>
           {election.instituteName}
         </CText>
       )}
 
-      {/* Botón de acción */}
-      <CButton
-        title={buttonConfig.title}
-        type="B16"
-        disabled={buttonConfig.disabled}
-        onPress={buttonConfig.onPress}
-        containerStyle={[
-          styles.button,
-          hasVoted && voteSynced && styles.buttonVoted,
-        ]}
-        sinMargen
-        testID="electionCardButton"
-      />
+      {/* Botón de acción - solo si está habilitado */}
+      {buttonConfig && (
+        <CButton
+          title={buttonConfig.title}
+          type="B16"
+          disabled={buttonConfig.disabled}
+          onPress={buttonConfig.onPress}
+          containerStyle={[
+            styles.button,
+            hasVoted && voteSynced && styles.buttonVoted,
+          ]}
+          sinMargen
+          testID="electionCardButton"
+        />
+      )}
     </View>
   );
 };
@@ -169,7 +229,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Badge a la derecha
+    justifyContent: 'space-between',
     marginBottom: getResponsiveSize(10, 12, 14),
   },
   title: {
@@ -180,7 +240,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: '#E8F5E9',
-    borderRadius: moderateScale(4), // Menos borderRadius
+    borderRadius: moderateScale(4),
     paddingHorizontal: moderateScale(10),
     paddingVertical: moderateScale(4),
     borderWidth: 1,
@@ -191,11 +251,12 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(10, 11, 12),
     fontWeight: '700',
   },
+  // Estado: Cierra en
   closesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFEBEE', // Fondo rojo claro
+    backgroundColor: '#FFEBEE',
     borderRadius: moderateScale(20),
     paddingVertical: getResponsiveSize(6, 8, 10),
     paddingHorizontal: getResponsiveSize(12, 14, 16),
@@ -214,21 +275,48 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '600',
   },
-  // Estilos para "Inicia en" (azul)
-  startsContainer: {
-    backgroundColor: '#E3F2FD', // Fondo azul claro
+  // Estado: Inicia en (con HH:MM:SS)
+  startsInContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: getResponsiveSize(12, 14, 16),
   },
-  blueDot: {
-    backgroundColor: '#2563EB', // Azul
+  startsInLabel: {
+    color: '#374151',
+    fontSize: getResponsiveSize(13, 14, 15),
+    fontWeight: '500',
+    marginRight: 6,
   },
-  startsText: {
-    color: '#2563EB', // Azul
+  startsInTime: {
+    color: '#374151',
+    fontSize: getResponsiveSize(15, 16, 18),
+    fontWeight: '700',
   },
+  // Estado: No habilitado
+  notEligibleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFEBEE',
+    borderRadius: moderateScale(12),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(16, 18, 20),
+    marginBottom: getResponsiveSize(6, 8, 10),
+  },
+  notEligibleText: {
+    color: '#E72F2F',
+    fontSize: getResponsiveSize(13, 14, 15),
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: getResponsiveSize(18, 20, 22),
+  },
+  // Estado: Ya votó
   votedMessageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E8F5E9', // Fondo verde claro
+    backgroundColor: '#E8F5E9',
     borderRadius: moderateScale(20),
     paddingVertical: getResponsiveSize(6, 8, 10),
     paddingHorizontal: getResponsiveSize(12, 14, 16),
@@ -239,16 +327,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#41A44D', // Verde
+    backgroundColor: '#41A44D',
     marginRight: 6,
   },
   votedMessage: {
-    color: '#41A44D', // Verde
+    color: '#41A44D',
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '500',
   },
   instituteName: {
-    color: '#9CA3AF', // Más plomo/gris
+    color: '#9CA3AF',
     fontSize: getResponsiveSize(13, 14, 15),
     textAlign: 'center',
     marginBottom: getResponsiveSize(14, 16, 18),
