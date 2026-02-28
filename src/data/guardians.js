@@ -139,13 +139,15 @@ export function useHasGuardiansQuery(carnet, enabled) {
 }
 
 export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
-  const {data, isLoading, remove} = useQuery({
+  const queryClient = useQueryClient();
+  const {data, isLoading} = useQuery({
     queryKey: ['recovery-detail', deviceId],
     queryFn: () => guardianApi.recoveryDetail(deviceId),
     enabled: !!deviceId && enabled,
     refetchInterval: 10000,
     refetchIntervalInBackground: true,
   });
+  const remove = () => queryClient.removeQueries({queryKey: ['recovery-detail', deviceId]});
   return {data: data, loading: isLoading, remove};
 }
 export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
