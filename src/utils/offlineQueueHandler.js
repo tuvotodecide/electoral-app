@@ -612,11 +612,20 @@ export const publishActaHandler = async (item, userData) => {
     const storedElectionId = String(
       (await AsyncStorage.getItem(ELECTION_ID)) || '',
     ).trim();
+    const existingRecordForElection = taskPayload?.existingRecord || {};
     const electionId = String(
       normalizedAdditional?.electionId ||
-      item?.task?.payload?.electionId ||
-      storedElectionId ||
-      '',
+        item?.task?.payload?.electionId ||
+        existingRecordForElection?.electionId ||
+        existingRecordForElection?.election_id ||
+        existingRecordForElection?.rawData?.electionId ||
+        existingRecordForElection?.rawData?.election_id ||
+        existingRecordForElection?.raw?.electionId ||
+        existingRecordForElection?.raw?.election_id ||
+        tableData?.electionId ||
+        tableData?.election_id ||
+        storedElectionId ||
+        '',
     ).trim() || undefined;
     normalizedAdditional.electionId = electionId;
     const observationPayload = (() => {

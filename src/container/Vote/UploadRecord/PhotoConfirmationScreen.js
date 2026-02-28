@@ -130,6 +130,18 @@ const PhotoConfirmationScreen = ({ route }) => {
 
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
+  const resolvedElectionId = String(
+    electionId ||
+      route.params?.existingRecord?.electionId ||
+      route.params?.existingRecord?.election_id ||
+      route.params?.existingRecord?.rawData?.electionId ||
+      route.params?.existingRecord?.rawData?.election_id ||
+      route.params?.existingRecord?.raw?.electionId ||
+      route.params?.existingRecord?.raw?.election_id ||
+      tableData?.electionId ||
+      tableData?.election_id ||
+      '',
+  ).trim();
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -330,7 +342,7 @@ const PhotoConfirmationScreen = ({ route }) => {
 
   const confirmWorksheetUpload = async () => {
     setStep(1);
-    const eid = electionId || undefined;
+    const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
         partyResults || [],
@@ -482,7 +494,7 @@ const PhotoConfirmationScreen = ({ route }) => {
 
   const confirmPublishAndCertify = async () => {
     setStep(1);
-    const eid = electionId || undefined;
+    const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
         partyResults || [],
@@ -1342,5 +1354,4 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoConfirmationScreen;
-
 
