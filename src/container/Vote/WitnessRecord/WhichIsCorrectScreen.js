@@ -433,6 +433,18 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
         electionId,
         electionType,
       };
+      console.log('[ATTEST-FLOW][WhichIsCorrect->PhotoReview]', {
+        mode: payloadForPhotoReview.mode,
+        electionId: payloadForPhotoReview.electionId || null,
+        electionType: payloadForPhotoReview.electionType || null,
+        tableCode:
+          mesaInfo?.codigo || mesaInfo?.tableCode || selectedImage?.tableCode || null,
+        recordId:
+          selectedImage?.recordId ||
+          selectedImage?.raw?.recordId ||
+          selectedImage?.rawData?.recordId ||
+          null,
+      });
       try {
         navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);
       } catch {

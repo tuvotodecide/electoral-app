@@ -590,6 +590,25 @@ const PhotoConfirmationScreen = ({ route }) => {
         hasObservation: Boolean(hasObservation),
         observationText: String(observationText || '').trim(),
       };
+      console.log('[ATTEST-FLOW][PhotoConfirmation][enqueue publishActa]', {
+        mode: flowMode,
+        electionId: eid || null,
+        tableCode: String(tableCode || ''),
+        tableNumber: String(tableNumber || ''),
+        existingRecordElectionId:
+          existingRecord?.electionId ||
+          existingRecord?.election_id ||
+          existingRecord?.rawData?.electionId ||
+          existingRecord?.rawData?.election_id ||
+          existingRecord?.raw?.electionId ||
+          existingRecord?.raw?.election_id ||
+          null,
+        existingRecordId:
+          existingRecord?.recordId ||
+          existingRecord?.rawData?.recordId ||
+          existingRecord?.raw?.recordId ||
+          null,
+      });
 
       await enqueue({
         type: 'publishActa',

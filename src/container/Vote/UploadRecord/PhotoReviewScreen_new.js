@@ -189,7 +189,8 @@ const PhotoReviewScreen = () => {
     fromWhichIsCorrect,
     mode: incomingMode,
     actaCount,
-    electionId
+    electionId,
+    electionType,
   } = route.params || {};
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
@@ -778,6 +779,17 @@ const PhotoReviewScreen = () => {
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
     };
+    console.log('[ATTEST-FLOW][PhotoReview->PhotoConfirmation]', {
+      mode: confirmationParams.mode,
+      electionId: confirmationParams.electionId || null,
+      tableCode:
+        mesaInfo?.tableCode || mesaInfo?.codigo || tableData?.tableCode || null,
+      existingRecordId:
+        confirmationParams?.existingRecord?.recordId ||
+        confirmationParams?.existingRecord?.rawData?.recordId ||
+        confirmationParams?.existingRecord?.raw?.recordId ||
+        null,
+    });
 
     if (
       !isWorksheetMode &&
@@ -838,10 +850,20 @@ const PhotoReviewScreen = () => {
   // Action buttons for PhotoReviewScreen
   const goToCamera = () => {
     const mesaInfo = getMesaInfo();
+    const resolvedElectionId = String(
+      electionId ||
+        mesaInfo?.electionId ||
+        mesaInfo?.election_id ||
+        tableData?.electionId ||
+        tableData?.election_id ||
+        '',
+    ).trim();
     navigation.navigate(StackNav.CameraScreen, {
       tableData: mesaInfo,
       mesaData: mesaInfo,
       mesa: mesaInfo,
+      electionId: resolvedElectionId || undefined,
+      electionType: electionType || route.params?.electionType || undefined,
     });
   };
 
@@ -1218,4 +1240,3 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoReviewScreen;
-
