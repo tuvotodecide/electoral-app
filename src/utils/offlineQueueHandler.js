@@ -190,6 +190,24 @@ const buildAlreadyAttestedError = () => {
   return error;
 };
 
+const isDuplicateVotesBackendError = error => {
+  const status = Number(error?.response?.status);
+  if (status !== 409) return false;
+  const message = extractErrorMessage(error).toLowerCase();
+  return (
+    message.includes('mismos votos') ||
+    message.includes('votos duplicados') ||
+    message.includes('acta duplicada')
+  );
+};
+
+const buildDuplicateVotesError = () => {
+  const error = new Error('Ya existe un acta con los mismos votos para esta mesa.');
+  error.removeFromQueue = true;
+  error.errorType = 'BUSINESS_TERMINAL';
+  return error;
+};
+
 const parseRecordIdToBigInt = value => {
   try {
     const raw = String(value ?? '').trim();
@@ -1298,6 +1316,9 @@ export const publishActaHandler = async (item, userData) => {
           critical: true,
           tableCode: tableCodeStrict,
         });
+        if (isDuplicateVotesBackendError(err)) {
+          throw buildDuplicateVotesError();
+        }
         throw err;
       }
 
@@ -1565,6 +1586,9 @@ export const publishActaHandler = async (item, userData) => {
         critical: true,
         tableCode: tableCodeStrict,
       });
+      if (isDuplicateVotesBackendError(err)) {
+        throw buildDuplicateVotesError();
+      }
       throw err;
     }
 

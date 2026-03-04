@@ -161,9 +161,16 @@ const deriveQueueFailMessage = failedItems => {
     joinedErrors.includes('already attested') ||
     joinedErrors.includes('616c7265616479206174746573746564') ||
     joinedErrors.includes('acta ya atestiguada');
+  const duplicateVotes =
+    joinedErrors.includes('mismos votos') ||
+    joinedErrors.includes('votos duplicados') ||
+    joinedErrors.includes('acta duplicada');
 
   if (alreadyAttested) {
     return 'Acta ya atestiguada.';
+  }
+  if (duplicateVotes) {
+    return 'Ya existe un acta con los mismos votos para esta mesa.';
   }
   return 'Reintenta o elimina para subir otra acta.';
 };
