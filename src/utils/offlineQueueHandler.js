@@ -473,7 +473,8 @@ const uploadCertificateAndNotifyBackend = async (
   normalizedAdditional,
   userData,
   apiKey,
-  actaData
+  actaData,
+  options = {},
 ) => {
   if (!certificateImageUri) return;
 
@@ -527,6 +528,8 @@ const uploadCertificateAndNotifyBackend = async (
     const actaImageUrl =
       String(actaData?.actaImageUrl || actaData?.imageUrl || '').trim() ||
       undefined;
+    const notificationType =
+      String(options?.notificationType || '').trim() || 'acta_published';
 
     const res = await axios.post(
       `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
@@ -536,6 +539,15 @@ const uploadCertificateAndNotifyBackend = async (
         electionId,
         ipfsUri: actaJsonUrl,
         actaImageUrl,
+        notificationType,
+        tableCode:
+          String(normalizedAdditional?.tableCode || '').trim() || undefined,
+        tableNumber:
+          String(
+            normalizedAdditional?.tableNumber ||
+            normalizedAdditional?.tableData?.tableNumber ||
+            '',
+          ).trim() || undefined,
       },
       {
         headers: {
@@ -883,6 +895,7 @@ export const publishActaHandler = async (item, userData) => {
               ipfsUri: extractJsonUrlFromBallot(backendBallot),
               actaImageUrl: backendBallot?.image || null,
             },
+            { notificationType: 'participation_certificate' },
           );
         } catch (err) {
           captureError(err, {
@@ -1182,6 +1195,7 @@ export const publishActaHandler = async (item, userData) => {
                 ipfsUri: jsonUrl,
                 actaImageUrl: existingBallot?.image || null,
               },
+              { notificationType: 'participation_certificate' },
             );
           } catch (err) {
             captureError(err, {
@@ -1462,6 +1476,7 @@ export const publishActaHandler = async (item, userData) => {
               ipfsUri: ipfsData?.jsonUrl,
               actaImageUrl: ipfsData?.imageUrl,
             },
+            { notificationType: 'participation_certificate' },
           );
         } catch (err) {
           captureError(err, {
@@ -1761,6 +1776,7 @@ export const publishActaHandler = async (item, userData) => {
             ipfsUri: ipfsData?.jsonUrl,
             actaImageUrl: ipfsData?.imageUrl,
           },
+          { notificationType: 'acta_published' },
         );
       } catch (err) {
         captureError(err, {

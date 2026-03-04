@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   SectionList,
@@ -46,6 +47,15 @@ export default function Profile({ navigation }) {
     name: subject?.fullName || '(sin nombre)',
     hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
+  const dni = (
+    subject?.nationalIdNumber ||
+    subject?.documentNumber ||
+    subject?.governmentIdentifier ||
+    userData?.dni ||
+    ''
+  )
+    .toString()
+    .trim();
 
 
   // Datos de reputación y NFTs
@@ -78,6 +88,14 @@ export default function Profile({ navigation }) {
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }
+  };
+
+  const onPressChangePlace = () => {
+    if (!dni) {
+      Alert.alert('Error', 'No se pudo detectar tu DNI para cambiar el recinto.');
+      return;
+    }
+    navigation.navigate(StackNav.ElectoralLocationsSave, { dni });
   };
 
   const RenderSectionHeader = ({ section: { section } }) => {
@@ -315,6 +333,42 @@ export default function Profile({ navigation }) {
             showsVerticalScrollIndicator={false}
             scrollEnabled={false}
           />
+          <TouchableOpacity
+            testID="profileChangePlaceItem"
+            activeOpacity={0.6}
+            onPress={onPressChangePlace}
+            style={[
+              localStyle.renderItemContainer,
+              {
+                borderColor: color.dark ? color.grayScale700 : color.grayScale200,
+              },
+            ]}>
+            <View style={styles.rowCenter}>
+              <View
+                style={[
+                  localStyle.iconBackground,
+                  { backgroundColor: color.inputBackground },
+                ]}>
+                <Entypo
+                  name="location-pin"
+                  size={moderateScale(20)}
+                  color={color.dark ? color.grayScale500 : color.grayScale400}
+                />
+              </View>
+              <View style={styles.ml10}>
+                <CText type={'B16'}>{String.changePlace}</CText>
+                <CText type={'R12'} color={color.grayScale500}>
+                  {String.changePlaceDescription}
+                </CText>
+              </View>
+            </View>
+            <Ionicons
+              name={'chevron-forward-outline'}
+              size={moderateScale(24)}
+              color={color.dark ? color.grayScale500 : color.grayScale400}
+              style={styles.mr10}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Botón de seleccionar insignia 

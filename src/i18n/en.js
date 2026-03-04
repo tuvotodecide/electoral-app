@@ -1043,6 +1043,8 @@ export default {
   networkError: 'Error de red, revise su conexión a internet.',
   registerPlace: 'Registrar recinto',
   registerPlaceDescription: 'Registra tu recinto para recibir avisos.',
+  changePlace: 'Cambiar recinto',
+  changePlaceDescription: 'Actualiza el recinto que tienes registrado.',
   backupAccount: 'Asegura tu cuenta',
   backupAccountDescription: 'Guarda un archivo de respaldo.',
 

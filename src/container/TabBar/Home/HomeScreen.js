@@ -459,6 +459,7 @@ export default function HomeScreen({ navigation }) {
   const [hasPendingActa, setHasPendingActa] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
+  const queueRunPromiseRef = useRef(null);
   const runOfflineQueueRef = useRef(() => {});
   const refreshNotificationBadgeCountRef = useRef(async () => {});
   const notificationsApiKeyRef = useRef(null);
@@ -943,86 +944,91 @@ export default function HomeScreen({ navigation }) {
   });
 
   const runOfflineQueueOnce = useCallback(async () => {
+    if (queueRunPromiseRef.current) return queueRunPromiseRef.current;
     if (processingRef.current) return;
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
-    processingRef.current = true;
-
-    try {
-      const net = await NetInfo.fetch();
-      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-
-
-      const probe = await backendProbe({ timeoutMs: 2000 });
-      if (!probe?.ok) {
-        console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
-        return;
-      }
-
-      const result = await processQueue(async item => {
-        const taskType = item?.task?.type;
-        if (taskType === 'publishWorksheet') {
-          await publishWorksheetHandler(item, userData);
+    queueRunPromiseRef.current = (async () => {
+      processingRef.current = true;
+      try {
+        const net = await NetInfo.fetch();
+        const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+        if (!online) return;
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        if (!probe?.ok) {
+          console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
           return;
-        }
-        if (taskType === 'publishActa') {
-          await publishActaHandler(item, userData);
-          return;
-        }
-        if (taskType === 'syncActaBackend') {
-          await syncActaBackendHandler(item, userData);
-          return;
-        }
-        const unknownTaskError = new Error(
-          `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
-        );
-        unknownTaskError.removeFromQueue = true;
-        unknownTaskError.errorType = 'BUSINESS_TERMINAL';
-        throw unknownTaskError;
-      });
+         }
 
-      // Actualiza badge/pending
-      if (typeof result?.remaining === 'number') {
-        setHasPendingActa(result.remaining > 0);
-      } else {
-        const listAfter = await getOfflineQueue();
-        const pendingAfter = (listAfter || []).some(
-          i => isQueueWriteTask(i?.task?.type),
-        );
-        setHasPendingActa(pendingAfter);
-      }
+        const result = await processQueue(async item => {
+          const taskType = item?.task?.type;
+          if (taskType === 'publishWorksheet') {
+            await publishWorksheetHandler(item, userData);
+            return;
+          }
+          if (taskType === 'publishActa') {
+            await publishActaHandler(item, userData);
+            return;
+          }
+          if (taskType === 'syncActaBackend') {
+            await syncActaBackendHandler(item, userData);
+            return;
+          }
+          const unknownTaskError = new Error(
+            `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
+          );
+          unknownTaskError.removeFromQueue = true;
+          unknownTaskError.errorType = 'BUSINESS_TERMINAL';
+          throw unknownTaskError;
+        });
 
-      if ((Number(result?.processed) || 0) > 0) {
-        try {
-          await refreshNotificationBadgeCountRef.current?.();
-        } catch {
-          // No bloquear flujo principal por error al refrescar badge.
-        }
-      }
-
-      if (result?.failed > 0) {
-        const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-        const modalItems = failedItems.filter(shouldShowQueueFailModal);
-        if (modalItems.length > 0) {
-          setQueueFailModal({
-            visible: true,
-            failedItems: modalItems,
-            message: deriveQueueFailMessage(modalItems),
-          });
+        // Actualiza badge/pending
+        if (typeof result?.remaining === 'number') {
+          setHasPendingActa(result.remaining > 0);
         } else {
-
+          const listAfter = await getOfflineQueue();
+          const pendingAfter = (listAfter || []).some(
+            i => isQueueWriteTask(i?.task?.type),
+          );
+          setHasPendingActa(pendingAfter);
         }
+
+        if ((Number(result?.processed) || 0) > 0) {
+          try {
+            await refreshNotificationBadgeCountRef.current?.();
+          } catch {
+            // No bloquear flujo principal por error al refrescar badge.
+          }
+        }
+
+        if (result?.failed > 0) {
+          const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+          const modalItems = failedItems.filter(shouldShowQueueFailModal);
+          if (modalItems.length > 0) {
+            setQueueFailModal({
+              visible: true,
+              failedItems: modalItems,
+              message: deriveQueueFailMessage(modalItems),
+            });
+          }
+        }
+      } catch (e) {
+        captureError(e, {
+          flow: 'offline_queue',
+          step: 'run_once_fatal',
+          critical: false,
+        });
+        setQueueFailModal({
+          visible: true,
+          failedItems: [],
+          message: ' Reintenta nuevamente.',
+        });
+      } finally {
+        processingRef.current = false;
+        queueRunPromiseRef.current = null;
       }
+    })();
 
-    } catch (e) {
-
-      setQueueFailModal({
-        visible: true,
-        failedItems: [],
-        message: ' Reintenta nuevamente.',
-      });
-    } finally {
-      processingRef.current = false;
-    }
+    return queueRunPromiseRef.current;
   }, [auth?.isAuthenticated, userData]);
 
   useEffect(() => {
@@ -1091,32 +1097,9 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const handleRemoveAllFailed = async () => {
-    try {
-      const items = queueFailModal.failedItems || [];
-      for (const it of items) {
-        await clearWorksheetStatusForFailedItem(it);
-        await removeById(it.id);
-      }
-
-      const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(
-        i => isQueueWriteTask(i?.task?.type),
-      );
-      setHasPendingActa(pendingAfter);
-    } finally {
-      setQueueFailModal({ visible: false, failedItems: [], message: '' });
-    }
-  };
-
-
   const handleQueueRetry = async () => {
     setQueueFailModal(m => ({ ...m, visible: false }));
     runOfflineQueueOnce();
-  };
-
-  const handleQueueCancel = () => {
-    setQueueFailModal(m => ({ ...m, visible: false }));
   };
 
 

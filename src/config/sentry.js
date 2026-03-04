@@ -294,6 +294,18 @@ export const captureMessage = (message, level = 'info', context = {}) => {
     });
 };
 
+/**
+ * Fuerza el envio de eventos pendientes.
+ * Util en etapas tempranas del arranque.
+ */
+export const flushSentry = async (timeoutMs = 2000) => {
+    try {
+        return await Sentry.flush(timeoutMs);
+    } catch {
+        return false;
+    }
+};
+
 // ============================================================================
 // UTILIDADES
 // ============================================================================
