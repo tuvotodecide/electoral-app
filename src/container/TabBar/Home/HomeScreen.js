@@ -56,6 +56,7 @@ import {
   getVotePlace,
   processQueue,
   removeById,
+  retryNow,
   saveVotePlace,
 } from '../../../utils/offlineQueue';
 import {
@@ -1084,6 +1085,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleRemoveFailedItem = async (id) => {
+    if (!id) return;
     try {
       const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
       await clearWorksheetStatusForFailedItem(failedItem);
@@ -1105,8 +1107,9 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleQueueRetry = async () => {
+    await retryNow(item => isQueueWriteTask(item?.task?.type));
     setQueueFailModal(m => ({ ...m, visible: false }));
-    runOfflineQueueOnce();
+    await runOfflineQueueOnce();
   };
 
 
@@ -1905,7 +1908,11 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
-  const firstFailedId = queueFailModal.failedItems?.[0]?.id;
+  const retryableFailedItems = (queueFailModal.failedItems || []).filter(
+    item => item?.removedFromQueue !== true,
+  );
+  const firstRetryableFailedId = retryableFailedItems?.[0]?.id;
+  const canRetryFailedItems = retryableFailedItems.length > 0;
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
@@ -2353,10 +2360,14 @@ export default function HomeScreen({ navigation }) {
         type="warning"
         title="No se pudo completar la subida"
         message={queueFailModal.message}
-        buttonText="Reintentar"
-        onButtonPress={handleQueueRetry}
-        tertiaryButtonText={firstFailedId ? "Eliminar" : undefined}
-        onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
+        buttonText={canRetryFailedItems ? 'Reintentar' : 'Aceptar'}
+        onButtonPress={canRetryFailedItems
+          ? handleQueueRetry
+          : () => setQueueFailModal(m => ({ ...m, visible: false }))}
+        tertiaryButtonText={firstRetryableFailedId ? 'Eliminar' : undefined}
+        onTertiaryPress={firstRetryableFailedId
+          ? () => handleRemoveFailedItem(firstRetryableFailedId)
+          : undefined}
         tertiaryVariant="danger"
       />
     </CSafeAreaView>

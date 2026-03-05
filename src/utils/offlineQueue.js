@@ -176,6 +176,27 @@ export const updateById = async (id, patch = {}) => {
 
 export const getAll = read;
 
+export const retryNow = async (filterFn = null) => {
+  const now = Date.now();
+  const list = await read();
+  let changed = 0;
+  const next = list.map(item => {
+    const shouldUpdate =
+      typeof filterFn === 'function' ? !!filterFn(item) : true;
+    if (!shouldUpdate) return item;
+    changed++;
+    return normalizeQueueItem({
+      ...item,
+      nextAttemptAt: now,
+      updatedAt: now,
+    });
+  });
+  if (changed > 0) {
+    await write(next);
+  }
+  return changed;
+};
+
 export const processQueue = async (handler) => {
   if (processing) {
     const remaining = (await read()).length;
