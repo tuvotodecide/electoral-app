@@ -6,7 +6,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'com.google.gms:google-services:4.4.1'
+        classpath 'com.google.gms:google-services:4.4.1'
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
@@ -19,7 +19,9 @@ def storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googlea
 allprojects {
   repositories {
     // Native module repositories
-    maven { url file('C:/apps/sdk-flutter-example/build/host/outputs/repo') }
+    maven { url "e:/electoral-app-main/wira-sdk-flutter-component/build/host/outputs/repo" }
+
+    
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }

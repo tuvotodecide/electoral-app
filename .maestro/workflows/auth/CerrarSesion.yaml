@@ -1,0 +1,22 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Click en el icono de cerrar sesión en el Home
+- extendedWaitUntil:
+    visible:
+      id: "logoutButton"
+    timeout: 15000
+
+- tapOn:
+    id: "logoutButton"
+
+# 3. Confirmar cerrar sesión en el modal
+- extendedWaitUntil:
+    visible:
+      id: "homeLogoutModal"
+    timeout: 5000
+
+- tapOn:
+    id: "homeLogoutModalConfirmButton"

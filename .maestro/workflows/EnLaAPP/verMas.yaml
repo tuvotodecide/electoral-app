@@ -1,0 +1,34 @@
+appId: com.tuvotodecide
+name: Learn More and Next 3 Times
+---
+# 1. Iniciar la aplicación
+- launchApp
+
+# 2. ESPERA LARGA: Para cubrir los 30 segundos que tarda tu app en abrir
+- waitForAnimationToEnd:
+    timeout: 40000
+
+# 3. Esperar a que el botón por su ID técnico sea visible
+- extendedWaitUntil:
+    visible:
+      id: connectInfoButton
+    timeout: 30000
+
+# 4. Dar un clic en el botón usando su ID (connectInfoButton)
+- tapOn:
+    id: connectInfoButton
+
+# 5. Esperar a que entre al onboarding y el primer slide sea visible
+- extendedWaitUntil:
+    visible:
+      id: onboardingSlideImage_0
+    timeout: 10000
+
+# 6. Presionar el botón de "Siguiente" 3 veces
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          id: onboardingGetStartedButton
+      - waitForAnimationToEnd:
+          timeout: 2000

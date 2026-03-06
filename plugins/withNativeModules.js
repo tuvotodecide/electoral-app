@@ -97,7 +97,7 @@ function withNativeModules(config) {
       key: 'org.gradle.jvmargs',
       value: '-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dkotlin.daemon.jvm.options=-Xmx1024m',
     });
-    
+
     // Remove x86/x86_64 architectures - only keep ARM for production (reduces AAB size by ~100MB)
     config.modResults = config.modResults.filter(
       (item) => !(item.type === 'property' && item.key === 'reactNativeArchitectures')
@@ -107,7 +107,7 @@ function withNativeModules(config) {
       key: 'reactNativeArchitectures',
       value: 'armeabi-v7a,arm64-v8a',
     });
-    
+
     return config;
   });
 
@@ -151,7 +151,7 @@ function addRepositories(contents) {
   // Replace the entire repositories block with the new content
   const newRepositories = `
     // Native module repositories
-    maven {url file('C:/apps/sdk-flutter-example/build/host/outputs/repo') }
+    maven { url "e:/electoral-app-main/wira-sdk-flutter-component/build/host/outputs/repo" }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
@@ -222,7 +222,7 @@ function addDependencies(contents) {
 
   // Find the dependencies block and add the Flutter dependencies
   const dependenciesPattern = /(dependencies\s*\{)/;
-  
+
   if (dependenciesPattern.test(contents)) {
     contents = contents.replace(
       dependenciesPattern,
@@ -233,7 +233,7 @@ function addDependencies(contents) {
   // Add pickFirst rules to handle duplicate native libraries from Flutter module
   if (!contents.includes('librapidsnark.so')) {
     const packagingPattern = /(packagingOptions\s*\{\s*\n\s*jniLibs\s*\{[^}]*useLegacyPackaging[^}]*\})/;
-    
+
     if (packagingPattern.test(contents)) {
       contents = contents.replace(
         packagingPattern,

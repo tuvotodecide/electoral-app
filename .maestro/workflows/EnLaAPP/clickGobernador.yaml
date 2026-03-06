@@ -1,0 +1,24 @@
+appId: com.tuvotodecide
+---
+# 1. Click directo en "Enviar Acta Gobernador"
+- tapOn: "Enviar Acta Gobernador"
+
+# 2. Esperar a que carguen los recintos
+- extendedWaitUntil:
+    visible: "Mostrando recintos cercanos a ti"
+    timeout: 15000
+
+# 3. Click en el primer recinto electoral de la lista
+- tapOn:
+    index: 0
+    text: ".* mesas"
+
+# 4. Escribir el código de mesa
+- tapOn: "Código de mesa"
+- inputText: "205076-1"
+
+# 5. Click en el botón Confirmar
+- tapOn: "Confirmar"
+
+- waitForAnimationToEnd:
+    timeout: 2000

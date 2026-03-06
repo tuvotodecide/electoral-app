@@ -1,6 +1,7 @@
 appId: com.tuvotodecide
 name: initialSetup
 ---
+# 1. Determinamos el tipo de inicio (Fresh vs Normal)
 - runFlow:
     when:
       true: ${FRESH_START == 'true'}
@@ -11,31 +12,54 @@ name: initialSetup
       true: ${FRESH_START != 'true'}
     file: ./cases/normalStart.yaml
 
+# 2. Espera inteligente al Logo Inicial (Si ya cargó, continúa de inmediato)
 - extendedWaitUntil:
     visible:
-      id: MiVotoLogoImage
-    timeout: 25000
+      id: "MiVotoLogoImage"
+    timeout: 60000
+
+# 3. Manejo de Debugger (Solo si aparece)
 - runFlow:
     when:
-      visible: 'Open debugger to view warnings.'
+      visible: "Open debugger to view warnings."
     file: skipDebuger.yaml
     env:
-      EXTERNAL: 'true'
+      EXTERNAL: "true"
 
+# 4. Manejo de pantalla de bienvenida (Si no estamos en el Home ni en el PIN)
+# Esto actúa como un IF: si ves el botón de login, presiónalo.
 - runFlow:
     when:
-        true: ${CHANGE_USER == 'true'}
+      visible:
+        id: "connectLoginButton"
+    commands:
+      - tapOn:
+          id: "connectLoginButton"
+      - waitForAnimationToEnd:
+          timeout: 5000
+
+# 5. Cambio de usuario (Opcional)
+- runFlow:
+    when:
+      true: ${CHANGE_USER == 'true'}
     file: ./changeUser/changeUser.yaml
 
+# 6. LOGIN (Solo si NO vemos el título del Home)
+# Esto es tu 'IF/ELSE': Si ya estoy en el Home, me salto el login.
 - runFlow:
     when:
       notVisible:
-        id: homeMiVotoLogoTitle
+        id: "homeMiVotoLogoTitle"
     file: ../auth/login.yaml
     env:
       PIN: ${PIN}
 
+# 7. LOGOUT (Opcional)
 - runFlow:
     when:
-        true: ${LOGOUT == 'true'}
+      true: ${LOGOUT == 'true'}
     file: ../auth/logout.yaml
+
+# 8. Pausa de estabilización final
+- waitForAnimationToEnd:
+    timeout: 3000

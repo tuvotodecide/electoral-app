@@ -1,0 +1,33 @@
+appId: com.tuvotodecide
+---
+# 1. Navegar al Perfil usando la ruta básica
+- runFlow: RutaBasica.yaml
+
+# 2. Entrar en Respaldo de identidad (Respaldo de datos)
+- extendedWaitUntil:
+    visible:
+      id: "profileMenuItem_2"
+    timeout: 10000
+
+- tapOn:
+    id: "profileMenuItem_2"
+
+# 3. Click en Descargar respaldo
+- extendedWaitUntil:
+    visible:
+      id: "recuperationFileSaveButton"
+    timeout: 10000
+
+- tapOn:
+    id: "recuperationFileSaveButton"
+
+# 4. Click en OK (Confirmación de descarga)
+- extendedWaitUntil:
+    visible: "OK"
+    timeout: 15000
+
+- tapOn: "OK"
+
+# 5. Regresar 2 veces
+- back
+- back
