@@ -13,7 +13,6 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@bam.tech/react-native-image-resizer": "^3.0.11",
     "@expo/vector-icons": "^15.0.3",
     "@google/genai": "^1.9.0",
     "@noble/hashes": "^1.8.0",
@@ -28,7 +27,6 @@
     "@react-native-firebase/database": "^22.4.0",
     "@react-native-firebase/functions": "^22.4.0",
     "@react-native-firebase/messaging": "^22.4.0",
-    "@react-native-ml-kit/barcode-scanning": "^2.0.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",

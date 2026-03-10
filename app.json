@@ -10,7 +10,26 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuvotodecide"
+      "bundleIdentifier": "com.tuvotodecide",
+      "buildNumber": "42",
+      "icon": "./assets/images/ic_launcher.png",
+      "googleServicesFile": "./native-files/GoogleService-Info.plist",
+      "usesAppleSignIn": false,
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galería de fotos",
+        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación en segundo plano",
+        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticación",
+        "UIBackgroundModes": ["remote-notification", "fetch"]
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "versionCode": 42,
@@ -69,6 +88,10 @@
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "useLegacyPackaging": false
+          },
+          "ios": {
+            "deploymentTarget": "15.1",
+            "useFrameworks": "dynamic"
           }
         }
       ],
@@ -91,11 +114,17 @@
           "microphonePermission": false
         }
       ],
-      ["./plugins/withAndroidKeystore", {
-        "keystorePath": "./native-files/keystores/identity-release.keystore"
-      }],
+      [
+        "./plugins/withAndroidKeystore",
+        {
+          "keystorePath": "./native-files/keystores/identity-release.keystore"
+        }
+      ],
+      "@sentry/react-native/expo",
+      "./plugins/withIOSCodesigning",
       "@react-native-firebase/app",
-      "./plugins/withNativeModules"
+      "./plugins/withNativeModules",
+      "./plugins/withIOSNativeModules"
     ],
     "experiments": {
       "typedRoutes": true,
