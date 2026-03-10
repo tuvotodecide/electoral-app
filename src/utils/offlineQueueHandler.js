@@ -657,23 +657,6 @@ export const publishActaHandler = async (item, userData) => {
         storedElectionId ||
         '',
     ).trim() || undefined;
-    console.log('[OFFLINE-QUEUE][ELECTION-ID] resolved', {
-      taskId: item?.id,
-      mode: flowMode,
-      electionId: electionId || null,
-      fromAdditional: normalizedAdditional?.electionId || null,
-      fromPayload: item?.task?.payload?.electionId || null,
-      fromExistingRecord:
-        existingRecordForElection?.electionId ||
-        existingRecordForElection?.election_id ||
-        existingRecordForElection?.rawData?.electionId ||
-        existingRecordForElection?.rawData?.election_id ||
-        existingRecordForElection?.raw?.electionId ||
-        existingRecordForElection?.raw?.election_id ||
-        null,
-      fromTableData: tableData?.electionId || tableData?.election_id || null,
-      fromStorage: storedElectionId || null,
-    });
     normalizedAdditional.electionId = electionId;
     const observationPayload = (() => {
       const hasObservationCandidate =
@@ -772,21 +755,11 @@ export const publishActaHandler = async (item, userData) => {
           existingRecord?.raw?.recordId,
       );
       if (dniValue && tableCodeStrict) {
-        console.log('[OFFLINE-QUEUE][ATTEST][ALREADY-CHECK][INPUT]', {
-          dni: String(dniValue || ''),
-          tableCode: tableCodeStrict,
-          electionId: electionId || null,
-        });
         const alreadyMine = await hasUserAttestedTable(
           dniValue,
           tableCodeStrict,
           electionId,
         );
-        console.log('[OFFLINE-QUEUE][ATTEST][ALREADY-CHECK][RESULT]', {
-          alreadyMine,
-          tableCode: tableCodeStrict,
-          electionId: electionId || null,
-        });
         if (alreadyMine) {
           throw buildAlreadyAttestedError();
         }
@@ -981,21 +954,11 @@ export const publishActaHandler = async (item, userData) => {
     // }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
-      console.log('[OFFLINE-QUEUE][UPLOAD][ALREADY-CHECK][INPUT]', {
-        dni: String(dniValue || ''),
-        tableCode: tableCodeStrict,
-        electionId: electionId || null,
-      });
       const alreadyMine = await hasUserAttestedTable(
         dniValue,
         tableCodeStrict,
         electionId,
       );
-      console.log('[OFFLINE-QUEUE][UPLOAD][ALREADY-CHECK][RESULT]', {
-        alreadyMine,
-        tableCode: tableCodeStrict,
-        electionId: electionId || null,
-      });
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
@@ -1299,6 +1262,7 @@ export const publishActaHandler = async (item, userData) => {
             ipfsUri: ipfsData.jsonUrl,
             recordId: 'String',
             tableIdIpfs: 'String',
+            ...observationPayload,
             ...(electionId ? { electionId: String(electionId) } : {}),
           },
           {
@@ -1569,6 +1533,7 @@ export const publishActaHandler = async (item, userData) => {
           ipfsUri: ipfsData.jsonUrl,
           recordId: 'String',
           tableIdIpfs: 'String',
+          ...observationPayload,
           ...(electionId ? { electionId: String(electionId) } : {}),
         },
         {
