@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Keyboard,
   ActivityIndicator,
   Image,
   Modal,
@@ -261,6 +262,7 @@ export default function TableDetail({ navigation, route }) {
     rawMesa.tableId,
   );
   const [mesaNumberInput, setMesaNumberInput] = useState('');
+  const mesaInputRef = useRef(null);
   const [mesaSearchError, setMesaSearchError] = useState('');
   const [isSearchingMesa, setIsSearchingMesa] = useState(false);
   const [selectedMesaRaw, setSelectedMesaRaw] = useState(null);
@@ -638,6 +640,9 @@ export default function TableDetail({ navigation, route }) {
   };
 
   const handleMesaSearch = async () => {
+    Keyboard.dismiss();
+    mesaInputRef.current?.blur();
+
     const normalizedInput = normalizeMesaNumber(mesaNumberInput);
     if (!normalizedInput) {
       setMesaSearchError('Escribe el número de mesa.');
@@ -1270,6 +1275,7 @@ export default function TableDetail({ navigation, route }) {
 
         <View style={stylesx.searchInputRow}>
           <TextInput
+            ref={mesaInputRef}
             value={mesaNumberInput}
             onChangeText={value => {
               setMesaNumberInput(value);
