@@ -11,8 +11,6 @@ import {
 } from '../notifications';
 import { requestPushPermissionExplicit } from '../services/pushPermission';
 import wira from 'wira-sdk';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ELECTION_ID } from '../common/constants';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
 import {
   WorksheetStatus,
@@ -639,9 +637,6 @@ export const publishActaHandler = async (item, userData) => {
         electionType: additionalData?.electionType ?? item?.task?.payload?.electionType ?? undefined,
       };
     })();
-    const storedElectionId = String(
-      (await AsyncStorage.getItem(ELECTION_ID)) || '',
-    ).trim();
     const existingRecordForElection = taskPayload?.existingRecord || {};
     const electionId = String(
       normalizedAdditional?.electionId ||
@@ -654,7 +649,6 @@ export const publishActaHandler = async (item, userData) => {
         existingRecordForElection?.raw?.election_id ||
         tableData?.electionId ||
         tableData?.election_id ||
-        storedElectionId ||
         '',
     ).trim() || undefined;
     normalizedAdditional.electionId = electionId;
