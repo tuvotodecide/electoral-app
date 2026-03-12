@@ -8,9 +8,6 @@ export const RecordHeader = ({testID = "recordHeader", onBack, title, colors}) =
     onBack={onBack}
     title={title}
     showNotification={true}
-    onNotificationPress={() => {
-      // Handle notification press
-    }}
   />
 );
 

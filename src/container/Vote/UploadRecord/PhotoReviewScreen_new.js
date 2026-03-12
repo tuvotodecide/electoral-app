@@ -17,6 +17,7 @@ import {moderateScale} from '../../../common/constants';
 import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
+import VoteValidationModal from '../../../components/modal/VoteValidationModal';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
 import CText from '../../../components/common/CText';
@@ -229,6 +230,10 @@ const PhotoReviewScreen = () => {
     message: '',
     buttonText: 'OK',
   });
+  const [voteValidationModal, setVoteValidationModal] = useState({
+    visible: false,
+    message: '',
+  });
   const [shouldGoHomeAfterInfoModal, setShouldGoHomeAfterInfoModal] =
     useState(false);
   const [pendingConfirmationParams, setPendingConfirmationParams] =
@@ -262,6 +267,12 @@ const PhotoReviewScreen = () => {
         ],
       });
     }
+  };
+  const closeVoteValidationModal = () => {
+    setVoteValidationModal({
+      visible: false,
+      message: '',
+    });
   };
 
   // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
@@ -637,9 +648,8 @@ const PhotoReviewScreen = () => {
         normalizedVoteSummaryResults,
       );
       if (!check.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: 'Datos inconsistentes',
           message: check.errors.join('\n'),
         });
         return; // NO avanzar
@@ -963,6 +973,7 @@ const PhotoReviewScreen = () => {
           ]}
         />
       ) : null}
+
     </View>
   );
 
@@ -1056,6 +1067,11 @@ const PhotoReviewScreen = () => {
         </View>
       </Modal>
       <InfoModal {...infoModalData} onClose={closeInfoModal} />
+      <VoteValidationModal
+        visible={voteValidationModal.visible}
+        message={voteValidationModal.message}
+        onClose={closeVoteValidationModal}
+      />
     </>
   );
 };
