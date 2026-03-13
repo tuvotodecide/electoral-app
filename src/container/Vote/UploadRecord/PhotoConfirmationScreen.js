@@ -151,7 +151,7 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [isNameVisible, setIsNameVisible] = useState(true);
   const [certificateUri, setCertificateUri] = useState(null);
   const [finalStepMessage, setFinalStepMessage] = useState(
-    'Acta guardada. Se subirá en segundo plano.',
+    'Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.',
   );
   const [compareResult] = useState(() => {
     const fromRoute = route.params?.compareResult;
@@ -628,7 +628,7 @@ const PhotoConfirmationScreen = ({ route }) => {
             undefined,
         },
       });
-      setFinalStepMessage('Acta guardada. Se subirá en segundo plano.');
+      setFinalStepMessage('Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.');
       setStep(2);
     } catch (error) {
       captureError(error, {
