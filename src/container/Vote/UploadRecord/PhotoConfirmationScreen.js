@@ -151,7 +151,7 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [isNameVisible, setIsNameVisible] = useState(true);
   const [certificateUri, setCertificateUri] = useState(null);
   const [finalStepMessage, setFinalStepMessage] = useState(
-    'Acta guardada. Se subirá en segundo plano.',
+    'Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.',
   );
   const [compareResult] = useState(() => {
     const fromRoute = route.params?.compareResult;
@@ -289,7 +289,9 @@ const PhotoConfirmationScreen = ({ route }) => {
           const capturedCertificateUri = await captureRef(
             certificateRef.current,
             {
-              format: 'png',
+              // El certificado es una captura de UI; JPG alta calidad reduce
+              // mucho el peso sin afectar la legibilidad y no toca el acta.
+              format: 'jpg',
               quality: 0.9,
             },
           );
@@ -628,7 +630,7 @@ const PhotoConfirmationScreen = ({ route }) => {
             undefined,
         },
       });
-      setFinalStepMessage('Acta guardada. Se subirá en segundo plano.');
+      setFinalStepMessage('Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.');
       setStep(2);
     } catch (error) {
       captureError(error, {

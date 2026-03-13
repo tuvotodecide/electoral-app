@@ -544,7 +544,7 @@ class PinataService {
       // 1) Subir la IMAGEN del certificado
       const imageResult = await this.uploadImageToIPFS(
         certificatePath,
-        'participation-certificate.png',
+        'participation-certificate.jpg',
       );
 
       if (!imageResult.success) {
