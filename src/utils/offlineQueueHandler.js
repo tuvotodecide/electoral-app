@@ -22,6 +22,17 @@ import { enqueue, updateById } from './offlineQueue';
 const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
 const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
 
+const nowMs = () => Date.now();
+const logActaTiming = (itemId, stage, startedAt, extra = {}) => {
+  const durationMs = nowMs() - startedAt;
+  console.log('[ACTA-TIMING]', {
+    itemId,
+    stage,
+    durationMs,
+    ...extra,
+  });
+};
+
 const safeStr = v =>
   String(v ?? '')
     .trim()
@@ -586,6 +597,7 @@ const uploadCertificateAndNotifyBackend = async (
 
 export const publishActaHandler = async (item, userData) => {
   let certificateData = null;
+  const totalStartedAt = nowMs();
   try {
     const taskPayload = item?.task?.payload || {};
     const {
@@ -600,10 +612,12 @@ export const publishActaHandler = async (item, userData) => {
     const isAttestMode = flowMode === 'attest';
 
     // Make zk-auth to get API key for backend for upload atestation
+    const authStartedAt = nowMs();
     const apiKey = await authenticateWithBackend(
       userData.did,
       userData.privKey,
     );
+    logActaTiming(item?.id, 'authenticate_backend', authStartedAt);
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -948,11 +962,16 @@ export const publishActaHandler = async (item, userData) => {
     // }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
+      const alreadyAttestedStartedAt = nowMs();
       const alreadyMine = await hasUserAttestedTable(
         dniValue,
         tableCodeStrict,
         electionId,
       );
+      logActaTiming(item?.id, 'check_user_already_attested', alreadyAttestedStartedAt, {
+        tableCode: tableCodeStrict,
+        electionId: electionId || null,
+      });
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
@@ -1010,10 +1029,15 @@ export const publishActaHandler = async (item, userData) => {
 
     let duplicateCheck;
     try {
+      const duplicateCheckStartedAt = nowMs();
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
         electionId,
       );
+      logActaTiming(item?.id, 'check_duplicate_ballot', duplicateCheckStartedAt, {
+        tableCode: tableCodeStrict,
+        duplicateFound: Boolean(duplicateCheck?.exists),
+      });
       if (duplicateCheck?.exists) {
         const existingBallot =
           duplicateCheck.ballot ||
@@ -1222,12 +1246,16 @@ export const publishActaHandler = async (item, userData) => {
 
       let ipfs;
       try {
+        const ipfsStartedAt = nowMs();
         ipfs = await pinataService.uploadElectoralActComplete(
           imagePath,
           aiAnalysis || {},
           { ...electoralData, voteSummaryResults: normalizedVoteSummary },
           normalizedAdditional,
         );
+        logActaTiming(item?.id, 'ipfs_upload_attest_new', ipfsStartedAt, {
+          tableCode: tableCodeStrict,
+        });
         if (!ipfs.success) {
           captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
             flow: 'offline_queue',
@@ -1250,6 +1278,7 @@ export const publishActaHandler = async (item, userData) => {
 
       // Validación backend
       try {
+        const validateStartedAt = nowMs();
         await axios.post(
           `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`,
           {
@@ -1267,6 +1296,9 @@ export const publishActaHandler = async (item, userData) => {
             timeout: 30000,
           },
         );
+        logActaTiming(item?.id, 'backend_validate_attest_new', validateStartedAt, {
+          tableCode: tableCodeStrict,
+        });
       } catch (err) {
         captureError(err, {
           flow: 'offline_queue',
@@ -1314,6 +1346,7 @@ export const publishActaHandler = async (item, userData) => {
         }
       }
 
+      const blockchainStartedAt = nowMs();
       const response = await executeOperation(
         privateKey,
         userData.account,
@@ -1327,6 +1360,9 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'Attested',
       );
+      logActaTiming(item?.id, 'blockchain_attest_new', blockchainStartedAt, {
+        tableCode: tableCodeStrict,
+      });
       const onChainRecordId = String(response.returnData.recordId.toString());
       await persistActaCheckpoint(item, {
         ipfsUri: ipfsData?.jsonUrl,
@@ -1340,6 +1376,7 @@ export const publishActaHandler = async (item, userData) => {
       // Notificar backend (from-ipfs) y registrar attestation
       let backendBallot;
       try {
+        const fromIpfsStartedAt = nowMs();
         const { data } = await axios.post(
           `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
           {
@@ -1357,6 +1394,9 @@ export const publishActaHandler = async (item, userData) => {
             timeout: 30000,
           },
         );
+        logActaTiming(item?.id, 'backend_from_ipfs_attest_new', fromIpfsStartedAt, {
+          tableCode: tableCodeStrict,
+        });
         backendBallot = data;
       } catch (err) {
         captureError(err, {
@@ -1446,6 +1486,7 @@ export const publishActaHandler = async (item, userData) => {
 
       if (certificateImageUri) {
         try {
+          const certificateStartedAt = nowMs();
           certificateData = await uploadCertificateAndNotifyBackend(
             certificateImageUri,
             normalizedAdditional,
@@ -1457,6 +1498,9 @@ export const publishActaHandler = async (item, userData) => {
             },
             { notificationType: 'participation_certificate' },
           );
+          logActaTiming(item?.id, 'certificate_upload_attest_new', certificateStartedAt, {
+            tableCode: tableCodeStrict,
+          });
         } catch (err) {
           captureError(err, {
             flow: 'offline_queue',
@@ -1492,12 +1536,16 @@ export const publishActaHandler = async (item, userData) => {
 
     let ipfs;
     try {
+      const ipfsStartedAt = nowMs();
       ipfs = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
         { ...electoralData, voteSummaryResults: normalizedVoteSummary },
         normalizedAdditional,
       );
+      logActaTiming(item?.id, 'ipfs_upload_create', ipfsStartedAt, {
+        tableCode: tableCodeStrict,
+      });
       if (!ipfs.success) {
         captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
           flow: 'offline_queue',
@@ -1521,6 +1569,7 @@ export const publishActaHandler = async (item, userData) => {
     // Validación en backend
     const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
     try {
+      const validateStartedAt = nowMs();
       await axios.post(
         backendUrl,
         {
@@ -1538,6 +1587,9 @@ export const publishActaHandler = async (item, userData) => {
           timeout: 30000,
         },
       );
+      logActaTiming(item?.id, 'backend_validate_create', validateStartedAt, {
+        tableCode: tableCodeStrict,
+      });
     } catch (err) {
       captureError(err, {
         flow: 'offline_queue',
@@ -1587,6 +1639,7 @@ export const publishActaHandler = async (item, userData) => {
 
     let response;
     try {
+      const blockchainStartedAt = nowMs();
       response = await executeOperation(
         privateKey,
         userData.account,
@@ -1599,6 +1652,9 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'AttestationCreated',
       );
+      logActaTiming(item?.id, 'blockchain_create_attestation', blockchainStartedAt, {
+        tableCode: tableCodeStrict,
+      });
     } catch (e) {
       addBlockchainBreadcrumb('createAttestation_error', { chain: CHAIN });
       const msg = e.message || '';
@@ -1607,6 +1663,7 @@ export const publishActaHandler = async (item, userData) => {
         msg.indexOf('416c72656164792063726561746564') >= 0 ||
         normalizedMsg.includes('already created');
       if (isAlreadyCreatedError) {
+        const attestFallbackStartedAt = nowMs();
         response = await executeOperation(
           privateKey,
           userData.account,
@@ -1620,6 +1677,9 @@ export const publishActaHandler = async (item, userData) => {
           oracleReads.waitForOracleEvent,
           'Attested',
         );
+        logActaTiming(item?.id, 'blockchain_attest_fallback', attestFallbackStartedAt, {
+          tableCode: tableCodeStrict,
+        });
       } else {
         captureError(e, {
           flow: 'offline_queue',
@@ -1650,6 +1710,7 @@ export const publishActaHandler = async (item, userData) => {
 
     let backendBallot;
     try {
+      const fromIpfsStartedAt = nowMs();
       const { data } = await axios.post(
         `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
         {
@@ -1667,6 +1728,9 @@ export const publishActaHandler = async (item, userData) => {
           timeout: 30000,
         },
       );
+      logActaTiming(item?.id, 'backend_from_ipfs_create', fromIpfsStartedAt, {
+        tableCode: tableCodeStrict,
+      });
       backendBallot = data;
     } catch (err) {
       captureError(err, {
@@ -1750,6 +1814,7 @@ export const publishActaHandler = async (item, userData) => {
     // Subir certificado y obtener enlace (si hay foto de certificado)
     if (certificateImageUri) {
       try {
+        const certificateStartedAt = nowMs();
         certificateData = await uploadCertificateAndNotifyBackend(
           certificateImageUri,
           normalizedAdditional,
@@ -1761,6 +1826,9 @@ export const publishActaHandler = async (item, userData) => {
           },
           { notificationType: 'acta_published' },
         );
+        logActaTiming(item?.id, 'certificate_upload_create', certificateStartedAt, {
+          tableCode: tableCodeStrict,
+        });
       } catch (err) {
         captureError(err, {
           flow: 'offline_queue',
@@ -1771,8 +1839,15 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
+    logActaTiming(item?.id, 'publish_acta_total', totalStartedAt, {
+      tableCode: tableCodeStrict,
+      electionId: electionId || null,
+    });
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
+    logActaTiming(item?.id, 'publish_acta_failed_total', totalStartedAt, {
+      error: fatalErr?.message || 'unknown',
+    });
     if (isAlreadyAttestedOracleError(fatalErr)) {
       throw buildAlreadyAttestedError();
     }
