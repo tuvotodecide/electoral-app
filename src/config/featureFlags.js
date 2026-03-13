@@ -1,21 +1,11 @@
+import {isVotingAppFlow} from './appMode';
+
 /**
  * Feature Flags - Centralized feature toggle configuration
- *
- * IMPORTANTE: Estos flags permiten activar/desactivar features sin modificar código.
- * Cuando ENABLE_UNIVERSITY_ELECTION = false, la app se comporta exactamente igual que antes.
  */
 
 export const FEATURE_FLAGS = {
-  /**
-   * Habilita el flujo de Elecciones Universitarias
-   * - Card en Home
-   * - Pantalla de candidatos
-   * - Votación con NFT
-   * - Cola offline
-   *
-   * Para desactivar: cambiar a false
-   */
-  ENABLE_UNIVERSITY_ELECTION: true,
+  ENABLE_VOTING_FLOW: isVotingAppFlow(),
 };
 
 /**
@@ -32,7 +22,7 @@ export const isFeatureEnabled = (flagName) => {
  * NO usar en producción
  */
 export const DEV_FLAGS = {
-  FORCE_OFFLINE_UNIVERSITY_ELECTION: true,
+  FORCE_OFFLINE_VOTING: true,
   /**
    * Habilita el countdown dinámico en la tarjeta de elección
    * true = usa timestamps reales para countdown

@@ -74,9 +74,8 @@ import { captureError, captureMessage } from '../../../config/sentry';
 import { useBackupCheck } from '../../../hooks/useBackupCheck';
 import { backendProbe } from '../../../utils/networkUtils';
 
-// University Election Feature
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
-import { ElectionCard, useUniversityElectionState, UI_STRINGS as UnivElectionStrings } from '../../../features/universityElection';
+import { ElectionCard, useVotingState, UI_STRINGS as VotingStrings } from '../../../features/voting';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -492,9 +491,8 @@ export default function HomeScreen({ navigation }) {
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [isHomeOnline, setIsHomeOnline] = useState(true);
 
-  // University Election Feature state
-  const univElectionState = FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
-    ? useUniversityElectionState()
+  const votingState = FEATURE_FLAGS.ENABLE_VOTING_FLOW
+    ? useVotingState()
     : { isLoading: false, hasVoted: false, voteSynced: false, refreshState: () => {} };
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
@@ -1460,9 +1458,8 @@ export default function HomeScreen({ navigation }) {
       fetchElectionStatus();
       requestLocationAndCheckAvailability();
 
-      // Refrescar estado de votación universitaria (si feature flag ON)
-      if (FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION && univElectionState.refreshState) {
-        univElectionState.refreshState();
+      if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
+        votingState.refreshState();
       }
 
       let alive = true;
@@ -1477,9 +1474,8 @@ export default function HomeScreen({ navigation }) {
           // opcional: recheck cuando vuelve el internet
           requestLocationAndCheckAvailability();
 
-          // Refrescar estado de votación universitaria cuando vuelve internet
-          if (FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION && univElectionState.refreshState) {
-            univElectionState.refreshState();
+          if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
+            votingState.refreshState();
           }
         }
       });
@@ -1492,7 +1488,7 @@ export default function HomeScreen({ navigation }) {
       runOfflineQueueOnce,
       fetchElectionStatus,
       requestLocationAndCheckAvailability,
-      univElectionState,
+      votingState,
     ]),
   );
 
@@ -1916,14 +1912,13 @@ export default function HomeScreen({ navigation }) {
     },
     {
       icon: 'bar-chart-outline',
-      // Si feature flag ON, mostrar "Mis participaciones"; si OFF, mostrar "Mis atestiguamientos"
-      title: FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
-        ? UnivElectionStrings.myParticipations
+      title: FEATURE_FLAGS.ENABLE_VOTING_FLOW
+        ? VotingStrings.myParticipations
         : I18nStrings.myWitnesses,
       description: I18nStrings.myWitnessesDescription,
       onPress: () => navigation.navigate(
-        FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
-          ? StackNav.UniversityElectionParticipationsScreen
+        FEATURE_FLAGS.ENABLE_VOTING_FLOW
+          ? StackNav.VotingParticipationsScreen
           : StackNav.MyWitnessesListScreen
       ),
       iconComponent: Ionicons,
@@ -2082,13 +2077,12 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {/* University Election Card - Solo si feature flag ON (tablet) */}
-          {FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION && !univElectionState.isLoading && (
+          {FEATURE_FLAGS.ENABLE_VOTING_FLOW && !votingState.isLoading && (
             <ElectionCard
-              hasVoted={univElectionState.hasVoted}
-              voteSynced={univElectionState.voteSynced}
-              onVotePress={() => navigation.navigate(StackNav.UniversityElectionCandidateScreen)}
-              onDetailsPress={() => navigation.navigate(StackNav.UniversityElectionReceiptScreen, { participationId: 'participation_1' })}
+              hasVoted={votingState.hasVoted}
+              voteSynced={votingState.voteSynced}
+              onVotePress={() => navigation.navigate(StackNav.VotingCandidateScreen)}
+              onDetailsPress={() => navigation.navigate(StackNav.VotingReceiptScreen, { participationId: 'participation_1' })}
             />
           )}
 
@@ -2265,13 +2259,12 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
 
-            {/* University Election Card - Solo si feature flag ON */}
-            {FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION && !univElectionState.isLoading && (
+            {FEATURE_FLAGS.ENABLE_VOTING_FLOW && !votingState.isLoading && (
               <ElectionCard
-                hasVoted={univElectionState.hasVoted}
-                voteSynced={univElectionState.voteSynced}
-                onVotePress={() => navigation.navigate(StackNav.UniversityElectionCandidateScreen)}
-                onDetailsPress={() => navigation.navigate(StackNav.UniversityElectionReceiptScreen, { participationId: 'participation_1' })}
+                hasVoted={votingState.hasVoted}
+                voteSynced={votingState.voteSynced}
+                onVotePress={() => navigation.navigate(StackNav.VotingCandidateScreen)}
+                onDetailsPress={() => navigation.navigate(StackNav.VotingReceiptScreen, { participationId: 'participation_1' })}
               />
             )}
 

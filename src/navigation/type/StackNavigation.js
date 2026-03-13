@@ -201,25 +201,25 @@ export default function StackNavigation() {
         options={{headerShown: false}}
       />
 
-      {/* University Election Feature */}
+      {/* Voting Feature */}
       <Stack.Screen
-        name={StackNav.UniversityElectionCandidateScreen}
-        component={StackRoute.UniversityElectionCandidateScreen}
+        name={StackNav.VotingCandidateScreen}
+        component={StackRoute.VotingCandidateScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={StackNav.UniversityElectionReceiptScreen}
-        component={StackRoute.UniversityElectionReceiptScreen}
+        name={StackNav.VotingReceiptScreen}
+        component={StackRoute.VotingReceiptScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={StackNav.UniversityElectionParticipationsScreen}
-        component={StackRoute.UniversityElectionParticipationsScreen}
+        name={StackNav.VotingParticipationsScreen}
+        component={StackRoute.VotingParticipationsScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={StackNav.UniversityElectionNotificationDetailScreen}
-        component={StackRoute.UniversityElectionNotificationDetailScreen}
+        name={StackNav.VotingNotificationDetailScreen}
+        component={StackRoute.VotingNotificationDetailScreen}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

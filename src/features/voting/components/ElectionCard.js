@@ -1,7 +1,7 @@
 /**
  * Election Card Component
  *
- * Card principal que se muestra en Home cuando ENABLE_UNIVERSITY_ELECTION = true
+ * Card principal que se muestra en Home cuando el flujo de votación está activo
  * Soporta estados: activa, inhabilitado, inicia en, ya votó
  */
 

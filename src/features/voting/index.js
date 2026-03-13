@@ -1,10 +1,10 @@
 /**
- * University Election Feature
+ * Voting Feature
  *
  * Exports all feature components, screens, and utilities.
  * Use this file for clean imports:
  *
- * import { ElectionCard, CandidateScreen, useUniversityElectionState } from '../features/universityElection';
+ * import { ElectionCard, CandidateScreen, useVotingState } from '../features/voting';
  */
 
 // Components
@@ -20,7 +20,7 @@ export { default as ParticipationsListScreen } from './screens/ParticipationsLis
 export { default as NotificationDetailScreen } from './screens/NotificationDetailScreen';
 
 // State
-export { useUniversityElectionState } from './state/useUniversityElectionState';
+export { useVotingState } from './state/useVotingState';
 
 // Utils
 export { useCountdown } from './utils/useCountdown';
@@ -35,5 +35,5 @@ export {
   hasPendingVotes,
   getPendingVotes,
   processVoteQueue,
-  handleUniversityElectionVote,
+  handleVotingQueueVote,
 } from './offline/queueAdapter';

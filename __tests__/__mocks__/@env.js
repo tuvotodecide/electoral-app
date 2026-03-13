@@ -15,6 +15,7 @@ const envConfig = {
   BUNDLER_MAIN_ARBITRUM: 'https://bundler.test',
   API_URL: 'https://test-api.com',
   APP_ENV: 'test',
+  APP_FLOW: 'attestation',
 };
 
 // Export por defecto y named exports para mayor compatibilidad  
@@ -34,6 +35,7 @@ module.exports.BUNDLER_MAIN = 'https://bundler.test';
 module.exports.BUNDLER_MAIN_ARBITRUM = 'https://bundler.test';
 module.exports.API_URL = 'https://test-api.com';
 module.exports.APP_ENV = 'test';
+module.exports.APP_FLOW = 'attestation';
 
 // También para imports ES6
 module.exports.default = envConfig;

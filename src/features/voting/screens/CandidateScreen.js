@@ -27,7 +27,7 @@ import ConfirmVoteModal from '../components/ConfirmVoteModal';
 import OfflineQueuedModal from '../components/OfflineQueuedModal';
 
 // Feature logic
-import { useUniversityElectionState } from '../state/useUniversityElectionState';
+import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
 import { enqueueVote } from '../offline/queueAdapter';
 import { MOCK_ELECTION, MOCK_CANDIDATES, UI_STRINGS } from '../data/mockData';
@@ -66,7 +66,7 @@ const CandidateScreen = ({ route }) => {
   const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   // Election state hook
-  const { recordVote } = useUniversityElectionState(electionId);
+  const { recordVote } = useVotingState(electionId);
 
   // Load candidates
   useEffect(() => {
@@ -102,7 +102,7 @@ const CandidateScreen = ({ route }) => {
 
     try {
       // Check connectivity (allow DEV_FLAGS override for testing)
-      const isOnline = DEV_FLAGS.FORCE_OFFLINE_UNIVERSITY_ELECTION
+      const isOnline = DEV_FLAGS.FORCE_OFFLINE_VOTING
         ? false
         : await checkInternetConnection();
 
@@ -124,7 +124,7 @@ const CandidateScreen = ({ route }) => {
           setShowConfirmModal(false);
 
           // Navigate to receipt/comprobante screen
-          navigation.navigate(StackNav.UniversityElectionReceiptScreen, {
+          navigation.navigate(StackNav.VotingReceiptScreen, {
             participationId: 'participation_1', // Mock ID for demo
           });
         } else {

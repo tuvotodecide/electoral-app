@@ -23,7 +23,7 @@ jest.mock('../../../../src/config/featureFlags', () => ({
 }));
 
 // Mock del useCountdown hook
-jest.mock('../../../../src/features/universityElection/utils/useCountdown', () => ({
+jest.mock('../../../../src/features/voting/utils/useCountdown', () => ({
   useCountdown: jest.fn(() => ({
     countdownLabel: 'Cierra en 2h',
     countdownTime: '',
@@ -37,8 +37,8 @@ jest.mock('../../../../src/features/universityElection/utils/useCountdown', () =
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
 
 // Import después de los mocks
-import ElectionCard from '../../../../src/features/universityElection/components/ElectionCard';
-import { useCountdown } from '../../../../src/features/universityElection/utils/useCountdown';
+import ElectionCard from '../../../../src/features/voting/components/ElectionCard';
+import { useCountdown } from '../../../../src/features/voting/utils/useCountdown';
 
 // Helper para crear store de Redux mock
 const createMockStore = () => {
@@ -67,7 +67,7 @@ const renderWithProvider = (component) => {
 // Mock de elección
 const mockElection = {
   id: 'election_test',
-  title: 'Elecciones Universitarias',
+  title: 'Votación General',
   status: 'ACTIVA',
   closesInLabel: 'Cierra en 2h',
   instituteName: 'Carrera de Informática',
@@ -99,7 +99,7 @@ describe('ElectionCard', () => {
         />
       );
 
-      expect(getByText('Elecciones Universitarias')).toBeTruthy();
+      expect(getByText('Votación General')).toBeTruthy();
     });
 
     test('renderiza el badge de estado ACTIVA', () => {

@@ -74,7 +74,7 @@ const ParticipationsListScreen = () => {
   const handleItemPress = (item) => {
     if (item.status === 'VOTO_REGISTRADO') {
       // Navigate to receipt/comprobante screen
-      navigation.navigate(StackNav.UniversityElectionReceiptScreen, {
+      navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: item.id,
       });
     } else {

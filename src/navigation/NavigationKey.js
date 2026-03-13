@@ -44,11 +44,11 @@ export const StackNav = {
   UnifiedParticipationScreen: 'UnifiedParticipationScreen',
   OracleParticipation: 'OracleParticipation',
 
-  // University Election Feature
-  UniversityElectionCandidateScreen: 'UniversityElectionCandidateScreen',
-  UniversityElectionReceiptScreen: 'UniversityElectionReceiptScreen',
-  UniversityElectionParticipationsScreen: 'UniversityElectionParticipationsScreen',
-  UniversityElectionNotificationDetailScreen: 'UniversityElectionNotificationDetailScreen',
+  // Voting Feature
+  VotingCandidateScreen: 'VotingCandidateScreen',
+  VotingReceiptScreen: 'VotingReceiptScreen',
+  VotingParticipationsScreen: 'VotingParticipationsScreen',
+  VotingNotificationDetailScreen: 'VotingNotificationDetailScreen',
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',

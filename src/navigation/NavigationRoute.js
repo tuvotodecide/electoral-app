@@ -56,13 +56,13 @@ import MyWitnessesDetailScreen from '../container/Vote/MyWitnesses/MyWitnessesDe
 import UnifiedParticipationScreen from '../container/Vote/common/UnifiedParticipationScreen';
 import OracleParticipation from '../container/TabBar/Profile/OracleParticipation';
 
-// University Election Feature
+// Voting Feature
 import {
-  CandidateScreen as UniversityElectionCandidateScreen,
-  VoteReceiptScreen as UniversityElectionReceiptScreen,
-  ParticipationsListScreen as UniversityElectionParticipationsScreen,
-  NotificationDetailScreen as UniversityElectionNotificationDetailScreen,
-} from '../features/universityElection';
+  CandidateScreen as VotingCandidateScreen,
+  VoteReceiptScreen as VotingReceiptScreen,
+  ParticipationsListScreen as VotingParticipationsScreen,
+  NotificationDetailScreen as VotingNotificationDetailScreen,
+} from '../features/voting';
 
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
@@ -145,11 +145,11 @@ export const StackRoute = {
   UnifiedParticipationScreen,
   OracleParticipation,
 
-  // University Election Feature
-  UniversityElectionCandidateScreen,
-  UniversityElectionReceiptScreen,
-  UniversityElectionParticipationsScreen,
-  UniversityElectionNotificationDetailScreen,
+  // Voting Feature
+  VotingCandidateScreen,
+  VotingReceiptScreen,
+  VotingParticipationsScreen,
+  VotingNotificationDetailScreen,
 
   // Profile y configuración
   PersonalDetails,

@@ -1,8 +1,7 @@
 /**
- * University Election State Hook
+ * Voting State Hook
  *
- * Maneja el estado persistente de la votación universitaria.
- * Usa AsyncStorage con keys namespaced para evitar colisiones.
+ * Maneja el estado persistente del flujo de votación.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,18 +10,18 @@ import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
-  HAS_VOTED: 'universityElection.hasVoted',
-  VOTE_SYNCED: 'universityElection.voteSynced',
-  SELECTED_CANDIDATE_ID: 'universityElection.selectedCandidateId',
-  ELECTION_ID: 'universityElection.electionId',
-  VOTE_TIMESTAMP: 'universityElection.voteTimestamp',
+  HAS_VOTED: 'voting.hasVoted',
+  VOTE_SYNCED: 'voting.voteSynced',
+  SELECTED_CANDIDATE_ID: 'voting.selectedCandidateId',
+  ELECTION_ID: 'voting.electionId',
+  VOTE_TIMESTAMP: 'voting.voteTimestamp',
 };
 
 /**
- * Hook para manejar el estado de la votación universitaria
+ * Hook para manejar el estado de votación
  * @param {string} electionId - ID de la elección
  */
-export const useUniversityElectionState = (electionId = 'election_univ_1') => {
+export const useVotingState = (electionId = 'election_voting_1') => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteSynced, setVoteSynced] = useState(false);
@@ -30,7 +29,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
 
   // Cargar estado inicial desde AsyncStorage
   useEffect(() => {
-    if (!FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
+    if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
       setIsLoading(false);
       return;
     }
@@ -56,7 +55,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
           setSelectedCandidateId(storedCandidateId || null);
         }
       } catch (error) {
-        console.error('[UniversityElection] Error loading state:', error);
+        console.error('[Voting] Error loading state:', error);
       } finally {
         setIsLoading(false);
       }
@@ -87,7 +86,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
 
         return true;
       } catch (error) {
-        console.error('[UniversityElection] Error recording vote:', error);
+        console.error('[Voting] Error recording vote:', error);
         return false;
       }
     },
@@ -103,7 +102,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
       setVoteSynced(true);
       return true;
     } catch (error) {
-      console.error('[UniversityElection] Error marking vote synced:', error);
+      console.error('[Voting] Error marking vote synced:', error);
       return false;
     }
   }, []);
@@ -127,7 +126,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
 
       return true;
     } catch (error) {
-      console.error('[UniversityElection] Error resetting state:', error);
+      console.error('[Voting] Error resetting state:', error);
       return false;
     }
   }, []);
@@ -142,7 +141,7 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
       ]);
       setVoteSynced(storedVoteSynced === 'true');
     } catch (error) {
-      console.error('[UniversityElection] Error refreshing state:', error);
+      console.error('[Voting] Error refreshing state:', error);
     }
   }, []);
 
@@ -162,4 +161,4 @@ export const useUniversityElectionState = (electionId = 'election_univ_1') => {
   };
 };
 
-export default useUniversityElectionState;
+export default useVotingState;

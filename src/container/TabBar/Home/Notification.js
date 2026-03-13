@@ -271,11 +271,11 @@ export default function Notification({ navigation }) {
   }, [fetchFromBackend]);
 
   // DEV: Mock notification para probar NotificationDetailScreen
-  const mockElectionResultsNotification = DEV_FLAGS.FORCE_HAS_NOT_VOTED && FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION
+  const mockElectionResultsNotification = DEV_FLAGS.FORCE_HAS_NOT_VOTED && FEATURE_FLAGS.ENABLE_VOTING_FLOW
     ? {
         id: 'mock_election_results',
         mesa: 'Resultados Disponibles',
-        tipo: 'Elección Universitaria',
+        tipo: 'Votación',
         direccion: 'Resultados preliminares de la votación',
         timestamp: Date.now(),
         data: {
@@ -310,9 +310,8 @@ export default function Notification({ navigation }) {
     item => {
       const rawData = item?.data || {};
 
-      // University Election: Navegación a pantalla de resultados
-      if (rawData?.type === 'election_results' && FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
-        navigation.navigate(StackNav.UniversityElectionNotificationDetailScreen, {
+      if (rawData?.type === 'election_results' && FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
+        navigation.navigate(StackNav.VotingNotificationDetailScreen, {
           notification: rawData,
         });
         return;

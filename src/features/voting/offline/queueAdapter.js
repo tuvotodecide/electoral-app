@@ -1,8 +1,5 @@
 /**
- * Offline Queue Adapter for University Election
- *
- * Usa el sistema de offlineQueue existente del repo.
- * NO reimplementa la cola ni el backoff.
+ * Offline Queue Adapter for Voting
  */
 
 import { enqueue, getAll, processQueue } from '../../../utils/offlineQueue';
@@ -10,11 +7,9 @@ import { getElectionRepository } from '../data/useElectionRepository';
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Task type identifier for university election votes
-const TASK_TYPE = 'universityElectionVote';
+const TASK_TYPE = 'votingFlowVote';
 
-// Storage key for synced status
-const VOTE_SYNCED_KEY = 'universityElection.voteSynced';
+const VOTE_SYNCED_KEY = 'voting.voteSynced';
 
 /**
  * Encola un voto para procesamiento posterior (cuando hay conexión)
@@ -26,8 +21,8 @@ const VOTE_SYNCED_KEY = 'universityElection.voteSynced';
  * @returns {Promise<string>} ID del item en cola
  */
 export const enqueueVote = async (voteData) => {
-  if (!FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
-    throw new Error('University election feature is disabled');
+  if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
+    throw new Error('Voting flow is disabled');
   }
 
   const task = {
@@ -50,9 +45,8 @@ export const enqueueVote = async (voteData) => {
  *
  * @param {Object} item - Item de la cola
  */
-export const handleUniversityElectionVote = async (item) => {
+export const handleVotingQueueVote = async (item) => {
   if (item?.task?.type !== TASK_TYPE) {
-    // No es un voto de elección universitaria, ignorar
     return;
   }
 
@@ -81,7 +75,7 @@ export const handleUniversityElectionVote = async (item) => {
     await repository.mintNFT(electionId, candidateId);
   } catch (nftError) {
     // NFT es secundario, no fallar si no se puede generar
-    console.warn('[UniversityElection] NFT mint failed:', nftError);
+    console.warn('[Voting] NFT mint failed:', nftError);
   }
 
   return result;
@@ -92,7 +86,7 @@ export const handleUniversityElectionVote = async (item) => {
  * @returns {Promise<boolean>}
  */
 export const hasPendingVotes = async () => {
-  if (!FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
+  if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
     return false;
   }
 
@@ -105,7 +99,7 @@ export const hasPendingVotes = async () => {
  * @returns {Promise<Array>}
  */
 export const getPendingVotes = async () => {
-  if (!FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
+  if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
     return [];
   }
 
@@ -120,11 +114,11 @@ export const getPendingVotes = async () => {
  * @returns {Promise<{processed: number, failed: number}>}
  */
 export const processVoteQueue = async () => {
-  if (!FEATURE_FLAGS.ENABLE_UNIVERSITY_ELECTION) {
+  if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
     return { processed: 0, failed: 0 };
   }
 
-  return processQueue(handleUniversityElectionVote);
+  return processQueue(handleVotingQueueVote);
 };
 
 /**
@@ -136,13 +130,13 @@ export const registerVoteHandler = () => {
   // de offlineQueue lo pueda usar
   return {
     type: TASK_TYPE,
-    handler: handleUniversityElectionVote,
+    handler: handleVotingQueueVote,
   };
 };
 
 export default {
   enqueueVote,
-  handleUniversityElectionVote,
+  handleVotingQueueVote,
   hasPendingVotes,
   getPendingVotes,
   processVoteQueue,

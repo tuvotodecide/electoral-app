@@ -1,15 +1,14 @@
 /**
- * Mock Data para Elecciones Universitarias
- * Datos de demostración - Será reemplazado por API real cuando exista backend
+ * Mock data del flujo de votación
  */
 
 export const MOCK_ELECTION = {
-  id: 'election_univ_1',
-  title: 'Elecciones Universitarias',
+  id: 'election_voting_1',
+  title: 'Votación General',
   status: 'ACTIVA',
   closesInLabel: 'Cierra en 2h',
-  instituteName: 'Carrera de Informática',
-  organization: 'UMSA',
+  instituteName: 'Recinto Principal',
+  organization: 'Tu Voto Decide',
   // Timestamp de cierre para countdown (2 horas desde ahora para demo)
   closesAt: Date.now() + 2 * 60 * 60 * 1000,
   // Timestamp de inicio (para "Inicia en X") - null = ya empezó
@@ -61,7 +60,7 @@ export const MOCK_CANDIDATES = [
 export const MOCK_PARTICIPATIONS = [
   {
     id: 'participation_1',
-    electionTitle: 'Elecciones universitarias',
+    electionTitle: 'Votación general',
     status: 'VOTO_REGISTRADO',
     statusLabel: 'VOTO REGISTRADO',
     date: '12 Feb',
@@ -97,7 +96,7 @@ export const MOCK_PARTICIPATIONS = [
  * Mensajes de UI
  */
 export const UI_STRINGS = {
-  electionTitle: 'Elecciones Universitarias',
+  electionTitle: 'Votación General',
   statusActive: 'ACTIVA',
   voteNow: 'Votar ahora',
   inProgress: 'En proceso...',
