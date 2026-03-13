@@ -2,13 +2,11 @@ appId: com.tuvotodecide
 ---
 # 1. Iniciar sesión usando el flujo existente
 - runFlow: ../auth/loginCorrectPin.yaml
-
 # 2. En el Home, deslizar el carrusel para ver el segundo anuncio (Asoblockchain)
 - swipe:
     from:
       id: "homeCarouselItem_1"
     direction: LEFT
-
 # 3. Pulsar el botón "Conocer más" del anuncio de Asoblockchain
 - extendedWaitUntil:
     visible:

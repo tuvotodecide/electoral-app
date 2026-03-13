@@ -12,7 +12,6 @@ name: blockAccount
 
 - tapOn:
     id: "selectRecuperationFileOption"
-
 - extendedWaitUntil:
     visible:
       id: "recoveryFileUploadCard"

@@ -8,10 +8,8 @@ appId: com.tuvotodecide
     visible:
       id: "homeCarouselButton_1"
     timeout: 15000
-
 - tapOn:
     id: "homeCarouselButton_1"
-
 # 3. Esperar a que cargue el contenido (se abre el navegador)
 - waitForAnimationToEnd:
     timeout: 5000

@@ -5,7 +5,7 @@ jest.mock('../../../src/api/oracle', () => ({
 }));
 jest.mock('../../../src/api/params', () => ({availableNetworks: {}}));
 jest.mock('../../../src/utils/persistLocalImage', () => ({
-  removePersistedImage: jest.fn(),
+  removePersistedImage: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('../../../src/api/account', () => ({executeOperation: jest.fn()}));
 jest.mock('../../../src/notifications', () => ({

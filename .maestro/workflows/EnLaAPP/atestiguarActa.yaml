@@ -29,7 +29,7 @@ appId: com.tuvotodecide
 - inputText: "205079-1" # El usuario pidió 2050791, pero el formato usual es con guión
 
 - tapOn: "Confirmar"
-
+- back
 # 5. Click en "Atestiguar" (en la pantalla WhichIsCorrect o Detail)
 - extendedWaitUntil:
     visible: "Atestiguar"

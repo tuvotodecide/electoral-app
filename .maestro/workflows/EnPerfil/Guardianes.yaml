@@ -1,7 +1,7 @@
 appId: com.tuvotodecide
 ---
 # 1. Navegar al Perfil usando la ruta básica
-- runFlow: RutaBasica.yaml
+- runFlow: RutaBasicaAPerfil.yaml
 
 # 2. Entrar en la sección de Guardianes
 - extendedWaitUntil:
@@ -44,8 +44,6 @@ appId: com.tuvotodecide
     id: "onboardingGuardiansGetStartedButton"
 - waitForAnimationToEnd:
     timeout: 3000
-
-
 
 # 5. Salir del onboarding (Cerrar)
 - tapOn:

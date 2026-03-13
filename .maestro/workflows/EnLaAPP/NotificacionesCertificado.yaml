@@ -17,7 +17,6 @@ appId: com.tuvotodecide
     visible:
       id: "notificationItem_0"
     timeout: 10000
-
 - tapOn:
     id: "notificationItem_0"
 

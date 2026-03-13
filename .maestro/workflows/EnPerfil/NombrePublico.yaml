@@ -1,7 +1,7 @@
 appId: com.tuvotodecide
 ---
 # 1. Navegar al Perfil usando la ruta básica
-- runFlow: RutaBasica.yaml
+- runFlow: RutaBasicaAPerfil.yaml
 
 # 2. Entrar en Datos personales
 - extendedWaitUntil:

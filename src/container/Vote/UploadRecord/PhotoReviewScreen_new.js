@@ -779,17 +779,7 @@ const PhotoReviewScreen = () => {
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
     };
-    console.log('[ATTEST-FLOW][PhotoReview->PhotoConfirmation]', {
-      mode: confirmationParams.mode,
-      electionId: confirmationParams.electionId || null,
-      tableCode:
-        mesaInfo?.tableCode || mesaInfo?.codigo || tableData?.tableCode || null,
-      existingRecordId:
-        confirmationParams?.existingRecord?.recordId ||
-        confirmationParams?.existingRecord?.rawData?.recordId ||
-        confirmationParams?.existingRecord?.raw?.recordId ||
-        null,
-    });
+
 
     if (
       !isWorksheetMode &&

@@ -27,7 +27,6 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import images from '../../../assets/images';
 import {
-  ELECTION_ID,
   JWT_KEY
 } from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -468,8 +467,8 @@ export default function HomeScreen({ navigation }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
   const queueRunPromiseRef = useRef(null);
-  const runOfflineQueueRef = useRef(() => {});
-  const refreshNotificationBadgeCountRef = useRef(async () => {});
+  const runOfflineQueueRef = useRef(() => { });
+  const refreshNotificationBadgeCountRef = useRef(async () => { });
   const notificationsApiKeyRef = useRef(null);
   const notificationsAuthRetryAtRef = useRef(0);
   const [checkingVotePlace, setCheckingVotePlace] = useState(false);
@@ -674,7 +673,7 @@ export default function HomeScreen({ navigation }) {
         try {
           const cached = await getAttestationAvailabilityCache(dni);
           if (cached?.availableElections) {
-        
+
             setContractsAvailability(
               buildContractsAvailabilityFromElections(
                 cached.availableElections,
@@ -683,7 +682,7 @@ export default function HomeScreen({ navigation }) {
             );
             return true;
           }
-         
+
         } catch {
           // noop
         }
@@ -695,10 +694,10 @@ export default function HomeScreen({ navigation }) {
           setLoadingAvailability(true);
         }
         const hasCached = await applyCachedAvailability();
-       
+
         const probe = await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
-      
+
           if (!hasCached) {
             setContractsAvailability({
               nearestLocation: null,
@@ -727,7 +726,7 @@ export default function HomeScreen({ navigation }) {
         const elections = Array.isArray(data?.availableElections)
           ? data.availableElections
           : [];
-       
+
 
         await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
@@ -739,7 +738,7 @@ export default function HomeScreen({ navigation }) {
         );
       } catch (e) {
         const hasCached = await applyCachedAvailability();
-        
+
         if (!hasCached) {
           setContractsAvailability({
             nearestLocation: null,
@@ -795,7 +794,7 @@ export default function HomeScreen({ navigation }) {
 
 
     const probe = await backendProbe({ timeoutMs: 2000 });
- 
+
 
     try {
       const coords = await getHomeLocation(true);
@@ -904,9 +903,6 @@ export default function HomeScreen({ navigation }) {
     const cachedData = cachedEntry?.data || null;
     if (cachedData) {
       setElectionStatus(cachedData);
-      if (cachedData?.config?.id) {
-        await AsyncStorage.setItem(ELECTION_ID, String(cachedData.config.id));
-      }
     } else {
     }
 
@@ -931,9 +927,6 @@ export default function HomeScreen({ navigation }) {
       await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
         version: 'elections-config-v1',
       });
-      if (res.data?.config?.id) {
-        await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
-      }
     } catch (err) {
 
       if (!cachedData) {
@@ -965,7 +958,7 @@ export default function HomeScreen({ navigation }) {
         if (!probe?.ok) {
           console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
           return;
-         }
+        }
 
         const result = await processQueue(async item => {
           const taskType = item?.task?.type;
@@ -1770,7 +1763,7 @@ export default function HomeScreen({ navigation }) {
 
 
 
- 
+
 
     if (!hasLocationCached) {
       setCheckingVotePlace(true);
@@ -1833,7 +1826,7 @@ export default function HomeScreen({ navigation }) {
         warmTablesCacheByLocationId({
           locationId: location?._id || location?.id,
           seedTables: location?.tables || [],
-        }).catch(() => {});
+        }).catch(() => { });
 
         const hasLocation = !!location?._id;
 
@@ -1872,7 +1865,7 @@ export default function HomeScreen({ navigation }) {
     checkUserVotePlace({ forceSync: true });
   }, [dni, checkUserVotePlace]);
 
-  
+
 
   const data = {
     name: subject.fullName || '(sin nombre)',

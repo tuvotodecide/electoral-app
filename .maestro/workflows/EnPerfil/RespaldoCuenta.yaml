@@ -25,7 +25,6 @@ appId: com.tuvotodecide
 - extendedWaitUntil:
     visible: "OK"
     timeout: 15000
-
 - tapOn: "OK"
 
 # 5. Regresar 2 veces

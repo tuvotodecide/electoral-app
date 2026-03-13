@@ -2,28 +2,22 @@ appId: com.tuvotodecide
 ---
 # 1. Iniciar sesión usando el flujo existente
 - runFlow: ../auth/loginCorrectPin.yaml
-
 # 2. En el Home, buscar la tarjeta de "Asegura tu cuenta" y pulsar la flecha/botón
 - extendedWaitUntil:
     visible: "Asegura tu cuenta"
     timeout: 15000
-
 - tapOn: "Asegura tu cuenta"
-
 # 3. En la pantalla de respaldo, pulsar el botón de descargar
 - extendedWaitUntil:
     visible:
       id: "recuperationFileSaveButton"
     timeout: 10000
-
 - tapOn:
     id: "recuperationFileSaveButton"
-
 # 4. Esperar al modal de éxito y pulsar OK
 - extendedWaitUntil:
     visible: "OK"
     timeout: 30000
-
 - tapOn: "OK"
 
 # 5. Regresar al menú principal

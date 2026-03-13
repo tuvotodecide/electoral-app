@@ -19,6 +19,5 @@ appId: com.tuvotodecide
 
 # 5. Click en el botón Confirmar
 - tapOn: "Confirmar"
-
 - waitForAnimationToEnd:
     timeout: 2000
