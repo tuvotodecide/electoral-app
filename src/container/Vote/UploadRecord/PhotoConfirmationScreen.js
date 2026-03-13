@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons fo
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import InfoModal from '../../../components/modal/InfoModal';
+import VoteValidationModal from '../../../components/modal/VoteValidationModal';
 import { enqueue, getAll as getOfflineQueue } from '../../../utils/offlineQueue';
 import { persistLocalImage } from '../../../utils/persistLocalImage';
 import { validateBallotLocally } from '../../../utils/ballotValidation';
@@ -202,6 +203,10 @@ const PhotoConfirmationScreen = ({ route }) => {
     title: '',
     message: '',
   });
+  const [voteValidationModal, setVoteValidationModal] = useState({
+    visible: false,
+    message: '',
+  });
   const tableNumberLabel =
     tableData?.tableNumber ||
     tableData?.numero ||
@@ -310,9 +315,8 @@ const PhotoConfirmationScreen = ({ route }) => {
         voteSummaryResults || [],
       );
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         return;
@@ -349,9 +353,8 @@ const PhotoConfirmationScreen = ({ route }) => {
         voteSummaryResults || [],
       );
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         setStep(0);
@@ -502,9 +505,8 @@ const PhotoConfirmationScreen = ({ route }) => {
       );
 
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         setStep(0);
@@ -656,6 +658,12 @@ const PhotoConfirmationScreen = ({ route }) => {
       message: '',
     });
   };
+  const closeVoteValidationModal = () => {
+    setVoteValidationModal({
+      visible: false,
+      message: '',
+    });
+  };
 
   const handleFinish = () => {
     setShowConfirmModal(false);
@@ -672,9 +680,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         onBack={handleBack}
         title={``}
         showNotification={true}
-        onNotificationPress={() => {
-          // Handle notification press
-        }}
       />
 
       {/* Information Ready to Load Text */}
@@ -984,6 +989,11 @@ const PhotoConfirmationScreen = ({ route }) => {
         testID="photoConfirmationInfoModal"
         {...infoModalData}
         onClose={closeInfoModal}
+      />
+      <VoteValidationModal
+        visible={voteValidationModal.visible}
+        message={voteValidationModal.message}
+        onClose={closeVoteValidationModal}
       />
     </CSafeAreaView>
   );
@@ -1354,4 +1364,3 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoConfirmationScreen;
-

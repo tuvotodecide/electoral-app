@@ -37,7 +37,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
-const MAX_CAPTURE_HEIGHT = 720;
+const MAX_CAPTURE_HEIGHT = 1080;
 
 // Función para obtener el mejor formato de cámara
 const getBestCameraFormat = device => {

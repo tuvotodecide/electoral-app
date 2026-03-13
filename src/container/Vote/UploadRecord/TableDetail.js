@@ -282,6 +282,16 @@ export default function TableDetail({ navigation, route }) {
   });
   const routeExistingRecords = route.params?.existingRecords || [];
 
+  const resetSelectedMesaState = useCallback(() => {
+    setSelectedMesaRaw(null);
+    setSelectedMesaRecords(null);
+    setSelectedMesaTotalRecords(null);
+    setResolvedOffline(null);
+    setWorksheetStatus({status: WorksheetStatus.NOT_FOUND});
+    setHasPendingActaInQueue(false);
+    setWorksheetFeedback('');
+  }, []);
+
   const normalizeMesaData = mesaSource => {
     const source = mesaSource || {};
     const sourceMesaId =
@@ -1278,8 +1288,19 @@ export default function TableDetail({ navigation, route }) {
             ref={mesaInputRef}
             value={mesaNumberInput}
             onChangeText={value => {
+              const nextNormalized = normalizeMesaNumber(value);
+              const currentSelectedMesa = normalizeMesaNumber(
+                selectedMesaRaw?.tableNumber ||
+                  selectedMesaRaw?.numero ||
+                  selectedMesaRaw?.number ||
+                  '',
+              );
+
               setMesaNumberInput(value);
               if (mesaSearchError) setMesaSearchError('');
+              if (selectedMesaRaw && nextNormalized !== currentSelectedMesa) {
+                resetSelectedMesaState();
+              }
             }}
             keyboardType="number-pad"
             placeholder="Código de mesa"
@@ -2089,4 +2110,3 @@ const stylesx = StyleSheet.create({
   //   lineHeight: getResponsiveSize(18, 20, 22),
   // },
 });
-
