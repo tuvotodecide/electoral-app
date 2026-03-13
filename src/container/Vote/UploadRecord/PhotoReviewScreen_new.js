@@ -17,6 +17,7 @@ import {moderateScale} from '../../../common/constants';
 import Strings from '../../../i18n/String';
 import {validateBallotLocally} from '../../../utils/ballotValidation';
 import InfoModal from '../../../components/modal/InfoModal';
+import VoteValidationModal from '../../../components/modal/VoteValidationModal';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
 import CText from '../../../components/common/CText';
@@ -189,7 +190,8 @@ const PhotoReviewScreen = () => {
     fromWhichIsCorrect,
     mode: incomingMode,
     actaCount,
-    electionId
+    electionId,
+    electionType,
   } = route.params || {};
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
@@ -228,6 +230,10 @@ const PhotoReviewScreen = () => {
     message: '',
     buttonText: 'OK',
   });
+  const [voteValidationModal, setVoteValidationModal] = useState({
+    visible: false,
+    message: '',
+  });
   const [shouldGoHomeAfterInfoModal, setShouldGoHomeAfterInfoModal] =
     useState(false);
   const [pendingConfirmationParams, setPendingConfirmationParams] =
@@ -261,6 +267,12 @@ const PhotoReviewScreen = () => {
         ],
       });
     }
+  };
+  const closeVoteValidationModal = () => {
+    setVoteValidationModal({
+      visible: false,
+      message: '',
+    });
   };
 
   // Datos iniciales - usar datos de IA si están disponibles, sino usar valores por defecto
@@ -636,9 +648,8 @@ const PhotoReviewScreen = () => {
         normalizedVoteSummaryResults,
       );
       if (!check.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: 'Datos inconsistentes',
           message: check.errors.join('\n'),
         });
         return; // NO avanzar
@@ -779,6 +790,7 @@ const PhotoReviewScreen = () => {
       compareResult,
     };
 
+
     if (
       !isWorksheetMode &&
       !isViewOnly &&
@@ -838,10 +850,20 @@ const PhotoReviewScreen = () => {
   // Action buttons for PhotoReviewScreen
   const goToCamera = () => {
     const mesaInfo = getMesaInfo();
+    const resolvedElectionId = String(
+      electionId ||
+        mesaInfo?.electionId ||
+        mesaInfo?.election_id ||
+        tableData?.electionId ||
+        tableData?.election_id ||
+        '',
+    ).trim();
     navigation.navigate(StackNav.CameraScreen, {
       tableData: mesaInfo,
       mesaData: mesaInfo,
       mesa: mesaInfo,
+      electionId: resolvedElectionId || undefined,
+      electionType: electionType || route.params?.electionType || undefined,
     });
   };
 
@@ -951,6 +973,7 @@ const PhotoReviewScreen = () => {
           ]}
         />
       ) : null}
+
     </View>
   );
 
@@ -1044,6 +1067,11 @@ const PhotoReviewScreen = () => {
         </View>
       </Modal>
       <InfoModal {...infoModalData} onClose={closeInfoModal} />
+      <VoteValidationModal
+        visible={voteValidationModal.visible}
+        message={voteValidationModal.message}
+        onClose={closeVoteValidationModal}
+      />
     </>
   );
 };
@@ -1218,4 +1246,3 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoReviewScreen;
-

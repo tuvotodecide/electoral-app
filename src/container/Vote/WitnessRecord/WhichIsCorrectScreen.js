@@ -433,6 +433,7 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
         electionId,
         electionType,
       };
+
       try {
         navigation.navigate(StackNav.PhotoReviewScreen, payloadForPhotoReview);
       } catch {

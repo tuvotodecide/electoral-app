@@ -1,21 +1,3 @@
-const oracleCalls = {
-  requestRegister: jest.fn(() => 'req-register'),
-  attest: jest.fn(() => 'attest'),
-  createAttestation: jest.fn(() => 'create-attestation'),
-};
-const oracleReads = {
-  isRegistered: jest.fn(async () => true),
-  isUserJury: jest.fn(async () => false),
-  waitForOracleEvent: jest.fn(),
-};
-const availableNetworks = {
-  testnet: {
-    explorer: 'https://explorer.example/',
-    nftExplorer: 'https://nft.example',
-    attestationNft: '0xabc',
-  },
-};
-
 jest.mock('../../../src/utils/pinataService', () => ({
   uploadImageToIPFS: jest.fn(),
   uploadJSONToIPFS: jest.fn(),
@@ -23,10 +5,29 @@ jest.mock('../../../src/utils/pinataService', () => ({
   uploadCertificateNFT: jest.fn(),
   checkDuplicateBallot: jest.fn(),
 }));
-jest.mock('../../../src/api/oracle', () => ({oracleCalls, oracleReads}));
-jest.mock('../../../src/api/params', () => ({availableNetworks}));
+jest.mock('../../../src/api/oracle', () => ({
+  oracleCalls: {
+    requestRegister: jest.fn(() => 'req-register'),
+    attest: jest.fn(() => 'attest'),
+    createAttestation: jest.fn(() => 'create-attestation'),
+  },
+  oracleReads: {
+    isRegistered: jest.fn(async () => true),
+    isUserJury: jest.fn(async () => false),
+    waitForOracleEvent: jest.fn(),
+  },
+}));
+jest.mock('../../../src/api/params', () => ({
+  availableNetworks: {
+    testnet: {
+      explorer: 'https://explorer.example/',
+      nftExplorer: 'https://nft.example',
+      attestationNft: '0xabc',
+    },
+  },
+}));
 jest.mock('../../../src/utils/persistLocalImage', () => ({
-  removePersistedImage: jest.fn(),
+  removePersistedImage: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('../../../src/api/account', () => ({executeOperation: jest.fn()}));
 jest.mock('../../../src/notifications', () => ({
@@ -69,6 +70,7 @@ import {removePersistedImage} from '../../../src/utils/persistLocalImage';
 import {requestPushPermissionExplicit} from '../../../src/services/pushPermission';
 import {showActaDuplicateNotification} from '../../../src/notifications';
 import {publishActaHandler} from '../../../src/utils/offlineQueueHandler';
+import {oracleCalls, oracleReads} from '../../../src/api/oracle';
 
 const basePayload = {
   imageUri: 'file:///tmp/acta.jpg',

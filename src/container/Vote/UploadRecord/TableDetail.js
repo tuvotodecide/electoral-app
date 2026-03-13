@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Keyboard,
   ActivityIndicator,
   Image,
   Modal,
@@ -261,6 +262,7 @@ export default function TableDetail({ navigation, route }) {
     rawMesa.tableId,
   );
   const [mesaNumberInput, setMesaNumberInput] = useState('');
+  const mesaInputRef = useRef(null);
   const [mesaSearchError, setMesaSearchError] = useState('');
   const [isSearchingMesa, setIsSearchingMesa] = useState(false);
   const [selectedMesaRaw, setSelectedMesaRaw] = useState(null);
@@ -279,6 +281,16 @@ export default function TableDetail({ navigation, route }) {
     lastSyncAt: 0,
   });
   const routeExistingRecords = route.params?.existingRecords || [];
+
+  const resetSelectedMesaState = useCallback(() => {
+    setSelectedMesaRaw(null);
+    setSelectedMesaRecords(null);
+    setSelectedMesaTotalRecords(null);
+    setResolvedOffline(null);
+    setWorksheetStatus({status: WorksheetStatus.NOT_FOUND});
+    setHasPendingActaInQueue(false);
+    setWorksheetFeedback('');
+  }, []);
 
   const normalizeMesaData = mesaSource => {
     const source = mesaSource || {};
@@ -638,6 +650,9 @@ export default function TableDetail({ navigation, route }) {
   };
 
   const handleMesaSearch = async () => {
+    Keyboard.dismiss();
+    mesaInputRef.current?.blur();
+
     const normalizedInput = normalizeMesaNumber(mesaNumberInput);
     if (!normalizedInput) {
       setMesaSearchError('Escribe el número de mesa.');
@@ -1270,10 +1285,22 @@ export default function TableDetail({ navigation, route }) {
 
         <View style={stylesx.searchInputRow}>
           <TextInput
+            ref={mesaInputRef}
             value={mesaNumberInput}
             onChangeText={value => {
+              const nextNormalized = normalizeMesaNumber(value);
+              const currentSelectedMesa = normalizeMesaNumber(
+                selectedMesaRaw?.tableNumber ||
+                  selectedMesaRaw?.numero ||
+                  selectedMesaRaw?.number ||
+                  '',
+              );
+
               setMesaNumberInput(value);
               if (mesaSearchError) setMesaSearchError('');
+              if (selectedMesaRaw && nextNormalized !== currentSelectedMesa) {
+                resetSelectedMesaState();
+              }
             }}
             keyboardType="number-pad"
             placeholder="Código de mesa"
@@ -2083,4 +2110,3 @@ const stylesx = StyleSheet.create({
   //   lineHeight: getResponsiveSize(18, 20, 22),
   // },
 });
-

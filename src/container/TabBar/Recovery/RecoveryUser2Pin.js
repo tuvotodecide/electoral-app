@@ -122,7 +122,7 @@ const localStyle = StyleSheet.create({
   },
   underlineStyleBase: {
     width: moderateScale(50),
-    height: moderateScale(50),
+    height: moderateScale(55),
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(10),
     ...typography.fontWeights.Bold,

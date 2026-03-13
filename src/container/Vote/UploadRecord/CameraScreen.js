@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -20,6 +21,7 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
@@ -35,6 +37,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
+const MAX_CAPTURE_HEIGHT = 1080;
 
 // Función para obtener el mejor formato de cámara
 const getBestCameraFormat = device => {
@@ -108,6 +111,7 @@ const RenderFrame = ({ color = 'red', screenWidth, screenHeight }) => {
 export default function CameraScreen({ navigation, route }) {
 
   const camera = useRef(null);
+  const insets = useSafeAreaInsets();
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
   const { electionId, electionType } = route.params || {};
@@ -138,7 +142,9 @@ export default function CameraScreen({ navigation, route }) {
   const [lastTranslateX, setLastTranslateX] = useState(0);
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
+  const [focusPoint, setFocusPoint] = useState(null);
   const initialDistance = useRef(null);
+  const focusIndicatorTimeoutRef = useRef(null);
 
   const initialScale = useRef(1);
   const isZooming = useRef(false);
@@ -526,8 +532,38 @@ export default function CameraScreen({ navigation, route }) {
     return () => {
       setIsActive(false);
       camera.current = null;
+      if (focusIndicatorTimeoutRef.current) {
+        clearTimeout(focusIndicatorTimeoutRef.current);
+      }
     };
   }, []);
+
+  const handleTapToFocus = async event => {
+    if (!camera.current || !isActive || !device?.supportsFocus) {
+      return;
+    }
+
+    const { locationX, locationY } = event.nativeEvent;
+    setFocusPoint({ x: locationX, y: locationY });
+
+    if (focusIndicatorTimeoutRef.current) {
+      clearTimeout(focusIndicatorTimeoutRef.current);
+    }
+
+    focusIndicatorTimeoutRef.current = setTimeout(() => {
+      setFocusPoint(null);
+      focusIndicatorTimeoutRef.current = null;
+    }, 900);
+
+    try {
+      await camera.current.focus({
+        x: locationX,
+        y: locationY,
+      });
+    } catch (error) {
+      // Algunos dispositivos limitan el enfoque manual aunque reporten soporte.
+    }
+  };
 
   if (!device || !hasPermission) {
     return (
@@ -547,28 +583,41 @@ export default function CameraScreen({ navigation, route }) {
 
     try {
       const firstResult = await camera.current.takePhoto({
-        qualityPrioritization: 'balanced',
+        qualityPrioritization: 'quality',
         flash: 'off',
         enableAutoRedEyeReduction: false,
         enableAutoStabilization: true,
         enableShutterSound: false,
       });
 
-      const imageContext = ImageManipulator.manipulate(`file://${firstResult.path}`);
-      const renderedImage = await imageContext.resize({
-        height: 720,
-      }).renderAsync()
+      let finalUri = `file://${firstResult.path}`;
+      let finalWidth = firstResult.width || 0;
+      let finalHeight = firstResult.height || 0;
 
-      const result = await renderedImage.saveAsync({
-        format: SaveFormat.JPEG,
-      });
+      if (finalHeight > MAX_CAPTURE_HEIGHT) {
+        const imageContext = ImageManipulator.manipulate(finalUri);
+        const renderedImage = await imageContext
+          .resize({
+            height: MAX_CAPTURE_HEIGHT,
+          })
+          .renderAsync();
 
-      const meta = {
-        width: result.width,
-        height: result.height,
+        const result = await renderedImage.saveAsync({
+          format: SaveFormat.JPEG,
+          compress: 0.9,
+        });
+
+        finalUri = result.uri;
+        finalWidth = result.width;
+        finalHeight = result.height;
       }
 
-      setPhoto({ path: result.uri.replace('file://', '') }); // sin cropData
+      const meta = {
+        width: finalWidth,
+        height: finalHeight,
+      };
+
+      setPhoto({ path: finalUri.replace('file://', '') }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);
@@ -764,22 +813,40 @@ export default function CameraScreen({ navigation, route }) {
       {!photo ? (
         <>
           {isActive && (
-            <Camera
-              testID="cameraScreenCamera"
-              key={cameraKey}
-              ref={camera}
+            <Pressable
+              testID="cameraScreenFocusArea"
               style={StyleSheet.absoluteFill}
-              device={device}
-              isActive={isActive && isFocused}
-              photo={true}
-              format={getBestCameraFormat(device)}
-              zoom={0}
-              onError={error => {
-                if (error.code === 'device/camera-already-in-use') {
-                  resetCamera();
-                }
-              }}
-            />
+              onPress={handleTapToFocus}>
+              <Camera
+                testID="cameraScreenCamera"
+                key={cameraKey}
+                ref={camera}
+                style={StyleSheet.absoluteFill}
+                device={device}
+                isActive={isActive && isFocused}
+                photo={true}
+                photoQualityBalance="quality"
+                format={getBestCameraFormat(device)}
+                zoom={0}
+                onError={error => {
+                  if (error.code === 'device/camera-already-in-use') {
+                    resetCamera();
+                  }
+                }}
+              />
+              {focusPoint ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.focusIndicator,
+                    {
+                      left: focusPoint.x - 28,
+                      top: focusPoint.y - 28,
+                    },
+                  ]}
+                />
+              ) : null}
+            </Pressable>
           )}
           <RenderFrame
             testID="cameraScreenRenderFrame"
@@ -790,7 +857,10 @@ export default function CameraScreen({ navigation, route }) {
           />
           <View
             testID="cameraScreenBottomContainer"
-            style={styles.bottomContainer}>
+            style={[
+              styles.bottomContainer,
+              { bottom: Math.max(insets.bottom, 16) + 16 },
+            ]}>
             <TouchableOpacity
               testID="cameraScreenCaptureButton"
               style={[
@@ -839,7 +909,10 @@ export default function CameraScreen({ navigation, route }) {
               FooterComponent={() => (
                 <View
                   testID="cameraScreenFooterActions"
-                  style={styles.photoActionsContainer}>
+                  style={[
+                    styles.photoActionsContainer,
+                    { paddingBottom: Math.max(insets.bottom, 16) + 8 },
+                  ]}>
                   <TouchableOpacity
                     testID="cameraScreenFooterRetakeButton"
                     style={[styles.actionButton, styles.retakeButton]}
@@ -975,7 +1048,11 @@ export default function CameraScreen({ navigation, route }) {
           </View>
 
           {/* Botones de acción */}
-          <View style={styles.photoActionsContainer}>
+          <View
+            style={[
+              styles.photoActionsContainer,
+              { paddingBottom: Math.max(insets.bottom, 16) + 8 },
+            ]}>
             <TouchableOpacity
               style={[styles.actionButton, styles.retakeButton]}
               onPress={takeNewPhoto}>
@@ -1163,16 +1240,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
+    paddingTop: 16,
     paddingVertical: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 12,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexGrow: 1,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -1222,6 +1303,16 @@ const styles = StyleSheet.create({
     zIndex: 100,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  focusIndicator: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#FACC15',
+    backgroundColor: 'rgba(250, 204, 21, 0.08)',
+    zIndex: 250,
   },
   corner: {
     position: 'absolute',

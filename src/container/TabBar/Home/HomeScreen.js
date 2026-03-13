@@ -27,7 +27,6 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import images from '../../../assets/images';
 import {
-  ELECTION_ID,
   JWT_KEY
 } from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -56,6 +55,7 @@ import {
   getVotePlace,
   processQueue,
   removeById,
+  retryNow,
   saveVotePlace,
 } from '../../../utils/offlineQueue';
 import {
@@ -154,6 +154,29 @@ const shouldShowQueueFailModal = failedItem => {
   }
 
   return failedItem?.removedFromQueue === true;
+};
+
+const deriveQueueFailMessage = failedItems => {
+  const list = Array.isArray(failedItems) ? failedItems : [];
+  const joinedErrors = list
+    .map(item => String(item?.error || '').toLowerCase())
+    .join(' | ');
+  const alreadyAttested =
+    joinedErrors.includes('already attested') ||
+    joinedErrors.includes('616c7265616479206174746573746564') ||
+    joinedErrors.includes('acta ya atestiguada');
+  const duplicateVotes =
+    joinedErrors.includes('mismos votos') ||
+    joinedErrors.includes('votos duplicados') ||
+    joinedErrors.includes('acta duplicada');
+
+  if (alreadyAttested) {
+    return 'Acta ya atestiguada.';
+  }
+  if (duplicateVotes) {
+    return 'Ya existe un acta con los mismos votos para esta mesa.';
+  }
+  return 'Reintenta o elimina para subir otra acta.';
 };
 const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
@@ -447,8 +470,9 @@ export default function HomeScreen({ navigation }) {
   const [hasPendingActa, setHasPendingActa] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
-  const runOfflineQueueRef = useRef(() => {});
-  const refreshNotificationBadgeCountRef = useRef(async () => {});
+  const queueRunPromiseRef = useRef(null);
+  const runOfflineQueueRef = useRef(() => { });
+  const refreshNotificationBadgeCountRef = useRef(async () => { });
   const notificationsApiKeyRef = useRef(null);
   const notificationsAuthRetryAtRef = useRef(0);
   const [checkingVotePlace, setCheckingVotePlace] = useState(false);
@@ -658,7 +682,7 @@ export default function HomeScreen({ navigation }) {
         try {
           const cached = await getAttestationAvailabilityCache(dni);
           if (cached?.availableElections) {
-        
+
             setContractsAvailability(
               buildContractsAvailabilityFromElections(
                 cached.availableElections,
@@ -667,7 +691,7 @@ export default function HomeScreen({ navigation }) {
             );
             return true;
           }
-         
+
         } catch {
           // noop
         }
@@ -679,10 +703,10 @@ export default function HomeScreen({ navigation }) {
           setLoadingAvailability(true);
         }
         const hasCached = await applyCachedAvailability();
-       
+
         const probe = await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
-      
+
           if (!hasCached) {
             setContractsAvailability({
               nearestLocation: null,
@@ -711,7 +735,7 @@ export default function HomeScreen({ navigation }) {
         const elections = Array.isArray(data?.availableElections)
           ? data.availableElections
           : [];
-       
+
 
         await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
@@ -723,7 +747,7 @@ export default function HomeScreen({ navigation }) {
         );
       } catch (e) {
         const hasCached = await applyCachedAvailability();
-        
+
         if (!hasCached) {
           setContractsAvailability({
             nearestLocation: null,
@@ -779,7 +803,7 @@ export default function HomeScreen({ navigation }) {
 
 
     const probe = await backendProbe({ timeoutMs: 2000 });
- 
+
 
     try {
       const coords = await getHomeLocation(true);
@@ -888,9 +912,6 @@ export default function HomeScreen({ navigation }) {
     const cachedData = cachedEntry?.data || null;
     if (cachedData) {
       setElectionStatus(cachedData);
-      if (cachedData?.config?.id) {
-        await AsyncStorage.setItem(ELECTION_ID, String(cachedData.config.id));
-      }
     } else {
     }
 
@@ -915,9 +936,6 @@ export default function HomeScreen({ navigation }) {
       await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
         version: 'elections-config-v1',
       });
-      if (res.data?.config?.id) {
-        await AsyncStorage.setItem(ELECTION_ID, String(res.data.config.id));
-      }
     } catch (err) {
 
       if (!cachedData) {
@@ -936,86 +954,91 @@ export default function HomeScreen({ navigation }) {
   });
 
   const runOfflineQueueOnce = useCallback(async () => {
+    if (queueRunPromiseRef.current) return queueRunPromiseRef.current;
     if (processingRef.current) return;
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
-    processingRef.current = true;
-
-    try {
-      const net = await NetInfo.fetch();
-      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-
-
-      const probe = await backendProbe({ timeoutMs: 2000 });
-      if (!probe?.ok) {
-        console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
-        return;
-      }
-
-      const result = await processQueue(async item => {
-        const taskType = item?.task?.type;
-        if (taskType === 'publishWorksheet') {
-          await publishWorksheetHandler(item, userData);
+    queueRunPromiseRef.current = (async () => {
+      processingRef.current = true;
+      try {
+        const net = await NetInfo.fetch();
+        const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+        if (!online) return;
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        if (!probe?.ok) {
+          console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
           return;
         }
-        if (taskType === 'publishActa') {
-          await publishActaHandler(item, userData);
-          return;
-        }
-        if (taskType === 'syncActaBackend') {
-          await syncActaBackendHandler(item, userData);
-          return;
-        }
-        const unknownTaskError = new Error(
-          `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
-        );
-        unknownTaskError.removeFromQueue = true;
-        unknownTaskError.errorType = 'BUSINESS_TERMINAL';
-        throw unknownTaskError;
-      });
 
-      // Actualiza badge/pending
-      if (typeof result?.remaining === 'number') {
-        setHasPendingActa(result.remaining > 0);
-      } else {
-        const listAfter = await getOfflineQueue();
-        const pendingAfter = (listAfter || []).some(
-          i => isQueueWriteTask(i?.task?.type),
-        );
-        setHasPendingActa(pendingAfter);
-      }
+        const result = await processQueue(async item => {
+          const taskType = item?.task?.type;
+          if (taskType === 'publishWorksheet') {
+            await publishWorksheetHandler(item, userData);
+            return;
+          }
+          if (taskType === 'publishActa') {
+            await publishActaHandler(item, userData);
+            return;
+          }
+          if (taskType === 'syncActaBackend') {
+            await syncActaBackendHandler(item, userData);
+            return;
+          }
+          const unknownTaskError = new Error(
+            `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
+          );
+          unknownTaskError.removeFromQueue = true;
+          unknownTaskError.errorType = 'BUSINESS_TERMINAL';
+          throw unknownTaskError;
+        });
 
-      if ((Number(result?.processed) || 0) > 0) {
-        try {
-          await refreshNotificationBadgeCountRef.current?.();
-        } catch {
-          // No bloquear flujo principal por error al refrescar badge.
-        }
-      }
-
-      if (result?.failed > 0) {
-        const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
-        const modalItems = failedItems.filter(shouldShowQueueFailModal);
-        if (modalItems.length > 0) {
-          setQueueFailModal({
-            visible: true,
-            failedItems: modalItems,
-            message: 'Reintenta o elimina para subir otra acta.',
-          });
+        // Actualiza badge/pending
+        if (typeof result?.remaining === 'number') {
+          setHasPendingActa(result.remaining > 0);
         } else {
-
+          const listAfter = await getOfflineQueue();
+          const pendingAfter = (listAfter || []).some(
+            i => isQueueWriteTask(i?.task?.type),
+          );
+          setHasPendingActa(pendingAfter);
         }
+
+        if ((Number(result?.processed) || 0) > 0) {
+          try {
+            await refreshNotificationBadgeCountRef.current?.();
+          } catch {
+            // No bloquear flujo principal por error al refrescar badge.
+          }
+        }
+
+        if (result?.failed > 0) {
+          const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+          const modalItems = failedItems.filter(shouldShowQueueFailModal);
+          if (modalItems.length > 0) {
+            setQueueFailModal({
+              visible: true,
+              failedItems: modalItems,
+              message: deriveQueueFailMessage(modalItems),
+            });
+          }
+        }
+      } catch (e) {
+        captureError(e, {
+          flow: 'offline_queue',
+          step: 'run_once_fatal',
+          critical: false,
+        });
+        setQueueFailModal({
+          visible: true,
+          failedItems: [],
+          message: ' Reintenta nuevamente.',
+        });
+      } finally {
+        processingRef.current = false;
+        queueRunPromiseRef.current = null;
       }
+    })();
 
-    } catch (e) {
-
-      setQueueFailModal({
-        visible: true,
-        failedItems: [],
-        message: ' Reintenta nuevamente.',
-      });
-    } finally {
-      processingRef.current = false;
-    }
+    return queueRunPromiseRef.current;
   }, [auth?.isAuthenticated, userData]);
 
   useEffect(() => {
@@ -1064,6 +1087,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleRemoveFailedItem = async (id) => {
+    if (!id) return;
     try {
       const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
       await clearWorksheetStatusForFailedItem(failedItem);
@@ -1084,32 +1108,10 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const handleRemoveAllFailed = async () => {
-    try {
-      const items = queueFailModal.failedItems || [];
-      for (const it of items) {
-        await clearWorksheetStatusForFailedItem(it);
-        await removeById(it.id);
-      }
-
-      const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(
-        i => isQueueWriteTask(i?.task?.type),
-      );
-      setHasPendingActa(pendingAfter);
-    } finally {
-      setQueueFailModal({ visible: false, failedItems: [], message: '' });
-    }
-  };
-
-
   const handleQueueRetry = async () => {
+    await retryNow(item => isQueueWriteTask(item?.task?.type));
     setQueueFailModal(m => ({ ...m, visible: false }));
-    runOfflineQueueOnce();
-  };
-
-  const handleQueueCancel = () => {
-    setQueueFailModal(m => ({ ...m, visible: false }));
+    await runOfflineQueueOnce();
   };
 
 
@@ -1782,7 +1784,7 @@ export default function HomeScreen({ navigation }) {
 
 
 
- 
+
 
     if (!hasLocationCached) {
       setCheckingVotePlace(true);
@@ -1845,7 +1847,7 @@ export default function HomeScreen({ navigation }) {
         warmTablesCacheByLocationId({
           locationId: location?._id || location?.id,
           seedTables: location?.tables || [],
-        }).catch(() => {});
+        }).catch(() => { });
 
         const hasLocation = !!location?._id;
 
@@ -1884,7 +1886,7 @@ export default function HomeScreen({ navigation }) {
     checkUserVotePlace({ forceSync: true });
   }, [dni, checkUserVotePlace]);
 
-  
+
 
   const data = {
     name: subject.fullName || '(sin nombre)',
@@ -1927,7 +1929,11 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
-  const firstFailedId = queueFailModal.failedItems?.[0]?.id;
+  const retryableFailedItems = (queueFailModal.failedItems || []).filter(
+    item => item?.removedFromQueue !== true,
+  );
+  const firstRetryableFailedId = retryableFailedItems?.[0]?.id;
+  const canRetryFailedItems = retryableFailedItems.length > 0;
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
@@ -2396,10 +2402,14 @@ export default function HomeScreen({ navigation }) {
         type="warning"
         title="No se pudo completar la subida"
         message={queueFailModal.message}
-        buttonText="Reintentar"
-        onButtonPress={handleQueueRetry}
-        tertiaryButtonText={firstFailedId ? "Eliminar" : undefined}
-        onTertiaryPress={firstFailedId ? () => handleRemoveFailedItem(firstFailedId) : undefined}
+        buttonText={canRetryFailedItems ? 'Reintentar' : 'Aceptar'}
+        onButtonPress={canRetryFailedItems
+          ? handleQueueRetry
+          : () => setQueueFailModal(m => ({ ...m, visible: false }))}
+        tertiaryButtonText={firstRetryableFailedId ? 'Eliminar' : undefined}
+        onTertiaryPress={firstRetryableFailedId
+          ? () => handleRemoveFailedItem(firstRetryableFailedId)
+          : undefined}
         tertiaryVariant="danger"
       />
     </CSafeAreaView>

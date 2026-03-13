@@ -12,6 +12,47 @@ import {
   sponsorshipPolicyId,
 } from './params';
 
+const RECEIPT_WAIT_TIMEOUT_MS = 15 * 60 * 1000;
+const RECEIPT_POLL_INTERVAL_MS = 2000;
+
+const isReceiptTimeoutError = error => {
+  const name = String(error?.name || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    name.includes('waitfortransactionreceipttimeouterror') ||
+    message.includes('waitfortransactionreceipttimeouterror') ||
+    message.includes('timed out while waiting for transaction')
+  );
+};
+
+const waitForReceiptWithFallback = async (publicClient, txHash) => {
+  try {
+    return await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: RECEIPT_WAIT_TIMEOUT_MS,
+      pollingInterval: RECEIPT_POLL_INTERVAL_MS,
+    });
+  } catch (error) {
+    if (!isReceiptTimeoutError(error)) {
+      throw error;
+    }
+
+    // En móvil, al volver de background el receipt puede existir aunque el wait haya vencido.
+    try {
+      return await publicClient.getTransactionReceipt({ hash: txHash });
+    } catch {
+      const timeoutError = new Error(
+        `Timed out while waiting for transaction receipt for ${txHash}`,
+      );
+      timeoutError.name = 'WaitForTransactionReceiptTimeoutError';
+      timeoutError.errorType = 'NETWORK_TIMEOUT';
+      timeoutError.txHash = txHash;
+      timeoutError.cause = error;
+      throw timeoutError;
+    }
+  }
+};
+
 export function getReadAccountContract(chain, address) {
   const client = createPublicClient({
     chain: availableNetworks[chain].chain,
@@ -87,7 +128,7 @@ export async function executeOperation(
   });
 
   const txHash = await smartAccountClient.sendTransaction(callData);
-  const receipt = await publicClient.waitForTransactionReceipt({hash: txHash});
+  const receipt = await waitForReceiptWithFallback(publicClient, txHash);
 
   let returnData;
   if (waitEvent && eventName) {

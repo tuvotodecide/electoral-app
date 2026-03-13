@@ -50,7 +50,10 @@ Si falta alguno de esos elementos o es ilegible, responde EXCLUSIVAMENTE:
 Si la foto esta borrosa o los campos clave no se distinguen con nitidez suficiente, responde EXCLUSIVAMENTE:
 {"image_not_clear": true}
 
-SOLO si la imagen cumple todos los criterios y se lee claramente, responde con un UNICO JSON siguiendo EXACTAMENTE esta estructura.
+SOLO si la imagen cumple los criterios generales del acta, responde con un único JSON. 
+Si una sección específica no se distingue con claridad suficiente, usa "0" en votos vacíos y en observaciones responde con:
+"text": "",
+"is_observed": false
 
 Reglas de negocio:
 1. Si alguna casilla de votos está vacía, regístrala como "0".
@@ -61,6 +64,21 @@ Reglas de negocio:
      b) Contiene una LINEA DIAGONAL (/) cruzada para anular el espacio.
      c) Contiene ÚNICAMENTE la frase "CORRE Y VALE" (ignorando mayúsculas, tildes y puntos).
    - Marca "is_observed": true si detectas cualquier otro texto descriptivo, incidentes o aclaraciones numéricas.
+
+Reglas estrictas para la sección OBSERVACIONES:
+- La sección "OBSERVACIONES" es EXCLUSIVAMENTE el recuadro grande con líneas horizontales ubicado en la parte inferior central/izquierda del acta, debajo de "VOTOS NULOS" y a la izquierda de "JURADAS - JURADOS DE MESA".
+- Ignora totalmente cualquier texto impreso fuera de ese recuadro.
+- Ignora el texto rojo preimpreso de instrucciones que aparece en la parte inferior del acta.
+- Ignora títulos, etiquetas, nombres de jurados, firmas, huellas, códigos y cualquier texto fuera del interior del recuadro de observaciones.
+- Solo considera observación válida si existe escritura manuscrita o texto claramente escrito dentro del recuadro.
+- Si el recuadro está vacío o tiene únicamente una línea diagonal de anulación, responde:
+  "text": "",
+  "is_observed": false
+- No inventes texto. No resumas. No completes palabras faltantes.
+- Si no se distingue con suficiente claridad escritura dentro del recuadro, responde:
+  "text": "",
+  "is_observed": false
+
 {
   "if_electoral_act": true,
   "table_number": "<número de mesa, parte superior izquierda>",

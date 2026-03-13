@@ -7,7 +7,7 @@ import images from '../assets/images';
 import { moderateScale, PENDINGRECOVERY } from '../common/constants';
 import CSafeAreaView from '../components/common/CSafeAreaView';
 import CText from '../components/common/CText';
-import String from '../i18n/String';
+import Strings from '../i18n/String';
 
 import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +18,7 @@ import { changeThemeAction } from '../redux/action/themeAction';
 import { colors } from '../themes/colors';
 import { initialStorageValueGet } from '../utils/AsyncStorage';
 import { getDraft } from '../utils/RegisterDraft';
-import { captureError } from '../config/sentry';
+import { captureError, flushSentry } from '../config/sentry';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
@@ -32,18 +32,19 @@ export default function Splash({navigation}) {
       DeviceEventEmitter.removeAllListeners('downloadInfo');
       subscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
         const {status, info} = JSON.parse(data);
+        const safeInfo = String(info ?? '');
 
         switch (status) {
           case config.CircuitDownloadStatus.DOWNLOADING:
-            if (info.startsWith('-')) {
-              setDownloadMessage(String.downloadingData + '-');
+            if (safeInfo.startsWith('-')) {
+              setDownloadMessage(Strings.downloadingData + '-');
             } else {
-              setDownloadMessage(String.downloadingData + info);
+              setDownloadMessage(Strings.downloadingData + safeInfo);
             }
             break;
 
           case config.CircuitDownloadStatus.DONE:
-            setDownloadMessage(String.initApp);
+            setDownloadMessage(Strings.initApp);
             subscription?.remove();
             resolve(true);
             break;
@@ -53,8 +54,11 @@ export default function Splash({navigation}) {
               flow: 'init_app',
               step: 'download_circuits',
               critical: false,
+              status,
+              info: safeInfo,
             });
-            setDownloadMessage(String.downloadingFailed);
+            flushSentry(2500).catch(() => {});
+            setDownloadMessage(Strings.downloadingFailed);
             subscription?.remove();
             reject(new Error(info || 'Circuit download failed'));
             break;
@@ -64,7 +68,10 @@ export default function Splash({navigation}) {
               flow: 'init_app',
               step: 'download_circuits',
               critical: false,
+              status,
+              info: safeInfo,
             });
+            flushSentry(2000).catch(() => {});
             subscription?.remove();
             reject(new Error('Download Status Unknown: ' + status));
             break;
@@ -124,7 +131,7 @@ export default function Splash({navigation}) {
       }
       await downloadComplete;
     } catch (error) {
-      setDownloadMessage(String.downloadingFailed);
+      setDownloadMessage(Strings.downloadingFailed);
       return;
     }
 
@@ -176,7 +183,7 @@ export default function Splash({navigation}) {
         await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
       } catch (error) {
         if (!error.message.includes('Type FilterMapper is already registered')) {
-          Alert.alert('Error', String.sdkInitError, [
+          Alert.alert('Error', Strings.sdkInitError, [
             {text: 'OK', style: 'default'},
           ]);
         }
@@ -210,9 +217,9 @@ export default function Splash({navigation}) {
             {downloadMessage}
           </CText>
         )}
-        {downloadMessage.startsWith(String.downloadingFailed) &&
+        {downloadMessage.startsWith(Strings.downloadingFailed) &&
           <CButton
-            title={String.retry}
+            title={Strings.retry}
             containerStyle={localStyle.button}
             testID="retryDownloadButton"
             onPress={initializeApp}

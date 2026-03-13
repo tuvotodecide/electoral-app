@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons fo
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import InfoModal from '../../../components/modal/InfoModal';
+import VoteValidationModal from '../../../components/modal/VoteValidationModal';
 import { enqueue, getAll as getOfflineQueue } from '../../../utils/offlineQueue';
 import { persistLocalImage } from '../../../utils/persistLocalImage';
 import { validateBallotLocally } from '../../../utils/ballotValidation';
@@ -123,12 +124,25 @@ const PhotoConfirmationScreen = ({ route }) => {
     partyResults,
     voteSummaryResults,
     aiAnalysis,
+    existingRecord,
     hasObservation = false,
     observationText = '',
   } = route.params || {};
 
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
+  const resolvedElectionId = String(
+    electionId ||
+      route.params?.existingRecord?.electionId ||
+      route.params?.existingRecord?.election_id ||
+      route.params?.existingRecord?.rawData?.electionId ||
+      route.params?.existingRecord?.rawData?.election_id ||
+      route.params?.existingRecord?.raw?.electionId ||
+      route.params?.existingRecord?.raw?.election_id ||
+      tableData?.electionId ||
+      tableData?.election_id ||
+      '',
+  ).trim();
   const mesaData = route.params?.mesaData;
   const mesa = route.params?.mesa;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -137,7 +151,7 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [isNameVisible, setIsNameVisible] = useState(true);
   const [certificateUri, setCertificateUri] = useState(null);
   const [finalStepMessage, setFinalStepMessage] = useState(
-    'Acta guardada. Se subirá en segundo plano.',
+    'Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.',
   );
   const [compareResult] = useState(() => {
     const fromRoute = route.params?.compareResult;
@@ -187,6 +201,10 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [infoModalData, setInfoModalData] = useState({
     visible: false,
     title: '',
+    message: '',
+  });
+  const [voteValidationModal, setVoteValidationModal] = useState({
+    visible: false,
     message: '',
   });
   const tableNumberLabel =
@@ -297,9 +315,8 @@ const PhotoConfirmationScreen = ({ route }) => {
         voteSummaryResults || [],
       );
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         return;
@@ -329,16 +346,15 @@ const PhotoConfirmationScreen = ({ route }) => {
 
   const confirmWorksheetUpload = async () => {
     setStep(1);
-    const eid = electionId || undefined;
+    const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
       );
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         setStep(0);
@@ -481,7 +497,7 @@ const PhotoConfirmationScreen = ({ route }) => {
 
   const confirmPublishAndCertify = async () => {
     setStep(1);
-    const eid = electionId || undefined;
+    const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
         partyResults || [],
@@ -489,9 +505,8 @@ const PhotoConfirmationScreen = ({ route }) => {
       );
 
       if (!local.ok) {
-        setInfoModalData({
+        setVoteValidationModal({
           visible: true,
-          title: I18nStrings.validationFailed,
           message: local.errors.join('\n'),
         });
         setStep(0);
@@ -598,10 +613,22 @@ const PhotoConfirmationScreen = ({ route }) => {
           createdAt: Date.now(),
           electionId: eid,
           electionType: electionType || undefined,
-
+          mode: flowMode,
+          existingRecord: existingRecord || null,
+          recordId:
+            existingRecord?.recordId ||
+            existingRecord?.rawData?.recordId ||
+            existingRecord?.raw?.recordId ||
+            undefined,
+          ballotId:
+            existingRecord?._id ||
+            existingRecord?.ballotId ||
+            existingRecord?.rawData?._id ||
+            existingRecord?.raw?._id ||
+            undefined,
         },
       });
-      setFinalStepMessage('Acta guardada. Se subirá en segundo plano.');
+      setFinalStepMessage('Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.');
       setStep(2);
     } catch (error) {
       captureError(error, {
@@ -631,6 +658,12 @@ const PhotoConfirmationScreen = ({ route }) => {
       message: '',
     });
   };
+  const closeVoteValidationModal = () => {
+    setVoteValidationModal({
+      visible: false,
+      message: '',
+    });
+  };
 
   const handleFinish = () => {
     setShowConfirmModal(false);
@@ -647,9 +680,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         onBack={handleBack}
         title={``}
         showNotification={true}
-        onNotificationPress={() => {
-          // Handle notification press
-        }}
       />
 
       {/* Information Ready to Load Text */}
@@ -959,6 +989,11 @@ const PhotoConfirmationScreen = ({ route }) => {
         testID="photoConfirmationInfoModal"
         {...infoModalData}
         onClose={closeInfoModal}
+      />
+      <VoteValidationModal
+        visible={voteValidationModal.visible}
+        message={voteValidationModal.message}
+        onClose={closeVoteValidationModal}
       />
     </CSafeAreaView>
   );
@@ -1329,5 +1364,3 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoConfirmationScreen;
-
-

@@ -3,7 +3,6 @@ export function validateBallotLocally(
   voteSummaryResults = [],
 ) {
   const errors = [];
-
   const asInt = v => {
     const n = parseInt(String(v ?? '0'), 10);
     return Number.isFinite(n) && n >= 0 ? n : NaN;
@@ -32,7 +31,7 @@ export function validateBallotLocally(
 
   if (!Number.isNaN(sumPres) && !Number.isNaN(vPres) && sumPres !== vPres) {
     errors.push(
-      `Presidentes: la suma por partido (${sumPres}) no coincide con Válidos (${vPres}).`,
+      'La suma de votos validos debe ser igual a la suma de ambos partidos.',
     );
   }
 
