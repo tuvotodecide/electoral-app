@@ -289,7 +289,9 @@ const PhotoConfirmationScreen = ({ route }) => {
           const capturedCertificateUri = await captureRef(
             certificateRef.current,
             {
-              format: 'png',
+              // El certificado es una captura de UI; JPG alta calidad reduce
+              // mucho el peso sin afectar la legibilidad y no toca el acta.
+              format: 'jpg',
               quality: 0.9,
             },
           );
