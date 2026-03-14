@@ -90,8 +90,16 @@
             "useLegacyPackaging": false
           },
           "ios": {
-            "deploymentTarget": "15.1",
-            "useFrameworks": "dynamic"
+            "deploymentTarget": "16.0",
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBDatabase",
+              "RNFBFunctions",
+              "RNFBMessaging",
+              "VisionCamera"
+            ]
           }
         }
       ],
@@ -120,11 +128,20 @@
           "keystorePath": "./native-files/keystores/identity-release.keystore"
         }
       ],
-      "@sentry/react-native/expo",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "note": "Use SENTRY_AUTH_TOKEN env to authenticate with Sentry.",
+          "project": "react-native",
+          "organization": "tu-voto-decide"
+        }
+      ],
       "./plugins/withIOSCodesigning",
       "@react-native-firebase/app",
       "./plugins/withNativeModules",
-      "./plugins/withIOSNativeModules"
+      "./plugins/withIOSNativeModules",
+      "./plugins/withIOSOrientation"
     ],
     "experiments": {
       "typedRoutes": true,

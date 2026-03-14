@@ -16,11 +16,7 @@ const path = require("path");
  *   1. Configures Info.plist for Firebase Cloud Messaging (background modes,
  *      notification settings).
  *   2. Adds push-notification and remote-notification entitlements.
- *   3. Copies Flutter module frameworks from the external build directory
- *      into ios/Flutter/ and generates a local podspec so CocoaPods can
- *      link & embed them automatically.
- *   4. Patches the Podfile to include additional pod dependencies
- *      (Flutter module podspec, Sentry) and build-setting tweaks.
+ *   3. Patches the Podfile post_install block with build-setting tweaks.
  */
 
 /** Relative path (from project root) to the Flutter module framework output */
@@ -79,163 +75,8 @@ function withIOSNativeModules(config) {
   });
 
   // ──────────────────────────────────────────────
-  // Step 3: Copy Flutter module frameworks &
-  //         generate a local podspec for them
-  // ──────────────────────────────────────────────
-  config = withDangerousMod(config, [
-    "ios",
-    async (config) => {
-      const projectRoot = config.modRequest.projectRoot;
-      const frameworkSrc = path.resolve(projectRoot, FLUTTER_FRAMEWORK_SOURCE);
-      const iosDir = path.join(projectRoot, "ios");
-      const frameworkDest = path.join(iosDir, "Flutter");
-
-      if (!fs.existsSync(frameworkSrc)) {
-        console.warn(
-          `[withIOSNativeModules] Flutter framework source not found at ${frameworkSrc} – ` +
-            "skipping framework copy. Build the Flutter module first.",
-        );
-        return config;
-      }
-
-      // The Flutter build outputs three configuration folders:
-      //   Debug/   – for development builds
-      //   Profile/ – for profiling builds
-      //   Release/ – for App Store / production builds
-      const buildModes = ["Debug", "Profile", "Release"];
-      const frameworksByMode = {};
-
-      for (const mode of buildModes) {
-        const modeSrc = path.join(frameworkSrc, mode);
-        const modeDest = path.join(frameworkDest, mode);
-
-        if (!fs.existsSync(modeSrc)) {
-          console.warn(
-            `[withIOSNativeModules] ${mode}/ folder not found in ${frameworkSrc}`,
-          );
-          continue;
-        }
-
-        if (!fs.existsSync(modeDest)) {
-          fs.mkdirSync(modeDest, { recursive: true });
-        }
-
-        const entries = fs.readdirSync(modeSrc);
-        const fwEntries = entries.filter(
-          (e) => e.endsWith(".framework") || e.endsWith(".xcframework"),
-        );
-
-        if (fwEntries.length === 0) {
-          console.warn(
-            `[withIOSNativeModules] No .framework/.xcframework found in ${modeSrc}`,
-          );
-          continue;
-        }
-
-        for (const entry of fwEntries) {
-          copyDirSync(path.join(modeSrc, entry), path.join(modeDest, entry));
-        }
-
-        frameworksByMode[mode] = fwEntries;
-        console.log(
-          `[withIOSNativeModules] Copied ${fwEntries.length} framework(s) from ${mode}/ → ios/Flutter/${mode}/`,
-        );
-      }
-
-      // --- Generate local podspec that selects frameworks per build configuration ---
-      // Use Release as the canonical list (must always be present).
-      const referenceMode = frameworksByMode["Release"]
-        ? "Release"
-        : Object.keys(frameworksByMode)[0];
-
-      if (!referenceMode) {
-        console.warn(
-          "[withIOSNativeModules] No frameworks found in any build mode – skipping podspec generation",
-        );
-        return config;
-      }
-
-      const referenceFrameworks = frameworksByMode[referenceMode];
-      const vendoredLines = referenceFrameworks.map(
-        (f) => `"Flutter/Release/${f}"`,
-      );
-
-      // Build the script phase that swaps frameworks based on CONFIGURATION
-      const frameworkNames = referenceFrameworks.map((f) => `"${f}"`).join(" ");
-
-      const podspecContent = `
-Pod::Spec.new do |s|
-  s.name         = 'WiraFlutterModule'
-  s.version      = '1.0.0'
-  s.summary      = 'Flutter module frameworks for wira-sdk'
-  s.homepage     = 'https://github.com/user/wira-sdk'
-  s.license      = { :type => 'Proprietary' }
-  s.author       = 'wira-sdk'
-  s.source       = { :path => '.' }
-  s.ios.deployment_target = '15.1'
-  s.static_framework = false
-
-  # Default to Release frameworks (overridden at build time by the script phase below)
-  s.vendored_frameworks = ${vendoredLines.join(",\n                          ")}
-
-  # Preserve all three build-mode folders so they are available at build time
-  s.preserve_paths = 'Flutter/Debug/**', 'Flutter/Profile/**', 'Flutter/Release/**'
-
-  # Script phase: copy the correct configuration's frameworks before compilation
-  s.script_phase = {
-    :name => 'Select Flutter Framework Configuration',
-    :script => %q(
-      FLUTTER_ROOT="\${PODS_ROOT}/../Flutter"
-      FRAMEWORKS=(${frameworkNames})
-
-      # Map Xcode CONFIGURATION to the Flutter build mode folder
-      if [ "\${CONFIGURATION}" = "Debug" ]; then
-        MODE="Debug"
-      elif [ "\${CONFIGURATION}" = "Profile" ]; then
-        MODE="Profile"
-      else
-        MODE="Release"
-      fi
-
-      echo "[WiraFlutterModule] Using $MODE frameworks for configuration \${CONFIGURATION}"
-
-      for FW in "\${FRAMEWORKS[@]}"; do
-        SRC="\${FLUTTER_ROOT}/\${MODE}/\${FW}"
-        DST="\${FLUTTER_ROOT}/Release/\${FW}"
-        if [ -d "$SRC" ] && [ "$MODE" != "Release" ]; then
-          rm -rf "$DST"
-          cp -R "$SRC" "$DST"
-        fi
-      done
-    ),
-    :execution_position => :before_compile,
-  }
-
-  # Disable bitcode (Flutter does not support it)
-  s.pod_target_xcconfig = {
-    'ENABLE_BITCODE' => 'NO',
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386 x86_64',
-  }
-  s.user_target_xcconfig = {
-    'ENABLE_BITCODE' => 'NO',
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64',
-  }
-end
-`.trimStart();
-
-      const podspecPath = path.join(iosDir, "WiraFlutterModule.podspec");
-      fs.writeFileSync(podspecPath, podspecContent, "utf-8");
-      console.log(`[withIOSNativeModules] Generated ${podspecPath}`);
-
-      return config;
-    },
-  ]);
-
-  // ──────────────────────────────────────────────
-  // Step 4: Patch Podfile – add pod dependencies
-  //         and build settings (equivalent to the
-  //         Android Gradle dependency / repository
-  //         modifications)
+  // Step 3: Patch Podfile post_install block with
+  //         build settings.
   // ──────────────────────────────────────────────
   config = withDangerousMod(config, [
     "ios",
@@ -252,20 +93,40 @@ end
 
       let podfileContents = fs.readFileSync(podfilePath, "utf-8");
 
-      // ---- Additional pods (Sentry, Flutter module) ----
-      const additionalPods = `
-  # ─── Added by withIOSNativeModules plugin ───
-  pod 'WiraFlutterModule', :path => '.'
-  # ─── End withIOSNativeModules ───`;
+      // ---- Ensure Flutter podhelper lines are present ----
+      const flutterPathLine =
+        "flutter_application_path = '../../wira-sdk-flutter-component'";
+      const flutterLoadLine =
+        "load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb')";
 
-      if (!podfileContents.includes("Added by withIOSNativeModules plugin")) {
-        // Insert additional pods right after the first `use_expo_modules!` or
-        // after the main target … do block.
+      if (!podfileContents.includes(flutterPathLine)) {
+        const platformPattern = /(platform\s+:ios[^\n]*\n)/;
+        if (platformPattern.test(podfileContents)) {
+          podfileContents = podfileContents.replace(
+            platformPattern,
+            `$1\n${flutterPathLine}\n${flutterLoadLine}\n`,
+          );
+        }
+      } else if (!podfileContents.includes(flutterLoadLine)) {
+        const flutterPathPattern = /(flutter_application_path\s*=\s*['"][^'"]+['"]\n)/;
+        if (flutterPathPattern.test(podfileContents)) {
+          podfileContents = podfileContents.replace(
+            flutterPathPattern,
+            `$1${flutterLoadLine}\n`,
+          );
+        }
+      }
+
+      // ---- Ensure Flutter pods are installed in app target ----
+      const installFlutterPodsLine =
+        "  install_all_flutter_pods(flutter_application_path)";
+
+      if (!podfileContents.includes(installFlutterPodsLine.trim())) {
         const targetBlockPattern = /(target\s+['"][^'"]+['"]\s+do\s*\n)/;
         if (targetBlockPattern.test(podfileContents)) {
           podfileContents = podfileContents.replace(
             targetBlockPattern,
-            `$1${additionalPods}\n`,
+            `$1${installFlutterPodsLine}\n\n`,
           );
         }
       }
@@ -273,24 +134,13 @@ end
       // ---- Post-install build-setting tweaks ----
       const postInstallTweaks = `
     # ─── Added by withIOSNativeModules plugin (build settings) ───
+    flutter_post_install(installer) if defined?(flutter_post_install)
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         # rapidsnark x86_64 static lib has missing ARM64 assembly symbols; force arm64 simulator via Rosetta
         build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
         # Minimum deployment target
-        build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1' if build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.1
-      end
-    end
-
-    # Convert binary plists to XML to prevent "invalid byte sequence in UTF-8" in react_native_post_install.
-    # react_native_post_install runs find for all Info.plist files under the project directory;
-    # binary plists inside vendored .framework bundles crash xcodeproj's UTF-8 regex.
-    ios_dir = File.dirname(__FILE__)
-    Dir.glob(File.join(ios_dir, '**', 'Info.plist')).each do |plist_path|
-      next unless File.file?(plist_path)
-      content = File.read(plist_path, encoding: 'ASCII-8BIT')
-      if content.start_with?('bplist')
-        system('plutil', '-convert', 'xml1', plist_path)
+        build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0' if build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 16.0
       end
     end
     # ─── End withIOSNativeModules (build settings) ───`;
@@ -318,7 +168,7 @@ end
 
       fs.writeFileSync(podfilePath, podfileContents, "utf-8");
       console.log(
-        "[withIOSNativeModules] Patched Podfile with additional pods and build settings",
+        "[withIOSNativeModules] Patched Podfile post_install build settings",
       );
 
       return config;
