@@ -89,8 +89,7 @@ export default function CountTableDetail({navigation, route}) {
       // Enviar notificaciones a usuarios cercanos
       const result = await firebaseNotificationService.announceCountToNearbyUsers(
         userId,
-        processedMesa,
-        locationData
+        processedMesa
       );
   
       setNotificationResult(result);
