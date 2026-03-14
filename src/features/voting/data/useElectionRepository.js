@@ -8,9 +8,15 @@
 import { useMemo } from 'react';
 import ElectionRepositoryMock from './repositories/ElectionRepository.mock';
 import ElectionRepositoryApi from './repositories/ElectionRepository.api';
+import {FEATURE_FLAGS} from '../../../config/featureFlags';
+import {APP_FLOWS, getAppFlow} from '../../../config/appMode';
 
-// Configuración: cambiar a 'api' cuando exista backend real
-const REPOSITORY_TYPE = 'mock'; // 'mock' | 'api'
+const getRepositoryType = () => {
+  if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && getAppFlow() === APP_FLOWS.VOTING) {
+    return 'api';
+  }
+  return 'mock';
+};
 
 /**
  * Hook que retorna el repositorio de elecciones configurado
@@ -18,7 +24,7 @@ const REPOSITORY_TYPE = 'mock'; // 'mock' | 'api'
  */
 export const useElectionRepository = () => {
   const repository = useMemo(() => {
-    switch (REPOSITORY_TYPE) {
+    switch (getRepositoryType()) {
       case 'api':
         return ElectionRepositoryApi;
       case 'mock':
@@ -35,7 +41,7 @@ export const useElectionRepository = () => {
  * @returns {typeof ElectionRepositoryMock}
  */
 export const getElectionRepository = () => {
-  switch (REPOSITORY_TYPE) {
+  switch (getRepositoryType()) {
     case 'api':
       return ElectionRepositoryApi;
     case 'mock':

@@ -19,8 +19,9 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
-import { UI_STRINGS, MOCK_PARTICIPATIONS } from '../data/mockData';
+import { UI_STRINGS } from '../data/mockData';
 import { StackNav } from '../../../navigation/NavigationKey';
+import { useVotingState } from '../state/useVotingState';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -70,6 +71,7 @@ const ParticipationItem = ({ item, onPress }) => {
 
 const ParticipationsListScreen = () => {
   const navigation = useNavigation();
+  const {participations = [], isLoading} = useVotingState();
 
   const handleItemPress = (item) => {
     if (item.status === 'VOTO_REGISTRADO') {
@@ -101,13 +103,14 @@ const ParticipationsListScreen = () => {
       <CHeader title={UI_STRINGS.participationsHeader} />
 
       <FlatList
-        data={MOCK_PARTICIPATIONS}
+        data={participations}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading}
       />
     </CSafeAreaView>
   );

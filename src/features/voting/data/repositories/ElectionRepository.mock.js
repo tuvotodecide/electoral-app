@@ -74,29 +74,6 @@ const ElectionRepositoryMock = {
       transactionId,
     };
   },
-
-  /**
-   * Genera NFT de participación (simulado)
-   * @param {string} electionId
-   * @param {string} candidateId
-   * @returns {Promise<{nftId: string, imageUrl: string}>}
-   */
-  async mintNFT(electionId, candidateId) {
-    await delay(600);
-
-    const nftId = `nft_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
-
-    return {
-      nftId,
-      imageUrl: null, // En implementación real, esto sería una URL a la imagen del NFT
-      metadata: {
-        electionId,
-        candidateId,
-        timestamp: Date.now(),
-        type: 'participation',
-      },
-    };
-  },
 };
 
 export default ElectionRepositoryMock;

@@ -10,6 +10,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const TASK_TYPE = 'votingFlowVote';
 
 const VOTE_SYNCED_KEY = 'voting.voteSynced';
+const LAST_RECEIPT_KEY = 'voting.lastReceipt';
+const PARTICIPATIONS_KEY = 'voting.participations';
+
+const safeParseJson = value => {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Encola un voto para procesamiento posterior (cuando hay conexión)
@@ -70,13 +80,47 @@ export const handleVotingQueueVote = async (item) => {
   // Voto enviado exitosamente, marcar como sincronizado
   await AsyncStorage.setItem(VOTE_SYNCED_KEY, 'true');
 
-  // Opcional: Mint NFT después de voto exitoso
-  try {
-    await repository.mintNFT(electionId, candidateId);
-  } catch (nftError) {
-    // NFT es secundario, no fallar si no se puede generar
-    console.warn('[Voting] NFT mint failed:', nftError);
-  }
+  const [lastReceiptRaw, participationsRaw] = await Promise.all([
+    AsyncStorage.getItem(LAST_RECEIPT_KEY),
+    AsyncStorage.getItem(PARTICIPATIONS_KEY),
+  ]);
+  const lastReceipt = safeParseJson(lastReceiptRaw);
+  const participations = safeParseJson(participationsRaw);
+  const patch = participation => ({
+    ...participation,
+    synced: true,
+    status: 'VOTO_REGISTRADO',
+    statusLabel: 'VOTO REGISTRADO',
+    id: result.participationId || participation?.id,
+    participatedAt: result.participatedAt || participation?.participatedAt,
+  });
+
+  const nextParticipations = Array.isArray(participations)
+    ? participations.map(participation => {
+        const sameElection =
+          String(participation?.electionId || '') === String(electionId);
+        const sameCandidate =
+          String(participation?.selectedCandidateId || '') === String(candidateId);
+        return sameElection && sameCandidate && participation?.synced !== true
+          ? patch(participation)
+          : participation;
+      })
+    : [];
+  const nextLastReceipt =
+    lastReceipt &&
+    String(lastReceipt?.electionId || '') === String(electionId) &&
+    String(lastReceipt?.selectedCandidateId || '') === String(candidateId)
+      ? patch(lastReceipt)
+      : lastReceipt;
+
+  await Promise.all([
+    nextParticipations.length > 0
+      ? AsyncStorage.setItem(PARTICIPATIONS_KEY, JSON.stringify(nextParticipations))
+      : Promise.resolve(),
+    nextLastReceipt
+      ? AsyncStorage.setItem(LAST_RECEIPT_KEY, JSON.stringify(nextLastReceipt))
+      : Promise.resolve(),
+  ]);
 
   return result;
 };

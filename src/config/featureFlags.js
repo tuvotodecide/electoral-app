@@ -22,7 +22,7 @@ export const isFeatureEnabled = (flagName) => {
  * NO usar en producción
  */
 export const DEV_FLAGS = {
-  FORCE_OFFLINE_VOTING: true,
+  FORCE_OFFLINE_VOTING: false,
   /**
    * Habilita el countdown dinámico en la tarjeta de elección
    * true = usa timestamps reales para countdown
@@ -34,7 +34,7 @@ export const DEV_FLAGS = {
    * true = siempre muestra que el usuario NO ha votado
    * false = usa el estado real del storage
    */
-  FORCE_HAS_NOT_VOTED: true,
+  FORCE_HAS_NOT_VOTED: false,
   /**
    * Fuerza el estado "no habilitado" para probar el card inhabilitado (foto 11)
    * true = muestra "Usted no está habilitado para participar"

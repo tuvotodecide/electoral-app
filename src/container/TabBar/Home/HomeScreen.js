@@ -75,7 +75,12 @@ import { useBackupCheck } from '../../../hooks/useBackupCheck';
 import { backendProbe } from '../../../utils/networkUtils';
 
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
-import { ElectionCard, useVotingState, UI_STRINGS as VotingStrings } from '../../../features/voting';
+import {
+  ElectionCard,
+  useVotingState,
+  useElectionRepository,
+  UI_STRINGS as VotingStrings,
+} from '../../../features/voting';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -490,10 +495,41 @@ export default function HomeScreen({ navigation }) {
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [isHomeOnline, setIsHomeOnline] = useState(true);
+  const [votingElection, setVotingElection] = useState(null);
+  const [loadingVotingElection, setLoadingVotingElection] = useState(
+    FEATURE_FLAGS.ENABLE_VOTING_FLOW,
+  );
 
+  const votingRepository = useElectionRepository();
+  const persistedVotingState = useVotingState();
   const votingState = FEATURE_FLAGS.ENABLE_VOTING_FLOW
-    ? useVotingState()
-    : { isLoading: false, hasVoted: false, voteSynced: false, refreshState: () => {} };
+    ? persistedVotingState
+    : {
+        ...persistedVotingState,
+        isLoading: false,
+        hasVoted: false,
+        voteSynced: false,
+        refreshState: () => {},
+        lastReceipt: null,
+      };
+
+  const loadVotingElection = useCallback(async () => {
+    if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
+      setLoadingVotingElection(false);
+      return;
+    }
+
+    try {
+      setLoadingVotingElection(true);
+      const election = await votingRepository.getElection();
+      setVotingElection(election || null);
+    } catch (error) {
+      console.warn('[HomeScreen] voting election load failed:', error?.message || error);
+      setVotingElection(null);
+    } finally {
+      setLoadingVotingElection(false);
+    }
+  }, [votingRepository]);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState('unknown');
@@ -1457,6 +1493,7 @@ export default function HomeScreen({ navigation }) {
       checkUserVotePlace({ forceSync: false });
       fetchElectionStatus();
       requestLocationAndCheckAvailability();
+      loadVotingElection();
 
       if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
         votingState.refreshState();
@@ -1473,6 +1510,7 @@ export default function HomeScreen({ navigation }) {
 
           // opcional: recheck cuando vuelve el internet
           requestLocationAndCheckAvailability();
+          loadVotingElection();
 
           if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
             votingState.refreshState();
@@ -1488,6 +1526,7 @@ export default function HomeScreen({ navigation }) {
       runOfflineQueueOnce,
       fetchElectionStatus,
       requestLocationAndCheckAvailability,
+      loadVotingElection,
       votingState,
     ]),
   );
@@ -1924,6 +1963,33 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
+  const resolvedVotingHasVoted =
+    Boolean(votingState.hasVoted) || Boolean(votingElection?.alreadyVoted);
+  const resolvedVotingSynced =
+    Boolean(votingState.voteSynced) || Boolean(votingElection?.alreadyVoted);
+  const currentParticipationId =
+    votingState.lastReceipt?.id || votingState.participationId || null;
+  const handleVotingPress = () => {
+    if (!votingElection?.id) {
+      return;
+    }
+
+    navigation.navigate(StackNav.VotingCandidateScreen, {
+      electionId: votingElection.id,
+      election: votingElection,
+    });
+  };
+  const handleVotingDetailsPress = () => {
+    if (currentParticipationId) {
+      navigation.navigate(StackNav.VotingReceiptScreen, {
+        participationId: currentParticipationId,
+        electionId: votingElection?.id,
+      });
+      return;
+    }
+
+    navigation.navigate(StackNav.VotingParticipationsScreen);
+  };
   const retryableFailedItems = (queueFailModal.failedItems || []).filter(
     item => item?.removedFromQueue !== true,
   );
@@ -2077,12 +2143,17 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {FEATURE_FLAGS.ENABLE_VOTING_FLOW && !votingState.isLoading && (
+          {FEATURE_FLAGS.ENABLE_VOTING_FLOW &&
+            !votingState.isLoading &&
+            !loadingVotingElection &&
+            votingElection && (
             <ElectionCard
-              hasVoted={votingState.hasVoted}
-              voteSynced={votingState.voteSynced}
-              onVotePress={() => navigation.navigate(StackNav.VotingCandidateScreen)}
-              onDetailsPress={() => navigation.navigate(StackNav.VotingReceiptScreen, { participationId: 'participation_1' })}
+              hasVoted={resolvedVotingHasVoted}
+              voteSynced={resolvedVotingSynced}
+              isEligible={Boolean(votingElection?.isEligible)}
+              election={votingElection}
+              onVotePress={handleVotingPress}
+              onDetailsPress={handleVotingDetailsPress}
             />
           )}
 
@@ -2259,12 +2330,17 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
 
-            {FEATURE_FLAGS.ENABLE_VOTING_FLOW && !votingState.isLoading && (
+            {FEATURE_FLAGS.ENABLE_VOTING_FLOW &&
+              !votingState.isLoading &&
+              !loadingVotingElection &&
+              votingElection && (
               <ElectionCard
-                hasVoted={votingState.hasVoted}
-                voteSynced={votingState.voteSynced}
-                onVotePress={() => navigation.navigate(StackNav.VotingCandidateScreen)}
-                onDetailsPress={() => navigation.navigate(StackNav.VotingReceiptScreen, { participationId: 'participation_1' })}
+                hasVoted={resolvedVotingHasVoted}
+                voteSynced={resolvedVotingSynced}
+                isEligible={Boolean(votingElection?.isEligible)}
+                election={votingElection}
+                onVotePress={handleVotingPress}
+                onDetailsPress={handleVotingDetailsPress}
               />
             )}
 

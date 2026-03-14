@@ -30,7 +30,7 @@ import OfflineQueuedModal from '../components/OfflineQueuedModal';
 import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
 import { enqueueVote } from '../offline/queueAdapter';
-import { MOCK_ELECTION, MOCK_CANDIDATES, UI_STRINGS } from '../data/mockData';
+import { UI_STRINGS } from '../data/mockData';
 import { DEV_FLAGS } from '../../../config/featureFlags';
 
 // Utils
@@ -55,11 +55,11 @@ const CandidateScreen = ({ route }) => {
   const colors = useSelector((state) => state.theme.theme);
   const repository = useElectionRepository();
 
-  // Get election data from route params or use mock
-  const electionId = route?.params?.electionId || MOCK_ELECTION.id;
+  const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
+  const electionId = route?.params?.electionId || electionInfo?.id || '';
 
   // State
-  const [candidates, setCandidates] = useState(MOCK_CANDIDATES);
+  const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -72,16 +72,30 @@ const CandidateScreen = ({ route }) => {
   useEffect(() => {
     const loadCandidates = async () => {
       try {
-        const data = await repository.getCandidates(electionId);
+        let resolvedElection = electionInfo;
+        if (!electionInfo?.id) {
+          const currentElection = await repository.getElection();
+          if (currentElection?.id) {
+            resolvedElection = currentElection;
+            setElectionInfo(currentElection);
+          }
+        }
+
+        const resolvedElectionId = route?.params?.electionId || resolvedElection?.id || '';
+        if (!resolvedElectionId) {
+          setCandidates([]);
+          return;
+        }
+
+        const data = await repository.getCandidates(resolvedElectionId);
         setCandidates(data);
       } catch (error) {
         console.error('[CandidateScreen] Error loading candidates:', error);
-        // Fallback to mock data
-        setCandidates(MOCK_CANDIDATES);
+        setCandidates([]);
       }
     };
     loadCandidates();
-  }, [electionId, repository]);
+  }, [electionId, repository, electionInfo, route?.params?.electionId]);
 
   // Handle candidate selection
   const handleSelectCandidate = useCallback((candidate) => {
@@ -111,21 +125,29 @@ const CandidateScreen = ({ route }) => {
         const result = await repository.submitVote(electionId, selectedCandidate.id);
 
         if (result.success) {
-          // Record vote locally as synced
-          await recordVote(selectedCandidate.id, true);
-
-          // Mint NFT
-          try {
-            await repository.mintNFT(electionId, selectedCandidate.id);
-          } catch (nftError) {
-            console.warn('[CandidateScreen] NFT mint error:', nftError);
-          }
+          const receipt = await recordVote(selectedCandidate.id, true, {
+            participationId: result.participationId,
+            participatedAt: result.participatedAt,
+            transactionId: result.transactionId || null,
+            electionId,
+            electionTitle: electionInfo?.title || 'Votacion institucional',
+            organization:
+              electionInfo?.organization ||
+              electionInfo?.instituteName ||
+              '',
+            candidateSelected: {
+              partyName: selectedCandidate.partyName,
+              presidentName: selectedCandidate.presidentName,
+              viceName: selectedCandidate.viceName,
+            },
+          });
 
           setShowConfirmModal(false);
 
           // Navigate to receipt/comprobante screen
           navigation.navigate(StackNav.VotingReceiptScreen, {
-            participationId: 'participation_1', // Mock ID for demo
+            participationId: receipt?.id || result.participationId,
+            electionId,
           });
         } else {
           throw new Error(result.error || 'Vote failed');
@@ -139,7 +161,19 @@ const CandidateScreen = ({ route }) => {
         });
 
         // Record vote locally as NOT synced
-        await recordVote(selectedCandidate.id, false);
+        await recordVote(selectedCandidate.id, false, {
+          electionId,
+          electionTitle: electionInfo?.title || 'Votacion institucional',
+          organization:
+            electionInfo?.organization ||
+            electionInfo?.instituteName ||
+            '',
+          candidateSelected: {
+            partyName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            viceName: selectedCandidate.viceName,
+          },
+        });
 
         setShowConfirmModal(false);
         setShowOfflineModal(true);
@@ -151,7 +185,7 @@ const CandidateScreen = ({ route }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCandidate, electionId, repository, recordVote, navigation]);
+  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);
 
   // Handle cancel confirm
   const handleCancelConfirm = useCallback(() => {

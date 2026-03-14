@@ -22,14 +22,12 @@
  * @typedef {Object} VoteResult
  * @property {boolean} success
  * @property {string} [transactionId]
- * @property {string} [nftId]
  * @property {string} [error]
  *
  * @typedef {Object} IElectionRepository
  * @property {() => Promise<Election>} getElection
  * @property {(electionId: string) => Promise<Candidate[]>} getCandidates
  * @property {(electionId: string, candidateId: string) => Promise<VoteResult>} submitVote
- * @property {(electionId: string, candidateId: string) => Promise<{nftId: string, imageUrl: string}>} mintNFT
  */
 
 /**

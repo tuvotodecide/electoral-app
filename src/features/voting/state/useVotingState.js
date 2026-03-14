@@ -15,17 +15,78 @@ const STORAGE_KEYS = {
   SELECTED_CANDIDATE_ID: 'voting.selectedCandidateId',
   ELECTION_ID: 'voting.electionId',
   VOTE_TIMESTAMP: 'voting.voteTimestamp',
+  PARTICIPATION_ID: 'voting.participationId',
+  LAST_RECEIPT: 'voting.lastReceipt',
+  PARTICIPATIONS: 'voting.participations',
+};
+
+const safeParseJson = value => {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+};
+
+const buildParticipationRecord = ({
+  electionId,
+  candidateId,
+  synced,
+  metadata = {},
+}) => {
+  const rawDate = metadata.participatedAt || metadata.timestamp || new Date().toISOString();
+  const date = new Date(rawDate);
+  const validDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  const id =
+    metadata.participationId ||
+    metadata.id ||
+    `participation_${validDate.getTime()}`;
+
+  return {
+    id,
+    electionId: electionId || metadata.electionId || '',
+    electionTitle: metadata.electionTitle || 'Votacion institucional',
+    status: synced ? 'VOTO_REGISTRADO' : 'EN_COLA',
+    statusLabel: synced ? 'VOTO REGISTRADO' : 'EN COLA',
+    date: validDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+    }),
+    time: validDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    fullDate: validDate.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    organization: metadata.organization || '',
+    transactionId: metadata.transactionId || null,
+    blockchainHash: metadata.blockchainHash || metadata.transactionId || null,
+    candidateSelected: metadata.candidateSelected || null,
+    nftId: metadata.nftId || null,
+    nftImageUrl: metadata.nftImageUrl || null,
+    participatedAt: validDate.toISOString(),
+    selectedCandidateId: candidateId || metadata.selectedCandidateId || null,
+    synced,
+  };
 };
 
 /**
  * Hook para manejar el estado de votación
  * @param {string} electionId - ID de la elección
  */
-export const useVotingState = (electionId = 'election_voting_1') => {
+export const useVotingState = (electionId = '') => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteSynced, setVoteSynced] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const [participationId, setParticipationId] = useState(null);
+  const [lastReceipt, setLastReceipt] = useState(null);
+  const [participations, setParticipations] = useState([]);
 
   // Cargar estado inicial desde AsyncStorage
   useEffect(() => {
@@ -41,19 +102,32 @@ export const useVotingState = (electionId = 'election_voting_1') => {
           storedVoteSynced,
           storedCandidateId,
           storedElectionId,
+          storedParticipationId,
+          storedLastReceipt,
+          storedParticipations,
         ] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.HAS_VOTED),
           AsyncStorage.getItem(STORAGE_KEYS.VOTE_SYNCED),
           AsyncStorage.getItem(STORAGE_KEYS.SELECTED_CANDIDATE_ID),
           AsyncStorage.getItem(STORAGE_KEYS.ELECTION_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATION_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.LAST_RECEIPT),
+          AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS),
         ]);
 
         // Solo cargar estado si es la misma elección
-        if (storedElectionId === electionId) {
+        const resolvedElectionId = electionId || storedElectionId;
+        if (storedElectionId === resolvedElectionId) {
           setHasVoted(storedHasVoted === 'true');
           setVoteSynced(storedVoteSynced === 'true');
           setSelectedCandidateId(storedCandidateId || null);
+          setParticipationId(storedParticipationId || null);
         }
+
+        const parsedLastReceipt = safeParseJson(storedLastReceipt);
+        const parsedParticipations = safeParseJson(storedParticipations);
+        setLastReceipt(parsedLastReceipt || null);
+        setParticipations(Array.isArray(parsedParticipations) ? parsedParticipations : []);
       } catch (error) {
         console.error('[Voting] Error loading state:', error);
       } finally {
@@ -68,30 +142,106 @@ export const useVotingState = (electionId = 'election_voting_1') => {
    * Registra un voto localmente
    * @param {string} candidateId - ID del candidato seleccionado
    * @param {boolean} synced - Si el voto ya fue sincronizado con el servidor
+   * @param {Object} metadata - Datos extras para recibo/listado
    */
   const recordVote = useCallback(
-    async (candidateId, synced = false) => {
+    async (candidateId, synced = false, metadata = {}) => {
       try {
+        const receipt = buildParticipationRecord({
+          electionId,
+          candidateId,
+          synced,
+          metadata,
+        });
+
+        const currentParticipationsRaw = await AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS);
+        const currentParticipations = safeParseJson(currentParticipationsRaw);
+        const nextParticipationsBase = Array.isArray(currentParticipations)
+          ? currentParticipations
+          : [];
+        const nextParticipations = [
+          receipt,
+          ...nextParticipationsBase.filter(item => item?.id !== receipt.id),
+        ];
+
         await Promise.all([
           AsyncStorage.setItem(STORAGE_KEYS.HAS_VOTED, 'true'),
           AsyncStorage.setItem(STORAGE_KEYS.VOTE_SYNCED, synced ? 'true' : 'false'),
           AsyncStorage.setItem(STORAGE_KEYS.SELECTED_CANDIDATE_ID, candidateId),
           AsyncStorage.setItem(STORAGE_KEYS.ELECTION_ID, electionId),
-          AsyncStorage.setItem(STORAGE_KEYS.VOTE_TIMESTAMP, Date.now().toString()),
+          AsyncStorage.setItem(
+            STORAGE_KEYS.VOTE_TIMESTAMP,
+            String(Date.parse(receipt.participatedAt) || Date.now()),
+          ),
+          AsyncStorage.setItem(STORAGE_KEYS.PARTICIPATION_ID, receipt.id),
+          AsyncStorage.setItem(STORAGE_KEYS.LAST_RECEIPT, JSON.stringify(receipt)),
+          AsyncStorage.setItem(
+            STORAGE_KEYS.PARTICIPATIONS,
+            JSON.stringify(nextParticipations),
+          ),
         ]);
 
         setHasVoted(true);
         setVoteSynced(synced);
         setSelectedCandidateId(candidateId);
+        setParticipationId(receipt.id);
+        setLastReceipt(receipt);
+        setParticipations(nextParticipations);
 
-        return true;
+        return receipt;
       } catch (error) {
         console.error('[Voting] Error recording vote:', error);
-        return false;
+        return null;
       }
     },
     [electionId],
   );
+
+  const updateParticipation = useCallback(async (targetParticipationId, patch = {}) => {
+    try {
+      const currentParticipationsRaw = await AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS);
+      const currentParticipations = safeParseJson(currentParticipationsRaw);
+      const source = Array.isArray(currentParticipations) ? currentParticipations : [];
+      const nextParticipations = source.map(item =>
+        item?.id === targetParticipationId
+          ? {
+              ...item,
+              ...patch,
+              status:
+                patch.synced === true ? 'VOTO_REGISTRADO' : patch.status || item.status,
+              statusLabel:
+                patch.synced === true ? 'VOTO REGISTRADO' : patch.statusLabel || item.statusLabel,
+            }
+          : item,
+      );
+      const nextReceipt =
+        (lastReceipt?.id === targetParticipationId
+          ? nextParticipations.find(item => item?.id === targetParticipationId)
+          : lastReceipt) || null;
+
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.PARTICIPATIONS, JSON.stringify(nextParticipations)),
+        nextReceipt
+          ? AsyncStorage.setItem(STORAGE_KEYS.LAST_RECEIPT, JSON.stringify(nextReceipt))
+          : Promise.resolve(),
+      ]);
+
+      if (patch.synced === true) {
+        await AsyncStorage.setItem(STORAGE_KEYS.VOTE_SYNCED, 'true');
+        setVoteSynced(true);
+      }
+
+      setParticipations(nextParticipations);
+      if (nextReceipt) {
+        setLastReceipt(nextReceipt);
+      }
+
+      return nextParticipations.find(item => item?.id === targetParticipationId) || null;
+    } catch (error) {
+      console.error('[Voting] Error updating participation:', error);
+      return null;
+    }
+  }, [lastReceipt]);
 
   /**
    * Marca el voto como sincronizado (cuando se procesa la cola offline)
@@ -100,12 +250,15 @@ export const useVotingState = (electionId = 'election_voting_1') => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.VOTE_SYNCED, 'true');
       setVoteSynced(true);
+      if (participationId) {
+        await updateParticipation(participationId, { synced: true });
+      }
       return true;
     } catch (error) {
       console.error('[Voting] Error marking vote synced:', error);
       return false;
     }
-  }, []);
+  }, [participationId, updateParticipation]);
 
   /**
    * Resetea el estado (solo para desarrollo/testing)
@@ -118,11 +271,17 @@ export const useVotingState = (electionId = 'election_voting_1') => {
         AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_CANDIDATE_ID),
         AsyncStorage.removeItem(STORAGE_KEYS.ELECTION_ID),
         AsyncStorage.removeItem(STORAGE_KEYS.VOTE_TIMESTAMP),
+        AsyncStorage.removeItem(STORAGE_KEYS.PARTICIPATION_ID),
+        AsyncStorage.removeItem(STORAGE_KEYS.LAST_RECEIPT),
+        AsyncStorage.removeItem(STORAGE_KEYS.PARTICIPATIONS),
       ]);
 
       setHasVoted(false);
       setVoteSynced(false);
       setSelectedCandidateId(null);
+      setParticipationId(null);
+      setLastReceipt(null);
+      setParticipations([]);
 
       return true;
     } catch (error) {
@@ -136,10 +295,19 @@ export const useVotingState = (electionId = 'election_voting_1') => {
    */
   const refreshState = useCallback(async () => {
     try {
-      const [storedVoteSynced] = await Promise.all([
+      const [storedVoteSynced, storedLastReceipt, storedParticipations, storedParticipationId] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.VOTE_SYNCED),
+        AsyncStorage.getItem(STORAGE_KEYS.LAST_RECEIPT),
+        AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS),
+        AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATION_ID),
       ]);
       setVoteSynced(storedVoteSynced === 'true');
+      setLastReceipt(safeParseJson(storedLastReceipt));
+      {
+        const parsedParticipations = safeParseJson(storedParticipations);
+        setParticipations(Array.isArray(parsedParticipations) ? parsedParticipations : []);
+      }
+      setParticipationId(storedParticipationId || null);
     } catch (error) {
       console.error('[Voting] Error refreshing state:', error);
     }
@@ -154,7 +322,11 @@ export const useVotingState = (electionId = 'election_voting_1') => {
     hasVoted: effectiveHasVoted,
     voteSynced: effectiveVoteSynced,
     selectedCandidateId,
+    participationId,
+    lastReceipt,
+    participations,
     recordVote,
+    updateParticipation,
     markVoteSynced,
     resetState,
     refreshState,

@@ -136,7 +136,8 @@ const ElectionCard = ({
         <View style={styles.notEligibleContainer}>
           <View style={styles.redDot} />
           <CText type="M14" style={styles.notEligibleText}>
-            Usted no está habilitado{'\n'}para participar en esta{'\n'}votación
+            {election.statusMessage ||
+              'Usted no está habilitado\npara participar en esta\nvotación'}
           </CText>
         </View>
       );

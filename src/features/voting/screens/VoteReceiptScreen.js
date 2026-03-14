@@ -6,8 +6,7 @@
  * - Título "Voto registrado exitosamente"
  * - Detalle de la elección
  * - Sección desplegable "Detalle de mi selección"
- * - Información de transacción/blockchain
- * - Botón "Ver mi NFT"
+ * - Información de transacción/blockchain cuando exista
  */
 
 import React, { useState } from 'react';
@@ -18,14 +17,14 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
-import { moderateScale, getHeight } from '../../../common/constants';
-import { UI_STRINGS, MOCK_PARTICIPATIONS } from '../data/mockData';
+import { moderateScale } from '../../../common/constants';
+import { UI_STRINGS } from '../data/mockData';
+import { useVotingState } from '../state/useVotingState';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,22 +38,25 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const VoteReceiptScreen = () => {
-  const navigation = useNavigation();
   const route = useRoute();
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
+  const {participations = [], lastReceipt} = useVotingState();
 
-  // Get participation data from route params or use mock
   const participationId = route?.params?.participationId;
-  const participation = MOCK_PARTICIPATIONS.find(p => p.id === participationId) || MOCK_PARTICIPATIONS[0];
+  const participation =
+    participations.find(p => p.id === participationId) ||
+    (lastReceipt?.id === participationId ? lastReceipt : null) ||
+    lastReceipt || {
+      electionTitle: 'Votacion institucional',
+      fullDate: '',
+      organization: '',
+      candidateSelected: null,
+      transactionId: null,
+      blockchainHash: null,
+    };
 
   const toggleDetail = () => {
     setIsDetailExpanded(!isDetailExpanded);
-  };
-
-  const handleViewNFT = () => {
-    // Navigate to NFT screen or show NFT modal
-    // For now, just log
-    console.log('View NFT:', participation.nftId);
   };
 
   return (
@@ -179,19 +181,6 @@ const VoteReceiptScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Button */}
-      {participation.nftId && (
-        <View style={styles.bottomContainer}>
-          <CButton
-            title={UI_STRINGS.viewMyNft}
-            type="B16"
-            onPress={handleViewNFT}
-            containerStyle={styles.nftButton}
-            sinMargen
-            testID="viewNftButton"
-          />
-        </View>
-      )}
     </CSafeAreaView>
   );
 };
@@ -299,22 +288,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '500',
-  },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: getResponsiveSize(16, 20, 24),
-    paddingTop: getResponsiveSize(12, 14, 16),
-    paddingBottom: getResponsiveSize(24, 28, 32),
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  nftButton: {
-    height: getHeight(52),
-    borderRadius: moderateScale(12),
   },
 });
 
