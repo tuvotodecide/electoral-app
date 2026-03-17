@@ -145,7 +145,7 @@ const CandidateScreen = ({ route }) => {
           setShowConfirmModal(false);
 
           // Navigate to receipt/comprobante screen
-          navigation.navigate(StackNav.VotingReceiptScreen, {
+          navigation.replace(StackNav.VotingReceiptScreen, {
             participationId: receipt?.id || result.participationId,
             electionId,
           });

@@ -512,6 +512,7 @@ export default function HomeScreen({ navigation }) {
         refreshState: () => {},
         lastReceipt: null,
       };
+  const refreshVotingState = votingState.refreshState;
 
   const loadVotingElection = useCallback(async () => {
     if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
@@ -1495,8 +1496,8 @@ export default function HomeScreen({ navigation }) {
       requestLocationAndCheckAvailability();
       loadVotingElection();
 
-      if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
-        votingState.refreshState();
+      if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && refreshVotingState) {
+        refreshVotingState();
       }
 
       let alive = true;
@@ -1512,8 +1513,8 @@ export default function HomeScreen({ navigation }) {
           requestLocationAndCheckAvailability();
           loadVotingElection();
 
-          if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && votingState.refreshState) {
-            votingState.refreshState();
+          if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && refreshVotingState) {
+            refreshVotingState();
           }
         }
       });
@@ -1527,7 +1528,7 @@ export default function HomeScreen({ navigation }) {
       fetchElectionStatus,
       requestLocationAndCheckAvailability,
       loadVotingElection,
-      votingState,
+      refreshVotingState,
     ]),
   );
 
@@ -1817,9 +1818,9 @@ export default function HomeScreen({ navigation }) {
       : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
     const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
 
-
-
-
+    if (!forceSync && (votePlaceSyncRef.current.inFlight || isRecentSync)) {
+      return;
+    }
 
     if (!hasLocationCached) {
       setCheckingVotePlace(true);
@@ -1830,6 +1831,9 @@ export default function HomeScreen({ navigation }) {
     try {
       const probe = await backendProbe({ timeoutMs: 2000 });
       votePlaceSyncRef.current.lastSyncAt = Date.now();
+      if (!probe?.ok) {
+        return;
+      }
 
 
       const res = await axios.get(
