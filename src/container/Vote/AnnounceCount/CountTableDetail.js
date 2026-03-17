@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -18,7 +18,7 @@ import String from '../../../i18n/String';
 import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
 
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -40,19 +40,19 @@ const mockMesa = {
   recinto: 'Colegio 23 de marzo',
 };
 
-export default function CountTableDetail({navigation, route}) {
+export default function CountTableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
-  
+
   // Obtener datos del usuario actual desde Redux
   const userData = useSelector(state => state.wallet.payload);
   const userId = userData?.account || 'user-' + Date.now();
-  
+
   // Obtener datos de la mesa y ubicación desde los parámetros de navegación
   const mesaData = route?.params?.mesa || route?.params?.table;
   const originalTable = route?.params?.originalTable;
   const locationData = route?.params?.locationData;
-  
-  
+
+
 
   // Use the processed mesa data if available, otherwise fallback to mock
   const mesa = mesaData || originalTable || mockMesa;
@@ -75,30 +75,30 @@ export default function CountTableDetail({navigation, route}) {
   const [success, setSuccess] = React.useState(false);
   const [notificationResult, setNotificationResult] = React.useState(null);
 
-  
+
   const handleAnnounceCount = () => {
     setModalVisible(true);
   };
 
   const handleConfirmCount = async () => {
     setLoading(true);
-    
+
     try {
 
-      
+
       // Enviar notificaciones a usuarios cercanos
       const result = await firebaseNotificationService.announceCountToNearbyUsers(
         userId,
         processedMesa
       );
-  
+
       setNotificationResult(result);
-      
+
       // Simular procesamiento adicional
       setTimeout(() => {
         setLoading(false);
         setSuccess(true);
-        
+
         // Después de 3 segundos, cerrar modal y navegar
         setTimeout(() => {
           setModalVisible(false);
@@ -107,11 +107,11 @@ export default function CountTableDetail({navigation, route}) {
           navigation.popToTop();
         }, 3000);
       }, 1500);
-      
+
     } catch (error) {
       setLoading(false);
       setSuccess(false);
-      
+
       // Mostrar error por 2 segundos y cerrar
       setTimeout(() => {
         setModalVisible(false);
@@ -241,7 +241,7 @@ export default function CountTableDetail({navigation, route}) {
                 <ActivityIndicator
                   size="large"
                   color="#4F9858"
-                  style={{marginBottom: getResponsiveSize(16, 20, 24)}}
+                  style={{ marginBottom: getResponsiveSize(16, 20, 24) }}
                 />
                 <CText style={stylesx.modalTitle}>{String.processing}</CText>
                 <CText style={stylesx.modalSubtitle}>
@@ -263,8 +263,8 @@ export default function CountTableDetail({navigation, route}) {
                   {String.countAnnounced}
                 </CText>
                 <CText style={stylesx.modalSubtitle}>
-                  {notificationResult ? 
-                    `Notificado a ${notificationResult.usuariosNotificados} usuarios cercanos` : 
+                  {notificationResult ?
+                    `Notificado a ${notificationResult.usuariosNotificados} usuarios cercanos` :
                     String.countAnnouncedSuccess
                   }
                 </CText>
@@ -362,7 +362,7 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(18, 23, 28),
     padding: getResponsiveSize(16, 18, 22),
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
     shadowRadius: 2,
     elevation: 1,
@@ -438,7 +438,7 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(18, 20, 28),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 10,
