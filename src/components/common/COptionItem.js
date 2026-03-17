@@ -17,31 +17,34 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
           localStyle.renderItemContainer,
           {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
         ]}>
-        <View testID="optionLabelContainer" style={styles.rowCenter}>
+        <View testID="optionLabelContainer" style={localStyle.textItem}>
           <Icons
             testID="optionIcon"
             name={item.icon}
             size={moderateScale(25)}
             color={color.primary}
           />
-          <View testID={`optionTextContainer_${item.id || index}`} style={styles.ml10}>
+          <View testID={`optionTextContainer_${item.id || index}`} style={localStyle.textBox}>
             <CText testID={`optionTitle_${item.id || index}`} type={'B15'}>{item.title}</CText>
             <CText testID={`optionValue_${item.id || index}`} type={'R12'} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
-        <Switch
-          testID={`optionSwitch_${item.id || index}`}
-          value={switchValue}
-          onValueChange={(value) => onSwitchValueChange(item, value)}
-          trackColor={{
-            false: color.grayScale300,
-            true: color.primary,
-          }}
-          thumbColor={color.white}
-          disabled={disabled}
-        />
+        <View>
+          <Switch
+            testID={`optionSwitch_${item.id || index}`}
+            value={switchValue}
+            onValueChange={(value) => onSwitchValueChange(item, value)}
+            trackColor={{
+              false: color.grayScale300,
+              true: color.primary,
+            }}
+            thumbColor={color.white}
+            disabled={disabled}
+          />
+        </View>
+        
       </View>
     );
   }
@@ -103,11 +106,25 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
 
 const localStyle = StyleSheet.create({
   renderItemContainer: {
-    height: moderateScale(72),
+    paddingVertical: moderateScale(10),
     borderRadius: moderateScale(12),
-    ...styles.rowSpaceBetween,
+    overflow: 'hidden',
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     ...styles.mv10,
     ...styles.ph10,
     borderWidth: moderateScale(1),
   },
+  textItem: {
+    ...styles.rowCenter,
+    flexShrink: 1
+  },
+  textBox: {
+    flex: 1,
+    flexDirection: 'column',
+    flexShrink: 1,
+    paddingHorizontal: moderateScale(10)
+  }
 });

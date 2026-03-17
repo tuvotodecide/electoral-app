@@ -17,7 +17,7 @@ export default function CEtiqueta({
   return (
     <View style={[localStyle.wrapper, containerStyle]}>
       <View style={localStyle.iconWrapper}>{icon}</View>
-      <View>
+      <View style={localStyle.textWrapper}>
         <CText
           type={'B14'}
           color={getSecondaryTextColor(colors)}
@@ -45,6 +45,11 @@ const localStyle = StyleSheet.create({
     marginRight: moderateScale(12),
     alignSelf: 'flex-start',
   },
+  textWrapper: {
+    flex: 1,
+    flexDirection: 'column',
+    flexShrink: 1
+  }, 
   text: {
     flex: 1,
   },

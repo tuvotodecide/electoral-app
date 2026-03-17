@@ -137,6 +137,12 @@
           "organization": "tu-voto-decide"
         }
       ],
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": ["LocationAlways", "LocationWhenInUse"]
+        }
+      ],
       "./plugins/withIOSCodesigning",
       "@react-native-firebase/app",
       "./plugins/withNativeModules",

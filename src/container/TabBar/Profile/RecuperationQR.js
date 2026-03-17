@@ -4,7 +4,6 @@ import {
   View,
   Alert,
   ActivityIndicator,
-  Linking,
   StyleSheet,
 } from 'react-native';
 
@@ -46,7 +45,7 @@ export default function RecuperationQR({ navigation }) {
       await saveData();
       await checkBackupAsStored();
     } catch (err) {
-      Alert.alert('Error', errorMessage, [
+      Alert.alert('Error', err?.message || String.backupSaveError, [
         {text: 'OK', style: 'default'},
         {text: 'Abrir configuración', onPress: () => openSettings()},
       ]);
@@ -55,7 +54,7 @@ export default function RecuperationQR({ navigation }) {
 
   const saveData = async () => {
     try {
-      const {savedOn, path, fileName} = await recoveryService.backupDataOnDevice({
+      const {fileName} = await recoveryService.backupDataOnDevice({
         dni: userData.dni,
         salt: userData.salt,
         privKey: userData.privKey,
@@ -65,34 +64,22 @@ export default function RecuperationQR({ navigation }) {
       });
 
       setSaveSuccess(true);
-      if (savedOn === 'downloads') {
-        Alert.alert(
-          String.backed,
-          String.backedOnDownloads + fileName,
-          [
-            { text: 'OK', style: 'default' },
-            {
-              text: String.openDownloads,
-              onPress: () => {
-                Linking.openURL(
-                  'content://com.android.externalstorage.documents/root/primary:Download'
-                ).catch(() => openSettings());
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert(
-          String.backed,
-          String.backedOnAppDir + path,
-          [{ text: 'OK' }]
-        );
-      }
+      Alert.alert(
+        String.backed,
+        fileName,
+        [
+          { text: 'OK', style: 'default' },
+        ]
+      );
     } catch (error) {
+      if (error?.message === 'Export canceled') {
+        return;
+      }
+
       let errorMessage = String.backupSaveError;
-      if (err.message.includes('Storage permission not granted')) {
+      if (error?.message?.includes('Storage permission not granted')) {
         errorMessage = String.permissionDeniedMessage;
-      } else if (err.message.includes('ENOENT')) {
+      } else if (error?.message?.includes('ENOENT')) {
         errorMessage = String.badDirectoryMessage;
       }
 

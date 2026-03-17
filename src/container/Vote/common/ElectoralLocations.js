@@ -27,6 +27,7 @@ import { BACKEND_RESULT } from '@env';
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 
 import { getVotePlace } from '../../../utils/offlineQueue';
+import { checkAndRequestLocationPermission } from '@/src/utils/geoLocation';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -231,54 +232,19 @@ const ElectoralLocations = ({ navigation, route }) => {
         if (retryCount > 0) {
         }
 
-        // Pedir permisos en Android
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title:
-                i18nString.locationPermissionTitle || 'Permiso de ubicación',
-              message:
-                i18nString.locationPermissionMessage ||
-                'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-              buttonNeutral: i18nString.askMeLater || 'Preguntar después',
-              buttonNegative: i18nString.cancel || 'Cancelar',
-              buttonPositive: i18nString.ok || 'OK',
-            },
+        const permissionGranted = await checkAndRequestLocationPermission();
+        if (!permissionGranted) {
+          showModal(
+            'settings',
+            i18nString.locationPermissionRequired,
+            i18nString.locationPermissionDeniedMessage,
+            i18nString.openSettings,
+            openLocationSettings,
+            i18nString.cancel,
+            closeModal,
           );
-
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            showModal(
-              'settings',
-              i18nString.locationPermissionRequired,
-              i18nString.locationPermissionDeniedMessage,
-              i18nString.openSettings,
-              openLocationSettings,
-              i18nString.cancel,
-              closeModal,
-            );
-            setLoadingLocation(false);
-            return;
-          }
-        } else {
-          // iOS
-          const status = await Geolocation.requestAuthorization('whenInUse');
-          if (status !== 'granted') {
-            showModal(
-              'settings',
-              i18nString.locationPermissionRequired,
-              i18nString.locationPermissionDeniedMessage,
-              i18nString.openSettings,
-              () => {
-                pendingPermissionFromSettings.current = true;
-                openLocationSettings();
-              },
-              i18nString.cancel,
-              closeModal,
-            );
-            setLoadingLocation(false);
-            return;
-          }
+          setLoadingLocation(false);
+          return;
         }
 
         // Obtener ubicación
@@ -334,6 +300,7 @@ const ElectoralLocations = ({ navigation, route }) => {
           },
         );
       } catch (error) {
+        console.log('Error obteniendo ubicación:', error);
         showModal(
           'error',
           i18nString.error,

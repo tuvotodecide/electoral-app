@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export default {
   sendInvitation: ' Enviar invitación',
   sendInvitation: ' Enviar invitación',
@@ -332,7 +334,7 @@ export default {
   security2Subtitle: 'Usa tu rostro para login',
   security3Title: 'Correo electrónico',
   security3Subtitle: 'Crear tu correo',
-  security4Title: 'Huella dactilar',
+  security4Title: Platform.OS === 'ios' ? 'Touch ID / Face ID' : 'Huella dactilar',
   security4Subtitle: 'Activar huella',
   showName: 'Nombre público',
   showNameValue: 'Tu nombre será visible para otros usuarios',

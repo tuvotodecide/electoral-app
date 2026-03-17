@@ -23,6 +23,7 @@ import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import { BACKEND_IDENTITY } from '@env';
+import * as ImagePicker from 'expo-image-picker';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
@@ -60,7 +61,27 @@ export default function RegisterUser4({navigation, route}) {
       );
     };
 
-    openCamera();
+    const pickFromGallery = async() => {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets) {
+        setSelfie(result.assets[0]);
+      }
+    };
+
+    if (__DEV__ && Platform.OS === 'ios') {
+      pickFromGallery();
+    } else {
+      openCamera();
+    }
   }, []);
 
   const requestCameraPermission = async () => {
@@ -110,7 +131,7 @@ export default function RegisterUser4({navigation, route}) {
   const resizeImage = async (uri) => {
     const imageContext = ImageManipulator.manipulate(uri);
     const renderedImage = await imageContext.resize({
-      height: 300,
+      height: 250,
     }).renderAsync()
 
     const result = await renderedImage.saveAsync({

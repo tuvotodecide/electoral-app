@@ -14,6 +14,7 @@ import {
   ScrollView,
   PanResponder,
   Animated,
+  Platform,
 } from 'react-native';
 import {
   Camera,
@@ -31,6 +32,7 @@ import NetInfo from '@react-native-community/netinfo';
 
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -139,6 +141,7 @@ export default function CameraScreen({ navigation, route }) {
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
+  const [imageVisible, setImageVisible] = useState(true);
 
   const initialScale = useRef(1);
   const isZooming = useRef(false);
@@ -529,7 +532,28 @@ export default function CameraScreen({ navigation, route }) {
     };
   }, []);
 
-  if (!device || !hasPermission) {
+  const pickFromGallery = async() => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      return;
+    }
+
+    const libResult = await ImagePicker.launchImageLibraryAsync({
+      quality: 1,
+    });
+
+    if (libResult.canceled || !libResult.assets) {
+      return;
+    }
+    const firstResult = libResult.assets[0];
+
+    return firstResult.uri;
+  };
+
+  if (__DEV__ && Platform.OS === 'ios') {
+    //pickFromGallery();
+  } else if (!device || !hasPermission) {
     return (
       <View style={styles.centered}>
         <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
@@ -539,22 +563,29 @@ export default function CameraScreen({ navigation, route }) {
 
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
-    if (!camera.current || loading || !isActive) {
+    if (__DEV__ && Platform.OS === 'ios') {
+    } else if (!camera.current || loading || !isActive) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const firstResult = await camera.current.takePhoto({
-        qualityPrioritization: 'balanced',
-        flash: 'off',
-        enableAutoRedEyeReduction: false,
-        enableAutoStabilization: true,
-        enableShutterSound: false,
-      });
+      let resultPath = '';
+      if (__DEV__ && Platform.OS === 'ios') {
+        resultPath = await pickFromGallery();
+      } else {
+        const firstResult = await camera.current.takePhoto({
+          qualityPrioritization: 'balanced',
+          flash: 'off',
+          enableAutoRedEyeReduction: false,
+          enableAutoStabilization: true,
+          enableShutterSound: false,
+        });
+        resultPath = `file://${firstResult.path}`;
+      }
 
-      const imageContext = ImageManipulator.manipulate(`file://${firstResult.path}`);
+      const imageContext = ImageManipulator.manipulate(resultPath);
       const renderedImage = await imageContext.resize({
         height: 720,
       }).renderAsync()
@@ -698,6 +729,7 @@ export default function CameraScreen({ navigation, route }) {
       // Mapear datos de la IA al formato de la app
       const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
 
+      setImageVisible(false);
       // Navegar a la pantalla de revisión con los datos analizados
       navigation.navigate(StackNav.PhotoReviewScreen, {
         photoUri: `file://${photo.path}`,
@@ -763,7 +795,7 @@ export default function CameraScreen({ navigation, route }) {
     <View testID="cameraScreenMainContainer" style={styles.mainContainer}>
       {!photo ? (
         <>
-          {isActive && (
+          {isActive && !__DEV__ && Platform.OS === 'android' && (
             <Camera
               testID="cameraScreenCamera"
               key={cameraKey}
@@ -828,7 +860,7 @@ export default function CameraScreen({ navigation, route }) {
           <View style={styles.fullContainer}>
             <ImageViewing
               images={[{ uri: 'file://' + photo.path }]}
-              visible={true}
+              visible={imageVisible}
               onRequestClose={() => {
                 /* no cerramos, controlas tú el flujo */
               }}

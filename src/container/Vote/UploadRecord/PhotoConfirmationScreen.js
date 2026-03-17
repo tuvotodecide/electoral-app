@@ -718,13 +718,16 @@ const PhotoConfirmationScreen = ({ route }) => {
                 style={styles.infoText}>
                 Mostrar mi nombre en el certificado
               </CText>
-              <Switch
-                value={isNameVisible}
-                onValueChange={setIsNameVisible}
-                style={styles.infoSwitch}
-                trackColor={{ false: '#D6D6D6', true: '#A5D6A7' }}
-                thumbColor={isNameVisible ? '#4CAF50' : '#f4f3f4'}
-              />
+              <View>
+                <Switch
+                  value={isNameVisible}
+                  onValueChange={setIsNameVisible}
+                  style={styles.infoSwitch}
+                  trackColor={{ false: '#D6D6D6', true: '#A5D6A7' }}
+                  thumbColor={isNameVisible ? '#4CAF50' : '#f4f3f4'}
+                />
+              </View>
+              
             </View>
           </TouchableOpacity>
         </View>
