@@ -27,6 +27,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import images from '../../../assets/images';
 import {
+  LAST_USER_TOPIC_KEY,
   JWT_KEY
 } from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -69,6 +70,10 @@ import {
   publishWorksheetHandler,
   syncActaBackendHandler,
 } from '../../../utils/offlineQueueHandler';
+import {
+  subscribeToPushTopic,
+  unsubscribeFromPushTopic,
+} from '../../../services/notifications';
 import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
 import { captureError, captureMessage } from '../../../config/sentry';
 import { useBackupCheck } from '../../../hooks/useBackupCheck';
@@ -468,6 +473,7 @@ const resolveElectionWindowState = status => {
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const auth = useSelector(s => s.auth);
+  const userTopicRef = useRef(null);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
@@ -1006,6 +1012,13 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const userData = useSelector(state => state.wallet.payload);
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ??
+    subject?.documentNumber ??
+    subject?.governmentIdentifier ??
+    userData?.dni;
 
   const [infoModal, setInfoModal] = useState({
     visible: false,
@@ -1115,6 +1128,130 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     refreshVotingStateRef.current = refreshVotingState || (() => {});
   }, [refreshVotingState]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      const clearUserTopicSubscription = async () => {
+        const previousTopic =
+          userTopicRef.current || (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
+        if (!previousTopic) return;
+
+        try {
+          await unsubscribeFromPushTopic(previousTopic);
+        } catch (error) {
+          console.warn('[PushTopic] Failed to unsubscribe previous user topic', error);
+        }
+
+        userTopicRef.current = null;
+        await AsyncStorage.removeItem(LAST_USER_TOPIC_KEY);
+      };
+
+      const syncUserTopicSubscription = async () => {
+        console.log('[PushTopic] HomeScreen sync invoked', {
+          isAuthenticated: Boolean(auth?.isAuthenticated),
+          hasDni: Boolean(dni),
+          hasDid: Boolean(userData?.did),
+          hasPrivKey: Boolean(userData?.privKey),
+        });
+
+        if (!auth?.isAuthenticated || !dni || !userData?.did || !userData?.privKey) {
+          console.log('[PushTopic] HomeScreen skipping sync due to missing session data', {
+            isAuthenticated: Boolean(auth?.isAuthenticated),
+            hasDni: Boolean(dni),
+            hasDid: Boolean(userData?.did),
+            hasPrivKey: Boolean(userData?.privKey),
+          });
+          await clearUserTopicSubscription();
+          return;
+        }
+
+        try {
+          console.log('[PushTopic] HomeScreen calling authenticateWithBackend', {
+            dni,
+            backendResult: String(BACKEND_RESULT || '').replace(/\/+$/, ''),
+          });
+
+          const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+          console.log('[PushTopic] HomeScreen authenticateWithBackend resolved', {
+            dni,
+            hasApiKey: Boolean(apiKey),
+            apiKeyPrefix: apiKey ? String(apiKey).slice(0, 8) : null,
+          });
+
+          if (!apiKey) {
+            return;
+          }
+
+          const requestUrl = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1/users/${encodeURIComponent(
+            dni,
+          )}`;
+          const response = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+          });
+
+          if (!response.ok) {
+            const responseText = await response.text().catch(() => '');
+            console.warn('[PushTopic] HomeScreen user lookup failed', {
+              dni,
+              requestUrl,
+              status: response.status,
+              responseText,
+            });
+            return;
+          }
+
+          const payload = await response.json();
+          const backendUserId = String(payload?._id || payload?.id || '').trim();
+          if (!backendUserId) {
+            console.warn('[PushTopic] HomeScreen user lookup payload missing id', {
+              dni,
+              requestUrl,
+              payload,
+            });
+            return;
+          }
+
+          const nextTopic = `user_${backendUserId}`;
+          const previousTopic =
+            userTopicRef.current || (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
+
+          if (previousTopic && previousTopic !== nextTopic) {
+            await unsubscribeFromPushTopic(previousTopic);
+          }
+
+          await subscribeToPushTopic(nextTopic);
+
+          if (cancelled) return;
+
+          userTopicRef.current = nextTopic;
+          await AsyncStorage.setItem(LAST_USER_TOPIC_KEY, nextTopic);
+          console.log('[PushTopic] HomeScreen user topic ready', {
+            dni,
+            topic: nextTopic,
+            backendUserId,
+          });
+        } catch (error) {
+          console.warn('[PushTopic] HomeScreen sync failed', {
+            dni,
+            message: error?.message || String(error),
+          });
+        }
+      };
+
+      syncUserTopicSubscription();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [auth?.isAuthenticated, dni, userData?.did, userData?.privKey]),
+  );
 
   useEffect(() => {
     requestLocationAndCheckAvailabilityRef.current = requestLocationAndCheckAvailability;
