@@ -476,9 +476,18 @@ export default function HomeScreen({ navigation }) {
   const processingRef = useRef(false);
   const queueRunPromiseRef = useRef(null);
   const runOfflineQueueRef = useRef(() => { });
+  const loadVotingElectionRef = useRef(async () => {});
+  const refreshVotingStateRef = useRef(() => {});
+  const requestLocationAndCheckAvailabilityRef = useRef(async () => {});
+  const checkUserVotePlaceRef = useRef(async () => {});
   const refreshNotificationBadgeCountRef = useRef(async () => { });
   const notificationsApiKeyRef = useRef(null);
   const notificationsAuthRetryAtRef = useRef(0);
+  const votingElectionLoadRef = useRef({
+    inFlight: false,
+    lastAttemptAt: 0,
+    promise: null,
+  });
   const [checkingVotePlace, setCheckingVotePlace] = useState(false);
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
@@ -520,17 +529,34 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
+    const now = Date.now();
+    if (votingElectionLoadRef.current.inFlight) {
+      return votingElectionLoadRef.current.promise;
+    }
+    if (now - votingElectionLoadRef.current.lastAttemptAt < 4000) {
+      return votingElection;
+    }
+
+    votingElectionLoadRef.current.lastAttemptAt = now;
+    votingElectionLoadRef.current.inFlight = true;
+
     try {
       setLoadingVotingElection(true);
-      const election = await votingRepository.getElection();
+      const request = votingRepository.getElection();
+      votingElectionLoadRef.current.promise = request;
+      const election = await request;
       setVotingElection(election || null);
+      return election || null;
     } catch (error) {
       console.warn('[HomeScreen] voting election load failed:', error?.message || error);
       setVotingElection(null);
+      return null;
     } finally {
+      votingElectionLoadRef.current.inFlight = false;
+      votingElectionLoadRef.current.promise = null;
       setLoadingVotingElection(false);
     }
-  }, [votingRepository]);
+  }, [votingRepository, votingElection]);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState('unknown');
@@ -1082,6 +1108,18 @@ export default function HomeScreen({ navigation }) {
     };
   }, [runOfflineQueueOnce]);
 
+  useEffect(() => {
+    loadVotingElectionRef.current = loadVotingElection;
+  }, [loadVotingElection]);
+
+  useEffect(() => {
+    refreshVotingStateRef.current = refreshVotingState || (() => {});
+  }, [refreshVotingState]);
+
+  useEffect(() => {
+    requestLocationAndCheckAvailabilityRef.current = requestLocationAndCheckAvailability;
+  }, [requestLocationAndCheckAvailability]);
+
   const buildWorksheetIdentity = payload => {
     const dni = String(
       payload?.dni ||
@@ -1491,13 +1529,13 @@ export default function HomeScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      checkUserVotePlace({ forceSync: false });
+      checkUserVotePlaceRef.current?.({ forceSync: false });
       fetchElectionStatus();
-      requestLocationAndCheckAvailability();
-      loadVotingElection();
+      requestLocationAndCheckAvailabilityRef.current?.();
+      loadVotingElectionRef.current?.();
 
       if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && refreshVotingState) {
-        refreshVotingState();
+        refreshVotingStateRef.current?.();
       }
 
       let alive = true;
@@ -1510,11 +1548,11 @@ export default function HomeScreen({ navigation }) {
           runOfflineQueueOnce();
 
           // opcional: recheck cuando vuelve el internet
-          requestLocationAndCheckAvailability();
-          loadVotingElection();
+          requestLocationAndCheckAvailabilityRef.current?.();
+          loadVotingElectionRef.current?.();
 
           if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && refreshVotingState) {
-            refreshVotingState();
+            refreshVotingStateRef.current?.();
           }
         }
       });
@@ -1523,12 +1561,8 @@ export default function HomeScreen({ navigation }) {
         unsubNet && unsubNet();
       };
     }, [
-      checkUserVotePlace,
       runOfflineQueueOnce,
       fetchElectionStatus,
-      requestLocationAndCheckAvailability,
-      loadVotingElection,
-      refreshVotingState,
     ]),
   );
 
@@ -1924,6 +1958,10 @@ export default function HomeScreen({ navigation }) {
     if (!dni) return;
     checkUserVotePlace({ forceSync: true });
   }, [dni, checkUserVotePlace]);
+
+  useEffect(() => {
+    checkUserVotePlaceRef.current = checkUserVotePlace;
+  }, [checkUserVotePlace]);
 
 
 
