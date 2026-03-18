@@ -1756,14 +1756,6 @@ export default function HomeScreen({ navigation }) {
     } catch (err) { }
   };
 
-  const vc = userData?.vc;
-  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
-  const dni =
-    subject?.nationalIdNumber ??
-    subject?.documentNumber ??
-    subject?.governmentIdentifier ??
-    userData?.dni;
-
   const ensureNotificationsApiKey = useCallback(async () => {
     const now = Date.now();
     if (now < notificationsAuthRetryAtRef.current) {
