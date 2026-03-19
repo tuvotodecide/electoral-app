@@ -31,6 +31,10 @@ import {
   WorksheetStatus,
   upsertWorksheetLocalStatus,
 } from '../../../utils/worksheetLocalStatus';
+import {
+  getContextOfficeLabels,
+  hasSecondaryBlockElection,
+} from '../../../utils/electionContext';
 
 const normalizeComparableObservation = text =>
   String(text ?? '')
@@ -66,12 +70,12 @@ const normalizeCompareToken = value =>
 
 const resolvePartyIdForCompare = party => {
   const candidates = [
+    party?.id,
+    party?.partyId,
     party?.partido,
     party?.name,
     party?.sigla,
     party?.party,
-    party?.partyId,
-    party?.id,
   ];
   let fallback = '';
   for (const candidate of candidates) {
@@ -158,6 +162,13 @@ const buildWorksheetCompareVotesPayload = (
     acc[partyId] = (acc[partyId] || 0) + toNumber(party?.presidente);
     return acc;
   }, {});
+  const deputyPartyVotesMap = (normalizedPartyResults || []).reduce((acc, party) => {
+    const partyId = resolvePartyIdForCompare(party);
+    if (!partyId) return acc;
+    acc[partyId] = (acc[partyId] || 0) + toNumber(party?.diputado);
+    return acc;
+  }, {});
+  const hasSecondary = Object.values(deputyPartyVotesMap).some(value => value > 0);
   return {
     parties: {
       validVotes,
@@ -169,7 +180,72 @@ const buildWorksheetCompareVotesPayload = (
       })),
       totalVotes: validVotes + nullVotes + blankVotes,
     },
+    ...(hasSecondary
+      ? {
+          deputies: {
+            validVotes: toNumber(pickRow('validos')?.value2),
+            nullVotes: toNumber(pickRow('nulos')?.value2),
+            blankVotes: toNumber(pickRow('blancos')?.value2),
+            partyVotes: Object.keys(deputyPartyVotesMap).map(partyId => ({
+              partyId,
+              votes: deputyPartyVotesMap[partyId],
+            })),
+            totalVotes:
+              toNumber(pickRow('validos')?.value2) +
+              toNumber(pickRow('nulos')?.value2) +
+              toNumber(pickRow('blancos')?.value2),
+          },
+        }
+      : {}),
   };
+};
+
+const buildOfficialPartyRows = (allowedParties = [], seed = '0') =>
+  (Array.isArray(allowedParties) ? allowedParties : []).map((party, index) => {
+    const partyId = String(
+      party?.partyId || party?.shortName || party?.fullName || `party-${index + 1}`,
+    )
+      .trim()
+      .toLowerCase();
+    return {
+      id: partyId || `party-${index + 1}`,
+      partido: String(
+        party?.shortName || party?.partyId || party?.fullName || `PARTIDO ${index + 1}`,
+      ).trim(),
+      presidente: seed,
+      diputado: seed,
+    };
+  });
+
+const mergeDetectedVotesIntoOfficialRows = (officialRows = [], detectedRows = []) => {
+  const baseMap = new Map(
+    (Array.isArray(officialRows) ? officialRows : []).map(row => [
+      String(row?.id || row?.partyId || row?.partido || '')
+        .trim()
+        .toLowerCase(),
+      {...row},
+    ]),
+  );
+
+  (Array.isArray(detectedRows) ? detectedRows : []).forEach((row, index) => {
+    const rowId = String(row?.id || row?.partyId || row?.partido || `party-${index + 1}`)
+      .trim()
+      .toLowerCase();
+    const existing = baseMap.get(rowId) || {
+      id: rowId || `party-${index + 1}`,
+      partido: row?.partido || row?.partyId || rowId || `PARTIDO ${index + 1}`,
+      presidente: '0',
+      diputado: '0',
+    };
+    baseMap.set(rowId, {
+      ...existing,
+      partido: existing.partido || row?.partido || row?.partyId || rowId,
+      presidente: String(row?.presidente ?? existing.presidente ?? '0'),
+      diputado: String(row?.diputado ?? existing.diputado ?? '0'),
+    });
+  });
+
+  return Array.from(baseMap.values());
 };
 
 const PhotoReviewScreen = () => {
@@ -192,7 +268,12 @@ const PhotoReviewScreen = () => {
     actaCount,
     electionId,
     electionType,
+    selectedElectionContext,
   } = route.params || {};
+  const resolvedElectionType =
+    selectedElectionContext?.electionType || electionType;
+  const officeLabels = getContextOfficeLabels(resolvedElectionType);
+  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   const isWorksheetMode = mode === 'worksheet';
@@ -280,10 +361,25 @@ const PhotoReviewScreen = () => {
     if (existingRecord?.partyResults) {
       return existingRecord.partyResults;
     }
+    const seed = offline ? '' : '0';
+    const officialRows = buildOfficialPartyRows(
+      selectedElectionContext?.allowedParties,
+      seed,
+    );
+
     if (mappedData?.partyResults) {
+      if (hasSecondaryFlow && officialRows.length) {
+        return mergeDetectedVotesIntoOfficialRows(
+          officialRows,
+          mappedData.partyResults,
+        );
+      }
       return mappedData.partyResults;
     }
-    const seed = offline ? '' : '0';
+
+    if (hasSecondaryFlow) {
+      return officialRows;
+    }
 
     return [
       {id: 'pdc', partido: 'PDC', presidente: seed, diputado: seed},
@@ -298,19 +394,19 @@ const PhotoReviewScreen = () => {
         id: 'validos',
         label: Strings.validVotes,
         value1: String(src.presValidVotes ?? src.validVotes ?? seed),
-        value2: '0',
+        value2: String(src.depValidVotes ?? src.secondaryValidVotes ?? '0'),
       },
       {
         id: 'blancos',
         label: Strings.blankVotes,
         value1: String(src.presBlankVotes ?? src.blankVotes ?? seed),
-        value2: '0',
+        value2: String(src.depBlankVotes ?? src.secondaryBlankVotes ?? '0'),
       },
       {
         id: 'nulos',
         label: Strings.nullVotes,
         value1: String(src.presNullVotes ?? src.nullVotes ?? seed),
-        value2: '0',
+        value2: String(src.depNullVotes ?? src.secondaryNullVotes ?? '0'),
       },
     ];
 
@@ -325,9 +421,24 @@ const PhotoReviewScreen = () => {
       return toArray(fromMapped);
 
     return [
-      {id: 'validos', label: Strings.validVotes, value1: seed, value2: '0'},
-      {id: 'blancos', label: Strings.blankVotes, value1: seed, value2: '0'},
-      {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: '0'},
+      {
+        id: 'validos',
+        label: Strings.validVotes,
+        value1: seed,
+        value2: hasSecondaryFlow ? seed : '0',
+      },
+      {
+        id: 'blancos',
+        label: Strings.blankVotes,
+        value1: seed,
+        value2: hasSecondaryFlow ? seed : '0',
+      },
+      {
+        id: 'nulos',
+        label: Strings.nullVotes,
+        value1: seed,
+        value2: hasSecondaryFlow ? seed : '0',
+      },
     ];
   };
   // State for the party results table
@@ -363,10 +474,11 @@ const PhotoReviewScreen = () => {
       mesaInfo,
       partyResults: normalizedPartyResults,
       voteSummaryResults: normalizedVoteSummaryResults.map(
-        ({id, label, value1}) => ({
+        ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
+          value2,
         }),
       ),
       photoUri: effectivePhotoUri,
@@ -392,6 +504,11 @@ const PhotoReviewScreen = () => {
       const local = validateBallotLocally(
         payload.partyResults || [],
         payload.voteSummaryResults || [],
+        {
+          requireSecondary: hasSecondaryFlow,
+          primaryLabel: officeLabels.primary,
+          secondaryLabel: officeLabels.secondary,
+        },
       );
       if (!local.ok) {
         setInfoModalData({
@@ -538,6 +655,7 @@ const PhotoReviewScreen = () => {
         createdAt: Date.now(),
         electionId: electionIdValue,
         electionType: route.params?.electionType || undefined,
+        selectedElectionContext,
         mode: 'worksheet',
       };
 
@@ -601,9 +719,16 @@ const PhotoReviewScreen = () => {
     // 2) Validar que no haya campos vacíos antes de normalizar
     if (!isViewOnly) {
       const hasEmptyParty = partiesArray.some(p => (p.presidente ?? '') === '');
-      const hasEmptySummary = summaryArray.some(v => (v.value1 ?? '') === '');
+      const hasEmptySecondaryParty = hasSecondaryFlow
+        ? partiesArray.some(p => (p.diputado ?? '') === '')
+        : false;
+      const hasEmptySummary = summaryArray.some(
+        v =>
+          (v.value1 ?? '') === '' ||
+          (hasSecondaryFlow && (v.value2 ?? '') === ''),
+      );
 
-      if (hasEmptyParty || hasEmptySummary) {
+      if (hasEmptyParty || hasEmptySecondaryParty || hasEmptySummary) {
         setInfoModalData({
           visible: true,
           title: 'Campos incompletos',
@@ -628,6 +753,7 @@ const PhotoReviewScreen = () => {
     const normalizedPartyResults = partyResults.map(p => ({
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
+      diputado: p.diputado === '' ? '0' : p.diputado,
     }));
     const cleanedPartyResults = normalizedPartyResults.map(p => ({
       id:
@@ -636,16 +762,23 @@ const PhotoReviewScreen = () => {
         (p.partido ? String(p.partido).trim().toLowerCase() : undefined),
       partido: p.partido ?? p.party ?? p.name ?? p.sigla ?? p.partyId ?? p.id,
       presidente: p.presidente,
+      diputado: p.diputado,
     }));
     const normalizedVoteSummaryResults = voteSummaryResults.map(v => ({
       ...v,
       value1: v.value1 === '' ? '0' : v.value1,
+      value2: v.value2 === '' ? '0' : v.value2,
     }));
 
     if (!isViewOnly) {
       const check = validateBallotLocally(
         normalizedPartyResults,
         normalizedVoteSummaryResults,
+        {
+          requireSecondary: hasSecondaryFlow,
+          primaryLabel: officeLabels.primary,
+          secondaryLabel: officeLabels.secondary,
+        },
       );
       if (!check.ok) {
         setVoteValidationModal({
@@ -774,10 +907,11 @@ const PhotoReviewScreen = () => {
       mesaData: mesaInfo,
       partyResults: cleanedPartyResults,
       voteSummaryResults: normalizedVoteSummaryResults.map(
-        ({id, label, value1}) => ({
+        ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
+          value2,
         }),
       ),
       aiAnalysis,
@@ -785,6 +919,8 @@ const PhotoReviewScreen = () => {
       existingRecord,
       mode,
       electionId,
+      electionType,
+      selectedElectionContext,
       hasObservation,
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
@@ -864,6 +1000,7 @@ const PhotoReviewScreen = () => {
       mesa: mesaInfo,
       electionId: resolvedElectionId || undefined,
       electionType: electionType || route.params?.electionType || undefined,
+      selectedElectionContext,
     });
   };
 
@@ -1008,8 +1145,10 @@ const PhotoReviewScreen = () => {
         showTableInfo={true}
         tableData={getMesaInfo()}
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
-        showDeputy={false}
-        twoColumns={false}
+        showDeputy={hasSecondaryFlow}
+        twoColumns={hasSecondaryFlow}
+        primaryLabel={officeLabels.primary}
+        secondaryLabel={officeLabels.secondary}
         highlightPhotoToggle={true}
         photoToggleLabelCollapsed={
           isWorksheetMode ? 'Ver foto de la hoja' : 'Ver foto del acta'

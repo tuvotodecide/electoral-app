@@ -4,6 +4,7 @@ import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
+import {getContextOfficeLabels, hasSecondaryBlockElection} from '../../../utils/electionContext';
 
 const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();
@@ -16,6 +17,7 @@ const MyWitnessesDetailScreen = () => {
     voteSummaryResults: apiVoteSummaryResults,
     attestationData,
     certificateUrl: routeCertificateUrl,
+    electionType,
   } = route.params || {};
 
   // Usar los datos reales del API que vienen desde MyWitnessesListScreen
@@ -23,6 +25,10 @@ const MyWitnessesDetailScreen = () => {
   const voteSummaryResults = apiVoteSummaryResults || [];
   const certificateUrl =
     routeCertificateUrl || attestationData?.certificateUrl || null;
+  const resolvedElectionType =
+    electionType || attestationData?.ballotData?.electionType || null;
+  const officeLabels = getContextOfficeLabels(resolvedElectionType);
+  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
   const handleBack = () => {
     navigation.goBack();
   };
@@ -109,6 +115,10 @@ const MyWitnessesDetailScreen = () => {
       photoUri={photoUri}
       partyResults={partyResults}
       voteSummaryResults={voteSummaryResults}
+      showDeputy={hasSecondaryFlow}
+      twoColumns={hasSecondaryFlow}
+      primaryLabel={officeLabels.primary}
+      secondaryLabel={officeLabels.secondary}
       actionButtons={actionButtons}
       onBack={handleBack}
     />

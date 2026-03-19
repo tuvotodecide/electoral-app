@@ -65,7 +65,7 @@ const MyWitnessesListScreen = () => {
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
   // const userInfo = useSelector(state => state.user.userInfo); // Get user info from Redux
-  const {mesaData} = route.params || {};
+  const {mesaData, electionType} = route.params || {};
 
   const userData = useSelector(state => state.wallet.payload);
   const dni = userData?.dni;
@@ -317,6 +317,8 @@ const MyWitnessesListScreen = () => {
       voteSummaryResults: witnessRecord.voteSummaryResults,
       attestationData: witnessRecord,
       certificateUrl: witnessRecord.certificateUrl,
+      electionType:
+        electionType || witnessRecord?.ballotData?.electionType || undefined,
     });
   };
 

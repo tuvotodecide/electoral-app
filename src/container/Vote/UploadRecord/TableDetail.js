@@ -31,6 +31,13 @@ import {
   upsertWorksheetLocalStatus,
   WorksheetStatus,
 } from '../../../utils/worksheetLocalStatus';
+import {
+  buildSelectedElectionContext,
+  enrichSelectedElectionContext,
+  getSelectedElectionContext,
+  resolveTerritoryFromLocation,
+  saveSelectedElectionContext,
+} from '../../../utils/electionContext';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -96,6 +103,17 @@ const mapWorksheetMetadataToExistingRecord = (metadata, worksheetStatus = {}) =>
   const partyVotesRows = Array.isArray(partiesVotes?.partyVotes)
     ? partiesVotes.partyVotes
     : [];
+  const deputyVotes =
+    votes?.deputies && typeof votes.deputies === 'object' ? votes.deputies : {};
+  const deputyVotesRows = Array.isArray(deputyVotes?.partyVotes)
+    ? deputyVotes.partyVotes
+    : [];
+  const deputyVoteMap = deputyVotesRows.reduce((acc, row) => {
+    const partyId = String(row?.partyId || '').trim().toLowerCase();
+    if (!partyId) return acc;
+    acc[partyId] = toInt(row?.votes);
+    return acc;
+  }, {});
 
   const partyResults = partyVotesRows.map((row, index) => {
     const partyId = String(row?.partyId || `party-${index + 1}`).trim();
@@ -105,7 +123,7 @@ const mapWorksheetMetadataToExistingRecord = (metadata, worksheetStatus = {}) =>
       id: normalizedId || `party-${index + 1}`,
       partido: partyId ? partyId.toUpperCase() : `PARTIDO ${index + 1}`,
       presidente: String(votesValue),
-      diputado: '0',
+      diputado: String(deputyVoteMap[normalizedId] ?? 0),
     };
   });
 
@@ -114,19 +132,19 @@ const mapWorksheetMetadataToExistingRecord = (metadata, worksheetStatus = {}) =>
       id: 'validos',
       label: I18nStrings.validVotes || 'Votos Validos',
       value1: String(toInt(partiesVotes?.validVotes)),
-      value2: '0',
+      value2: String(toInt(deputyVotes?.validVotes)),
     },
     {
       id: 'blancos',
       label: I18nStrings.blankVotes || 'Votos en Blanco',
       value1: String(toInt(partiesVotes?.blankVotes)),
-      value2: '0',
+      value2: String(toInt(deputyVotes?.blankVotes)),
     },
     {
       id: 'nulos',
       label: I18nStrings.nullVotes || 'Votos Nulos',
       value1: String(toInt(partiesVotes?.nullVotes)),
-      value2: '0',
+      value2: String(toInt(deputyVotes?.nullVotes)),
     },
   ];
 
@@ -248,6 +266,7 @@ export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const { electionId, electionType } = route.params || {};
+  const incomingElectionContext = route.params?.selectedElectionContext || null;
   const rawMesa = route.params?.mesa || route.params?.tableData || {};
   const locationFromParams = route.params?.locationData || {};
   const hasMesaSelectedFromParams = Boolean(
@@ -277,10 +296,63 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
+  const [selectedElectionContext, setSelectedElectionContext] = useState(
+    incomingElectionContext,
+  );
   const worksheetStatusSyncRef = useRef({
     lastSyncAt: 0,
   });
   const routeExistingRecords = route.params?.existingRecords || [];
+  const userDni = getUserDni(userData);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveElectionContext = async () => {
+      const territory = resolveTerritoryFromLocation(locationFromParams);
+      const cached =
+        incomingElectionContext ||
+        (userDni
+          ? await getSelectedElectionContext(userDni, {
+              electionId: electionId || incomingElectionContext?.electionId,
+              electionType:
+                electionType || incomingElectionContext?.electionType,
+              territory,
+            })
+          : null);
+      const baseContext = buildSelectedElectionContext({
+        ...(cached || {}),
+        contractId: cached?.contractId || null,
+        electionId: electionId || cached?.electionId || null,
+        electionName: cached?.electionName || null,
+        electionType: electionType || cached?.electionType || null,
+        territory:
+          territory?.municipalityId || territory?.departmentId
+            ? territory
+            : cached?.territory || {},
+        allowedParties: cached?.allowedParties || [],
+        source: cached?.source || 'cache',
+      });
+      const enriched = await enrichSelectedElectionContext(baseContext);
+      if (cancelled) return;
+      setSelectedElectionContext(enriched);
+      if (userDni) {
+        await saveSelectedElectionContext(userDni, enriched);
+      }
+    };
+
+    resolveElectionContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    incomingElectionContext,
+    userDni,
+    electionId,
+    electionType,
+    locationFromParams,
+  ]);
 
   const resetSelectedMesaState = useCallback(() => {
     setSelectedMesaRaw(null);
@@ -753,14 +825,18 @@ export default function TableDetail({ navigation, route }) {
           tableData: finalTableData,
           mesaData: finalTableData,
           mesa: finalTableData,
-          electionId, electionType
+          electionId,
+          electionType,
+          selectedElectionContext,
         });
       } catch {
         navigation.navigate('CameraScreen', {
           tableData: finalTableData,
           mesaData: finalTableData,
           mesa: finalTableData,
-          electionId, electionType
+          electionId,
+          electionType,
+          selectedElectionContext,
         });
       }
       return;
@@ -776,7 +852,10 @@ export default function TableDetail({ navigation, route }) {
           existingRecord: record,
           isViewOnly: true,
           photoUri: record?.actaImage,
-          mode: 'attest', electionId, electionType
+          mode: 'attest',
+          electionId,
+          electionType,
+          selectedElectionContext,
         });
 
       } catch {
@@ -788,7 +867,9 @@ export default function TableDetail({ navigation, route }) {
           isViewOnly: true,
           photoUri: record?.actaImage,
           mode: 'attest',
-          electionId, electionType
+          electionId,
+          electionType,
+          selectedElectionContext,
         });
       }
       return;
@@ -803,7 +884,9 @@ export default function TableDetail({ navigation, route }) {
         existingRecords,
         totalRecords,
         fromTableDetail: true,
-        electionId, electionType
+        electionId,
+        electionType,
+        selectedElectionContext,
       });
     } catch {
       navigation.navigate('WhichIsCorrectScreen', {
@@ -813,7 +896,9 @@ export default function TableDetail({ navigation, route }) {
         existingRecords,
         totalRecords,
         fromTableDetail: true,
-        electionId, electionType
+        electionId,
+        electionType,
+        selectedElectionContext,
       });
     }
   };
@@ -824,7 +909,9 @@ export default function TableDetail({ navigation, route }) {
       title: I18nStrings.photoSentTitle,
       message: I18nStrings.photoSentMessage,
       returnRoute: 'Home', // o la ruta principal desde donde empezó el flujo
-      electionId, electionType
+      electionId,
+      electionType,
+      selectedElectionContext,
     });
   };
 
@@ -839,7 +926,9 @@ export default function TableDetail({ navigation, route }) {
       tableData: finalTableData,
       mesaData: finalTableData,
       mesa: finalTableData,
-      electionId, electionType
+      electionId,
+      electionType,
+      selectedElectionContext,
     });
   };
 
@@ -870,6 +959,7 @@ export default function TableDetail({ navigation, route }) {
         mesa: finalTableData,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: 'worksheet',
       });
     } catch {
@@ -879,6 +969,7 @@ export default function TableDetail({ navigation, route }) {
         mesa: finalTableData,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: 'worksheet',
       });
     }
@@ -1134,6 +1225,7 @@ export default function TableDetail({ navigation, route }) {
         mode: 'worksheet',
         electionId,
         electionType,
+        selectedElectionContext,
       });
     } catch (error) {
       setWorksheetFeedback(
@@ -1404,7 +1496,9 @@ export default function TableDetail({ navigation, route }) {
                             mesa: mesa,
                             existingRecord: record,
                             isViewOnly: true,
-                            electionId, electionType
+                            electionId,
+                            electionType,
+                            selectedElectionContext,
                           });
                         }}>
                         <View style={stylesx.recordHeader}>
