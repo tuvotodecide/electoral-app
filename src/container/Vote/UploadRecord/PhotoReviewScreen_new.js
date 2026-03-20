@@ -1129,14 +1129,13 @@ const PhotoReviewScreen = () => {
           style={[
             styles.observationChoicePill,
             hasObservation && {
-              borderColor: colors.primary || '#459151',
-              backgroundColor: '#EAF6EC',
+              borderColor: '#D32F2F',
+              backgroundColor: '#FDECEC',
             },
           ]}>
           <CText
             style={[
               styles.observationChoiceText,
-              hasObservation && {color: colors.primary || '#459151'},
             ]}>
             Sí
           </CText>
