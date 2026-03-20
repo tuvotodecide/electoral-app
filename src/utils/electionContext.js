@@ -285,7 +285,17 @@ export async function fetchElectionPartiesForTerritory(context = {}) {
     },
   );
 
-  return (Array.isArray(data) ? data : []).map(normalizeParty);
+  const normalized = (Array.isArray(data) ? data : []).map(normalizeParty);
+  console.log('[ELECTION-CONTEXT] fetch parties', {
+    electionId,
+    electionType: normalizedType || null,
+    departmentId: params.departmentId || null,
+    municipalityId: params.municipalityId || null,
+    count: normalized.length,
+    partyIds: normalized.map(party => party.partyId),
+  });
+
+  return normalized;
 }
 
 export async function enrichSelectedElectionContext(context = {}) {
@@ -295,18 +305,37 @@ export async function enrichSelectedElectionContext(context = {}) {
 
   try {
     const allowedParties = await fetchElectionPartiesForTerritory(context);
-    return buildSelectedElectionContext({
+    const built = buildSelectedElectionContext({
       ...context,
       allowedParties,
       source: 'backend',
     });
+    console.log('[ELECTION-CONTEXT] enrich success', {
+      electionId: built?.electionId || null,
+      electionType: built?.electionType || null,
+      territory: built?.territory || null,
+      allowedPartiesCount: Array.isArray(built?.allowedParties)
+        ? built.allowedParties.length
+        : 0,
+    });
+    return built;
   } catch (error) {
     console.warn('[ELECTION-CONTEXT] party fetch failed', error?.message);
-    return buildSelectedElectionContext({
+    const built = buildSelectedElectionContext({
       ...context,
       allowedParties: context?.allowedParties || [],
       source: context?.source || 'cache',
     });
+    console.log('[ELECTION-CONTEXT] enrich fallback', {
+      electionId: built?.electionId || null,
+      electionType: built?.electionType || null,
+      territory: built?.territory || null,
+      allowedPartiesCount: Array.isArray(built?.allowedParties)
+        ? built.allowedParties.length
+        : 0,
+      source: built?.source || null,
+    });
+    return built;
   }
 }
 

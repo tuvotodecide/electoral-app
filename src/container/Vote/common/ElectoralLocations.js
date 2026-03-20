@@ -159,7 +159,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setLoading(true);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
-        //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
+        // `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.498326&lng=-68.1688788&maxDistance=500`,
         { timeout: 10000 }, // 10 segundos timeout
       );
       if (response.data && response.data.data) {

@@ -190,6 +190,12 @@ const MyWitnessesListScreen = () => {
 
       // Transformar datos para la UI
       const transformedData = validBallotsData.map((ballot, index) => {
+        const resolvedBallotElectionType =
+          ballot?.electionType ||
+          ballot?.election?.type ||
+          ballot?.election?.electionType ||
+          null;
+
         // Convertir votos de presidente
         const presidentVotes = (ballot.votes?.parties?.partyVotes || []).map(
           party => ({
@@ -198,14 +204,17 @@ const MyWitnessesListScreen = () => {
           }),
         );
 
-        // Convertir votos de diputados
-        // const deputyVotes = (ballot.votes?.deputies?.partyVotes || []).map(party => ({
-        //   partyId: party.partyId,
-        //   presidente: '0',
-        //   diputado: party.votes ? party.votes.toString() : '0'
-        // }));
+        // Convertir votos del bloque secundario cuando exista
+        const deputyVotes = (ballot.votes?.deputies?.partyVotes || []).map(
+          party => ({
+            partyId: party.partyId,
+            presidente: '0',
+            diputado: party.votes ? party.votes.toString() : '0',
+          }),
+        );
+
         // Consolidar votos por partido
-        const allVotes = [...presidentVotes];
+        const allVotes = [...presidentVotes, ...deputyVotes];
         const consolidatedPartyResults = allVotes.reduce((acc, current) => {
           const existing = acc.find(item => item.partyId === current.partyId);
           if (existing) {
@@ -215,10 +224,16 @@ const MyWitnessesListScreen = () => {
                 parseInt(existing.presidente) + parseInt(current.presidente)
               ).toString();
             }
+            if (current.diputado) {
+              existing.diputado = (
+                parseInt(existing.diputado || '0') + parseInt(current.diputado)
+              ).toString();
+            }
           } else {
             acc.push({
               partyId: current.partyId,
               presidente: current.presidente || '0',
+              diputado: current.diputado || '0',
             });
           }
           return acc;
@@ -229,24 +244,42 @@ const MyWitnessesListScreen = () => {
           {
             label: 'Válidos',
             value1: ballot.votes?.parties?.validVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.validVotes?.toString() || '0',
           },
           {
             label: 'Blanco',
             value1: ballot.votes?.parties?.blankVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.blankVotes?.toString() || '0',
           },
           {
             label: 'Nulos',
             value1: ballot.votes?.parties?.nullVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.nullVotes?.toString() || '0',
           },
           {
             label: 'Total',
             value1: ballot.votes?.parties?.totalVotes?.toString() || '0',
+            value2: ballot.votes?.deputies?.totalVotes?.toString() || '0',
           },
         ];
         const certificateUrl =
           certificatesByBallotId[ballot._id] ||
           certificatesByBallotId[String(ballot._id)] ||
           null;
+
+        console.log('[MY-WITNESSES] transform ballot', {
+          ballotId: ballot?._id || null,
+          tableCode: ballot?.tableCode || null,
+          electionType: resolvedBallotElectionType,
+          partiesVotesLength: Array.isArray(ballot?.votes?.parties?.partyVotes)
+            ? ballot.votes.parties.partyVotes.length
+            : 0,
+          deputiesVotesLength: Array.isArray(ballot?.votes?.deputies?.partyVotes)
+            ? ballot.votes.deputies.partyVotes.length
+            : 0,
+          partiesSummary: ballot?.votes?.parties || null,
+          deputiesSummary: ballot?.votes?.deputies || null,
+        });
 
         return {
           id: ballot._id || `ballot-${index}`,
@@ -268,6 +301,7 @@ const MyWitnessesListScreen = () => {
           recordId: ballot.recordId,
           ballotData: ballot, // Guardar datos completos para referencia
           certificateUrl,
+          electionType: resolvedBallotElectionType,
         };
       });
 
@@ -306,6 +340,33 @@ const MyWitnessesListScreen = () => {
     navigation.goBack();
   };
   const handleOpenWitness = witnessRecord => {
+    const resolvedElectionType =
+      electionType ||
+      witnessRecord?.electionType ||
+      witnessRecord?.ballotData?.electionType ||
+      witnessRecord?.ballotData?.election?.type ||
+      undefined;
+    console.log('[MY-WITNESSES] open detail', {
+      routeElectionType: electionType || null,
+      witnessElectionType: witnessRecord?.electionType || null,
+      ballotElectionType: witnessRecord?.ballotData?.electionType || null,
+      ballotNestedElectionType:
+        witnessRecord?.ballotData?.election?.type || null,
+      resolvedElectionType: resolvedElectionType || null,
+      tableCode: witnessRecord?.tableCode || null,
+      tableNumber: witnessRecord?.tableNumber || null,
+      partyResultsLength: Array.isArray(witnessRecord?.partyResults)
+        ? witnessRecord.partyResults.length
+        : 0,
+      partyResultsSample: Array.isArray(witnessRecord?.partyResults)
+        ? witnessRecord.partyResults.slice(0, 3)
+        : [],
+      voteSummaryKeys: witnessRecord?.voteSummaryResults
+        ? Object.keys(witnessRecord.voteSummaryResults)
+        : [],
+      voteSummaryResults: witnessRecord?.voteSummaryResults || null,
+    });
+
     navigation.navigate(StackNav.MyWitnessesDetailScreen, {
       photoUri: witnessRecord.imagen,
       mesaData: {
@@ -317,8 +378,7 @@ const MyWitnessesListScreen = () => {
       voteSummaryResults: witnessRecord.voteSummaryResults,
       attestationData: witnessRecord,
       certificateUrl: witnessRecord.certificateUrl,
-      electionType:
-        electionType || witnessRecord?.ballotData?.electionType || undefined,
+      electionType: resolvedElectionType,
     });
   };
 
