@@ -310,11 +310,19 @@ export default function Notification({ navigation }) {
     item => {
       const rawData = item?.data || {};
 
-      if (rawData?.type === 'election_results' && FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
-        navigation.navigate(StackNav.VotingNotificationDetailScreen, {
-          notification: rawData,
-        });
-        return;
+      if (FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
+        switch (rawData?.type) {
+          case 'election_results':
+            navigation.navigate(StackNav.VotingNotificationDetailScreen, {
+              notification: rawData,
+            });
+            return;
+          case 'INSTITUTIONAL_EVENT_PUBLISHED':
+            navigation.navigate(StackNav.ClaimCredScreen, {
+              notification: item,
+            });
+            return;
+        }
       }
 
       if (rawData?.type === 'worksheet_uploaded') {

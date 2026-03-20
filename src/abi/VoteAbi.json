@@ -1,0 +1,386 @@
+[
+  {
+    "type": "function",
+    "name": "castVote",
+    "inputs": [
+      {
+        "name": "voteId",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "optionId",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "nullifier",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getOwnVoteInfo",
+    "inputs": [
+      {
+        "name": "voteId",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "nullifier",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "hasVoted",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "optionVoted",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getProofStatus",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IZKPVerifier.ProofStatus",
+        "components": [
+          {
+            "name": "isVerified",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "validatorVersion",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "blockNumber",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "blockTimestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVoteInfo",
+    "inputs": [
+      {
+        "name": "voteId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "startDate",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "endDate",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "resultsDate",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "options",
+        "type": "string[]",
+        "internalType": "string[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVoteResults",
+    "inputs": [
+      {
+        "name": "voteId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "options",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "voteCounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getZKPRequest",
+    "inputs": [
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "zkpRequest",
+        "type": "tuple",
+        "internalType": "struct IZKPVerifier.ZKPRequest",
+        "components": [
+          {
+            "name": "metadata",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "validator",
+            "type": "address",
+            "internalType": "contract ICircuitValidator"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isProofVerified",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "requestIdExists",
+    "inputs": [
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "submitZKPResponse",
+    "inputs": [
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "inputs",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "a",
+        "type": "uint256[2]",
+        "internalType": "uint256[2]"
+      },
+      {
+        "name": "b",
+        "type": "uint256[2][2]",
+        "internalType": "uint256[2][2]"
+      },
+      {
+        "name": "c",
+        "type": "uint256[2]",
+        "internalType": "uint256[2]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "submitZKPResponseV2",
+    "inputs": [
+      {
+        "name": "responses",
+        "type": "tuple[]",
+        "internalType": "struct IZKPVerifier.ZKPResponse[]",
+        "components": [
+          {
+            "name": "requestId",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "zkProof",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "crossChainProof",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Voted",
+    "inputs": [
+      {
+        "name": "voteId",
+        "type": "string",
+        "indexed": true,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "LinkedProofError",
+    "inputs": [
+      {
+        "name": "message",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "requestId",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "linkID",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "requestIdToCompare",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "linkIdToCompare",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  }
+]

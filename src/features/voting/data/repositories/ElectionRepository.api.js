@@ -1,6 +1,9 @@
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
 import store from '../../../../redux/store';
+import { getCredentialForVote } from '@/src/data/credentials';
+import { getZKPRequest } from '@/src/api/vote';
+import wira from 'wira-sdk';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 
@@ -217,7 +220,7 @@ const ElectionRepositoryApi = {
     return candidates;
   },
 
-  async submitVote(electionId, candidateId) {
+  async submitVote(electionId, candidateId, userDid, privKey) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -231,6 +234,37 @@ const ElectionRepositoryApi = {
         success: false,
         error: 'No se encontro el carnet del usuario actual',
       };
+    }
+
+    try {
+      const credential = await getCredentialForVote(electionId, userDid, privKey);
+      if (!credential) {
+        throw new Error('No credential found for vote');
+      }
+
+      const request = await getZKPRequest(100);
+      console.log('ZKP Request:', request.metadata);
+
+      const response = await wira.getVCProof(
+        request.metadata,
+        userDid,
+        privKey,
+        'id',
+        credential.id
+      )
+      console.log('ZKP Response:', response);
+
+      return {
+        success: false,
+        error: 'ZKP verification failed (simulated)',
+      }
+      
+    } catch (error) {
+      console.log('Error during ZKP process:', error);
+      return {
+        success: false,
+        error: 'Failed to submit vote:' + error.message,
+      }
     }
 
     try {

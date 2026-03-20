@@ -222,6 +222,11 @@ export default function StackNavigation() {
         component={StackRoute.VotingNotificationDetailScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.ClaimCredScreen}
+        component={StackRoute.ClaimCredScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

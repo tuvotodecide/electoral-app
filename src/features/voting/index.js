@@ -18,6 +18,7 @@ export { default as CandidateScreen } from './screens/CandidateScreen';
 export { default as VoteReceiptScreen } from './screens/VoteReceiptScreen';
 export { default as ParticipationsListScreen } from './screens/ParticipationsListScreen';
 export { default as NotificationDetailScreen } from './screens/NotificationDetailScreen';
+export { default as ClaimCredScreen } from './screens/ClaimCredScreen';
 
 // State
 export { useVotingState } from './state/useVotingState';

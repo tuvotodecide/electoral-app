@@ -5,6 +5,7 @@
  * Cuando exista backend real, se reemplazará por ElectionRepository.api.js
  */
 
+import { getCredentialForVote } from '@/src/data/credentials';
 import { MOCK_ELECTION, MOCK_CANDIDATES } from '../mockData';
 
 /**

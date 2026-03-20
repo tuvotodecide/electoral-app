@@ -1433,4 +1433,13 @@ export default {
   deviceGetError: 'Error al buscar aplicaciones',
   shareDeclined: 'Rechazado',
   shareDeclinedMessage: 'El usuario rechazó la solicitud de compartir',
+
+  //Credentials
+  credentialReceived: 'Credenciales recibidas',
+  claimCredendialsDesc: 'Reclama tus credenciales para participar en esta votación.',
+  claimCredentials: 'Reclamar Credenciales',
+  credentialsClaimed: 'Credenciales Reclamadas',
+  claimingCredentials: 'Reclamando credenciales...',
+  claimError: 'Error al reclamar credenciales, inténtalo de nuevo o contacta al soporte si el problema persiste.',
+  credentialsClaimedDesc: 'Tus credenciales han sido reclamadas exitosamente, ahora puedes ir a la votación.',
 };

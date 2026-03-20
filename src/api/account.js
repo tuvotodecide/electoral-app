@@ -11,6 +11,7 @@ import {
   FACTORY_ADDRESS,
   sponsorshipPolicyId,
 } from './params';
+import { ethers } from 'ethers';
 
 const RECEIPT_WAIT_TIMEOUT_MS = 15 * 60 * 1000;
 const RECEIPT_POLL_INTERVAL_MS = 2000;
@@ -86,6 +87,25 @@ export async function getAccount(privateKey, address, chain) {
   return {account, publicClient};
 }
 
+export async function getRandomAccount(chain) {
+  const privateKey = ethers.Wallet.createRandom().privateKey;
+  const {chain: chainConfig, bundler} = availableNetworks[chain];
+
+  const publicClient = createPublicClient({
+    chain: chainConfig,
+    transport: http(bundler),
+  });
+
+  const account = await toSimpleSmartAccount({
+    client: publicClient,
+    owner: privateKeyToAccount(privateKey),
+    factoryAddress: FACTORY_ADDRESS,
+    entryPoint: {address: entryPoint07Address, version: '0.7'},
+  });
+
+  return {account, publicClient};
+}
+
 export async function executeOperation(
   privateKey,
   address,
@@ -93,8 +113,11 @@ export async function executeOperation(
   callData,
   waitEvent,
   eventName,
+  ephemeral = false,
 ) {
-  const {account, publicClient} = await getAccount(
+  const {account, publicClient} = ephemeral
+  ? await getRandomAccount(chainId)
+  : await getAccount(
     privateKey,
     address,
     chainId,

@@ -64,6 +64,8 @@ const CandidateScreen = ({ route }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
+  const userData = useSelector(state => state.wallet.payload);
+  
 
   // Election state hook
   const { recordVote } = useVotingState(electionId);
@@ -122,7 +124,9 @@ const CandidateScreen = ({ route }) => {
 
       if (isOnline) {
         // Online: Submit vote directly
-        const result = await repository.submitVote(electionId, selectedCandidate.id);
+        console.log('Submitting vote for candidate:', selectedCandidate.id);
+        const result = await repository.submitVote(electionId, selectedCandidate.id, userData.did, userData.privKey);
+        console.log('Vote submission result:', result);
 
         if (result.success) {
           const receipt = await recordVote(selectedCandidate.id, true, {

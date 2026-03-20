@@ -86,6 +86,7 @@ import {
   useElectionRepository,
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
+import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -2140,11 +2141,40 @@ export default function HomeScreen({ navigation }) {
     Boolean(votingState.voteSynced) || Boolean(votingElection?.alreadyVoted);
   const currentParticipationId =
     votingState.lastReceipt?.id || votingState.participationId || null;
-  const handleVotingPress = () => {
+
+
+  const [loadVoteMsg, setLoadVoteMsg] = useState(null);
+  const handleVotingPress = async () => {
+    setLoadVoteMsg('Verificando credenciales...');
     if (!votingElection?.id) {
       return;
     }
+    const hasCredForVote = await checkClaimedCredForVote(
+      votingElection.id,
+      userData.did,
+      userData.privKey
+    );
 
+    if (!hasCredForVote) {
+      const sucess = await claimForVote(
+        votingElection.id,
+        userData.dni,
+        userData.did,
+        userData.privKey
+      )
+      if (!sucess) {
+        setInfoModal({
+          visible: true,
+          type: 'error',
+          title: 'Error',
+          message: 'No se pudo obtener la credencial de voto necesaria para participar. Intenta nuevamente más tarde.',
+        });
+        setLoadVoteMsg(null);
+        return;
+      }
+    }
+
+    setLoadVoteMsg(null);
     navigation.navigate(StackNav.VotingCandidateScreen, {
       electionId: votingElection.id,
       election: votingElection,
@@ -2325,6 +2355,7 @@ export default function HomeScreen({ navigation }) {
               election={votingElection}
               onVotePress={handleVotingPress}
               onDetailsPress={handleVotingDetailsPress}
+              loadMsg={loadVoteMsg}
             />
           )}
 
@@ -2506,12 +2537,13 @@ export default function HomeScreen({ navigation }) {
               !loadingVotingElection &&
               votingElection && (
               <ElectionCard
-                hasVoted={resolvedVotingHasVoted}
+                hasVoted={false}
                 voteSynced={resolvedVotingSynced}
                 isEligible={Boolean(votingElection?.isEligible)}
                 election={votingElection}
                 onVotePress={handleVotingPress}
                 onDetailsPress={handleVotingDetailsPress}
+                loadMsg={loadVoteMsg}
               />
             )}
 

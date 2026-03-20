@@ -35,6 +35,7 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {() => void} props.onVotePress - Handler para botón "Votar ahora"
  * @param {() => void} props.onDetailsPress - Handler para botón "Ver detalles"
  * @param {Object} [props.election] - Datos de la elección (opcional, usa mock si no se provee)
+ * @param {string|null} [props.loadMsg] - Mensaje de carga para mostrar en el botón (opcional)
  */
 const ElectionCard = ({
   hasVoted = false,
@@ -43,6 +44,7 @@ const ElectionCard = ({
   onVotePress,
   onDetailsPress,
   election = MOCK_ELECTION,
+  loadMsg = null
 }) => {
   const colors = useSelector((state) => state.theme.theme);
 
@@ -71,6 +73,15 @@ const ElectionCard = ({
     // Si no está habilitado, no mostrar botón
     if (!effectiveIsEligible) {
       return null;
+    }
+
+    // Si está cargando
+    if (loadMsg) {
+      return {
+        title: loadMsg,
+        disabled: true,
+        onPress: () => {},
+      };
     }
 
     // Si la elección terminó

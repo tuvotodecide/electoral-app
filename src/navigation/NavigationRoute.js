@@ -62,6 +62,7 @@ import {
   VoteReceiptScreen as VotingReceiptScreen,
   ParticipationsListScreen as VotingParticipationsScreen,
   NotificationDetailScreen as VotingNotificationDetailScreen,
+  ClaimCredScreen,
 } from '../features/voting';
 
 // Componentes TabBar necesarios
@@ -150,6 +151,7 @@ export const StackRoute = {
   VotingReceiptScreen,
   VotingParticipationsScreen,
   VotingNotificationDetailScreen,
+  ClaimCredScreen,
 
   // Profile y configuración
   PersonalDetails,

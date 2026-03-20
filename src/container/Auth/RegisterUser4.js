@@ -110,7 +110,7 @@ export default function RegisterUser4({navigation, route}) {
   const resizeImage = async (uri) => {
     const imageContext = ImageManipulator.manipulate(uri);
     const renderedImage = await imageContext.resize({
-      height: 300,
+      height: 250,
     }).renderAsync()
 
     const result = await renderedImage.saveAsync({
