@@ -719,13 +719,29 @@ export default function TableDetail({ navigation, route }) {
               ? record.image
               : record.ipfsUri || null;
         const presidentialParties = record.votes?.parties?.partyVotes || [];
+        const deputyParties = record.votes?.deputies?.partyVotes || [];
+        const deputyMap = deputyParties.reduce((acc, depParty) => {
+          const partyId = global.String(depParty.partyId ?? '')
+            .trim()
+            .toLowerCase();
+          if (!partyId) return acc;
+          acc[partyId] = depParty.votes;
+          return acc;
+        }, {});
 
-        const partyResults = presidentialParties.map(presParty => ({
-          partyId: global.String(presParty.partyId ?? '').trim().toLowerCase(),
-          presidente: presParty.votes,
-        }));
+        const partyResults = presidentialParties.map(presParty => {
+          const partyId = global.String(presParty.partyId ?? '')
+            .trim()
+            .toLowerCase();
+          return {
+            partyId,
+            presidente: presParty.votes,
+            diputado: deputyMap[partyId] ?? 0,
+          };
+        });
 
         const presVoteSummary = record.votes?.parties || {};
+        const depVoteSummary = record.votes?.deputies || {};
 
         return {
           ...record,
@@ -736,6 +752,10 @@ export default function TableDetail({ navigation, route }) {
             presBlankVotes: presVoteSummary.blankVotes || 0,
             presNullVotes: presVoteSummary.nullVotes || 0,
             presTotalVotes: presVoteSummary.totalVotes || 0,
+            depValidVotes: depVoteSummary.validVotes || 0,
+            depBlankVotes: depVoteSummary.blankVotes || 0,
+            depNullVotes: depVoteSummary.nullVotes || 0,
+            depTotalVotes: depVoteSummary.totalVotes || 0,
           },
         };
       })

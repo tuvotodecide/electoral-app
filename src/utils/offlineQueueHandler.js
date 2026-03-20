@@ -25,12 +25,7 @@ const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
 const nowMs = () => Date.now();
 const logActaTiming = (itemId, stage, startedAt, extra = {}) => {
   const durationMs = nowMs() - startedAt;
-  console.log('[ACTA-TIMING]', {
-    itemId,
-    stage,
-    durationMs,
-    ...extra,
-  });
+
 };
 
 const safeStr = v =>

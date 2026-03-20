@@ -22,6 +22,8 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
 import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
+import {getAttestationAvailabilityCache} from '../../../utils/attestationAvailabilityCache';
+import {normalizeElectionTypeParam} from '../../../utils/electionContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -146,6 +148,22 @@ const MyWitnessesListScreen = () => {
     setOfflineErrorMessage('');
 
     try {
+      let activeElectionTypeById = {};
+      try {
+        const availabilityCache = await getAttestationAvailabilityCache(dni);
+        const availableElections = Array.isArray(availabilityCache?.availableElections)
+          ? availabilityCache.availableElections
+          : [];
+        activeElectionTypeById = availableElections.reduce((acc, election) => {
+          const electionId = String(election?.electionId || '').trim();
+          const electionType = normalizeElectionTypeParam(election?.electionType);
+          if (electionId && electionType) {
+            acc[electionId] = electionType;
+          }
+          return acc;
+        }, {});
+      } catch {}
+
       // Paso 1: Obtener los attestations por DNI
       const attestationsResponse = await axios.get(
         `${BACKEND_RESULT}/api/v1/attestations/by-user/${dni}`,
@@ -153,10 +171,16 @@ const MyWitnessesListScreen = () => {
 
       const attestationsData = attestationsResponse.data.data || [];
       const certificatesByBallotId = {};
+      const electionIdByBallotId = {};
       attestationsData.forEach(attestation => {
         if (attestation.ballotId && attestation.certificateUrl) {
           certificatesByBallotId[attestation.ballotId] =
             attestation.certificateUrl;
+        }
+        if (attestation.ballotId && attestation.electionId) {
+          electionIdByBallotId[String(attestation.ballotId)] = String(
+            attestation.electionId,
+          ).trim();
         }
       });
       if (attestationsData.length === 0) {
@@ -190,10 +214,21 @@ const MyWitnessesListScreen = () => {
 
       // Transformar datos para la UI
       const transformedData = validBallotsData.map((ballot, index) => {
+        const ballotId = String(ballot?._id || '').trim();
+        const resolvedElectionId = String(
+          ballot?.electionId ||
+            ballot?.election?._id ||
+            electionIdByBallotId[ballotId] ||
+            '',
+        ).trim();
         const resolvedBallotElectionType =
-          ballot?.electionType ||
-          ballot?.election?.type ||
-          ballot?.election?.electionType ||
+          normalizeElectionTypeParam(
+            ballot?.electionType ||
+              ballot?.election?.type ||
+              ballot?.election?.electionType ||
+              activeElectionTypeById[resolvedElectionId] ||
+              '',
+          ) ||
           null;
 
         // Convertir votos de presidente
@@ -267,19 +302,7 @@ const MyWitnessesListScreen = () => {
           certificatesByBallotId[String(ballot._id)] ||
           null;
 
-        console.log('[MY-WITNESSES] transform ballot', {
-          ballotId: ballot?._id || null,
-          tableCode: ballot?.tableCode || null,
-          electionType: resolvedBallotElectionType,
-          partiesVotesLength: Array.isArray(ballot?.votes?.parties?.partyVotes)
-            ? ballot.votes.parties.partyVotes.length
-            : 0,
-          deputiesVotesLength: Array.isArray(ballot?.votes?.deputies?.partyVotes)
-            ? ballot.votes.deputies.partyVotes.length
-            : 0,
-          partiesSummary: ballot?.votes?.parties || null,
-          deputiesSummary: ballot?.votes?.deputies || null,
-        });
+       
 
         return {
           id: ballot._id || `ballot-${index}`,
@@ -301,6 +324,7 @@ const MyWitnessesListScreen = () => {
           recordId: ballot.recordId,
           ballotData: ballot, // Guardar datos completos para referencia
           certificateUrl,
+          electionId: resolvedElectionId || null,
           electionType: resolvedBallotElectionType,
         };
       });
@@ -346,26 +370,7 @@ const MyWitnessesListScreen = () => {
       witnessRecord?.ballotData?.electionType ||
       witnessRecord?.ballotData?.election?.type ||
       undefined;
-    console.log('[MY-WITNESSES] open detail', {
-      routeElectionType: electionType || null,
-      witnessElectionType: witnessRecord?.electionType || null,
-      ballotElectionType: witnessRecord?.ballotData?.electionType || null,
-      ballotNestedElectionType:
-        witnessRecord?.ballotData?.election?.type || null,
-      resolvedElectionType: resolvedElectionType || null,
-      tableCode: witnessRecord?.tableCode || null,
-      tableNumber: witnessRecord?.tableNumber || null,
-      partyResultsLength: Array.isArray(witnessRecord?.partyResults)
-        ? witnessRecord.partyResults.length
-        : 0,
-      partyResultsSample: Array.isArray(witnessRecord?.partyResults)
-        ? witnessRecord.partyResults.slice(0, 3)
-        : [],
-      voteSummaryKeys: witnessRecord?.voteSummaryResults
-        ? Object.keys(witnessRecord.voteSummaryResults)
-        : [],
-      voteSummaryResults: witnessRecord?.voteSummaryResults || null,
-    });
+
 
     navigation.navigate(StackNav.MyWitnessesDetailScreen, {
       photoUri: witnessRecord.imagen,

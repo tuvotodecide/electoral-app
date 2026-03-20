@@ -16,6 +16,7 @@ import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
 import {
   getContextOfficeLabels,
   hasSecondaryBlockElection,
+  hasSecondaryVoteData,
 } from '../../../utils/electionContext';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -49,7 +50,6 @@ const ActaDetailScreen = () => {
   } = route.params || {};
   const resolvedElectionType =
     selectedElectionContext?.electionType || electionType;
-  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
 
   const partyResultsTransformed = useMemo(() => {
@@ -98,6 +98,13 @@ const ActaDetailScreen = () => {
       return [];
     }
   }, [rawVoteSummaryResults]);
+  const hasSecondaryFlow =
+    hasSecondaryBlockElection(resolvedElectionType) ||
+    hasSecondaryVoteData({
+      partyResults: partyResultsTransformed,
+      voteSummaryResults: voteSummaryTransformed,
+      voteSummary: rawVoteSummaryResults,
+    });
 
   // Component for handling IPFS images
   const IPFSImageComponent = ({photoUri, testID}) => {

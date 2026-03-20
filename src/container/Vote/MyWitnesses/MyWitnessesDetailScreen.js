@@ -4,7 +4,11 @@ import {useSelector} from 'react-redux';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
-import {getContextOfficeLabels, hasSecondaryBlockElection} from '../../../utils/electionContext';
+import {
+  getContextOfficeLabels,
+  hasSecondaryBlockElection,
+  hasSecondaryVoteData,
+} from '../../../utils/electionContext';
 import {useEffect} from 'react';
 
 const MyWitnessesDetailScreen = () => {
@@ -29,30 +33,12 @@ const MyWitnessesDetailScreen = () => {
   const resolvedElectionType =
     electionType || attestationData?.ballotData?.electionType || null;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
-
-  useEffect(() => {
-    console.log('[MY-WITNESSES] detail render', {
-      routeElectionType: electionType || null,
-      ballotElectionType: attestationData?.ballotData?.electionType || null,
-      resolvedElectionType: resolvedElectionType || null,
-      hasSecondaryFlow,
-      primaryLabel: officeLabels.primary,
-      secondaryLabel: officeLabels.secondary,
-      partyResultsLength: Array.isArray(partyResults) ? partyResults.length : 0,
-      voteSummaryLength: Array.isArray(voteSummaryResults)
-        ? voteSummaryResults.length
-        : 0,
+  const hasSecondaryFlow =
+    hasSecondaryBlockElection(resolvedElectionType) ||
+    hasSecondaryVoteData({
+      partyResults,
+      voteSummaryResults,
     });
-  }, [
-    electionType,
-    attestationData,
-    resolvedElectionType,
-    hasSecondaryFlow,
-    officeLabels,
-    partyResults,
-    voteSummaryResults,
-  ]);
 
   const handleBack = () => {
     navigation.goBack();

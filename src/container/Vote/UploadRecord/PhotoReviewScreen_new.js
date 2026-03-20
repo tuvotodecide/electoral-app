@@ -34,6 +34,7 @@ import {
 import {
   getContextOfficeLabels,
   hasSecondaryBlockElection,
+  hasSecondaryVoteData,
 } from '../../../utils/electionContext';
 
 const normalizeComparableObservation = text =>
@@ -299,7 +300,6 @@ const PhotoReviewScreen = () => {
   const resolvedElectionType =
     selectedElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   const isWorksheetMode = mode === 'worksheet';
@@ -474,6 +474,13 @@ const PhotoReviewScreen = () => {
   const [voteSummaryResults, setVoteSummaryResults] = useState(
     getInitialVoteSummary(),
   );
+  const hasSecondaryFlow =
+    hasSecondaryBlockElection(resolvedElectionType) ||
+    hasSecondaryVoteData({
+      partyResults,
+      voteSummaryResults,
+      voteSummary: existingRecord?.voteSummaryResults,
+    });
   const [hasObservation, setHasObservation] = useState(initialHasObservation);
   const [observationText, setObservationText] = useState(initialObservationText);
   const [isComparingWorksheet, setIsComparingWorksheet] = useState(false);

@@ -43,6 +43,45 @@ export const hasSecondaryBlockElection = value => {
   return normalized === 'municipal' || normalized === 'departamental';
 };
 
+const hasMeaningfulValue = value =>
+  value !== undefined && value !== null && String(value).trim() !== '';
+
+export const hasSecondaryVoteData = ({
+  partyResults = [],
+  voteSummaryResults = [],
+  voteSummary = null,
+} = {}) => {
+  const partyRows = Array.isArray(partyResults) ? partyResults : [];
+  const summaryRows = Array.isArray(voteSummaryResults) ? voteSummaryResults : [];
+  const summaryObject = voteSummary && typeof voteSummary === 'object' ? voteSummary : null;
+
+  if (partyRows.some(row => hasMeaningfulValue(row?.diputado))) {
+    return true;
+  }
+
+  if (summaryRows.some(row => hasMeaningfulValue(row?.value2))) {
+    return true;
+  }
+
+  if (
+    summaryObject &&
+    [
+      summaryObject?.depValidVotes,
+      summaryObject?.depBlankVotes,
+      summaryObject?.depNullVotes,
+      summaryObject?.depTotalVotes,
+      summaryObject?.secondaryValidVotes,
+      summaryObject?.secondaryBlankVotes,
+      summaryObject?.secondaryNullVotes,
+      summaryObject?.secondaryTotalVotes,
+    ].some(hasMeaningfulValue)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export const getContextOfficeLabels = contextOrElectionType => {
   const electionType = normalizeElectionTypeParam(
     contextOrElectionType?.electionType || contextOrElectionType,
@@ -286,14 +325,7 @@ export async function fetchElectionPartiesForTerritory(context = {}) {
   );
 
   const normalized = (Array.isArray(data) ? data : []).map(normalizeParty);
-  console.log('[ELECTION-CONTEXT] fetch parties', {
-    electionId,
-    electionType: normalizedType || null,
-    departmentId: params.departmentId || null,
-    municipalityId: params.municipalityId || null,
-    count: normalized.length,
-    partyIds: normalized.map(party => party.partyId),
-  });
+
 
   return normalized;
 }
@@ -310,14 +342,7 @@ export async function enrichSelectedElectionContext(context = {}) {
       allowedParties,
       source: 'backend',
     });
-    console.log('[ELECTION-CONTEXT] enrich success', {
-      electionId: built?.electionId || null,
-      electionType: built?.electionType || null,
-      territory: built?.territory || null,
-      allowedPartiesCount: Array.isArray(built?.allowedParties)
-        ? built.allowedParties.length
-        : 0,
-    });
+
     return built;
   } catch (error) {
     console.warn('[ELECTION-CONTEXT] party fetch failed', error?.message);
@@ -326,15 +351,7 @@ export async function enrichSelectedElectionContext(context = {}) {
       allowedParties: context?.allowedParties || [],
       source: context?.source || 'cache',
     });
-    console.log('[ELECTION-CONTEXT] enrich fallback', {
-      electionId: built?.electionId || null,
-      electionType: built?.electionType || null,
-      territory: built?.territory || null,
-      allowedPartiesCount: Array.isArray(built?.allowedParties)
-        ? built.allowedParties.length
-        : 0,
-      source: built?.source || null,
-    });
+
     return built;
   }
 }
