@@ -1659,10 +1659,15 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
+    const state = await NetInfo.fetch();
+    if (!isStateEffectivelyOnline(state)) {
       return;
     }
+
+    // No bloquear la consulta real de notificaciones por un health probe
+    // transitorio. El endpoint /users/:dni/notifications puede responder bien
+    // aunque /health falle o expire.
+    await backendProbe({ timeoutMs: 2000 }).catch(() => null);
 
     try {
       const apiKey = await ensureNotificationsApiKey();

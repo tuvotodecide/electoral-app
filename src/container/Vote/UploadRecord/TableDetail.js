@@ -35,6 +35,7 @@ import {
   buildSelectedElectionContext,
   enrichSelectedElectionContext,
   getSelectedElectionContext,
+  hasSecondaryBlockElection,
   resolveTerritoryFromLocation,
   saveSelectedElectionContext,
 } from '../../../utils/electionContext';
@@ -296,6 +297,8 @@ export default function TableDetail({ navigation, route }) {
   const [isWorksheetLoading, setIsWorksheetLoading] = useState(false);
   const [isWorksheetActionLoading, setIsWorksheetActionLoading] = useState(false);
   const [worksheetFeedback, setWorksheetFeedback] = useState('');
+  const [electionContextFeedback, setElectionContextFeedback] = useState('');
+  const [isElectionContextLoading, setIsElectionContextLoading] = useState(false);
   const [selectedElectionContext, setSelectedElectionContext] = useState(
     incomingElectionContext,
   );
@@ -309,6 +312,8 @@ export default function TableDetail({ navigation, route }) {
     let cancelled = false;
 
     const resolveElectionContext = async () => {
+      setIsElectionContextLoading(true);
+      setElectionContextFeedback('');
       const territory = resolveTerritoryFromLocation(locationFromParams);
       const cached =
         incomingElectionContext ||
@@ -336,12 +341,20 @@ export default function TableDetail({ navigation, route }) {
       const enriched = await enrichSelectedElectionContext(baseContext);
       if (cancelled) return;
       setSelectedElectionContext(enriched);
+      setElectionContextFeedback('');
       if (userDni) {
         await saveSelectedElectionContext(userDni, enriched);
       }
+      setIsElectionContextLoading(false);
     };
 
-    resolveElectionContext();
+    resolveElectionContext().catch(() => {
+      if (cancelled) return;
+      setIsElectionContextLoading(false);
+      setElectionContextFeedback(
+        'No se pudieron cargar los partidos oficiales de esta eleccion.',
+      );
+    });
 
     return () => {
       cancelled = true;
@@ -666,6 +679,14 @@ export default function TableDetail({ navigation, route }) {
   const [modalVisible, setModalVisible] = useState(
     !!route.params?.capturedImage,
   );
+  const requiresOfficialParties = hasSecondaryBlockElection(
+    selectedElectionContext?.electionType || electionType,
+  );
+  const officialPartiesCount = Array.isArray(selectedElectionContext?.allowedParties)
+    ? selectedElectionContext.allowedParties.length
+    : 0;
+  const showOfficialPartiesInfo =
+    requiresOfficialParties && !electionContextFeedback && !isElectionContextLoading;
 
   const fetchExistingRecordsByTable = async tableCode => {
     const electionQuery = electionId
@@ -815,6 +836,23 @@ export default function TableDetail({ navigation, route }) {
 
   const handleTakePhoto = () => {
     const finalTableData = buildFinalTableData();
+    const hasOfficialParties = officialPartiesCount > 0;
+
+    if (requiresOfficialParties && isElectionContextLoading) {
+      setElectionContextFeedback(
+        'Cargando partidos oficiales para esta eleccion y territorio...',
+      );
+      return;
+    }
+
+    if (requiresOfficialParties && !hasOfficialParties) {
+      setElectionContextFeedback(
+        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir el acta.',
+      );
+      return;
+    }
+
+    setElectionContextFeedback('');
 
     const count = Array.isArray(existingRecords) ? existingRecords.length : 0;
 
@@ -933,6 +971,27 @@ export default function TableDetail({ navigation, route }) {
   };
 
   const handleTakeWorksheetPhoto = () => {
+    const hasOfficialParties = officialPartiesCount > 0;
+
+    if (requiresOfficialParties && isElectionContextLoading) {
+      setElectionContextFeedback(
+        'Cargando partidos oficiales para esta eleccion y territorio...',
+      );
+      return;
+    }
+
+    if (requiresOfficialParties && !hasOfficialParties) {
+      setElectionContextFeedback(
+        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir la hoja.',
+      );
+      setWorksheetFeedback(
+        'No hay partidos oficiales cargados para esta eleccion y territorio.',
+      );
+      return;
+    }
+
+    setElectionContextFeedback('');
+
     const blockedByBackendRule = String(
       worksheetStatus?.errorMessage || '',
     )
@@ -1482,6 +1541,25 @@ export default function TableDetail({ navigation, route }) {
 
               {/* Right Column: AI Info and Photo Button OR Existing Records */}
               <View style={stylesx.rightColumn}>
+                {isElectionContextLoading && requiresOfficialParties ? (
+                  <CAlert
+                    status="info"
+                    message="Cargando partidos oficiales para esta eleccion y territorio..."
+                  />
+                ) : null}
+                {electionContextFeedback ? (
+                  <CAlert status="warning" message={electionContextFeedback} />
+                ) : null}
+                {showOfficialPartiesInfo ? (
+                  <CAlert
+                    status={officialPartiesCount > 0 ? 'success' : 'warning'}
+                    message={
+                      officialPartiesCount > 0
+                        ? `Partidos oficiales cargados: ${officialPartiesCount}`
+                        : 'No hay partidos oficiales cargados para esta eleccion y territorio.'
+                    }
+                  />
+                ) : null}
                 {recordsCount > 0 ? (
                   <View style={stylesx.existingRecordsContainer}>
                     <CAlert status="success" message={recordsMsg} />
@@ -1563,6 +1641,25 @@ export default function TableDetail({ navigation, route }) {
 
               </View>
               <View style={stylesx.middleWrap}>
+                {isElectionContextLoading && requiresOfficialParties ? (
+                  <CAlert
+                    status="info"
+                    message="Cargando partidos oficiales para esta eleccion y territorio..."
+                  />
+                ) : null}
+                {electionContextFeedback ? (
+                  <CAlert status="warning" message={electionContextFeedback} />
+                ) : null}
+                {showOfficialPartiesInfo ? (
+                  <CAlert
+                    status={officialPartiesCount > 0 ? 'success' : 'warning'}
+                    message={
+                      officialPartiesCount > 0
+                        ? `Partidos oficiales cargados: ${officialPartiesCount}`
+                        : 'No hay partidos oficiales cargados para esta eleccion y territorio.'
+                    }
+                  />
+                ) : null}
                 <View
                   style={[
                     shouldCenter && { marginTop: 0, marginBottom: getResponsiveSize(10, 25, 40) }

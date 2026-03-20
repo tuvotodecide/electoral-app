@@ -8,6 +8,53 @@ class ElectoralActAnalyzer {
     this.genAI = null;
   }
 
+  normalizePartyToken(value) {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  parseJsonResponse(rawText) {
+    const text = String(rawText ?? '').trim();
+    if (!text) {
+      throw new Error('EMPTY_RESPONSE');
+    }
+
+    const parseCandidate = candidate => {
+      const trimmed = String(candidate ?? '').trim();
+      if (!trimmed) {
+        throw new Error('EMPTY_RESPONSE');
+      }
+      return JSON.parse(trimmed);
+    };
+
+    try {
+      return parseCandidate(text);
+    } catch (error) {
+      const withoutFences = text
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+
+      if (withoutFences && withoutFences !== text) {
+        try {
+          return parseCandidate(withoutFences);
+        } catch (fencedError) {}
+      }
+
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        const extracted = text.slice(firstBrace, lastBrace + 1);
+        return parseCandidate(extracted);
+      }
+
+      throw error;
+    }
+  }
+
   async ensureClient() {
     if (this.genAI) return this.genAI;
     const prov = await getProvision();
@@ -233,7 +280,7 @@ Devuelve SOLO el JSON solicitado.
 
       const text = response.text.trim();
       try {
-        const analysisResult = JSON.parse(text);
+        const analysisResult = this.parseJsonResponse(text);
         return {
           success: true,
           data: analysisResult,
@@ -273,6 +320,7 @@ Devuelve SOLO el JSON solicitado.
         ? electionContext.allowedParties
         : [];
       const partyBaseMap = new Map();
+      const partyAliasToId = new Map();
 
       allowedParties.forEach((party, index) => {
         const partyId = String(
@@ -289,6 +337,22 @@ Devuelve SOLO el JSON solicitado.
           presidente: '0',
           diputado: '0',
         });
+
+        [
+          party?.partyId,
+          party?.shortName,
+          party?.fullName,
+          String(
+            party?.shortName || party?.partyId || party?.fullName || partyId,
+          ).trim(),
+        ]
+          .map(token => this.normalizePartyToken(token))
+          .filter(Boolean)
+          .forEach(token => {
+            if (!partyAliasToId.has(token)) {
+              partyAliasToId.set(token, partyId);
+            }
+          });
       });
 
       const officeMap = Array.isArray(aiData?.offices) ? aiData.offices : [];
@@ -306,7 +370,12 @@ Devuelve SOLO el JSON solicitado.
           : [];
         rows.forEach((candidate, index) => {
           const visibleId = String(candidate?.candidate_id || '').trim();
-          const normalizedId = visibleId.toLowerCase() || `party-${index + 1}`;
+          const normalizedVisibleId = this.normalizePartyToken(visibleId);
+          const canonicalId =
+            partyAliasToId.get(normalizedVisibleId) ||
+            normalizedVisibleId ||
+            `party-${index + 1}`;
+          const normalizedId = canonicalId;
           const existing = partyBaseMap.get(normalizedId) || {
             id: normalizedId,
             partido: visibleId || `PARTIDO ${index + 1}`,

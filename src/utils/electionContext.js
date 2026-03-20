@@ -24,8 +24,12 @@ export const normalizeElectionTypeParam = value => {
   const raw = String(value || '')
     .trim()
     .toLowerCase();
-  if (raw === 'alcalde' || raw === 'municipal') return 'municipal';
-  if (raw === 'gobernador' || raw === 'departamental') return 'departamental';
+  if (raw === 'alcalde' || raw === 'municipal' || raw === 'mayor') {
+    return 'municipal';
+  }
+  if (raw === 'gobernador' || raw === 'departamental' || raw === 'governor') {
+    return 'departamental';
+  }
   if (raw === 'presidential' || raw === 'presidencial') return 'presidential';
   return raw;
 };
@@ -272,7 +276,7 @@ export async function fetchElectionPartiesForTerritory(context = {}) {
   }
 
   const {data} = await axios.get(
-    `${BACKEND_RESULT}/api/v1/political/election-parties/by-territory/${encodeURIComponent(
+    `${BACKEND_RESULT}/political/election-parties/by-territory/${encodeURIComponent(
       electionId,
     )}`,
     {

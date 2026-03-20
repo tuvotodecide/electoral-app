@@ -217,20 +217,46 @@ const buildOfficialPartyRows = (allowedParties = [], seed = '0') =>
     };
   });
 
-const mergeDetectedVotesIntoOfficialRows = (officialRows = [], detectedRows = []) => {
-  const baseMap = new Map(
-    (Array.isArray(officialRows) ? officialRows : []).map(row => [
-      String(row?.id || row?.partyId || row?.partido || '')
+const getPartyRowAliases = row =>
+  [
+    row?.id,
+    row?.partyId,
+    row?.partido,
+    row?.shortName,
+    row?.fullName,
+  ]
+    .map(value =>
+      String(value ?? '')
         .trim()
         .toLowerCase(),
-      {...row},
-    ]),
-  );
+    )
+    .filter(Boolean);
 
-  (Array.isArray(detectedRows) ? detectedRows : []).forEach((row, index) => {
-    const rowId = String(row?.id || row?.partyId || row?.partido || `party-${index + 1}`)
+const mergeDetectedVotesIntoOfficialRows = (officialRows = [], detectedRows = []) => {
+  const baseMap = new Map();
+  const aliasMap = new Map();
+
+  (Array.isArray(officialRows) ? officialRows : []).forEach(row => {
+    const canonicalId = String(row?.id || row?.partyId || row?.partido || '')
       .trim()
       .toLowerCase();
+    if (!canonicalId) return;
+    baseMap.set(canonicalId, {...row});
+    getPartyRowAliases(row).forEach(alias => {
+      if (!aliasMap.has(alias)) {
+        aliasMap.set(alias, canonicalId);
+      }
+    });
+  });
+
+  (Array.isArray(detectedRows) ? detectedRows : []).forEach((row, index) => {
+    const detectedAliases = getPartyRowAliases(row);
+    const matchedCanonicalId = detectedAliases.find(alias => aliasMap.has(alias));
+    const rowId =
+      (matchedCanonicalId && aliasMap.get(matchedCanonicalId)) ||
+      String(row?.id || row?.partyId || row?.partido || `party-${index + 1}`)
+        .trim()
+        .toLowerCase();
     const existing = baseMap.get(rowId) || {
       id: rowId || `party-${index + 1}`,
       partido: row?.partido || row?.partyId || rowId || `PARTIDO ${index + 1}`,
@@ -709,6 +735,19 @@ const PhotoReviewScreen = () => {
   const handleNext = async () => {
     if (isComparingWorksheet) return;
     const mesaInfo = getMesaInfo();
+    const hasOfficialParties =
+      Array.isArray(selectedElectionContext?.allowedParties) &&
+      selectedElectionContext.allowedParties.length > 0;
+
+    if (hasSecondaryFlow && !hasOfficialParties) {
+      setInfoModalData({
+        visible: true,
+        title: 'Partidos no cargados',
+        message:
+          'Esta eleccion requiere partidos oficiales por territorio. No se puede continuar hasta cargarlos correctamente para evitar errores de validacion.',
+      });
+      return;
+    }
 
     // 1) Asegurarnos de trabajar con arrays
     const partiesArray = Array.isArray(partyResults) ? partyResults : [];
