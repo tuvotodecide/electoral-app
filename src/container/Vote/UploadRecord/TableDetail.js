@@ -323,16 +323,24 @@ export default function TableDetail({ navigation, route }) {
       setIsElectionContextLoading(true);
       setElectionContextFeedback('');
       const territory = resolveTerritoryFromLocation(locationFromParams);
+      const storedContext = userDni
+        ? await getSelectedElectionContext(userDni, {
+            electionId: electionId || incomingElectionContext?.electionId,
+            electionType:
+              electionType || incomingElectionContext?.electionType,
+            territory,
+          })
+        : null;
+      const incomingHasAllowedParties =
+        Array.isArray(incomingElectionContext?.allowedParties) &&
+        incomingElectionContext.allowedParties.length > 0;
+      const storedHasAllowedParties =
+        Array.isArray(storedContext?.allowedParties) &&
+        storedContext.allowedParties.length > 0;
       const cached =
-        incomingElectionContext ||
-        (userDni
-          ? await getSelectedElectionContext(userDni, {
-              electionId: electionId || incomingElectionContext?.electionId,
-              electionType:
-                electionType || incomingElectionContext?.electionType,
-              territory,
-            })
-          : null);
+        incomingHasAllowedParties || !storedHasAllowedParties
+          ? incomingElectionContext || storedContext
+          : storedContext;
       const baseContext = buildSelectedElectionContext({
         ...(cached || {}),
         contractId: cached?.contractId || null,

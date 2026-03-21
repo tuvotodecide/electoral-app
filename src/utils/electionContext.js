@@ -251,17 +251,51 @@ const getScopedFallbackKeys = scope => {
 export async function saveSelectedElectionContext(dni, context) {
   try {
     const normalizedContext = buildSelectedElectionContext(context || {});
+    const rawLatest = await AsyncStorage.getItem(KEY_CONTEXT(dni));
+    const latest = rawLatest ? JSON.parse(rawLatest) : null;
+    const shouldPreserveAllowedParties =
+      Array.isArray(normalizedContext?.allowedParties) &&
+      normalizedContext.allowedParties.length === 0 &&
+      Array.isArray(latest?.allowedParties) &&
+      latest.allowedParties.length > 0 &&
+      String(latest?.electionId || '').trim() ===
+        String(normalizedContext?.electionId || '').trim() &&
+      normalizeElectionTypeParam(latest?.electionType) ===
+        normalizeElectionTypeParam(normalizedContext?.electionType);
+    const finalContext = shouldPreserveAllowedParties
+      ? buildSelectedElectionContext({
+          ...normalizedContext,
+          allowedParties: latest.allowedParties,
+          source: normalizedContext?.source || latest?.source || 'cache',
+        })
+      : normalizedContext;
     await AsyncStorage.setItem(
       KEY_CONTEXT(dni),
-      JSON.stringify(normalizedContext),
+      JSON.stringify(finalContext),
     );
 
-    const scopeKey = getContextScopeKey(normalizedContext);
+    const scopeKey = getContextScopeKey(finalContext);
     if (!scopeKey) return;
 
     const rawScoped = await AsyncStorage.getItem(KEY_CONTEXT_SCOPED(dni));
     const scopedCache = rawScoped ? JSON.parse(rawScoped) : {};
-    scopedCache[scopeKey] = normalizedContext;
+    const scopedExisting = scopedCache[scopeKey];
+    const shouldPreserveScopedAllowedParties =
+      Array.isArray(finalContext?.allowedParties) &&
+      finalContext.allowedParties.length === 0 &&
+      Array.isArray(scopedExisting?.allowedParties) &&
+      scopedExisting.allowedParties.length > 0 &&
+      String(scopedExisting?.electionId || '').trim() ===
+        String(finalContext?.electionId || '').trim() &&
+      normalizeElectionTypeParam(scopedExisting?.electionType) ===
+        normalizeElectionTypeParam(finalContext?.electionType);
+    scopedCache[scopeKey] = shouldPreserveScopedAllowedParties
+      ? buildSelectedElectionContext({
+          ...finalContext,
+          allowedParties: scopedExisting.allowedParties,
+          source: finalContext?.source || scopedExisting?.source || 'cache',
+        })
+      : finalContext;
     await AsyncStorage.setItem(
       KEY_CONTEXT_SCOPED(dni),
       JSON.stringify(scopedCache),
