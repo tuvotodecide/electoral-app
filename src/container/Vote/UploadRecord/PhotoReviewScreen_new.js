@@ -492,23 +492,41 @@ const PhotoReviewScreen = () => {
       : [];
     if (!allowedParties.length) return;
 
-    const shouldHydrateRows =
-      !Array.isArray(partyResults) ||
-      partyResults.length === 0 ||
-      partyResults.every(
-        row =>
-          String(row?.presidente ?? '') === '' &&
-          String(row?.diputado ?? '') === '',
-      );
+    setPartyResults(prev => {
+      const shouldHydrateRows =
+        !Array.isArray(prev) ||
+        prev.length === 0 ||
+        prev.every(
+          row =>
+            String(row?.presidente ?? '') === '' &&
+            String(row?.diputado ?? '') === '',
+        );
 
-    if (!shouldHydrateRows) return;
+      if (!shouldHydrateRows) {
+        return prev;
+      }
 
-    setPartyResults(buildOfficialPartyRows(allowedParties, offline ? '' : '0'));
+      const next = buildOfficialPartyRows(allowedParties, offline ? '' : '0');
+      const sameRows =
+        Array.isArray(prev) &&
+        prev.length === next.length &&
+        prev.every((row, index) => {
+          const candidate = next[index] || {};
+          return (
+            String(row?.id || '') === String(candidate?.id || '') &&
+            String(row?.partido || '') === String(candidate?.partido || '') &&
+            String(row?.presidente ?? '') ===
+              String(candidate?.presidente ?? '') &&
+            String(row?.diputado ?? '') === String(candidate?.diputado ?? '')
+          );
+        });
+
+      return sameRows ? prev : next;
+    });
   }, [
     effectiveElectionContext,
     requiresOfficialPartyRows,
     offline,
-    partyResults,
   ]);
   const hasSecondaryFlow =
     hasSecondaryBlockElection(resolvedElectionType) ||
