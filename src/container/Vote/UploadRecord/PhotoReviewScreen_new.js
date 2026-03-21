@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -33,6 +33,7 @@ import {
 } from '../../../utils/worksheetLocalStatus';
 import {
   getContextOfficeLabels,
+  getSelectedElectionContext,
   hasSecondaryBlockElection,
   hasSecondaryVoteData,
 } from '../../../utils/electionContext';
@@ -296,8 +297,13 @@ const PhotoReviewScreen = () => {
     electionType,
     selectedElectionContext,
   } = route.params || {};
+  const [resolvedElectionContext, setResolvedElectionContext] = useState(
+    selectedElectionContext || null,
+  );
+  const effectiveElectionContext =
+    resolvedElectionContext || selectedElectionContext || null;
   const resolvedElectionType =
-    selectedElectionContext?.electionType || electionType;
+    effectiveElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
   const requiresOfficialPartyRows =
     hasSecondaryBlockElection(resolvedElectionType);
@@ -390,7 +396,7 @@ const PhotoReviewScreen = () => {
     }
     const seed = offline ? '' : '0';
     const officialRows = buildOfficialPartyRows(
-      selectedElectionContext?.allowedParties,
+      effectiveElectionContext?.allowedParties,
       seed,
     );
 
@@ -478,6 +484,32 @@ const PhotoReviewScreen = () => {
   const [voteSummaryResults, setVoteSummaryResults] = useState(
     getInitialVoteSummary(),
   );
+  useEffect(() => {
+    if (!requiresOfficialPartyRows) return;
+
+    const allowedParties = Array.isArray(effectiveElectionContext?.allowedParties)
+      ? effectiveElectionContext.allowedParties
+      : [];
+    if (!allowedParties.length) return;
+
+    const shouldHydrateRows =
+      !Array.isArray(partyResults) ||
+      partyResults.length === 0 ||
+      partyResults.every(
+        row =>
+          String(row?.presidente ?? '') === '' &&
+          String(row?.diputado ?? '') === '',
+      );
+
+    if (!shouldHydrateRows) return;
+
+    setPartyResults(buildOfficialPartyRows(allowedParties, offline ? '' : '0'));
+  }, [
+    effectiveElectionContext,
+    requiresOfficialPartyRows,
+    offline,
+    partyResults,
+  ]);
   const hasSecondaryFlow =
     hasSecondaryBlockElection(resolvedElectionType) ||
     hasSecondaryVoteData({
@@ -488,6 +520,49 @@ const PhotoReviewScreen = () => {
   const [hasObservation, setHasObservation] = useState(initialHasObservation);
   const [observationText, setObservationText] = useState(initialObservationText);
   const [isComparingWorksheet, setIsComparingWorksheet] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateElectionContext = async () => {
+      const routeHasAllowedParties =
+        Array.isArray(selectedElectionContext?.allowedParties) &&
+        selectedElectionContext.allowedParties.length > 0;
+
+      if (routeHasAllowedParties) {
+        setResolvedElectionContext(selectedElectionContext);
+        return;
+      }
+
+      const subject = getCredentialSubjectFromPayload(userData) || {};
+      const dniValue = String(
+        subject?.nationalIdNumber ??
+          subject?.documentNumber ??
+          subject?.governmentIdentifier ??
+          userData?.dni ??
+          '',
+      ).trim();
+
+      if (!dniValue) return;
+
+      const cached = await getSelectedElectionContext(dniValue, {
+        electionId: electionId || selectedElectionContext?.electionId,
+        electionType: electionType || selectedElectionContext?.electionType,
+        territory: selectedElectionContext?.territory || {},
+      });
+
+      if (cancelled) return;
+      if (cached) {
+        setResolvedElectionContext(cached);
+      }
+    };
+
+    hydrateElectionContext().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedElectionContext, electionId, electionType, userData]);
 
   // Mostrar información de la mesa analizadas
   const getMesaInfo = () => {
@@ -692,7 +767,7 @@ const PhotoReviewScreen = () => {
         createdAt: Date.now(),
         electionId: electionIdValue,
         electionType: route.params?.electionType || undefined,
-        selectedElectionContext,
+        selectedElectionContext: effectiveElectionContext,
         mode: 'worksheet',
       };
 
@@ -747,8 +822,8 @@ const PhotoReviewScreen = () => {
     if (isComparingWorksheet) return;
     const mesaInfo = getMesaInfo();
     const hasOfficialParties =
-      Array.isArray(selectedElectionContext?.allowedParties) &&
-      selectedElectionContext.allowedParties.length > 0;
+      Array.isArray(effectiveElectionContext?.allowedParties) &&
+      effectiveElectionContext.allowedParties.length > 0;
 
     if (hasSecondaryFlow && !hasOfficialParties) {
       setInfoModalData({
@@ -970,7 +1045,7 @@ const PhotoReviewScreen = () => {
       mode,
       electionId,
       electionType,
-      selectedElectionContext,
+      selectedElectionContext: effectiveElectionContext,
       hasObservation,
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
@@ -1050,7 +1125,7 @@ const PhotoReviewScreen = () => {
       mesa: mesaInfo,
       electionId: resolvedElectionId || undefined,
       electionType: electionType || route.params?.electionType || undefined,
-      selectedElectionContext,
+      selectedElectionContext: effectiveElectionContext,
     });
   };
 
