@@ -253,11 +253,10 @@ const mergeDetectedVotesIntoOfficialRows = (officialRows = [], detectedRows = []
   (Array.isArray(detectedRows) ? detectedRows : []).forEach((row, index) => {
     const detectedAliases = getPartyRowAliases(row);
     const matchedCanonicalId = detectedAliases.find(alias => aliasMap.has(alias));
-    const rowId =
-      (matchedCanonicalId && aliasMap.get(matchedCanonicalId)) ||
-      String(row?.id || row?.partyId || row?.partido || `party-${index + 1}`)
-        .trim()
-        .toLowerCase();
+    const rowId = matchedCanonicalId ? aliasMap.get(matchedCanonicalId) : '';
+    if (!rowId) {
+      return;
+    }
     const existing = baseMap.get(rowId) || {
       id: rowId || `party-${index + 1}`,
       partido: row?.partido || row?.partyId || rowId || `PARTIDO ${index + 1}`,
@@ -300,6 +299,8 @@ const PhotoReviewScreen = () => {
   const resolvedElectionType =
     selectedElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
+  const requiresOfficialPartyRows =
+    hasSecondaryBlockElection(resolvedElectionType);
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   const isWorksheetMode = mode === 'worksheet';
@@ -394,16 +395,19 @@ const PhotoReviewScreen = () => {
     );
 
     if (mappedData?.partyResults) {
-      if (hasSecondaryFlow && officialRows.length) {
+      if (requiresOfficialPartyRows && officialRows.length) {
         return mergeDetectedVotesIntoOfficialRows(
           officialRows,
           mappedData.partyResults,
         );
       }
+      if (requiresOfficialPartyRows) {
+        return officialRows;
+      }
       return mappedData.partyResults;
     }
 
-    if (hasSecondaryFlow) {
+    if (requiresOfficialPartyRows) {
       return officialRows;
     }
 
@@ -451,19 +455,19 @@ const PhotoReviewScreen = () => {
         id: 'validos',
         label: Strings.validVotes,
         value1: seed,
-        value2: hasSecondaryFlow ? seed : '0',
+        value2: requiresOfficialPartyRows ? seed : '0',
       },
       {
         id: 'blancos',
         label: Strings.blankVotes,
         value1: seed,
-        value2: hasSecondaryFlow ? seed : '0',
+        value2: requiresOfficialPartyRows ? seed : '0',
       },
       {
         id: 'nulos',
         label: Strings.nullVotes,
         value1: seed,
-        value2: hasSecondaryFlow ? seed : '0',
+        value2: requiresOfficialPartyRows ? seed : '0',
       },
     ];
   };

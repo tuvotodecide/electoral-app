@@ -141,6 +141,20 @@ const normalizeParty = (party, index) => {
   };
 };
 
+const dedupeParties = parties => {
+  const seen = new Set();
+  return (Array.isArray(parties) ? parties : []).filter(party => {
+    const key = String(
+      party?.partyId || party?.shortName || party?.fullName || '',
+    )
+      .trim()
+      .toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export const buildSelectedElectionContext = ({
   contractId = null,
   electionId = null,
@@ -324,9 +338,11 @@ export async function fetchElectionPartiesForTerritory(context = {}) {
     },
   );
 
-  const normalized = (Array.isArray(data) ? data : []).map(normalizeParty);
+  if (!Array.isArray(data)) {
+    throw new Error('INVALID_ELECTION_PARTIES_PAYLOAD');
+  }
 
-
+  const normalized = dedupeParties(data.map(normalizeParty));
   return normalized;
 }
 

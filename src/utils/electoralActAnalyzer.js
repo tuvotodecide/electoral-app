@@ -371,11 +371,14 @@ Devuelve SOLO el JSON solicitado.
         rows.forEach((candidate, index) => {
           const visibleId = String(candidate?.candidate_id || '').trim();
           const normalizedVisibleId = this.normalizePartyToken(visibleId);
-          const canonicalId =
-            partyAliasToId.get(normalizedVisibleId) ||
-            normalizedVisibleId ||
-            `party-${index + 1}`;
-          const normalizedId = canonicalId;
+          const canonicalId = partyAliasToId.get(normalizedVisibleId);
+          if (allowedParties.length > 0 && !canonicalId) {
+            return;
+          }
+          const fallbackId =
+            normalizedVisibleId || `party-${index + 1}`;
+          const resolvedId = canonicalId || fallbackId;
+          const normalizedId = resolvedId;
           const existing = partyBaseMap.get(normalizedId) || {
             id: normalizedId,
             partido: visibleId || `PARTIDO ${index + 1}`,

@@ -262,6 +262,14 @@ const getUserDni = userData => {
   ).trim();
 };
 
+const withTimeout = (promise, timeoutMs = 12000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('ELECTION_CONTEXT_TIMEOUT')), timeoutMs),
+    ),
+  ]);
+
 
 export default function TableDetail({ navigation, route }) {
   const colors = useSelector(state => state.theme.theme);
@@ -338,7 +346,9 @@ export default function TableDetail({ navigation, route }) {
         allowedParties: cached?.allowedParties || [],
         source: cached?.source || 'cache',
       });
-      const enriched = await enrichSelectedElectionContext(baseContext);
+      const enriched = await withTimeout(
+        enrichSelectedElectionContext(baseContext),
+      );
       if (cancelled) return;
       setSelectedElectionContext(enriched);
       setElectionContextFeedback('');
@@ -685,8 +695,6 @@ export default function TableDetail({ navigation, route }) {
   const officialPartiesCount = Array.isArray(selectedElectionContext?.allowedParties)
     ? selectedElectionContext.allowedParties.length
     : 0;
-  const showOfficialPartiesInfo =
-    requiresOfficialParties && !electionContextFeedback && !isElectionContextLoading;
 
   const fetchExistingRecordsByTable = async tableCode => {
     const electionQuery = electionId
@@ -1570,16 +1578,6 @@ export default function TableDetail({ navigation, route }) {
                 {electionContextFeedback ? (
                   <CAlert status="warning" message={electionContextFeedback} />
                 ) : null}
-                {showOfficialPartiesInfo ? (
-                  <CAlert
-                    status={officialPartiesCount > 0 ? 'success' : 'warning'}
-                    message={
-                      officialPartiesCount > 0
-                        ? `Partidos oficiales cargados: ${officialPartiesCount}`
-                        : 'No hay partidos oficiales cargados para esta eleccion y territorio.'
-                    }
-                  />
-                ) : null}
                 {recordsCount > 0 ? (
                   <View style={stylesx.existingRecordsContainer}>
                     <CAlert status="success" message={recordsMsg} />
@@ -1669,16 +1667,6 @@ export default function TableDetail({ navigation, route }) {
                 ) : null}
                 {electionContextFeedback ? (
                   <CAlert status="warning" message={electionContextFeedback} />
-                ) : null}
-                {showOfficialPartiesInfo ? (
-                  <CAlert
-                    status={officialPartiesCount > 0 ? 'success' : 'warning'}
-                    message={
-                      officialPartiesCount > 0
-                        ? `Partidos oficiales cargados: ${officialPartiesCount}`
-                        : 'No hay partidos oficiales cargados para esta eleccion y territorio.'
-                    }
-                  />
                 ) : null}
                 <View
                   style={[
