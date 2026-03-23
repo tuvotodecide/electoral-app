@@ -37,6 +37,14 @@ describe('networkUtils', () => {
     await expect(checkInternetConnection()).resolves.toBe(true);
   });
 
+  it('checkInternetConnection tolera reachability nulo si hay red conectada', async () => {
+    NetInfo.fetch.mockResolvedValueOnce({
+      isConnected: true,
+      isInternetReachable: null,
+    });
+    await expect(checkInternetConnection()).resolves.toBe(true);
+  });
+
   it('backendProbe devuelve ok en respuesta exitosa', async () => {
     global.fetch.mockResolvedValueOnce({ok: true, status: 200});
     const result = await backendProbe({baseUrl: 'https://api-ok.example'});
