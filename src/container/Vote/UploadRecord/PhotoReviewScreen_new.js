@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -31,6 +31,12 @@ import {
   WorksheetStatus,
   upsertWorksheetLocalStatus,
 } from '../../../utils/worksheetLocalStatus';
+import {
+  getContextOfficeLabels,
+  getSelectedElectionContext,
+  hasSecondaryBlockElection,
+  hasSecondaryVoteData,
+} from '../../../utils/electionContext';
 
 const normalizeComparableObservation = text =>
   String(text ?? '')
@@ -66,12 +72,12 @@ const normalizeCompareToken = value =>
 
 const resolvePartyIdForCompare = party => {
   const candidates = [
+    party?.id,
+    party?.partyId,
     party?.partido,
     party?.name,
     party?.sigla,
     party?.party,
-    party?.partyId,
-    party?.id,
   ];
   let fallback = '';
   for (const candidate of candidates) {
@@ -158,6 +164,13 @@ const buildWorksheetCompareVotesPayload = (
     acc[partyId] = (acc[partyId] || 0) + toNumber(party?.presidente);
     return acc;
   }, {});
+  const deputyPartyVotesMap = (normalizedPartyResults || []).reduce((acc, party) => {
+    const partyId = resolvePartyIdForCompare(party);
+    if (!partyId) return acc;
+    acc[partyId] = (acc[partyId] || 0) + toNumber(party?.diputado);
+    return acc;
+  }, {});
+  const hasSecondary = Object.values(deputyPartyVotesMap).some(value => value > 0);
   return {
     parties: {
       validVotes,
@@ -169,7 +182,97 @@ const buildWorksheetCompareVotesPayload = (
       })),
       totalVotes: validVotes + nullVotes + blankVotes,
     },
+    ...(hasSecondary
+      ? {
+          deputies: {
+            validVotes: toNumber(pickRow('validos')?.value2),
+            nullVotes: toNumber(pickRow('nulos')?.value2),
+            blankVotes: toNumber(pickRow('blancos')?.value2),
+            partyVotes: Object.keys(deputyPartyVotesMap).map(partyId => ({
+              partyId,
+              votes: deputyPartyVotesMap[partyId],
+            })),
+            totalVotes:
+              toNumber(pickRow('validos')?.value2) +
+              toNumber(pickRow('nulos')?.value2) +
+              toNumber(pickRow('blancos')?.value2),
+          },
+        }
+      : {}),
   };
+};
+
+const buildOfficialPartyRows = (allowedParties = [], seed = '0') =>
+  (Array.isArray(allowedParties) ? allowedParties : []).map((party, index) => {
+    const partyId = String(
+      party?.partyId || party?.shortName || party?.fullName || `party-${index + 1}`,
+    )
+      .trim()
+      .toLowerCase();
+    return {
+      id: partyId || `party-${index + 1}`,
+      partido: String(
+        party?.shortName || party?.partyId || party?.fullName || `PARTIDO ${index + 1}`,
+      ).trim(),
+      presidente: seed,
+      diputado: seed,
+    };
+  });
+
+const getPartyRowAliases = row =>
+  [
+    row?.id,
+    row?.partyId,
+    row?.partido,
+    row?.shortName,
+    row?.fullName,
+  ]
+    .map(value =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
+
+const mergeDetectedVotesIntoOfficialRows = (officialRows = [], detectedRows = []) => {
+  const baseMap = new Map();
+  const aliasMap = new Map();
+
+  (Array.isArray(officialRows) ? officialRows : []).forEach(row => {
+    const canonicalId = String(row?.id || row?.partyId || row?.partido || '')
+      .trim()
+      .toLowerCase();
+    if (!canonicalId) return;
+    baseMap.set(canonicalId, {...row});
+    getPartyRowAliases(row).forEach(alias => {
+      if (!aliasMap.has(alias)) {
+        aliasMap.set(alias, canonicalId);
+      }
+    });
+  });
+
+  (Array.isArray(detectedRows) ? detectedRows : []).forEach((row, index) => {
+    const detectedAliases = getPartyRowAliases(row);
+    const matchedCanonicalId = detectedAliases.find(alias => aliasMap.has(alias));
+    const rowId = matchedCanonicalId ? aliasMap.get(matchedCanonicalId) : '';
+    if (!rowId) {
+      return;
+    }
+    const existing = baseMap.get(rowId) || {
+      id: rowId || `party-${index + 1}`,
+      partido: row?.partido || row?.partyId || rowId || `PARTIDO ${index + 1}`,
+      presidente: '0',
+      diputado: '0',
+    };
+    baseMap.set(rowId, {
+      ...existing,
+      partido: existing.partido || row?.partido || row?.partyId || rowId,
+      presidente: String(row?.presidente ?? existing.presidente ?? '0'),
+      diputado: String(row?.diputado ?? existing.diputado ?? '0'),
+    });
+  });
+
+  return Array.from(baseMap.values());
 };
 
 const PhotoReviewScreen = () => {
@@ -192,7 +295,18 @@ const PhotoReviewScreen = () => {
     actaCount,
     electionId,
     electionType,
+    selectedElectionContext,
   } = route.params || {};
+  const [resolvedElectionContext, setResolvedElectionContext] = useState(
+    selectedElectionContext || null,
+  );
+  const effectiveElectionContext =
+    resolvedElectionContext || selectedElectionContext || null;
+  const resolvedElectionType =
+    effectiveElectionContext?.electionType || electionType;
+  const officeLabels = getContextOfficeLabels(resolvedElectionType);
+  const requiresOfficialPartyRows =
+    hasSecondaryBlockElection(resolvedElectionType);
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   const isWorksheetMode = mode === 'worksheet';
@@ -280,10 +394,28 @@ const PhotoReviewScreen = () => {
     if (existingRecord?.partyResults) {
       return existingRecord.partyResults;
     }
+    const seed = offline ? '' : '0';
+    const officialRows = buildOfficialPartyRows(
+      effectiveElectionContext?.allowedParties,
+      seed,
+    );
+
     if (mappedData?.partyResults) {
+      if (requiresOfficialPartyRows && officialRows.length) {
+        return mergeDetectedVotesIntoOfficialRows(
+          officialRows,
+          mappedData.partyResults,
+        );
+      }
+      if (requiresOfficialPartyRows) {
+        return officialRows;
+      }
       return mappedData.partyResults;
     }
-    const seed = offline ? '' : '0';
+
+    if (requiresOfficialPartyRows) {
+      return officialRows;
+    }
 
     return [
       {id: 'pdc', partido: 'PDC', presidente: seed, diputado: seed},
@@ -298,19 +430,19 @@ const PhotoReviewScreen = () => {
         id: 'validos',
         label: Strings.validVotes,
         value1: String(src.presValidVotes ?? src.validVotes ?? seed),
-        value2: '0',
+        value2: String(src.depValidVotes ?? src.secondaryValidVotes ?? '0'),
       },
       {
         id: 'blancos',
         label: Strings.blankVotes,
         value1: String(src.presBlankVotes ?? src.blankVotes ?? seed),
-        value2: '0',
+        value2: String(src.depBlankVotes ?? src.secondaryBlankVotes ?? '0'),
       },
       {
         id: 'nulos',
         label: Strings.nullVotes,
         value1: String(src.presNullVotes ?? src.nullVotes ?? seed),
-        value2: '0',
+        value2: String(src.depNullVotes ?? src.secondaryNullVotes ?? '0'),
       },
     ];
 
@@ -325,9 +457,24 @@ const PhotoReviewScreen = () => {
       return toArray(fromMapped);
 
     return [
-      {id: 'validos', label: Strings.validVotes, value1: seed, value2: '0'},
-      {id: 'blancos', label: Strings.blankVotes, value1: seed, value2: '0'},
-      {id: 'nulos', label: Strings.nullVotes, value1: seed, value2: '0'},
+      {
+        id: 'validos',
+        label: Strings.validVotes,
+        value1: seed,
+        value2: requiresOfficialPartyRows ? seed : '0',
+      },
+      {
+        id: 'blancos',
+        label: Strings.blankVotes,
+        value1: seed,
+        value2: requiresOfficialPartyRows ? seed : '0',
+      },
+      {
+        id: 'nulos',
+        label: Strings.nullVotes,
+        value1: seed,
+        value2: requiresOfficialPartyRows ? seed : '0',
+      },
     ];
   };
   // State for the party results table
@@ -337,9 +484,103 @@ const PhotoReviewScreen = () => {
   const [voteSummaryResults, setVoteSummaryResults] = useState(
     getInitialVoteSummary(),
   );
+  useEffect(() => {
+    if (!requiresOfficialPartyRows) return;
+
+    const allowedParties = Array.isArray(effectiveElectionContext?.allowedParties)
+      ? effectiveElectionContext.allowedParties
+      : [];
+    if (!allowedParties.length) return;
+
+    setPartyResults(prev => {
+      const shouldHydrateRows =
+        !Array.isArray(prev) ||
+        prev.length === 0 ||
+        prev.every(
+          row =>
+            String(row?.presidente ?? '') === '' &&
+            String(row?.diputado ?? '') === '',
+        );
+
+      if (!shouldHydrateRows) {
+        return prev;
+      }
+
+      const next = buildOfficialPartyRows(allowedParties, offline ? '' : '0');
+      const sameRows =
+        Array.isArray(prev) &&
+        prev.length === next.length &&
+        prev.every((row, index) => {
+          const candidate = next[index] || {};
+          return (
+            String(row?.id || '') === String(candidate?.id || '') &&
+            String(row?.partido || '') === String(candidate?.partido || '') &&
+            String(row?.presidente ?? '') ===
+              String(candidate?.presidente ?? '') &&
+            String(row?.diputado ?? '') === String(candidate?.diputado ?? '')
+          );
+        });
+
+      return sameRows ? prev : next;
+    });
+  }, [
+    effectiveElectionContext,
+    requiresOfficialPartyRows,
+    offline,
+  ]);
+  const hasSecondaryFlow =
+    hasSecondaryBlockElection(resolvedElectionType) ||
+    hasSecondaryVoteData({
+      partyResults,
+      voteSummaryResults,
+      voteSummary: existingRecord?.voteSummaryResults,
+    });
   const [hasObservation, setHasObservation] = useState(initialHasObservation);
   const [observationText, setObservationText] = useState(initialObservationText);
   const [isComparingWorksheet, setIsComparingWorksheet] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateElectionContext = async () => {
+      const routeHasAllowedParties =
+        Array.isArray(selectedElectionContext?.allowedParties) &&
+        selectedElectionContext.allowedParties.length > 0;
+
+      if (routeHasAllowedParties) {
+        setResolvedElectionContext(selectedElectionContext);
+        return;
+      }
+
+      const subject = getCredentialSubjectFromPayload(userData) || {};
+      const dniValue = String(
+        subject?.nationalIdNumber ??
+          subject?.documentNumber ??
+          subject?.governmentIdentifier ??
+          userData?.dni ??
+          '',
+      ).trim();
+
+      if (!dniValue) return;
+
+      const cached = await getSelectedElectionContext(dniValue, {
+        electionId: electionId || selectedElectionContext?.electionId,
+        electionType: electionType || selectedElectionContext?.electionType,
+        territory: selectedElectionContext?.territory || {},
+      });
+
+      if (cancelled) return;
+      if (cached) {
+        setResolvedElectionContext(cached);
+      }
+    };
+
+    hydrateElectionContext().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedElectionContext, electionId, electionType, userData]);
 
   // Mostrar información de la mesa analizadas
   const getMesaInfo = () => {
@@ -363,10 +604,11 @@ const PhotoReviewScreen = () => {
       mesaInfo,
       partyResults: normalizedPartyResults,
       voteSummaryResults: normalizedVoteSummaryResults.map(
-        ({id, label, value1}) => ({
+        ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
+          value2,
         }),
       ),
       photoUri: effectivePhotoUri,
@@ -392,6 +634,11 @@ const PhotoReviewScreen = () => {
       const local = validateBallotLocally(
         payload.partyResults || [],
         payload.voteSummaryResults || [],
+        {
+          requireSecondary: hasSecondaryFlow,
+          primaryLabel: officeLabels.primary,
+          secondaryLabel: officeLabels.secondary,
+        },
       );
       if (!local.ok) {
         setInfoModalData({
@@ -538,6 +785,7 @@ const PhotoReviewScreen = () => {
         createdAt: Date.now(),
         electionId: electionIdValue,
         electionType: route.params?.electionType || undefined,
+        selectedElectionContext: effectiveElectionContext,
         mode: 'worksheet',
       };
 
@@ -591,6 +839,19 @@ const PhotoReviewScreen = () => {
   const handleNext = async () => {
     if (isComparingWorksheet) return;
     const mesaInfo = getMesaInfo();
+    const hasOfficialParties =
+      Array.isArray(effectiveElectionContext?.allowedParties) &&
+      effectiveElectionContext.allowedParties.length > 0;
+
+    if (hasSecondaryFlow && !hasOfficialParties) {
+      setInfoModalData({
+        visible: true,
+        title: 'Partidos no cargados',
+        message:
+          'Esta eleccion requiere partidos oficiales por territorio. No se puede continuar hasta cargarlos correctamente para evitar errores de validacion.',
+      });
+      return;
+    }
 
     // 1) Asegurarnos de trabajar con arrays
     const partiesArray = Array.isArray(partyResults) ? partyResults : [];
@@ -601,9 +862,16 @@ const PhotoReviewScreen = () => {
     // 2) Validar que no haya campos vacíos antes de normalizar
     if (!isViewOnly) {
       const hasEmptyParty = partiesArray.some(p => (p.presidente ?? '') === '');
-      const hasEmptySummary = summaryArray.some(v => (v.value1 ?? '') === '');
+      const hasEmptySecondaryParty = hasSecondaryFlow
+        ? partiesArray.some(p => (p.diputado ?? '') === '')
+        : false;
+      const hasEmptySummary = summaryArray.some(
+        v =>
+          (v.value1 ?? '') === '' ||
+          (hasSecondaryFlow && (v.value2 ?? '') === ''),
+      );
 
-      if (hasEmptyParty || hasEmptySummary) {
+      if (hasEmptyParty || hasEmptySecondaryParty || hasEmptySummary) {
         setInfoModalData({
           visible: true,
           title: 'Campos incompletos',
@@ -628,6 +896,7 @@ const PhotoReviewScreen = () => {
     const normalizedPartyResults = partyResults.map(p => ({
       ...p,
       presidente: p.presidente === '' ? '0' : p.presidente,
+      diputado: p.diputado === '' ? '0' : p.diputado,
     }));
     const cleanedPartyResults = normalizedPartyResults.map(p => ({
       id:
@@ -636,16 +905,23 @@ const PhotoReviewScreen = () => {
         (p.partido ? String(p.partido).trim().toLowerCase() : undefined),
       partido: p.partido ?? p.party ?? p.name ?? p.sigla ?? p.partyId ?? p.id,
       presidente: p.presidente,
+      diputado: p.diputado,
     }));
     const normalizedVoteSummaryResults = voteSummaryResults.map(v => ({
       ...v,
       value1: v.value1 === '' ? '0' : v.value1,
+      value2: v.value2 === '' ? '0' : v.value2,
     }));
 
     if (!isViewOnly) {
       const check = validateBallotLocally(
         normalizedPartyResults,
         normalizedVoteSummaryResults,
+        {
+          requireSecondary: hasSecondaryFlow,
+          primaryLabel: officeLabels.primary,
+          secondaryLabel: officeLabels.secondary,
+        },
       );
       if (!check.ok) {
         setVoteValidationModal({
@@ -774,10 +1050,11 @@ const PhotoReviewScreen = () => {
       mesaData: mesaInfo,
       partyResults: cleanedPartyResults,
       voteSummaryResults: normalizedVoteSummaryResults.map(
-        ({id, label, value1}) => ({
+        ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
+          value2,
         }),
       ),
       aiAnalysis,
@@ -785,6 +1062,8 @@ const PhotoReviewScreen = () => {
       existingRecord,
       mode,
       electionId,
+      electionType,
+      selectedElectionContext: effectiveElectionContext,
       hasObservation,
       observationText: hasObservation ? normalizedObservationText : '',
       compareResult,
@@ -864,6 +1143,7 @@ const PhotoReviewScreen = () => {
       mesa: mesaInfo,
       electionId: resolvedElectionId || undefined,
       electionType: electionType || route.params?.electionType || undefined,
+      selectedElectionContext: effectiveElectionContext,
     });
   };
 
@@ -946,14 +1226,13 @@ const PhotoReviewScreen = () => {
           style={[
             styles.observationChoicePill,
             hasObservation && {
-              borderColor: colors.primary || '#459151',
-              backgroundColor: '#EAF6EC',
+              borderColor: '#D32F2F',
+              backgroundColor: '#FDECEC',
             },
           ]}>
           <CText
             style={[
               styles.observationChoiceText,
-              hasObservation && {color: colors.primary || '#459151'},
             ]}>
             Sí
           </CText>
@@ -1008,8 +1287,10 @@ const PhotoReviewScreen = () => {
         showTableInfo={true}
         tableData={getMesaInfo()}
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
-        showDeputy={false}
-        twoColumns={false}
+        showDeputy={hasSecondaryFlow}
+        twoColumns={hasSecondaryFlow}
+        primaryLabel={officeLabels.primary}
+        secondaryLabel={officeLabels.secondary}
         highlightPhotoToggle={true}
         photoToggleLabelCollapsed={
           isWorksheetMode ? 'Ver foto de la hoja' : 'Ver foto del acta'
