@@ -90,20 +90,11 @@ export const VoteSummaryTable = ({
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
   twoColumns = true,
-  primaryLabel = '',
-  secondaryLabel = '',
 }) => (
   <View testID={testID} style={styles.voteSummaryTableContainer}>
     <CText testID={`${testID}Title`} style={styles.voteSummaryTableTitle}>
       Votos
     </CText>
-    {twoColumns && (primaryLabel || secondaryLabel) ? (
-      <View style={styles.voteSummaryHeaderRow}>
-        <View style={styles.voteSummaryLabelHeaderSpacer} />
-        <CText style={styles.voteSummaryColumnHeader}>{primaryLabel}</CText>
-        <CText style={styles.voteSummaryColumnHeader}>{secondaryLabel}</CText>
-      </View>
-    ) : null}
     {(Array.isArray(voteSummaryResults) ? voteSummaryResults : []).map(
       (item, index) => (
         <VoteSummaryRow
@@ -138,22 +129,6 @@ const styles = StyleSheet.create({
     color: '#2F2F2F',
     marginBottom: getResponsiveSize(2, 8, 12),
     paddingHorizontal: getResponsiveSize(6, 16, 20),
-  },
-  voteSummaryHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: getResponsiveSize(6, 16, 20),
-    paddingBottom: getResponsiveSize(4, 8, 12),
-  },
-  voteSummaryLabelHeaderSpacer: {
-    flex: 1,
-  },
-  voteSummaryColumnHeader: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
   },
   voteSummaryTableRow: {
     flexDirection: 'row',

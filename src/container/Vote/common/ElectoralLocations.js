@@ -74,8 +74,7 @@ const ElectoralLocations = ({ navigation, route }) => {
   const slowLoadTimerRef = useRef(null);
 
   // Get navigation target from route params
-  const { targetScreen, electionId, electionType, selectedElectionContext } =
-    route.params || {};
+  const { targetScreen, electionId, electionType } = route.params || {};
   const filterLocations = text => {
     setSearchTerm(text);
 
@@ -159,7 +158,7 @@ const ElectoralLocations = ({ navigation, route }) => {
       setLoading(true);
       const response = await axios.get(
         `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=${latitude}&lng=${longitude}&maxDistance=500`,
-        // `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.498326&lng=-68.1688788&maxDistance=500`,
+        //`${BACKEND_RESULT}/api/v1/geographic/electoral-locations/nearby?lat=-16.4940642&lng=-68.1598532&maxDistance=10000`,
         { timeout: 10000 }, // 10 segundos timeout
       );
       if (response.data && response.data.data) {
@@ -356,18 +355,10 @@ const ElectoralLocations = ({ navigation, route }) => {
       locationData: cachedVotePlace.location,
       electionId,
       electionType,
-      selectedElectionContext,
       fromCache: true,
       offline: true,
     });
-  }, [
-    cachedVotePlace,
-    targetScreen,
-    navigation,
-    electionId,
-    electionType,
-    selectedElectionContext,
-  ]);
+  }, [cachedVotePlace, targetScreen, navigation, electionId, electionType]);
 
   useEffect(() => {
     let mounted = true;
@@ -610,10 +601,8 @@ const ElectoralLocations = ({ navigation, route }) => {
       } else if (targetScreen === 'UnifiedParticipation') {
         navigation.navigate(StackNav.UnifiedParticipationScreen, {
           locationId: location._id,
-          locationData: location,
-          electionId,
+          locationData: location, electionId,
           electionType,
-          selectedElectionContext,
         });
       } else {
         navigation.navigate(StackNav.UnifiedTableScreen, {
@@ -622,7 +611,6 @@ const ElectoralLocations = ({ navigation, route }) => {
           targetScreen: targetScreen,
           electionId,
           electionType,
-          selectedElectionContext,
         });
       }
     } else {

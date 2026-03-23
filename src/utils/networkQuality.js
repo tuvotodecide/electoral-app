@@ -15,9 +15,7 @@ export const isStateEffectivelyOnline = (
   } = {},
 ) => {
   if (!state?.isConnected) return false;
-  // NetInfo puede tardar en resolver reachability y devolver null al inicio.
-  // Solo tratamos "false" como offline confirmado.
-  if (state?.isInternetReachable === false) return false;
+  if (state.isInternetReachable !== true) return false;
 
   const type = state.type;
   const d = state.details || {};

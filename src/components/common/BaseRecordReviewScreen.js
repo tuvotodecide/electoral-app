@@ -63,8 +63,6 @@ const BaseRecordReviewScreen = ({
   emptyDisplayWhenReadOnly = '0',
   showDeputy = false,
   twoColumns = false,
-  primaryLabel = 'PRESIDENTE/A',
-  secondaryLabel = 'DIPUTADO/A',
   PhotoComponent,
   extraContent = null,
   highlightPhotoToggle = false,
@@ -278,8 +276,6 @@ const BaseRecordReviewScreen = ({
                     onUpdate={onPartyUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
                     showDeputy={showDeputy}
-                    primaryLabel={primaryLabel}
-                    secondaryLabel={secondaryLabel}
                   />
                 </View>
 
@@ -302,8 +298,6 @@ const BaseRecordReviewScreen = ({
                     onUpdate={onVoteSummaryUpdate}
                     emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
                     twoColumns={twoColumns}
-                    primaryLabel={primaryLabel}
-                    secondaryLabel={secondaryLabel}
                   />
                 </View>
               </View>
@@ -467,8 +461,6 @@ const BaseRecordReviewScreen = ({
           onUpdate={onPartyUpdate}
           emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
           showDeputy={showDeputy}
-          primaryLabel={primaryLabel}
-          secondaryLabel={secondaryLabel}
         />
 
         {/* Vote Summary Table */}
@@ -479,8 +471,6 @@ const BaseRecordReviewScreen = ({
           onUpdate={onVoteSummaryUpdate}
           emptyDisplayWhenReadOnly={emptyDisplayWhenReadOnly}
           twoColumns={twoColumns}
-          primaryLabel={primaryLabel}
-          secondaryLabel={secondaryLabel}
         />
 
         {/* Action Buttons */}

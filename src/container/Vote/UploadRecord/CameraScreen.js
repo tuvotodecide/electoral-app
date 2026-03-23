@@ -114,7 +114,7 @@ export default function CameraScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
-  const { electionId, electionType, selectedElectionContext } = route.params || {};
+  const { electionId, electionType } = route.params || {};
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
   const device = backDevice || frontDevice;
@@ -664,7 +664,6 @@ export default function CameraScreen({ navigation, route }) {
         offline: !isOnline,
         electionId,
         electionType,
-        selectedElectionContext,
         mode: 'worksheet',
       });
       return;
@@ -677,7 +676,6 @@ export default function CameraScreen({ navigation, route }) {
         offline: true,
         electionId,
         electionType,
-        selectedElectionContext,
         mode: flowMode,
       });
       return;
@@ -689,7 +687,6 @@ export default function CameraScreen({ navigation, route }) {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
         photo.path,
-        selectedElectionContext,
       );
 
 
@@ -748,10 +745,7 @@ export default function CameraScreen({ navigation, route }) {
       }
 
       // Mapear datos de la IA al formato de la app
-      const mappedData = electoralActAnalyzer.mapToAppFormat(
-        aiData,
-        selectedElectionContext,
-      );
+      const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
 
       // Navegar a la pantalla de revisión con los datos analizados
       navigation.navigate(StackNav.PhotoReviewScreen, {
@@ -761,7 +755,6 @@ export default function CameraScreen({ navigation, route }) {
         mappedData: mappedData,
         electionId,
         electionType,
-        selectedElectionContext,
         mode: flowMode,
       });
     } catch (error) {
@@ -780,7 +773,6 @@ export default function CameraScreen({ navigation, route }) {
           offline: true,
           electionId,
           electionType,
-          selectedElectionContext,
           mode: flowMode,
         });
         return;
@@ -805,7 +797,6 @@ export default function CameraScreen({ navigation, route }) {
                 tableData: mesaInfo,
                 electionId,
                 electionType,
-                selectedElectionContext,
                 mode: flowMode,
               });
             },

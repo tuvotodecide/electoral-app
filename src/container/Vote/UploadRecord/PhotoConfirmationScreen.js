@@ -30,10 +30,6 @@ import {
   WorksheetStatus,
   upsertWorksheetLocalStatus,
 } from '../../../utils/worksheetLocalStatus';
-import {
-  getContextOfficeLabels,
-  hasSecondaryBlockElection,
-} from '../../../utils/electionContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -108,7 +104,7 @@ const formatWorksheetDiffFieldLabel = rawField => {
 };
 
 const PhotoConfirmationScreen = ({ route }) => {
-  const { electionId, electionType, selectedElectionContext } = route.params || {};
+  const { electionId, electionType } = route.params || {};
   const navigation = useNavigation();
   const navigateHome = useCallback(() => {
     navigation.reset({
@@ -132,10 +128,6 @@ const PhotoConfirmationScreen = ({ route }) => {
     hasObservation = false,
     observationText = '',
   } = route.params || {};
-  const resolvedElectionType =
-    selectedElectionContext?.electionType || electionType;
-  const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
 
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
@@ -323,11 +315,6 @@ const PhotoConfirmationScreen = ({ route }) => {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
-        {
-          requireSecondary: hasSecondaryFlow,
-          primaryLabel: officeLabels.primary,
-          secondaryLabel: officeLabels.secondary,
-        },
       );
       if (!local.ok) {
         setVoteValidationModal({
@@ -366,11 +353,6 @@ const PhotoConfirmationScreen = ({ route }) => {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
-        {
-          requireSecondary: hasSecondaryFlow,
-          primaryLabel: officeLabels.primary,
-          secondaryLabel: officeLabels.secondary,
-        },
       );
       if (!local.ok) {
         setVoteValidationModal({
@@ -463,7 +445,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         role: 'worksheet',
         dni: worksheetIdentity.dni,
         electionId: worksheetIdentity.electionId,
-        selectedElectionContext,
       };
 
       const electoralData = {
@@ -488,7 +469,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         createdAt: Date.now(),
         electionId: eid,
         electionType: electionType || undefined,
-        selectedElectionContext,
         mode: 'worksheet',
       };
 
@@ -524,11 +504,6 @@ const PhotoConfirmationScreen = ({ route }) => {
       const local = validateBallotLocally(
         partyResults || [],
         voteSummaryResults || [],
-        {
-          requireSecondary: hasSecondaryFlow,
-          primaryLabel: officeLabels.primary,
-          secondaryLabel: officeLabels.secondary,
-        },
       );
 
       if (!local.ok) {
@@ -611,7 +586,6 @@ const PhotoConfirmationScreen = ({ route }) => {
         electionId: eid,
         hasObservation: Boolean(hasObservation),
         observationText: String(observationText || '').trim(),
-        selectedElectionContext,
       };
 
       const electoralData = {
@@ -641,7 +615,6 @@ const PhotoConfirmationScreen = ({ route }) => {
           createdAt: Date.now(),
           electionId: eid,
           electionType: electionType || undefined,
-          selectedElectionContext,
           mode: flowMode,
           existingRecord: existingRecord || null,
           recordId:

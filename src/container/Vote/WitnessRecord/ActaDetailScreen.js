@@ -13,11 +13,6 @@ import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewS
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import String from '../../../i18n/String';
 import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
-import {
-  getContextOfficeLabels,
-  hasSecondaryBlockElection,
-  hasSecondaryVoteData,
-} from '../../../utils/electionContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -45,12 +40,7 @@ const ActaDetailScreen = () => {
     allActas,
     onCorrectActaSelected,
     onUploadNewActa,
-    selectedElectionContext,
-    electionType,
   } = route.params || {};
-  const resolvedElectionType =
-    selectedElectionContext?.electionType || electionType;
-  const officeLabels = getContextOfficeLabels(resolvedElectionType);
 
   const partyResultsTransformed = useMemo(() => {
     try {
@@ -62,7 +52,6 @@ const ActaDetailScreen = () => {
           id: pid,
           party: pid,
           presidente: p.presidente || 0,
-          diputado: p.diputado || 0,
         };
       });
     } catch (error) {
@@ -76,35 +65,24 @@ const ActaDetailScreen = () => {
         {
           label: 'Válidos',
           value1: rawVoteSummaryResults.presValidVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depValidVotes || 0,
         },
         {
           label: 'Blancos',
           value1: rawVoteSummaryResults.presBlankVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depBlankVotes || 0,
         },
         {
           label: 'Nulos',
           value1: rawVoteSummaryResults.presNullVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depNullVotes || 0,
         },
         {
           label: 'Total',
           value1: rawVoteSummaryResults.presTotalVotes || 0, // Presidente
-          value2: rawVoteSummaryResults.depTotalVotes || 0,
         },
       ];
     } catch (error) {
       return [];
     }
   }, [rawVoteSummaryResults]);
-  const hasSecondaryFlow =
-    hasSecondaryBlockElection(resolvedElectionType) ||
-    hasSecondaryVoteData({
-      partyResults: partyResultsTransformed,
-      voteSummaryResults: voteSummaryTransformed,
-      voteSummary: rawVoteSummaryResults,
-    });
 
   // Component for handling IPFS images
   const IPFSImageComponent = ({photoUri, testID}) => {
@@ -301,10 +279,6 @@ const ActaDetailScreen = () => {
       PhotoComponent={PhotoComponent} // Pass our custom photo component
       partyResults={partyResultsTransformed || []}
       voteSummaryResults={voteSummaryTransformed || []}
-      showDeputy={hasSecondaryFlow}
-      twoColumns={hasSecondaryFlow}
-      primaryLabel={officeLabels.primary}
-      secondaryLabel={officeLabels.secondary}
       actionButtons={actionButtons}
       onBack={handleBack}
       showTableInfo={true}

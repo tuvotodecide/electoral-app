@@ -379,13 +379,14 @@ const BaseSearchTableScreenUser = ({
       return;
     }
 
-    const effectiveElectionId = String(electionId || '').trim();
-
     try {
       // Show loading
       setIsVerifying(true);
 
       // Check if mesa has existing attestations
+      const effectiveElectionId = String(
+        electionId || '',
+      ).trim();
       const electionQuery = effectiveElectionId
         ? `?electionId=${encodeURIComponent(effectiveElectionId)}`
         : '';
@@ -430,7 +431,6 @@ const BaseSearchTableScreenUser = ({
             return {
               partyId: presParty.partyId,
               presidente: presParty.votes,
-              diputado: deputyParty.votes || 0,
             };
           });
 
@@ -452,10 +452,6 @@ const BaseSearchTableScreenUser = ({
               presBlankVotes: presVoteSummary.blankVotes || 0,
               presNullVotes: presVoteSummary.nullVotes || 0,
               presTotalVotes: presVoteSummary.totalVotes || 0,
-              depValidVotes: depVoteSummary.validVotes || 0,
-              depBlankVotes: depVoteSummary.blankVotes || 0,
-              depNullVotes: depVoteSummary.nullVotes || 0,
-              depTotalVotes: depVoteSummary.totalVotes || 0,
 
             },
             rawData: record,
