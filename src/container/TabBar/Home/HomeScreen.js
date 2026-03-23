@@ -298,6 +298,9 @@ const BlockchainConsultoraBanner = () => (
     <View
       testID="homeBlockchainBannerContent"
       style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={stylesx.bcLogoCircle}>
+        <CText style={stylesx.bcLogoText}>bc</CText>
+      </View>
       <View testID="homeBlockchainBannerText" style={{ marginLeft: 10, flex: 1 }}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
           {I18nStrings.needBlockchainApp}

@@ -1,7 +1,7 @@
 // C:\apps\electoralmobile\src\notifications.js
 
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageService as AsyncStorage } from './services/StorageService';
 import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {setPendingNav} from './redux/slices/authSlice';
@@ -148,6 +148,43 @@ const buildBackendNotificationAlertKey = notification => {
   return `fallback:${timestamp}:${title}:${body}`;
 };
 
+// OCP: Strategy pattern dictionary. 
+// Para extender nuevos tipos de notificación, simplemente añade una entrada aquí sin modificar la función principal.
+const NotificationTypeStrategies = {
+  participation_certificate: {
+    getTitle: () => 'Atestiguamiento exitoso',
+    getBody: (tableLabel) => tableLabel
+      ? `Tu atestiguamiento de la mesa ${tableLabel} se registró correctamente.`
+      : 'Tu atestiguamiento se registró correctamente.',
+  },
+  acta_published: {
+    getTitle: () => 'Acta subida exitosamente',
+    getBody: (tableLabel) => tableLabel
+      ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
+      : 'Tu acta fue publicada correctamente.',
+  },
+  worksheet_uploaded: {
+    getTitle: () => 'Hoja de trabajo subida',
+    getBody: (tableLabel) => tableLabel
+      ? `Mesa ${tableLabel}: tu hoja ya está disponible para comparación.`
+      : 'Tu hoja de trabajo ya está disponible para comparación.',
+    getRoute: () => ({
+      name: StackNav.TabNavigation,
+      params: {screen: TabNav.HomeScreen},
+    }),
+  },
+  announce_count: {
+    getRoute: () => ({
+      name: StackNav.TabNavigation,
+      params: {screen: TabNav.HomeScreen},
+    }),
+  },
+  default: {
+    getTitle: () => 'Tu Voto Decide',
+    getBody: () => 'Tienes una notificación nueva.',
+  }
+};
+
 const buildNotificationTextFallback = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
@@ -157,33 +194,18 @@ const buildNotificationTextFallback = notification => {
   const tableLabel = String(data?.tableNumber || data?.tableCode || '')
     .trim();
 
+  // Obtenemos la estrategia dinámica en lugar de bifurcaciones (OCP resuelto)
+  const strategy = NotificationTypeStrategies[notificationType] || NotificationTypeStrategies.default;
+
   const title =
     notification?.title ||
     data?.title ||
-    (notificationType === 'participation_certificate'
-      ? 'Atestiguamiento exitoso'
-      : notificationType === 'acta_published'
-      ? 'Acta subida exitosamente'
-      : notificationType === 'worksheet_uploaded'
-      ? 'Hoja de trabajo subida'
-      : 'Tu Voto Decide');
+    (strategy.getTitle ? strategy.getTitle() : NotificationTypeStrategies.default.getTitle());
 
   const body =
     notification?.body ||
     data?.body ||
-    (notificationType === 'participation_certificate'
-      ? tableLabel
-        ? `Tu atestiguamiento de la mesa ${tableLabel} se registró correctamente.`
-        : 'Tu atestiguamiento se registró correctamente.'
-      : notificationType === 'acta_published'
-      ? tableLabel
-        ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
-        : 'Tu acta fue publicada correctamente.'
-      : notificationType === 'worksheet_uploaded'
-      ? tableLabel
-        ? `Mesa ${tableLabel}: tu hoja ya está disponible para comparación.`
-        : 'Tu hoja de trabajo ya está disponible para comparación.'
-      : 'Tienes una notificación nueva.');
+    (strategy.getBody ? strategy.getBody(tableLabel) : NotificationTypeStrategies.default.getBody());
 
   return {title, body, data};
 };
@@ -615,17 +637,12 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
 
 function buildRouteFromNotification(notification) {
   const data = notification?.data ?? {};
-  if (data?.type === 'announce_count') {
-    return {
-      name: StackNav.TabNavigation,
-      params: {screen: TabNav.HomeScreen},
-    };
-  }
-  if (data?.type === 'worksheet_uploaded') {
-    return {
-      name: StackNav.TabNavigation,
-      params: {screen: TabNav.HomeScreen},
-    };
+  const notificationType = data?.type;
+  
+  // OCP: Utilizamos el mismo diccionario de estrategias previamente definido (Reutilización y OCP)
+  const strategy = NotificationTypeStrategies[notificationType];
+  if (strategy && strategy.getRoute && typeof strategy.getRoute === 'function') {
+    return strategy.getRoute();
   }
 
   let params = data;
