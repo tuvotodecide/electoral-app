@@ -9,22 +9,25 @@
  * - Información de transacción/blockchain cuando exista
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
+  BackHandler,
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { useVotingState } from '../state/useVotingState';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -38,8 +41,10 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const VoteReceiptScreen = () => {
+  const navigation = useNavigation();
   const route = useRoute();
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
+  const allowExitRef = useRef(false);
   const {participations = [], lastReceipt} = useVotingState();
 
   const participationId = route?.params?.participationId;
@@ -59,9 +64,55 @@ const VoteReceiptScreen = () => {
     setIsDetailExpanded(!isDetailExpanded);
   };
 
+  const navigateHome = useCallback(() => {
+    allowExitRef.current = true;
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+  }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      allowExitRef.current = false;
+
+      const onBeforeRemove = event => {
+        if (allowExitRef.current) {
+          return;
+        }
+
+        const actionType = String(event?.data?.action?.type || '');
+        if (
+          actionType === 'GO_BACK' ||
+          actionType === 'POP' ||
+          actionType === 'POP_TO_TOP'
+        ) {
+          event.preventDefault();
+        }
+      };
+
+      const onBackPress = () => true;
+      const removeBackHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+      const unsubscribe = navigation.addListener('beforeRemove', onBeforeRemove);
+
+      return () => {
+        removeBackHandler.remove();
+        unsubscribe();
+      };
+    }, [navigation]),
+  );
+
   return (
     <CSafeAreaView style={styles.container}>
-      <CHeader title={UI_STRINGS.receiptHeader} />
+      <CHeader title={UI_STRINGS.receiptHeader} isHideBack />
 
       <ScrollView
         style={styles.scrollView}
@@ -179,6 +230,13 @@ const VoteReceiptScreen = () => {
             </View>
           )}
         </View>
+
+        <CButton
+          title="Ir al inicio"
+          onPress={navigateHome}
+          containerStyle={styles.homeButton}
+          sinMargen
+        />
       </ScrollView>
 
     </CSafeAreaView>
@@ -226,6 +284,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  homeButton: {
+    marginTop: getResponsiveSize(24, 28, 32),
   },
   electionTitle: {
     color: '#1F2937',

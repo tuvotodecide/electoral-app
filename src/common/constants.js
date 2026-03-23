@@ -70,6 +70,7 @@ export const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 export const KEY_OFFLINE = '@offline_queue_v1';
 export const STORAGE_KEY = 'PROVISION_V1';
 export const LAST_TOPIC_KEY = 'LAST_LOCATION_TOPIC';
+export const LAST_USER_TOPIC_KEY = 'LAST_USER_TOPIC';
 export const SERVICE_TMP = 'tmpRegister';
 export const SERVICE_PIN = 'tmpRegisterPin';
 export const ELECTION_STATUS = '@electionStatus';

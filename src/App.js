@@ -1,4 +1,3 @@
-import { BACKEND_IDENTITY } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,7 +6,7 @@ import * as Sentry from '@sentry/react-native';
 import { captureError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { LAST_TOPIC_KEY } from './common/constants';
+import { LAST_TOPIC_KEY, LAST_USER_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
 import { handleNotificationPress, registerNotifications } from './notifications';
@@ -16,6 +15,7 @@ import {
   ensureFCMSetup,
   initNotifications,
   showLocalNotification,
+  subscribeToPushTopic,
   subscribeToLocationTopic,
 } from './services/notifications';
 import { styles } from './themes';
@@ -30,7 +30,6 @@ const App = () => {
   const colors = useSelector(state => state.theme.theme);
   const auth = useSelector(s => s.auth);
   const dispatch = useDispatch();
-  const processingRef = useRef(false);
 
   const [mustUpdate, setMustUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -119,7 +118,7 @@ const App = () => {
           try {
             const data = msg?.data || {};
             if (!data || Object.keys(data).length === 0) return;
-            handleNotificationPress({data});
+            handleNotificationPress({ data });
           } catch (e) {
             captureError(e, {
               flow: 'notification',
@@ -135,24 +134,29 @@ const App = () => {
     };
   }, []);
   useEffect(() => {
+    const resubscribeStoredTopics = async () => {
+      const lastLocationTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);
+      if (lastLocationTopic) {
+        const rawId = lastLocationTopic.replace('loc_', '');
+        try {
+          await subscribeToLocationTopic(rawId);
+        } catch (e) { }
+      }
+
+      const lastUserTopic = await AsyncStorage.getItem(LAST_USER_TOPIC_KEY);
+      if (lastUserTopic) {
+        try {
+          await subscribeToPushTopic(lastUserTopic);
+        } catch (e) { }
+      }
+    };
+
     (async () => {
       await ensureFCMSetup();
-      const last = await AsyncStorage.getItem(LAST_TOPIC_KEY);
-      if (last) {
-        const rawId = last.replace('loc_', '');
-        try {
-          await subscribeToLocationTopic(rawId);
-        } catch (e) { }
-      }
+      await resubscribeStoredTopics();
     })();
     const unsub = messaging().onTokenRefresh(async () => {
-      const last = await AsyncStorage.getItem(LAST_TOPIC_KEY);
-      if (last) {
-        const rawId = last.replace('loc_', '');
-        try {
-          await subscribeToLocationTopic(rawId);
-        } catch (e) { }
-      }
+      await resubscribeStoredTopics();
     });
     return () => unsub();
   }, []);

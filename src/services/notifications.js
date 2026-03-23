@@ -70,6 +70,20 @@ export async function unsubscribeFromLocationTopic(locationKey) {
   await messaging().unsubscribeFromTopic(topic);
 }
 
+export async function subscribeToPushTopic(topic) {
+  const normalizedTopic = sanitizeTopicKey(topic);
+  if (!normalizedTopic) return null;
+  await messaging().subscribeToTopic(normalizedTopic);
+  return normalizedTopic;
+}
+
+export async function unsubscribeFromPushTopic(topic) {
+  const normalizedTopic = sanitizeTopicKey(topic);
+  if (!normalizedTopic) return null;
+  await messaging().unsubscribeFromTopic(normalizedTopic);
+  return normalizedTopic;
+}
+
 export function registerBackgroundHandler() {
   // Se ejecuta cuando el app está en background/quit y llega un mensaje data-only o para procesar info
   messaging().setBackgroundMessageHandler(async remoteMessage => {
