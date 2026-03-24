@@ -78,6 +78,7 @@ const ParticipationsListScreen = () => {
       // Navigate to receipt/comprobante screen
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: item.id,
+        electionId: item.electionId,
       });
     } else {
       // Show info that it's pending

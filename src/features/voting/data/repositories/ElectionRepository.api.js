@@ -1,9 +1,10 @@
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
 import store from '../../../../redux/store';
-import { getCredentialForVote } from '@/src/data/credentials';
-import { getZKPRequest } from '@/src/api/vote';
-import wira from 'wira-sdk';
+import { executeOperation } from '@/src/api/account';
+import { castVote } from '@/src/api/vote';
+import { CHAIN } from "@env";
+import { generateNullifierForVote, saveNullifierForVote } from '@/src/data/voteNullifier';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 
@@ -220,7 +221,7 @@ const ElectionRepositoryApi = {
     return candidates;
   },
 
-  async submitVote(electionId, candidateId, userDid, privKey) {
+  async submitVote(electionId, candidateId, candidateName, userAccount, privKey) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -237,30 +238,23 @@ const ElectionRepositoryApi = {
     }
 
     try {
-      const credential = await getCredentialForVote(electionId, userDid, privKey);
-      if (!credential) {
-        throw new Error('No credential found for vote');
-      }
+      const nullifier = await generateNullifierForVote();
+      console.log('Nullifier for vote obtained:', nullifier);
 
-      const request = await getZKPRequest(100);
-      console.log('ZKP Request:', request.metadata);
-
-      const response = await wira.getVCProof(
-        request.metadata,
-        userDid,
+      const response = await executeOperation(
         privKey,
-        'id',
-        credential.id
-      )
-      console.log('ZKP Response:', response);
+        userAccount,
+        CHAIN,
+        castVote(electionId, candidateName, nullifier),
+        null,
+        null,
+        true
+      );
 
-      return {
-        success: false,
-        error: 'ZKP verification failed (simulated)',
-      }
-      
+      console.log('Vote transaction response:', response);
+      await saveNullifierForVote(electionId, nullifier);
     } catch (error) {
-      console.log('Error during ZKP process:', error);
+      console.log('Error during on-chain voting process:', error);
       return {
         success: false,
         error: 'Failed to submit vote:' + error.message,

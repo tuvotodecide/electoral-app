@@ -4,9 +4,12 @@
  * Maneja el estado persistente del flujo de votación.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
+import { getOwnVoteInfo } from '@/src/api/vote';
+import { getNullifierForVote } from '@/src/data/voteNullifier';
+import { captureError } from '@/src/config/sentry';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -87,6 +90,7 @@ export const useVotingState = (electionId = '') => {
   const [participationId, setParticipationId] = useState(null);
   const [lastReceipt, setLastReceipt] = useState(null);
   const [participations, setParticipations] = useState([]);
+  const [syncedWithBlockchain, setSyncedWithBlockchain] = useState('loading');
 
   // Cargar estado inicial desde AsyncStorage
   useEffect(() => {
@@ -137,6 +141,34 @@ export const useVotingState = (electionId = '') => {
 
     loadState();
   }, [electionId]);
+
+  const syncStateWithBlockchain = async (participationId) => {
+    const localParticipation = participations.find(p => p.id === participationId);
+    if (!localParticipation) {
+      return;
+    }
+
+    try {
+      setSyncedWithBlockchain('loading');
+      const nullifier = await getNullifierForVote(electionId);
+      if(!nullifier) {
+        setSyncedWithBlockchain('failed');
+        throw new Error(`Nullifier not found for electionId ${electionId}`);
+      }
+
+      const voteInfo = await getOwnVoteInfo(electionId, nullifier);
+      if (Array.isArray(voteInfo) && voteInfo.length === 2) {
+        const [hasVoted, option] = voteInfo;
+        if (hasVoted && option == localParticipation?.candidateSelected?.partyName) {
+          setSyncedWithBlockchain('synced');
+        } else {
+          setSyncedWithBlockchain('not_synced');
+        }
+      }
+    } catch (error) {
+      setSyncedWithBlockchain('failed');
+    }
+  }
 
   /**
    * Registra un voto localmente
@@ -322,6 +354,8 @@ export const useVotingState = (electionId = '') => {
     hasVoted: effectiveHasVoted,
     voteSynced: effectiveVoteSynced,
     selectedCandidateId,
+    syncedWithBlockchain,
+    syncStateWithBlockchain,
     participationId,
     lastReceipt,
     participations,

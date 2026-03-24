@@ -162,22 +162,6 @@ const ClaimCredScreen = () => {
             {notification.body}
           </CText>
         </View>
-
-        <CButton
-          title={renderButtonText.title}
-          disabled={claimStatus === 'claiming' || claimStatus === 'claimed'}
-          type="B16"
-          variant={claimStatus === 'claimed' ? 'outlined' : 'default'}
-          onPress={handleClaim}
-          containerStyle={styles.actionButton}
-          sinMargen
-          testID="goToResultsButton"
-        />
-
-        {/* Body Text */}
-        <CText type="R16" style={styles.bodyText}>
-          {renderButtonText.msg}
-        </CText>
       </ScrollView>
     </CSafeAreaView>
   );

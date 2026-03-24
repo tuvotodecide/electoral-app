@@ -9,7 +9,7 @@
  * - Información de transacción/blockchain cuando exista
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BackHandler,
   View,
@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
@@ -45,7 +46,7 @@ const VoteReceiptScreen = () => {
   const route = useRoute();
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const allowExitRef = useRef(false);
-  const {participations = [], lastReceipt} = useVotingState();
+  const {participations = [], lastReceipt, syncStateWithBlockchain, syncedWithBlockchain} = useVotingState(route?.params?.electionId ?? '');
 
   const participationId = route?.params?.participationId;
   const participation =
@@ -109,6 +110,27 @@ const VoteReceiptScreen = () => {
       };
     }, [navigation]),
   );
+
+  useEffect(() => {
+    if (participationId) {
+      syncStateWithBlockchain(participationId)
+    }
+  }, [participationId, participations]);
+
+  const renderSyncStatus = () => {
+    switch (syncedWithBlockchain) {
+      case 'loading':
+        return 'progress-download';
+      case 'synced':
+        return 'check-circle';
+      case 'not_synced':
+        return 'close-circle';
+      case 'failed':
+        return 'wifi-alert';
+      default:
+        return null;
+    }
+  }
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -219,16 +241,16 @@ const VoteReceiptScreen = () => {
           )}
 
           {/* Blockchain Hash */}
-          {participation.blockchainHash && (
-            <View style={styles.detailRow}>
-              <CText type="R14" style={styles.detailLabel}>
-                {UI_STRINGS.blockchainHash}
-              </CText>
-              <CText type="M14" style={styles.detailValueMono}>
-                {participation.blockchainHash}
-              </CText>
-            </View>
-          )}
+          <View style={styles.detailRow}>
+            <CText type="R14" style={styles.detailLabel}>
+              {UI_STRINGS.syncedWithBlockchain}
+            </CText>
+            <Icon
+              name={renderSyncStatus()}
+              size={20}
+              color="#374151"
+            />
+          </View>
         </View>
 
         <CButton

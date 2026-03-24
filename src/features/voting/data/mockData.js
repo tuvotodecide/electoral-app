@@ -132,6 +132,7 @@ export const UI_STRINGS = {
   organization: 'Organización',
   transactionId: 'ID de transacción',
   blockchainHash: 'Hash blockchain',
+  syncedWithBlockchain: 'Sincronizado con la blockchain',
   viewMyNft: 'Ver mi NFT',
   party: 'Partido',
 

@@ -3,24 +3,11 @@ import voteAbi from '../abi/VoteAbi.json';
 import { availableNetworks } from "./params";
 import { CHAIN } from "@env";
 
-const bundler = 'https://0bb12tnp-8545.brs.devtunnels.ms';
-
 function getVoteReadContract() {
-  const { voteContract } = availableNetworks[CHAIN];
+  const { voteContract, bundler, chain } = availableNetworks[CHAIN];
 
   const publicClient = createPublicClient({
-    chain: defineChain({
-      id: 2,
-      name: 'Localhost',
-      nativeCurrency: {
-        decimals: 18,
-        name: 'Ether',
-        symbol: 'ETH',
-      },
-      rpcUrls: {
-        default: { http: [bundler] },
-      },
-    }),
+    chain,
     transport: http(bundler),
   });
 
@@ -39,15 +26,20 @@ export async function getZKPRequest(requestId) {
   return request;
 }
 
+export async function getOwnVoteInfo(voteId, nullifier) {
+  const vote = getVoteReadContract();
+  const ownVote = await vote.read.getOwnVoteInfo([voteId, nullifier]);
+  return ownVote;
+}
 
-function submitZKPresponse(requestId, ) {
+export function castVote(voteId, optionId, nullifier) {
   return {
-    to: '',
+    to: availableNetworks[CHAIN].voteContract,
     value: BigInt(0),
     data: encodeFunctionData({
       abi: voteAbi,
-      functionName: 'submitZKPResponse',
-      args: [tableId, jsonUri]
+      functionName: 'castVote',
+      args: [voteId, optionId, nullifier]
     })
-  }
+  };
 }

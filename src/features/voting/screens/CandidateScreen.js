@@ -125,7 +125,7 @@ const CandidateScreen = ({ route }) => {
       if (isOnline) {
         // Online: Submit vote directly
         console.log('Submitting vote for candidate:', selectedCandidate.id);
-        const result = await repository.submitVote(electionId, selectedCandidate.id, userData.did, userData.privKey);
+        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.did, userData.privKey);
         console.log('Vote submission result:', result);
 
         if (result.success) {

@@ -125,7 +125,7 @@ export default function Splash({navigation}) {
               fileName: 'credentialAtomicQuerySigV2.dat',
               circuitId: 'credentialAtomicQuerySigV2',
               checksum: null,
-            },
+            }
           ],
         });
       }

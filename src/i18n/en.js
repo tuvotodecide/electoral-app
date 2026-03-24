@@ -1435,7 +1435,7 @@ export default {
   shareDeclinedMessage: 'El usuario rechazó la solicitud de compartir',
 
   //Credentials
-  credentialReceived: 'Credenciales recibidas',
+  credentialReceived: 'Votante habilitado',
   claimCredendialsDesc: 'Reclama tus credenciales para participar en esta votación.',
   claimCredentials: 'Reclamar Credenciales',
   credentialsClaimed: 'Credenciales Reclamadas',

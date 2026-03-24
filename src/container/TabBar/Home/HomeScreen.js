@@ -517,7 +517,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const votingRepository = useElectionRepository();
-  const persistedVotingState = useVotingState();
+  const persistedVotingState = useVotingState(votingElection?.id);
   const votingState = FEATURE_FLAGS.ENABLE_VOTING_FLOW
     ? persistedVotingState
     : {
@@ -2135,6 +2135,10 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
+  console.log('Render Home with votingState', {
+    votingState,
+    votingElection,
+  });
   const resolvedVotingHasVoted =
     Boolean(votingState.hasVoted) || Boolean(votingElection?.alreadyVoted);
   const resolvedVotingSynced =
@@ -2148,30 +2152,6 @@ export default function HomeScreen({ navigation }) {
     setLoadVoteMsg('Verificando credenciales...');
     if (!votingElection?.id) {
       return;
-    }
-    const hasCredForVote = await checkClaimedCredForVote(
-      votingElection.id,
-      userData.did,
-      userData.privKey
-    );
-
-    if (!hasCredForVote) {
-      const sucess = await claimForVote(
-        votingElection.id,
-        userData.dni,
-        userData.did,
-        userData.privKey
-      )
-      if (!sucess) {
-        setInfoModal({
-          visible: true,
-          type: 'error',
-          title: 'Error',
-          message: 'No se pudo obtener la credencial de voto necesaria para participar. Intenta nuevamente más tarde.',
-        });
-        setLoadVoteMsg(null);
-        return;
-      }
     }
 
     setLoadVoteMsg(null);
@@ -2537,7 +2517,7 @@ export default function HomeScreen({ navigation }) {
               !loadingVotingElection &&
               votingElection && (
               <ElectionCard
-                hasVoted={false}
+                hasVoted={resolvedVotingHasVoted}
                 voteSynced={resolvedVotingSynced}
                 isEligible={Boolean(votingElection?.isEligible)}
                 election={votingElection}

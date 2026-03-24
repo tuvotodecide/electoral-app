@@ -39,7 +39,7 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
     participationNft: '',
-    voteContract: '0xbb4E9E637b93dA75D4603A74Cd22D49993F903Db',
+    voteContract: '0x0D0af8339857939d1dfa595Af1075f2c2944ed65',
   },
   'base': {
     chain: base,
