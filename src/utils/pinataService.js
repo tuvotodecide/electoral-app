@@ -1,12 +1,7 @@
+import { PINATA_API, PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND_RESULT } from '@env';
 import axios from 'axios';
 import RNFS from 'react-native-fs';
-import {
-  PINATA_API,
-  PINATA_API_KEY,
-  PINATA_API_SECRET,
-  PINATA_JWT,
-  BACKEND_RESULT,
-} from '@env';
+
 import {
   getContextOfficeLabels,
   hasSecondaryBlockElection,

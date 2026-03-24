@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -20,7 +21,7 @@ import {StackNav} from '../../../navigation/NavigationKey';
 //import {fetchUserAttestations} from '../../../api/account';
 
 import axios from 'axios';
-import {BACKEND_RESULT} from '@env';
+
 import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
 import {getAttestationAvailabilityCache} from '../../../utils/attestationAvailabilityCache';
 import {normalizeElectionTypeParam} from '../../../utils/electionContext';

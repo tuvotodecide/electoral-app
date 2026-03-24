@@ -1,9 +1,10 @@
+import { BACKEND_IDENTITY } from '@env';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, TextInput, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 // Custom imports
-import { BACKEND_IDENTITY } from '@env';
+
 import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
 import { moderateScale } from '../../common/constants';

@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React from 'react';
 import {
   ScrollView,
@@ -25,7 +26,7 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { BACKEND_RESULT } from '@env';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 

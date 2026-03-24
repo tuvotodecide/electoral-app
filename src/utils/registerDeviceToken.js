@@ -1,7 +1,8 @@
+import { BACKEND } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging     from '@react-native-firebase/messaging';
 import axios         from 'axios';
-import { BACKEND }   from '@env';
+
 import { DEVICE_TOKEN,  PENDING_DID } from '../common/constants';
 import { setAsyncStorageData }   from './AsyncStorage';
 import { getJwt } from './Session';

@@ -1,3 +1,4 @@
+import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -24,7 +25,7 @@ import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import wira from 'wira-sdk';
 
-import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LAST_TOPIC_KEY } from '../../../common/constants';
 import { saveVotePlace } from '../../../utils/offlineQueue';

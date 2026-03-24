@@ -1,3 +1,4 @@
+import { PROVIDER_NAME, BACKEND_IDENTITY } from '@env';
 import {useDispatch} from 'react-redux';
 import {startSession} from '../../../utils/Session';
 import {setSecrets} from '../../../redux/action/walletAction';
@@ -12,7 +13,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+
 import wira from 'wira-sdk';
 
 

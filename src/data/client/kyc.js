@@ -1,8 +1,9 @@
+import { BACKEND_IDENTITY } from '@env';
 import {crudFactory} from './crud-factory';
 import {Http} from './http';
 import {API_ENDPOINTS} from './api-endpoints';
 import wira from 'wira-sdk';
-import {BACKEND_IDENTITY} from '@env';
+
 
 export const registryApi = new wira.RegistryApi(BACKEND_IDENTITY);
 

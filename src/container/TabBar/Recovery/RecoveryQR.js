@@ -1,3 +1,4 @@
+import { BACKEND_IDENTITY } from '@env';
 import React, {useState} from 'react';
 import {
   View,
@@ -21,7 +22,7 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 import wira from 'wira-sdk';
 import { getLegacyData } from '../../../utils/migrateLegacy';
 import CAlert from '../../../components/common/CAlert';
-import {BACKEND_IDENTITY} from '@env';
+
 
 const recoveryService = new wira.RecoveryService();
 

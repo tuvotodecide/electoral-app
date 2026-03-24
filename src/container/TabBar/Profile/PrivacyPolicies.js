@@ -1,3 +1,4 @@
+import { PRIVACY_URL } from '@env';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {moderateScale} from '../../../common/constants';
@@ -7,7 +8,7 @@ import {WebView} from 'react-native-webview'; // <-- importante
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import String from '../../../i18n/String';
-import {PRIVACY_URL} from '@env';
+
 import {styles} from '../../../themes';
 
 

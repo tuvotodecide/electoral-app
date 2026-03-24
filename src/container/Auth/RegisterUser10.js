@@ -1,3 +1,4 @@
+import { BACKEND_IDENTITY, CHAIN, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME } from '@env';
 import {
   ActivityIndicator,
   AppState,
@@ -26,13 +27,7 @@ import {
   normalizeOcrForUI,
 } from '../../utils/issuerClient';
 import wira from 'wira-sdk';
-import {
-  BACKEND_IDENTITY,
-  CHAIN,
-  CRED_TYPE,
-  CRED_EXP_DAYS,
-  PROVIDER_NAME,
-} from '@env';
+
 import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
 import { captureError } from '../../config/sentry';
 

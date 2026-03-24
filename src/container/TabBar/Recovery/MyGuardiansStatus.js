@@ -1,3 +1,4 @@
+import { BACKEND_IDENTITY } from '@env';
 import {KeyboardAvoidingView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 
@@ -25,7 +26,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
-import { BACKEND_IDENTITY } from '@env';
+
 
 import { truncateDid } from '../../../utils/Address';
 

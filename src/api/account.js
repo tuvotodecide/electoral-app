@@ -1,3 +1,4 @@
+
 import { CHAIN } from '@env';
 import { createSmartAccountClient } from 'permissionless';
 import { toSimpleSmartAccount } from 'permissionless/accounts';

@@ -1,3 +1,4 @@
+import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, BACKEND_RESULT, BUNDLER, BUNDLER_MAIN, GATEWAY_BASE, PROVIDER_NAME } from '@env';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,16 +22,7 @@ import { AuthNav, StackNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import typography from '../../themes/typography';
 
-import {
-  BACKEND,
-  BACKEND_BLOCKCHAIN,
-  BACKEND_IDENTITY,
-  BACKEND_RESULT,
-  BUNDLER,
-  BUNDLER_MAIN,
-  GATEWAY_BASE,
-  PROVIDER_NAME,
-} from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SHA256 } from 'crypto-js';
 import wira from 'wira-sdk';

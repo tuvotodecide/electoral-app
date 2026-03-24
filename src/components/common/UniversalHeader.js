@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {View, TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
@@ -10,7 +11,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
 import {moderateScale} from '../../common/constants';
 import {StackNav} from '../../navigation/NavigationKey';
-import {BACKEND_RESULT} from '@env';
+
 import {authenticateWithBackend} from '../../utils/offlineQueueHandler';
 import {
   alertNewBackendNotifications,

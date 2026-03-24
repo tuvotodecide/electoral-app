@@ -1,6 +1,7 @@
+import { BACKEND_RESULT } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {BACKEND_RESULT} from '@env';
+
 
 const KEY_CONTEXT = dni =>
   `@selected-election-context:v1:${String(dni || 'unknown')}`;

@@ -1,9 +1,10 @@
+import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
 import { useCallback, useEffect, useState } from 'react';
 import { DeviceEventEmitter, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { StorageService } from '../services/StorageService';
 import wira, { config } from 'wira-sdk';
-import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
+
 
 import { PENDINGRECOVERY } from '../common/constants';
 import Strings from '../i18n/String';
