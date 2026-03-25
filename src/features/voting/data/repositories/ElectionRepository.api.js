@@ -5,6 +5,7 @@ import { executeOperation } from '@/src/api/account';
 import { castVote } from '@/src/api/vote';
 import { CHAIN } from "@env";
 import { generateNullifierForVote, saveNullifierForVote } from '@/src/data/voteNullifier';
+import { getNullifierForVote } from '@/src/data/credentials';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 
@@ -221,7 +222,7 @@ const ElectionRepositoryApi = {
     return candidates;
   },
 
-  async submitVote(electionId, candidateId, candidateName, userAccount, privKey) {
+  async submitVote(electionId, candidateId, candidateName) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -238,12 +239,12 @@ const ElectionRepositoryApi = {
     }
 
     try {
-      const nullifier = await generateNullifierForVote();
+      const nullifier = await getNullifierForVote(electionId);
       console.log('Nullifier for vote obtained:', nullifier);
 
       const response = await executeOperation(
-        privKey,
-        userAccount,
+        '',
+        '',
         CHAIN,
         castVote(electionId, candidateName, nullifier),
         null,

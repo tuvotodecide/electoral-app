@@ -27,6 +27,7 @@ const safeParseJson = value => {
  * @param {Object} voteData
  * @param {string} voteData.electionId
  * @param {string} voteData.candidateId
+ * @param {string} voteData.candidateName - Para votacion on-chain
  * @param {string} voteData.presidentName - Para mostrar en UI
  * @returns {Promise<string>} ID del item en cola
  */
@@ -40,6 +41,7 @@ export const enqueueVote = async (voteData) => {
     payload: {
       electionId: voteData.electionId,
       candidateId: voteData.candidateId,
+      candidateName: voteData.candidateName,
       presidentName: voteData.presidentName,
       timestamp: Date.now(),
     },
@@ -60,18 +62,18 @@ export const handleVotingQueueVote = async (item) => {
     return;
   }
 
-  const { electionId, candidateId } = item.task.payload || {};
+  const { electionId, candidateId, candidateName } = item.task.payload || {};
 
-  if (!electionId || !candidateId) {
+  if (!electionId || !candidateId || !candidateName) {
     // Item malformado, marcarlo como error terminal
-    const error = new Error('Invalid vote data: missing electionId or candidateId');
+    const error = new Error('Invalid vote data: missing electionId, candidateId, or candidateName');
     error.removeFromQueue = true;
     throw error;
   }
 
   // Usar el repositorio para enviar el voto
   const repository = getElectionRepository();
-  const result = await repository.submitVote(electionId, candidateId);
+  const result = await repository.submitVote(electionId, candidateId, candidateName);
 
   if (!result.success) {
     throw new Error(result.error || 'Vote submission failed');

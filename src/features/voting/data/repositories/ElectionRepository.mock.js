@@ -46,9 +46,10 @@ const ElectionRepositoryMock = {
    * Envía voto (simulado)
    * @param {string} electionId
    * @param {string} candidateId
+   * @param {string} candidateName - Para votacion on-chain
    * @returns {Promise<import('./ElectionRepository').VoteResult>}
    */
-  async submitVote(electionId, candidateId) {
+  async submitVote(electionId, candidateId, candidateName) {
     await delay(800);
 
     // Validaciones

@@ -86,7 +86,7 @@ import {
   useElectionRepository,
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
-import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
+import { checkClaimedCredForVote, claimForVote, claimNullifierForVote, getNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -2135,10 +2135,6 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
-  console.log('Render Home with votingState', {
-    votingState,
-    votingElection,
-  });
   const resolvedVotingHasVoted =
     Boolean(votingState.hasVoted) || Boolean(votingElection?.alreadyVoted);
   const resolvedVotingSynced =
@@ -2151,6 +2147,29 @@ export default function HomeScreen({ navigation }) {
   const handleVotingPress = async () => {
     setLoadVoteMsg('Verificando credenciales...');
     if (!votingElection?.id) {
+      return;
+    }
+
+    try {
+      const hasNullifier = await hasNullifierForVote(votingElection.id);
+      if (!hasNullifier) {
+        await claimNullifierForVote(votingElection.id, userData.dni, userData.did, userData.privKey);
+      }
+    } catch (error) {
+      console.error('Error al reclamar nullifier para voto', error);
+      captureError(error, {
+        flow: 'voting_flow',
+        step: 'claim_nullifier',
+        critical: true,
+        allowPii: true,
+      })
+      setInfoModal({
+        visible: true,
+        type: 'error',
+        title: 'Error',
+        message: 'No se pudo obtener la credencial de voto necesaria para participar. Intenta nuevamente más tarde.',
+      });
+      setLoadVoteMsg(null);
       return;
     }
 
