@@ -293,6 +293,132 @@ const buildParticipationErrorMessage = (status, fallback = null) => {
   return fallback || 'No se pudo registrar la participación';
 };
 
+const resolveParticipationTitle = participation =>
+  String(
+    participation?.eventName ||
+      participation?.eventTitle ||
+      participation?.title ||
+      participation?.name ||
+      participation?.electionTitle ||
+      participation?.event?.name ||
+      '',
+  ).trim() || 'Votación institucional';
+
+const resolveParticipationOrganization = participation =>
+  String(
+    participation?.organizationName ||
+      participation?.organization ||
+      participation?.institutionName ||
+      participation?.tenantName ||
+      participation?.event?.organizationName ||
+      participation?.event?.institutionName ||
+      '',
+  ).trim();
+
+const normalizeParticipationStatus = participation => {
+  const rawStatus = String(
+    participation?.statusLabel || participation?.status || '',
+  ).toUpperCase();
+
+  if (rawStatus.includes('ERROR') || rawStatus.includes('FAILED')) {
+    return {status: 'ERROR', statusLabel: 'ERROR'};
+  }
+
+  if (
+    rawStatus.includes('COLA') ||
+    rawStatus.includes('QUEUE') ||
+    rawStatus.includes('PENDING')
+  ) {
+    return {status: 'EN_COLA', statusLabel: 'EN COLA'};
+  }
+
+  return {status: 'VOTO_REGISTRADO', statusLabel: 'VOTO REGISTRADO'};
+};
+
+const formatParticipationDateParts = rawDate => {
+  const parsedDate = new Date(rawDate || Date.now());
+  const validDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
+  return {
+    participatedAt: validDate.toISOString(),
+    date: validDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+    }),
+    time: validDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    fullDate: validDate.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  };
+};
+
+const mapParticipationRecord = participation => {
+  const {status, statusLabel} = normalizeParticipationStatus(participation);
+  const dateParts = formatParticipationDateParts(
+    participation?.participatedAt ||
+      participation?.createdAt ||
+      participation?.timestamp,
+  );
+
+  return {
+    id: String(
+      participation?.id ||
+        participation?.participationId ||
+        `${participation?.eventId || 'participation'}:${dateParts.participatedAt}`,
+    ),
+    electionId: String(
+      participation?.eventId || participation?.electionId || participation?.event?.id || '',
+    ),
+    electionTitle: resolveParticipationTitle(participation),
+    status,
+    statusLabel,
+    date: dateParts.date,
+    time: dateParts.time,
+    fullDate: dateParts.fullDate,
+    organization: resolveParticipationOrganization(participation),
+    transactionId: participation?.transactionId || participation?.txHash || null,
+    blockchainHash:
+      participation?.blockchainHash ||
+      participation?.txHash ||
+      participation?.transactionId ||
+      null,
+    candidateSelected: participation?.candidateSelected || null,
+    errorMessage: participation?.errorMessage || null,
+    nftId: participation?.nftId || null,
+    nftImageUrl: participation?.nftImageUrl || null,
+    participatedAt: dateParts.participatedAt,
+    selectedCandidateId:
+      participation?.selectedCandidateId ||
+      participation?.candidateId ||
+      participation?.optionId ||
+      null,
+    synced: status === 'VOTO_REGISTRADO',
+  };
+};
+
+const extractParticipations = data => {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (Array.isArray(data?.items)) {
+    return data.items;
+  }
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+  if (Array.isArray(data?.participations)) {
+    return data.participations;
+  }
+  return [];
+};
+
 const postParticipation = async (electionId, candidateId, dni) => {
   try {
     const {data} = await axios.post(
@@ -420,6 +546,27 @@ const ElectionRepositoryApi = {
       }
       throw error;
     }
+  },
+
+  async getParticipations() {
+    const dni = getCurrentDni();
+    if (!dni) {
+      return [];
+    }
+
+    const {data} = await axios.get(`${API_BASE}/voting/events/participations`, {
+      params: {carnet: dni},
+      headers: {Accept: 'application/json'},
+      timeout: 30000,
+    });
+
+    return extractParticipations(data)
+      .map(mapParticipationRecord)
+      .sort(
+        (left, right) =>
+          new Date(right?.participatedAt || 0).getTime() -
+          new Date(left?.participatedAt || 0).getTime(),
+      );
   },
 
   async submitVote(electionId, candidateId, candidateName) {

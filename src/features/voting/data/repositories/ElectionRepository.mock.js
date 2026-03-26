@@ -47,6 +47,11 @@ const ElectionRepositoryMock = {
     return [...MOCK_CANDIDATES];
   },
 
+  async getParticipations() {
+    await delay(300);
+    return [];
+  },
+
   async registerParticipation(electionId, candidateId) {
     return this.submitVote(electionId, candidateId, '');
   },

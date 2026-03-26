@@ -116,6 +116,25 @@ const buildPendingSyncCopy = ({
   };
 };
 
+const resolveElectionTitle = election =>
+  String(
+    election?.title ||
+      election?.name ||
+      election?.eventName ||
+      election?.electionTitle ||
+      '',
+  ).trim() || 'Votación institucional';
+
+const resolveElectionOrganization = election =>
+  String(
+    election?.organization ||
+      election?.organizationName ||
+      election?.institutionName ||
+      election?.instituteName ||
+      election?.tenantName ||
+      '',
+  ).trim();
+
 const CandidateScreen = ({ route }) => {
   const navigation = useNavigation();
   const repository = useElectionRepository();
@@ -227,16 +246,13 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: electionInfo?.title || 'Votación institucional',
+          electionTitle: resolveElectionTitle(electionInfo),
         });
 
         const receipt = await recordVote(selectedCandidate.id, false, {
           electionId,
-          electionTitle: electionInfo?.title || 'Votación institucional',
-          organization:
-            electionInfo?.organization ||
-            electionInfo?.instituteName ||
-            '',
+          electionTitle: resolveElectionTitle(electionInfo),
+          organization: resolveElectionOrganization(electionInfo),
           candidateSelected: {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
@@ -263,16 +279,13 @@ const CandidateScreen = ({ route }) => {
             candidateId: selectedCandidate.id,
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
-            electionTitle: electionInfo?.title || 'Votacion institucional',
+            electionTitle: resolveElectionTitle(electionInfo),
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
             electionId,
-            electionTitle: electionInfo?.title || 'Votacion institucional',
-            organization:
-              electionInfo?.organization ||
-              electionInfo?.instituteName ||
-              '',
+            electionTitle: resolveElectionTitle(electionInfo),
+            organization: resolveElectionOrganization(electionInfo),
             candidateSelected: {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
@@ -292,11 +305,8 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: electionInfo?.title || 'Votación institucional',
-          organization:
-            electionInfo?.organization ||
-            electionInfo?.instituteName ||
-            '',
+          electionTitle: resolveElectionTitle(electionInfo),
+          organization: resolveElectionOrganization(electionInfo),
           candidateSelected: {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
@@ -315,11 +325,8 @@ const CandidateScreen = ({ route }) => {
             participatedAt: result.participatedAt,
             transactionId: result.transactionId || null,
             electionId,
-            electionTitle: electionInfo?.title || 'Votación institucional',
-            organization:
-              electionInfo?.organization ||
-              electionInfo?.instituteName ||
-              '',
+            electionTitle: resolveElectionTitle(electionInfo),
+            organization: resolveElectionOrganization(electionInfo),
             candidateSelected: {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
@@ -340,16 +347,13 @@ const CandidateScreen = ({ route }) => {
             candidateId: selectedCandidate.id,
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
-            electionTitle: electionInfo?.title || 'Votación institucional',
+            electionTitle: resolveElectionTitle(electionInfo),
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
             electionId,
-            electionTitle: electionInfo?.title || 'Votación institucional',
-            organization:
-              electionInfo?.organization ||
-              electionInfo?.instituteName ||
-              '',
+            electionTitle: resolveElectionTitle(electionInfo),
+            organization: resolveElectionOrganization(electionInfo),
             candidateSelected: {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,

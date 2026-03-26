@@ -5,7 +5,7 @@
  * Muestra cada participación con estado (VOTO REGISTRADO, EN COLA).
  */
 
-import React from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -22,6 +22,7 @@ import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { useVotingState } from '../state/useVotingState';
+import { useElectionRepository } from '../data/useElectionRepository';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -32,6 +33,38 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const mergeParticipations = (remoteParticipations, localParticipations) => {
+  const pendingLocal = (Array.isArray(localParticipations) ? localParticipations : []).filter(
+    item => item?.synced !== true || item?.status === 'ERROR',
+  );
+  const blockedElectionIds = new Set(
+    pendingLocal.map(item => String(item?.electionId || '')).filter(Boolean),
+  );
+  const seenIds = new Set(pendingLocal.map(item => String(item?.id || '')).filter(Boolean));
+  const nextParticipations = [...pendingLocal];
+
+  (Array.isArray(remoteParticipations) ? remoteParticipations : []).forEach(item => {
+    const itemId = String(item?.id || '');
+    const electionId = String(item?.electionId || '');
+
+    if ((itemId && seenIds.has(itemId)) || (electionId && blockedElectionIds.has(electionId))) {
+      return;
+    }
+
+    if (itemId) {
+      seenIds.add(itemId);
+    }
+
+    nextParticipations.push(item);
+  });
+
+  return nextParticipations.sort(
+    (left, right) =>
+      new Date(right?.participatedAt || 0).getTime() -
+      new Date(left?.participatedAt || 0).getTime(),
+  );
 };
 
 const ParticipationItem = ({ item, onPress }) => {
@@ -72,12 +105,34 @@ const ParticipationItem = ({ item, onPress }) => {
 
 const ParticipationsListScreen = () => {
   const navigation = useNavigation();
-  const {participations = [], isLoading} = useVotingState();
+  const repository = useElectionRepository();
+  const {participations: localParticipations = []} = useVotingState();
+  const [participations, setParticipations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadParticipations = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const remoteParticipations = await repository.getParticipations();
+      setParticipations(mergeParticipations(remoteParticipations, localParticipations));
+    } catch (error) {
+      setParticipations(mergeParticipations([], localParticipations));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [localParticipations, repository]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadParticipations();
+    }, [loadParticipations]),
+  );
 
   const handleItemPress = (item) => {
     navigation.navigate(StackNav.VotingReceiptScreen, {
       participationId: item.id,
       electionId: item.electionId,
+      participation: item,
       allowBack: true,
     });
   };
@@ -108,6 +163,7 @@ const ParticipationsListScreen = () => {
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
+        onRefresh={loadParticipations}
       />
     </CSafeAreaView>
   );

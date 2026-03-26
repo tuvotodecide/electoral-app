@@ -51,7 +51,9 @@ const VoteReceiptScreen = () => {
   const {participations = [], lastReceipt, syncStateWithBlockchain, syncedWithBlockchain} = useVotingState(route?.params?.electionId ?? '');
 
   const participationId = route?.params?.participationId;
+  const routeParticipation = route?.params?.participation || null;
   const participation =
+    routeParticipation ||
     participations.find(p => p.id === participationId) ||
     (lastReceipt?.id === participationId ? lastReceipt : null) ||
     lastReceipt || {
