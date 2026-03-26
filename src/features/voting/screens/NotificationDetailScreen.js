@@ -248,26 +248,18 @@ const NotificationDetailScreen = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSection}>
-          <CText type="B20" style={styles.title}>
-            {notification?.mesa || notification?.title || DEFAULT_NOTIFICATION.title}
-          </CText>
-          {kind === 'election_results' ? null : (
-            <CText type="R14" style={styles.subtitle}>
-              {rawData?.body || notification?.direccion || ''}
-            </CText>
-          )}
-        </View>
-
         <View style={[styles.heroCard, { backgroundColor: heroConfig.backgroundColor }]}>
           <View style={[styles.heroIcon, { backgroundColor: heroConfig.iconBg }]}>
             <Ionicons name={heroConfig.iconName} size={34} color="#FFFFFF" />
           </View>
-          {kind === 'generic' && (
-            <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
-              {heroConfig.title}
+          <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
+            {notification?.mesa || notification?.title || heroConfig.title || DEFAULT_NOTIFICATION.title}
+          </CText>
+          {kind !== 'election_results' && (rawData?.body || notification?.direccion) ? (
+            <CText type="R14" style={styles.heroSubtitle}>
+              {rawData?.body || notification?.direccion || ''}
             </CText>
-          )}
+          ) : null}
         </View>
 
         {kind === 'election_results' ? (
@@ -368,22 +360,6 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveSize(12, 16, 20),
     paddingBottom: getResponsiveSize(120, 128, 136),
   },
-  headerSection: {
-    marginBottom: getResponsiveSize(18, 22, 26),
-  },
-  title: {
-    color: '#0F172A',
-    fontSize: getResponsiveSize(22, 24, 28),
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: getResponsiveSize(8, 10, 12),
-  },
-  subtitle: {
-    color: '#475569',
-    fontSize: getResponsiveSize(15, 16, 18),
-    lineHeight: getResponsiveSize(22, 24, 26),
-    textAlign: 'center',
-  },
   heroCard: {
     borderRadius: moderateScale(18),
     paddingVertical: getResponsiveSize(22, 26, 30),
@@ -404,6 +380,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: '700',
+  },
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: getResponsiveSize(14, 15, 17),
+    lineHeight: getResponsiveSize(20, 22, 24),
+    textAlign: 'center',
+    marginTop: getResponsiveSize(8, 10, 12),
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',

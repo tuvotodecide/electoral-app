@@ -3425,7 +3425,7 @@ const stylesx = StyleSheet.create({
     gap: getResponsiveSize(6, 8, 10),
   },
   votingCarouselContainer: {
-    marginBottom: getResponsiveSize(8, 10, 12),
+    marginBottom: getResponsiveSize(4, 6, 8),
   },
   singleVotingCardContainer: {
     width: '100%',
@@ -3435,7 +3435,7 @@ const stylesx = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(4, 6, 8),
+    marginBottom: getResponsiveSize(2, 4, 6),
     gap: getResponsiveSize(6, 8, 10),
   },
   pageIndicator: {
