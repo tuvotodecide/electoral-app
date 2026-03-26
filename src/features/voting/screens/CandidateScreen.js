@@ -42,6 +42,7 @@ import { backendProbe, checkInternetConnection } from '../../../utils/networkUti
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
+import { useSelector } from 'react-redux';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -141,7 +142,8 @@ const CandidateScreen = ({ route }) => {
 
   const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
   const electionId = route?.params?.electionId || electionInfo?.id || '';
-
+  const userData = useSelector(state => state.wallet.payload);
+  
   // State
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -316,7 +318,7 @@ const CandidateScreen = ({ route }) => {
 
         // Online: Submit vote directly
         console.log('Submitting vote for candidate:', selectedCandidate.id);
-        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName);
+        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.account, userData.privKey);
         console.log('Vote submission result:', result);
 
         if (result.success) {

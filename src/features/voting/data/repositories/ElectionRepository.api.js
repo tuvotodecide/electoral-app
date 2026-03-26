@@ -5,8 +5,7 @@ import store from '../../../../redux/store';
 import { executeOperation } from '@/src/api/account';
 import { castVote } from '@/src/api/vote';
 import { CHAIN } from "@env";
-import { saveNullifierForVote } from '@/src/data/voteNullifier';
-import { getNullifierForVote } from '@/src/data/credentials';
+import { getNullifierForVote, saveNullifierForVote } from '@/src/data/credentials';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;

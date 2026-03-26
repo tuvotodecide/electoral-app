@@ -1,4 +1,4 @@
-import { createPublicClient, defineChain, encodeFunctionData, getContract, http } from "viem";
+import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
 import voteAbi from '../abi/VoteAbi.json';
 import { availableNetworks } from "./params";
 import { CHAIN } from "@env";

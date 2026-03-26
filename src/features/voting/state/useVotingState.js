@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
-import { getNullifierForVote } from '@/src/data/voteNullifier';
+import { getNullifierForVote } from '@/src/data/credentials';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
