@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   Dimensions,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -55,6 +56,17 @@ const DEFAULT_NOTIFICATION = {
   },
 };
 
+const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
+
+const colorPalette = [
+  '#1e40af',
+  '#059669',
+  '#dc2626',
+  '#7c3aed',
+  '#0ea5e9',
+  '#f59e0b',
+];
+
 const resolvePublicResultsUrl = notification => {
   const rawData = notification?.data || {};
   const directUrl =
@@ -88,6 +100,42 @@ const resolvePublicResultsUrl = notification => {
   }
 };
 
+const mapResultsSummaryFromDetail = detail => {
+  const options = Array.isArray(detail?.options) ? detail.options : [];
+  const resultRows = Array.isArray(detail?.results) ? detail.results : [];
+  const votesByOption = new Map(
+    resultRows.map(result => [String(result?.option ?? ''), Number(result?.votes ?? 0)]),
+  );
+
+  const mapped = options.map((option, index) => {
+    const partyName = String(option?.name ?? `Opcion ${index + 1}`);
+    const firstCandidate =
+      Array.isArray(option?.candidates) && option.candidates.length > 0
+        ? option.candidates[0]
+        : null;
+    const votes = votesByOption.get(partyName) ?? 0;
+
+    return {
+      id: String(option?.id ?? `option-${index + 1}`),
+      name: firstCandidate?.name ?? partyName,
+      party: partyName,
+      colorHex: option?.color ?? colorPalette[index % colorPalette.length],
+      votes,
+      percent: 0,
+    };
+  });
+
+  const totalVotes = mapped.reduce((sum, candidate) => sum + candidate.votes, 0);
+
+  return mapped
+    .map(candidate => ({
+      ...candidate,
+      percent: totalVotes > 0 ? Number(((candidate.votes * 100) / totalVotes).toFixed(2)) : 0,
+    }))
+    .sort((a, b) => b.percent - a.percent)
+    .slice(0, 4);
+};
+
 const NotificationDetailScreen = () => {
   const route = useRoute();
   const notification = route?.params?.notification || DEFAULT_NOTIFICATION;
@@ -96,10 +144,58 @@ const NotificationDetailScreen = () => {
   const statusTone = notification?.statusTone || 'success';
   const startsAtLabel = notification?.votingStartLabel || formatEventDate(rawData?.votingStart);
   const endsAtLabel = notification?.votingEndLabel || formatEventDate(rawData?.votingEnd);
-  const resultsSummary = Array.isArray(notification?.resultsSummary)
-    ? notification.resultsSummary
-    : [];
+  const [remoteResultsSummary, setRemoteResultsSummary] = useState([]);
+  const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
   const resolvedPublicUrl = resolvePublicResultsUrl(notification);
+  const eventId = String(rawData?.eventId || notification?.eventId || '').trim();
+  const resultsSummary = Array.isArray(notification?.resultsSummary) && notification.resultsSummary.length > 0
+    ? notification.resultsSummary
+    : remoteResultsSummary;
+
+  useEffect(() => {
+    if (kind !== 'election_results' || !eventId) {
+      setResultsLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    const loadPublicDetail = async () => {
+      try {
+        setResultsLoading(true);
+        const response = await fetch(
+          `${API_BASE}/voting/events/public/detail/${encodeURIComponent(eventId)}`,
+          {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('No se pudo cargar el detalle publico');
+        }
+
+        const detail = await response.json();
+        if (!mounted) {
+          return;
+        }
+
+        setRemoteResultsSummary(mapResultsSummaryFromDetail(detail));
+      } catch {
+        if (mounted) {
+          setRemoteResultsSummary([]);
+        }
+      } finally {
+        if (mounted) {
+          setResultsLoading(false);
+        }
+      }
+    };
+
+    loadPublicDetail();
+    return () => {
+      mounted = false;
+    };
+  }, [eventId, kind]);
 
   const heroConfig = useMemo(() => {
     if (kind === 'election_results') {
@@ -167,7 +263,7 @@ const NotificationDetailScreen = () => {
           <View style={[styles.heroIcon, { backgroundColor: heroConfig.iconBg }]}>
             <Ionicons name={heroConfig.iconName} size={34} color="#FFFFFF" />
           </View>
-          {kind !== 'voting_event' && (
+          {kind === 'generic' && (
             <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
               {heroConfig.title}
             </CText>
@@ -179,12 +275,22 @@ const NotificationDetailScreen = () => {
             <CText type="B16" style={styles.sectionTitle}>
               Resultados
             </CText>
-            {resultsSummary.length > 0 ? (
-              resultsSummary.slice(0, 3).map(result => (
+            {resultsLoading ? (
+              <View style={styles.loadingResultsBox}>
+                <ActivityIndicator size="small" color="#1F7A36" />
+                <CText type="R14" style={styles.loadingResultsText}>
+                  Cargando resultados...
+                </CText>
+              </View>
+            ) : resultsSummary.length > 0 ? (
+              resultsSummary.map(result => (
                 <View key={String(result?.id)} style={styles.resultRow}>
                   <View style={styles.resultCopy}>
                     <CText type="M14" style={styles.resultName}>
                       {result?.name}
+                    </CText>
+                    <CText type="R12" style={styles.resultParty}>
+                      {result?.party || 'Candidato'}
                     </CText>
                     {Number(result?.votes || 0) > 0 ? (
                       <CText type="R12" style={styles.resultVotes}>
@@ -199,7 +305,7 @@ const NotificationDetailScreen = () => {
               ))
             ) : (
               <CText type="R14" style={styles.emptyResultsText}>
-                Los resultados se estan preparando para esta elección.
+                Resultados listos para consultar en detalle.
               </CText>
             )}
           </View>
@@ -346,6 +452,10 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '600',
   },
+  resultParty: {
+    color: '#64748B',
+    marginTop: 2,
+  },
   resultVotes: {
     color: '#64748B',
     marginTop: 2,
@@ -353,6 +463,15 @@ const styles = StyleSheet.create({
   resultPercent: {
     color: '#1F7A36',
     fontWeight: '700',
+  },
+  loadingResultsBox: {
+    paddingVertical: getResponsiveSize(18, 20, 24),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingResultsText: {
+    marginTop: 10,
+    color: '#64748B',
   },
   emptyResultsText: {
     color: '#475569',

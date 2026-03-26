@@ -232,6 +232,10 @@ export default function Notification({ navigation }) {
       data?.publicUrl ||
       n?.actionUrl ||
       null;
+    const eligibleFlag =
+      typeof data?.eligible === 'string'
+        ? data.eligible.toLowerCase() === 'true'
+        : data?.eligible === true;
 
     return {
       id: n?._id || `srv_${created}`,
@@ -253,7 +257,7 @@ export default function Notification({ navigation }) {
       statusTone:
         notificationKind === 'election_results'
           ? 'success'
-          : notificationKind === 'voting_event' && data?.eligible === false
+          : notificationKind === 'voting_event' && eligibleFlag === false
             ? 'danger'
             : 'success',
       votingStartLabel: startsAtLabel,
