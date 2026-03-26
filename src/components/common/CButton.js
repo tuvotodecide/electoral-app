@@ -25,6 +25,7 @@ export default function CButton({
   variant = 'default',
   sinMargen = false,
   testID,
+  textProps = {},
   ...props
 }) {
   const colors = useSelector(state => state.theme.theme);
@@ -71,7 +72,7 @@ export default function CButton({
         borderStyle,
       ]}>
       {frontIcon}
-      <CText type={type} style={style} color={textColor}>
+      <CText type={type} style={style} color={textColor} {...textProps}>
         {title}
       </CText>
       {icon}

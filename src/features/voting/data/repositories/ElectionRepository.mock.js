@@ -18,13 +18,18 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * Mock Election Repository
  */
 const ElectionRepositoryMock = {
+  async getElections() {
+    await delay(300);
+    return [{...MOCK_ELECTION}];
+  },
+
   /**
    * Obtiene información de la elección actual
    * @returns {Promise<import('./ElectionRepository').Election>}
    */
   async getElection() {
-    await delay(300);
-    return { ...MOCK_ELECTION };
+    const elections = await this.getElections();
+    return elections[0] || null;
   },
 
   /**
@@ -40,6 +45,10 @@ const ElectionRepositoryMock = {
     }
 
     return [...MOCK_CANDIDATES];
+  },
+
+  async registerParticipation(electionId, candidateId) {
+    return this.submitVote(electionId, candidateId, '');
   },
 
   /**

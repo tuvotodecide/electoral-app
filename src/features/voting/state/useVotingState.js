@@ -4,12 +4,11 @@
  * Maneja el estado persistente del flujo de votación.
  */
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
 import { getNullifierForVote } from '@/src/data/voteNullifier';
-import { captureError } from '@/src/config/sentry';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -29,6 +28,48 @@ const safeParseJson = value => {
   } catch {
     return null;
   }
+};
+
+const matchesElection = (participation, electionId) =>
+  String(participation?.electionId || '') === String(electionId || '');
+
+const getMostRecentParticipation = (participations = [], electionId = '') => {
+  if (!Array.isArray(participations)) {
+    return null;
+  }
+
+  if (!electionId) {
+    return participations[0] || null;
+  }
+
+  return participations.find(item => matchesElection(item, electionId)) || null;
+};
+
+const buildScopedState = ({
+  electionId,
+  participations,
+  lastReceipt,
+  storedVoteSynced,
+  storedParticipationId,
+}) => {
+  const scopedParticipation =
+    getMostRecentParticipation(participations, electionId) ||
+    (matchesElection(lastReceipt, electionId) ? lastReceipt : null);
+
+  return {
+    hasVoted: Boolean(scopedParticipation),
+    voteSynced:
+      scopedParticipation?.synced === true ||
+      (!electionId && storedVoteSynced === 'true'),
+    selectedCandidateId: scopedParticipation?.selectedCandidateId || null,
+    participationId:
+      scopedParticipation?.id ||
+      (!electionId ? storedParticipationId || null : null),
+    lastReceipt:
+      matchesElection(lastReceipt, electionId) || !electionId
+        ? lastReceipt || null
+        : scopedParticipation,
+  };
 };
 
 const buildParticipationRecord = ({
@@ -70,6 +111,7 @@ const buildParticipationRecord = ({
     transactionId: metadata.transactionId || null,
     blockchainHash: metadata.blockchainHash || metadata.transactionId || null,
     candidateSelected: metadata.candidateSelected || null,
+    errorMessage: metadata.errorMessage || null,
     nftId: metadata.nftId || null,
     nftImageUrl: metadata.nftImageUrl || null,
     participatedAt: validDate.toISOString(),
@@ -119,19 +161,29 @@ export const useVotingState = (electionId = '') => {
           AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS),
         ]);
 
-        // Solo cargar estado si es la misma elección
-        const resolvedElectionId = electionId || storedElectionId;
-        if (storedElectionId === resolvedElectionId) {
-          setHasVoted(storedHasVoted === 'true');
-          setVoteSynced(storedVoteSynced === 'true');
-          setSelectedCandidateId(storedCandidateId || null);
-          setParticipationId(storedParticipationId || null);
-        }
-
         const parsedLastReceipt = safeParseJson(storedLastReceipt);
         const parsedParticipations = safeParseJson(storedParticipations);
-        setLastReceipt(parsedLastReceipt || null);
-        setParticipations(Array.isArray(parsedParticipations) ? parsedParticipations : []);
+        const normalizedParticipations = Array.isArray(parsedParticipations)
+          ? parsedParticipations
+          : [];
+        const scopedState = buildScopedState({
+          electionId: electionId || storedElectionId,
+          participations: normalizedParticipations,
+          lastReceipt: parsedLastReceipt || null,
+          storedVoteSynced,
+          storedParticipationId,
+        });
+
+        setHasVoted(
+          electionId || storedElectionId
+            ? scopedState.hasVoted
+            : storedHasVoted === 'true' || scopedState.hasVoted,
+        );
+        setVoteSynced(scopedState.voteSynced);
+        setSelectedCandidateId(scopedState.selectedCandidateId || storedCandidateId || null);
+        setParticipationId(scopedState.participationId);
+        setLastReceipt(scopedState.lastReceipt || parsedLastReceipt || null);
+        setParticipations(normalizedParticipations);
       } catch (error) {
         console.error('[Voting] Error loading state:', error);
       } finally {
@@ -193,7 +245,9 @@ export const useVotingState = (electionId = '') => {
           : [];
         const nextParticipations = [
           receipt,
-          ...nextParticipationsBase.filter(item => item?.id !== receipt.id),
+          ...nextParticipationsBase.filter(
+            item => item?.id !== receipt.id && !matchesElection(item, receipt.electionId),
+          ),
         ];
 
         await Promise.all([
@@ -333,13 +387,24 @@ export const useVotingState = (electionId = '') => {
         AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATIONS),
         AsyncStorage.getItem(STORAGE_KEYS.PARTICIPATION_ID),
       ]);
-      setVoteSynced(storedVoteSynced === 'true');
-      setLastReceipt(safeParseJson(storedLastReceipt));
-      {
-        const parsedParticipations = safeParseJson(storedParticipations);
-        setParticipations(Array.isArray(parsedParticipations) ? parsedParticipations : []);
-      }
-      setParticipationId(storedParticipationId || null);
+      const parsedLastReceipt = safeParseJson(storedLastReceipt);
+      const parsedParticipations = safeParseJson(storedParticipations);
+      const normalizedParticipations = Array.isArray(parsedParticipations)
+        ? parsedParticipations
+        : [];
+      const scopedState = buildScopedState({
+        electionId,
+        participations: normalizedParticipations,
+        lastReceipt: parsedLastReceipt,
+        storedVoteSynced,
+        storedParticipationId,
+      });
+      setHasVoted(scopedState.hasVoted);
+      setVoteSynced(scopedState.voteSynced);
+      setSelectedCandidateId(scopedState.selectedCandidateId);
+      setLastReceipt(scopedState.lastReceipt || parsedLastReceipt || null);
+      setParticipations(normalizedParticipations);
+      setParticipationId(scopedState.participationId);
     } catch (error) {
       console.error('[Voting] Error refreshing state:', error);
     }

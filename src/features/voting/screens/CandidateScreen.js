@@ -12,7 +12,6 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 
 // Components
@@ -20,6 +19,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
+import CustomModal from '../../../components/common/CustomModal';
 
 // Feature components
 import CandidateCard from '../components/CandidateCard';
@@ -29,7 +29,11 @@ import OfflineQueuedModal from '../components/OfflineQueuedModal';
 // Feature logic
 import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
-import { enqueueVote } from '../offline/queueAdapter';
+import {
+  enqueueBackendParticipationSync,
+  enqueueVote,
+} from '../offline/queueAdapter';
+import { clearVoteJournal, startVoteJournal } from '../offline/voteJournal';
 import { UI_STRINGS } from '../data/mockData';
 import { DEV_FLAGS } from '../../../config/featureFlags';
 
@@ -37,6 +41,7 @@ import { DEV_FLAGS } from '../../../config/featureFlags';
 import { checkInternetConnection } from '../../../utils/networkUtils';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -50,9 +55,52 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const isLikelyNetworkVoteError = error => {
+  const message = String(error?.message || error || '').toLowerCase();
+  return (
+    message.includes('network') ||
+    message.includes('internet') ||
+    message.includes('timeout') ||
+    message.includes('failed to fetch') ||
+    message.includes('request failed')
+  );
+};
+
+const buildVoteErrorMessage = error => {
+  const raw = String(error?.message || error || '').trim();
+  const message = raw.toLowerCase();
+
+  if (!raw) {
+    return 'Ocurrio un error al registrar el voto. Puedes reintentar nuevamente.';
+  }
+  if (
+    message.includes('already voted') ||
+    message.includes('ya participaste') ||
+    message.includes('already_voted')
+  ) {
+    return 'Esta votacion ya figura como registrada para tu usuario.';
+  }
+  if (
+    message.includes('outside_voting_window') ||
+    message.includes('fuera del horario')
+  ) {
+    return 'La votacion ya no se encuentra disponible en este horario.';
+  }
+  if (
+    message.includes('vote does not exist') ||
+    message.includes('execution reverted')
+  ) {
+    return 'No se pudo registrar el voto en blockchain. Puedes reintentar o volver a votar mas tarde.';
+  }
+  if (isLikelyNetworkVoteError(raw)) {
+    return 'Hubo un problema de conexion al registrar el voto. Puedes reintentar.';
+  }
+
+  return raw;
+};
+
 const CandidateScreen = ({ route }) => {
   const navigation = useNavigation();
-  const colors = useSelector((state) => state.theme.theme);
   const repository = useElectionRepository();
 
   const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
@@ -64,11 +112,25 @@ const CandidateScreen = ({ route }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
-  const userData = useSelector(state => state.wallet.payload);
-  
+  const [queuedParticipationId, setQueuedParticipationId] = useState(null);
+  const [offlineModalCopy, setOfflineModalCopy] = useState({
+    title: UI_STRINGS.offlineTitle,
+    message: UI_STRINGS.offlineMessage,
+  });
+  const [errorModal, setErrorModal] = useState({
+    visible: false,
+    title: 'No se pudo registrar el voto',
+    message: '',
+  });
 
   // Election state hook
-  const { recordVote } = useVotingState(electionId);
+  const {
+    recordVote,
+    hasVoted,
+    participationId,
+    lastReceipt,
+    isLoading: isVotingStateLoading,
+  } = useVotingState(electionId);
 
   // Load candidates
   useEffect(() => {
@@ -99,6 +161,29 @@ const CandidateScreen = ({ route }) => {
     loadCandidates();
   }, [electionId, repository, electionInfo, route?.params?.electionId]);
 
+  useEffect(() => {
+    if (isVotingStateLoading || !hasVoted || !electionId) {
+      return;
+    }
+
+    const resolvedParticipationId =
+      lastReceipt?.electionId === electionId ? lastReceipt?.id : participationId;
+
+    if (resolvedParticipationId) {
+      navigation.replace(StackNav.VotingReceiptScreen, {
+        participationId: resolvedParticipationId,
+        electionId,
+      });
+    }
+  }, [
+    electionId,
+    hasVoted,
+    isVotingStateLoading,
+    lastReceipt,
+    navigation,
+    participationId,
+  ]);
+
   // Handle candidate selection
   const handleSelectCandidate = useCallback((candidate) => {
     setSelectedCandidate(candidate);
@@ -117,12 +202,61 @@ const CandidateScreen = ({ route }) => {
     setIsLoading(true);
 
     try {
+      const queueVoteAndShowReceipt = async () => {
+        await enqueueVote({
+          electionId,
+          candidateId: selectedCandidate.id,
+          candidateName: selectedCandidate.partyName,
+          presidentName: selectedCandidate.presidentName,
+          electionTitle: electionInfo?.title || 'Votacion institucional',
+        });
+
+        const receipt = await recordVote(selectedCandidate.id, false, {
+          electionId,
+          electionTitle: electionInfo?.title || 'Votacion institucional',
+          organization:
+            electionInfo?.organization ||
+            electionInfo?.instituteName ||
+            '',
+          candidateSelected: {
+            partyName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            viceName: selectedCandidate.viceName,
+          },
+        });
+
+        setOfflineModalCopy({
+          title: UI_STRINGS.offlineTitle,
+          message: UI_STRINGS.offlineMessage,
+        });
+        setQueuedParticipationId(receipt?.id || null);
+        setShowConfirmModal(false);
+        setShowOfflineModal(true);
+      };
+
       // Check connectivity (allow DEV_FLAGS override for testing)
       const isOnline = DEV_FLAGS.FORCE_OFFLINE_VOTING
         ? false
         : await checkInternetConnection();
 
       if (isOnline) {
+        await startVoteJournal({
+          electionId,
+          candidateId: selectedCandidate.id,
+          candidateName: selectedCandidate.partyName,
+          presidentName: selectedCandidate.presidentName,
+          electionTitle: electionInfo?.title || 'Votacion institucional',
+          organization:
+            electionInfo?.organization ||
+            electionInfo?.instituteName ||
+            '',
+          candidateSelected: {
+            partyName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            viceName: selectedCandidate.viceName,
+          },
+        });
+
         // Online: Submit vote directly
         console.log('Submitting vote for candidate:', selectedCandidate.id);
         const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName);
@@ -153,40 +287,70 @@ const CandidateScreen = ({ route }) => {
             participationId: receipt?.id || result.participationId,
             electionId,
           });
+        } else if (result?.shouldQueueBackendSync && result?.blockchainCommitted) {
+          await enqueueBackendParticipationSync({
+            electionId,
+            candidateId: selectedCandidate.id,
+            candidateName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            electionTitle: electionInfo?.title || 'Votacion institucional',
+          });
+
+          const receipt = await recordVote(selectedCandidate.id, false, {
+            electionId,
+            electionTitle: electionInfo?.title || 'Votacion institucional',
+            organization:
+              electionInfo?.organization ||
+              electionInfo?.instituteName ||
+              '',
+            candidateSelected: {
+              partyName: selectedCandidate.partyName,
+              presidentName: selectedCandidate.presidentName,
+              viceName: selectedCandidate.viceName,
+            },
+            errorMessage: null,
+          });
+
+          setOfflineModalCopy({
+            title: 'Voto emitido, sincronizacion pendiente',
+            message:
+              'Tu voto ya fue emitido, pero falta registrar la participacion en el backend. La app lo reintentara automaticamente.',
+          });
+          setQueuedParticipationId(receipt?.id || null);
+          setShowConfirmModal(false);
+          setShowOfflineModal(true);
         } else {
+          const stillOnline = await checkInternetConnection();
+          if (!stillOnline && isLikelyNetworkVoteError(result.error)) {
+            await queueVoteAndShowReceipt();
+            return;
+          }
           throw new Error(result.error || 'Vote failed');
         }
       } else {
-        // Offline: Queue vote for later
-        await enqueueVote({
-          electionId,
-          candidateId: selectedCandidate.id,
-          candidateName: selectedCandidate.partyName,
-          presidentName: selectedCandidate.presidentName,
-        });
-
-        // Record vote locally as NOT synced
-        await recordVote(selectedCandidate.id, false, {
-          electionId,
-          electionTitle: electionInfo?.title || 'Votacion institucional',
-          organization:
-            electionInfo?.organization ||
-            electionInfo?.instituteName ||
-            '',
-          candidateSelected: {
-            partyName: selectedCandidate.partyName,
-            presidentName: selectedCandidate.presidentName,
-            viceName: selectedCandidate.viceName,
-          },
-        });
-
-        setShowConfirmModal(false);
-        setShowOfflineModal(true);
+        await queueVoteAndShowReceipt();
       }
     } catch (error) {
+      if (!String(error?.message || '').toLowerCase().includes('blockchain')) {
+        await clearVoteJournal(electionId);
+      }
+      captureError(error, {
+        flow: 'voting_flow',
+        step: 'submit_vote',
+        critical: false,
+        allowPii: false,
+        extra: {
+          electionId,
+          candidateId: selectedCandidate?.id || null,
+        },
+      });
       console.error('[CandidateScreen] Vote error:', error);
-      // TODO: Show error modal
       setShowConfirmModal(false);
+      setErrorModal({
+        visible: true,
+        title: 'No se pudo registrar el voto',
+        message: buildVoteErrorMessage(error),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -200,9 +364,16 @@ const CandidateScreen = ({ route }) => {
   // Handle offline modal dismiss
   const handleOfflineDismiss = useCallback(() => {
     setShowOfflineModal(false);
-    // Navigate back to home
-    navigation.navigate(StackNav.TabNavigation);
-  }, [navigation]);
+    navigation.replace(StackNav.VotingReceiptScreen, {
+      participationId: queuedParticipationId || participationId || lastReceipt?.id,
+      electionId,
+    });
+  }, [electionId, lastReceipt?.id, navigation, participationId, queuedParticipationId]);
+
+  const handleRetryVote = useCallback(() => {
+    setErrorModal(modal => ({...modal, visible: false}));
+    handleConfirmVote();
+  }, [handleConfirmVote]);
 
   // Get button text
   const getButtonText = () => {
@@ -247,6 +418,12 @@ const CandidateScreen = ({ route }) => {
           disabled={!selectedCandidate}
           onPress={handleVotePress}
           containerStyle={styles.voteButton}
+          style={styles.voteButtonText}
+          textProps={{
+            numberOfLines: 2,
+            adjustsFontSizeToFit: true,
+            minimumFontScale: 0.72,
+          }}
           sinMargen
           testID="voteButton"
         />
@@ -271,6 +448,20 @@ const CandidateScreen = ({ route }) => {
       <OfflineQueuedModal
         visible={showOfflineModal}
         onDismiss={handleOfflineDismiss}
+        title={offlineModalCopy.title}
+        message={offlineModalCopy.message}
+      />
+
+      <CustomModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal(modal => ({...modal, visible: false}))}
+        type="error"
+        title={errorModal.title}
+        message={errorModal.message}
+        buttonText="Reintentar"
+        onButtonPress={handleRetryVote}
+        secondaryButtonText="Cerrar"
+        onSecondaryPress={() => setErrorModal(modal => ({...modal, visible: false}))}
       />
     </CSafeAreaView>
   );
@@ -308,9 +499,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   voteButton: {
-    height: getHeight(52),
+    minHeight: getHeight(52),
+    height: 'auto',
     borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(10),
     marginBottom: getResponsiveSize(10, 12, 14),
+  },
+  voteButtonText: {
+    textAlign: 'center',
+    lineHeight: moderateScale(20),
   },
   securityNote: {
     color: '#9CA3AF',

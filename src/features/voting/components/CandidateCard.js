@@ -8,7 +8,6 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
-import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import CText from '../../../components/common/CText';
@@ -34,7 +33,6 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {() => void} props.onSelect - Handler de selección
  */
 const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
-  const colors = useSelector((state) => state.theme.theme);
   const isSpecial = candidate.isSpecial || false;
 
   // Render para votos especiales (Blanco/Nulo)
@@ -95,7 +93,13 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
     >
       {/* Header con nombre del partido */}
       <View style={[styles.partyHeader, { backgroundColor: candidate.partyColor || '#2563EB' }]}>
-        <CText type="B14" style={styles.partyName}>
+        <CText
+          type="B14"
+          style={styles.partyName}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {candidate.partyName}
         </CText>
       </View>
@@ -122,7 +126,13 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
           <CText type="R12" style={styles.label}>
             {UI_STRINGS.president}
           </CText>
-          <CText type="B16" style={styles.name}>
+          <CText
+            type="B16"
+            style={styles.name}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.78}
+          >
             {candidate.presidentName}
           </CText>
           {candidate.viceName ? (
@@ -130,7 +140,13 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
               <CText type="R12" style={styles.label}>
                 {UI_STRINGS.vicePresident}
               </CText>
-              <CText type="M14" style={styles.viceName}>
+              <CText
+                type="M14"
+                style={styles.viceName}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 {candidate.viceName}
               </CText>
             </>
@@ -188,6 +204,8 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveSize(10, 12, 14),
     paddingHorizontal: getResponsiveSize(14, 16, 18),
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: getResponsiveSize(52, 56, 60),
   },
   partyName: {
     color: '#FFFFFF',
@@ -240,6 +258,7 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+    minWidth: 0,
   },
   label: {
     color: '#64748B',

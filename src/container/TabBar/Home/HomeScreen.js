@@ -82,11 +82,15 @@ import { backendProbe } from '../../../utils/networkUtils';
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
 import {
   ElectionCard,
+  handleVotingQueueVote,
+  markVoteFailed,
+  reconcileVoteJournal,
+  releaseVoteForElection,
   useVotingState,
   useElectionRepository,
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
-import { checkClaimedCredForVote, claimForVote, claimNullifierForVote, getNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
+import { claimNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -106,6 +110,7 @@ const QUEUE_WRITE_TASK_TYPES = new Set([
   'publishActa',
   'publishWorksheet',
   'syncActaBackend',
+  'votingFlowVote',
 ]);
 
 const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
@@ -168,6 +173,18 @@ const shouldShowQueueFailModal = failedItem => {
 
 const deriveQueueFailMessage = failedItems => {
   const list = Array.isArray(failedItems) ? failedItems : [];
+  const hasVotingFailure = list.some(item => item?.type === 'votingFlowVote');
+  if (hasVotingFailure) {
+    const joinedVotingErrors = list
+      .filter(item => item?.type === 'votingFlowVote')
+      .map(item => String(item?.error || '').trim())
+      .filter(Boolean)
+      .join('\n\n');
+
+    return joinedVotingErrors ||
+      'No se pudo completar el registro del voto. Puedes volver a intentarlo o liberar el voto para votar de nuevo.';
+  }
+
   const joinedErrors = list
     .map(item => String(item?.error || '').toLowerCase())
     .join(' | ');
@@ -187,6 +204,14 @@ const deriveQueueFailMessage = failedItems => {
     return 'Ya existe un acta con los mismos votos para esta mesa.';
   }
   return 'Reintenta o elimina para subir otra acta.';
+};
+
+const deriveQueueFailTitle = failedItems => {
+  const list = Array.isArray(failedItems) ? failedItems : [];
+  if (list.some(item => item?.type === 'votingFlowVote')) {
+    return 'No se pudo completar el voto';
+  }
+  return 'No se pudo completar la subida';
 };
 const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
@@ -355,10 +380,20 @@ const LOOKUP_CACHE_TTLS = {
   notificationsMs: 10 * 1000,
   tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
+const VOTING_CAROUSEL_RETENTION_MS = 24 * 60 * 60 * 1000;
 const NOTIFICATIONS_AUTH_RETRY_MS = 60 * 1000;
 const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS = 15 * 1000;
+
+const shouldKeepElectionInCarousel = election => {
+  const closesAt = Number(election?.closesAt || 0);
+  if (!Number.isFinite(closesAt) || closesAt <= 0) {
+    return true;
+  }
+
+  return Date.now() - closesAt <= VOTING_CAROUSEL_RETENTION_MS;
+};
 
 const extractNotificationTimestamp = notification => {
   const raw =
@@ -511,10 +546,12 @@ export default function HomeScreen({ navigation }) {
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [isHomeOnline, setIsHomeOnline] = useState(true);
-  const [votingElection, setVotingElection] = useState(null);
+  const [votingElections, setVotingElections] = useState([]);
+  const [currentVotingElectionIndex, setCurrentVotingElectionIndex] = useState(0);
   const [loadingVotingElection, setLoadingVotingElection] = useState(
     FEATURE_FLAGS.ENABLE_VOTING_FLOW,
   );
+  const votingElection = votingElections[currentVotingElectionIndex] || null;
 
   const votingRepository = useElectionRepository();
   const persistedVotingState = useVotingState(votingElection?.id);
@@ -549,21 +586,36 @@ export default function HomeScreen({ navigation }) {
 
     try {
       setLoadingVotingElection(true);
-      const request = votingRepository.getElection();
+      const request =
+        typeof votingRepository.getElections === 'function'
+          ? votingRepository.getElections()
+          : votingRepository.getElection();
       votingElectionLoadRef.current.promise = request;
-      const election = await request;
-      setVotingElection(election || null);
-      return election || null;
+      const result = await request;
+      const elections = Array.isArray(result)
+        ? result
+        : result
+          ? [result]
+          : [];
+      const visibleElections = elections.filter(shouldKeepElectionInCarousel);
+      setVotingElections(visibleElections);
+      setCurrentVotingElectionIndex(currentIndex =>
+        visibleElections.length === 0
+          ? 0
+          : Math.min(currentIndex, visibleElections.length - 1),
+      );
+      return visibleElections;
     } catch (error) {
       console.warn('[HomeScreen] voting election load failed:', error?.message || error);
-      setVotingElection(null);
-      return null;
+      setVotingElections([]);
+      setCurrentVotingElectionIndex(0);
+      return [];
     } finally {
       votingElectionLoadRef.current.inFlight = false;
       votingElectionLoadRef.current.promise = null;
       setLoadingVotingElection(false);
     }
-  }, [votingRepository, votingElection]);
+  }, [votingRepository]);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState('unknown');
@@ -1027,6 +1079,10 @@ export default function HomeScreen({ navigation }) {
     title: '',
     message: '',
   });
+  const [votingSyncBanner, setVotingSyncBanner] = useState({
+    visible: false,
+    message: '',
+  });
 
   const runOfflineQueueOnce = useCallback(async () => {
     if (queueRunPromiseRef.current) return queueRunPromiseRef.current;
@@ -1034,7 +1090,9 @@ export default function HomeScreen({ navigation }) {
     if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
     queueRunPromiseRef.current = (async () => {
       processingRef.current = true;
+      let processedVotingSyncCount = 0;
       try {
+        await reconcileVoteJournal();
         const net = await NetInfo.fetch();
         const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
         if (!online) return;
@@ -1056,6 +1114,11 @@ export default function HomeScreen({ navigation }) {
           }
           if (taskType === 'syncActaBackend') {
             await syncActaBackendHandler(item, userData);
+            return;
+          }
+          if (taskType === 'votingFlowVote') {
+            await handleVotingQueueVote(item);
+            processedVotingSyncCount += 1;
             return;
           }
           const unknownTaskError = new Error(
@@ -1080,6 +1143,17 @@ export default function HomeScreen({ navigation }) {
         if ((Number(result?.processed) || 0) > 0) {
           try {
             await refreshNotificationBadgeCountRef.current?.();
+            await refreshVotingStateRef.current?.();
+            await loadVotingElectionRef.current?.();
+            if (processedVotingSyncCount > 0) {
+              setVotingSyncBanner({
+                visible: true,
+                message:
+                  processedVotingSyncCount === 1
+                    ? 'Votacion completada'
+                    : `${processedVotingSyncCount} votaciones completadas`,
+              });
+            }
           } catch {
             // No bloquear flujo principal por error al refrescar badge.
           }
@@ -1087,6 +1161,20 @@ export default function HomeScreen({ navigation }) {
 
         if (result?.failed > 0) {
           const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+          const failedVotingItems = failedItems.filter(
+            item => item?.type === 'votingFlowVote' && item?.removedFromQueue === true,
+          );
+          if (failedVotingItems.length > 0) {
+            await Promise.all(
+              failedVotingItems.map(item =>
+                markVoteFailed({
+                  electionId: item?.electionId,
+                  reason: item?.error || 'No se pudo completar el registro del voto.',
+                }),
+              ),
+            );
+            await refreshVotingStateRef.current?.();
+          }
           const modalItems = failedItems.filter(shouldShowQueueFailModal);
           if (modalItems.length > 0) {
             setQueueFailModal({
@@ -1129,6 +1217,18 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     refreshVotingStateRef.current = refreshVotingState || (() => {});
   }, [refreshVotingState]);
+
+  useEffect(() => {
+    if (!votingSyncBanner.visible) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setVotingSyncBanner(current => ({...current, visible: false}));
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, [votingSyncBanner.visible]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1297,11 +1397,28 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const clearVotingStatusForFailedItem = async failedItem => {
+    if (failedItem?.type !== 'votingFlowVote') return;
+    const electionId = String(failedItem?.electionId || '').trim();
+    if (!electionId) return;
+
+    await releaseVoteForElection(electionId);
+    await refreshVotingStateRef.current?.();
+    await loadVotingElectionRef.current?.();
+    setInfoModal({
+      visible: true,
+      type: 'success',
+      title: 'Voto liberado',
+      message: 'Puedes volver a ingresar y registrar tu voto nuevamente.',
+    });
+  };
+
   const handleRemoveFailedItem = async (id) => {
     if (!id) return;
     try {
       const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
       await clearWorksheetStatusForFailedItem(failedItem);
+      await clearVotingStatusForFailedItem(failedItem);
       await removeById(id);
       setQueueFailModal(m => ({
         ...m,
@@ -1315,7 +1432,12 @@ export default function HomeScreen({ navigation }) {
       );
       setHasPendingActa(pendingAfter);
     } catch (e) {
-      // opcional: modal informativo
+      setInfoModal({
+        visible: true,
+        type: 'error',
+        title: 'No se pudo actualizar el estado',
+        message: 'No fue posible liberar el voto fallido. Intenta nuevamente.',
+      });
     }
   };
 
@@ -2135,25 +2257,40 @@ export default function HomeScreen({ navigation }) {
       iconComponent: Ionicons,
     },
   ];
-  const resolvedVotingHasVoted =
-    Boolean(votingState.hasVoted) || Boolean(votingElection?.alreadyVoted);
-  const resolvedVotingSynced =
-    Boolean(votingState.voteSynced) || Boolean(votingElection?.alreadyVoted);
   const currentParticipationId =
-    votingState.lastReceipt?.id || votingState.participationId || null;
+    (votingState.participations || []).find(
+      item => String(item?.electionId || '') === String(votingElection?.id || ''),
+    )?.id ||
+    (votingState.lastReceipt?.electionId === votingElection?.id
+      ? votingState.lastReceipt?.id
+      : null) ||
+    votingState.participationId ||
+    null;
 
 
   const [loadVoteMsg, setLoadVoteMsg] = useState(null);
-  const handleVotingPress = async () => {
+  const getVotingParticipationForElection = electionId =>
+    (votingState.participations || []).find(
+      item => String(item?.electionId || '') === String(electionId || ''),
+    ) || null;
+
+  const handleVotingPress = async targetElection => {
     setLoadVoteMsg('Verificando credenciales...');
-    if (!votingElection?.id) {
+    const selectedElection = targetElection || votingElection;
+    if (!selectedElection?.id) {
+      setLoadVoteMsg(null);
       return;
     }
 
     try {
-      const hasNullifier = await hasNullifierForVote(votingElection.id);
+      const hasNullifier = await hasNullifierForVote(selectedElection.id);
       if (!hasNullifier) {
-        await claimNullifierForVote(votingElection.id, userData.dni, userData.did, userData.privKey);
+        await claimNullifierForVote(
+          selectedElection.id,
+          userData.dni,
+          userData.did,
+          userData.privKey,
+        );
       }
     } catch (error) {
       console.error('Error al reclamar nullifier para voto', error);
@@ -2175,29 +2312,136 @@ export default function HomeScreen({ navigation }) {
 
     setLoadVoteMsg(null);
     navigation.navigate(StackNav.VotingCandidateScreen, {
-      electionId: votingElection.id,
-      election: votingElection,
+      electionId: selectedElection.id,
+      election: selectedElection,
     });
   };
-  const handleVotingDetailsPress = () => {
-    if (currentParticipationId) {
+  const handleVotingDetailsPress = targetElection => {
+    const selectedElection = targetElection || votingElection;
+    const participation = getVotingParticipationForElection(selectedElection?.id);
+    if (participation?.id) {
+      navigation.navigate(StackNav.VotingReceiptScreen, {
+        participationId: participation.id,
+        electionId: selectedElection?.id,
+      });
+      return;
+    }
+
+    if (
+      currentParticipationId &&
+      String(votingElection?.id || '') === String(selectedElection?.id || '')
+    ) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: currentParticipationId,
-        electionId: votingElection?.id,
+        electionId: selectedElection?.id,
       });
       return;
     }
 
     navigation.navigate(StackNav.VotingParticipationsScreen);
   };
+  const renderVotingElectionCarousel = () => {
+    if (
+      !FEATURE_FLAGS.ENABLE_VOTING_FLOW ||
+      votingState.isLoading ||
+      loadingVotingElection ||
+      votingElections.length === 0
+    ) {
+      return null;
+    }
+
+    const cardWidth = isTablet && isLandscape
+      ? Math.min(screenWidth * 0.36, 440)
+      : screenWidth - getResponsiveSize(32, 40, 48);
+
+    return (
+      <View style={stylesx.votingCarouselContainer}>
+        <FlatList
+          data={votingElections}
+          keyExtractor={(item, index) => String(item?.id || index)}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToAlignment="center"
+          onMomentumScrollEnd={event => {
+            const index = Math.round(
+              event.nativeEvent.contentOffset.x / cardWidth,
+            );
+            setCurrentVotingElectionIndex(
+              Math.max(0, Math.min(index, votingElections.length - 1)),
+            );
+          }}
+          renderItem={({item}) => {
+            const participation = getVotingParticipationForElection(item?.id);
+            const hasVotedForElection =
+              Boolean(participation) || Boolean(item?.alreadyVoted);
+            const isSyncedForElection =
+              Boolean(participation?.synced) || Boolean(item?.alreadyVoted);
+
+            return (
+              <View style={{width: cardWidth}}>
+                <ElectionCard
+                  hasVoted={hasVotedForElection}
+                  voteSynced={isSyncedForElection}
+                  isEligible={Boolean(item?.isEligible)}
+                  election={item}
+                  onVotePress={() => handleVotingPress(item)}
+                  onDetailsPress={() => handleVotingDetailsPress(item)}
+                  loadMsg={
+                    loadVoteMsg &&
+                    String(item?.id || '') === String(votingElection?.id || '')
+                      ? loadVoteMsg
+                      : null
+                  }
+                />
+              </View>
+            );
+          }}
+        />
+        {votingElections.length > 1 && (
+          <View style={stylesx.votingPageIndicators}>
+            {votingElections.map((item, index) => (
+              <View
+                key={String(item?.id || index)}
+                style={[
+                  stylesx.pageIndicator,
+                  index === currentVotingElectionIndex &&
+                    stylesx.activePageIndicator,
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
   const retryableFailedItems = (queueFailModal.failedItems || []).filter(
     item => item?.removedFromQueue !== true,
   );
   const firstRetryableFailedId = retryableFailedItems?.[0]?.id;
   const canRetryFailedItems = retryableFailedItems.length > 0;
+  const firstVotingFailedItem = (queueFailModal.failedItems || []).find(
+    item => item?.type === 'votingFlowVote',
+  );
+  const canReleaseFailedVote =
+    Boolean(firstVotingFailedItem?.id) && !canRetryFailedItems;
+  const queueFailPrimaryText = canRetryFailedItems ? 'Reintentar' : 'Aceptar';
+  const queueFailTertiaryText = firstRetryableFailedId
+    ? 'Eliminar'
+    : canReleaseFailedVote
+      ? 'Volver a votar'
+      : undefined;
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
+      {votingSyncBanner.visible && (
+        <View style={stylesx.votingSyncBanner}>
+          <CText style={stylesx.votingSyncBannerText}>
+            {votingSyncBanner.message}
+          </CText>
+        </View>
+      )}
       {/* Modal de cerrar sesión */}
       <Modal
         testID="homeLogoutModal"
@@ -2343,20 +2587,7 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
           </View>
-          {FEATURE_FLAGS.ENABLE_VOTING_FLOW &&
-            !votingState.isLoading &&
-            !loadingVotingElection &&
-            votingElection && (
-            <ElectionCard
-              hasVoted={resolvedVotingHasVoted}
-              voteSynced={resolvedVotingSynced}
-              isEligible={Boolean(votingElection?.isEligible)}
-              election={votingElection}
-              onVotePress={handleVotingPress}
-              onDetailsPress={handleVotingDetailsPress}
-              loadMsg={loadVoteMsg}
-            />
-          )}
+          {renderVotingElectionCarousel()}
 
           {!hasBackup && (
             <RegisterAlertCard
@@ -2531,20 +2762,7 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
 
-            {FEATURE_FLAGS.ENABLE_VOTING_FLOW &&
-              !votingState.isLoading &&
-              !loadingVotingElection &&
-              votingElection && (
-              <ElectionCard
-                hasVoted={resolvedVotingHasVoted}
-                voteSynced={resolvedVotingSynced}
-                isEligible={Boolean(votingElection?.isEligible)}
-                election={votingElection}
-                onVotePress={handleVotingPress}
-                onDetailsPress={handleVotingDetailsPress}
-                loadMsg={loadVoteMsg}
-              />
-            )}
+            {renderVotingElectionCarousel()}
 
             {!hasBackup && (
               <RegisterAlertCard
@@ -2671,16 +2889,18 @@ export default function HomeScreen({ navigation }) {
         visible={queueFailModal.visible}
         onClose={() => setQueueFailModal(m => ({ ...m, visible: false }))}
         type="warning"
-        title="No se pudo completar la subida"
+        title={deriveQueueFailTitle(queueFailModal.failedItems)}
         message={queueFailModal.message}
-        buttonText={canRetryFailedItems ? 'Reintentar' : 'Aceptar'}
+        buttonText={queueFailPrimaryText}
         onButtonPress={canRetryFailedItems
           ? handleQueueRetry
           : () => setQueueFailModal(m => ({ ...m, visible: false }))}
-        tertiaryButtonText={firstRetryableFailedId ? 'Eliminar' : undefined}
+        tertiaryButtonText={queueFailTertiaryText}
         onTertiaryPress={firstRetryableFailedId
           ? () => handleRemoveFailedItem(firstRetryableFailedId)
-          : undefined}
+          : canReleaseFailedVote
+            ? () => handleRemoveFailedItem(firstVotingFailedItem?.id)
+            : undefined}
         tertiaryVariant="danger"
       />
     </CSafeAreaView>
@@ -2688,6 +2908,28 @@ export default function HomeScreen({ navigation }) {
 }
 
 const stylesx = StyleSheet.create({
+  votingSyncBanner: {
+    position: 'absolute',
+    top: getResponsiveSize(14, 18, 22),
+    left: getResponsiveSize(16, 20, 24),
+    right: getResponsiveSize(16, 20, 24),
+    zIndex: 20,
+    backgroundColor: '#1F7A36',
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  votingSyncBannerText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '700',
+    fontSize: getResponsiveSize(13, 14, 16),
+  },
   gridParent: {
     width: '100%',
     marginTop: getResponsiveSize(10, 13, 16),
@@ -3128,6 +3370,17 @@ const stylesx = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: getResponsiveSize(12, 16, 20),
+    gap: getResponsiveSize(6, 8, 10),
+  },
+  votingCarouselContainer: {
+    marginBottom: getResponsiveSize(16, 20, 24),
+  },
+  votingPageIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 18, 24),
     gap: getResponsiveSize(6, 8, 10),
   },
   pageIndicator: {

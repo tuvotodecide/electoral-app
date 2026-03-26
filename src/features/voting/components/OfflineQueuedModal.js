@@ -25,7 +25,12 @@ const { width: screenWidth } = Dimensions.get('window');
  * @param {boolean} props.visible
  * @param {() => void} props.onDismiss
  */
-const OfflineQueuedModal = ({ visible, onDismiss }) => {
+const OfflineQueuedModal = ({
+  visible,
+  onDismiss,
+  title = UI_STRINGS.offlineTitle,
+  message = UI_STRINGS.offlineMessage,
+}) => {
   return (
     <Modal
       visible={visible}
@@ -44,12 +49,12 @@ const OfflineQueuedModal = ({ visible, onDismiss }) => {
 
           {/* Título */}
           <CText type="B20" style={styles.title}>
-            {UI_STRINGS.offlineTitle}
+            {title}
           </CText>
 
           {/* Mensaje */}
           <CText type="R14" style={styles.message}>
-            {UI_STRINGS.offlineMessage}
+            {message}
           </CText>
 
           {/* Botón */}

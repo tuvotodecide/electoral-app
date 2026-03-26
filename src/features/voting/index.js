@@ -32,9 +32,20 @@ export { MOCK_ELECTION, MOCK_CANDIDATES, UI_STRINGS } from './data/mockData';
 
 // Offline
 export {
+  reconcileVoteJournal,
   enqueueVote,
+  enqueueBackendParticipationSync,
   hasPendingVotes,
   getPendingVotes,
   processVoteQueue,
   handleVotingQueueVote,
+  markVoteFailed,
+  releaseVoteForElection,
 } from './offline/queueAdapter';
+
+export {
+  startVoteJournal,
+  markVoteJournalChainConfirmed,
+  clearVoteJournal,
+  getPendingVoteJournalEntries,
+} from './offline/voteJournal';

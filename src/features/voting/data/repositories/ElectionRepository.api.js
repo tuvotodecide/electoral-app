@@ -1,13 +1,48 @@
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import store from '../../../../redux/store';
 import { executeOperation } from '@/src/api/account';
 import { castVote } from '@/src/api/vote';
 import { CHAIN } from "@env";
-import { generateNullifierForVote, saveNullifierForVote } from '@/src/data/voteNullifier';
+import { saveNullifierForVote } from '@/src/data/voteNullifier';
 import { getNullifierForVote } from '@/src/data/credentials';
+import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
+const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
+const CANDIDATES_CACHE_PREFIX = 'voting.cache.candidates:';
+
+const safeParseJson = value => {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+};
+
+const buildCacheEnvelope = data => {
+  const expiry = new Date();
+  expiry.setHours(23, 59, 59, 999);
+  return {
+    expiresAt: expiry.getTime(),
+    data,
+  };
+};
+
+const readCacheEnvelope = async key => {
+  const raw = await AsyncStorage.getItem(key);
+  const parsed = safeParseJson(raw);
+  if (!parsed || typeof parsed !== 'object') {
+    return null;
+  }
+  const expiresAt = Number(parsed?.expiresAt || 0);
+  if (!expiresAt || expiresAt < Date.now()) {
+    await AsyncStorage.removeItem(key);
+    return null;
+  }
+  return parsed?.data;
+};
 
 const getWalletPayload = () => store.getState()?.wallet?.payload || null;
 
@@ -26,10 +61,24 @@ const getCurrentDni = () => {
   ).trim();
 };
 
-const pickFeaturedEvent = data => {
-  const active = Array.isArray(data?.active) ? data.active : [];
-  const upcoming = Array.isArray(data?.upcoming) ? data.upcoming : [];
-  return active[0] || upcoming[0] || null;
+const getLandingEvents = data => {
+  const groups = [
+    Array.isArray(data?.active) ? data.active : [],
+    Array.isArray(data?.upcoming) ? data.upcoming : [],
+    Array.isArray(data?.results) ? data.results : [],
+  ];
+  const seen = new Set();
+
+  return groups
+    .flat()
+    .filter(event => {
+      const id = String(event?.id || '').trim();
+      if (!id || seen.has(id)) {
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
 };
 
 const phaseToCardStatus = phase => {
@@ -183,43 +232,150 @@ const requestCandidates = async electionId => {
     .filter(candidate => candidate.id);
 };
 
+const cacheCandidates = async (electionId, candidates) => {
+  await AsyncStorage.setItem(
+    `${CANDIDATES_CACHE_PREFIX}${String(electionId || '').trim()}`,
+    JSON.stringify(buildCacheEnvelope(candidates || [])),
+  );
+};
+
+const getCachedCandidates = async electionId => {
+  const parsed = await readCacheEnvelope(
+    `${CANDIDATES_CACHE_PREFIX}${String(electionId || '').trim()}`,
+  );
+  return Array.isArray(parsed) ? parsed : [];
+};
+
+const cacheLandingModels = async elections => {
+  await AsyncStorage.setItem(
+    LANDING_CACHE_KEY,
+    JSON.stringify(buildCacheEnvelope(elections || [])),
+  );
+};
+
+const getCachedLandingModels = async () => {
+  const parsed = await readCacheEnvelope(LANDING_CACHE_KEY);
+  return Array.isArray(parsed) ? parsed : [];
+};
+
+const buildParticipationErrorMessage = (status, fallback = null) => {
+  const normalized = String(status || '').toUpperCase();
+  if (normalized === 'ALREADY_VOTED') return 'Ya participaste en este evento';
+  if (normalized === 'OUTSIDE_VOTING_WINDOW') return 'Fuera del horario de votacion';
+  if (normalized === 'ROLL_IN_VALIDATION') return 'Padron en validacion';
+  if (normalized === 'NOT_IN_ROLL') return 'No habilitado para votar';
+  if (normalized === 'VOTER_DISABLED') return 'Estas empadronado, pero no habilitado para votar';
+  if (normalized === 'PADRON_NOT_AVAILABLE') return 'Padron no disponible';
+  if (normalized === 'EVENT_NOT_PUBLISHED') return 'Evento no disponible';
+  return fallback || 'No se pudo registrar la participacion';
+};
+
+const postParticipation = async (electionId, candidateId, dni) => {
+  try {
+    const {data} = await axios.post(
+      `${API_BASE}/voting/events/${encodeURIComponent(electionId)}/participations`,
+      {carnet: dni},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'idempotency-key': buildIdempotencyKey(electionId, candidateId),
+        },
+        timeout: 30000,
+      },
+    );
+
+    return {
+      success: true,
+      participationId: String(data?.id || ''),
+      participatedAt: data?.participatedAt || new Date().toISOString(),
+      transactionId: null,
+    };
+  } catch (error) {
+    const backendError =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      error?.response?.data?.status ||
+      error?.message;
+    return {
+      success: false,
+      error: buildParticipationErrorMessage(
+        error?.response?.data?.error,
+        typeof backendError === 'string'
+          ? backendError
+          : 'No se pudo registrar la participacion',
+      ),
+      statusCode: Number(error?.response?.status || 0),
+    };
+  }
+};
+
 const ElectionRepositoryApi = {
-  async getElection() {
-    const {data} = await axios.get(`${API_BASE}/voting/events/public/landing`, {
-      headers: {Accept: 'application/json'},
-      timeout: 30000,
-    });
+  async getElections() {
+    try {
+      const {data} = await axios.get(`${API_BASE}/voting/events/public/landing`, {
+        headers: {Accept: 'application/json'},
+        timeout: 30000,
+      });
 
-    const event = pickFeaturedEvent(data);
-    if (!event) {
-      return null;
+      const events = getLandingEvents(data);
+      if (events.length === 0) {
+        await cacheLandingModels([]);
+        return [];
+      }
+
+      const elections = await Promise.all(
+        events.map(async event => {
+          const [eligibility, participationStatus] = await Promise.all([
+            requestEligibility(event.id).catch(() => ({
+              status: 'UNKNOWN',
+              eligible: false,
+            })),
+            requestParticipationStatus(event.id).catch(() => ({
+              status: 'UNKNOWN',
+              canVote: false,
+              alreadyVoted: false,
+            })),
+          ]);
+
+          return buildElectionModel({
+            event,
+            eligibility,
+            participationStatus,
+          });
+        }),
+      );
+
+      await cacheLandingModels(elections);
+      return elections;
+    } catch (error) {
+      const cached = await getCachedLandingModels();
+      if (cached.length > 0) {
+        return cached;
+      }
+      throw error;
     }
+  },
 
-    const [eligibility, participationStatus] = await Promise.all([
-      requestEligibility(event.id).catch(() => ({
-        status: 'UNKNOWN',
-        eligible: false,
-      })),
-      requestParticipationStatus(event.id).catch(() => ({
-        status: 'UNKNOWN',
-        canVote: false,
-        alreadyVoted: false,
-      })),
-    ]);
-
-    return buildElectionModel({
-      event,
-      eligibility,
-      participationStatus,
-    });
+  async getElection() {
+    const elections = await this.getElections();
+    return elections.find(election => election?.status === 'ACTIVA') || elections[0] || null;
   },
 
   async getCandidates(electionId) {
     if (!String(electionId || '').trim()) {
       return [];
     }
-    const candidates = await requestCandidates(electionId);
-    return candidates;
+    try {
+      const candidates = await requestCandidates(electionId);
+      await cacheCandidates(electionId, candidates);
+      return candidates;
+    } catch (error) {
+      const cached = await getCachedCandidates(electionId);
+      if (cached.length > 0) {
+        return cached;
+      }
+      throw error;
+    }
   },
 
   async submitVote(electionId, candidateId, candidateName) {
@@ -235,6 +391,21 @@ const ElectionRepositoryApi = {
       return {
         success: false,
         error: 'No se encontro el carnet del usuario actual',
+      };
+    }
+
+    const participationStatus = await requestParticipationStatus(electionId).catch(() => ({
+      status: 'UNKNOWN',
+      canVote: true,
+      alreadyVoted: false,
+    }));
+    if (participationStatus?.alreadyVoted || participationStatus?.canVote === false) {
+      return {
+        success: false,
+        error: buildParticipationErrorMessage(
+          participationStatus?.status,
+          'No se pudo registrar la participacion',
+        ),
       };
     }
 
@@ -254,7 +425,9 @@ const ElectionRepositoryApi = {
 
       console.log('Vote transaction response:', response);
       await saveNullifierForVote(electionId, nullifier);
+      await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
+      await clearVoteJournal(electionId);
       console.log('Error during on-chain voting process:', error);
       return {
         success: false,
@@ -262,36 +435,37 @@ const ElectionRepositoryApi = {
       }
     }
 
-    try {
-      const {data} = await axios.post(
-        `${API_BASE}/voting/events/${encodeURIComponent(electionId)}/participations`,
-        {carnet: dni},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'idempotency-key': buildIdempotencyKey(electionId, candidateId),
-          },
-          timeout: 30000,
-        },
-      );
+    const backendResult = await postParticipation(electionId, candidateId, dni);
+    if (backendResult.success) {
+      await clearVoteJournal(electionId);
+      return backendResult;
+    }
 
-      return {
-        success: true,
-        participationId: String(data?.id || ''),
-        participatedAt: data?.participatedAt || new Date().toISOString(),
-        transactionId: null,
-      };
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'No se pudo registrar la participacion';
+    return {
+      success: false,
+      error: backendResult.error,
+      blockchainCommitted: true,
+      shouldQueueBackendSync: true,
+    };
+  },
+
+  async registerParticipation(electionId, candidateId) {
+    if (!String(electionId || '').trim()) {
       return {
         success: false,
-        error: typeof message === 'string' ? message : 'No se pudo registrar la participacion',
+        error: 'No se encontro una eleccion valida',
       };
     }
+
+    const dni = getCurrentDni();
+    if (!dni) {
+      return {
+        success: false,
+        error: 'No se encontro el carnet del usuario actual',
+      };
+    }
+
+    return postParticipation(electionId, candidateId, dni);
   },
 };
 

@@ -28,6 +28,7 @@ import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { useVotingState } from '../state/useVotingState';
+import { releaseVoteForElection } from '../offline/queueAdapter';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -60,6 +61,9 @@ const VoteReceiptScreen = () => {
       transactionId: null,
       blockchainHash: null,
     };
+  const isFailedParticipation = participation?.status === 'ERROR';
+  const isQueuedParticipation =
+    participation?.synced === false && !isFailedParticipation;
 
   const toggleDetail = () => {
     setIsDetailExpanded(!isDetailExpanded);
@@ -112,12 +116,18 @@ const VoteReceiptScreen = () => {
   );
 
   useEffect(() => {
-    if (participationId) {
+    if (participationId && !isQueuedParticipation && !isFailedParticipation) {
       syncStateWithBlockchain(participationId)
     }
-  }, [participationId, participations]);
+  }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
 
   const renderSyncStatus = () => {
+    if (isFailedParticipation) {
+      return 'alert-circle';
+    }
+    if (isQueuedParticipation) {
+      return 'clock-outline';
+    }
     switch (syncedWithBlockchain) {
       case 'loading':
         return 'progress-download';
@@ -143,15 +153,46 @@ const VoteReceiptScreen = () => {
       >
         {/* Success Icon */}
         <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="checkmark-circle" size={moderateScale(56)} color="#41A44D" />
+          <View
+            style={[
+              styles.iconCircle,
+              isQueuedParticipation && styles.iconCircleQueued,
+              isFailedParticipation && styles.iconCircleFailed,
+            ]}>
+            <Ionicons
+              name={
+                isFailedParticipation
+                  ? 'alert-circle'
+                  : isQueuedParticipation
+                    ? 'time'
+                    : 'checkmark-circle'
+              }
+              size={moderateScale(56)}
+              color={
+                isFailedParticipation
+                  ? '#D32F2F'
+                  : isQueuedParticipation
+                    ? '#F59E0B'
+                    : '#41A44D'
+              }
+            />
           </View>
         </View>
 
         {/* Success Title */}
         <CText type="B22" style={styles.successTitle}>
-          {UI_STRINGS.voteRegisteredSuccess}
+          {isQueuedParticipation
+            ? 'Voto en cola para sincronizar'
+            : isFailedParticipation
+              ? 'No se pudo completar el voto'
+              : UI_STRINGS.voteRegisteredSuccess}
         </CText>
+
+        {isFailedParticipation && participation?.errorMessage ? (
+          <CText type="R14" style={styles.failureMessage}>
+            {participation.errorMessage}
+          </CText>
+        ) : null}
 
         {/* Card with details */}
         <View style={styles.card}>
@@ -254,8 +295,13 @@ const VoteReceiptScreen = () => {
         </View>
 
         <CButton
-          title="Ir al inicio"
-          onPress={navigateHome}
+          title={isFailedParticipation ? 'Volver a votar' : 'Ir al inicio'}
+          onPress={async () => {
+            if (isFailedParticipation) {
+              await releaseVoteForElection(route?.params?.electionId ?? '');
+            }
+            navigateHome();
+          }}
           containerStyle={styles.homeButton}
           sinMargen
         />
@@ -290,12 +336,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  iconCircleQueued: {
+    backgroundColor: '#FEF3C7',
+  },
+  iconCircleFailed: {
+    backgroundColor: '#FFEBEE',
+  },
   successTitle: {
     color: '#1F2937',
     fontSize: getResponsiveSize(20, 22, 26),
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: getResponsiveSize(20, 24, 28),
+  },
+  failureMessage: {
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(16, 20, 24),
   },
   card: {
     backgroundColor: '#FFFFFF',

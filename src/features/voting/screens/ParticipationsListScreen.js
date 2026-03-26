@@ -36,8 +36,9 @@ const getResponsiveSize = (small, medium, large) => {
 
 const ParticipationItem = ({ item, onPress }) => {
   const isRegistered = item.status === 'VOTO_REGISTRADO';
-  const statusColor = isRegistered ? '#41A44D' : '#F59E0B';
-  const statusBgColor = isRegistered ? '#E8F5E9' : '#FEF3C7';
+  const isFailed = item.status === 'ERROR';
+  const statusColor = isRegistered ? '#41A44D' : isFailed ? '#D32F2F' : '#F59E0B';
+  const statusBgColor = isRegistered ? '#E8F5E9' : isFailed ? '#FFEBEE' : '#FEF3C7';
 
   return (
     <TouchableOpacity
@@ -74,16 +75,10 @@ const ParticipationsListScreen = () => {
   const {participations = [], isLoading} = useVotingState();
 
   const handleItemPress = (item) => {
-    if (item.status === 'VOTO_REGISTRADO') {
-      // Navigate to receipt/comprobante screen
-      navigation.navigate(StackNav.VotingReceiptScreen, {
-        participationId: item.id,
-        electionId: item.electionId,
-      });
-    } else {
-      // Show info that it's pending
-      // Could show a modal or toast
-    }
+    navigation.navigate(StackNav.VotingReceiptScreen, {
+      participationId: item.id,
+      electionId: item.electionId,
+    });
   };
 
   const renderItem = ({ item }) => (

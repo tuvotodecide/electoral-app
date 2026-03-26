@@ -25,8 +25,10 @@
  * @property {string} [error]
  *
  * @typedef {Object} IElectionRepository
+ * @property {() => Promise<Election[]>} [getElections]
  * @property {() => Promise<Election>} getElection
  * @property {(electionId: string) => Promise<Candidate[]>} getCandidates
+ * @property {(electionId: string, candidateId: string) => Promise<VoteResult>} [registerParticipation]
  * @property {(electionId: string, candidateId: string) => Promise<VoteResult>} submitVote
  */
 
