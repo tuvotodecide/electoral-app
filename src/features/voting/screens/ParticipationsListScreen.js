@@ -78,6 +78,7 @@ const ParticipationsListScreen = () => {
     navigation.navigate(StackNav.VotingReceiptScreen, {
       participationId: item.id,
       electionId: item.electionId,
+      allowBack: true,
     });
   };
 

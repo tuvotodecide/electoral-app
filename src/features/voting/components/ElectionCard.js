@@ -198,7 +198,7 @@ const ElectionCard = ({
       {renderStatusContent()}
 
       {/* Nombre del instituto - solo si no votó y está habilitado y no está en "inicia en" */}
-      {!hasVoted && effectiveIsEligible && !isStarting && (
+      {!hasVoted && effectiveIsEligible && !isStarting && !isEnded && (
         <CText type="R14" style={styles.instituteName}>
           {election.instituteName}
         </CText>

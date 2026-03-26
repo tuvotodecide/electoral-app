@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -36,6 +36,91 @@ const buildNotificationSeenKey = dniValue => {
 const notificationsCacheKey = dniValue =>
   `home:notifications:${String(dniValue || '').trim().toLowerCase() || 'anon'}`;
 
+const pad2 = value => String(value).padStart(2, '0');
+
+const formatVotingDate = value => {
+  const parsed = Date.parse(String(value || ''));
+  if (!Number.isFinite(parsed)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(parsed));
+};
+
+const formatCountdownLabel = (target, now) => {
+  const diff = Number(target || 0) - Number(now || 0);
+  if (!Number.isFinite(diff) || diff <= 0) {
+    return 'Inició';
+  }
+
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `Inicia en ${days}d ${hours}h`;
+  }
+
+  return `Inicia en ${pad2(hours)}:${pad2(minutes)}`;
+};
+
+const getNotificationKind = ({ type, title, body }) => {
+  const normalizedType = String(type || '').trim().toUpperCase();
+  const haystack = `${String(title || '')} ${String(body || '')}`.toLowerCase();
+
+  if (
+    normalizedType === 'ELECTION_RESULTS' ||
+    normalizedType === 'INSTITUTIONAL_RESULTS_AVAILABLE' ||
+    haystack.includes('resultados')
+  ) {
+    return 'election_results';
+  }
+
+  if (
+    normalizedType === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
+    haystack.includes('convocatoria') ||
+    haystack.includes('votacion')
+  ) {
+    return 'voting_event';
+  }
+
+  return 'generic';
+};
+
+const mapResultsSummary = data => {
+  if (Array.isArray(data?.results?.candidates)) {
+    return data.results.candidates
+      .map(candidate => ({
+        id: String(candidate?.id || candidate?.candidateId || candidate?.name || Math.random()),
+        name: candidate?.name || candidate?.partyName || 'Opción',
+        percent: Number(candidate?.percent ?? candidate?.percentage ?? 0),
+        votes: Number(candidate?.votes ?? 0),
+      }))
+      .sort((a, b) => b.percent - a.percent)
+      .slice(0, 3);
+  }
+
+  if (Array.isArray(data?.rankings)) {
+    return data.rankings
+      .map(candidate => ({
+        id: String(candidate?.id || candidate?.candidateId || candidate?.name || Math.random()),
+        name: candidate?.name || candidate?.partyName || 'Opción',
+        percent: Number(candidate?.percent ?? candidate?.percentage ?? 0),
+        votes: Number(candidate?.votes ?? 0),
+      }))
+      .sort((a, b) => b.percent - a.percent)
+      .slice(0, 3);
+  }
+
+  return [];
+};
+
 export default function Notification({ navigation }) {
   const userData = useSelector(state => state.wallet.payload);
 
@@ -52,6 +137,15 @@ export default function Notification({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [apiKey, setApiKey] = useState(null);
   const [authResolved, setAuthResolved] = useState(false);
+  const [notificationNow, setNotificationNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNotificationNow(Date.now());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const markNotificationsAsSeen = useCallback(
     async notifications => {
@@ -70,29 +164,50 @@ export default function Notification({ navigation }) {
     [dni],
   );
 
-  const mapServerToUi = useCallback(n => {
+  const mapServerToUi = useCallback((n, now = Date.now()) => {
     const data = n?.data || {};
     const created = n?.createdAt || n?.timestamp || new Date().toISOString();
     const titleFromBackend = n?.title || data?.title || '';
     const bodyFromBackend = n?.body || data?.body || '';
-    const notificationType = String(data?.type || '')
-      .trim()
-      .toLowerCase();
-    const preferBackendText = notificationType === 'acta_published';
+    const notificationKind = getNotificationKind({
+      type: data?.type,
+      title: titleFromBackend,
+      body: bodyFromBackend,
+    });
 
     let mesaLabel = '';
-    if (preferBackendText) {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificación';
+    if (notificationKind === 'voting_event') {
+      mesaLabel =
+        titleFromBackend ||
+        data?.title ||
+        data?.eventName ||
+        bodyFromBackend ||
+        data?.body ||
+        'Nueva convocatoria de votación';
+    } else if (notificationKind === 'election_results') {
+      mesaLabel =
+        titleFromBackend ||
+        data?.title ||
+        data?.eventName ||
+        bodyFromBackend ||
+        'Resultados disponibles';
+    } else if (String(data?.type || '').trim().toLowerCase() === 'acta_published') {
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Acta publicada';
     } else if (data.tableNumber) {
       mesaLabel = `Mesa ${String(data.tableNumber)}`;
     } else if (data.tableCode) {
       mesaLabel = data.tableCode;
     } else {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Notificación';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Actualización';
     }
 
-    let tipo = 'Notificación';
-    if (data?.type === 'announce_count') {
+    let tipo = 'Actualizar';
+    if (notificationKind === 'voting_event') {
+      const startsAt = data?.votingStart || data?.startsAt;
+      tipo = startsAt ? formatCountdownLabel(Date.parse(String(startsAt)), now) : 'Ver convocatoria';
+    } else if (notificationKind === 'election_results') {
+      tipo = 'Ver ganador';
+    } else if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
       tipo = 'Acta publicada';
@@ -101,22 +216,50 @@ export default function Notification({ navigation }) {
     } else if (data?.type === 'worksheet_uploaded') {
       tipo = 'Hoja de trabajo subida';
     }
-    if (preferBackendText && bodyFromBackend) {
+    if (notificationKind === 'generic' && String(data?.type || '').trim().toLowerCase() === 'acta_published' && bodyFromBackend) {
       tipo = bodyFromBackend;
     }
+
+    const startsAtLabel = formatVotingDate(data?.votingStart || data?.startsAt);
+    const endsAtLabel = formatVotingDate(data?.votingEnd || data?.endsAt);
+    const dateRange =
+      startsAtLabel && endsAtLabel
+        ? `${startsAtLabel} - ${endsAtLabel}`
+        : startsAtLabel || endsAtLabel || '';
+
+    const actionUrl =
+      data?.actionUrl ||
+      data?.publicUrl ||
+      n?.actionUrl ||
+      null;
 
     return {
       id: n?._id || `srv_${created}`,
       raw: n,
       data,
+      kind: notificationKind,
       tipo,
       mesa: mesaLabel,
       colegio: data?.locationName || n?.locationName || '',
-      direccion: data?.locationAddress || n?.locationAddress || '',
+      direccion:
+        notificationKind === 'voting_event'
+          ? dateRange
+          : notificationKind === 'election_results'
+            ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
+            : data?.locationAddress || n?.locationAddress || '',
       distancia: data?.distance ?? null,
       timestamp: new Date(created).getTime(),
       estado: data?.status || 'iniciado',
-
+      statusTone:
+        notificationKind === 'election_results'
+          ? 'success'
+          : notificationKind === 'voting_event' && data?.eligible === false
+            ? 'danger'
+            : 'success',
+      votingStartLabel: startsAtLabel,
+      votingEndLabel: endsAtLabel,
+      actionUrl,
+      resultsSummary: mapResultsSummary(data),
       screen: data?.screen || null,
       routeParams: data?.routeParams || null,
       title: titleFromBackend,
@@ -181,7 +324,7 @@ export default function Notification({ navigation }) {
             remoteList: cachedList,
           });
           const mappedCached = mergedList
-            .map(mapServerToUi)
+            .map(item => mapServerToUi(item, notificationNow))
             .sort((a, b) => b.timestamp - a.timestamp);
           setItems(mappedCached);
           setLoading(false);
@@ -212,7 +355,7 @@ export default function Notification({ navigation }) {
           remoteList: list,
         });
         const mapped = mergedList
-          .map(mapServerToUi)
+          .map(item => mapServerToUi(item, notificationNow))
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
         await markNotificationsAsSeen(mapped);
@@ -225,7 +368,7 @@ export default function Notification({ navigation }) {
           remoteList: cachedList,
         });
         const mappedLocal = dedupedLocalList
-          .map(mapServerToUi)
+          .map(item => mapServerToUi(item, notificationNow))
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mappedLocal);
       } finally {
@@ -241,6 +384,7 @@ export default function Notification({ navigation }) {
       authResolved,
       mapServerToUi,
       markNotificationsAsSeen,
+      notificationNow,
       userData?.did,
       userData?.privKey,
     ],
@@ -275,9 +419,15 @@ export default function Notification({ navigation }) {
     ? {
         id: 'mock_election_results',
         mesa: 'Resultados Disponibles',
-        tipo: 'Votación',
+        tipo: 'Ver ganador',
+        kind: 'election_results',
         direccion: 'Resultados preliminares de la votación',
         timestamp: Date.now(),
+        statusTone: 'success',
+        resultsSummary: [
+          {id: '1', name: 'Lista 1', percent: 52.4, votes: 412},
+          {id: '2', name: 'Lista 2', percent: 38.1, votes: 299},
+        ],
         data: {
           type: 'election_results',
           title: 'Resultados Disponibles',
@@ -289,10 +439,15 @@ export default function Notification({ navigation }) {
       }
     : null;
 
-  // Combinar mock con items reales
-  const displayItems = mockElectionResultsNotification
-    ? [mockElectionResultsNotification, ...items]
-    : items;
+  const displayItems = useMemo(() => {
+    const remappedItems = items.map(item =>
+      item?.raw ? mapServerToUi(item.raw, notificationNow) : item,
+    );
+
+    return mockElectionResultsNotification
+      ? [mockElectionResultsNotification, ...remappedItems]
+      : remappedItems;
+  }, [items, mapServerToUi, mockElectionResultsNotification, notificationNow]);
 
   const showLoader =
     items.length === 0 && (loading || !authResolved || refreshing);
@@ -302,7 +457,7 @@ export default function Notification({ navigation }) {
       case 'Conteo de Votos':
         return 'megaphone-outline';
       default:
-        return 'notifications-outline';
+        return 'sparkles-outline';
     }
   }, []);
 
@@ -311,17 +466,16 @@ export default function Notification({ navigation }) {
       const rawData = item?.data || {};
 
       if (FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
-        switch (rawData?.type) {
-          case 'election_results':
-            navigation.navigate(StackNav.VotingNotificationDetailScreen, {
-              notification: rawData,
-            });
-            return;
-          case 'INSTITUTIONAL_EVENT_PUBLISHED':
-            navigation.navigate(StackNav.ClaimCredScreen, {
-              notification: item,
-            });
-            return;
+        if (
+          item?.kind === 'election_results' ||
+          item?.kind === 'voting_event' ||
+          rawData?.type === 'election_results' ||
+          rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED'
+        ) {
+          navigation.navigate(StackNav.VotingNotificationDetailScreen, {
+            notification: item,
+          });
+          return;
         }
       }
 
@@ -432,19 +586,25 @@ export default function Notification({ navigation }) {
       <TouchableOpacity
         testID={`notificationItem_${index}`}
         style={localStyle.notificationCard}
-        disabled={item.tipo === 'Conteo de Votos'}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}>
         <View
           testID={`notificationCardContent_${index}`}
           style={localStyle.cardContent}>
-          <Ionicons
-            testID={`notificationIcon_${index}`}
-            name={getIconName(item.tipo)}
-            size={38}
-            color={'#111'}
-            style={{ marginTop: 3 }}
-          />
+          <View
+            style={[
+              localStyle.iconWrap,
+              item.statusTone === 'danger'
+                ? localStyle.iconWrapDanger
+                : localStyle.iconWrapSuccess,
+            ]}>
+            <Ionicons
+              testID={`notificationIcon_${index}`}
+              name={item.kind === 'election_results' ? 'podium-outline' : getIconName(item.tipo)}
+              size={26}
+              color={item.statusTone === 'danger' ? '#B91C1C' : '#1F7A36'}
+            />
+          </View>
           <View
             testID={`notificationContentContainer_${index}`}
             style={localStyle.contentContainer}>
@@ -478,16 +638,25 @@ export default function Notification({ navigation }) {
               style={localStyle.subtitle}>
               {item.tipo}
             </Text>
-            {/* <Text
-              testID={`notificationCollege_${index}`}
-              style={localStyle.detailText}>
-              {item.colegio}
-            </Text> */}
             <Text
               testID={`notificationAddress_${index}`}
               style={localStyle.detailText}>
               {item.direccion}
             </Text>
+            {Array.isArray(item.resultsSummary) && item.resultsSummary.length > 0 ? (
+              <View style={localStyle.resultsPreview}>
+                {item.resultsSummary.slice(0, 2).map(result => (
+                  <View key={result.id} style={localStyle.resultRow}>
+                    <Text style={localStyle.resultName} numberOfLines={1}>
+                      {result.name}
+                    </Text>
+                    <Text style={localStyle.resultPercent}>
+                      {Number(result.percent || 0).toFixed(1)}%
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
@@ -550,41 +719,95 @@ const localStyle = StyleSheet.create({
     fontSize: 14,
     color: '#2790b0',
   },
-  listContent: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 15 },
-  notificationCard: { paddingBottom: 6, backgroundColor: '#fff' },
-  cardContent: { flexDirection: 'row', alignItems: 'center' },
-  contentContainer: { flex: 1, marginLeft: 10 },
+  listContent: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 24 },
+  notificationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#E8EEF3',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  cardContent: { flexDirection: 'row', alignItems: 'flex-start' },
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  iconWrapSuccess: {
+    backgroundColor: '#E8F5E9',
+  },
+  iconWrapDanger: {
+    backgroundColor: '#FEE2E2',
+  },
+  contentContainer: { flex: 1, marginLeft: 14 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   rightInfo: { alignItems: 'flex-end' },
   distance: {
-    color: '#2790b0',
+    color: '#1D4ED8',
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
   },
   title: {
-    fontWeight: 'bold',
-    fontSize: 22,
-    color: '#111',
+    fontWeight: '700',
+    fontSize: 18,
+    lineHeight: 24,
+    color: '#0F172A',
     marginRight: 10,
-    marginTop: -3,
     flex: 1,
   },
-  time: { color: '#2790b0', fontSize: 13, fontWeight: '400', marginTop: 2 },
-  subtitle: { fontSize: 16, color: '#111', marginTop: 1, fontWeight: '400' },
-  detailText: { fontSize: 14, color: '#444', marginTop: 2, fontWeight: '400' },
-  actionHint: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  actionText: {
-    color: '#2790b0',
+  time: { color: '#64748B', fontSize: 12, fontWeight: '500', marginTop: 2 },
+  subtitle: {
+    fontSize: 15,
+    color: '#1F7A36',
+    marginTop: 2,
+    fontWeight: '700',
+  },
+  detailText: {
     fontSize: 14,
-    marginLeft: 6,
+    lineHeight: 20,
+    color: '#475569',
+    marginTop: 6,
     fontWeight: '500',
   },
-  separator: { height: 1, backgroundColor: '#ededed', marginVertical: 10 },
+  resultsPreview: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F7',
+    gap: 6,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  resultName: {
+    flex: 1,
+    marginRight: 8,
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  resultPercent: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  separator: { height: 14 },
 });
 

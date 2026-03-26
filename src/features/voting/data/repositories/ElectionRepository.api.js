@@ -111,6 +111,15 @@ const buildElectionModel = ({
     statusMessage = 'Ya registraste tu participacion';
   }
 
+  const organizationName =
+    event?.organizationName ||
+    event?.institutionName ||
+    event?.tenantName ||
+    event?.institution?.name ||
+    event?.tenant?.name ||
+    event?.name ||
+    '';
+
   return {
     id: String(event?.id || ''),
     title: event?.name || 'Votacion institucional',
@@ -118,7 +127,7 @@ const buildElectionModel = ({
     closesInLabel:
       event?.phase === 'UPCOMING' ? 'Inicia pronto' : 'Cierra pronto',
     instituteName: event?.objective || '',
-    organization: event?.objective || '',
+    organization: organizationName,
     startsAt: event?.votingStart ? new Date(event.votingStart).getTime() : null,
     closesAt: event?.votingEnd ? new Date(event.votingEnd).getTime() : null,
     resultsAt: event?.resultsPublishAt
@@ -258,6 +267,20 @@ const getCachedLandingModels = async () => {
   return Array.isArray(parsed) ? parsed : [];
 };
 
+const shouldShowElectionInHome = election => {
+  const eligibilityStatus = String(election?.eligibilityStatus || '').toUpperCase();
+  if (election?.alreadyVoted) {
+    return true;
+  }
+  if (election?.isEligible === true) {
+    return true;
+  }
+
+  return ['DISABLED', 'ROLL_IN_VALIDATION', 'PUBLIC_CHECK_DISABLED'].includes(
+    eligibilityStatus,
+  );
+};
+
 const buildParticipationErrorMessage = (status, fallback = null) => {
   const normalized = String(status || '').toUpperCase();
   if (normalized === 'ALREADY_VOTED') return 'Ya participaste en este evento';
@@ -312,7 +335,14 @@ const postParticipation = async (electionId, candidateId, dni) => {
 const ElectionRepositoryApi = {
   async getElections() {
     try {
+      const dni = getCurrentDni();
+      if (!dni) {
+        await cacheLandingModels([]);
+        return [];
+      }
+
       const {data} = await axios.get(`${API_BASE}/voting/events/public/landing`, {
+        params: {carnet: dni},
         headers: {Accept: 'application/json'},
         timeout: 30000,
       });
@@ -345,8 +375,22 @@ const ElectionRepositoryApi = {
         }),
       );
 
-      await cacheLandingModels(elections);
-      return elections;
+      const visibleElections = elections.filter(shouldShowElectionInHome);
+
+      await cacheLandingModels(visibleElections);
+      await Promise.all(
+        visibleElections
+          .filter(election => election?.isEligible === true)
+          .map(async election => {
+            try {
+              const candidates = await requestCandidates(election.id);
+              await cacheCandidates(election.id, candidates);
+            } catch {
+              // no bloquear el landing por un fallo de precarga
+            }
+          }),
+      );
+      return visibleElections;
     } catch (error) {
       const cached = await getCachedLandingModels();
       if (cached.length > 0) {

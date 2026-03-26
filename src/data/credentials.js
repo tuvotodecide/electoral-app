@@ -5,9 +5,23 @@ import { BACKEND_RESULT } from "@env";
 import { captureError } from "../config/sentry";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const wiraClient = wira?.default && typeof wira.default === 'object'
+  ? wira.default
+  : wira;
+
+const getWiraMethod = methodName =>
+  typeof wiraClient?.[methodName] === 'function'
+    ? wiraClient[methodName].bind(wiraClient)
+    : null;
+
 export async function getCredentialForVote(voteId, did, privKey) {
   try {
-    const userCreds = await wira.getUserCredentials(
+    const getUserCredentials = getWiraMethod('getUserCredentials');
+    if (!getUserCredentials) {
+      return false;
+    }
+
+    const userCreds = await getUserCredentials(
       did,
       privKey,
     );
@@ -31,6 +45,11 @@ export async function checkClaimedCredForVote(voteId, did, privKey) {
 
 export async function claimForVote(voteId, dni, did, privKey) {
   try {
+    const claimNewCredential = getWiraMethod('claimNewCredential');
+    if (!claimNewCredential) {
+      throw new Error('claimNewCredential is not available in wira-sdk');
+    }
+
     const resolvedApiKey = await authenticateWithBackend(
       did,
       privKey,
@@ -59,7 +78,7 @@ export async function claimForVote(voteId, dni, did, privKey) {
       throw new Error('No matching notification found for vote credential claim.');
     }
 
-    await wira.claimNewCredential(notification.data.credentialData, did, privKey);
+    await claimNewCredential(notification.data.credentialData, did, privKey);
 
     return true;
   } catch (error) {

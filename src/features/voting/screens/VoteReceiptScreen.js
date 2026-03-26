@@ -47,6 +47,7 @@ const VoteReceiptScreen = () => {
   const route = useRoute();
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const allowExitRef = useRef(false);
+  const allowBackNavigation = route?.params?.allowBack === true;
   const {participations = [], lastReceipt, syncStateWithBlockchain, syncedWithBlockchain} = useVotingState(route?.params?.electionId ?? '');
 
   const participationId = route?.params?.participationId;
@@ -84,6 +85,10 @@ const VoteReceiptScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      if (allowBackNavigation) {
+        return undefined;
+      }
+
       allowExitRef.current = false;
 
       const onBeforeRemove = event => {
@@ -112,7 +117,7 @@ const VoteReceiptScreen = () => {
         removeBackHandler.remove();
         unsubscribe();
       };
-    }, [navigation]),
+    }, [allowBackNavigation, navigation]),
   );
 
   useEffect(() => {
@@ -144,7 +149,10 @@ const VoteReceiptScreen = () => {
 
   return (
     <CSafeAreaView style={styles.container}>
-      <CHeader title={UI_STRINGS.receiptHeader} isHideBack />
+      <CHeader
+        title={UI_STRINGS.receiptHeader}
+        isHideBack={!allowBackNavigation}
+      />
 
       <ScrollView
         style={styles.scrollView}

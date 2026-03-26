@@ -1,11 +1,4 @@
-/**
- * Notification Detail Screen
- *
- * Pantalla de detalle de notificación de resultados.
- * Muestra información sobre resultados disponibles con botón de acción.
- */
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,7 +6,7 @@ import {
   Dimensions,
   Linking,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
@@ -21,6 +14,7 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
+import { BACKEND_RESULT } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,32 +27,121 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-// Mock notification data
-const MOCK_NOTIFICATION = {
-  id: 'notif_1',
-  title: 'Resultados Disponibles',
-  timestamp: 'Hace 10 min',
-  source: 'Tu voto decide',
-  bannerTitle: 'Resultados Preliminares',
-  bannerSubtitle: 'Conteo en tiempo real',
-  body: 'Ya están disponibles los primeros resultados preliminares de la votación para "Elección Directiva 2026".',
-  actionUrl: 'https://results.tuvotodecide.com', // URL de resultados
+const formatEventDate = value => {
+  const parsed = Date.parse(String(value || ''));
+  if (!Number.isFinite(parsed)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(parsed));
+};
+
+const DEFAULT_NOTIFICATION = {
+  title: 'Resultados disponibles',
+  kind: 'election_results',
+  tipo: 'Ver ganador',
+  direccion: 'Resultados preliminares disponibles',
+  actionLabel: 'Ver detalles',
+  actionUrl: null,
+  data: {
+    bannerTitle: 'Resultados publicados',
+    body: 'Consulta los resultados publicados de esta votación.',
+  },
+};
+
+const resolvePublicResultsUrl = notification => {
+  const rawData = notification?.data || {};
+  const directUrl =
+    notification?.actionUrl ||
+    rawData?.actionUrl ||
+    rawData?.publicUrl ||
+    null;
+
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const relativePath = rawData?.publicPath || rawData?.link || null;
+  if (!relativePath || !String(relativePath).startsWith('/')) {
+    return null;
+  }
+
+  const backendBase = String(BACKEND_RESULT || '').trim();
+  if (!backendBase) {
+    return null;
+  }
+
+  try {
+    const url = new URL(backendBase);
+    url.pathname = String(relativePath);
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return null;
+  }
 };
 
 const NotificationDetailScreen = () => {
-  const navigation = useNavigation();
   const route = useRoute();
+  const notification = route?.params?.notification || DEFAULT_NOTIFICATION;
+  const rawData = notification?.data || {};
+  const kind = notification?.kind || 'generic';
+  const statusTone = notification?.statusTone || 'success';
+  const startsAtLabel = notification?.votingStartLabel || formatEventDate(rawData?.votingStart);
+  const endsAtLabel = notification?.votingEndLabel || formatEventDate(rawData?.votingEnd);
+  const resultsSummary = Array.isArray(notification?.resultsSummary)
+    ? notification.resultsSummary
+    : [];
+  const resolvedPublicUrl = resolvePublicResultsUrl(notification);
 
-  // Get notification from params or use mock
-  const notification = route?.params?.notification || MOCK_NOTIFICATION;
-
-  const handleGoToResults = () => {
-    // Open results page
-    if (notification.actionUrl) {
-      Linking.openURL(notification.actionUrl).catch((err) =>
-        console.error('Error opening URL:', err)
-      );
+  const heroConfig = useMemo(() => {
+    if (kind === 'election_results') {
+      return {
+        backgroundColor: '#1F7A36',
+        iconName: 'podium-outline',
+        iconBg: 'rgba(255,255,255,0.18)',
+        title: rawData?.bannerTitle || 'Resultados publicados',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
     }
+
+    if (kind === 'voting_event' && statusTone === 'danger') {
+      return {
+        backgroundColor: '#B91C1C',
+        iconName: 'close-circle-outline',
+        iconBg: 'rgba(255,255,255,0.16)',
+        title: 'No habilitado para votar',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
+    }
+
+    return {
+      backgroundColor: '#1F7A36',
+      iconName: 'checkmark-circle-outline',
+      iconBg: 'rgba(255,255,255,0.16)',
+      title: rawData?.bannerTitle || 'Habilitado para votar',
+      subtitle: '',
+      textColor: '#FFFFFF',
+    };
+  }, [kind, rawData?.bannerTitle, statusTone]);
+
+  const handlePrimaryAction = () => {
+    const targetUrl = resolvedPublicUrl;
+
+    if (!targetUrl) {
+      return;
+    }
+
+    Linking.openURL(targetUrl).catch(() => {});
   };
 
   return (
@@ -68,57 +151,100 @@ const NotificationDetailScreen = () => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <CText type="B20" style={styles.title}>
-            {notification.title}
+            {notification?.mesa || notification?.title || DEFAULT_NOTIFICATION.title}
           </CText>
-          <CText type="R12" style={styles.timestamp}>
-            {notification.timestamp} · {notification.source}
-          </CText>
+          {kind === 'election_results' ? null : (
+            <CText type="R14" style={styles.subtitle}>
+              {rawData?.body || notification?.direccion || ''}
+            </CText>
+          )}
         </View>
 
-        {/* Banner Card */}
-        <View style={styles.bannerCard}>
-          {/* Decorative circles */}
-          <View style={[styles.circle, styles.circle1]} />
-          <View style={[styles.circle, styles.circle2]} />
-          <View style={[styles.circle, styles.circle3]} />
-          <View style={[styles.circle, styles.circle4]} />
-
-          {/* Icon */}
-          <View style={styles.bannerIconContainer}>
-            <Ionicons name="cube-outline" size={40} color="#FFFFFF" />
+        <View style={[styles.heroCard, { backgroundColor: heroConfig.backgroundColor }]}>
+          <View style={[styles.heroIcon, { backgroundColor: heroConfig.iconBg }]}>
+            <Ionicons name={heroConfig.iconName} size={34} color="#FFFFFF" />
           </View>
-
-          {/* Banner Text */}
-          <CText type="B18" style={styles.bannerTitle}>
-            {notification.bannerTitle}
-          </CText>
-          <CText type="R14" style={styles.bannerSubtitle}>
-            {notification.bannerSubtitle}
-          </CText>
+          {kind !== 'voting_event' && (
+            <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
+              {heroConfig.title}
+            </CText>
+          )}
         </View>
 
-        {/* Body Text */}
-        <CText type="R16" style={styles.bodyText}>
-          {notification.body}
-        </CText>
+        {kind === 'election_results' ? (
+          <View style={styles.sectionCard}>
+            <CText type="B16" style={styles.sectionTitle}>
+              Resultados
+            </CText>
+            {resultsSummary.length > 0 ? (
+              resultsSummary.slice(0, 3).map(result => (
+                <View key={String(result?.id)} style={styles.resultRow}>
+                  <View style={styles.resultCopy}>
+                    <CText type="M14" style={styles.resultName}>
+                      {result?.name}
+                    </CText>
+                    {Number(result?.votes || 0) > 0 ? (
+                      <CText type="R12" style={styles.resultVotes}>
+                        {result.votes} votos
+                      </CText>
+                    ) : null}
+                  </View>
+                  <CText type="B16" style={styles.resultPercent}>
+                    {Number(result?.percent || 0).toFixed(1)}%
+                  </CText>
+                </View>
+              ))
+            ) : (
+              <CText type="R14" style={styles.emptyResultsText}>
+                Los resultados se estan preparando para esta elección.
+              </CText>
+            )}
+          </View>
+        ) : (
+          <View style={styles.sectionCard}>
+            <CText type="B16" style={styles.sectionTitle}>
+              Fechas de la elección
+            </CText>
+            {startsAtLabel ? (
+              <View style={styles.scheduleRow}>
+                <CText type="R14" style={styles.scheduleLabel}>
+                  Inicio
+                </CText>
+                <CText type="M14" style={styles.scheduleValue}>
+                  {startsAtLabel}
+                </CText>
+              </View>
+            ) : null}
+            {endsAtLabel ? (
+              <View style={styles.scheduleRow}>
+                <CText type="R14" style={styles.scheduleLabel}>
+                  Cierre
+                </CText>
+                <CText type="M14" style={styles.scheduleValue}>
+                  {endsAtLabel}
+                </CText>
+              </View>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Bottom Button */}
-      <View style={styles.bottomContainer}>
-        <CButton
-          title={UI_STRINGS.goToResultsPage}
-          type="B16"
-          onPress={handleGoToResults}
-          containerStyle={styles.actionButton}
-          sinMargen
-          testID="goToResultsButton"
-        />
-      </View>
+      {kind === 'election_results' ? (
+        <View style={styles.bottomContainer}>
+          <CButton
+            title={notification?.actionLabel || 'Ver detalles'}
+            type="B16"
+            onPress={handlePrimaryAction}
+            containerStyle={styles.actionButton}
+            disabled={!resolvedPublicUrl}
+            sinMargen
+            testID="goToResultsButton"
+          />
+        </View>
+      ) : null}
     </CSafeAreaView>
   );
 };
@@ -126,91 +252,111 @@ const NotificationDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: getResponsiveSize(16, 20, 24),
-    paddingTop: getResponsiveSize(16, 20, 24),
-    paddingBottom: getResponsiveSize(100, 110, 120),
+    paddingTop: getResponsiveSize(12, 16, 20),
+    paddingBottom: getResponsiveSize(120, 128, 136),
   },
   headerSection: {
-    marginBottom: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(18, 22, 26),
   },
   title: {
-    color: '#1F2937',
-    fontSize: getResponsiveSize(20, 22, 26),
+    color: '#0F172A',
+    fontSize: getResponsiveSize(22, 24, 28),
     fontWeight: '700',
-    marginBottom: getResponsiveSize(4, 6, 8),
+    textAlign: 'center',
+    marginBottom: getResponsiveSize(8, 10, 12),
   },
-  timestamp: {
-    color: '#9CA3AF',
-    fontSize: getResponsiveSize(12, 13, 14),
+  subtitle: {
+    color: '#475569',
+    fontSize: getResponsiveSize(15, 16, 18),
+    lineHeight: getResponsiveSize(22, 24, 26),
+    textAlign: 'center',
   },
-  bannerCard: {
-    backgroundColor: '#41A44D',
-    borderRadius: moderateScale(16),
-    padding: getResponsiveSize(24, 28, 32),
-    marginBottom: getResponsiveSize(20, 24, 28),
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  circle: {
-    position: 'absolute',
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    backgroundColor: 'transparent',
-  },
-  circle1: {
-    width: 60,
-    height: 60,
-    top: -20,
-    left: -20,
-  },
-  circle2: {
-    width: 80,
-    height: 80,
-    top: 40,
-    right: -30,
-  },
-  circle3: {
-    width: 40,
-    height: 40,
-    bottom: 20,
-    left: 30,
-  },
-  circle4: {
-    width: 100,
-    height: 100,
-    bottom: -40,
-    right: 40,
-  },
-  bannerIconContainer: {
-    width: moderateScale(64),
-    height: moderateScale(64),
-    borderRadius: moderateScale(12),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
+  heroCard: {
+    borderRadius: moderateScale(18),
+    paddingVertical: getResponsiveSize(22, 26, 30),
+    paddingHorizontal: getResponsiveSize(20, 24, 28),
     alignItems: 'center',
-    marginBottom: getResponsiveSize(16, 18, 20),
+    justifyContent: 'center',
+    marginBottom: getResponsiveSize(18, 22, 26),
   },
-  bannerTitle: {
-    color: '#FFFFFF',
+  heroIcon: {
+    width: moderateScale(72),
+    height: moderateScale(72),
+    borderRadius: moderateScale(22),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: getResponsiveSize(14, 16, 18),
+  },
+  heroTitle: {
+    textAlign: 'center',
     fontSize: getResponsiveSize(18, 20, 24),
     fontWeight: '700',
-    marginBottom: getResponsiveSize(4, 6, 8),
   },
-  bannerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: getResponsiveSize(13, 14, 16),
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(18),
+    padding: getResponsiveSize(18, 22, 26),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  bodyText: {
-    color: '#374151',
-    fontSize: getResponsiveSize(14, 15, 17),
-    lineHeight: getResponsiveSize(22, 24, 28),
+  sectionTitle: {
+    color: '#0F172A',
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    marginBottom: getResponsiveSize(14, 16, 18),
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  scheduleLabel: {
+    color: '#64748B',
+  },
+  scheduleValue: {
+    flex: 1,
+    marginLeft: 12,
+    textAlign: 'right',
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  resultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: getResponsiveSize(10, 12, 14),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  resultCopy: {
+    flex: 1,
+    marginRight: 12,
+  },
+  resultName: {
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  resultVotes: {
+    color: '#64748B',
+    marginTop: 2,
+  },
+  resultPercent: {
+    color: '#1F7A36',
+    fontWeight: '700',
+  },
+  emptyResultsText: {
+    color: '#475569',
+    lineHeight: getResponsiveSize(22, 24, 26),
   },
   bottomContainer: {
     position: 'absolute',
@@ -220,13 +366,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingTop: getResponsiveSize(12, 14, 16),
     paddingBottom: getResponsiveSize(24, 28, 32),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#E2E8F0',
   },
   actionButton: {
     height: getHeight(52),
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(14),
   },
 });
 

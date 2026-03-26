@@ -2318,11 +2318,52 @@ export default function HomeScreen({ navigation }) {
   };
   const handleVotingDetailsPress = targetElection => {
     const selectedElection = targetElection || votingElection;
+    const isUpcomingElection =
+      Number(selectedElection?.startsAt || 0) > Date.now() &&
+      !selectedElection?.alreadyVoted;
+
+    if (isUpcomingElection) {
+      navigation.navigate(StackNav.VotingNotificationDetailScreen, {
+        notification: {
+          mesa: selectedElection?.title || 'Detalle de elección',
+          kind: 'voting_event',
+          statusTone: selectedElection?.isEligible ? 'success' : 'danger',
+          direccion: selectedElection?.instituteName || '',
+          votingStartLabel: selectedElection?.startsAt
+            ? new Intl.DateTimeFormat('es-ES', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }).format(new Date(selectedElection.startsAt))
+            : '',
+          votingEndLabel: selectedElection?.closesAt
+            ? new Intl.DateTimeFormat('es-ES', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }).format(new Date(selectedElection.closesAt))
+            : '',
+          data: {
+            bannerTitle: selectedElection?.isEligible
+              ? 'Habilitado para votar'
+              : 'No habilitado para votar',
+            body: selectedElection?.instituteName || '',
+          },
+        },
+      });
+      return;
+    }
+
     const participation = getVotingParticipationForElection(selectedElection?.id);
     if (participation?.id) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: participation.id,
         electionId: selectedElection?.id,
+        allowBack: true,
       });
       return;
     }
@@ -2334,6 +2375,7 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: currentParticipationId,
         electionId: selectedElection?.id,
+        allowBack: true,
       });
       return;
     }
@@ -2354,6 +2396,41 @@ export default function HomeScreen({ navigation }) {
       ? Math.min(screenWidth * 0.36, 440)
       : screenWidth - getResponsiveSize(32, 40, 48);
 
+    const renderVotingCard = item => {
+      const participation = getVotingParticipationForElection(item?.id);
+      const hasVotedForElection =
+        Boolean(participation) || Boolean(item?.alreadyVoted);
+      const isSyncedForElection =
+        Boolean(participation?.synced) || Boolean(item?.alreadyVoted);
+
+      return (
+        <ElectionCard
+          hasVoted={hasVotedForElection}
+          voteSynced={isSyncedForElection}
+          isEligible={Boolean(item?.isEligible)}
+          election={item}
+          onVotePress={() => handleVotingPress(item)}
+          onDetailsPress={() => handleVotingDetailsPress(item)}
+          loadMsg={
+            loadVoteMsg &&
+            String(item?.id || '') === String(votingElection?.id || '')
+              ? loadVoteMsg
+              : null
+          }
+        />
+      );
+    };
+
+    if (votingElections.length === 1) {
+      return (
+        <View style={stylesx.votingCarouselContainer}>
+          <View style={stylesx.singleVotingCardContainer}>
+            {renderVotingCard(votingElections[0])}
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={stylesx.votingCarouselContainer}>
         <FlatList
@@ -2372,32 +2449,7 @@ export default function HomeScreen({ navigation }) {
               Math.max(0, Math.min(index, votingElections.length - 1)),
             );
           }}
-          renderItem={({item}) => {
-            const participation = getVotingParticipationForElection(item?.id);
-            const hasVotedForElection =
-              Boolean(participation) || Boolean(item?.alreadyVoted);
-            const isSyncedForElection =
-              Boolean(participation?.synced) || Boolean(item?.alreadyVoted);
-
-            return (
-              <View style={{width: cardWidth}}>
-                <ElectionCard
-                  hasVoted={hasVotedForElection}
-                  voteSynced={isSyncedForElection}
-                  isEligible={Boolean(item?.isEligible)}
-                  election={item}
-                  onVotePress={() => handleVotingPress(item)}
-                  onDetailsPress={() => handleVotingDetailsPress(item)}
-                  loadMsg={
-                    loadVoteMsg &&
-                    String(item?.id || '') === String(votingElection?.id || '')
-                      ? loadVoteMsg
-                      : null
-                  }
-                />
-              </View>
-            );
-          }}
+          renderItem={({item}) => <View style={{width: cardWidth}}>{renderVotingCard(item)}</View>}
         />
         {votingElections.length > 1 && (
           <View style={stylesx.votingPageIndicators}>
@@ -3373,14 +3425,17 @@ const stylesx = StyleSheet.create({
     gap: getResponsiveSize(6, 8, 10),
   },
   votingCarouselContainer: {
-    marginBottom: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(8, 10, 12),
+  },
+  singleVotingCardContainer: {
+    width: '100%',
   },
   votingPageIndicators: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: getResponsiveSize(12, 16, 20),
-    marginBottom: getResponsiveSize(12, 18, 24),
+    marginBottom: getResponsiveSize(4, 6, 8),
     gap: getResponsiveSize(6, 8, 10),
   },
   pageIndicator: {
