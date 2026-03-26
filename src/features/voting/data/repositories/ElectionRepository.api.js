@@ -98,17 +98,17 @@ const buildElectionModel = ({
 
   let statusMessage = '';
   if (eligibilityStatus === 'ROLL_IN_VALIDATION') {
-    statusMessage = 'Padron en validacion';
+    statusMessage = 'Padrón en validación';
   } else if (eligibilityStatus === 'PUBLIC_CHECK_DISABLED') {
     statusMessage = 'Consulta no disponible';
   } else if (eligibilityStatus === 'DISABLED') {
-    statusMessage = 'Estas empadronado, pero no habilitado para votar';
+    statusMessage = 'Estás empadronado, pero no habilitado para votar';
   } else if (eligibilityStatus === 'NOT_ELIGIBLE') {
     statusMessage = 'No habilitado para votar';
   } else if (participationCode === 'OUTSIDE_VOTING_WINDOW') {
-    statusMessage = 'Fuera del horario de votacion';
+    statusMessage = 'Fuera del horario de votación';
   } else if (participationCode === 'ALREADY_VOTED') {
-    statusMessage = 'Ya registraste tu participacion';
+    statusMessage = 'Ya registraste tu participación';
   }
 
   const organizationName =
@@ -122,7 +122,7 @@ const buildElectionModel = ({
 
   return {
     id: String(event?.id || ''),
-    title: event?.name || 'Votacion institucional',
+    title: event?.name || 'Votación institucional',
     status: phaseToCardStatus(event?.phase),
     closesInLabel:
       event?.phase === 'UPCOMING' ? 'Inicia pronto' : 'Cierra pronto',
@@ -160,7 +160,7 @@ const mapOptionToCandidate = option => {
 
   return {
     id: String(option?.id || ''),
-    partyName: option?.name || 'Opcion',
+    partyName: option?.name || 'Opción',
     presidentName: president?.name || option?.name || 'Sin candidato',
     viceName: vice?.name || '',
     avatarUrl: president?.photoUrl || option?.logoUrl || null,
@@ -284,13 +284,13 @@ const shouldShowElectionInHome = election => {
 const buildParticipationErrorMessage = (status, fallback = null) => {
   const normalized = String(status || '').toUpperCase();
   if (normalized === 'ALREADY_VOTED') return 'Ya participaste en este evento';
-  if (normalized === 'OUTSIDE_VOTING_WINDOW') return 'Fuera del horario de votacion';
-  if (normalized === 'ROLL_IN_VALIDATION') return 'Padron en validacion';
+  if (normalized === 'OUTSIDE_VOTING_WINDOW') return 'Fuera del horario de votación';
+  if (normalized === 'ROLL_IN_VALIDATION') return 'Padrón en validación';
   if (normalized === 'NOT_IN_ROLL') return 'No habilitado para votar';
-  if (normalized === 'VOTER_DISABLED') return 'Estas empadronado, pero no habilitado para votar';
-  if (normalized === 'PADRON_NOT_AVAILABLE') return 'Padron no disponible';
+  if (normalized === 'VOTER_DISABLED') return 'Estás empadronado, pero no habilitado para votar';
+  if (normalized === 'PADRON_NOT_AVAILABLE') return 'Padrón no disponible';
   if (normalized === 'EVENT_NOT_PUBLISHED') return 'Evento no disponible';
-  return fallback || 'No se pudo registrar la participacion';
+  return fallback || 'No se pudo registrar la participación';
 };
 
 const postParticipation = async (electionId, candidateId, dni) => {
@@ -325,7 +325,7 @@ const postParticipation = async (electionId, candidateId, dni) => {
         error?.response?.data?.error,
         typeof backendError === 'string'
           ? backendError
-          : 'No se pudo registrar la participacion',
+          : 'No se pudo registrar la participación',
       ),
       statusCode: Number(error?.response?.status || 0),
     };
@@ -426,7 +426,7 @@ const ElectionRepositoryApi = {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
-        error: 'No se encontro una eleccion valida',
+        error: 'No se encontró una elección válida',
       };
     }
 
@@ -434,7 +434,7 @@ const ElectionRepositoryApi = {
     if (!dni) {
       return {
         success: false,
-        error: 'No se encontro el carnet del usuario actual',
+        error: 'No se encontró el carnet del usuario actual',
       };
     }
 
@@ -448,7 +448,7 @@ const ElectionRepositoryApi = {
         success: false,
         error: buildParticipationErrorMessage(
           participationStatus?.status,
-          'No se pudo registrar la participacion',
+          'No se pudo registrar la participación',
         ),
       };
     }
@@ -497,7 +497,7 @@ const ElectionRepositoryApi = {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
-        error: 'No se encontro una eleccion valida',
+        error: 'No se encontró una elección válida',
       };
     }
 
@@ -505,7 +505,7 @@ const ElectionRepositoryApi = {
     if (!dni) {
       return {
         success: false,
-        error: 'No se encontro el carnet del usuario actual',
+        error: 'No se encontró el carnet del usuario actual',
       };
     }
 

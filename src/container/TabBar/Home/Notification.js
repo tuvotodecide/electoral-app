@@ -70,7 +70,7 @@ const formatCountdownLabel = (target, now) => {
   return `Inicia en ${pad2(hours)}:${pad2(minutes)}`;
 };
 
-const getNotificationKind = ({ type, title, body }) => {
+export const getNotificationKind = ({ type, title, body }) => {
   const normalizedType = String(type || '').trim().toUpperCase();
   const haystack = `${String(title || '')} ${String(body || '')}`.toLowerCase();
 
@@ -93,7 +93,7 @@ const getNotificationKind = ({ type, title, body }) => {
   return 'generic';
 };
 
-const mapResultsSummary = data => {
+export const mapResultsSummary = data => {
   if (Array.isArray(data?.results?.candidates)) {
     return data.results.candidates
       .map(candidate => ({
@@ -119,6 +119,123 @@ const mapResultsSummary = data => {
   }
 
   return [];
+};
+
+export const safeParseNotificationRouteParams = routeParams => {
+  if (!routeParams) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(routeParams);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+export const buildNotificationNavigationTarget = (
+  item,
+  { enableVotingFlow = FEATURE_FLAGS.ENABLE_VOTING_FLOW } = {},
+) => {
+  const rawData = item?.data || {};
+
+  if (enableVotingFlow) {
+    if (
+      item?.kind === 'election_results' ||
+      item?.kind === 'voting_event' ||
+      rawData?.type === 'election_results' ||
+      rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED'
+    ) {
+      return {
+        name: StackNav.VotingNotificationDetailScreen,
+        params: { notification: item },
+      };
+    }
+  }
+
+  if (rawData?.type === 'worksheet_uploaded') {
+    return {
+      name: StackNav.TabNavigation,
+      params: { screen: TabNav.HomeScreen },
+    };
+  }
+
+  if (item?.screen === 'SuccessScreen') {
+    const paramsFromNotif = safeParseNotificationRouteParams(item.routeParams);
+    const notificationType =
+      rawData?.type || paramsFromNotif?.notificationType || null;
+
+    const rawIpfsData =
+      paramsFromNotif?.ipfsData && typeof paramsFromNotif.ipfsData === 'object'
+        ? paramsFromNotif.ipfsData
+        : {};
+    const rawCertificateData =
+      paramsFromNotif?.certificateData &&
+      typeof paramsFromNotif.certificateData === 'object'
+        ? paramsFromNotif.certificateData
+        : {};
+    const rawNftData =
+      paramsFromNotif?.nftData && typeof paramsFromNotif.nftData === 'object'
+        ? paramsFromNotif.nftData
+        : {};
+
+    return {
+      name: 'SuccessScreen',
+      params: {
+        ...paramsFromNotif,
+        ipfsData: {
+          ...rawIpfsData,
+          jsonUrl:
+            rawIpfsData?.jsonUrl ||
+            rawData?.jsonUrl ||
+            rawData?.ipfsUri ||
+            null,
+          imageUrl:
+            rawIpfsData?.imageUrl ||
+            (notificationType === 'acta_published' ||
+            notificationType === 'worksheet_uploaded'
+              ? rawData?.imageUrl
+              : null),
+          ipfsUri: rawIpfsData?.ipfsUri || rawData?.ipfsUri || null,
+          url: rawIpfsData?.url || rawData?.ipfsUrl || null,
+        },
+        certificateData: {
+          ...rawCertificateData,
+          imageUrl:
+            rawCertificateData?.imageUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+          jsonUrl: rawCertificateData?.jsonUrl || null,
+          certificateUrl:
+            rawCertificateData?.certificateUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        },
+        nftData: {
+          ...rawNftData,
+          nftUrl:
+            rawNftData?.nftUrl ||
+            (notificationType === 'participation_certificate'
+              ? rawData?.imageUrl
+              : null),
+        },
+        notificationType,
+        fromNotifications: true,
+      },
+    };
+  }
+
+  if (typeof item?.screen === 'string' && StackNav[item.screen]) {
+    return {
+      name: item.screen,
+      params: safeParseNotificationRouteParams(item.routeParams),
+    };
+  }
+
+  return null;
 };
 
 export default function Notification({ navigation }) {
@@ -467,121 +584,11 @@ export default function Notification({ navigation }) {
 
   const handleNotificationPress = useCallback(
     item => {
-      const rawData = item?.data || {};
-
-      if (FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
-        if (
-          item?.kind === 'election_results' ||
-          item?.kind === 'voting_event' ||
-          rawData?.type === 'election_results' ||
-          rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED'
-        ) {
-          navigation.navigate(StackNav.VotingNotificationDetailScreen, {
-            notification: item,
-          });
-          return;
-        }
-      }
-
-      if (rawData?.type === 'worksheet_uploaded') {
-        navigation.navigate(StackNav.TabNavigation, {
-          screen: TabNav.HomeScreen,
-        });
+      const target = buildNotificationNavigationTarget(item);
+      if (!target?.name) {
         return;
       }
-
-      // Solo navegamos si es SuccessScreen
-      if (item.screen === 'SuccessScreen') {
-        let paramsFromNotif = {};
-        if (item.routeParams) {
-          try {
-            paramsFromNotif = JSON.parse(item.routeParams);
-          } catch (e) {
-            // si viene mal, no revienta
-          }
-        }
-
-        const notificationType =
-          rawData?.type || paramsFromNotif?.notificationType || null;
-
-        const rawIpfsData =
-          paramsFromNotif?.ipfsData && typeof paramsFromNotif.ipfsData === 'object'
-            ? paramsFromNotif.ipfsData
-            : {};
-        const rawCertificateData =
-          paramsFromNotif?.certificateData &&
-          typeof paramsFromNotif.certificateData === 'object'
-            ? paramsFromNotif.certificateData
-            : {};
-        const rawNftData =
-          paramsFromNotif?.nftData && typeof paramsFromNotif.nftData === 'object'
-            ? paramsFromNotif.nftData
-            : {};
-
-        // Fallback desde data cuando backend no envía routeParams completos.
-        const fallbackIpfsData = {
-          ...rawIpfsData,
-          jsonUrl:
-            rawIpfsData?.jsonUrl ||
-            rawData?.jsonUrl ||
-            rawData?.ipfsUri ||
-            null,
-          imageUrl:
-            rawIpfsData?.imageUrl ||
-            (notificationType === 'acta_published' ||
-            notificationType === 'worksheet_uploaded'
-              ? rawData?.imageUrl
-              : null),
-          ipfsUri: rawIpfsData?.ipfsUri || rawData?.ipfsUri || null,
-          url: rawIpfsData?.url || rawData?.ipfsUrl || null,
-        };
-
-        const fallbackCertificateData = {
-          ...rawCertificateData,
-          imageUrl:
-            rawCertificateData?.imageUrl ||
-            (notificationType === 'participation_certificate'
-              ? rawData?.imageUrl
-              : null),
-          jsonUrl: rawCertificateData?.jsonUrl || null,
-          certificateUrl:
-            rawCertificateData?.certificateUrl ||
-            (notificationType === 'participation_certificate'
-              ? rawData?.imageUrl
-              : null),
-        };
-
-        const fallbackNftData = {
-          ...rawNftData,
-          nftUrl:
-            rawNftData?.nftUrl ||
-            (notificationType === 'participation_certificate'
-              ? rawData?.imageUrl
-              : null),
-        };
-
-        navigation.navigate('SuccessScreen', {
-          ...paramsFromNotif,
-          ipfsData: fallbackIpfsData,
-          certificateData: fallbackCertificateData,
-          nftData: fallbackNftData,
-          notificationType,
-          fromNotifications: true,
-        });
-        return;
-      }
-
-      if (item.screen) {
-        let paramsFromNotif = {};
-        if (item.routeParams) {
-          try {
-            paramsFromNotif = JSON.parse(item.routeParams);
-          } catch {
-            paramsFromNotif = {};
-          }
-        }
-        navigation.navigate(item.screen, paramsFromNotif);
-      }
+      navigation.navigate(target.name, target.params);
     },
     [navigation],
   );

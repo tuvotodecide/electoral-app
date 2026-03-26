@@ -90,7 +90,7 @@ const ParticipationsListScreen = () => {
     <View style={styles.emptyContainer}>
       <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
       <CText type="M16" style={styles.emptyText}>
-        No tienes participaciones aún
+        Aún no tienes participaciones
       </CText>
     </View>
   );

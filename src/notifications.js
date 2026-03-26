@@ -148,7 +148,7 @@ const buildBackendNotificationAlertKey = notification => {
   return `fallback:${timestamp}:${title}:${body}`;
 };
 
-const buildNotificationTextFallback = notification => {
+export const buildNotificationTextFallback = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
@@ -219,7 +219,7 @@ async function setAlertedBackendNotificationKeys(storageKey, keys) {
   } catch {}
 }
 
-const buildNotificationSemanticKey = notification => {
+export const buildNotificationSemanticKey = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
@@ -613,7 +613,7 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
   store.dispatch(setPendingNav({name: scr, params: d}));
 }
 
-function buildRouteFromNotification(notification) {
+export function buildRouteFromNotification(notification) {
   const data = notification?.data ?? {};
   if (data?.type === 'announce_count') {
     return {
@@ -662,7 +662,7 @@ export function handleNotificationPress(notification) {
   }
 }
 
-function handleNotificationPressBackground(notification) {
+export function handleNotificationPressBackground(notification) {
   const route = buildRouteFromNotification(notification);
   store.dispatch(setPendingNav(route));
 }

@@ -50,6 +50,15 @@ describe('notifications service', () => {
       expect(mockMessaging.requestPermission).toHaveBeenCalled();
       expect(result).toBe(true);
     });
+
+    it('retorna false cuando los permisos no quedan autorizados', async () => {
+      mockMessaging.requestPermission.mockResolvedValueOnce(0);
+      const {ensureFCMSetup} = require('../../../src/services/notifications');
+
+      const result = await ensureFCMSetup();
+
+      expect(result).toBe(false);
+    });
   });
 
   describe('ensureNotifChannel', () => {
@@ -136,6 +145,55 @@ describe('notifications service', () => {
 
       expect(mockMessaging.onMessage).toHaveBeenCalled();
       expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('reemplaza el listener anterior cuando se vuelve a registrar', () => {
+      const firstUnsub = jest.fn();
+      const secondUnsub = jest.fn();
+      mockMessaging.onMessage
+        .mockReturnValueOnce(firstUnsub)
+        .mockReturnValueOnce(secondUnsub);
+
+      const {registerForegroundListener} = require('../../../src/services/notifications');
+
+      registerForegroundListener(jest.fn());
+      registerForegroundListener(jest.fn());
+
+      expect(firstUnsub).toHaveBeenCalled();
+      expect(mockMessaging.onMessage).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('registerOpenHandlers', () => {
+    it('propaga notificacion abierta y notificacion inicial', async () => {
+      let openedCallback;
+      mockMessaging.onNotificationOpenedApp.mockImplementation(cb => {
+        openedCallback = cb;
+        return jest.fn();
+      });
+      mockMessaging.getInitialNotification.mockResolvedValueOnce({
+        data: {screen: 'Splash'},
+      });
+
+      const {registerOpenHandlers} = require('../../../src/services/notifications');
+      const onOpened = jest.fn();
+
+      registerOpenHandlers(onOpened);
+      openedCallback({data: {screen: 'Splash'}});
+
+      await Promise.resolve();
+
+      expect(onOpened).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('registerBackgroundHandler', () => {
+    it('registra el background message handler en firebase messaging', () => {
+      const {registerBackgroundHandler} = require('../../../src/services/notifications');
+
+      registerBackgroundHandler();
+
+      expect(mockMessaging.setBackgroundMessageHandler).toHaveBeenCalled();
     });
   });
 

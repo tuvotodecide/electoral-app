@@ -86,7 +86,7 @@ const buildReceiptFromJournal = journal => {
   return {
     id: journal?.participationId || `participation_${now.getTime()}`,
     electionId: journal?.electionId || '',
-    electionTitle: journal?.electionTitle || 'Votacion institucional',
+    electionTitle: journal?.electionTitle || 'Votación institucional',
     status: 'EN_COLA',
     statusLabel: 'EN COLA',
     date: now.toLocaleDateString('es-ES', {

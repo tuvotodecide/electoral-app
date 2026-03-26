@@ -89,7 +89,7 @@ const buildParticipationRecord = ({
   return {
     id,
     electionId: electionId || metadata.electionId || '',
-    electionTitle: metadata.electionTitle || 'Votacion institucional',
+    electionTitle: metadata.electionTitle || 'Votación institucional',
     status: synced ? 'VOTO_REGISTRADO' : 'EN_COLA',
     statusLabel: synced ? 'VOTO REGISTRADO' : 'EN COLA',
     date: validDate.toLocaleDateString('es-ES', {

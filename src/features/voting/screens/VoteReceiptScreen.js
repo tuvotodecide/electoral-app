@@ -55,7 +55,7 @@ const VoteReceiptScreen = () => {
     participations.find(p => p.id === participationId) ||
     (lastReceipt?.id === participationId ? lastReceipt : null) ||
     lastReceipt || {
-      electionTitle: 'Votacion institucional',
+      electionTitle: 'Votación institucional',
       fullDate: '',
       organization: '',
       candidateSelected: null,

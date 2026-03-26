@@ -5,7 +5,7 @@
  * Usa los componentes existentes del repo.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -38,7 +38,7 @@ import { UI_STRINGS } from '../data/mockData';
 import { DEV_FLAGS } from '../../../config/featureFlags';
 
 // Utils
-import { checkInternetConnection } from '../../../utils/networkUtils';
+import { backendProbe, checkInternetConnection } from '../../../utils/networkUtils';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
@@ -71,32 +71,49 @@ const buildVoteErrorMessage = error => {
   const message = raw.toLowerCase();
 
   if (!raw) {
-    return 'Ocurrio un error al registrar el voto. Puedes reintentar nuevamente.';
+    return 'Ocurrió un error al registrar el voto. Puedes reintentar.';
   }
   if (
     message.includes('already voted') ||
     message.includes('ya participaste') ||
     message.includes('already_voted')
   ) {
-    return 'Esta votacion ya figura como registrada para tu usuario.';
+    return 'Esta votación ya figura como registrada para tu usuario.';
   }
   if (
     message.includes('outside_voting_window') ||
     message.includes('fuera del horario')
   ) {
-    return 'La votacion ya no se encuentra disponible en este horario.';
+    return 'La votación ya no se encuentra disponible en este horario.';
   }
   if (
     message.includes('vote does not exist') ||
     message.includes('execution reverted')
   ) {
-    return 'No se pudo registrar el voto en blockchain. Puedes reintentar o volver a votar mas tarde.';
+    return 'No se pudo registrar el voto en blockchain. Puedes reintentar o volver a votar más tarde.';
   }
   if (isLikelyNetworkVoteError(raw)) {
-    return 'Hubo un problema de conexion al registrar el voto. Puedes reintentar.';
+    return 'Hubo un problema de conexión al registrar el voto. Puedes reintentar.';
   }
 
   return raw;
+};
+
+const buildPendingSyncCopy = ({
+  serverUnavailable = false,
+} = {}) => {
+  if (serverUnavailable) {
+    return {
+      title: 'Conexion con servidor pendiente',
+      message:
+        'Detectamos red disponible, pero el servidor no respondio. Tu voto quedo guardado y la app lo sincronizara automaticamente.',
+    };
+  }
+
+  return {
+    title: UI_STRINGS.offlineTitle,
+    message: UI_STRINGS.offlineMessage,
+  };
 };
 
 const CandidateScreen = ({ route }) => {
@@ -122,6 +139,7 @@ const CandidateScreen = ({ route }) => {
     title: 'No se pudo registrar el voto',
     message: '',
   });
+  const isSubmittingVoteRef = useRef(false);
 
   // Election state hook
   const {
@@ -197,8 +215,9 @@ const CandidateScreen = ({ route }) => {
 
   // Handle confirm vote
   const handleConfirmVote = useCallback(async () => {
-    if (!selectedCandidate) return;
+    if (!selectedCandidate || isSubmittingVoteRef.current) return;
 
+    isSubmittingVoteRef.current = true;
     setIsLoading(true);
 
     try {
@@ -208,12 +227,12 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: electionInfo?.title || 'Votacion institucional',
+          electionTitle: electionInfo?.title || 'Votación institucional',
         });
 
         const receipt = await recordVote(selectedCandidate.id, false, {
           electionId,
-          electionTitle: electionInfo?.title || 'Votacion institucional',
+          electionTitle: electionInfo?.title || 'Votación institucional',
           organization:
             electionInfo?.organization ||
             electionInfo?.instituteName ||
@@ -225,10 +244,7 @@ const CandidateScreen = ({ route }) => {
           },
         });
 
-        setOfflineModalCopy({
-          title: UI_STRINGS.offlineTitle,
-          message: UI_STRINGS.offlineMessage,
-        });
+        setOfflineModalCopy(buildPendingSyncCopy());
         setQueuedParticipationId(receipt?.id || null);
         setShowConfirmModal(false);
         setShowOfflineModal(true);
@@ -240,12 +256,43 @@ const CandidateScreen = ({ route }) => {
         : await checkInternetConnection();
 
       if (isOnline) {
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        if (!probe?.ok) {
+          await enqueueVote({
+            electionId,
+            candidateId: selectedCandidate.id,
+            candidateName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            electionTitle: electionInfo?.title || 'Votacion institucional',
+          });
+
+          const receipt = await recordVote(selectedCandidate.id, false, {
+            electionId,
+            electionTitle: electionInfo?.title || 'Votacion institucional',
+            organization:
+              electionInfo?.organization ||
+              electionInfo?.instituteName ||
+              '',
+            candidateSelected: {
+              partyName: selectedCandidate.partyName,
+              presidentName: selectedCandidate.presidentName,
+              viceName: selectedCandidate.viceName,
+            },
+          });
+
+          setOfflineModalCopy(buildPendingSyncCopy({ serverUnavailable: true }));
+          setQueuedParticipationId(receipt?.id || null);
+          setShowConfirmModal(false);
+          setShowOfflineModal(true);
+          return;
+        }
+
         await startVoteJournal({
           electionId,
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: electionInfo?.title || 'Votacion institucional',
+          electionTitle: electionInfo?.title || 'Votación institucional',
           organization:
             electionInfo?.organization ||
             electionInfo?.instituteName ||
@@ -268,7 +315,7 @@ const CandidateScreen = ({ route }) => {
             participatedAt: result.participatedAt,
             transactionId: result.transactionId || null,
             electionId,
-            electionTitle: electionInfo?.title || 'Votacion institucional',
+            electionTitle: electionInfo?.title || 'Votación institucional',
             organization:
               electionInfo?.organization ||
               electionInfo?.instituteName ||
@@ -293,12 +340,12 @@ const CandidateScreen = ({ route }) => {
             candidateId: selectedCandidate.id,
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
-            electionTitle: electionInfo?.title || 'Votacion institucional',
+            electionTitle: electionInfo?.title || 'Votación institucional',
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
             electionId,
-            electionTitle: electionInfo?.title || 'Votacion institucional',
+            electionTitle: electionInfo?.title || 'Votación institucional',
             organization:
               electionInfo?.organization ||
               electionInfo?.instituteName ||
@@ -312,9 +359,9 @@ const CandidateScreen = ({ route }) => {
           });
 
           setOfflineModalCopy({
-            title: 'Voto emitido, sincronizacion pendiente',
+            title: 'Voto emitido, sincronización pendiente',
             message:
-              'Tu voto ya fue emitido, pero falta registrar la participacion en el backend. La app lo reintentara automaticamente.',
+              'Tu voto ya fue emitido, pero falta registrar la participación en el backend. La app lo reintentará automáticamente.',
           });
           setQueuedParticipationId(receipt?.id || null);
           setShowConfirmModal(false);
@@ -352,6 +399,7 @@ const CandidateScreen = ({ route }) => {
         message: buildVoteErrorMessage(error),
       });
     } finally {
+      isSubmittingVoteRef.current = false;
       setIsLoading(false);
     }
   }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);

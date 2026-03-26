@@ -143,8 +143,8 @@ export const UI_STRINGS = {
 
   // Notification detail
   notificationHeader: 'Notificaciones',
-  resultsAvailable: 'Resultados Disponibles',
-  preliminaryResults: 'Resultados Preliminares',
+  resultsAvailable: 'Resultados disponibles',
+  preliminaryResults: 'Resultados preliminares',
   realTimeCount: 'Conteo en tiempo real',
   goToResultsPage: 'Ir a la página de resultados',
 

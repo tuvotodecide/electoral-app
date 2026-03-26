@@ -46,7 +46,7 @@ const formatEventDate = value => {
 const DEFAULT_NOTIFICATION = {
   title: 'Resultados disponibles',
   kind: 'election_results',
-  tipo: 'Ver ganador',
+  tipo: 'Ver resultados',
   direccion: 'Resultados preliminares disponibles',
   actionLabel: 'Ver detalles',
   actionUrl: null,
@@ -108,7 +108,7 @@ const mapResultsSummaryFromDetail = detail => {
   );
 
   const mapped = options.map((option, index) => {
-    const partyName = String(option?.name ?? `Opcion ${index + 1}`);
+    const partyName = String(option?.name ?? `Opción ${index + 1}`);
     const firstCandidate =
       Array.isArray(option?.candidates) && option.candidates.length > 0
         ? option.candidates[0]
@@ -122,18 +122,22 @@ const mapResultsSummaryFromDetail = detail => {
       colorHex: option?.color ?? colorPalette[index % colorPalette.length],
       votes,
       percent: 0,
+      isTied: false,
     };
   });
 
   const totalVotes = mapped.reduce((sum, candidate) => sum + candidate.votes, 0);
+  const maxVotes = mapped.reduce((max, candidate) => Math.max(max, candidate.votes), 0);
+  const tiedCount = maxVotes > 0 ? mapped.filter(candidate => candidate.votes === maxVotes).length : 0;
 
   return mapped
     .map(candidate => ({
       ...candidate,
       percent: totalVotes > 0 ? Number(((candidate.votes * 100) / totalVotes).toFixed(2)) : 0,
+      isTied: maxVotes > 0 && tiedCount > 1 && candidate.votes === maxVotes,
     }))
-    .sort((a, b) => b.percent - a.percent)
-    .slice(0, 4);
+    .sort((a, b) => b.votes - a.votes || b.percent - a.percent)
+    .slice(0, Math.max(4, tiedCount));
 };
 
 const NotificationDetailScreen = () => {
@@ -151,6 +155,11 @@ const NotificationDetailScreen = () => {
   const resultsSummary = Array.isArray(notification?.resultsSummary) && notification.resultsSummary.length > 0
     ? notification.resultsSummary
     : remoteResultsSummary;
+  const tiedLeaders = useMemo(
+    () => resultsSummary.filter(result => result?.isTied),
+    [resultsSummary],
+  );
+  const hasTie = tiedLeaders.length > 1;
 
   useEffect(() => {
     if (kind !== 'election_results' || !eventId) {
@@ -171,7 +180,7 @@ const NotificationDetailScreen = () => {
         );
 
         if (!response.ok) {
-          throw new Error('No se pudo cargar el detalle publico');
+          throw new Error('No se pudo cargar el detalle público');
         }
 
         const detail = await response.json();
@@ -267,6 +276,24 @@ const NotificationDetailScreen = () => {
             <CText type="B16" style={styles.sectionTitle}>
               Resultados
             </CText>
+            {hasTie ? (
+              <View
+                style={{
+                  marginBottom: 16,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: '#FCD34D',
+                  backgroundColor: '#FFFBEB',
+                  padding: 14,
+                }}>
+                <CText type="B14" style={{color: '#92400E', fontWeight: '700'}}>
+                  Empate
+                </CText>
+                <CText type="R12" style={{color: '#92400E', marginTop: 4}}>
+                  {`Hay un empate en el primer lugar entre ${tiedLeaders.map(result => result?.name).join(', ')}.`}
+                </CText>
+              </View>
+            ) : null}
             {resultsLoading ? (
               <View style={styles.loadingResultsBox}>
                 <ActivityIndicator size="small" color="#1F7A36" />
