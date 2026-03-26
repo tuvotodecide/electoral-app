@@ -84,8 +84,11 @@ export const getNotificationKind = ({ type, title, body }) => {
 
   if (
     normalizedType === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
+    normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED' ||
     haystack.includes('convocatoria') ||
-    haystack.includes('votacion')
+    haystack.includes('votacion') ||
+    haystack.includes('cronograma') ||
+    haystack.includes('horario')
   ) {
     return 'voting_event';
   }
@@ -145,7 +148,8 @@ export const buildNotificationNavigationTarget = (
       item?.kind === 'election_results' ||
       item?.kind === 'voting_event' ||
       rawData?.type === 'election_results' ||
-      rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED'
+      rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
+      rawData?.type === 'INSTITUTIONAL_SCHEDULE_UPDATED'
     ) {
       return {
         name: StackNav.VotingNotificationDetailScreen,
@@ -286,6 +290,8 @@ export default function Notification({ navigation }) {
     const created = n?.createdAt || n?.timestamp || new Date().toISOString();
     const titleFromBackend = n?.title || data?.title || '';
     const bodyFromBackend = n?.body || data?.body || '';
+    const normalizedType = String(data?.type || '').trim().toUpperCase();
+    const isScheduleUpdate = normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -321,7 +327,11 @@ export default function Notification({ navigation }) {
     let tipo = 'Actualizar';
     if (notificationKind === 'voting_event') {
       const startsAt = data?.votingStart || data?.startsAt;
-      tipo = startsAt ? formatCountdownLabel(Date.parse(String(startsAt)), now) : 'Ver convocatoria';
+      tipo = isScheduleUpdate
+        ? 'Cronograma modificado'
+        : startsAt
+          ? formatCountdownLabel(Date.parse(String(startsAt)), now)
+          : 'Ver convocatoria';
     } else if (notificationKind === 'election_results') {
       tipo = 'Ver ganador';
     } else if (data?.type === 'announce_count') {
@@ -364,7 +374,7 @@ export default function Notification({ navigation }) {
       colegio: data?.locationName || n?.locationName || '',
       direccion:
         notificationKind === 'voting_event'
-          ? dateRange
+          ? bodyFromBackend || dateRange
           : notificationKind === 'election_results'
             ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
             : data?.locationAddress || n?.locationAddress || '',
@@ -385,6 +395,7 @@ export default function Notification({ navigation }) {
       routeParams: data?.routeParams || null,
       title: titleFromBackend,
       body: bodyFromBackend,
+      isScheduleUpdate,
     };
   }, []);
 

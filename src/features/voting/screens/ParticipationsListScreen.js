@@ -12,6 +12,7 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  Image,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,6 +24,7 @@ import { UI_STRINGS } from '../data/mockData';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
+import { normalizeUri } from '../../../utils/normalizedUri';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -72,6 +74,7 @@ const ParticipationItem = ({ item, onPress }) => {
   const isFailed = item.status === 'ERROR';
   const statusColor = isRegistered ? '#41A44D' : isFailed ? '#D32F2F' : '#F59E0B';
   const statusBgColor = isRegistered ? '#E8F5E9' : isFailed ? '#FFEBEE' : '#FEF3C7';
+  const attestationImageUrl = normalizeUri(item?.nftImageUrl || null);
 
   return (
     <TouchableOpacity
@@ -80,6 +83,23 @@ const ParticipationItem = ({ item, onPress }) => {
       activeOpacity={0.7}
     >
       <View style={styles.itemContent}>
+        {attestationImageUrl ? (
+          <View style={styles.previewRow}>
+            <Image
+              source={{uri: attestationImageUrl}}
+              style={styles.attestationPreview}
+              resizeMode="cover"
+            />
+            <View style={styles.previewCopy}>
+              <CText type="B12" style={styles.previewLabel}>
+                Attestation
+              </CText>
+              <CText type="R12" style={styles.previewHint}>
+                Certificado asociado
+              </CText>
+            </View>
+          </View>
+        ) : null}
         <View style={styles.itemHeader}>
           <CText type="B16" style={styles.itemTitle}>
             {item.electionTitle}
@@ -192,6 +212,29 @@ const styles = StyleSheet.create({
   },
   itemContent: {
     padding: getResponsiveSize(14, 16, 18),
+  },
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getResponsiveSize(10, 12, 14),
+  },
+  attestationPreview: {
+    width: getResponsiveSize(44, 52, 60),
+    height: getResponsiveSize(58, 68, 78),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#F3F4F6',
+  },
+  previewCopy: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  previewLabel: {
+    color: '#17694A',
+    fontWeight: '700',
+  },
+  previewHint: {
+    color: '#6B7280',
+    marginTop: 2,
   },
   itemHeader: {
     flexDirection: 'row',

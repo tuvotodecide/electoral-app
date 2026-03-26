@@ -192,4 +192,60 @@ describe('useVotingState', () => {
     expect(getOwnVoteInfo).toHaveBeenCalledWith('election-1', 'nullifier-1');
     expect(result.current.syncedWithBlockchain).toBe('synced');
   });
+
+  it('marca fallo cuando no encuentra nullifier para consultar blockchain', async () => {
+    createStorage({
+      'voting.participations': JSON.stringify([
+        {
+          id: 'participation-1',
+          electionId: 'election-1',
+          selectedCandidateId: 'candidate-1',
+          synced: true,
+          candidateSelected: {partyName: 'Lista Azul'},
+        },
+      ]),
+    });
+    getNullifierForVote.mockResolvedValue(null);
+
+    const {result} = renderHook(() => useVotingState('election-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.syncStateWithBlockchain('participation-1');
+    });
+
+    expect(getOwnVoteInfo).not.toHaveBeenCalled();
+    expect(result.current.syncedWithBlockchain).toBe('failed');
+  });
+
+  it('marca not_synced cuando blockchain devuelve una opcion distinta', async () => {
+    createStorage({
+      'voting.participations': JSON.stringify([
+        {
+          id: 'participation-1',
+          electionId: 'election-1',
+          selectedCandidateId: 'candidate-1',
+          synced: true,
+          candidateSelected: {partyName: 'Lista Azul'},
+        },
+      ]),
+    });
+    getNullifierForVote.mockResolvedValue('nullifier-1');
+    getOwnVoteInfo.mockResolvedValue([true, 'Lista Verde']);
+
+    const {result} = renderHook(() => useVotingState('election-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.syncStateWithBlockchain('participation-1');
+    });
+
+    expect(result.current.syncedWithBlockchain).toBe('not_synced');
+  });
 });

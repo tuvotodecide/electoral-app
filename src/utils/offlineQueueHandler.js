@@ -2230,7 +2230,6 @@ export const syncActaBackendHandler = async (item, userData) => {
 };
 
 export const authenticateWithBackend = async (did, privateKey) => {
-  console.log(VERIFIER_REQUEST_ENDPOINT)
   const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
 
   const authData = request.data;

@@ -1,13 +1,13 @@
-const storage = new Map();
+const mockStorage = new Map();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(key => Promise.resolve(storage.has(key) ? storage.get(key) : null)),
+  getItem: jest.fn(key => Promise.resolve(mockStorage.has(key) ? mockStorage.get(key) : null)),
   setItem: jest.fn((key, value) => {
-    storage.set(key, value);
+    mockStorage.set(key, value);
     return Promise.resolve();
   }),
   removeItem: jest.fn(key => {
-    storage.delete(key);
+    mockStorage.delete(key);
     return Promise.resolve();
   }),
 }));
@@ -80,7 +80,7 @@ const rootNav = require('../../src/navigation/RootNavigation');
 
 describe('notifications', () => {
   beforeEach(() => {
-    storage.clear();
+    mockStorage.clear();
     jest.clearAllMocks();
     storeModule.__setAuthState({isAuthenticated: false});
   });
@@ -165,7 +165,7 @@ describe('notifications', () => {
     });
 
     expect(notifee.displayNotification).toHaveBeenCalledTimes(1);
-    expect(storage.get('@backend-notifications:alerted:v1:123')).toContain(
+    expect(mockStorage.get('@backend-notifications:alerted:v1:123')).toContain(
       'id:remote-1',
     );
   });
@@ -181,7 +181,7 @@ describe('notifications', () => {
     });
 
     expect(notifee.displayNotification).toHaveBeenCalled();
-    const stored = JSON.parse(storage.get('@local-notifications:v1'));
+    const stored = JSON.parse(mockStorage.get('@local-notifications:v1'));
     expect(stored[0]).toMatchObject({
       source: 'local',
       dni: '12345678',
@@ -206,7 +206,7 @@ describe('notifications', () => {
     });
 
     expect(notifee.displayNotification).toHaveBeenCalled();
-    const stored = JSON.parse(storage.get('@local-notifications:v1'));
+    const stored = JSON.parse(mockStorage.get('@local-notifications:v1'));
     expect(stored[0]).toMatchObject({
       title: 'Nueva votación',
       body: 'Abierta',

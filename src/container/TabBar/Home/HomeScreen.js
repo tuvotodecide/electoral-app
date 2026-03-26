@@ -1250,36 +1250,19 @@ export default function HomeScreen({ navigation }) {
       };
 
       const syncUserTopicSubscription = async () => {
-        console.log('[PushTopic] HomeScreen sync invoked', {
-          isAuthenticated: Boolean(auth?.isAuthenticated),
-          hasDni: Boolean(dni),
-          hasDid: Boolean(userData?.did),
-          hasPrivKey: Boolean(userData?.privKey),
-        });
+
 
         if (!auth?.isAuthenticated || !dni || !userData?.did || !userData?.privKey) {
-          console.log('[PushTopic] HomeScreen skipping sync due to missing session data', {
-            isAuthenticated: Boolean(auth?.isAuthenticated),
-            hasDni: Boolean(dni),
-            hasDid: Boolean(userData?.did),
-            hasPrivKey: Boolean(userData?.privKey),
-          });
+
           await clearUserTopicSubscription();
           return;
         }
 
         try {
-          console.log('[PushTopic] HomeScreen calling authenticateWithBackend', {
-            dni,
-            backendResult: String(BACKEND_RESULT || '').replace(/\/+$/, ''),
-          });
+
 
           const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
-          console.log('[PushTopic] HomeScreen authenticateWithBackend resolved', {
-            dni,
-            hasApiKey: Boolean(apiKey),
-            apiKeyPrefix: apiKey ? String(apiKey).slice(0, 8) : null,
-          });
+
 
           if (!apiKey) {
             return;
@@ -1333,11 +1316,7 @@ export default function HomeScreen({ navigation }) {
 
           userTopicRef.current = nextTopic;
           await AsyncStorage.setItem(LAST_USER_TOPIC_KEY, nextTopic);
-          console.log('[PushTopic] HomeScreen user topic ready', {
-            dni,
-            topic: nextTopic,
-            backendUserId,
-          });
+
         } catch (error) {
           console.warn('[PushTopic] HomeScreen sync failed', {
             dni,

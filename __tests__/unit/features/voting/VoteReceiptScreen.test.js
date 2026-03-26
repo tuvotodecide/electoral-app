@@ -155,7 +155,7 @@ describe('VoteReceiptScreen', () => {
 
     const screen = render(<VoteReceiptScreen />);
 
-    expect(screen.getByText('No se pudo completar el voto')).toBeTruthy();
+    expect(screen.getAllByText('No se pudo completar el voto').length).toBeGreaterThan(0);
     fireEvent.press(screen.getByText('Volver a votar'));
 
     await waitFor(() => {
