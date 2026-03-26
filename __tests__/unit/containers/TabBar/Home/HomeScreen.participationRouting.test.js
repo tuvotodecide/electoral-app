@@ -333,7 +333,7 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     view.unmount();
   });
 
-  test('si no hay internet y no existe recinto cacheado, muestra modal de advertencia', async () => {
+  test('si no hay internet y no existe recinto cacheado, muestra la advertencia para registrar recinto', async () => {
     mockedUseSelector.mockImplementation(selector =>
       selector(buildState({dni: '12345678'})),
     );
@@ -346,18 +346,11 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('Enviar Acta Alcalde')).toBeTruthy();
-    });
-
-    const titleNode = view.getByText('Enviar Acta Alcalde');
-    const pressable = findPressableAncestor(titleNode);
-    fireEvent.press(pressable);
-
-    await waitFor(() => {
       expect(
-        view.getByText('Necesitas conexión para escoger tu recinto por primera vez.'),
+        view.getByText('Registra tu recinto para usar modo sin internet'),
       ).toBeTruthy();
     });
+    expect(view.getByTestId('registerAlert-Registrar-recinto')).toBeTruthy();
 
     expect(navigation.navigate).not.toHaveBeenCalledWith(
       StackNav.UnifiedParticipationScreen,
@@ -367,7 +360,6 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
       StackNav.ElectoralLocations,
       expect.anything(),
     );
-
     view.unmount();
   });
 });

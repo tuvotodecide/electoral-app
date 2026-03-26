@@ -82,7 +82,7 @@ export async function claimForVote(voteId, dni, did, privKey) {
 
     return true;
   } catch (error) {
-    console.log('Error fetching notifications for vote claim:', error);
+
     const err = new Error(`Error fetching notifications for vote claim:`, error);
     captureError(
       err,

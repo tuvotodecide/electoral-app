@@ -437,7 +437,7 @@ describe('CandidateScreen', () => {
     });
 
     expect(captureError).toHaveBeenCalled();
-    expect(screen.getByText('Esta votacion ya figura como registrada para tu usuario.')).toBeTruthy();
+    expect(screen.getByText('Esta votación ya figura como registrada para tu usuario.')).toBeTruthy();
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
@@ -455,9 +455,14 @@ describe('CandidateScreen', () => {
     await screen.findByText('Lista Azul');
     fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
     fireEvent.press(screen.getByTestId('voteButton'));
-    fireEvent.press(screen.getByTestId('confirmVoteButton'));
-    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+    const confirmButton = await screen.findByTestId('confirmVoteButton');
+    fireEvent.press(confirmButton);
 
+    await waitFor(() => {
+      expect(repository.submitVote).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.press(confirmButton);
     expect(repository.submitVote).toHaveBeenCalledTimes(1);
 
     resolveSubmit({

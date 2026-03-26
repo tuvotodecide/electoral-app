@@ -23,15 +23,7 @@ const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
 const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
 
 const nowMs = () => Date.now();
-const logActaTiming = (itemId, stage, startedAt, extra = {}) => {
-  const durationMs = nowMs() - startedAt;
-  console.log('[ACTA-TIMING]', {
-    itemId,
-    stage,
-    durationMs,
-    ...extra,
-  });
-};
+
 
 const safeStr = v =>
   String(v ?? '')
@@ -617,7 +609,7 @@ export const publishActaHandler = async (item, userData) => {
       userData.did,
       userData.privKey,
     );
-    logActaTiming(item?.id, 'authenticate_backend', authStartedAt);
+
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
       const idRecinto =
@@ -968,10 +960,7 @@ export const publishActaHandler = async (item, userData) => {
         tableCodeStrict,
         electionId,
       );
-      logActaTiming(item?.id, 'check_user_already_attested', alreadyAttestedStartedAt, {
-        tableCode: tableCodeStrict,
-        electionId: electionId || null,
-      });
+
       if (alreadyMine) {
         try {
           await removePersistedImage(imageUri);
@@ -1034,10 +1023,7 @@ export const publishActaHandler = async (item, userData) => {
         verificationData,
         electionId,
       );
-      logActaTiming(item?.id, 'check_duplicate_ballot', duplicateCheckStartedAt, {
-        tableCode: tableCodeStrict,
-        duplicateFound: Boolean(duplicateCheck?.exists),
-      });
+
       if (duplicateCheck?.exists) {
         const existingBallot =
           duplicateCheck.ballot ||
@@ -1253,9 +1239,7 @@ export const publishActaHandler = async (item, userData) => {
           { ...electoralData, voteSummaryResults: normalizedVoteSummary },
           normalizedAdditional,
         );
-        logActaTiming(item?.id, 'ipfs_upload_attest_new', ipfsStartedAt, {
-          tableCode: tableCodeStrict,
-        });
+
         if (!ipfs.success) {
           captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
             flow: 'offline_queue',
@@ -1296,9 +1280,7 @@ export const publishActaHandler = async (item, userData) => {
             timeout: 30000,
           },
         );
-        logActaTiming(item?.id, 'backend_validate_attest_new', validateStartedAt, {
-          tableCode: tableCodeStrict,
-        });
+
       } catch (err) {
         captureError(err, {
           flow: 'offline_queue',
@@ -1360,9 +1342,7 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'Attested',
       );
-      logActaTiming(item?.id, 'blockchain_attest_new', blockchainStartedAt, {
-        tableCode: tableCodeStrict,
-      });
+
       const onChainRecordId = String(response.returnData.recordId.toString());
       await persistActaCheckpoint(item, {
         ipfsUri: ipfsData?.jsonUrl,
@@ -1394,9 +1374,7 @@ export const publishActaHandler = async (item, userData) => {
             timeout: 30000,
           },
         );
-        logActaTiming(item?.id, 'backend_from_ipfs_attest_new', fromIpfsStartedAt, {
-          tableCode: tableCodeStrict,
-        });
+
         backendBallot = data;
       } catch (err) {
         captureError(err, {
@@ -1498,9 +1476,7 @@ export const publishActaHandler = async (item, userData) => {
             },
             { notificationType: 'participation_certificate' },
           );
-          logActaTiming(item?.id, 'certificate_upload_attest_new', certificateStartedAt, {
-            tableCode: tableCodeStrict,
-          });
+
         } catch (err) {
           captureError(err, {
             flow: 'offline_queue',
@@ -1543,9 +1519,7 @@ export const publishActaHandler = async (item, userData) => {
         { ...electoralData, voteSummaryResults: normalizedVoteSummary },
         normalizedAdditional,
       );
-      logActaTiming(item?.id, 'ipfs_upload_create', ipfsStartedAt, {
-        tableCode: tableCodeStrict,
-      });
+
       if (!ipfs.success) {
         captureError(new Error(ipfs.error || 'uploadElectoralActComplete failed'), {
           flow: 'offline_queue',
@@ -1587,9 +1561,7 @@ export const publishActaHandler = async (item, userData) => {
           timeout: 30000,
         },
       );
-      logActaTiming(item?.id, 'backend_validate_create', validateStartedAt, {
-        tableCode: tableCodeStrict,
-      });
+
     } catch (err) {
       captureError(err, {
         flow: 'offline_queue',
@@ -1652,9 +1624,7 @@ export const publishActaHandler = async (item, userData) => {
         oracleReads.waitForOracleEvent,
         'AttestationCreated',
       );
-      logActaTiming(item?.id, 'blockchain_create_attestation', blockchainStartedAt, {
-        tableCode: tableCodeStrict,
-      });
+
     } catch (e) {
       addBlockchainBreadcrumb('createAttestation_error', { chain: CHAIN });
       const msg = e.message || '';
@@ -1677,9 +1647,7 @@ export const publishActaHandler = async (item, userData) => {
           oracleReads.waitForOracleEvent,
           'Attested',
         );
-        logActaTiming(item?.id, 'blockchain_attest_fallback', attestFallbackStartedAt, {
-          tableCode: tableCodeStrict,
-        });
+ 
       } else {
         captureError(e, {
           flow: 'offline_queue',
@@ -1728,9 +1696,7 @@ export const publishActaHandler = async (item, userData) => {
           timeout: 30000,
         },
       );
-      logActaTiming(item?.id, 'backend_from_ipfs_create', fromIpfsStartedAt, {
-        tableCode: tableCodeStrict,
-      });
+
       backendBallot = data;
     } catch (err) {
       captureError(err, {
@@ -1826,9 +1792,7 @@ export const publishActaHandler = async (item, userData) => {
           },
           { notificationType: 'acta_published' },
         );
-        logActaTiming(item?.id, 'certificate_upload_create', certificateStartedAt, {
-          tableCode: tableCodeStrict,
-        });
+
       } catch (err) {
         captureError(err, {
           flow: 'offline_queue',
@@ -1839,15 +1803,10 @@ export const publishActaHandler = async (item, userData) => {
       }
     }
 
-    logActaTiming(item?.id, 'publish_acta_total', totalStartedAt, {
-      tableCode: tableCodeStrict,
-      electionId: electionId || null,
-    });
+
     return { success: true, ipfsData, nftData: nftResult, tableData };
   } catch (fatalErr) {
-    logActaTiming(item?.id, 'publish_acta_failed_total', totalStartedAt, {
-      error: fatalErr?.message || 'unknown',
-    });
+ 
     if (isAlreadyAttestedOracleError(fatalErr)) {
       throw buildAlreadyAttestedError();
     }
@@ -2230,7 +2189,6 @@ export const syncActaBackendHandler = async (item, userData) => {
 };
 
 export const authenticateWithBackend = async (did, privateKey) => {
-  console.log(VERIFIER_REQUEST_ENDPOINT)
   const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
 
   const authData = request.data;

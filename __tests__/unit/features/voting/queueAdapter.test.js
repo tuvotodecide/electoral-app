@@ -3,6 +3,7 @@ import {
   enqueueVote,
   handleVotingQueueVote,
   markVoteFailed,
+  releaseVoteForElection,
 } from '../../../../src/features/voting/offline/queueAdapter';
 
 jest.mock('../../../../src/config/featureFlags', () => ({
@@ -193,6 +194,105 @@ describe('queueAdapter voting flow', () => {
     expect(JSON.parse(storage.get('voting.lastReceipt'))).toMatchObject({
       status: 'ERROR',
       errorMessage: 'Backend unavailable',
+    });
+    expect(clearVoteJournal).toHaveBeenCalledWith('election-1');
+  });
+
+  it('procesa sincronizacion backendOnly para una participacion ya emitida en cadena', async () => {
+    const storage = createStorage({
+      'voting.lastReceipt': JSON.stringify({
+        id: 'local-1',
+        electionId: 'election-1',
+        selectedCandidateId: 'candidate-1',
+        synced: false,
+        status: 'EN_COLA',
+        statusLabel: 'EN COLA',
+      }),
+      'voting.participations': JSON.stringify([
+        {
+          id: 'local-1',
+          electionId: 'election-1',
+          selectedCandidateId: 'candidate-1',
+          synced: false,
+          status: 'EN_COLA',
+          statusLabel: 'EN COLA',
+        },
+      ]),
+    });
+
+    const registerParticipation = jest.fn().mockResolvedValue({
+      success: true,
+      participationId: 'server-backend-1',
+      participatedAt: '2026-01-01T11:00:00.000Z',
+    });
+    getElectionRepository.mockReturnValue({
+      submitVote: jest.fn(),
+      registerParticipation,
+    });
+
+    const result = await handleVotingQueueVote({
+      task: {
+        type: 'votingFlowVote',
+        payload: {
+          mode: 'backendOnly',
+          electionId: 'election-1',
+          candidateId: 'candidate-1',
+          candidateName: 'Lista Azul',
+          electionTitle: 'Centro de estudiantes',
+        },
+      },
+    });
+
+    expect(registerParticipation).toHaveBeenCalledWith('election-1', 'candidate-1');
+    expect(result).toMatchObject({
+      success: true,
+      participationId: 'server-backend-1',
+    });
+
+    expect(JSON.parse(storage.get('voting.lastReceipt'))).toMatchObject({
+      id: 'server-backend-1',
+      synced: true,
+      status: 'VOTO_REGISTRADO',
+    });
+  });
+
+  it('libera solo la eleccion solicitada y conserva otras participaciones', async () => {
+    const storage = createStorage({
+      'voting.lastReceipt': JSON.stringify({
+        id: 'receipt-other',
+        electionId: 'election-2',
+        selectedCandidateId: 'candidate-2',
+        synced: true,
+      }),
+      'voting.participations': JSON.stringify([
+        {
+          id: 'local-1',
+          electionId: 'election-1',
+          selectedCandidateId: 'candidate-1',
+          synced: false,
+          status: 'ERROR',
+        },
+        {
+          id: 'receipt-other',
+          electionId: 'election-2',
+          selectedCandidateId: 'candidate-2',
+          synced: true,
+          status: 'VOTO_REGISTRADO',
+        },
+      ]),
+    });
+
+    await releaseVoteForElection('election-1');
+
+    expect(JSON.parse(storage.get('voting.participations'))).toEqual([
+      expect.objectContaining({
+        id: 'receipt-other',
+        electionId: 'election-2',
+      }),
+    ]);
+    expect(JSON.parse(storage.get('voting.lastReceipt'))).toMatchObject({
+      id: 'receipt-other',
+      electionId: 'election-2',
     });
     expect(clearVoteJournal).toHaveBeenCalledWith('election-1');
   });

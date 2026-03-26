@@ -22,6 +22,7 @@ describe('attestationAvailabilityCache', () => {
 
   it('mantiene cache vigente dentro del mismo dia local', async () => {
     const savedAt = new Date(2026, 0, 12, 9, 15, 0, 0).getTime();
+    jest.spyOn(Date, 'now').mockReturnValue(savedAt + 60 * 60 * 1000);
     AsyncStorage.getItem.mockResolvedValueOnce(
       JSON.stringify({
         savedAt,
@@ -37,6 +38,7 @@ describe('attestationAvailabilityCache', () => {
       availableElections: [{electionId: 'municipal-1'}],
     });
     expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+    Date.now.mockRestore();
   });
 
   it('invalida el cache al dia siguiente aunque siga offline', async () => {

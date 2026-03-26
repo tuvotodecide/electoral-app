@@ -55,6 +55,25 @@ describe('Notification routing helpers', () => {
     });
   });
 
+  it('navega al mismo detalle voting cuando llega una modificacion de cronograma', () => {
+    const target = buildNotificationNavigationTarget({
+      kind: 'voting_event',
+      isScheduleUpdate: true,
+      data: {type: 'INSTITUTIONAL_SCHEDULE_UPDATED'},
+    }, {enableVotingFlow: true});
+
+    expect(target).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'voting_event',
+          isScheduleUpdate: true,
+          data: {type: 'INSTITUTIONAL_SCHEDULE_UPDATED'},
+        },
+      },
+    });
+  });
+
   it('redirige worksheet_uploaded al home sin navegar a pantallas erradas', () => {
     expect(
       buildNotificationNavigationTarget({

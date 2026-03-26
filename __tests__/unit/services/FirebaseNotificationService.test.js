@@ -1,4 +1,4 @@
-const storage = new Map();
+const mockStorage = new Map();
 let foregroundHandler = null;
 let backgroundHandler = null;
 
@@ -46,16 +46,16 @@ jest.mock('@react-native-firebase/functions', () => {
 });
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(key => Promise.resolve(storage.has(key) ? storage.get(key) : null)),
+  getItem: jest.fn(key => Promise.resolve(mockStorage.has(key) ? mockStorage.get(key) : null)),
   setItem: jest.fn((key, value) => {
-    storage.set(key, value);
+    mockStorage.set(key, value);
     return Promise.resolve();
   }),
 }));
 
 describe('FirebaseNotificationService', () => {
   beforeEach(() => {
-    storage.clear();
+    mockStorage.clear();
     foregroundHandler = null;
     backgroundHandler = null;
     jest.resetModules();
@@ -93,7 +93,7 @@ describe('FirebaseNotificationService', () => {
       },
     });
 
-    const stored = JSON.parse(storage.get('local_notifications'));
+    const stored = JSON.parse(mockStorage.get('local_notifications'));
     expect(stored[0]).toMatchObject({
       mesa: '12',
       colegio: 'Colegio A',
@@ -107,6 +107,10 @@ describe('FirebaseNotificationService', () => {
   it('tambien persiste la notificacion en background handler', async () => {
     const {FirebaseNotificationService} = require('../../../src/services/FirebaseNotificationService');
     new FirebaseNotificationService();
+    await Promise.resolve();
+
+    expect(mockMessaging.setBackgroundMessageHandler).toHaveBeenCalled();
+    expect(typeof backgroundHandler).toBe('function');
 
     await backgroundHandler({
       data: {
@@ -115,7 +119,7 @@ describe('FirebaseNotificationService', () => {
       },
     });
 
-    const stored = JSON.parse(storage.get('local_notifications'));
+    const stored = JSON.parse(mockStorage.get('local_notifications'));
     expect(stored[0]).toMatchObject({
       mesa: '15',
       colegio: 'Colegio B',

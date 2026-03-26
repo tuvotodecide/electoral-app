@@ -145,9 +145,13 @@ const NotificationDetailScreen = () => {
   const notification = route?.params?.notification || DEFAULT_NOTIFICATION;
   const rawData = notification?.data || {};
   const kind = notification?.kind || 'generic';
+  const isScheduleUpdate =
+    notification?.isScheduleUpdate === true ||
+    String(rawData?.type || '').trim().toUpperCase() === 'INSTITUTIONAL_SCHEDULE_UPDATED';
   const statusTone = notification?.statusTone || 'success';
   const startsAtLabel = notification?.votingStartLabel || formatEventDate(rawData?.votingStart);
   const endsAtLabel = notification?.votingEndLabel || formatEventDate(rawData?.votingEnd);
+  const resultsAtLabel = formatEventDate(rawData?.resultsPublishAt);
   const [remoteResultsSummary, setRemoteResultsSummary] = useState([]);
   const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
   const resolvedPublicUrl = resolvePublicResultsUrl(notification);
@@ -218,6 +222,17 @@ const NotificationDetailScreen = () => {
       };
     }
 
+    if (kind === 'voting_event' && isScheduleUpdate) {
+      return {
+        backgroundColor: '#1F7A36',
+        iconName: 'create-outline',
+        iconBg: 'rgba(255,255,255,0.16)',
+        title: rawData?.bannerTitle || 'Modificacion de cronograma',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
+    }
+
     if (kind === 'voting_event' && statusTone === 'danger') {
       return {
         backgroundColor: '#B91C1C',
@@ -237,7 +252,7 @@ const NotificationDetailScreen = () => {
       subtitle: '',
       textColor: '#FFFFFF',
     };
-  }, [kind, rawData?.bannerTitle, statusTone]);
+  }, [isScheduleUpdate, kind, rawData?.bannerTitle, statusTone]);
 
   const handlePrimaryAction = () => {
     const targetUrl = resolvedPublicUrl;
@@ -350,6 +365,16 @@ const NotificationDetailScreen = () => {
                 </CText>
                 <CText type="M14" style={styles.scheduleValue}>
                   {endsAtLabel}
+                </CText>
+              </View>
+            ) : null}
+            {resultsAtLabel ? (
+              <View style={styles.scheduleRow}>
+                <CText type="R14" style={styles.scheduleLabel}>
+                  Resultados
+                </CText>
+                <CText type="M14" style={styles.scheduleValue}>
+                  {resultsAtLabel}
                 </CText>
               </View>
             ) : null}

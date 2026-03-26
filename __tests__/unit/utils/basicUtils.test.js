@@ -157,11 +157,20 @@ describe('utils básicos', () => {
     await clearCache('abc');
     expect(AsyncStorage.removeItem).toHaveBeenCalled();
 
+    const fixedNow = new Date(2026, 0, 12, 10, 30, 0, 0).getTime();
+    jest.spyOn(Date, 'now').mockReturnValue(fixedNow);
     await saveAttestationAvailabilityCache('dni', {foo: 'bar'});
-    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify({foo: 'bar'}));
+    AsyncStorage.getItem.mockResolvedValueOnce(
+      JSON.stringify({
+        savedAt: fixedNow,
+        expiresAt: fixedNow + 60 * 60 * 1000,
+        foo: 'bar',
+      }),
+    );
     const cache = await getAttestationAvailabilityCache('dni');
-    expect(cache).toEqual({foo: 'bar'});
+    expect(cache).toMatchObject({foo: 'bar'});
     await clearAttestationAvailabilityCache('dni');
+    Date.now.mockRestore();
   });
 
   it('PinAttempts incrementa, bloquea y libera', async () => {

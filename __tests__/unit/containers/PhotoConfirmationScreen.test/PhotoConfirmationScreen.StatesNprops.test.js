@@ -31,7 +31,7 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
     jest.useRealTimers();
   });
 
-  test('muestra InfoModal cuando la validacion local falla al presionar Siguiente', async () => {
+  test('muestra el modal de validacion cuando la validacion local falla al confirmar', async () => {
     validateBallotLocally.mockReturnValue({
       ok: false,
       errors: ['Totales inconsistentes', 'Faltan datos'],
@@ -44,11 +44,14 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
       await flushPromises();
     });
 
-    expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
-    const infoModalMessage = getByTestId('photoConfirmationInfoModalMessage');
-    const messageText = Array.isArray(infoModalMessage.props.children)
-      ? infoModalMessage.props.children.join(' ')
-      : String(infoModalMessage.props.children);
+    await act(async () => {
+      fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+      await flushPromises();
+    });
+
+    expect(getByTestId('voteValidationModal')).toBeTruthy();
+    const infoModalMessage = getByTestId('voteValidationModalMessage');
+    const messageText = String(infoModalMessage.props.children);
     expect(messageText).toContain('Totales inconsistentes');
     expect(messageText).toContain('Faltan datos');
   });

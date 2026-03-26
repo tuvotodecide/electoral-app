@@ -150,6 +150,16 @@ jest.mock('react-native', () => ({
     currentState: 'active',
     addEventListener: jest.fn(() => ({remove: jest.fn()})),
   },
+  Keyboard: {
+    dismiss: jest.fn(),
+    addListener: jest.fn(() => ({remove: jest.fn()})),
+    removeListener: jest.fn(),
+  },
+  BackHandler: {
+    addEventListener: jest.fn(() => ({remove: jest.fn()})),
+    removeEventListener: jest.fn(),
+    exitApp: jest.fn(),
+  },
   useColorScheme: jest.fn(() => 'light'),
   StatusBar: 'StatusBar',
   InteractionManager: {
@@ -206,6 +216,14 @@ jest.mock('expo-image-manipulator', () => ({
         ),
       })),
     })),
+  },
+}));
+
+jest.mock('expo-crypto', () => ({
+  getRandomBytesAsync: jest.fn(async size => new Uint8Array(size)),
+  digestStringAsync: jest.fn(async () => 'mock-digest'),
+  CryptoDigestAlgorithm: {
+    SHA256: 'SHA-256',
   },
 }));
 

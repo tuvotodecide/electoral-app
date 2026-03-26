@@ -116,7 +116,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
   });
 
   describe('validation errors', () => {
-    test('muestra error cuando validación local falla', async () => {
+    test('muestra modal de validacion cuando validación local falla', async () => {
       validateBallotLocally.mockReturnValue({
         ok: false,
         errors: ['Total de votos no coincide', 'Votos negativos'],
@@ -129,7 +129,12 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
         await flushPromises();
       });
 
-      expect(queryByTestId('photoConfirmationInfoModal')).toBeTruthy();
+      await act(async () => {
+        fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+        await flushPromises();
+      });
+
+      expect(queryByTestId('voteValidationModal')).toBeTruthy();
     });
 
     test('maneja caso cuando photoUri es null', async () => {
@@ -188,7 +193,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
       expect(enqueue).not.toHaveBeenCalled();
     });
 
-    test('cierra info modal al presionar close', async () => {
+    test('cierra modal de validacion al presionar close', async () => {
       validateBallotLocally.mockReturnValue({
         ok: false,
         errors: ['Error de validación'],
@@ -201,10 +206,15 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
         await flushPromises();
       });
 
-      expect(queryByTestId('photoConfirmationInfoModal')).toBeTruthy();
+      await act(async () => {
+        fireEvent.press(getByTestId('photoConfirmationModalConfirmButton'));
+        await flushPromises();
+      });
+
+      expect(queryByTestId('voteValidationModal')).toBeTruthy();
 
       await act(async () => {
-        fireEvent.press(getByTestId('photoConfirmationInfoModalCloseButton'));
+        fireEvent.press(getByTestId('voteValidationModalButton'));
         await flushPromises();
       });
     });
