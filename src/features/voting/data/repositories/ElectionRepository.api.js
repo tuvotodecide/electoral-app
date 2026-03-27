@@ -182,8 +182,17 @@ const buildElectionModel = ({
 const findCandidateByRoleName = (candidates = [], matcher) =>
   candidates.find(candidate => matcher(String(candidate?.roleName || '').toLowerCase()));
 
+const mapTicketEntries = candidates =>
+  (Array.isArray(candidates) ? candidates : [])
+    .map(candidate => ({
+      roleName: String(candidate?.roleName || candidate?.role?.name || '').trim(),
+      name: String(candidate?.name || '').trim(),
+    }))
+    .filter(candidate => candidate.name);
+
 const mapOptionToCandidate = option => {
   const candidates = Array.isArray(option?.candidates) ? option.candidates : [];
+  const ticketEntries = mapTicketEntries(candidates);
   const president =
     findCandidateByRoleName(candidates, role => role.includes('president')) ||
     findCandidateByRoleName(candidates, role => role.includes('presidente')) ||
@@ -200,6 +209,7 @@ const mapOptionToCandidate = option => {
     partyName: option?.name || 'Opción',
     presidentName: president?.name || option?.name || 'Sin candidato',
     viceName: vice?.name || '',
+    ticketEntries,
     avatarUrl: president?.photoUrl || option?.logoUrl || null,
     partyColor: option?.color || '#2563EB',
   };

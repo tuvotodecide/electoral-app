@@ -42,6 +42,34 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const buildSelectionEntries = candidateSelected => {
+  const ticketEntries = Array.isArray(candidateSelected?.ticketEntries)
+    ? candidateSelected.ticketEntries
+        .map(entry => ({
+          label: String(entry?.roleName || '').trim(),
+          value: String(entry?.name || '').trim(),
+        }))
+        .filter(entry => entry.value)
+    : [];
+
+  if (ticketEntries.length > 0) {
+    return ticketEntries;
+  }
+
+  const fallbackEntries = [
+    {
+      label: String(UI_STRINGS.president || '').replace(/:$/, ''),
+      value: String(candidateSelected?.presidentName || '').trim(),
+    },
+    {
+      label: String(UI_STRINGS.vicePresident || '').replace(/:$/, ''),
+      value: String(candidateSelected?.viceName || '').trim(),
+    },
+  ];
+
+  return fallbackEntries.filter(entry => entry.value);
+};
+
 const VoteReceiptScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -67,6 +95,7 @@ const VoteReceiptScreen = () => {
   const isFailedParticipation = participation?.status === 'ERROR';
   const isQueuedParticipation =
     participation?.synced === false && !isFailedParticipation;
+  const selectionEntries = buildSelectionEntries(participation?.candidateSelected);
 
   const toggleDetail = () => {
     setIsDetailExpanded(!isDetailExpanded);
@@ -248,24 +277,19 @@ const VoteReceiptScreen = () => {
                   {participation.candidateSelected.partyName}
                 </CText>
               </View>
-              <View style={styles.selectionDetailRow}>
-                <CText type="R12" style={styles.selectionLabel}>
-                  {UI_STRINGS.president}
-                </CText>
-                <CText type="M14" style={styles.selectionValue}>
-                  {participation.candidateSelected.presidentName}
-                </CText>
-              </View>
-              {participation.candidateSelected.viceName && (
-                <View style={styles.selectionDetailRow}>
+              {selectionEntries.map(entry => (
+                <View
+                  key={`${entry.label}:${entry.value}`}
+                  style={styles.selectionDetailRow}
+                >
                   <CText type="R12" style={styles.selectionLabel}>
-                    {UI_STRINGS.vicePresident}
+                    {entry.label}
                   </CText>
                   <CText type="M14" style={styles.selectionValue}>
-                    {participation.candidateSelected.viceName}
+                    {entry.value}
                   </CText>
                 </View>
-              )}
+              ))}
             </View>
           )}
 

@@ -56,6 +56,19 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const getPrimaryCandidateName = candidate => {
+  const primaryTicketEntry = Array.isArray(candidate?.ticketEntries)
+    ? candidate.ticketEntries.find(entry => String(entry?.name || '').trim())
+    : null;
+
+  return String(
+    primaryTicketEntry?.name ||
+      candidate?.presidentName ||
+      candidate?.partyName ||
+      '',
+  ).trim();
+};
+
 const isLikelyNetworkVoteError = error => {
   const message = String(error?.message || error || '').toLowerCase();
   return (
@@ -259,6 +272,7 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
@@ -292,6 +306,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -313,6 +328,7 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
@@ -333,6 +349,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -360,6 +377,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
             errorMessage: null,
           });
@@ -434,7 +452,9 @@ const CandidateScreen = ({ route }) => {
     if (!selectedCandidate) {
       return UI_STRINGS.selectCandidate;
     }
-    return `${UI_STRINGS.voteFor} ${selectedCandidate.presidentName.split(' ')[0].toUpperCase()} ${selectedCandidate.presidentName.split(' ')[1]?.toUpperCase() || ''}`.trim();
+    const primaryName = getPrimaryCandidateName(selectedCandidate);
+    const [firstName = '', secondName = ''] = primaryName.split(' ');
+    return `${UI_STRINGS.voteFor} ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
   };
 
   return (
@@ -490,7 +510,7 @@ const CandidateScreen = ({ route }) => {
       {/* Confirm Modal */}
       <ConfirmVoteModal
         visible={showConfirmModal}
-        presidentName={selectedCandidate?.presidentName || ''}
+        presidentName={getPrimaryCandidateName(selectedCandidate)}
         partyName={selectedCandidate?.partyName || ''}
         partyColor={selectedCandidate?.partyColor || '#2563EB'}
         onConfirm={handleConfirmVote}

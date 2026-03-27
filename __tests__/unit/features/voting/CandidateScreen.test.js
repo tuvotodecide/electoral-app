@@ -304,6 +304,7 @@ describe('CandidateScreen', () => {
         candidateSelected: {
           partyName: 'Lista Azul',
           presidentName: 'Ana Perez',
+          ticketEntries: [],
           viceName: 'Luis Rojas',
         },
       });
@@ -326,6 +327,7 @@ describe('CandidateScreen', () => {
       candidateSelected: {
         partyName: 'Lista Azul',
         presidentName: 'Ana Perez',
+        ticketEntries: [],
         viceName: 'Luis Rojas',
       },
     });
@@ -389,6 +391,7 @@ describe('CandidateScreen', () => {
       candidateSelected: {
         partyName: 'Lista Azul',
         presidentName: 'Ana Perez',
+        ticketEntries: [],
         viceName: 'Luis Rojas',
       },
     });
