@@ -70,6 +70,26 @@ const formatCountdownLabel = (target, now) => {
   return `Inicia en ${pad2(hours)}:${pad2(minutes)}`;
 };
 
+export const resolveVotingEventDescription = (data = {}, body = '') => {
+  const eventName = String(
+    data?.eventName ||
+      data?.title ||
+      data?.eventTitle ||
+      '',
+  ).trim();
+  if (eventName) {
+    return eventName;
+  }
+
+  const normalizedBody = String(body || '').trim();
+  const quotedMatch = normalizedBody.match(/["“](.+?)["”]/);
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1].trim();
+  }
+
+  return normalizedBody;
+};
+
 export const getNotificationKind = ({ type, title, body }) => {
   const normalizedType = String(type || '').trim().toUpperCase();
   const haystack = `${String(title || '')} ${String(body || '')}`.toLowerCase();
@@ -374,7 +394,7 @@ export default function Notification({ navigation }) {
       colegio: data?.locationName || n?.locationName || '',
       direccion:
         notificationKind === 'voting_event'
-          ? bodyFromBackend || dateRange
+          ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
             ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
             : data?.locationAddress || n?.locationAddress || '',

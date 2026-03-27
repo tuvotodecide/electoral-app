@@ -37,40 +37,22 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const mergeParticipations = (remoteParticipations, localParticipations) => {
-  const pendingLocal = (Array.isArray(localParticipations) ? localParticipations : []).filter(
-    item => item?.synced !== true || item?.status === 'ERROR',
-  );
-  const blockedElectionIds = new Set(
-    pendingLocal.map(item => String(item?.electionId || '')).filter(Boolean),
-  );
-  const seenIds = new Set(pendingLocal.map(item => String(item?.id || '')).filter(Boolean));
-  const nextParticipations = [...pendingLocal];
-
-  (Array.isArray(remoteParticipations) ? remoteParticipations : []).forEach(item => {
-    const itemId = String(item?.id || '');
-    const electionId = String(item?.electionId || '');
-
-    if ((itemId && seenIds.has(itemId)) || (electionId && blockedElectionIds.has(electionId))) {
-      return;
-    }
-
-    if (itemId) {
-      seenIds.add(itemId);
-    }
-
-    nextParticipations.push(item);
-  });
-
-  return nextParticipations.sort(
+const mergeHistoryItems = ({
+  localParticipations,
+  witnessRecords,
+}) =>
+  [
+    ...(Array.isArray(localParticipations) ? localParticipations : []),
+    ...(Array.isArray(witnessRecords) ? witnessRecords : []),
+  ].sort(
     (left, right) =>
       new Date(right?.participatedAt || 0).getTime() -
       new Date(left?.participatedAt || 0).getTime(),
   );
-};
 
 const ParticipationItem = ({ item, onPress }) => {
-  const isRegistered = item.status === 'VOTO_REGISTRADO';
+  const isAttestation = item?.itemType === 'attestation';
+  const isRegistered = item.status === 'VOTO_REGISTRADO' || isAttestation;
   const isFailed = item.status === 'ERROR';
   const statusColor = isRegistered ? '#41A44D' : isFailed ? '#D32F2F' : '#F59E0B';
   const statusBgColor = isRegistered ? '#E8F5E9' : isFailed ? '#FFEBEE' : '#FEF3C7';
@@ -90,34 +72,50 @@ const ParticipationItem = ({ item, onPress }) => {
               style={styles.attestationPreview}
               resizeMode="cover"
             />
-            <View style={styles.previewCopy}>
-              <CText type="B12" style={styles.previewLabel}>
-                Attestation
-              </CText>
-              <CText type="R12" style={styles.previewHint}>
-                Certificado asociado
-              </CText>
-            </View>
+            {isAttestation ? (
+              <View style={styles.previewCopy}>
+                <CText type="B12" style={styles.previewLabel}>
+                  {item.electionTitle}
+                </CText>
+                <CText type="R12" style={styles.previewHint}>
+                  {item.date} · {item.time}
+                </CText>
+              </View>
+            ) : null}
+            {isAttestation ? (
+              <Ionicons
+                name="chevron-forward"
+                size={22}
+                color="#9CA3AF"
+                style={styles.previewChevron}
+              />
+            ) : null}
           </View>
         ) : null}
-        <View style={styles.itemHeader}>
-          <CText type="B16" style={styles.itemTitle}>
-            {item.electionTitle}
-          </CText>
-          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-        </View>
+        {!isAttestation ? (
+          <View style={styles.itemHeader}>
+            <CText type="B16" style={styles.itemTitle}>
+              {item.electionTitle}
+            </CText>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </View>
+        ) : null}
 
         {/* Status Badge */}
-        <View style={[styles.statusBadge, { backgroundColor: statusBgColor }]}>
-          <CText type="B12" style={[styles.statusText, { color: statusColor }]}>
-            {item.statusLabel}
-          </CText>
-        </View>
+        {!isAttestation ? (
+          <View style={[styles.statusBadge, { backgroundColor: statusBgColor }]}>
+            <CText type="B12" style={[styles.statusText, { color: statusColor }]}>
+              {item.statusLabel}
+            </CText>
+          </View>
+        ) : null}
 
         {/* Date */}
-        <CText type="R12" style={styles.dateText}>
-          {item.date} · {item.time}
-        </CText>
+        {!isAttestation ? (
+          <CText type="R12" style={styles.dateText}>
+            {item.date} · {item.time}
+          </CText>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -132,14 +130,21 @@ const ParticipationsListScreen = () => {
 
   const loadParticipations = useCallback(async () => {
     setIsLoading(true);
-    try {
-      const remoteParticipations = await repository.getParticipations();
-      setParticipations(mergeParticipations(remoteParticipations, localParticipations));
-    } catch (error) {
-      setParticipations(mergeParticipations([], localParticipations));
-    } finally {
-      setIsLoading(false);
-    }
+    const [witnessRecordsResult] = await Promise.allSettled([
+      typeof repository.getWitnessRecords === 'function'
+        ? repository.getWitnessRecords()
+        : Promise.resolve([]),
+    ]);
+    const witnessRecords =
+      witnessRecordsResult.status === 'fulfilled' ? witnessRecordsResult.value : [];
+
+    setParticipations(
+      mergeHistoryItems({
+        localParticipations,
+        witnessRecords,
+      }),
+    );
+    setIsLoading(false);
   }, [localParticipations, repository]);
 
   useFocusEffect(
@@ -149,6 +154,18 @@ const ParticipationsListScreen = () => {
   );
 
   const handleItemPress = (item) => {
+    if (item?.itemType === 'attestation') {
+      navigation.navigate(StackNav.MyWitnessesDetailScreen, {
+        photoUri: item.photoUri || null,
+        mesaData: item.mesaData || null,
+        partyResults: item.partyResults || [],
+        voteSummaryResults: item.voteSummaryResults || [],
+        attestationData: item.attestationData || null,
+        certificateUrl: item.certificateUrl || null,
+      });
+      return;
+    }
+
     navigation.navigate(StackNav.VotingReceiptScreen, {
       participationId: item.id,
       electionId: item.electionId,
@@ -228,13 +245,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  previewChevron: {
+    marginLeft: 10,
+  },
   previewLabel: {
     color: '#17694A',
     fontWeight: '700',
+    fontSize: getResponsiveSize(14, 15, 16),
   },
   previewHint: {
     color: '#6B7280',
     marginTop: 2,
+    fontSize: getResponsiveSize(13, 14, 15),
   },
   itemHeader: {
     flexDirection: 'row',
@@ -244,7 +266,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     color: '#1F2937',
-    fontSize: getResponsiveSize(15, 16, 18),
+    fontSize: getResponsiveSize(16, 17, 19),
     fontWeight: '600',
     flex: 1,
     marginRight: 8,
@@ -262,7 +284,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: '#9CA3AF',
-    fontSize: getResponsiveSize(12, 13, 14),
+    fontSize: getResponsiveSize(13, 14, 15),
   },
   separator: {
     height: getResponsiveSize(12, 14, 16),
