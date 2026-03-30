@@ -32,7 +32,6 @@ const mockPaths = [
   '../../../src/container/TabBar/Recovery/RecoveryUserQrpin',
   '../../../src/container/TabBar/Recovery/RecoveryUserQrpin2',
   '../../../src/container/TabBar/Recovery/RecoveryQR',
-  '../../../src/container/TabBar/Recovery/RecoveryQr',
   '../../../src/container/TabBar/Recovery/MyGuardiansStatus',
   '../../../src/container/TabBar/Recovery/RecoveryUser1Pin',
   '../../../src/container/TabBar/Recovery/RecoveryUser2Pin',
