@@ -1,0 +1,27 @@
+appId: "com.tuvotodecide"
+---
+
+# INGRESO DE PIN
+- inputText: "3938"
+
+# ESPERAR A QUE CARGUE EL HOME
+- extendedWaitUntil:
+    visible:
+      id: "homeMiVotoLogoTitle"
+    timeout: 5000
+
+
+# CLICK EN VOTAR AHORA
+- tapOn: "Votar Ahora"
+
+# REEMPLAZO DE SLEEP: Esperar a que el candidato aparezca en pantalla
+# Esto es mucho más estable que un delay fijo de 5 segundos.
+- extendedWaitUntil:
+    visible: "HOJS"
+    timeout: 10000
+
+# SELECCIONAR CANDIDATO
+- tapOn: "HOJS"
+
+# CONFIRMAR VOTO
+- tapOn: "VOTAR POR HOJS"

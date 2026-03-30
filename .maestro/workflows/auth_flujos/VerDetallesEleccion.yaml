@@ -1,0 +1,14 @@
+appId: com.tuvotodecide
+---
+# INGRESO DE PIN
+- inputText: "3938"
+
+# ESPERAR A QUE CARGUE EL HOME
+- extendedWaitUntil:
+    visible:
+      id: "homeMiVotoLogoTitle"
+    timeout: 5000
+
+# CLICK EN VER DETALLES
+- tapOn: "Ver detalles"
+
