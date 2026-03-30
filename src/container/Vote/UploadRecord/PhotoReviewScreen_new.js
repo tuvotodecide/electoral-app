@@ -1,9 +1,9 @@
+import { BACKEND_RESULT } from '@env';
 import React, {useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
   StyleSheet,
-  Switch,
   TextInput,
   TouchableOpacity,
   View,
@@ -22,7 +22,7 @@ import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
 import CText from '../../../components/common/CText';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {BACKEND_RESULT} from '@env';
+
 import {authenticateWithBackend} from '../../../utils/offlineQueueHandler';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 import {enqueue, getAll as getOfflineQueue} from '../../../utils/offlineQueue';

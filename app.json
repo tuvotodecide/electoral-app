@@ -57,11 +57,10 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
       [
         "expo-build-properties",
         {
@@ -98,7 +97,6 @@
       "./plugins/withNativeModules"
     ],
     "experiments": {
-      "typedRoutes": true,
       "reactCompiler": true
     }
   }

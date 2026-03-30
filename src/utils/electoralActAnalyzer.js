@@ -1,7 +1,8 @@
+import { API_GEMINI } from '@env';
 import {GoogleGenAI} from '@google/genai';
 import {getProvision} from './provisionClient';
 import RNFS from 'react-native-fs';
-import {API_GEMINI} from '@env';
+
 
 class ElectoralActAnalyzer {
   constructor() {

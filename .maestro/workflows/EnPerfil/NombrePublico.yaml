@@ -1,0 +1,25 @@
+appId: com.tuvotodecide
+---
+# 1. Navegar al Perfil usando la ruta básica
+- runFlow: RutaBasicaAPerfil.yaml
+
+# 2. Entrar en Datos personales
+- extendedWaitUntil:
+    visible:
+      id: "profileMenuItem_1"
+    timeout: 10000
+
+- tapOn:
+    id: "profileMenuItem_1"
+
+# 3. Encender/Apagar "Nombre público"
+- extendedWaitUntil:
+    visible:
+      id: "optionSwitch_1"
+    timeout: 10000
+
+- tapOn:
+    id: "optionSwitch_1"
+
+# 4. Regresar al Perfil
+- back

@@ -1,10 +1,11 @@
+import { BACKEND_IDENTITY } from '@env';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
 import { useSelector } from 'react-redux';
 
 // custom import
-import { BACKEND_IDENTITY } from '@env';
+
 import wira from 'wira-sdk';
 import { moderateScale } from '../../../common/constants';
 import CButton from '../../../components/common/CButton';

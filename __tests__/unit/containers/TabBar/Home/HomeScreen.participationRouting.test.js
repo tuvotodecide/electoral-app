@@ -48,6 +48,14 @@ jest.mock('axios', () => ({
   defaults: {headers: {common: {}}},
 }));
 
+jest.mock('expo-image', () => {
+  const React = require('react');
+  const MockExpoImage = props => React.createElement('Image', props, props.children);
+  return {
+    Image: MockExpoImage,
+  };
+});
+
 jest.mock('../../../../../src/components/common/CustomModal', () => {
   const ReactLib = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');

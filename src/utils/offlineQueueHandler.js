@@ -1,6 +1,7 @@
+import { BACKEND_RESULT, CHAIN, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import pinataService from '../utils/pinataService';
 import axios from 'axios';
-import { BACKEND_RESULT, CHAIN, VERIFIER_REQUEST_ENDPOINT } from '@env';
+
 import { oracleCalls, oracleReads } from '../api/oracle';
 import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';

@@ -1,6 +1,7 @@
+import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_RESULT } from '@env';
 import NetInfo from '@react-native-community/netinfo';
 import {Alert} from 'react-native';
-import {BACKEND, BACKEND_BLOCKCHAIN, BACKEND_RESULT} from '@env';
+
 
 const NETWORK_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 

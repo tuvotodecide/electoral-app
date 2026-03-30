@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +15,7 @@ import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import axios from 'axios';
-import { BACKEND_RESULT } from '@env';
+
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
 import {

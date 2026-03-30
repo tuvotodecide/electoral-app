@@ -1,6 +1,7 @@
+import { APP_DOMAIN, APP_URI } from '@env';
 import {Wallet} from 'ethers';
 import {SiweMessage} from 'siwe';
-import {APP_DOMAIN, APP_URI} from '@env';
+
 
 export async function buildSiweAuthSig(privKey, dataHash) {
   const wallet = new Wallet(privKey);

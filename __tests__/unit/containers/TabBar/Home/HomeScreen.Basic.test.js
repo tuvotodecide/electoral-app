@@ -81,6 +81,14 @@ jest.mock('react-native-paper', () => ({
   ActivityIndicator: 'ActivityIndicator',
 }));
 
+jest.mock('expo-image', () => {
+  const React = require('react');
+  const MockExpoImage = props => React.createElement('Image', props, props.children);
+  return {
+    Image: MockExpoImage,
+  };
+});
+
 import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
 import {clearSession} from '../../../../../src/utils/Session';
 

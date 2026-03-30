@@ -1,5 +1,6 @@
-import axios from 'axios';
 import { BACKEND_IDENTITY } from '@env';
+import axios from 'axios';
+
 import { captureError, addHttpBreadcrumb } from '../config/sentry';
 
 

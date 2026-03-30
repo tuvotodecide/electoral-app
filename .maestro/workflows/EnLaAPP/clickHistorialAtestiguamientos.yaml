@@ -1,0 +1,63 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Click en "Mis atestiguamientos"
+- extendedWaitUntil:
+    visible: "Mis atestiguamientos"
+    timeout: 10000
+
+- tapOn: "Mis atestiguamientos"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 3. Click en la primera mesa de la lista
+- tapOn:
+    id: "phoneWitnessRecord_0"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 4. Ver certificado
+- extendedWaitUntil:
+    visible: 
+        id: "viewCertificateButton"
+    timeout: 10000
+
+- tapOn:
+    id: "viewCertificateButton"
+
+# 5. Compartir mi certificado
+- extendedWaitUntil:
+    visible: "Compartir mi certificado"
+    timeout: 10000
+
+- tapOn: "Compartir mi certificado"
+
+# 6. Seleccionar WhatsApp (esto abre el menú de compartir del sistema)
+- extendedWaitUntil:
+    visible: "WhatsApp"
+    timeout: 10000
+- tapOn: "WhatsApp"
+
+- tapOn: "WhatsApp"
+
+# 7. Seleccionar contacto en WhatsApp y enviar
+- extendedWaitUntil:
+    visible: "joselo U"
+    timeout: 15000
+
+- tapOn: "joselo U"
+
+
+# Confirmar envío desde el chat de WhatsApp
+- extendedWaitUntil:
+    visible:
+      id: "com.whatsapp:id/send"
+    timeout: 5000
+    optional: true
+
+- tapOn:
+    id: "com.whatsapp:id/send"
+    optional: true
+

@@ -1,3 +1,4 @@
+
 import { CHAIN } from '@env';
 import { createSmartAccountClient } from 'permissionless';
 import { toSimpleSmartAccount } from 'permissionless/accounts';
@@ -131,21 +132,15 @@ export async function executeOperation(
     },
   });
 
-  const arbitrumParams = chainId.startsWith('arbitrum') ? {
-    paymasterContext: { sponsorshipPolicyId },
-    userOperation: {
-      estimateFeesPerGas: async () => {
-        return (await pimlicoClient.getUserOperationGasPrice()).standard;
-      },
-    },
-  } : {};
+  const customParams = availableNetworks[chainId].getCustomPaymasterParams ? 
+    availableNetworks[chainId].getCustomPaymasterParams(pimlicoClient, sponsorshipPolicyId) : {};
 
   const smartAccountClient = createSmartAccountClient({
     account,
     chain,
     bundlerTransport: http(bundler),
     paymaster: pimlicoClient,
-    ...arbitrumParams,
+    ...customParams,
   });
 
   const txHash = await smartAccountClient.sendTransaction(callData);

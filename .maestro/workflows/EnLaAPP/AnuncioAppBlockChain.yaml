@@ -1,0 +1,27 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. En el Home, buscar el anuncio en el carrusel y pulsar "Más Info"
+- extendedWaitUntil:
+    visible:
+      id: "homeCarouselButton_1"
+    timeout: 15000
+- tapOn:
+    id: "homeCarouselButton_1"
+# 3. Esperar a que cargue el contenido (se abre el navegador)
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# 4. Hacer scroll hacia abajo hasta el final
+- scroll
+
+- scroll
+
+- scroll
+
+- scroll
+
+# 5. Regresar a la aplicación
+- back

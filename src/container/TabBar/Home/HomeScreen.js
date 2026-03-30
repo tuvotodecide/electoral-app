@@ -1,8 +1,9 @@
+import { BACKEND_RESULT } from '@env';
+import { Image } from 'expo-image';
 import {
   AppState,
   Dimensions,
   FlatList,
-  Image,
   Linking,
   Modal,
   PermissionsAndroid,
@@ -21,7 +22,7 @@ import { useDispatch } from 'react-redux';
 import { clearWallet } from '../../../redux/action/walletAction';
 import { clearAuth } from '../../../redux/slices/authSlice';
 
-import { BACKEND_RESULT } from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -333,6 +334,9 @@ const BlockchainConsultoraBanner = () => (
     <View
       testID="homeBlockchainBannerContent"
       style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={stylesx.bcLogoCircle}>
+        <CText style={stylesx.bcLogoText}>bc</CText>
+      </View>
       <View testID="homeBlockchainBannerText" style={{ marginLeft: 10, flex: 1 }}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
           {I18nStrings.needBlockchainApp}

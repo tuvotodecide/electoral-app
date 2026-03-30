@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -23,7 +24,7 @@ import I18nStrings from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CAlert from '../../../components/common/CAlert';
 import { StackNav } from '../../../navigation/NavigationKey';
-import { BACKEND_RESULT } from '@env';
+
 import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { enqueue, getAll as getOfflineQueue } from '../../../utils/offlineQueue';
 import {

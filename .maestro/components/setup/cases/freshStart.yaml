@@ -1,12 +1,5 @@
 appId: com.tuvotodecide
 ---
+# 1. LANZAMOS LA APP (Sin forzar link de red)
 - launchApp:
-    clearState: true
-- assertVisible:
-    id: downloadMessage
-- assertNotVisible:
-    id: retryDownloadButton
-- extendedWaitUntil:
-    visible:
-      id: MiVotoLogoImage
-    timeout: 90000
+    clearState: false

@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -23,7 +24,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import NetInfo from '@react-native-community/netinfo';
-import { BACKEND_RESULT } from '@env';
+
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 
 import { getVotePlace } from '../../../utils/offlineQueue';

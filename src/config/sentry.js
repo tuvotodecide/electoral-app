@@ -1,5 +1,6 @@
-import * as Sentry from '@sentry/react-native';
 import { SENTRY_DSN_KEY } from '@env';
+import * as Sentry from '@sentry/react-native';
+
 
 // ============================================================================
 // CONFIGURACION SENTRY - App Electoral

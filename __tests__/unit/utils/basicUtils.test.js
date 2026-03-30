@@ -107,10 +107,10 @@ describe('utils básicos', () => {
   });
 
   it('AsyncStorage helpers: set/get y parse', async () => {
-    AsyncStorage.multiGet.mockResolvedValueOnce([
-      [THEME, JSON.stringify({dark: true})],
-      [ON_BOARDING, JSON.stringify(true)],
-    ]);
+    AsyncStorage.getItem
+      .mockResolvedValueOnce(JSON.stringify({ dark: true }))
+      .mockResolvedValueOnce(JSON.stringify(true));
+
     const {themeColor, onBoardingValue} = await initialStorageValueGet();
     expect(themeColor).toEqual({dark: true});
     expect(onBoardingValue).toBe(true);

@@ -1,27 +1,25 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageService as AsyncStorage } from '../services/StorageService';
 import {ON_BOARDING, THEME} from '../common/constants';
 import {jsonSafe} from './RegisterDraft';
 
 const setOnBoarding = async v =>
   AsyncStorage.setItem(ON_BOARDING, JSON.stringify(v));
 
+// Interface Segregation Principle (ISP): 
+// Métodos segregados para no obligar al cliente a descargar todo
+const getThemeColor = async () => {
+  const themeRaw = await AsyncStorage.getItem(THEME);
+  try { return themeRaw ? JSON.parse(themeRaw) : null; } catch (e) { return null; }
+};
+
+const getOnBoardingValue = async () => {
+  const onbRaw = await AsyncStorage.getItem(ON_BOARDING);
+  try { return onbRaw ? JSON.parse(onbRaw) : null; } catch (e) { return null; }
+};
+
 const initialStorageValueGet = async () => {
-  const [[, themeRaw], [, onbRaw]] = await AsyncStorage.multiGet([
-    THEME,
-    ON_BOARDING,
-  ]);
-  let themeColor = null;
-  let onBoardingValue = null;
-  try {
-    themeColor = themeRaw ? JSON.parse(themeRaw) : null;
-  } catch (e) {
-    themeColor = null;
-  }
-  try {
-    onBoardingValue = onbRaw ? JSON.parse(onbRaw) : null;
-  } catch (e) {
-    onBoardingValue = null;
-  }
+  const themeColor = await getThemeColor();
+  const onBoardingValue = await getOnBoardingValue();
   return {themeColor, onBoardingValue};
 };
 const toStoredString = v =>
@@ -45,6 +43,8 @@ const getAsyncStorageData = async k => {
 };
 export {
   setOnBoarding,
+  getThemeColor,
+  getOnBoardingValue,
   initialStorageValueGet,
   setAsyncStorageData,
   getAsyncStorageData,

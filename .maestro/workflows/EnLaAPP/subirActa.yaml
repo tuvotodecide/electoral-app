@@ -1,0 +1,74 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Click en "Enviar Acta Alcalde" en el Home
+- extendedWaitUntil:
+    visible: "Enviar Acta Alcalde"
+    timeout: 15000
+
+- tapOn: "Enviar Acta Alcalde"
+
+# 3. Esperar a que carguen los recintos y click en el primero
+- extendedWaitUntil:
+    visible: ".* mesas"
+    timeout: 15000
+
+- tapOn:
+    index: 0
+    text: ".* mesas"
+
+# 4. Colocar código de mesa: 2050791
+- extendedWaitUntil:
+    visible: { id: "tableDetailMesaInput" }
+    timeout: 15000
+
+- tapOn: { id: "tableDetailMesaInput" }
+- inputText: "2050791"
+
+# 5. Atrás para quitar el teclado
+- back
+
+# 6. Click en "Confirmar" mesa (Necesario para que aparezca el botón de tomar foto)
+- tapOn: { id: "tableDetailSearchMesaButton" }
+
+# 7. Click en "Tomar foto" (el botón que abre la cámara)
+- extendedWaitUntil:
+    visible: { id: "tableDetailTakePhotoButton" }
+    timeout: 10000
+
+- tapOn: { id: "tableDetailTakePhotoButton" }
+
+# 8. Esperar 2 segundos en la cámara y sacar la foto
+- waitForAnimationToEnd
+- waitForMillis: 2000
+- tapOn: { id: "cameraScreenCaptureButton" }
+
+# 9. Click en "Analizar"
+- extendedWaitUntil:
+    visible: { id: "cameraScreenFooterAnalyzeButton" }
+    timeout: 10000
+
+- tapOn: { id: "cameraScreenFooterAnalyzeButton" }
+
+# 10. Click en "Siguiente" (en revisión de foto)
+- extendedWaitUntil:
+    visible: { id: "photoReviewNextButton" }
+    timeout: 15000
+
+- tapOn: { id: "photoReviewNextButton" }
+
+# 11. Click en "Siguiente" (en confirmación/atestiguación)
+- extendedWaitUntil:
+    visible: { id: "photoConfirmationPublishButton" }
+    timeout: 10000
+
+- tapOn: { id: "photoConfirmationPublishButton" }
+
+# 12. Click en "Publico y certifico" (en el modal final)
+- extendedWaitUntil:
+    visible: "Publico y certifico"
+    timeout: 10000
+
+- tapOn: { id: "photoConfirmationModalConfirmButton" }

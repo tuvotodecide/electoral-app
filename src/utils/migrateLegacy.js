@@ -1,6 +1,7 @@
 // utils/migrateLegacy.js
+import { BACKEND, BACKEND_IDENTITY, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME, CHAIN } from '@env';
 import axios from 'axios';
-import {BACKEND, BACKEND_IDENTITY, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME, CHAIN} from '@env';
+
 import {buildSiweAuthSig} from './siweRn';
 import {decryptVCWithPin} from './vcCrypto';
 import wira from 'wira-sdk';
