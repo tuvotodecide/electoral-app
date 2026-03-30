@@ -284,6 +284,8 @@ const PhotoReviewScreen = () => {
       existingRecord?.observationText ??
       '',
   ).trim();
+
+  
   const initialObservationByText = isObservationFromText(initialObservationText);
   const initialHasObservation =
     typeof route.params?.hasObservation === 'boolean'
