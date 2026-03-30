@@ -337,6 +337,12 @@ const buildWorksheetVotesFromElectoralData = electoralData => {
   const validVotes = toNumber(findRow('validos')?.value1);
   const nullVotes = toNumber(findRow('nulos')?.value1);
   const blankVotes = toNumber(findRow('blancos')?.value1);
+  const validVotesSecondary = toNumber(findRow('validos')?.value2);
+  const nullVotesSecondary = toNumber(findRow('nulos')?.value2);
+  const blankVotesSecondary = toNumber(findRow('blancos')?.value2);
+  const hasSecondary = partyResults.some(party =>
+    String(party?.diputado ?? '').trim() !== '',
+  );
 
   return {
     parties: {
@@ -353,6 +359,25 @@ const buildWorksheetVotesFromElectoralData = electoralData => {
       })),
       totalVotes: validVotes + nullVotes + blankVotes,
     },
+    ...(hasSecondary
+      ? {
+          deputies: {
+            validVotes: validVotesSecondary,
+            nullVotes: nullVotesSecondary,
+            blankVotes: blankVotesSecondary,
+            partyVotes: partyResults.map(party => ({
+              partyId: String(
+                party?.id ?? party?.partyId ?? party?.partido ?? party?.name ?? '',
+              )
+                .trim()
+                .toLowerCase(),
+              votes: toNumber(party?.diputado),
+            })),
+            totalVotes:
+              validVotesSecondary + nullVotesSecondary + blankVotesSecondary,
+          },
+        }
+      : {}),
   };
 };
 
@@ -1011,9 +1036,15 @@ export const publishActaHandler = async (item, userData) => {
     };
 
     // 1) PRIMERO: verificar duplicado por votos (idéntico a online)
+    const hasSecondaryVotes = (electoralData?.partyResults || []).some(
+      p => String(p?.diputado ?? '').trim() !== '',
+    );
     const verificationData = {
       tableNumber: tableCodeStrict,
-      votes: { parties: buildFromPayload('presidente') },
+      votes: {
+        parties: buildFromPayload('presidente'),
+        ...(hasSecondaryVotes ? {deputies: buildFromPayload('diputado')} : {}),
+      },
     };
 
     let duplicateCheck;
