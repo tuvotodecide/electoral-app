@@ -46,6 +46,16 @@ export const hasSecondaryBlockElection = value => {
 const hasMeaningfulValue = value =>
   value !== undefined && value !== null && String(value).trim() !== '';
 
+const hasNonZeroMeaningfulValue = value => {
+  if (!hasMeaningfulValue(value)) return false;
+  const normalized = String(value).trim();
+  const parsed = Number(normalized);
+  if (!Number.isNaN(parsed)) {
+    return parsed !== 0;
+  }
+  return true;
+};
+
 export const hasSecondaryVoteData = ({
   partyResults = [],
   voteSummaryResults = [],
@@ -55,11 +65,11 @@ export const hasSecondaryVoteData = ({
   const summaryRows = Array.isArray(voteSummaryResults) ? voteSummaryResults : [];
   const summaryObject = voteSummary && typeof voteSummary === 'object' ? voteSummary : null;
 
-  if (partyRows.some(row => hasMeaningfulValue(row?.diputado))) {
+  if (partyRows.some(row => hasNonZeroMeaningfulValue(row?.diputado))) {
     return true;
   }
 
-  if (summaryRows.some(row => hasMeaningfulValue(row?.value2))) {
+  if (summaryRows.some(row => hasNonZeroMeaningfulValue(row?.value2))) {
     return true;
   }
 
@@ -74,7 +84,7 @@ export const hasSecondaryVoteData = ({
       summaryObject?.secondaryBlankVotes,
       summaryObject?.secondaryNullVotes,
       summaryObject?.secondaryTotalVotes,
-    ].some(hasMeaningfulValue)
+    ].some(hasNonZeroMeaningfulValue)
   ) {
     return true;
   }

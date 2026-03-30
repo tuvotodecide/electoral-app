@@ -263,12 +263,21 @@ const getUserDni = userData => {
 };
 
 const withTimeout = (promise, timeoutMs = 12000) =>
-  Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('ELECTION_CONTEXT_TIMEOUT')), timeoutMs),
-    ),
-  ]);
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(
+      () => reject(new Error('ELECTION_CONTEXT_TIMEOUT')),
+      timeoutMs,
+    );
+    Promise.resolve(promise)
+      .then(value => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch(error => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
 
 
 export default function TableDetail({ navigation, route }) {
@@ -310,6 +319,7 @@ export default function TableDetail({ navigation, route }) {
   const [selectedElectionContext, setSelectedElectionContext] = useState(
     incomingElectionContext,
   );
+  const isMountedRef = useRef(true);
   const worksheetStatusSyncRef = useRef({
     lastSyncAt: 0,
   });
@@ -317,9 +327,29 @@ export default function TableDetail({ navigation, route }) {
   const userDni = getUserDni(userData);
 
   useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     const resolveElectionContext = async () => {
+      const effectiveElectionType =
+        incomingElectionContext?.electionType || electionType;
+      const routeHasAllowedParties =
+        Array.isArray(incomingElectionContext?.allowedParties) &&
+        incomingElectionContext.allowedParties.length > 0;
+
+      // Avoid async context hydration when the flow does not require official parties.
+      if (!hasSecondaryBlockElection(effectiveElectionType) && !routeHasAllowedParties) {
+        setSelectedElectionContext(incomingElectionContext || null);
+        setIsElectionContextLoading(false);
+        setElectionContextFeedback('');
+        return;
+      }
+
       setIsElectionContextLoading(true);
       setElectionContextFeedback('');
       const territory = resolveTerritoryFromLocation(locationFromParams);
@@ -362,6 +392,7 @@ export default function TableDetail({ navigation, route }) {
       setElectionContextFeedback('');
       if (userDni) {
         await saveSelectedElectionContext(userDni, enriched);
+        if (cancelled) return;
       }
       setIsElectionContextLoading(false);
     };
@@ -564,8 +595,10 @@ export default function TableDetail({ navigation, route }) {
 
   const fetchWorksheetStatus = useCallback(async ({ silent = false, force = false } = {}) => {
     if (!hasMesaSelected || !currentDni || !tableCodeForWorksheet || !electionId) {
-      setHasPendingActaInQueue(false);
-      setWorksheetStatus({ status: WorksheetStatus.NOT_FOUND });
+      if (isMountedRef.current) {
+        setHasPendingActaInQueue(false);
+        setWorksheetStatus({ status: WorksheetStatus.NOT_FOUND });
+      }
       return;
     }
 
@@ -577,8 +610,10 @@ export default function TableDetail({ navigation, route }) {
     worksheetStatusSyncRef.current.lastSyncAt = now;
 
     if (!silent) {
-      setIsWorksheetLoading(true);
-      setWorksheetFeedback('');
+      if (isMountedRef.current) {
+        setIsWorksheetLoading(true);
+        setWorksheetFeedback('');
+      }
     }
     try {
       const identity = {
@@ -607,6 +642,7 @@ export default function TableDetail({ navigation, route }) {
             item?.task?.type === 'syncActaBackend') &&
           isActaTaskForCurrentTable(item?.task?.payload),
       );
+      if (!isMountedRef.current) return;
       setHasPendingActaInQueue(Boolean(pendingActaInQueue));
 
       if (pendingInQueue) {
@@ -622,6 +658,7 @@ export default function TableDetail({ navigation, route }) {
       const netState = await NetInfo.fetch();
       const isOnline =
         !!netState?.isConnected && netState?.isInternetReachable !== false;
+      if (!isMountedRef.current) return;
       setNetIsOnline(isOnline);
 
       if (
@@ -672,9 +709,11 @@ export default function TableDetail({ navigation, route }) {
         };
       }
 
-      setWorksheetStatus(resolvedStatus || { status: WorksheetStatus.NOT_FOUND });
+      if (isMountedRef.current) {
+        setWorksheetStatus(resolvedStatus || { status: WorksheetStatus.NOT_FOUND });
+      }
     } finally {
-      if (!silent) {
+      if (!silent && isMountedRef.current) {
         setIsWorksheetLoading(false);
       }
     }
@@ -832,12 +871,15 @@ export default function TableDetail({ navigation, route }) {
         }
       }
 
+      if (!isMountedRef.current) return;
       setSelectedMesaRaw(matchedMesa);
       setSelectedMesaRecords(records);
       setSelectedMesaTotalRecords(records.length);
       setResolvedOffline(!isOnline);
     } finally {
-      setIsSearchingMesa(false);
+      if (isMountedRef.current) {
+        setIsSearchingMesa(false);
+      }
     }
   };
 
@@ -1099,6 +1141,7 @@ export default function TableDetail({ navigation, route }) {
     setWorksheetFeedback('');
     try {
       const currentQueue = await getOfflineQueue();
+      if (!isMountedRef.current) return;
       const alreadyQueued = (currentQueue || []).some(
         item =>
           item?.task?.type === 'publishWorksheet' &&
@@ -1119,6 +1162,7 @@ export default function TableDetail({ navigation, route }) {
       }
 
       const localStatus = await getWorksheetLocalStatus(worksheetIdentity);
+      if (!isMountedRef.current) return;
       const retryPayload = localStatus?.retryPayload;
 
       if (retryPayload) {
@@ -1179,6 +1223,7 @@ export default function TableDetail({ navigation, route }) {
           type: 'publishWorksheet',
           payload: fallbackRetryPayload,
         });
+        if (!isMountedRef.current) return;
         await upsertWorksheetLocalStatus(worksheetIdentity, {
           status: WorksheetStatus.PENDING,
           errorMessage: undefined,
@@ -1196,13 +1241,17 @@ export default function TableDetail({ navigation, route }) {
         'No hay datos locales para reintentar. Mantén conexión para sincronizar automáticamente.',
       );
     } catch (error) {
-      setWorksheetFeedback(
-        error?.response?.data?.message ||
-        error?.message ||
-        'No se pudo reintentar la hoja de trabajo.',
-      );
+      if (isMountedRef.current) {
+        setWorksheetFeedback(
+          error?.response?.data?.message ||
+          error?.message ||
+          'No se pudo reintentar la hoja de trabajo.',
+        );
+      }
     } finally {
-      setIsWorksheetActionLoading(false);
+      if (isMountedRef.current) {
+        setIsWorksheetActionLoading(false);
+      }
     }
   };
 
@@ -1299,6 +1348,7 @@ export default function TableDetail({ navigation, route }) {
       }
 
       const resolved = await firstFulfilled(attempts);
+      if (!isMountedRef.current) return;
       const worksheetRecord = resolved?.worksheetRecord;
       const resolvedIpfs = String(resolved?.ipfsUri || '').trim();
 
@@ -1323,12 +1373,16 @@ export default function TableDetail({ navigation, route }) {
         selectedElectionContext,
       });
     } catch (error) {
-      setWorksheetFeedback(
-        error?.message ||
-        'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
-      );
+      if (isMountedRef.current) {
+        setWorksheetFeedback(
+          error?.message ||
+          'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
+        );
+      }
     } finally {
-      setIsWorksheetActionLoading(false);
+      if (isMountedRef.current) {
+        setIsWorksheetActionLoading(false);
+      }
     }
   };
 

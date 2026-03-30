@@ -70,12 +70,13 @@ describe('TableDetailScreen - Interacciones de Usuario', () => {
 
     await act(async () => {
       fireEvent.press(getByText(String.retakePhoto));
-      await waitFor(() => {
-        expect(navigation.navigate).toHaveBeenCalledWith(
-          StackNav.CameraScreen,
-          expect.any(Object),
-        );
-      });
+    });
+
+    await waitFor(() => {
+      expect(navigation.navigate).toHaveBeenCalledWith(
+        StackNav.CameraScreen,
+        expect.any(Object),
+      );
     });
   });
 
