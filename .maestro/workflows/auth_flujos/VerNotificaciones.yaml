@@ -1,0 +1,22 @@
+appId: com.tuvotodecide
+---
+# INGRESO DE PIN
+- inputText: "3938"
+
+# VERIFICACIÓN DE INGRESO (MÁXIMO 5 SEGUNDOS)
+- extendedWaitUntil:
+    visible:
+      id: "homeMiVotoLogoTitle"
+    timeout: 5000
+
+# CLICK EN ICONO DE NOTIFICACIONES
+# Se intenta por ID común de icono o por descripción
+- tapOn:
+    id: "notificationsIconButton" # Cambia esto si el ID es distinto (ej. homeNotificationButton)
+
+# CLICK EN LA PRIMERA OPCIÓN "Resultados disponibles"
+- tapOn: "Resultados disponibles"
+
+# CLICK EN VER DETALLES
+- tapOn: "Ver detalles"
+
