@@ -19,14 +19,14 @@ appId: com.tuvotodecide
 - tapOn:
     id: "registerUser1ContinueButton"
 
-# 3. Escribir el carnet: 9896687
+# 3. Escribir el carnet
 - extendedWaitUntil:
     visible:
         id: "idNumberInput"
     timeout: 10000
 - tapOn:
     id: "idNumberInput"
-- inputText: "9896687"
+- inputText: "${MAESTRO_USER_1_CI}"
 
 # 4. Pulsar en el logo de cámara de Anverso
 - tapOn:

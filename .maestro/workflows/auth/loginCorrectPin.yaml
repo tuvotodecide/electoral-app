@@ -1,7 +1,7 @@
 appId: com.tuvotodecide
 ---
 # INGRESO DE PIN (Inicia directamente con el teclado abierto o enfocado)
-- inputText: "3938"
+- inputText: "${MAESTRO_USER_1_PIN}"
 
 # VERIFICACIÓN
 - extendedWaitUntil:

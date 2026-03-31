@@ -37,8 +37,8 @@ name: blockAccount
 - tapOn:
     id: "recoveryFileContinueButton"
 
-# 1. Ingreso de PIN (3938)
-- inputText: "3938"
+# 1. Ingreso de PIN
+- inputText: "${MAESTRO_USER_1_PIN}"
 
 # Quitar el teclado (botón atrás del sistema)
 - back
@@ -46,12 +46,12 @@ name: blockAccount
 - tapOn:
     id: "changePinNewContinueButton"
 
-# 2. Confirmación de PIN (3938)
+# 2. Confirmación de PIN
 - extendedWaitUntil:
     visible: "Confirma tu PIN"
     timeout: 10000
 
-- inputText: "3938"
+- inputText: "${MAESTRO_USER_1_PIN}"
 
 # Quitar el teclado (botón atrás del sistema)
 - back

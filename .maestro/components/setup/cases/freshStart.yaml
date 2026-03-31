@@ -1,5 +1,12 @@
 appId: com.tuvotodecide
 ---
-# 1. LANZAMOS LA APP (Sin forzar link de red)
 - launchApp:
-    clearState: false
+    clearState: true
+- extendedWaitUntil: 
+    visible:
+      id: downloadMessage
+    timeout: 30000
+- extendedWaitUntil: 
+    visible:
+      id: connectLoginButton
+    timeout: 50000

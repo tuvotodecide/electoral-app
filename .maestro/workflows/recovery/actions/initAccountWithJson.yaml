@@ -7,14 +7,19 @@ appId: com.tuvotodecide
     id: selectRecuperationFileOption
 - tapOn:
     id: recoveryFileUploadCard
-- tapOn: ${RECOVERY_JSON_FILE}
+- scrollUntilVisible:
+    element: "${RECOVERY_JSON_FILE}"
+    direction: DOWN
+- tapOn: "${RECOVERY_JSON_FILE}"
 - assertVisible: ${MAESTRO_RIGHT_FILE_MESSAGE}
 - tapOn:
     id: recoveryFileContinueButton
 - inputText: ${RECOVERY_PIN}
+- back
 - tapOn:
     id: changePinNewContinueButton
 - inputText: ${RECOVERY_PIN}
+- back
 - tapOn:
     id: changePinNewContinueButton
 - assertVisible: ${MAESTRO_RECOVERING_DATA_MESSAGE}

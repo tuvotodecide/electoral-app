@@ -27,24 +27,24 @@ appId: com.tuvotodecide
     timeout: 15000
 - tapOn: { id: "recoveryFileContinueButton" }
 
-# 6. Ingresar PIN nuevo (3938)
+# 6. Ingresar PIN nuevo
 - extendedWaitUntil:
     visible: "Crea tu PIN de acceso"
     timeout: 10000
-- inputText: "3938"
+- inputText: "${MAESTRO_USER_1_PIN}"
 - back # Quitar teclado
 - tapOn: { id: "changePinNewContinueButton" }
 
-# 7. Verificar PIN nuevo (3938)
+# 7. Verificar PIN nuevo
 - extendedWaitUntil:
     visible: "Confirma tu PIN"
     timeout: 10000
-- inputText: "3938"
+- inputText: "${MAESTRO_USER_1_PIN}"
 - back # Quitar teclado
 - tapOn: { id: "changePinNewContinueButton" }
 
-# 8. Ingreso final al sistema con el PIN recuperado (3938)
+# 8. Ingreso final al sistema con el PIN recuperado
 - extendedWaitUntil:
     visible: { id: "loginUserTitle" }
     timeout: 15000
-- inputText: "3938"
+- inputText: "${MAESTRO_USER_1_PIN}"
