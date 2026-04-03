@@ -11,7 +11,7 @@ const NETWORK_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 export const checkInternetConnection = async () => {
   try {
     const state = await NetInfo.fetch();
-    return state.isConnected && state.isInternetReachable;
+    return !!state?.isConnected && state?.isInternetReachable !== false;
   } catch (error) {
     //console.error('Error checking internet connection:', error);
     return false;

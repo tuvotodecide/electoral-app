@@ -19,6 +19,16 @@ describe('networkQuality', () => {
     expect(isStateEffectivelyOnline(state, NET_POLICIES.balanced)).toBe(true);
   });
 
+  it('tolera reachability nulo mientras la red siga conectada', () => {
+    const state = {
+      isConnected: true,
+      isInternetReachable: null,
+      type: 'wifi',
+      details: {strength: 80},
+    };
+    expect(isStateEffectivelyOnline(state, NET_POLICIES.balanced)).toBe(true);
+  });
+
   it('retorna false en celular con generaciÃ³n baja', () => {
     const state = {
       isConnected: true,

@@ -144,6 +144,7 @@ describe('CameraScreen - Estados y Props', () => {
 
     expect(analyzer.analyzeElectoralAct).toHaveBeenCalledWith(
       expect.stringMatching(/\.jpg$/),
+      undefined,
     );
     expect(analyzer.mapToAppFormat).toHaveBeenCalled();
     expect(mockNavigation.navigate).toHaveBeenCalledWith(

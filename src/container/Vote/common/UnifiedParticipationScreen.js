@@ -21,7 +21,8 @@ const getResponsiveSize = (small, medium, large) => {
 
 const UnifiedParticipationScreen = ({ navigation, route }) => {
   const colors = useSelector(state => state.theme.theme);
-  const { locationData, electionId, electionType } = route.params || {};
+  const {locationData, electionId, electionType, selectedElectionContext} =
+    route.params || {};
   const [dots, setDots] = useState('');
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,6 +48,7 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
           offline,
           electionId,
           electionType,
+          selectedElectionContext,
         });
       } else {
         // Nuevo flujo: tras seleccionar recinto, ir directo a TableDetail
@@ -59,11 +61,12 @@ const UnifiedParticipationScreen = ({ navigation, route }) => {
           offline,
           electionId,
           electionType,
+          selectedElectionContext,
         });
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [navigation, route?.params, electionId, electionType]);
+  }, [navigation, route?.params, electionId, electionType, selectedElectionContext]);
 
   const handleBack = () => {
     navigation.goBack();

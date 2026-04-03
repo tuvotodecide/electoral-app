@@ -58,12 +58,12 @@ describe('persistLocalImage', () => {
     });
 
     const out = await persistLocalImage('https://example.com/image.png');
-    expect(out).toBe(`file://${Paths.document}/acta-123.png`);
+    expect(out).toBe(`${Paths.document.uri}/acta-123.png`);
     expect(mockBlobFetch).toHaveBeenCalledWith('HEAD', 'https://example.com/image.png');
     expect(BlobUtil.config).toHaveBeenCalled();
     expect(__fileInstances).toHaveLength(2);
     expect(__fileInstances[0].uri).toBe('/tmp/downloaded.tmp');
-    expect(__fileInstances[1].uri).toBe(`${Paths.document}/acta-123.png`);
+    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.png`);
     expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
     expect(__fileInstances[0].delete).toHaveBeenCalled();
   });
@@ -83,19 +83,19 @@ describe('persistLocalImage', () => {
 
   it('copia archivos file:// directamente', async () => {
     const out = await persistLocalImage('file:///src/photo.jpg');
-    expect(out).toBe(`file://${Paths.document}/acta-123.jpg`);
+    expect(out).toBe(`${Paths.document.uri}/acta-123.jpg`);
     expect(__fileInstances).toHaveLength(2);
-    expect(__fileInstances[0].uri).toBe('/src/photo.jpg');
-    expect(__fileInstances[1].uri).toBe(`${Paths.document}/acta-123.jpg`);
+    expect(__fileInstances[0].uri).toBe('file:///src/photo.jpg');
+    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
     expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
   });
 
   it('lee contenido content:// en android', async () => {
     const out = await persistLocalImage('content://media/1');
-    expect(out).toBe(`file://${Paths.document}/acta-123.jpg`);
+    expect(out).toBe(`${Paths.document.uri}/acta-123.jpg`);
     expect(BlobUtil.fs.readFile).toHaveBeenCalledWith('content://media/1', 'base64');
     expect(__fileInstances).toHaveLength(1);
-    expect(__fileInstances[0].uri).toBe(`${Paths.document}/acta-123.jpg`);
+    expect(__fileInstances[0].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
     expect(__fileInstances[0].write).toHaveBeenCalledWith('ZGF0YQ==', {
       encoding: 'base64',
     });
@@ -104,7 +104,7 @@ describe('persistLocalImage', () => {
   it('removePersistedImage elimina si existe', async () => {
     await removePersistedImage('file:///mock/documents/acta-1.jpg');
     expect(__fileInstances).toHaveLength(1);
-    expect(__fileInstances[0].uri).toBe('/mock/documents/acta-1.jpg');
+    expect(__fileInstances[0].uri).toBe('file:///mock/documents/acta-1.jpg');
     expect(__fileInstances[0].info).toHaveBeenCalled();
     expect(__fileInstances[0].delete).toHaveBeenCalled();
   });

@@ -71,7 +71,7 @@ const RecordCertificationScreen = () => {
   const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
-      const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+      const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
 
       const payload = {
         attestations: [
@@ -111,6 +111,7 @@ const RecordCertificationScreen = () => {
     try {
       const isRegistered = await oracleReads.isRegistered(
         CHAIN,
+        userData.privKey,
         userData.account,
         1,
       );
@@ -125,6 +126,7 @@ const RecordCertificationScreen = () => {
 
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
+          userData.privKey,
           userData.account,
           20,
         );

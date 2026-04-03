@@ -30,9 +30,9 @@ MockFile.downloadFileAsync = jest.fn((from, to) =>
 );
 
 const Paths = {
-  document: '/mock/documents',
-  cache: '/mock/cache',
-  temp: '/mock/tmp',
+  document: { uri: 'file:///mock/documents'},
+  cache: { uri: 'file:///mock/cache'},
+  temp: { uri: 'file:///mock/tmp'},
 };
 
 const mockFs = {

@@ -122,7 +122,7 @@ describe('pinataService', () => {
 
     expect(File.downloadFileAsync).toHaveBeenCalledWith(
       'https://example.com/photo.jpg',
-      `${Paths.cache}/1000-photo.jpg`,
+      `${Paths.cache.uri}/1000-photo.jpg`,
     );
     expect(axios.post).toHaveBeenCalledWith(
       'https://pinata.example/pinning/pinFileToIPFS',
@@ -177,7 +177,7 @@ describe('pinataService', () => {
     File.downloadFileAsync.mockResolvedValueOnce({
       exists: false,
       statusCode: 404,
-      uri: `${Paths.cache}/1000-img.jpg`,
+      uri: `${Paths.cache.uri}/1000-img.jpg`,
     });
 
     await expect(

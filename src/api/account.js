@@ -77,12 +77,9 @@ export async function getAccount(privateKey, address, chain) {
     transport: http(bundler),
   });
 
-  const account = await toSimpleSmartAccount({
+  const account = await toCoinbaseSmartAccount({
     client: publicClient,
-    address,
-    factoryAddress: FACTORY_ADDRESS,
-    owner,
-    entryPoint: {address: entryPoint07Address, version: '0.7'},
+    owners: [owner],
   });
 
   return {account, publicClient};

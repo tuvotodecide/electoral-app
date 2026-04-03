@@ -77,6 +77,33 @@ jest.mock('../../../../src/utils/offlineQueueHandler', () => ({
   authenticateWithBackend: jest.fn(),
 }));
 
+jest.mock('../../../../src/utils/electionContext', () => ({
+  buildSelectedElectionContext: jest.fn(context => ({
+    contractId: context?.contractId || null,
+    electionId: context?.electionId || null,
+    electionName: context?.electionName || null,
+    electionType: context?.electionType || null,
+    territory: context?.territory || {},
+    expectedBlocks: [],
+    allowedParties: context?.allowedParties || [],
+    cachedAt: 0,
+    source: context?.source || 'test',
+  })),
+  enrichSelectedElectionContext: jest.fn(async context => context || null),
+  getSelectedElectionContext: jest.fn(async () => null),
+  hasSecondaryBlockElection: jest.fn(() => false),
+  resolveTerritoryFromLocation: jest.fn(location => ({
+    type: 'unknown',
+    departmentId: null,
+    departmentName: null,
+    municipalityId: null,
+    municipalityName: null,
+    locationId: location?._id || location?.locationId || null,
+    locationName: location?.name || null,
+  })),
+  saveSelectedElectionContext: jest.fn(async () => undefined),
+}));
+
 jest.mock('../../../../src/utils/lookupCache', () => ({
   getCache: jest.fn(() => Promise.resolve(null)),
   isFresh: jest.fn(() => Promise.resolve(false)),

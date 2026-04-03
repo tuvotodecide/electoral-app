@@ -63,6 +63,10 @@ import {
   getAttestationAvailabilityCache,
   saveAttestationAvailabilityCache,
 } from '../../../utils/attestationAvailabilityCache';
+import {
+  buildSelectedElectionContext,
+  saveSelectedElectionContext,
+} from '../../../utils/electionContext';
 import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
 import {
   authenticateWithBackend,
@@ -538,8 +542,24 @@ export default function HomeScreen({ navigation }) {
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
   const [contractsAvailability, setContractsAvailability] = useState({
-    ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-    GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+    ALCALDE: {
+      enabled: false,
+      electionId: null,
+      electionName: null,
+      reason: null,
+      contractId: null,
+      contract: null,
+      backendElectionType: null,
+    },
+    GOBERNADOR: {
+      enabled: false,
+      electionId: null,
+      electionName: null,
+      reason: null,
+      contractId: null,
+      contract: null,
+      backendElectionType: null,
+    },
     nearestLocation: null,
   });
   const contracts = contractsAvailability;
@@ -788,12 +808,18 @@ export default function HomeScreen({ navigation }) {
           electionId: municipalEnabled ? municipal?.electionId : null,
           electionName: municipal?.electionName || null,
           reason: municipal?.reason || null,
+          contractId: municipal?.contract?.id || null,
+          contract: municipal?.contract || null,
+          backendElectionType: municipal?.electionType || null,
         },
         GOBERNADOR: {
           enabled: departamentalEnabled,
           electionId: departamentalEnabled ? departamental?.electionId : null,
           electionName: departamental?.electionName || null,
           reason: departamental?.reason || null,
+          contractId: departamental?.contract?.id || null,
+          contract: departamental?.contract || null,
+          backendElectionType: departamental?.electionType || null,
         },
       };
     },
@@ -1478,6 +1504,9 @@ export default function HomeScreen({ navigation }) {
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     const selected = contractsAvailability?.[type];
     let electionId = selected?.electionId;
+    let contractId = selected?.contractId || null;
+    let electionName = selected?.electionName || null;
+    let backendElectionType = selected?.backendElectionType || null;
 
     if (!electionId && dni) {
       try {
@@ -1492,6 +1521,9 @@ export default function HomeScreen({ navigation }) {
           ? elections.find(e => e?.electionType === wantedElectionType && !!e?.canAttest)
           : null;
         electionId = match?.electionId || null;
+        contractId = match?.contract?.id || contractId;
+        electionName = match?.electionName || electionName;
+        backendElectionType = match?.electionType || backendElectionType;
       } catch { }
     }
     if (!electionId) {
@@ -1504,10 +1536,34 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
+    const selectedElectionContext = buildSelectedElectionContext({
+      contractId,
+      electionId,
+      electionName,
+      electionType:
+        backendElectionType ||
+        (type === 'ALCALDE'
+          ? 'municipal'
+          : type === 'GOBERNADOR'
+          ? 'departamental'
+          : type),
+      territory: {
+        type: 'unknown',
+        locationId: contractsAvailability?.nearestLocation?._id || null,
+        locationName: contractsAvailability?.nearestLocation?.name || null,
+      },
+      allowedParties: [],
+      source: online ? 'backend' : 'cache',
+    });
+    if (dni) {
+      await saveSelectedElectionContext(dni, selectedElectionContext);
+    }
+
     const params = {
       targetScreen: 'UnifiedParticipation',
       electionType: type,
       electionId,
+      selectedElectionContext,
     };
     if (online) {
       if (dni) {
@@ -1929,10 +1985,15 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
+    const state = await NetInfo.fetch();
+    if (!isStateEffectivelyOnline(state)) {
       return;
     }
+
+    // No bloquear la consulta real de notificaciones por un health probe
+    // transitorio. El endpoint /users/:dni/notifications puede responder bien
+    // aunque /health falle o expire.
+    await backendProbe({ timeoutMs: 2000 }).catch(() => null);
 
     try {
       const apiKey = await ensureNotificationsApiKey();

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
+  Pressable,
   TouchableOpacity,
   StyleSheet,
   Image,
@@ -74,7 +75,7 @@ export default function CameraScreen({ navigation, route }) {
 
   const camera = useRef(null);
   const insets = useSafeAreaInsets();
-  const { electionId, electionType } = route.params || {};
+  const { electionId, electionType, selectedElectionContext } = route.params || {};
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
   const [permission, requestPermission] = useCameraPermissions();
@@ -101,9 +102,16 @@ export default function CameraScreen({ navigation, route }) {
   const [lastScale, setLastScale] = useState(1);
   const [lastTranslateX, setLastTranslateX] = useState(0);
   const [lastTranslateY, setLastTranslateY] = useState(0);
+  const [autofocusMode, setAutofocusMode] = useState('off');
+  const [focusIndicator, setFocusIndicator] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+  });
   const [isOnline, setIsOnline] = useState(true);
   const initialDistance = useRef(null);
   const focusIndicatorTimeoutRef = useRef(null);
+  const tapFocusTimeoutRef = useRef(null);
 
   const initialScale = useRef(1);
   const isZooming = useRef(false);
@@ -391,8 +399,39 @@ export default function CameraScreen({ navigation, route }) {
   const takeNewPhoto = () => {
     setPhoto(null);
     setPhotoMeta({ width: 0, height: 0 });
+    setAutofocusMode('off');
+    setFocusIndicator({ visible: false, x: 0, y: 0 });
     setIsActive(true);
     resetImageTransform();
+  };
+
+  const handleTapToFocus = event => {
+    if (!isActive || !camera.current || loading || photo) {
+      return;
+    }
+
+    const { locationX, locationY } = event.nativeEvent;
+    setFocusIndicator({
+      visible: true,
+      x: locationX,
+      y: locationY,
+    });
+
+    if (focusIndicatorTimeoutRef.current) {
+      clearTimeout(focusIndicatorTimeoutRef.current);
+    }
+    focusIndicatorTimeoutRef.current = setTimeout(() => {
+      setFocusIndicator(prev => ({ ...prev, visible: false }));
+    }, 700);
+
+    // Trigger a one-shot autofocus lock cycle.
+    setAutofocusMode('on');
+    if (tapFocusTimeoutRef.current) {
+      clearTimeout(tapFocusTimeoutRef.current);
+    }
+    tapFocusTimeoutRef.current = setTimeout(() => {
+      setAutofocusMode('off');
+    }, 450);
   };
 
   // Function to completely reset the camera
@@ -488,6 +527,9 @@ export default function CameraScreen({ navigation, route }) {
       if (focusIndicatorTimeoutRef.current) {
         clearTimeout(focusIndicatorTimeoutRef.current);
       }
+      if (tapFocusTimeoutRef.current) {
+        clearTimeout(tapFocusTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -540,7 +582,6 @@ export default function CameraScreen({ navigation, route }) {
         width: finalWidth,
         height: finalHeight,
       };
-
       setPhoto({ path: finalUri }); // sin cropData
       setPhotoMeta(meta);
 
@@ -583,11 +624,12 @@ export default function CameraScreen({ navigation, route }) {
 
     if (isWorksheetMode) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         offline: !isOnline,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: 'worksheet',
       });
       return;
@@ -595,11 +637,12 @@ export default function CameraScreen({ navigation, route }) {
 
     if (!isOnline) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         offline: true,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: flowMode,
       });
       return;
@@ -611,6 +654,7 @@ export default function CameraScreen({ navigation, route }) {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
         photo.path,
+        selectedElectionContext,
       );
 
 
@@ -669,16 +713,20 @@ export default function CameraScreen({ navigation, route }) {
       }
 
       // Mapear datos de la IA al formato de la app
-      const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
+      const mappedData = electoralActAnalyzer.mapToAppFormat(
+        aiData,
+        selectedElectionContext,
+      );
 
       // Navegar a la pantalla de revisión con los datos analizados
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         aiAnalysis: aiData,
         mappedData: mappedData,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: flowMode,
       });
     } catch (error) {
@@ -692,11 +740,12 @@ export default function CameraScreen({ navigation, route }) {
 
       if (isNetworkError) {
         navigation.navigate(StackNav.PhotoReviewScreen, {
-          photoUri: `file://${photo.path}`,
+          photoUri: photo.path,
           tableData: mesaInfo,
           offline: true,
           electionId,
           electionType,
+          selectedElectionContext,
           mode: flowMode,
         });
         return;
@@ -717,10 +766,11 @@ export default function CameraScreen({ navigation, route }) {
             onPress: () => {
               setModalVisible(false);
               navigation.navigate(StackNav.PhotoReviewScreen, {
-                photoUri: `file://${photo.path}`,
+                photoUri: photo.path,
                 tableData: mesaInfo,
                 electionId,
                 electionType,
+                selectedElectionContext,
                 mode: flowMode,
               });
             },
@@ -745,7 +795,7 @@ export default function CameraScreen({ navigation, route }) {
               active={isActive && isFocused}
               facing="back"
               ratio='16:9'
-              autofocus='off'
+              autofocus={autofocusMode}
               onMountError={error => {
                 if (
                   error?.code === 'E_CAMERA_IS_BEING_USED' ||
@@ -754,6 +804,25 @@ export default function CameraScreen({ navigation, route }) {
                   resetCamera();
                 }
               }}
+            />
+          )}
+          {isActive && (
+            <Pressable
+              testID="cameraScreenFocusOverlay"
+              onPress={handleTapToFocus}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+          {focusIndicator.visible && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.focusIndicator,
+                {
+                  left: focusIndicator.x - 28,
+                  top: focusIndicator.y - 28,
+                },
+              ]}
             />
           )}
           <RenderFrame
@@ -805,7 +874,7 @@ export default function CameraScreen({ navigation, route }) {
           {/* Header con controles */}
           <View style={styles.fullContainer}>
             <ImageViewing
-              images={[{ uri: 'file://' + photo.path }]}
+              images={[{ uri: photo.path }]}
               visible={true}
               onRequestClose={() => {
                 /* no cerramos, controlas tú el flujo */
@@ -881,7 +950,7 @@ export default function CameraScreen({ navigation, route }) {
                       onPress={() => {
                         const mesaInfo = route.params?.tableData || {};
                         navigation.navigate(StackNav.PhotoReviewScreen, {
-                          photoUri: `file://${photo.path}`,
+                          photoUri: photo.path,
                           tableData: mesaInfo,
                           offline: true,
                           electionId,
@@ -943,7 +1012,7 @@ export default function CameraScreen({ navigation, route }) {
                 );
                 return (
                   <Image
-                    source={{ uri: 'file://' + photo.path }}
+                    source={{ uri: photo.path }}
                     style={[
                       styles.zoomableImage,
                       { width: draw.width, height: draw.height }, // ✅ sin márgenes "fake"
@@ -1007,7 +1076,7 @@ export default function CameraScreen({ navigation, route }) {
                 onPress={() => {
                   const mesaInfo = route.params?.tableData || {};
                   navigation.navigate(StackNav.PhotoReviewScreen, {
-                    photoUri: `file://${photo.path}`,
+                    photoUri: photo.path,
                     tableData: mesaInfo,
                     offline: true,
                     electionId,
