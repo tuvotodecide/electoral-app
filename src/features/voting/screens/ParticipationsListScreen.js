@@ -9,7 +9,6 @@ import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Dimensions,
   Image,
@@ -25,6 +24,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
 import { normalizeUri } from '../../../utils/normalizedUri';
+import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -191,7 +191,7 @@ const ParticipationsListScreen = () => {
     <CSafeAreaView style={styles.container}>
       <CHeader title={UI_STRINGS.participationsHeader} />
 
-      <FlatList
+      <FlashList
         data={participations}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}

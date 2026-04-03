@@ -16,7 +16,6 @@ import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import typography from '../../themes/typography';
-import { setTmpPin } from '../../utils/TempRegister';
 import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 
 export default function RegisterUser9({navigation, route}) {
@@ -29,7 +28,6 @@ export default function RegisterUser9({navigation, route}) {
   const handleConfirmPin = async () => {
     const matchesOriginal = otp === originalPin;
     if (matchesOriginal) {
-      await setTmpPin(otp);
       const params = {
         originalPin: otp,
         ocrData,

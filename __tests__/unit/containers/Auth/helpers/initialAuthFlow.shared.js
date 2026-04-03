@@ -4,10 +4,6 @@ import {initialStorageValueGet} from '../../../../../src/utils/AsyncStorage';
 import {getDraft} from '../../../../../src/utils/RegisterDraft';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-jest.mock('../../../../../src/utils/migrateLegacy', () => ({
-  checkLegacyDataExists: jest.fn(async () => false),
-}));
-
 jest.mock('../../../../../src/utils/AsyncStorage', () => ({
   initialStorageValueGet: jest.fn(async () => ({themeColor: 'light'})),
   setOnBoarding: jest.fn(async () => undefined),

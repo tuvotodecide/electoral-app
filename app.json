@@ -17,8 +17,14 @@
       "googleServicesFile": "./native-files/google-services.json",
       "package": "com.tuvotodecide",
       "usesFeatures": [
-        { "name": "android.hardware.camera", "required": true },
-        { "name": "android.hardware.camera.autofocus", "required": false }
+        {
+          "name": "android.hardware.camera",
+          "required": true
+        },
+        {
+          "name": "android.hardware.camera.autofocus",
+          "required": false
+        }
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -47,10 +53,19 @@
           "action": "VIEW",
           "autoVerify": false,
           "data": [
-            { "scheme": "com.appelectoral", "host": "shared.request" },
-            { "scheme": "com.appelectoral", "host": "shared.response" }
+            {
+              "scheme": "com.appelectoral",
+              "host": "shared.request"
+            },
+            {
+              "scheme": "com.appelectoral",
+              "host": "shared.response"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "edgeToEdgeEnabled": true,
@@ -90,11 +105,16 @@
           "microphonePermission": false
         }
       ],
-      ["./plugins/withAndroidKeystore", {
-        "keystorePath": "./native-files/keystores/identity-release.keystore"
-      }],
+      [
+        "./plugins/withAndroidKeystore",
+        {
+          "keystorePath": "./native-files/keystores/identity-release.keystore"
+        }
+      ],
       "@react-native-firebase/app",
-      "./plugins/withNativeModules"
+      "./plugins/withNativeModules",
+      "expo-secure-store",
+      "expo-localization"
     ],
     "experiments": {
       "reactCompiler": true

@@ -9,8 +9,8 @@ jest.mock(
 );
 
 jest.mock('react-native', () => require('../../../__mocks__/cameraScreen/reactNative')());
-jest.mock('react-native-vision-camera', () =>
-  jest.requireActual('../../../__mocks__/cameraScreen/reactNativeVisionCamera'),
+jest.mock('expo-camera', () =>
+  jest.requireActual('../../../__mocks__/cameraScreen/expoCamera'),
 );
 jest.mock('react-redux', () => jest.requireActual('../../../__mocks__/react-redux'));
 jest.mock('@react-navigation/native', () =>
@@ -19,8 +19,8 @@ jest.mock('@react-navigation/native', () =>
 jest.mock('react-native-image-viewing', () =>
   jest.requireActual('../../../__mocks__/react-native-image-viewing'),
 );
-jest.mock('react-native-image-picker', () =>
-  jest.requireActual('../../../__mocks__/react-native-image-picker'),
+jest.mock('expo-image-picker', () =>
+  jest.requireActual('../../../__mocks__/expo-image-picker'),
 );
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
@@ -73,12 +73,12 @@ describe('CameraScreen - Renderizado', () => {
     jest.useRealTimers();
   });
 
-  test('muestra mensaje cuando no hay dispositivo o permisos', () => {
-    cameraModule.useCameraDevice.mockReturnValue(null);
-    cameraModule.useCameraPermission.mockReturnValue({
-      hasPermission: false,
-      requestPermission: jest.fn(async () => false),
-    });
+  test('muestra mensaje cuando no hay permisos', () => {
+    const requestPermission = jest.fn(async () => ({ granted: true, status: 'granted' }));
+    cameraModule.useCameraPermissions.mockReturnValue([
+      { granted: false },
+      requestPermission,
+    ]);
 
     const {getByText} = render(
       <CameraScreen navigation={mockNavigation} route={buildMockRoute()} />,

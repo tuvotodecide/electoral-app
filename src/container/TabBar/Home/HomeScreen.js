@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import {
   AppState,
   Dimensions,
-  FlatList,
   Linking,
   Modal,
   PermissionsAndroid,
@@ -92,6 +91,7 @@ import {
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
 import { claimNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
+import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -2416,7 +2416,7 @@ export default function HomeScreen({ navigation }) {
 
     return (
       <View style={stylesx.votingCarouselContainer}>
-        <FlatList
+        <FlashList
           data={votingElections}
           keyExtractor={(item, index) => String(item?.id || index)}
           horizontal
@@ -2593,7 +2593,7 @@ export default function HomeScreen({ navigation }) {
 
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
-              <FlatList
+              <FlashList
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}
@@ -2768,7 +2768,7 @@ export default function HomeScreen({ navigation }) {
           <ScrollView>
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
-              <FlatList
+              <FlashList
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}

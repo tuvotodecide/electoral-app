@@ -1,4 +1,4 @@
-import {FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useState} from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -13,6 +13,7 @@ import CText from '../../../components/common/CText';
 import {LanguageData} from '../../../api/constant';
 import CButton from '../../../components/common/CButton';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
+import { FlashList } from '@shopify/flash-list';
 
 
 export default function SelectLanguage({navigation}) {
@@ -91,7 +92,7 @@ export default function SelectLanguage({navigation}) {
   return (
     <CSafeAreaView testID="selectLanguageContainer">
       <CHeader testID="selectLanguageHeader" title={String.language} />
-      <FlatList
+      <FlashList
         testID="selectLanguageList"
         data={LanguageData}
         renderItem={languages}

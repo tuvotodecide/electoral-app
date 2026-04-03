@@ -1,6 +1,6 @@
 const {useSelector} = require('react-redux');
 const {useNavigation, useRoute} = require('@react-navigation/native');
-const cameraModule = require('react-native-vision-camera');
+const cameraModule = require('expo-camera');
 const netInfoModule = require('@react-native-community/netinfo').default;
 
 const themeState = {
@@ -49,15 +49,10 @@ const setupCameraBaseMocks = ({navigation = createMockNavigation(), routeOverrid
   useNavigation.mockReturnValue(navigation);
   useRoute.mockReturnValue(buildMockRoute(routeOverrides));
 
-  cameraModule.useCameraDevice.mockReturnValue({
-    id: 'mock-device',
-    formats: [{photoWidth: 4000, photoHeight: 3000}],
-  });
-
-  cameraModule.useCameraPermission.mockReturnValue({
-    hasPermission: true,
-    requestPermission: jest.fn(async () => true),
-  });
+  cameraModule.useCameraPermissions.mockReturnValue([
+    { granted: true },
+    jest.fn(async () => ({ granted: true })),
+  ]);
 
   netInfoModule.addEventListener.mockImplementation(callback => {
     callback?.({isConnected: true, isInternetReachable: true});

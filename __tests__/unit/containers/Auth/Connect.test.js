@@ -5,7 +5,6 @@ import {AuthNav, StackNav} from '../../../../src/navigation/NavigationKey';
 import Connect from '../../../../src/container/Connect';
 import wira from 'wira-sdk';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
-import {checkLegacyDataExists} from '../../../../src/utils/migrateLegacy';
 
 describe('Connect', () => {
   beforeEach(() => {
@@ -23,10 +22,9 @@ describe('Connect', () => {
     });
   });
 
-  it('envía a SelectRecuperation al presionar ingresar sin datos locales ni legados', async () => {
+  it('envía a SelectRecuperation al presionar ingresar sin datos locales', async () => {
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     wira.Storage.checkUserData.mockResolvedValue(false);
-    checkLegacyDataExists.mockResolvedValue(false);
 
     const {getByTestId} = renderWithProviders(<Connect navigation={localNavigation} />);
 
@@ -34,20 +32,6 @@ describe('Connect', () => {
 
     await waitFor(() => {
       expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.SelectRecuperation);
-    });
-  });
-
-  it('envía a LoginUser cuando no hay datos locales pero sí legado detectado', async () => {
-    const localNavigation = {...mockNavigation, navigate: jest.fn()};
-    wira.Storage.checkUserData.mockResolvedValue(false);
-    checkLegacyDataExists.mockResolvedValue(true);
-
-    const {getByTestId} = renderWithProviders(<Connect navigation={localNavigation} />);
-
-    fireEvent.press(getByTestId('connectLoginButton'));
-
-    await waitFor(() => {
-      expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.LoginUser);
     });
   });
 

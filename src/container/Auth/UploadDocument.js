@@ -1,4 +1,4 @@
-import {FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -14,6 +14,7 @@ import {moderateScale} from '../../common/constants';
 import {UploadDocumentData} from '../../api/constant';
 import CButton from '../../components/common/CButton';
 import {AuthNav} from '../../navigation/NavigationKey';
+import { FlashList } from '@shopify/flash-list';
 
 
 export default function UploadDocument({navigation}) {
@@ -120,13 +121,12 @@ export default function UploadDocument({navigation}) {
                   : colors.backgroundColor,
               },
             ]}>
-            <FlatList
+            <FlashList
               testID="uploadDocumentOptionsList"
               data={UploadDocumentData}
               renderItem={RenderUploadData}
               showsVerticalScrollIndicator={false}
               keyExtractor={(item, index) => item.id}
-              vertical
               bounces={false}
             />
           </View>

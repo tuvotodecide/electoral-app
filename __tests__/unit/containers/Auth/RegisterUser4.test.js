@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert} from 'react-native';
 import {fireEvent, waitFor} from '@testing-library/react-native';
-import {launchCamera} from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser4 from '../../../../src/container/Auth/RegisterUser4';
@@ -14,8 +14,8 @@ describe('RegisterUser4', () => {
   });
 
   it('navega a RegisterUser5 despues de capturar selfie', async () => {
-    launchCamera.mockImplementationOnce((_options, callback) =>
-      callback({assets: [{uri: 'file://selfie.jpg'}]}),
+    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
+      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
     );
 
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
@@ -48,7 +48,7 @@ describe('RegisterUser4', () => {
 
   it('muestra alerta si se intenta continuar sin selfie', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    launchCamera.mockImplementationOnce((_options, callback) => callback({}));
+    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) => Promise.resolve({}));
 
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const route = {
@@ -79,8 +79,8 @@ describe('RegisterUser4', () => {
   });
 
   it('en modo recovery exitoso guarda datos y redirige a LoginUser CI', async () => {
-    launchCamera.mockImplementationOnce((_options, callback) =>
-      callback({assets: [{uri: 'file://selfie.jpg'}]}),
+    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
+      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
     );
     new wira.RecoveryService().recoveryAndSave.mockResolvedValueOnce(undefined);
 
@@ -128,8 +128,8 @@ describe('RegisterUser4', () => {
   });
 
   it('si falla recovery permite volver a RegisterUser1 con "Revisar datos"', async () => {
-    launchCamera.mockImplementationOnce((_options, callback) =>
-      callback({assets: [{uri: 'file://selfie.jpg'}]}),
+    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
+      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
     );
     new wira.RecoveryService().recoveryAndSave.mockRejectedValueOnce(
       new Error('Recovery failed'),
@@ -172,8 +172,9 @@ describe('RegisterUser4', () => {
   });
 
   it('si falla recovery y se presiona reintentar vuelve a ejecutar la recuperación', async () => {
-    launchCamera.mockImplementationOnce((_options, callback) =>
-      callback({assets: [{uri: 'file://selfie.jpg'}]}),
+    ImagePicker.requestCameraPermissionsAsync.mockResolvedValueOnce({granted: true});
+    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
+      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
     );
     new wira.RecoveryService().recoveryAndSave
       .mockRejectedValueOnce(new Error('Recovery failed'))

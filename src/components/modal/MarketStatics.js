@@ -1,5 +1,4 @@
-import {FlatList, StyleSheet, View} from 'react-native';
-import React from 'react';
+import {StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import Icons from 'react-native-vector-icons/EvilIcons';
 
@@ -9,8 +8,8 @@ import {styles} from '../../themes';
 import CText from '../common/CText';
 import String from '../../i18n/String';
 import {deviceWidth, moderateScale} from '../../common/constants';
-import {MarketStaticData} from '../../api/constant';
 import CButton from '../common/CButton';
+import { FlashList } from '@shopify/flash-list';
 
 export default function MarketStatics(props) {
   const colors = useSelector(state => state.theme.theme);
@@ -55,7 +54,7 @@ export default function MarketStatics(props) {
           style={localStyle.iconStyle}
         />
       </View>
-      <FlatList
+      <FlashList
         data={data}
         renderItem={marketStatic}
         key={2}

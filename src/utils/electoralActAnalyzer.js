@@ -1,8 +1,7 @@
 import { API_GEMINI } from '@env';
 import {GoogleGenAI} from '@google/genai';
 import {getProvision} from './provisionClient';
-import RNFS from 'react-native-fs';
-
+import { File } from 'expo-file-system';
 
 class ElectoralActAnalyzer {
   constructor() {
@@ -25,8 +24,10 @@ class ElectoralActAnalyzer {
    */
   async imageToBase64(imagePath) {
     try {
-      return await RNFS.readFile(imagePath, 'base64');
+      const file = new File(imagePath);
+      return await file.base64();
     } catch (error) {
+      console.log('Error al convertir la imagen a base64:', error);
       throw new Error('No se pudo procesar la imagen');
     }
   }

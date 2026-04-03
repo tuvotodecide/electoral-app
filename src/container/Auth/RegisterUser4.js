@@ -3,13 +3,10 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
-  PermissionsAndroid,
-  Platform,
   StyleSheet,
   View,
 } from 'react-native';
-import { launchCamera } from 'react-native-image-picker';
-import { check, openSettings, RESULTS } from 'react-native-permissions';
+import { openSettings } from 'expo-linking';
 import { useSelector } from 'react-redux';
 // Custom imports
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -23,6 +20,7 @@ import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
+import * as ImagePicker from 'expo-image-picker';
 
 
 import wira from 'wira-sdk';
@@ -40,44 +38,35 @@ export default function RegisterUser4({navigation, route}) {
 
   useEffect(() => {
     const openCamera = async () => {
-      const granted = await requestCameraPermission();
-      if (!granted) {
-        Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
-        return;
-      }
+      try {
+        const granted = await requestCameraPermission();
+        if (!granted) {
+          Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
+          return;
+        }
 
-      launchCamera(
-        {
-          mediaType: 'photo',
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['livePhotos'],
           quality: 0.8,
-          saveToPhotos: true,
-        },
-        response => {
-          if (response?.assets) {
-            setSelfie(response.assets[0]);
-          } else if (response?.errorCode) {
-          }
-        },
-      );
+          cameraType: ImagePicker.CameraType.front,
+        });
+
+        if (!result.canceled && result.assets) {
+          setSelfie(result.assets[0]);
+        }
+      } catch (error) {
+        console.log('Error launching camera:', error);
+      }
     };
 
     openCamera();
   }, []);
 
   const requestCameraPermission = async () => {
-    if (Platform.OS !== 'android') return true;
+    const response = await ImagePicker.requestCameraPermissionsAsync();
+    if (response.granted) return true;
 
-    const status = await check(PermissionsAndroid.PERMISSIONS.CAMERA);
-    if (status === RESULTS.GRANTED) return true;
-
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-      {title: 'Permiso de cámara', message: 'Necesitamos acceso a la cámara.'},
-    );
-
-    if (granted === PermissionsAndroid.RESULTS.GRANTED) return true;
-
-    if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+    if (!response.canAskAgain) {
       Alert.alert(
         'Cámara deshabilitada',
         'Habilita la cámara en Ajustes del sistema',

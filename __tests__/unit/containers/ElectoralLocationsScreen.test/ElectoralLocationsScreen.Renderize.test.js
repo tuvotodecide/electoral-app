@@ -41,25 +41,6 @@ jest.mock('../../../../src/components/common/CustomModal', () =>
   require('../../../__mocks__/components/common/CustomModal')
 );
 
-// Mock FlatList
-jest.mock('react-native/Libraries/Lists/FlatList', () => {
-  const React = require('react');
-  
-  return function FlatList({ data, renderItem, testID, keyExtractor, contentContainerStyle, ...props }) {
-    if (!data || data.length === 0) {
-      return React.createElement('FlatList', { testID, ...props });
-    }
-
-    const items = data.map((item, index) => {
-      const key = keyExtractor ? keyExtractor(item, index) : index.toString();
-      const renderedItem = renderItem({ item, index });
-      return React.createElement('View', { key }, renderedItem);
-    });
-
-    return React.createElement('View', { testID, style: contentContainerStyle, ...props }, items);
-  };
-});
-
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {
   const { configureStore } = require('@reduxjs/toolkit');
@@ -199,7 +180,7 @@ describe('ElectoralLocationsScreen - Tests Comprehensivos', () => {
         
         await waitFor(() => {
           expect(getByTestId('electoralLocationsList')).toBeTruthy();
-          // Verificar que el FlatList está presente y el componente no está en estado de loading
+          // Verificar que el FlashList está presente y el componente no está en estado de loading
           expect(() => getByTestId('electoralLocationsLoadingIndicator')).toThrow();
         }, { timeout: 5000 });
       });

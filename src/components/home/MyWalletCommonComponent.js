@@ -1,5 +1,4 @@
 import {
-  FlatList,
   Image,
   StyleSheet,
   TextInput,
@@ -20,6 +19,7 @@ import CText from '../common/CText';
 import {useSelector} from 'react-redux';
 import String from '../../i18n/String';
 import CButton from '../common/CButton';
+import { FlashList } from '@shopify/flash-list';
 
 export default function MyWalletCommonComponent(props) {
   let {
@@ -136,7 +136,7 @@ export default function MyWalletCommonComponent(props) {
           </TouchableOpacity>
         </View>
         {title === String.withdraw ? (
-          <FlatList
+          <FlashList
             data={['25%', '50%', '75% ', '100%']}
             renderItem={renderItem}
             keyExtractor={(item, index) => index.toString()}

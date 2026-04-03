@@ -2,7 +2,6 @@ import { BACKEND_RESULT } from '@env';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  FlatList,
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
@@ -28,6 +27,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 
 import { getVotePlace } from '../../../utils/offlineQueue';
+import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -897,7 +897,7 @@ const ElectoralLocations = ({ navigation, route }) => {
               </View>
             )}
 
-            <FlatList
+            <FlashList
               style={{ flex: 1 }}
               data={filteredLocations}
               renderItem={renderLocationItem}

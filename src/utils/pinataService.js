@@ -1,6 +1,6 @@
 import { PINATA_API, PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND_RESULT } from '@env';
 import axios from 'axios';
-import RNFS from 'react-native-fs';
+import { File, Paths } from 'expo-file-system';
 
 class PinataService {
   constructor() {
@@ -28,9 +28,9 @@ class PinataService {
 
   async downloadToCache(url, preferredName = 'electoral-act.jpg') {
     const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
-    const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
-    const res = await RNFS.downloadFile({ fromUrl: src, toFile: target }).promise;
-    if (res.statusCode >= 200 && res.statusCode < 300) return target;
+    const target = `${Paths.cache}/${Date.now()}-${preferredName}`;
+    const res = await File.downloadFileAsync(src, target);
+    if (res.exists) return res.uri;
     throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
   }
   async checkDuplicateBallot(voteData, electionId = null) {
@@ -134,11 +134,11 @@ class PinataService {
         ? localPath.slice(7)
         : localPath;
 
-      const fileExists = await RNFS.exists(fsPath);
-      if (!fileExists) throw new Error('El archivo no existe');
+      const file = new File(fsPath);
 
       // Obtener información del archivo
-      const fileInfo = await RNFS.stat(fsPath);
+      const { exists: fileExists, ...fileInfo } = file.info();
+      if (!fileExists) throw new Error('El archivo no existe');
 
       // Crear FormData para React Native
       const formData = new FormData();
@@ -190,7 +190,9 @@ class PinataService {
         },
       };
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        RNFS.unlink(fsPath).catch(() => { });
+        try {
+          (new File(fsPath)).delete();
+        } catch (e) {}
       }
 
       return out;

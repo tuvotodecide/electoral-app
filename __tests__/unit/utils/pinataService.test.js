@@ -20,23 +20,48 @@ jest.mock('axios', () => ({
   post: jest.fn(),
 }));
 
-jest.mock('react-native-fs', () => ({
-  CachesDirectoryPath: '/cache',
-  downloadFile: jest.fn(() => ({
-    promise: Promise.resolve({statusCode: 200}),
-  })),
-  exists: jest.fn(() => Promise.resolve(true)),
-  stat: jest.fn(() => Promise.resolve({size: 123})),
-  unlink: jest.fn(() => Promise.resolve()),
-}));
+const fileInstances = [];
+const nextInfoQueue = [];
+jest.mock('expo-file-system', () => {
+  const base = jest.requireActual('../../__mocks__/expo-file-system');
+
+  class TrackedFile extends base.File {
+    constructor(uri) {
+      super(uri);
+      const defaultInfo = this.info;
+      this.info = jest.fn(() => {
+        if (nextInfoQueue.length > 0) {
+          return {
+            uri: this.uri,
+            isDirectory: false,
+            size: 0,
+            ...nextInfoQueue.shift(),
+          };
+        }
+        return defaultInfo();
+      });
+      fileInstances.push(this);
+    }
+  }
+
+  TrackedFile.downloadFileAsync = base.File.downloadFileAsync;
+
+  return {
+    ...base,
+    File: TrackedFile,
+    __fileInstances: fileInstances,
+    __setNextInfo: value => nextInfoQueue.push(value),
+  };
+});
 
 import axios from 'axios';
-import RNFS from 'react-native-fs';
+import {File, Paths, __fileInstances, __setNextInfo} from 'expo-file-system';
 import pinataService from '../../../src/utils/pinataService';
 
 describe('pinataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __fileInstances.length = 0;
     jest.spyOn(Date, 'now').mockReturnValue(1000);
   });
 
@@ -95,7 +120,10 @@ describe('pinataService', () => {
       'photo.jpg',
     );
 
-    expect(RNFS.downloadFile).toHaveBeenCalled();
+    expect(File.downloadFileAsync).toHaveBeenCalledWith(
+      'https://example.com/photo.jpg',
+      `${Paths.cache}/1000-photo.jpg`,
+    );
     expect(axios.post).toHaveBeenCalledWith(
       'https://pinata.example/pinning/pinFileToIPFS',
       expect.any(FormData),
@@ -103,7 +131,7 @@ describe('pinataService', () => {
     );
     expect(out.success).toBe(true);
     expect(out.data.gatewayUrl).toContain('https://gateway.pinata.cloud/ipfs/');
-    expect(RNFS.unlink).toHaveBeenCalled();
+    expect(__fileInstances.some(file => file.delete.mock.calls.length > 0)).toBe(true);
   });
 
   it('uploadJSONToIPFS retorna error si falla', async () => {
@@ -146,8 +174,10 @@ describe('pinataService', () => {
   });
 
   it('downloadToCache falla si status HTTP no es 2xx', async () => {
-    RNFS.downloadFile.mockReturnValueOnce({
-      promise: Promise.resolve({statusCode: 404}),
+    File.downloadFileAsync.mockResolvedValueOnce({
+      exists: false,
+      statusCode: 404,
+      uri: `${Paths.cache}/1000-img.jpg`,
     });
 
     await expect(
@@ -156,7 +186,7 @@ describe('pinataService', () => {
   });
 
   it('uploadImageToIPFS falla si el archivo no existe', async () => {
-    RNFS.exists.mockResolvedValueOnce(false);
+    __setNextInfo({exists: false});
     const out = await pinataService.uploadImageToIPFS('/tmp/missing.jpg');
     expect(out.success).toBe(false);
     expect(out.error).toMatch(/no existe/i);
@@ -168,7 +198,7 @@ describe('pinataService', () => {
     });
 
     const out = await pinataService.uploadImageToIPFS('/tmp/local.jpg');
-    expect(RNFS.downloadFile).not.toHaveBeenCalled();
+    expect(File.downloadFileAsync).not.toHaveBeenCalled();
     expect(out.success).toBe(true);
   });
 

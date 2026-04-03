@@ -2,7 +2,6 @@ import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   PermissionsAndroid,
@@ -35,6 +34,7 @@ import {
   subscribeToLocationTopic,
   unsubscribeFromLocationTopic,
 } from '../../../services/notifications';
+import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -860,7 +860,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
               </View>
             )}
 
-            <FlatList
+            <FlashList
               style={{ flex: 1 }}
               data={filteredLocations}
               renderItem={renderLocationItem}

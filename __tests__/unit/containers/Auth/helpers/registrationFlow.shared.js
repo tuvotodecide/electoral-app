@@ -13,12 +13,6 @@ jest.mock('react-native-otp-textinput', () => {
     });
 });
 
-jest.mock('react-native-image-picker', () => ({
-  launchCamera: jest.fn((_options, callback) =>
-    callback({assets: [{uri: 'file://selfie.jpg'}]}),
-  ),
-}));
-
 jest.mock('react-native-gesture-handler', () => {
   const {TouchableOpacity, View} = require('react-native');
   return {
@@ -43,25 +37,13 @@ jest.mock('expo-image-picker', () => ({
     assets: [{uri: 'file://camera.jpg'}],
   })),
   CameraType: {
+    front: 'front',
     back: 'back',
   },
 }));
 
-jest.mock('react-native-permissions', () => ({
-  check: jest.fn(async () => 'granted'),
+jest.mock('expo-linking', () => ({
   openSettings: jest.fn(),
-  RESULTS: {
-    GRANTED: 'granted',
-  },
-}));
-
-jest.mock('../../../../../src/utils/Biometry', () => ({
-  biometryAvailability: jest.fn(async () => ({available: true, biometryType: 'Fingerprint'})),
-  biometricLogin: jest.fn(async () => true),
-}));
-
-jest.mock('../../../../../src/utils/TempRegister', () => ({
-  setTmpPin: jest.fn(async () => undefined),
 }));
 
 jest.mock('../../../../../src/utils/PinAttempts', () => ({
@@ -74,11 +56,6 @@ jest.mock('../../../../../src/utils/RegisterDraft', () => ({
   getDraft: jest.fn(async () => null),
   saveDraft: jest.fn(async () => undefined),
   clearDraft: jest.fn(async () => undefined),
-}));
-
-jest.mock('../../../../../src/utils/ensureBundle', () => ({
-  ensureBundle: jest.fn(async () => undefined),
-  writeBundleAtomic: jest.fn(async () => undefined),
 }));
 
 export const configurarMocksRegistro = () => {

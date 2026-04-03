@@ -1,19 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, TouchableOpacity, Alert, StyleSheet} from 'react-native';
-import {
-  Camera,
-  useCameraPermission,
-  useCameraDevice,
-} from 'react-native-vision-camera';
+import {Camera, useCameraPermissions} from 'expo-camera';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
 
 
 export default function CameraPermissionTest({navigation}) {
-  const {hasPermission, requestPermission} = useCameraPermission();
-  const backDevice = useCameraDevice('back');
-  const frontDevice = useCameraDevice('front');
-  const device = backDevice || frontDevice;
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasPermission = permission?.granted === true;
+  const [isCameraAvailable, setIsCameraAvailable] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState('checking');
 
   
@@ -23,18 +18,21 @@ export default function CameraPermissionTest({navigation}) {
 
   const checkPermissions = async () => {
     try {
-      const status = await Camera.getCameraPermissionStatus();
-
-      setPermissionStatus(status);
+      const status = await Camera.getCameraPermissionsAsync();
+      setPermissionStatus(status.status);
+      const available = await Camera.isAvailableAsync();
+      setIsCameraAvailable(Boolean(available));
     } catch (error) {
 
       setPermissionStatus('error');
+      setIsCameraAvailable(false);
     }
   };
 
   const handleRequestPermission = async () => {
     try {
-      const granted = await requestPermission();
+      const result = await requestPermission();
+      const granted = result?.granted === true;
 
       if (granted) {
         setPermissionStatus('granted');
@@ -69,21 +67,21 @@ export default function CameraPermissionTest({navigation}) {
       <View testID="cameraPermissionTestDeviceInfo" style={styles.infoContainer}>
         <Text testID="cameraPermissionTestDeviceLabel" style={styles.label}>{String.cameraDevice}</Text>
         <Text testID="cameraPermissionTestDeviceValue" style={styles.value}>
-          {device ? String.available : String.notAvailable}
+          {isCameraAvailable ? String.available : String.notAvailable}
         </Text>
       </View>
 
       <View testID="cameraPermissionTestBackCameraInfo" style={styles.infoContainer}>
         <Text testID="cameraPermissionTestBackCameraLabel" style={styles.label}>{String.backCamera}</Text>
         <Text testID="cameraPermissionTestBackCameraValue" style={styles.value}>
-          {backDevice ? String.available : String.notAvailable}
+          {isCameraAvailable ? String.available : String.notAvailable}
         </Text>
       </View>
 
       <View testID="cameraPermissionTestFrontCameraInfo" style={styles.infoContainer}>
         <Text testID="cameraPermissionTestFrontCameraLabel" style={styles.label}>{String.frontCamera}</Text>
         <Text testID="cameraPermissionTestFrontCameraValue" style={styles.value}>
-          {frontDevice ? String.available : String.notAvailable}
+          {isCameraAvailable ? String.available : String.notAvailable}
         </Text>
       </View>
 

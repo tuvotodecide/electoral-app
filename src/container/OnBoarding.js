@@ -1,5 +1,4 @@
 import {
-  FlatList,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -7,6 +6,7 @@ import {
 } from 'react-native';
 import React, {useCallback, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
+import { FlashList } from '@shopify/flash-list';
 
 // custom import
 import {deviceWidth, getHeight, moderateScale} from '../common/constants';
@@ -101,7 +101,7 @@ export default function OnBoarding({navigation}) {
           <Icon name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
-      <FlatList
+      <FlashList
         data={OnBoardingData}
         renderItem={({item, index}) => (
           <RenderItemData item={item} index={index} />
@@ -112,7 +112,7 @@ export default function OnBoarding({navigation}) {
         keyExtractor={(item, index) => index.toString()}
         bounces={false}
         onViewableItemsChanged={_onViewableItemsChanged}
-        _onViewabilityConfig={_onViewabilityConfig}
+        viewabilityConfig={_onViewabilityConfig}
         pagingEnabled
         testID="onboardingFlatList"
       />

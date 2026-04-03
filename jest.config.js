@@ -2,7 +2,7 @@
 //   preset: 'react-native',
 //   setupFilesAfterEnv: ['<rootDir>/__tests__/setup/jest.setup.js'],
 //   transformIgnorePatterns: [
-//     'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|react-native-biometrics|react-native-keychain|@twotalltotems|react-redux|@reduxjs)/)',
+//     'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|@twotalltotems|react-redux|@reduxjs)/)',
 //   ],
 //   collectCoverageFrom: [
 //     'src/**/*.{js,jsx,ts,tsx}',
@@ -35,7 +35,7 @@ module.exports = {
     '<rootDir>/__tests__/setup/jest.setup.js',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|react-native-biometrics|react-native-keychain|@twotalltotems|react-redux|@reduxjs|immer|jest-expo|expo-modules-core|expo|expo-router|expo-font|expo-haptics|expo-image|expo-linking|expo-splash-screen|expo-status-bar|expo-system-ui|expo-web-browser)/)',
+    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|@twotalltotems|react-redux|@reduxjs|immer|jest-expo|expo-modules-core|expo|expo-router|expo-font|expo-haptics|expo-image|expo-linking|expo-splash-screen|expo-status-bar|expo-system-ui|expo-web-browser|expo-linking|expo-constants)/)',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
@@ -49,7 +49,8 @@ module.exports = {
     '<rootDir>/__tests__/**/*.spec.{js,jsx,ts,tsx}',
   ],
   moduleNameMapper: {
-    '^react-native-fs$': '<rootDir>/__tests__/__mocks__/react-native-fs.js',
+    '^@shopify/flash-list$': '<rootDir>/__tests__/__mocks__/flash-list.js',
+    '^expo-file-system$': '<rootDir>/__tests__/__mocks__/expo-file-system.js',
     '^wira-sdk$': '<rootDir>/__tests__/__mocks__/wira-sdk.js',
     '^expo-crypto$': '<rootDir>/__tests__/__mocks__/expo-crypto.js',
     '^.+\\.svg$': '<rootDir>/__tests__/__mocks__/svgMock.js',

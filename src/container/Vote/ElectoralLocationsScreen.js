@@ -1,10 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import {
   View,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   PermissionsAndroid,
   Platform,
   Dimensions,
@@ -21,6 +19,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
+import { FlashList } from '@shopify/flash-list';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -278,7 +277,7 @@ const ElectoralLocationsScreen = () => {
           </CText>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           testID="electoralLocationsList"
           data={locations}
           renderItem={renderLocationItem}

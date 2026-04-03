@@ -81,6 +81,8 @@ const wira = {
   },
   Biometric: {
     getBioFlag: jest.fn(async () => false),
+    biometryAvailability: jest.fn(async () => ({available: true, biometryType: 'Fingerprint'})),
+    biometricLogin: jest.fn(async () => true),
   },
   idCardAnalyzer: {
     ensureClient: jest.fn(async () => undefined),

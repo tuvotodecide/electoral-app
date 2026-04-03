@@ -2,7 +2,6 @@ import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -26,6 +25,7 @@ import { getCache, setCache } from '../../../utils/lookupCache';
 import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
+import { FlashList } from '@shopify/flash-list';
 
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
@@ -724,7 +724,7 @@ export default function Notification({ navigation }) {
           <Text style={localStyle.loaderText}>Cargando notificaciones...</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           testID="notificationList"
           data={displayItems}
           keyExtractor={item => String(item.id)}

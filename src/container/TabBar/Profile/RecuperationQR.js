@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import {openSettings} from 'react-native-permissions';
+import {openSettings} from 'expo-linking';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';

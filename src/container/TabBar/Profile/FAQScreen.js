@@ -1,4 +1,4 @@
-import {FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,6 +15,7 @@ import {styles} from '../../../themes';
 import FaqComponent from '../../../components/home/FaqComponents';
 import {FaqData, SearchTopicsFaqs} from '../../../api/constant';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
+import { FlashList } from '@shopify/flash-list';
 
 
 export default function FAQScreen() {
@@ -151,20 +152,18 @@ export default function FAQScreen() {
         <View style={localStyle.mainContainer}>
           <CText type={'B16'}>{String.popularQuestions}</CText>
 
-          <FlatList
+          <FlashList
             data={FaqData}
             renderItem={renderIem}
             keyExtractor={(item, index) => index.toString()}
             showsVerticalScrollIndicator={false}
-            vertical
           />
           <CText type={'B16'}>{String.searchByTopics}</CText>
-          <FlatList
+          <FlashList
             data={searchData}
             renderItem={searchTopics}
             keyExtractor={(item, index) => index.toString()}
             showsVerticalScrollIndicator={false}
-            vertical
             bounces={false}
           />
         </View>

@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
-  Pressable,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -12,15 +11,10 @@ import {
   StatusBar,
   Modal,
   Text,
-  ScrollView,
   PanResponder,
   Animated,
 } from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-} from 'react-native-vision-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -28,8 +22,7 @@ import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
-import { launchImageLibrary } from 'react-native-image-picker';
-import NetInfo from '@react-native-community/netinfo';
+import * as ImagePicker from 'expo-image-picker';
 
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -38,37 +31,6 @@ const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
 const MAX_CAPTURE_HEIGHT = 1080;
-
-// Función para obtener el mejor formato de cámara
-const getBestCameraFormat = device => {
-  if (!device?.formats) return undefined;
-
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const isPortrait = screenHeight >= screenWidth;
-  const screenRatio = screenWidth / screenHeight;
-
-  let bestFormat = undefined;
-  let bestDiff = Number.MAX_VALUE;
-
-  for (const format of device.formats) {
-    // ✅ solo formatos que soporten foto
-    if (!format.photoWidth || !format.photoHeight) continue;
-
-    const formatRatio = format.photoWidth / format.photoHeight;
-    const adjustedRatio = isPortrait
-      ? Math.min(formatRatio, 1 / formatRatio)
-      : formatRatio;
-
-    const diff = Math.abs(adjustedRatio - screenRatio);
-
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestFormat = format;
-    }
-  }
-
-  return bestFormat;
-};
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const getContainedSize = (srcW, srcH, maxW, maxH) => {
@@ -112,13 +74,11 @@ export default function CameraScreen({ navigation, route }) {
 
   const camera = useRef(null);
   const insets = useSafeAreaInsets();
-  const backDevice = useCameraDevice('back');
-  const frontDevice = useCameraDevice('front');
   const { electionId, electionType } = route.params || {};
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
-  const device = backDevice || frontDevice;
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasPermission = permission?.granted === true;
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -142,7 +102,6 @@ export default function CameraScreen({ navigation, route }) {
   const [lastTranslateX, setLastTranslateX] = useState(0);
   const [lastTranslateY, setLastTranslateY] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
-  const [focusPoint, setFocusPoint] = useState(null);
   const initialDistance = useRef(null);
   const focusIndicatorTimeoutRef = useRef(null);
 
@@ -213,20 +172,14 @@ export default function CameraScreen({ navigation, route }) {
   };
 
   const openGallery = async () => {
-    const options = {
-      mediaType: 'photo',
-      includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
-      quality: 0.8,
-    };
-
     try {
-      const result = await launchImageLibrary(options);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        base64: true,
+        quality: 0.8,
+      });
 
-      if (result.didCancel) {
-      } else if (result.errorCode) {
-        Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      if (result.canceled) {
       } else if (result.assets && result.assets.length > 0) {
         const selectedPhoto = result.assets[0];
         let imagePath = selectedPhoto.uri;
@@ -482,12 +435,12 @@ export default function CameraScreen({ navigation, route }) {
     const initCamera = async () => {
       if (!hasPermission) {
         const granted = await requestPermission();
-        if (!granted) {
+        if (!granted.granted) {
           return;
         }
       }
 
-      if (device && hasPermission && !photo && isFocused) {
+      if (hasPermission && !photo && isFocused) {
         // Longer delay to ensure camera is completely free
         timeoutId = setTimeout(() => {
           setIsActive(true);
@@ -503,7 +456,7 @@ export default function CameraScreen({ navigation, route }) {
       }
       setIsActive(false);
     };
-  }, [hasPermission, requestPermission, device, photo, isFocused, cameraKey]);
+  }, [hasPermission, requestPermission, photo, isFocused, cameraKey]);
 
   // Focus listener para reactivar cuando se regresa a la pantalla
   useEffect(() => {
@@ -538,34 +491,7 @@ export default function CameraScreen({ navigation, route }) {
     };
   }, []);
 
-  const handleTapToFocus = async event => {
-    if (!camera.current || !isActive || !device?.supportsFocus) {
-      return;
-    }
-
-    const { locationX, locationY } = event.nativeEvent;
-    setFocusPoint({ x: locationX, y: locationY });
-
-    if (focusIndicatorTimeoutRef.current) {
-      clearTimeout(focusIndicatorTimeoutRef.current);
-    }
-
-    focusIndicatorTimeoutRef.current = setTimeout(() => {
-      setFocusPoint(null);
-      focusIndicatorTimeoutRef.current = null;
-    }, 900);
-
-    try {
-      await camera.current.focus({
-        x: locationX,
-        y: locationY,
-      });
-    } catch (error) {
-      // Algunos dispositivos limitan el enfoque manual aunque reporten soporte.
-    }
-  };
-
-  if (!device || !hasPermission) {
+  if (!hasPermission) {
     return (
       <View style={styles.centered}>
         <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
@@ -582,15 +508,13 @@ export default function CameraScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      const firstResult = await camera.current.takePhoto({
-        qualityPrioritization: 'quality',
+      const firstResult = await camera.current.takePictureAsync({
         flash: 'off',
         enableAutoRedEyeReduction: false,
-        enableAutoStabilization: true,
-        enableShutterSound: false,
+        shutterSound: false,
       });
 
-      let finalUri = `file://${firstResult.path}`;
+      let finalUri = firstResult.uri;
       let finalWidth = firstResult.width || 0;
       let finalHeight = firstResult.height || 0;
 
@@ -617,7 +541,7 @@ export default function CameraScreen({ navigation, route }) {
         height: finalHeight,
       };
 
-      setPhoto({ path: finalUri.replace('file://', '') }); // sin cropData
+      setPhoto({ path: finalUri }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);
@@ -625,7 +549,7 @@ export default function CameraScreen({ navigation, route }) {
       console.error('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
       // Specific handling for "camera already in use" error
       if (
-        err.code === 'device/camera-already-in-use' ||
+        err.code === 'E_CAMERA_IS_BEING_USED' ||
         err.message?.includes('already in use')
       ) {
         resetCamera();
@@ -813,40 +737,24 @@ export default function CameraScreen({ navigation, route }) {
       {!photo ? (
         <>
           {isActive && (
-            <Pressable
-              testID="cameraScreenFocusArea"
+            <CameraView
+              testID="cameraScreenCamera"
+              key={cameraKey}
+              ref={camera}
               style={StyleSheet.absoluteFill}
-              onPress={handleTapToFocus}>
-              <Camera
-                testID="cameraScreenCamera"
-                key={cameraKey}
-                ref={camera}
-                style={StyleSheet.absoluteFill}
-                device={device}
-                isActive={isActive && isFocused}
-                photo={true}
-                photoQualityBalance="quality"
-                format={getBestCameraFormat(device)}
-                zoom={0}
-                onError={error => {
-                  if (error.code === 'device/camera-already-in-use') {
-                    resetCamera();
-                  }
-                }}
-              />
-              {focusPoint ? (
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.focusIndicator,
-                    {
-                      left: focusPoint.x - 28,
-                      top: focusPoint.y - 28,
-                    },
-                  ]}
-                />
-              ) : null}
-            </Pressable>
+              active={isActive && isFocused}
+              facing="back"
+              ratio='16:9'
+              autofocus='off'
+              onMountError={error => {
+                if (
+                  error?.code === 'E_CAMERA_IS_BEING_USED' ||
+                  error?.message?.includes('already in use')
+                ) {
+                  resetCamera();
+                }
+              }}
+            />
           )}
           <RenderFrame
             testID="cameraScreenRenderFrame"

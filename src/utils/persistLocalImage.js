@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
-import RNFS from 'react-native-fs';
 import BlobUtil from 'react-native-blob-util';
+import { File, Paths } from 'expo-file-system';
 
 const isHttp = uri => /^https?:\/\//i.test(String(uri || ''));
 
@@ -36,7 +36,7 @@ export const persistLocalImage = async uri => {
       '';
 
     const ext = guessExt(safeUri, ct);
-    const destPath = `${RNFS.DocumentDirectoryPath}/acta-${Date.now()}.${ext}`;
+    const destPath = `${Paths.document}/acta-${Date.now()}.${ext}`;
 
     // 2) DESCARGA A DISCO (fileCache true) y además escribe directo a destPath
     const res = await BlobUtil.config({
@@ -55,15 +55,17 @@ export const persistLocalImage = async uri => {
 
     // Si BlobUtil respetó "path", savedPath suele ser destPath. Si no, asegúralo:
     if (savedPath !== destPath) {
-      await RNFS.copyFile(savedPath, destPath);
-      try { await RNFS.unlink(savedPath); } catch (e) { }
+      const savedFile = new File(savedPath);
+      const copiedFile = new File(destPath);
+      savedFile.copy(copiedFile);
+      try { savedFile.delete(); } catch (e) { }
     }
 
     return `file://${destPath}`;
   }
 
   const ext = guessExt(safeUri);
-  const destPath = `${RNFS.DocumentDirectoryPath}/acta-${Date.now()}.${ext}`;
+  const destPath = `${Paths.document}/acta-${Date.now()}.${ext}`;
 
   const isFile = safeUri.startsWith('file://');
   const isAndroidContent = Platform.OS === 'android' && safeUri.startsWith('content://');
@@ -75,13 +77,17 @@ export const persistLocalImage = async uri => {
 
   if (isFile) {
     const src = safeUri.replace('file://', '');
-    await RNFS.copyFile(src, destPath);
+    (new File(src)).copy(new File(destPath));
   } else if (isAndroidContent || isIOSAsset) {
     const base64 = await BlobUtil.fs.readFile(safeUri, 'base64');
-    await RNFS.writeFile(destPath, base64, 'base64');
+    (new File(destPath)).write(base64, {
+      encoding: 'base64'
+    });
   } else {
     const base64 = await BlobUtil.fs.readFile(safeUri, 'base64');
-    await RNFS.writeFile(destPath, base64, 'base64');
+    (new File(destPath)).write(base64, {
+      encoding: 'base64'
+    });
   }
 
   return `file://${destPath}`;
@@ -92,8 +98,10 @@ export const removePersistedImage = async fileUri => {
   try {
     if (!fileUri || typeof fileUri !== 'string') return;
     const path = fileUri.startsWith('file://') ? fileUri.slice(7) : fileUri;
-    const exists = await RNFS.exists(path);
-    if (exists) await RNFS.unlink(path);
+    const fileToRemove = new File(path);
+    const { exists } = fileToRemove.info();
+
+    if (exists) fileToRemove.delete();
   } catch (error) {
     console.error('[PERSIST-IMAGE] Error al eliminar imagen', { error: error?.message });
   }

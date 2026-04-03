@@ -9,8 +9,6 @@ __tests__/
 ├── __mocks__/                          # Mocks globales reutilizables
 │   ├── @react-native-async-storage/    # Mock AsyncStorage
 │   ├── @react-native-firebase/         # Mock Firebase services
-│   ├── react-native-biometrics.js      # Mock autenticación biométrica
-│   ├── react-native-keychain.js        # Mock almacenamiento seguro
 │   └── navigation.js                   # Mock navegación
 │
 ├── setup/                              # Configuración de pruebas

@@ -1,14 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {EXPIRES_KEY, JWT_KEY, SESSION, TTL_MIN} from '../common/constants';
-import * as Keychain from 'react-native-keychain';
-
-
+import {EXPIRES_KEY, JWT_KEY, JWT_KEY_EXPO, SESSION, TTL_MIN} from '../common/constants';
+import { InternetCredentials } from '../data/client/internetCredentials';
 
 async function migrateIfLegacy() {
   const legacy = await AsyncStorage.getItem(JWT_KEY);
   if (!legacy) return;
 
-  await Keychain.setInternetCredentials(JWT_KEY, 'user', legacy, {
+  await InternetCredentials.saveInternetCredentials(JWT_KEY_EXPO, 'user', legacy, {
     accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   });
   await AsyncStorage.removeItem(JWT_KEY);
@@ -17,9 +15,7 @@ async function migrateIfLegacy() {
 export async function startSession(jwt, ttl = TTL_MIN) {
   await migrateIfLegacy();
   if (jwt) {
-    await Keychain.setInternetCredentials(JWT_KEY, 'user', jwt, {
-      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    });
+    await InternetCredentials.saveInternetCredentials(JWT_KEY_EXPO, 'user', jwt);
     const exp = Date.now() + ttl * 60_000;
     await AsyncStorage.multiSet([
       [EXPIRES_KEY, exp.toString()],
@@ -40,14 +36,14 @@ export async function startLocalSession(ttl = TTL_MIN) {
 }
 
 export async function clearSession() {
-  await Keychain.resetInternetCredentials({server: JWT_KEY});
+  await InternetCredentials.resetInternetCredentials(JWT_KEY_EXPO);
   await AsyncStorage.multiRemove([JWT_KEY, EXPIRES_KEY, SESSION]);
 }
 
 export async function isSessionValid() {
   await migrateIfLegacy();
   const isLocalSession = await AsyncStorage.getItem(SESSION);
-  const creds = await Keychain.getInternetCredentials(JWT_KEY);
+  const creds = await InternetCredentials.getInternetCredentials(JWT_KEY_EXPO);
   const exp = await AsyncStorage.getItem(EXPIRES_KEY);
   return (
     (isLocalSession === '1' || !!creds?.password) &&
@@ -58,7 +54,7 @@ export async function isSessionValid() {
 
 export async function getJwt() {
   await migrateIfLegacy();
-  const creds = await Keychain.getInternetCredentials(JWT_KEY); 
+  const creds = await InternetCredentials.getInternetCredentials(JWT_KEY_EXPO);
   return creds?.password ?? null;
 }
 

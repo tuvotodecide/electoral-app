@@ -1,9 +1,9 @@
-// Mock para react-native FlatList
+// Mock para @shopify/flash-list
 import React from 'react';
 
-const FlatList = ({ data, renderItem, testID, keyExtractor, ...props }) => {
+const FlashList = ({ data, renderItem, testID, keyExtractor, ...props }) => {
   if (!data || data.length === 0) {
-    return React.createElement('FlatList', { testID, ...props });
+    return React.createElement('FlashList', { testID, ...props });
   }
 
   const items = data.map((item, index) => {
@@ -14,6 +14,8 @@ const FlatList = ({ data, renderItem, testID, keyExtractor, ...props }) => {
   return React.createElement('ScrollView', { testID, ...props }, items);
 };
 
+export { FlashList };
+
 export default {
-  FlatList,
+  FlashList,
 };

@@ -212,7 +212,7 @@ function addDependencies(contents) {
 
   const flutterDeps = `
     // Flutter module dependencies for wira-sdk
-    releaseImplementation 'com.example.wira_flutter_module:flutter_release:1.0'
+    releaseImplementation 'com.wira.wira_flutter_module:flutter_release:1.0'
 
     // Sentry dependencies
     implementation platform("io.sentry:sentry-bom:8.31.0")
