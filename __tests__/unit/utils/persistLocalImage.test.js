@@ -62,7 +62,7 @@ describe('persistLocalImage', () => {
     expect(mockBlobFetch).toHaveBeenCalledWith('HEAD', 'https://example.com/image.png');
     expect(BlobUtil.config).toHaveBeenCalled();
     expect(__fileInstances).toHaveLength(2);
-    expect(__fileInstances[0].uri).toBe('/tmp/downloaded.tmp');
+    expect(__fileInstances[0].uri).toBe('file:///tmp/downloaded.tmp');
     expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.png`);
     expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
     expect(__fileInstances[0].delete).toHaveBeenCalled();

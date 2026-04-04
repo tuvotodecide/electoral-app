@@ -41,12 +41,11 @@ export const persistLocalImage = async uri => {
     // 2) DESCARGA A DISCO (fileCache true) y además escribe directo a destPath
     const res = await BlobUtil.config({
       fileCache: true,
-      path: destPath,     // escribe aquí directamente
+      path: destPath.replace('file://', ''),     // escribe aquí directamente
       appendExt: ext,     // por si el FS necesita extensión
     }).fetch('GET', safeUri);
 
-    const savedPath = res?.path();
-
+    const savedPath = res?.path() ? 'file://' + res?.path() : null;
 
     // 3) Validación fuerte
     if (!savedPath) {
