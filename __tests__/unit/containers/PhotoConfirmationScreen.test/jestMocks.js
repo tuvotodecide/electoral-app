@@ -169,11 +169,6 @@ jest.mock('../../../../src/utils/Cifrate', () => ({
   })),
 }));
 
-jest.mock('../../../../src/utils/aesGcm', () => ({
-  aesGcmEncrypt: jest.fn(() => Promise.resolve(new Uint8Array(32))),
-  aesGcmDecrypt: jest.fn(() => Promise.resolve(new Uint8Array(32))),
-}));
-
 jest.mock('react-native-view-shot', () => ({
   captureRef: jest.fn(() => Promise.resolve('file:///mock-certificate.png')),
 }));
@@ -181,9 +176,4 @@ jest.mock('react-native-view-shot', () => ({
 jest.mock('../../../../src/utils/BioFlag', () => ({
   getBioFlag: jest.fn(() => Promise.resolve(false)),
   setBioFlag: jest.fn(() => Promise.resolve()),
-}));
-
-jest.mock('../../../../src/utils/ensureBundle', () => ({
-  readBundleFile: jest.fn(() => Promise.resolve('{}')),
-  writeBundleAtomic: jest.fn(() => Promise.resolve()),
 }));

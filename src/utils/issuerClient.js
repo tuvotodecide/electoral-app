@@ -1,7 +1,8 @@
+import { CRED_SCHEMA_URL, CRED_TYPE, CRED_EXP_DAYS } from '@env';
 import axios from 'axios';
 import {Buffer} from 'buffer';
 import {getProvision} from './provisionClient';
-import {CRED_SCHEMA_URL, CRED_TYPE, CRED_EXP_DAYS} from '@env';
+
 
 function stripTrailingSlash(s = '') {
   return String(s || '').replace(/\/+$/, '');

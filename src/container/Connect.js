@@ -16,7 +16,6 @@ import { AuthNav, StackNav } from '../navigation/NavigationKey';
 import { styles } from '../themes';
 import { commonColor } from '../themes/colors';
 import { HandleModal } from './TabBar/SignIn/HandleModal';
-import { checkLegacyDataExists } from '../utils/migrateLegacy';
 
 export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
@@ -42,13 +41,10 @@ export default function Connect({ navigation }) {
   const onPressLoginUser = async () => {
     const response = await wira.Storage.checkUserData();
     if (!response) {
-      const legacyDataExists = await checkLegacyDataExists();
-      if (!legacyDataExists) {
-        navigation.navigate(AuthNav.SelectRecuperation);
-        return;
-      }
+      navigation.navigate(AuthNav.SelectRecuperation);
+    } else {
+      navigation.navigate(AuthNav.LoginUser);
     }
-    navigation.navigate(AuthNav.LoginUser);
   };
 
   const onPressInfo = () => {

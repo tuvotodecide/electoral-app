@@ -1,6 +1,7 @@
+import { BACKEND_IDENTITY, PROVIDER_NAME } from '@env';
 import { useState } from "react";
 import wira from "wira-sdk";
-import {BACKEND_IDENTITY, PROVIDER_NAME} from '@env';
+
 import CSafeAreaView from "../../../components/common/CSafeAreaView";
 import CHeader from "../../../components/common/CHeader";
 import String from '../../../i18n/String';

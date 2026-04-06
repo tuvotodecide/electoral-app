@@ -80,7 +80,5 @@ executionOrder:
     #- certifySelfRecord
     #- certifyValidRecord
 
-
 # Customised test output directory
 testOutputDir: test_output_directory
-

@@ -42,6 +42,7 @@ import { backendProbe, checkInternetConnection } from '../../../utils/networkUti
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
+import { useSelector } from 'react-redux';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -53,6 +54,19 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const getPrimaryCandidateName = candidate => {
+  const primaryTicketEntry = Array.isArray(candidate?.ticketEntries)
+    ? candidate.ticketEntries.find(entry => String(entry?.name || '').trim())
+    : null;
+
+  return String(
+    primaryTicketEntry?.name ||
+      candidate?.presidentName ||
+      candidate?.partyName ||
+      '',
+  ).trim();
 };
 
 const isLikelyNetworkVoteError = error => {
@@ -141,7 +155,8 @@ const CandidateScreen = ({ route }) => {
 
   const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
   const electionId = route?.params?.electionId || electionInfo?.id || '';
-
+  const userData = useSelector(state => state.wallet.payload);
+  
   // State
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -257,6 +272,7 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
@@ -290,6 +306,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -311,12 +328,13 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
         // Online: Submit vote directly
         console.log('Submitting vote for candidate:', selectedCandidate.id);
-        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName);
+        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.account, userData.privKey);
         console.log('Vote submission result:', result);
 
         if (result.success) {
@@ -331,6 +349,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -358,6 +377,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
             errorMessage: null,
           });
@@ -432,7 +452,9 @@ const CandidateScreen = ({ route }) => {
     if (!selectedCandidate) {
       return UI_STRINGS.selectCandidate;
     }
-    return `${UI_STRINGS.voteFor} ${selectedCandidate.presidentName.split(' ')[0].toUpperCase()} ${selectedCandidate.presidentName.split(' ')[1]?.toUpperCase() || ''}`.trim();
+    const primaryName = getPrimaryCandidateName(selectedCandidate);
+    const [firstName = '', secondName = ''] = primaryName.split(' ');
+    return `${UI_STRINGS.voteFor} ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
   };
 
   return (
@@ -488,7 +510,7 @@ const CandidateScreen = ({ route }) => {
       {/* Confirm Modal */}
       <ConfirmVoteModal
         visible={showConfirmModal}
-        presidentName={selectedCandidate?.presidentName || ''}
+        presidentName={getPrimaryCandidateName(selectedCandidate)}
         partyName={selectedCandidate?.partyName || ''}
         partyColor={selectedCandidate?.partyColor || '#2563EB'}
         onConfirm={handleConfirmVote}

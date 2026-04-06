@@ -1,8 +1,8 @@
+import { BACKEND } from '@env';
 import axios from 'axios';
-import {BACKEND} from '@env';
 
-import * as Keychain from 'react-native-keychain';
-import {JWT_KEY} from '../../common/constants';
+import { InternetCredentials } from './internetCredentials';
+import {JWT_KEY, JWT_KEY_EXPO} from '../../common/constants';
 
 const Axios = axios.create({
   baseURL: BACKEND,
@@ -22,7 +22,7 @@ const AxiosMultipart = axios.create({
 });
 
 async function authHeader(config) {
-  const token = await Keychain.getInternetCredentials(JWT_KEY);
+  const token = await InternetCredentials.getInternetCredentials(JWT_KEY_EXPO);
   if (token) config.headers.Authorization = `Bearer ${token.password}`;
   return config;
 }

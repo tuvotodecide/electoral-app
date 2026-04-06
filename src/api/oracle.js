@@ -1,6 +1,7 @@
 import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
 import oracleAbi from '../abi/OracleAbi.json';
 import { availableNetworks } from "./params";
+import { getAccount } from "./account";
 
 function requestRegister(chain, imageUri) {
   return {
@@ -38,8 +39,15 @@ function attest(chain, tableId, recordId, newJsonUri = "") {
   }
 }
 
-async function isRegistered(chainId, accountAddress, attemps = 3) {
+async function isRegistered(chainId, privateKey, accountAddress, attemps = 3) {
   const {chain, oracle, userRole, juryRole, bundler} = availableNetworks[chainId];
+
+  let address = accountAddress;
+  if(privateKey) {
+    const {account} = await getAccount(privateKey, null, chainId);
+    address = account.address;
+  }
+
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
   const publicClient = createPublicClient({
@@ -56,7 +64,7 @@ async function isRegistered(chainId, accountAddress, attemps = 3) {
   for(let i = 0; i < attemps; i++) {
     const isUser = await oracleContract.read.hasRole([
       userRole,
-      accountAddress
+      address
     ]);
 
     if(isUser) {
@@ -65,7 +73,7 @@ async function isRegistered(chainId, accountAddress, attemps = 3) {
 
     const isJury = await oracleContract.read.hasRole([
       juryRole,
-      accountAddress
+      address
     ]);
 
     if(isJury) {
@@ -78,8 +86,14 @@ async function isRegistered(chainId, accountAddress, attemps = 3) {
   return false;
 }
 
-async function isUserJury(chainId, address) {
+async function isUserJury(chainId, privateKey, accountAddress) {
   const {chain, oracle, juryRole, bundler} = availableNetworks[chainId];
+
+  let address = accountAddress;
+  if(privateKey) {
+    const {account} = await getAccount(privateKey, null, chainId);
+    address = account.address;
+  }
 
   const publicClient = createPublicClient({
     chain: chain,

@@ -1,6 +1,4 @@
 import {
-  FlatList,
-  Image,
   ImageBackground,
   StyleSheet,
   TouchableOpacity,
@@ -23,8 +21,8 @@ import CSafeAreaView from '../components/common/CSafeAreaView';
 import CButton from '../components/common/CButton';
 import String from '../i18n/String';
 import {setOnBoarding} from '../utils/AsyncStorage';
-import {AuthNav, StackNav} from '../navigation/NavigationKey';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { FlashList } from '@shopify/flash-list';
 
 export default function OnBoardingGuardians({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -41,8 +39,9 @@ export default function OnBoardingGuardians({navigation}) {
       await setOnBoarding(true);
       navigation.goBack();
     } else {
-      slideRef.current._listRef._scrollRef.scrollTo({
-        x: deviceWidth * (currentIndex + 1),
+      slideRef.current.scrollToIndex({
+        index: currentIndex + 1,
+        animated: true,
       });
     }
   };
@@ -91,7 +90,7 @@ export default function OnBoardingGuardians({navigation}) {
           <Icon testID="onboardingGuardiansSkipIcon" name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
-      <FlatList
+      <FlashList
         testID="onboardingGuardiansFlatList"
         data={OnBoardingGuardiansData}
         renderItem={({item, index}) => (
@@ -103,7 +102,7 @@ export default function OnBoardingGuardians({navigation}) {
         keyExtractor={(item, index) => index.toString()}
         bounces={false}
         onViewableItemsChanged={_onViewableItemsChanged}
-        _onViewabilityConfig={_onViewabilityConfig}
+        viewabilityConfig={_onViewabilityConfig}
         pagingEnabled
       />
 

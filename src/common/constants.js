@@ -53,6 +53,7 @@ export const TTL_MIN = 15;
 export const DRAFT = '@wIRA/DRAFT';
 export const DEVICE_TOKEN = 'DEVICE_TOKEN';
 export const JWT_KEY = '@wIRA/JWT';
+export const JWT_KEY_EXPO= 'WIRA_JWT_EXPO';
 export const EXPIRES_KEY = `${JWT_KEY}_EXPIRES`;
 export const PENDING_DID = 'PENDING_DID';
 export const DEVICE_ID_KEY = 'DEVICE_ID';

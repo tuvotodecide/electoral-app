@@ -1,5 +1,4 @@
-import {FlatList, Image, StyleSheet, View} from 'react-native';
-import React, { useRef } from 'react';
+import {StyleSheet, View} from 'react-native';
 
 // custom import
 import {moderateScale} from '../../common/constants';
@@ -7,6 +6,7 @@ import {useSelector} from 'react-redux';
 import {styles} from '../../themes';
 import CListCard from '../common/CLIstCard';
 import QRCode from 'react-native-qrcode-svg';
+import { FlashList } from '@shopify/flash-list';
 
 export default function QRDetails({qrData, data, getRef}) {
   const colors = useSelector(state => state.theme.theme);
@@ -27,7 +27,7 @@ export default function QRDetails({qrData, data, getRef}) {
         />
       </View>
       <View style={localStyle.detailsContainer}>
-        <FlatList
+        <FlashList
           data={data}
           renderItem={({item, index}) => <CListCard item={item} index={index} size='small' />}
           showsVerticalScrollIndicator={false}

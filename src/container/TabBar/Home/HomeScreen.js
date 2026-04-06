@@ -1,8 +1,8 @@
+import { BACKEND_RESULT } from '@env';
+import { Image } from 'expo-image';
 import {
   AppState,
   Dimensions,
-  FlatList,
-  Image,
   Linking,
   Modal,
   PermissionsAndroid,
@@ -21,7 +21,7 @@ import { useDispatch } from 'react-redux';
 import { clearWallet } from '../../../redux/action/walletAction';
 import { clearAuth } from '../../../redux/slices/authSlice';
 
-import { BACKEND_RESULT } from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -63,6 +63,10 @@ import {
   getAttestationAvailabilityCache,
   saveAttestationAvailabilityCache,
 } from '../../../utils/attestationAvailabilityCache';
+import {
+  buildSelectedElectionContext,
+  saveSelectedElectionContext,
+} from '../../../utils/electionContext';
 import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
 import {
   authenticateWithBackend,
@@ -91,6 +95,7 @@ import {
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
 import { claimNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
+import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -333,6 +338,9 @@ const BlockchainConsultoraBanner = () => (
     <View
       testID="homeBlockchainBannerContent"
       style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={stylesx.bcLogoCircle}>
+        <CText style={stylesx.bcLogoText}>bc</CText>
+      </View>
       <View testID="homeBlockchainBannerText" style={{ marginLeft: 10, flex: 1 }}>
         <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
           {I18nStrings.needBlockchainApp}
@@ -534,8 +542,24 @@ export default function HomeScreen({ navigation }) {
   const [shouldShowRegisterAlert, setShouldShowRegisterAlert] = useState(false);
   const [electionStatus, setElectionStatus] = useState(null);
   const [contractsAvailability, setContractsAvailability] = useState({
-    ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-    GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+    ALCALDE: {
+      enabled: false,
+      electionId: null,
+      electionName: null,
+      reason: null,
+      contractId: null,
+      contract: null,
+      backendElectionType: null,
+    },
+    GOBERNADOR: {
+      enabled: false,
+      electionId: null,
+      electionName: null,
+      reason: null,
+      contractId: null,
+      contract: null,
+      backendElectionType: null,
+    },
     nearestLocation: null,
   });
   const contracts = contractsAvailability;
@@ -784,12 +808,18 @@ export default function HomeScreen({ navigation }) {
           electionId: municipalEnabled ? municipal?.electionId : null,
           electionName: municipal?.electionName || null,
           reason: municipal?.reason || null,
+          contractId: municipal?.contract?.id || null,
+          contract: municipal?.contract || null,
+          backendElectionType: municipal?.electionType || null,
         },
         GOBERNADOR: {
           enabled: departamentalEnabled,
           electionId: departamentalEnabled ? departamental?.electionId : null,
           electionName: departamental?.electionName || null,
           reason: departamental?.reason || null,
+          contractId: departamental?.contract?.id || null,
+          contract: departamental?.contract || null,
+          backendElectionType: departamental?.electionType || null,
         },
       };
     },
@@ -1474,6 +1504,9 @@ export default function HomeScreen({ navigation }) {
     const online = isStateEffectivelyOnline(net, NET_POLICIES.estrict);
     const selected = contractsAvailability?.[type];
     let electionId = selected?.electionId;
+    let contractId = selected?.contractId || null;
+    let electionName = selected?.electionName || null;
+    let backendElectionType = selected?.backendElectionType || null;
 
     if (!electionId && dni) {
       try {
@@ -1488,6 +1521,9 @@ export default function HomeScreen({ navigation }) {
           ? elections.find(e => e?.electionType === wantedElectionType && !!e?.canAttest)
           : null;
         electionId = match?.electionId || null;
+        contractId = match?.contract?.id || contractId;
+        electionName = match?.electionName || electionName;
+        backendElectionType = match?.electionType || backendElectionType;
       } catch { }
     }
     if (!electionId) {
@@ -1500,10 +1536,34 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
+    const selectedElectionContext = buildSelectedElectionContext({
+      contractId,
+      electionId,
+      electionName,
+      electionType:
+        backendElectionType ||
+        (type === 'ALCALDE'
+          ? 'municipal'
+          : type === 'GOBERNADOR'
+          ? 'departamental'
+          : type),
+      territory: {
+        type: 'unknown',
+        locationId: contractsAvailability?.nearestLocation?._id || null,
+        locationName: contractsAvailability?.nearestLocation?.name || null,
+      },
+      allowedParties: [],
+      source: online ? 'backend' : 'cache',
+    });
+    if (dni) {
+      await saveSelectedElectionContext(dni, selectedElectionContext);
+    }
+
     const params = {
       targetScreen: 'UnifiedParticipation',
       electionType: type,
       electionId,
+      selectedElectionContext,
     };
     if (online) {
       if (dni) {
@@ -1925,10 +1985,15 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
+    const state = await NetInfo.fetch();
+    if (!isStateEffectivelyOnline(state)) {
       return;
     }
+
+    // No bloquear la consulta real de notificaciones por un health probe
+    // transitorio. El endpoint /users/:dni/notifications puede responder bien
+    // aunque /health falle o expire.
+    await backendProbe({ timeoutMs: 2000 }).catch(() => null);
 
     try {
       const apiKey = await ensureNotificationsApiKey();
@@ -2412,7 +2477,7 @@ export default function HomeScreen({ navigation }) {
 
     return (
       <View style={stylesx.votingCarouselContainer}>
-        <FlatList
+        <FlashList
           data={votingElections}
           keyExtractor={(item, index) => String(item?.id || index)}
           horizontal
@@ -2589,7 +2654,7 @@ export default function HomeScreen({ navigation }) {
 
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
-              <FlatList
+              <FlashList
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}
@@ -2764,7 +2829,7 @@ export default function HomeScreen({ navigation }) {
           <ScrollView>
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
-              <FlatList
+              <FlashList
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}

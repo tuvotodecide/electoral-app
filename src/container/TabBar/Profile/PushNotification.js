@@ -1,4 +1,4 @@
-import {FlatList, StyleSheet, Switch, View} from 'react-native';
+import {StyleSheet, Switch, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom imports
@@ -24,6 +24,7 @@ import {
   Whatsapp_Dark,
   Whatsapp_Light,
 } from '../../../assets/svg';
+import { FlashList } from '@shopify/flash-list';
 
 export default function PushNotification() {
   const colors = useSelector(state => state.theme.theme);
@@ -165,7 +166,7 @@ export default function PushNotification() {
   return (
     <CSafeAreaView>
       <CHeader title={String.notification} testID="pushNotificationHeader" />
-      <FlatList
+      <FlashList
         data={PushNotificationData}
         renderItem={NotificationCollection}
         keyExtractor={(item, index) => index.toString()}

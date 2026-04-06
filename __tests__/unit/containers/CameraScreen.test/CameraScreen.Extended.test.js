@@ -10,8 +10,8 @@ jest.mock(
 );
 
 jest.mock('react-native', () => require('../../../__mocks__/cameraScreen/reactNative')());
-jest.mock('react-native-vision-camera', () =>
-  jest.requireActual('../../../__mocks__/cameraScreen/reactNativeVisionCamera'),
+jest.mock('expo-camera', () =>
+  jest.requireActual('../../../__mocks__/cameraScreen/expoCamera'),
 );
 jest.mock('react-redux', () => jest.requireActual('../../../__mocks__/react-redux'));
 jest.mock('@react-navigation/native', () =>
@@ -20,8 +20,8 @@ jest.mock('@react-navigation/native', () =>
 jest.mock('react-native-image-viewing', () =>
   jest.requireActual('../../../__mocks__/react-native-image-viewing'),
 );
-jest.mock('react-native-image-picker', () =>
-  jest.requireActual('../../../__mocks__/react-native-image-picker'),
+jest.mock('expo-image-picker', () =>
+  jest.requireActual('../../../__mocks__/expo-image-picker'),
 );
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
@@ -47,7 +47,7 @@ const {
   flushPromises,
 } = require('./testUtils');
 const analyzer = require('../../../../src/utils/electoralActAnalyzer');
-const imagePicker = require('react-native-image-picker');
+const imagePicker = require('expo-image-picker');
 
 const {Dimensions, AppState, StatusBar, Image, Alert, Animated} = ReactNative;
 
@@ -112,7 +112,7 @@ describe('CameraScreen - Extended Coverage', () => {
 
   describe('Gallery selection', () => {
     it('maneja selección de imagen de galería', async () => {
-      imagePicker.launchImageLibrary.mockResolvedValueOnce({
+      imagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
         assets: [{
           uri: 'file:///selected-image.jpg',
           width: 1920,
@@ -135,7 +135,7 @@ describe('CameraScreen - Extended Coverage', () => {
     });
 
     it('maneja cancelación de galería', async () => {
-      imagePicker.launchImageLibrary.mockResolvedValueOnce({
+      imagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
         didCancel: true,
       });
 
@@ -149,7 +149,7 @@ describe('CameraScreen - Extended Coverage', () => {
     });
 
     it('maneja error de galería', async () => {
-      imagePicker.launchImageLibrary.mockResolvedValueOnce({
+      imagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
         errorCode: 'camera_unavailable',
       });
 
@@ -211,12 +211,11 @@ describe('CameraScreen - Extended Coverage', () => {
 
   describe('Permission handling', () => {
     it('solicita permisos cuando no están otorgados', async () => {
-      const requestPermission = jest.fn(async () => true);
-
-      cameraModule.useCameraPermission.mockReturnValue({
-        hasPermission: false,
+      const requestPermission = jest.fn(async () => ({ granted: true, status: 'granted' }));
+      cameraModule.useCameraPermissions.mockReturnValue([
+        { granted: false },
         requestPermission,
-      });
+      ]);
 
       const route = buildMockRoute();
       render(<CameraScreen navigation={mockNavigation} route={route} />);
@@ -227,19 +226,6 @@ describe('CameraScreen - Extended Coverage', () => {
       await flushAsync();
 
       expect(requestPermission).toHaveBeenCalled();
-    });
-
-    it('muestra mensaje cuando no hay dispositivo de cámara', () => {
-      cameraModule.useCameraDevice.mockReturnValue(null);
-
-      const route = buildMockRoute();
-      const {queryByText} = render(
-        <CameraScreen navigation={mockNavigation} route={route} />,
-      );
-
-      // String mock may return key or translated text
-      const hasMessage = queryByText(/cámara no disponible/i) || queryByText('cameraNotAvailable');
-      expect(hasMessage).toBeTruthy();
     });
   });
 

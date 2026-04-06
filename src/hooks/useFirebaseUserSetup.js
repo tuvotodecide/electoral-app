@@ -1,12 +1,12 @@
 import {useEffect, useState} from 'react';
 import {useSelector} from 'react-redux';
-import {FirebaseNotificationService} from '../services/FirebaseNotificationService';
+import {firebaseNotificationService} from '../services/FirebaseNotificationService';
 
 export const useFirebaseUserSetup = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState(null);
   const userData = useSelector(state => state.wallet.payload);
-  const notificationService = new FirebaseNotificationService();
+  const notificationService = firebaseNotificationService;
 
   useEffect(() => {
     const initializeUser = async () => {

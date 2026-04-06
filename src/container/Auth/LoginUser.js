@@ -1,3 +1,4 @@
+import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, BACKEND_RESULT, BUNDLER, BUNDLER_MAIN, GATEWAY_BASE, PROVIDER_NAME } from '@env';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,16 +22,7 @@ import { AuthNav, StackNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import typography from '../../themes/typography';
 
-import {
-  BACKEND,
-  BACKEND_BLOCKCHAIN,
-  BACKEND_IDENTITY,
-  BACKEND_RESULT,
-  BUNDLER,
-  BUNDLER_MAIN,
-  GATEWAY_BASE,
-  PROVIDER_NAME,
-} from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SHA256 } from 'crypto-js';
 import wira from 'wira-sdk';
@@ -42,8 +34,6 @@ import { clearWallet, setSecrets } from '../../redux/action/walletAction';
 import { setAddresses } from '../../redux/slices/addressSlice';
 import { clearAuth, setAuthenticated } from '../../redux/slices/authSlice';
 import { commonColor } from '../../themes/colors';
-import { ensureBundle, writeBundleAtomic } from '../../utils/ensureBundle';
-import { migrateIfNeeded } from '../../utils/migrateLegacy';
 import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
 import {startLocalSession} from '../../utils/Session';
@@ -159,19 +149,6 @@ export default function LoginUser({ navigation, route }) {
     dispatch(setAuthenticated(true));
     await startLocalSession();
     await resetAttempts();
-    try {
-      const safe = {
-        cipherHex: payload.cipherHex,
-        saltHex: payload.saltHex,
-        account: payload.account,
-        guardian: payload.guardian,
-        salt: payload.salt,
-      };
-      if (payload.streamId) safe.streamId = payload.streamId;
-      if (safe.cipherHex && safe.saltHex) {
-        await writeBundleAtomic(JSON.stringify(safe));
-      }
-    } catch (e) { }
 
     const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
     if (!exists && typeof pin === 'string' && pin.length) {
@@ -212,7 +189,19 @@ export default function LoginUser({ navigation, route }) {
 
       const hasUserData = await wira.Storage.checkUserData();
       if (hasUserData) {
-        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
+        let userData;
+        try {
+          userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
+        } catch (error) {
+          if (error?.message?.includes('Invalid PIN')) {
+            return { ok: false, type: 'bad_pin' };
+          } else {
+            logNetworkIssue('wira.signIn', error, {
+              stage: 'verifyPin',
+            });
+            return { ok: false, type: 'unexpected', error };
+          }
+        }
 
         try {
           await guardianApi.deviceToken({
@@ -227,53 +216,14 @@ export default function LoginUser({ navigation, route }) {
           });
         }
         return { ok: true, payload: userData, jwt: null };
-      }
-
-      setLoadingMessage(String.migratingOnLogin);
-      const mig = await migrateIfNeeded(code.trim());
-      setLoadingMessage(String.loading);
-      if (mig.ok) {
-        const hasUserData = await wira.Storage.checkUserData();
-        if (!hasUserData) {
-          return { ok: false, type: 'unexpected' };
-        }
-        const userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
-        return { ok: true, payload: userData, jwt: null };
-      }
-
-      const reason = mig.reason || 'unknown';
-      if (reason === 'bad_pin') {
-        return { ok: false, type: 'bad_pin' };
-      }
-
-
-      if (reason === 'no_local_secrets') {
-        logNetworkIssue('migrateIfNeeded:no_local', null, {
-          stage: 'verifyPin',
-          reason,
-        });
+      } else {
         return { ok: false, type: 'no_local_secrets' };
       }
-
-      logNetworkIssue('migrateIfNeeded_failed', mig.error ?? null, {
-        stage: 'verifyPin',
-        reason,
-      });
-
-      return {
-        ok: false,
-        type: 'migrate_failed',
-        reason,
-        error: mig.error ?? null,
-      };
     } catch (err) {
       logNetworkIssue('verifyPin', err, {
         stage: 'verifyPin',
         attemptCode: code,
       });
-      if (err?.message?.includes('Invalid PIN')) {
-        return { ok: false, type: 'bad_pin' };
-      }
       return { ok: false, type: 'unexpected', error: err };
     }
   }
@@ -402,7 +352,6 @@ export default function LoginUser({ navigation, route }) {
 
         if (!userData) {
           if (error === 'No credentials stored') {
-            await ensureBundle();
             setLoading(false);
             setModal({
               visible: true,

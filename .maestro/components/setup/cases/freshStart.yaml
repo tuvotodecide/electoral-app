@@ -2,11 +2,11 @@ appId: com.tuvotodecide
 ---
 - launchApp:
     clearState: true
-- assertVisible:
-    id: downloadMessage
-- assertNotVisible:
-    id: retryDownloadButton
-- extendedWaitUntil:
+- extendedWaitUntil: 
     visible:
-      id: MiVotoLogoImage
-    timeout: 90000
+      id: downloadMessage
+    timeout: 30000
+- extendedWaitUntil: 
+    visible:
+      id: connectLoginButton
+    timeout: 50000

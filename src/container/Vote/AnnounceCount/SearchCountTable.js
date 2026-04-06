@@ -1,3 +1,4 @@
+import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, View, Dimensions } from 'react-native';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
@@ -9,7 +10,7 @@ import { fetchMesasConteo } from '../../../data/mockMesas';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import axios from 'axios';
-import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
+
 
 const { width: screenWidth } = Dimensions.get('window');
 

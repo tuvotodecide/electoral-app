@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
-  TouchableOpacity,
   Pressable,
+  TouchableOpacity,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -12,15 +12,10 @@ import {
   StatusBar,
   Modal,
   Text,
-  ScrollView,
   PanResponder,
   Animated,
 } from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-} from 'react-native-vision-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -28,8 +23,7 @@ import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
-import { launchImageLibrary } from 'react-native-image-picker';
-import NetInfo from '@react-native-community/netinfo';
+import * as ImagePicker from 'expo-image-picker';
 
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -38,37 +32,6 @@ const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
 const isSmallPhone = windowWidth < 350;
 const MAX_CAPTURE_HEIGHT = 1080;
-
-// Función para obtener el mejor formato de cámara
-const getBestCameraFormat = device => {
-  if (!device?.formats) return undefined;
-
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const isPortrait = screenHeight >= screenWidth;
-  const screenRatio = screenWidth / screenHeight;
-
-  let bestFormat = undefined;
-  let bestDiff = Number.MAX_VALUE;
-
-  for (const format of device.formats) {
-    // ✅ solo formatos que soporten foto
-    if (!format.photoWidth || !format.photoHeight) continue;
-
-    const formatRatio = format.photoWidth / format.photoHeight;
-    const adjustedRatio = isPortrait
-      ? Math.min(formatRatio, 1 / formatRatio)
-      : formatRatio;
-
-    const diff = Math.abs(adjustedRatio - screenRatio);
-
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestFormat = format;
-    }
-  }
-
-  return bestFormat;
-};
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const getContainedSize = (srcW, srcH, maxW, maxH) => {
@@ -112,13 +75,11 @@ export default function CameraScreen({ navigation, route }) {
 
   const camera = useRef(null);
   const insets = useSafeAreaInsets();
-  const backDevice = useCameraDevice('back');
-  const frontDevice = useCameraDevice('front');
-  const { electionId, electionType } = route.params || {};
+  const { electionId, electionType, selectedElectionContext } = route.params || {};
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
-  const device = backDevice || frontDevice;
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasPermission = permission?.granted === true;
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -141,10 +102,16 @@ export default function CameraScreen({ navigation, route }) {
   const [lastScale, setLastScale] = useState(1);
   const [lastTranslateX, setLastTranslateX] = useState(0);
   const [lastTranslateY, setLastTranslateY] = useState(0);
+  const [autofocusMode, setAutofocusMode] = useState('off');
+  const [focusIndicator, setFocusIndicator] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+  });
   const [isOnline, setIsOnline] = useState(true);
-  const [focusPoint, setFocusPoint] = useState(null);
   const initialDistance = useRef(null);
   const focusIndicatorTimeoutRef = useRef(null);
+  const tapFocusTimeoutRef = useRef(null);
 
   const initialScale = useRef(1);
   const isZooming = useRef(false);
@@ -213,20 +180,14 @@ export default function CameraScreen({ navigation, route }) {
   };
 
   const openGallery = async () => {
-    const options = {
-      mediaType: 'photo',
-      includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
-      quality: 0.8,
-    };
-
     try {
-      const result = await launchImageLibrary(options);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        base64: true,
+        quality: 0.8,
+      });
 
-      if (result.didCancel) {
-      } else if (result.errorCode) {
-        Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      if (result.canceled) {
       } else if (result.assets && result.assets.length > 0) {
         const selectedPhoto = result.assets[0];
         let imagePath = selectedPhoto.uri;
@@ -438,8 +399,39 @@ export default function CameraScreen({ navigation, route }) {
   const takeNewPhoto = () => {
     setPhoto(null);
     setPhotoMeta({ width: 0, height: 0 });
+    setAutofocusMode('off');
+    setFocusIndicator({ visible: false, x: 0, y: 0 });
     setIsActive(true);
     resetImageTransform();
+  };
+
+  const handleTapToFocus = event => {
+    if (!isActive || !camera.current || loading || photo) {
+      return;
+    }
+
+    const { locationX, locationY } = event.nativeEvent;
+    setFocusIndicator({
+      visible: true,
+      x: locationX,
+      y: locationY,
+    });
+
+    if (focusIndicatorTimeoutRef.current) {
+      clearTimeout(focusIndicatorTimeoutRef.current);
+    }
+    focusIndicatorTimeoutRef.current = setTimeout(() => {
+      setFocusIndicator(prev => ({ ...prev, visible: false }));
+    }, 700);
+
+    // Trigger a one-shot autofocus lock cycle.
+    setAutofocusMode('on');
+    if (tapFocusTimeoutRef.current) {
+      clearTimeout(tapFocusTimeoutRef.current);
+    }
+    tapFocusTimeoutRef.current = setTimeout(() => {
+      setAutofocusMode('off');
+    }, 450);
   };
 
   // Function to completely reset the camera
@@ -482,12 +474,12 @@ export default function CameraScreen({ navigation, route }) {
     const initCamera = async () => {
       if (!hasPermission) {
         const granted = await requestPermission();
-        if (!granted) {
+        if (!granted.granted) {
           return;
         }
       }
 
-      if (device && hasPermission && !photo && isFocused) {
+      if (hasPermission && !photo && isFocused) {
         // Longer delay to ensure camera is completely free
         timeoutId = setTimeout(() => {
           setIsActive(true);
@@ -503,7 +495,7 @@ export default function CameraScreen({ navigation, route }) {
       }
       setIsActive(false);
     };
-  }, [hasPermission, requestPermission, device, photo, isFocused, cameraKey]);
+  }, [hasPermission, requestPermission, photo, isFocused, cameraKey]);
 
   // Focus listener para reactivar cuando se regresa a la pantalla
   useEffect(() => {
@@ -535,37 +527,13 @@ export default function CameraScreen({ navigation, route }) {
       if (focusIndicatorTimeoutRef.current) {
         clearTimeout(focusIndicatorTimeoutRef.current);
       }
+      if (tapFocusTimeoutRef.current) {
+        clearTimeout(tapFocusTimeoutRef.current);
+      }
     };
   }, []);
 
-  const handleTapToFocus = async event => {
-    if (!camera.current || !isActive || !device?.supportsFocus) {
-      return;
-    }
-
-    const { locationX, locationY } = event.nativeEvent;
-    setFocusPoint({ x: locationX, y: locationY });
-
-    if (focusIndicatorTimeoutRef.current) {
-      clearTimeout(focusIndicatorTimeoutRef.current);
-    }
-
-    focusIndicatorTimeoutRef.current = setTimeout(() => {
-      setFocusPoint(null);
-      focusIndicatorTimeoutRef.current = null;
-    }, 900);
-
-    try {
-      await camera.current.focus({
-        x: locationX,
-        y: locationY,
-      });
-    } catch (error) {
-      // Algunos dispositivos limitan el enfoque manual aunque reporten soporte.
-    }
-  };
-
-  if (!device || !hasPermission) {
+  if (!hasPermission) {
     return (
       <View style={styles.centered}>
         <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
@@ -582,15 +550,13 @@ export default function CameraScreen({ navigation, route }) {
     setLoading(true);
 
     try {
-      const firstResult = await camera.current.takePhoto({
-        qualityPrioritization: 'quality',
+      const firstResult = await camera.current.takePictureAsync({
         flash: 'off',
         enableAutoRedEyeReduction: false,
-        enableAutoStabilization: true,
-        enableShutterSound: false,
+        shutterSound: false,
       });
 
-      let finalUri = `file://${firstResult.path}`;
+      let finalUri = firstResult.uri;
       let finalWidth = firstResult.width || 0;
       let finalHeight = firstResult.height || 0;
 
@@ -616,8 +582,7 @@ export default function CameraScreen({ navigation, route }) {
         width: finalWidth,
         height: finalHeight,
       };
-
-      setPhoto({ path: finalUri.replace('file://', '') }); // sin cropData
+      setPhoto({ path: finalUri }); // sin cropData
       setPhotoMeta(meta);
 
       setIsActive(false);
@@ -625,7 +590,7 @@ export default function CameraScreen({ navigation, route }) {
       console.error('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
       // Specific handling for "camera already in use" error
       if (
-        err.code === 'device/camera-already-in-use' ||
+        err.code === 'E_CAMERA_IS_BEING_USED' ||
         err.message?.includes('already in use')
       ) {
         resetCamera();
@@ -659,11 +624,12 @@ export default function CameraScreen({ navigation, route }) {
 
     if (isWorksheetMode) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         offline: !isOnline,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: 'worksheet',
       });
       return;
@@ -671,11 +637,12 @@ export default function CameraScreen({ navigation, route }) {
 
     if (!isOnline) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         offline: true,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: flowMode,
       });
       return;
@@ -687,6 +654,7 @@ export default function CameraScreen({ navigation, route }) {
       // Analizar la imagen con Gemini AI
       const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
         photo.path,
+        selectedElectionContext,
       );
 
 
@@ -745,16 +713,20 @@ export default function CameraScreen({ navigation, route }) {
       }
 
       // Mapear datos de la IA al formato de la app
-      const mappedData = electoralActAnalyzer.mapToAppFormat(aiData);
+      const mappedData = electoralActAnalyzer.mapToAppFormat(
+        aiData,
+        selectedElectionContext,
+      );
 
       // Navegar a la pantalla de revisión con los datos analizados
       navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: `file://${photo.path}`,
+        photoUri: photo.path,
         tableData: mesaInfo,
         aiAnalysis: aiData,
         mappedData: mappedData,
         electionId,
         electionType,
+        selectedElectionContext,
         mode: flowMode,
       });
     } catch (error) {
@@ -768,11 +740,12 @@ export default function CameraScreen({ navigation, route }) {
 
       if (isNetworkError) {
         navigation.navigate(StackNav.PhotoReviewScreen, {
-          photoUri: `file://${photo.path}`,
+          photoUri: photo.path,
           tableData: mesaInfo,
           offline: true,
           electionId,
           electionType,
+          selectedElectionContext,
           mode: flowMode,
         });
         return;
@@ -793,10 +766,11 @@ export default function CameraScreen({ navigation, route }) {
             onPress: () => {
               setModalVisible(false);
               navigation.navigate(StackNav.PhotoReviewScreen, {
-                photoUri: `file://${photo.path}`,
+                photoUri: photo.path,
                 tableData: mesaInfo,
                 electionId,
                 electionType,
+                selectedElectionContext,
                 mode: flowMode,
               });
             },
@@ -813,40 +787,43 @@ export default function CameraScreen({ navigation, route }) {
       {!photo ? (
         <>
           {isActive && (
-            <Pressable
-              testID="cameraScreenFocusArea"
+            <CameraView
+              testID="cameraScreenCamera"
+              key={cameraKey}
+              ref={camera}
               style={StyleSheet.absoluteFill}
-              onPress={handleTapToFocus}>
-              <Camera
-                testID="cameraScreenCamera"
-                key={cameraKey}
-                ref={camera}
-                style={StyleSheet.absoluteFill}
-                device={device}
-                isActive={isActive && isFocused}
-                photo={true}
-                photoQualityBalance="quality"
-                format={getBestCameraFormat(device)}
-                zoom={0}
-                onError={error => {
-                  if (error.code === 'device/camera-already-in-use') {
-                    resetCamera();
-                  }
-                }}
-              />
-              {focusPoint ? (
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.focusIndicator,
-                    {
-                      left: focusPoint.x - 28,
-                      top: focusPoint.y - 28,
-                    },
-                  ]}
-                />
-              ) : null}
-            </Pressable>
+              active={isActive && isFocused}
+              facing="back"
+              ratio='16:9'
+              autofocus={autofocusMode}
+              onMountError={error => {
+                if (
+                  error?.code === 'E_CAMERA_IS_BEING_USED' ||
+                  error?.message?.includes('already in use')
+                ) {
+                  resetCamera();
+                }
+              }}
+            />
+          )}
+          {isActive && (
+            <Pressable
+              testID="cameraScreenFocusOverlay"
+              onPress={handleTapToFocus}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+          {focusIndicator.visible && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.focusIndicator,
+                {
+                  left: focusIndicator.x - 28,
+                  top: focusIndicator.y - 28,
+                },
+              ]}
+            />
           )}
           <RenderFrame
             testID="cameraScreenRenderFrame"
@@ -897,7 +874,7 @@ export default function CameraScreen({ navigation, route }) {
           {/* Header con controles */}
           <View style={styles.fullContainer}>
             <ImageViewing
-              images={[{ uri: 'file://' + photo.path }]}
+              images={[{ uri: photo.path }]}
               visible={true}
               onRequestClose={() => {
                 /* no cerramos, controlas tú el flujo */
@@ -973,7 +950,7 @@ export default function CameraScreen({ navigation, route }) {
                       onPress={() => {
                         const mesaInfo = route.params?.tableData || {};
                         navigation.navigate(StackNav.PhotoReviewScreen, {
-                          photoUri: `file://${photo.path}`,
+                          photoUri: photo.path,
                           tableData: mesaInfo,
                           offline: true,
                           electionId,
@@ -1035,7 +1012,7 @@ export default function CameraScreen({ navigation, route }) {
                 );
                 return (
                   <Image
-                    source={{ uri: 'file://' + photo.path }}
+                    source={{ uri: photo.path }}
                     style={[
                       styles.zoomableImage,
                       { width: draw.width, height: draw.height }, // ✅ sin márgenes "fake"
@@ -1099,7 +1076,7 @@ export default function CameraScreen({ navigation, route }) {
                 onPress={() => {
                   const mesaInfo = route.params?.tableData || {};
                   navigation.navigate(StackNav.PhotoReviewScreen, {
-                    photoUri: `file://${photo.path}`,
+                    photoUri: photo.path,
                     tableData: mesaInfo,
                     offline: true,
                     electionId,

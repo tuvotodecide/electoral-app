@@ -5,8 +5,8 @@ import store from '../../../../redux/store';
 import { executeOperation } from '@/src/api/account';
 import { castVote } from '@/src/api/vote';
 import { CHAIN } from "@env";
-import { saveNullifierForVote } from '@/src/data/voteNullifier';
-import { getNullifierForVote } from '@/src/data/credentials';
+import { getNullifierForVote, saveNullifierForVote } from '@/src/data/credentials';
+import { authenticateWithBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
@@ -59,6 +59,43 @@ const getCurrentDni = () => {
       subject?.nationalIdNumber ||
       '',
   ).trim();
+};
+
+const getCurrentDid = () => {
+  const payload = getWalletPayload();
+  const subject = getCredentialSubject(payload);
+  return String(
+    payload?.did ||
+      payload?.payloadQr?.did ||
+      subject?.did ||
+      '',
+  ).trim();
+};
+
+const getCurrentPrivKey = () => {
+  const payload = getWalletPayload();
+  return String(
+    payload?.privKey ||
+      payload?.payloadQr?.privKey ||
+      '',
+  ).trim();
+};
+
+const getVotingAuthHeaders = async () => {
+  const did = getCurrentDid();
+  const privKey = getCurrentPrivKey();
+
+  if (!did || !privKey) {
+    throw new Error('No se encontraron credenciales zk para autenticar la consulta');
+  }
+
+  const apiKey = await authenticateWithBackend(did, privKey);
+
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'x-api-key': apiKey,
+  };
 };
 
 const getLandingEvents = data => {
@@ -145,8 +182,17 @@ const buildElectionModel = ({
 const findCandidateByRoleName = (candidates = [], matcher) =>
   candidates.find(candidate => matcher(String(candidate?.roleName || '').toLowerCase()));
 
+const mapTicketEntries = candidates =>
+  (Array.isArray(candidates) ? candidates : [])
+    .map(candidate => ({
+      roleName: String(candidate?.roleName || candidate?.role?.name || '').trim(),
+      name: String(candidate?.name || '').trim(),
+    }))
+    .filter(candidate => candidate.name);
+
 const mapOptionToCandidate = option => {
   const candidates = Array.isArray(option?.candidates) ? option.candidates : [];
+  const ticketEntries = mapTicketEntries(candidates);
   const president =
     findCandidateByRoleName(candidates, role => role.includes('president')) ||
     findCandidateByRoleName(candidates, role => role.includes('presidente')) ||
@@ -163,6 +209,7 @@ const mapOptionToCandidate = option => {
     partyName: option?.name || 'Opción',
     presidentName: president?.name || option?.name || 'Sin candidato',
     viceName: vice?.name || '',
+    ticketEntries,
     avatarUrl: president?.photoUrl || option?.logoUrl || null,
     partyColor: option?.color || '#2563EB',
   };
@@ -419,6 +466,154 @@ const extractParticipations = data => {
   return [];
 };
 
+const buildWitnessPartyResults = ballot => {
+  const presidentVotes = (ballot?.votes?.parties?.partyVotes || []).map(party => ({
+    partyId: party.partyId,
+    presidente: party.votes ? party.votes.toString() : '0',
+  }));
+
+  return presidentVotes.reduce((acc, current) => {
+    const existing = acc.find(item => item.partyId === current.partyId);
+    if (existing) {
+      existing.presidente = (
+        parseInt(existing.presidente, 10) + parseInt(current.presidente, 10)
+      ).toString();
+      return acc;
+    }
+
+    acc.push({
+      partyId: current.partyId,
+      presidente: current.presidente || '0',
+    });
+    return acc;
+  }, []);
+};
+
+const buildWitnessVoteSummaryResults = ballot => [
+  {
+    label: 'Validos',
+    value1: ballot?.votes?.parties?.validVotes?.toString() || '0',
+  },
+  {
+    label: 'Blanco',
+    value1: ballot?.votes?.parties?.blankVotes?.toString() || '0',
+  },
+  {
+    label: 'Nulos',
+    value1: ballot?.votes?.parties?.nullVotes?.toString() || '0',
+  },
+  {
+    label: 'Total',
+    value1: ballot?.votes?.parties?.totalVotes?.toString() || '0',
+  },
+];
+
+const mapWitnessRecord = (attestation, ballot) => {
+  const rawDate = ballot?.createdAt || attestation?.createdAt || Date.now();
+  const dateParts = formatParticipationDateParts(rawDate);
+  const tableNumber = ballot?.tableNumber || attestation?.tableNumber || '';
+  const certificateUrl = attestation?.certificateUrl || null;
+
+  return {
+    id: `attestation:${String(ballot?._id || attestation?.ballotId || dateParts.participatedAt)}`,
+    itemType: 'attestation',
+    electionId: '',
+    electionTitle: tableNumber ? `Mesa ${tableNumber}` : 'Atestiguamiento',
+    status: 'ATESTIGUAMIENTO',
+    statusLabel: 'ATESTIGUAMIENTO',
+    date: dateParts.date,
+    time: dateParts.time,
+    fullDate: dateParts.fullDate,
+    organization:
+      ballot?.electoralLocation?.name ||
+      ballot?.locationName ||
+      ballot?.precinctName ||
+      '',
+    transactionId: null,
+    blockchainHash: null,
+    candidateSelected: null,
+    errorMessage: null,
+    nftId: null,
+    nftImageUrl: certificateUrl,
+    participatedAt: dateParts.participatedAt,
+    selectedCandidateId: null,
+    synced: true,
+    photoUri: ballot?.image
+      ? String(ballot.image).replace('ipfs://', 'https://ipfs.io/ipfs/')
+      : null,
+    mesaData: {
+      tableNumber,
+      tableCode: ballot?.tableCode || null,
+      numero: tableNumber || null,
+      mesa: tableNumber ? `Mesa ${tableNumber}` : null,
+      fecha: new Date(rawDate).toLocaleDateString('es-ES'),
+    },
+    partyResults: buildWitnessPartyResults(ballot),
+    voteSummaryResults: buildWitnessVoteSummaryResults(ballot),
+    attestationData: {
+      tableNumber,
+      tableCode: ballot?.tableCode || null,
+      fecha: new Date(rawDate).toLocaleDateString('es-ES'),
+      hora: new Date(rawDate).toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      certificateUrl,
+    },
+    certificateUrl,
+  };
+};
+
+const fetchWitnessRecordsByDni = async dni => {
+  if (!dni) {
+    return [];
+  }
+
+  const attestationsResponse = await axios.get(
+    `${API_BASE}/attestations/by-user/${encodeURIComponent(dni)}`,
+    {
+      timeout: 30000,
+    },
+  );
+
+  const attestations = Array.isArray(attestationsResponse?.data?.data)
+    ? attestationsResponse.data.data
+    : [];
+
+  if (attestations.length === 0) {
+    return [];
+  }
+
+  const ballots = await Promise.all(
+    attestations.map(async attestation => {
+      try {
+        const ballotResponse = await axios.get(
+          `${API_BASE}/ballots/${encodeURIComponent(attestation?.ballotId)}`,
+          {
+            timeout: 30000,
+          },
+        );
+
+        return {
+          attestation,
+          ballot: ballotResponse?.data || null,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return ballots
+    .filter(entry => entry?.ballot)
+    .map(entry => mapWitnessRecord(entry.attestation, entry.ballot))
+    .sort(
+      (left, right) =>
+        new Date(right?.participatedAt || 0).getTime() -
+        new Date(left?.participatedAt || 0).getTime(),
+    );
+};
+
 const postParticipation = async (electionId, candidateId, dni) => {
   try {
     const {data} = await axios.post(
@@ -554,11 +749,29 @@ const ElectionRepositoryApi = {
       return [];
     }
 
-    const {data} = await axios.get(`${API_BASE}/voting/events/participations`, {
-      params: {carnet: dni},
-      headers: {Accept: 'application/json'},
-      timeout: 30000,
-    });
+    const requestUrl = `${API_BASE}/voting/events/participations`;
+    let headers = await getVotingAuthHeaders();
+    let data;
+    try {
+      const response = await axios.get(requestUrl, {
+        params: {carnet: dni},
+        headers,
+        timeout: 30000,
+      });
+      data = response.data;
+    } catch (error) {
+      if (Number(error?.response?.status) !== 401) {
+        throw error;
+      }
+
+      headers = await getVotingAuthHeaders();
+      const retryResponse = await axios.get(requestUrl, {
+        params: {carnet: dni},
+        headers,
+        timeout: 30000,
+      });
+      data = retryResponse.data;
+    }
 
     return extractParticipations(data)
       .map(mapParticipationRecord)
@@ -567,6 +780,11 @@ const ElectionRepositoryApi = {
           new Date(right?.participatedAt || 0).getTime() -
           new Date(left?.participatedAt || 0).getTime(),
       );
+  },
+
+  async getWitnessRecords() {
+    const dni = getCurrentDni();
+    return fetchWitnessRecordsByDni(dni);
   },
 
   async submitVote(electionId, candidateId, candidateName) {

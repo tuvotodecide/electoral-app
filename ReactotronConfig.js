@@ -1,5 +1,6 @@
+import { REACTOTRON_HOST } from '@env';
 import Reactotron from "reactotron-react-native";
-import { REACTOTRON_HOST } from "@env";
+
 
 const host = REACTOTRON_HOST?.trim();
 

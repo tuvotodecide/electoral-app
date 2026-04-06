@@ -53,10 +53,6 @@ jest.mock('react-redux', () => ({
     }),
 }));
 
-jest.mock('../src/utils/migrateBundle', () => ({
-  migrateIfNeeded: jest.fn(),
-}));
-
 import App from '../src/App';
 
 describe('src/App', () => {

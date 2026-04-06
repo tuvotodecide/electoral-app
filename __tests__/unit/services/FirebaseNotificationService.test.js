@@ -80,7 +80,12 @@ describe('FirebaseNotificationService', () => {
 
   it('persiste localmente la notificacion recibida en foreground', async () => {
     const {FirebaseNotificationService} = require('../../../src/services/FirebaseNotificationService');
-    new FirebaseNotificationService();
+    const {geoLocationService} = require('../../../src/services/GeoLocationService');
+    const {localNotificationStorageService} = require('../../../src/services/LocalNotificationStorageService');
+    new FirebaseNotificationService(
+      geoLocationService,
+      localNotificationStorageService,
+    );
 
     await foregroundHandler({
       data: {
@@ -106,7 +111,12 @@ describe('FirebaseNotificationService', () => {
 
   it('tambien persiste la notificacion en background handler', async () => {
     const {FirebaseNotificationService} = require('../../../src/services/FirebaseNotificationService');
-    new FirebaseNotificationService();
+    const {geoLocationService} = require('../../../src/services/GeoLocationService');
+    const {localNotificationStorageService} = require('../../../src/services/LocalNotificationStorageService');
+    new FirebaseNotificationService(
+      geoLocationService,
+      localNotificationStorageService,
+    );
     await Promise.resolve();
 
     expect(mockMessaging.setBackgroundMessageHandler).toHaveBeenCalled();
@@ -141,9 +151,14 @@ describe('FirebaseNotificationService', () => {
 
   it('initializeUser guarda token, ubicacion y geohash cuando todo esta disponible', async () => {
     const {FirebaseNotificationService} = require('../../../src/services/FirebaseNotificationService');
-    const service = new FirebaseNotificationService();
+    const {geoLocationService} = require('../../../src/services/GeoLocationService');
+    const {localNotificationStorageService} = require('../../../src/services/LocalNotificationStorageService');
+    const service = new FirebaseNotificationService(
+      geoLocationService,
+      localNotificationStorageService,
+    );
     jest.spyOn(service, 'getFCMToken').mockResolvedValue('fcm-123');
-    jest.spyOn(service, 'getCurrentLocation').mockResolvedValue({
+    jest.spyOn(geoLocationService, 'getCurrentLocation').mockResolvedValue({
       latitude: -16.5,
       longitude: -68.1,
     });

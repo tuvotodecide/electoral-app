@@ -304,12 +304,19 @@ describe('CandidateScreen', () => {
         candidateSelected: {
           partyName: 'Lista Azul',
           presidentName: 'Ana Perez',
+          ticketEntries: [],
           viceName: 'Luis Rojas',
         },
       });
     });
 
-    expect(repository.submitVote).toHaveBeenCalledWith('election-1', 'cand-1', 'Lista Azul');
+    expect(repository.submitVote).toHaveBeenCalledWith(
+      'election-1',
+      'cand-1',
+      'Lista Azul',
+      '0xtest',
+      undefined,
+    );
     expect(recordVote).toHaveBeenCalledWith('cand-1', true, {
       participationId: 'server-participation',
       participatedAt: '2026-01-01T10:00:00.000Z',
@@ -320,6 +327,7 @@ describe('CandidateScreen', () => {
       candidateSelected: {
         partyName: 'Lista Azul',
         presidentName: 'Ana Perez',
+        ticketEntries: [],
         viceName: 'Luis Rojas',
       },
     });
@@ -383,6 +391,7 @@ describe('CandidateScreen', () => {
       candidateSelected: {
         partyName: 'Lista Azul',
         presidentName: 'Ana Perez',
+        ticketEntries: [],
         viceName: 'Luis Rojas',
       },
     });

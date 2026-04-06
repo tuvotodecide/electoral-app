@@ -1,9 +1,7 @@
-import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser9 from '../../../../src/container/Auth/RegisterUser9Pin';
-import {setTmpPin} from '../../../../src/utils/TempRegister';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 
 describe('RegisterUser9Pin', () => {
@@ -30,7 +28,6 @@ describe('RegisterUser9Pin', () => {
     fireEvent.press(getByTestId('registerUser9PinConfirmButton'));
 
     await waitFor(() => {
-      expect(setTmpPin).toHaveBeenCalledWith('1234');
       expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.RegisterUser10, {
         originalPin: '1234',
         ocrData: route.params.ocrData,

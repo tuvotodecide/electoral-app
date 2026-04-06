@@ -2,6 +2,7 @@ import {
   buildNotificationNavigationTarget,
   getNotificationKind,
   mapResultsSummary,
+  resolveVotingEventDescription,
   safeParseNotificationRouteParams,
 } from '../../../../../src/container/TabBar/Home/Notification';
 
@@ -36,6 +37,22 @@ describe('Notification routing helpers', () => {
       {id: '1', name: 'Lista A', percent: 65.1, votes: 300},
       {id: '2', name: 'Lista B', percent: 21.4, votes: 98},
     ]);
+  });
+
+  it('para convocatorias muestra solo el titulo de la eleccion en el cuerpo secundario', () => {
+    expect(
+      resolveVotingEventDescription(
+        {eventName: 'Elección Directiva 2026'},
+        'Ya puedes participar en "Elección Directiva 2026"',
+      ),
+    ).toBe('Elección Directiva 2026');
+
+    expect(
+      resolveVotingEventDescription(
+        {},
+        'Ya puedes participar en "Elección Directiva 2026"',
+      ),
+    ).toBe('Elección Directiva 2026');
   });
 
   it('navega al detalle de voting cuando la notificacion es de publicacion o resultados', () => {

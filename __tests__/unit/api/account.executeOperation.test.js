@@ -16,6 +16,10 @@ jest.mock('permissionless/accounts', () => ({
   toSimpleSmartAccount: jest.fn(),
 }));
 
+jest.mock('viem/account-abstraction', () => ({
+  toCoinbaseSmartAccount: jest.fn(),
+}))
+
 jest.mock('permissionless/clients/pimlico', () => ({
   createPimlicoClient: jest.fn(),
 }));
@@ -32,6 +36,7 @@ jest.mock('../../../src/api/params', () => ({
   sponsorshipPolicyId: 'policy-id',
 }));
 
+import { toCoinbaseSmartAccount } from 'viem/account-abstraction';
 import {executeOperation} from '../../../src/api/account';
 
 describe('api/account executeOperation', () => {

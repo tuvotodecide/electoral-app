@@ -15,7 +15,7 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
-import { BACKEND_RESULT } from '@env';
+import { BACKEND_RESULT, FRONTEND_RESULTS } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -84,13 +84,13 @@ const resolvePublicResultsUrl = notification => {
     return null;
   }
 
-  const backendBase = String(BACKEND_RESULT || '').trim();
-  if (!backendBase) {
+  const frontendBase = String(FRONTEND_RESULTS || '').trim();
+  if (!frontendBase) {
     return null;
   }
 
   try {
-    const url = new URL(backendBase);
+    const url = new URL(frontendBase);
     url.pathname = String(relativePath);
     url.search = '';
     url.hash = '';

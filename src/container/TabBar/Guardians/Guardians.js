@@ -10,7 +10,6 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
-import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import GuardianActionModal from '../../../components/modal/GuardianActionModal';
 import {StackNav} from '../../../navigation/NavigationKey';
@@ -28,6 +27,7 @@ import { truncateDid } from '../../../utils/Address';
 import ActionSheet from 'react-native-actions-sheet';
 import CInput from '../../../components/common/CInput';
 import CIconButton from '../../../components/common/CIconButton';
+import { FlashList } from '@shopify/flash-list';
 
 const statusColorKey = {
   ACCEPTED: 'activeColor',
@@ -278,7 +278,7 @@ export default function Guardians({navigation}) {
           {String.guardiansSubtitle}
         </CText>
         {guardians.length == 0 && <InfoCard />}
-        <FlatList
+        <FlashList
           data={visibleGuardians}
           keyExtractor={item => item.id}
           renderItem={renderGuardianOption}
@@ -286,7 +286,6 @@ export default function Guardians({navigation}) {
           scrollEnabled={false} 
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
-          initialNumToRender={8}
           testID="guardiansList"
         />
       </KeyBoardAvoidWrapper>

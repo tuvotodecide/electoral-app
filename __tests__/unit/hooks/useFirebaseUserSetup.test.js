@@ -10,11 +10,15 @@ import {configureStore} from '@reduxjs/toolkit';
 
 // Mocks
 const mockInitializeUser = jest.fn();
+const mockNotificationService = {
+  initializeUser: mockInitializeUser,
+};
 
 jest.mock('../../../src/services/FirebaseNotificationService', () => ({
-  FirebaseNotificationService: jest.fn().mockImplementation(() => ({
-    initializeUser: mockInitializeUser,
-  })),
+  FirebaseNotificationService: jest
+    .fn()
+    .mockImplementation(() => mockNotificationService),
+  firebaseNotificationService: mockNotificationService,
 }));
 
 jest.mock('react-redux', () => ({

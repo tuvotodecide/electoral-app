@@ -1,6 +1,7 @@
+import { BACKEND_RESULT, CHAIN, VERIFIER_REQUEST_ENDPOINT } from '@env';
 import pinataService from '../utils/pinataService';
 import axios from 'axios';
-import { BACKEND_RESULT, CHAIN, VERIFIER_REQUEST_ENDPOINT } from '@env';
+
 import { oracleCalls, oracleReads } from '../api/oracle';
 import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';
@@ -337,6 +338,12 @@ const buildWorksheetVotesFromElectoralData = electoralData => {
   const validVotes = toNumber(findRow('validos')?.value1);
   const nullVotes = toNumber(findRow('nulos')?.value1);
   const blankVotes = toNumber(findRow('blancos')?.value1);
+  const validVotesSecondary = toNumber(findRow('validos')?.value2);
+  const nullVotesSecondary = toNumber(findRow('nulos')?.value2);
+  const blankVotesSecondary = toNumber(findRow('blancos')?.value2);
+  const hasSecondary = partyResults.some(party =>
+    String(party?.diputado ?? '').trim() !== '',
+  );
 
   return {
     parties: {
@@ -353,6 +360,25 @@ const buildWorksheetVotesFromElectoralData = electoralData => {
       })),
       totalVotes: validVotes + nullVotes + blankVotes,
     },
+    ...(hasSecondary
+      ? {
+          deputies: {
+            validVotes: validVotesSecondary,
+            nullVotes: nullVotesSecondary,
+            blankVotes: blankVotesSecondary,
+            partyVotes: partyResults.map(party => ({
+              partyId: String(
+                party?.id ?? party?.partyId ?? party?.partido ?? party?.name ?? '',
+              )
+                .trim()
+                .toLowerCase(),
+              votes: toNumber(party?.diputado),
+            })),
+            totalVotes:
+              validVotesSecondary + nullVotesSecondary + blankVotesSecondary,
+          },
+        }
+      : {}),
   };
 };
 
@@ -499,9 +525,7 @@ const uploadCertificateAndNotifyBackend = async (
 
   try {
     // Normalizar path (igual que con el acta)
-    const certPath = certificateImageUri.startsWith('file://')
-      ? certificateImageUri.substring(7)
-      : certificateImageUri;
+    const certPath = certificateImageUri
 
     // 1) Subir certificado a IPFS (imagen + metadata, SIN data)
     const certificateDisplayName = String(
@@ -777,6 +801,7 @@ export const publishActaHandler = async (item, userData) => {
       const privateKey = userData?.privKey;
       let isRegistered = await oracleReads.isRegistered(
         CHAIN,
+        userData.privKey,
         userData.account,
         1,
       );
@@ -789,6 +814,7 @@ export const publishActaHandler = async (item, userData) => {
         );
         isRegistered = await oracleReads.isRegistered(
           CHAIN,
+          userData.privKey,
           userData.account,
           20,
         );
@@ -833,7 +859,7 @@ export const publishActaHandler = async (item, userData) => {
           );
 
       try {
-        const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+        const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
         const queryEID = electionId
           ? `?electionId=${encodeURIComponent(electionId)}`
           : '';
@@ -1011,9 +1037,15 @@ export const publishActaHandler = async (item, userData) => {
     };
 
     // 1) PRIMERO: verificar duplicado por votos (idéntico a online)
+    const hasSecondaryVotes = (electoralData?.partyResults || []).some(
+      p => String(p?.diputado ?? '').trim() !== '',
+    );
     const verificationData = {
       tableNumber: tableCodeStrict,
-      votes: { parties: buildFromPayload('presidente') },
+      votes: {
+        parties: buildFromPayload('presidente'),
+        ...(hasSecondaryVotes ? {deputies: buildFromPayload('diputado')} : {}),
+      },
     };
 
     let duplicateCheck;
@@ -1056,6 +1088,7 @@ export const publishActaHandler = async (item, userData) => {
         const privateKey = userData?.privKey;
         let isRegistered = await oracleReads.isRegistered(
           CHAIN,
+          userData.privKey,
           userData.account,
           1,
         );
@@ -1068,6 +1101,7 @@ export const publishActaHandler = async (item, userData) => {
           );
           isRegistered = await oracleReads.isRegistered(
             CHAIN,
+            userData.privKey,
             userData.account,
             20,
           );
@@ -1100,6 +1134,7 @@ export const publishActaHandler = async (item, userData) => {
           if (existingBallot && existingBallot._id) {
             const isJury = await oracleReads.isUserJury(
               CHAIN,
+              userData.privKey,
               userData.account,
             );
             const dniValue =
@@ -1217,9 +1252,7 @@ export const publishActaHandler = async (item, userData) => {
     if (existingByTable) {
       // HAY record en la mesa PERO votos distintos:
       // SUBIR a IPFS y luego ATESTIGUAR con el JSON NUEVO (NO createAttestation)
-      const imagePath = imageUri.startsWith('file://')
-        ? imageUri.substring(7)
-        : imageUri;
+      const imagePath = imageUri
 
       const normalizedVoteSummary = (
         electoralData?.voteSummaryResults || []
@@ -1298,6 +1331,7 @@ export const publishActaHandler = async (item, userData) => {
       const privateKey = userData?.privKey;
       let isRegistered = await oracleReads.isRegistered(
         CHAIN,
+        userData.privKey,
         userData.account,
         1,
       );
@@ -1310,6 +1344,7 @@ export const publishActaHandler = async (item, userData) => {
         );
         isRegistered = await oracleReads.isRegistered(
           CHAIN,
+          userData.privKey,
           userData.account,
           20,
         );
@@ -1398,7 +1433,7 @@ export const publishActaHandler = async (item, userData) => {
 
       try {
         if (backendBallot && backendBallot._id) {
-          const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+          const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
           const queryEID = electionId
             ? `?electionId=${encodeURIComponent(electionId)}`
             : '';
@@ -1497,9 +1532,7 @@ export const publishActaHandler = async (item, userData) => {
     }
 
     // 3) NO hay acta por mesa → primera vez: subir + createAttestation
-    const imagePath = imageUri.startsWith('file://')
-      ? imageUri.substring(7)
-      : imageUri;
+    const imagePath = imageUri
 
     const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
       data => {
@@ -1579,6 +1612,7 @@ export const publishActaHandler = async (item, userData) => {
     const privateKey = userData?.privKey;
     let isRegistered = await oracleReads.isRegistered(
       CHAIN,
+      userData.privKey,
       userData.account,
       1,
     );
@@ -1591,6 +1625,7 @@ export const publishActaHandler = async (item, userData) => {
       );
       isRegistered = await oracleReads.isRegistered(
         CHAIN,
+        userData.privKey,
         userData.account,
         20,
       );
@@ -1720,7 +1755,7 @@ export const publishActaHandler = async (item, userData) => {
 
     try {
       if (backendBallot && backendBallot._id) {
-        const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+        const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
         const queryEID = electionId
           ? `?electionId=${encodeURIComponent(electionId)}`
           : '';
@@ -1945,9 +1980,8 @@ export const publishWorksheetHandler = async (item, userData) => {
           'No se encontró la imagen local de la hoja de trabajo para subir.',
         );
       }
-      const imagePath = imageUri.startsWith('file://')
-        ? imageUri.substring(7)
-        : imageUri;
+      const imagePath = imageUri;
+      console.log(`[WORKSHEET-UPLOAD] Ruta de la hoja para IPFS: ${imagePath}`);
 
       const normalizedVoteSummary = (electoralData?.voteSummaryResults || []).map(
         data => {
@@ -2156,7 +2190,7 @@ export const syncActaBackendHandler = async (item, userData) => {
     return { success: true, backendOnly: true };
   }
 
-  const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+  const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
   const queryEID = electionId ? `?electionId=${encodeURIComponent(electionId)}` : '';
   try {
     await axios.post(

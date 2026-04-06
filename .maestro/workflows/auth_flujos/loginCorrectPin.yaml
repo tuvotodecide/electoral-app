@@ -1,0 +1,13 @@
+appId: com.tuvotodecide
+---
+# INGRESO DE PIN (Inicia directamente con el teclado abierto o enfocado)
+- inputText: "3938"
+
+# VERIFICACIÓN
+- extendedWaitUntil:
+    visible:
+      id: "homeMiVotoLogoTitle"
+    timeout: 20000
+
+- assertVisible:
+    id: "homeMiVotoLogoTitle"

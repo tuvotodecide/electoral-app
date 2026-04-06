@@ -1,3 +1,4 @@
+import { BACKEND_RESULT, BACKEND_SECRET } from '@env';
 import React, {useState, useEffect} from 'react';
 import {ActivityIndicator, View, Dimensions} from 'react-native';
 import axios from 'axios';
@@ -9,7 +10,7 @@ import {createSearchTableStyles} from '../../styles/searchTableStyles';
 import {fetchMesas} from '../../data/mockMesas';
 import {StackNav} from '../../navigation/NavigationKey';
 import Strings from '../../i18n/String';
-import {BACKEND_RESULT, BACKEND_SECRET} from '@env';
+
 import BaseSearchTableScreenUser from '../../components/common/BaseSearchTableScreenUser';
 import {
   subscribeToLocationTopic,

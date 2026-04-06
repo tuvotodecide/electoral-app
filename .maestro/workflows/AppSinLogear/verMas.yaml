@@ -1,0 +1,23 @@
+appId: com.tuvotodecide
+---
+# 1. Pulsar en el botón Saber más usando su ID para mayor precisión
+- extendedWaitUntil:
+    visible:
+      id: "connectInfoButton"
+    timeout: 10000
+
+- tapOn:
+    id: "connectInfoButton"
+
+# 2. Pulsar el botón Siguiente (ID onboardingGetStartedButton) 3 veces
+- repeat:
+    times: 5
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "onboardingGetStartedButton"
+          timeout: 5000
+      - tapOn:
+          id: "onboardingGetStartedButton"
+      - waitForAnimationToEnd:
+          timeout: 2000

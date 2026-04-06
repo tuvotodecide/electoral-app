@@ -2,13 +2,13 @@ appId: com.tuvotodecide
 ---
 - runFlow:
     when:
-      notVisible: 
+      notVisible:
         id: loginUserContentContainer
     file: ./simpleActions/pressLogin.yaml
 
 - tapOn:
     id: textInput
-    
+
 - inputText: ${PIN}
 
 - assertVisible:

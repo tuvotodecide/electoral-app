@@ -1,0 +1,63 @@
+appId: com.tuvotodecide
+name: blockAccount
+---
+# INICIO (Se asume que la app ya está abierta en la pantalla de inicio/Connect)
+- tapOn:
+    id: "connectLoginButton"
+
+- extendedWaitUntil:
+    visible:
+      id: "selectRecuperationFileOption"
+    timeout: 10000
+
+- tapOn:
+    id: "selectRecuperationFileOption"
+- extendedWaitUntil:
+    visible:
+      id: "recoveryFileUploadCard"
+    timeout: 10000
+
+- tapOn:
+    id: "recoveryFileUploadCard"
+
+# Buscar el archivo haciendo scroll hacia abajo en el selector del sistema
+- scrollUntilVisible:
+    element: "Respaldo_de_cuenta.*"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Respaldo_de_cuenta.*"
+
+# Continuar tras procesar el archivo
+- extendedWaitUntil:
+    visible:
+      id: "recoveryFileContinueButton"
+    timeout: 10000
+
+- tapOn:
+    id: "recoveryFileContinueButton"
+
+# 1. Ingreso de PIN (3938)
+- inputText: "3938"
+
+# Quitar el teclado (botón atrás del sistema)
+- back
+
+- tapOn:
+    id: "changePinNewContinueButton"
+
+# 2. Confirmación de PIN (3938)
+- extendedWaitUntil:
+    visible: "Confirma tu PIN"
+    timeout: 10000
+
+- inputText: "3938"
+
+# Quitar el teclado (botón atrás del sistema)
+- back
+
+- tapOn:
+    id: "changePinNewContinueButton"
+
+
+

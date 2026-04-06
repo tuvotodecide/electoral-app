@@ -10,8 +10,8 @@ jest.mock(
 );
 
 jest.mock('react-native', () => require('../../../__mocks__/cameraScreen/reactNative')());
-jest.mock('react-native-vision-camera', () =>
-  jest.requireActual('../../../__mocks__/cameraScreen/reactNativeVisionCamera'),
+jest.mock('expo-camera', () =>
+  jest.requireActual('../../../__mocks__/cameraScreen/expoCamera'),
 );
 jest.mock('react-redux', () => jest.requireActual('../../../__mocks__/react-redux'));
 jest.mock('@react-navigation/native', () =>
@@ -20,8 +20,8 @@ jest.mock('@react-navigation/native', () =>
 jest.mock('react-native-image-viewing', () =>
   jest.requireActual('../../../__mocks__/react-native-image-viewing'),
 );
-jest.mock('react-native-image-picker', () =>
-  jest.requireActual('../../../__mocks__/react-native-image-picker'),
+jest.mock('expo-image-picker', () =>
+  jest.requireActual('../../../__mocks__/expo-image-picker'),
 );
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),

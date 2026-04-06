@@ -1,9 +1,10 @@
+
 import { CHAIN } from '@env';
 import { createSmartAccountClient } from 'permissionless';
 import { toSimpleSmartAccount } from 'permissionless/accounts';
 import { createPimlicoClient } from 'permissionless/clients/pimlico';
 import { createPublicClient, getContract, http } from 'viem';
-import { entryPoint07Address } from 'viem/account-abstraction';
+import { entryPoint07Address, toCoinbaseSmartAccount } from 'viem/account-abstraction';
 import { privateKeyToAccount } from 'viem/accounts';
 import walletAbi from './contracts/SimpleAccount.json';
 import {
@@ -76,12 +77,9 @@ export async function getAccount(privateKey, address, chain) {
     transport: http(bundler),
   });
 
-  const account = await toSimpleSmartAccount({
+  const account = await toCoinbaseSmartAccount({
     client: publicClient,
-    address,
-    factoryAddress: FACTORY_ADDRESS,
-    owner,
-    entryPoint: {address: entryPoint07Address, version: '0.7'},
+    owners: [owner],
   });
 
   return {account, publicClient};
@@ -96,11 +94,9 @@ export async function getRandomAccount(chain) {
     transport: http(bundler),
   });
 
-  const account = await toSimpleSmartAccount({
+  const account = await toCoinbaseSmartAccount({
     client: publicClient,
-    owner: privateKeyToAccount(privateKey),
-    factoryAddress: FACTORY_ADDRESS,
-    entryPoint: {address: entryPoint07Address, version: '0.7'},
+    owners: [privateKeyToAccount(privateKey)],
   });
 
   return {account, publicClient};
@@ -133,21 +129,15 @@ export async function executeOperation(
     },
   });
 
-  const arbitrumParams = chainId.startsWith('arbitrum') ? {
-    paymasterContext: { sponsorshipPolicyId },
-    userOperation: {
-      estimateFeesPerGas: async () => {
-        return (await pimlicoClient.getUserOperationGasPrice()).standard;
-      },
-    },
-  } : {};
+  const customParams = availableNetworks[chainId].getCustomPaymasterParams ? 
+    availableNetworks[chainId].getCustomPaymasterParams(pimlicoClient, sponsorshipPolicyId) : {};
 
   const smartAccountClient = createSmartAccountClient({
     account,
     chain,
     bundlerTransport: http(bundler),
     paymaster: pimlicoClient,
-    ...arbitrumParams,
+    ...customParams,
   });
 
   const txHash = await smartAccountClient.sendTransaction(callData);

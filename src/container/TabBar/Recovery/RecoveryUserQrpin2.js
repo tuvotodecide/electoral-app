@@ -1,4 +1,5 @@
 // src/container/Auth/Recovery/RecoveryUserQrPin2.js
+import { BACKEND_IDENTITY, PROVIDER_NAME } from '@env';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
@@ -20,7 +21,7 @@ import typography from '../../../themes/typography';
 import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
-import { BACKEND_IDENTITY, PROVIDER_NAME } from '@env';
+
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
 import { resetAttempts } from '../../../utils/PinAttempts';

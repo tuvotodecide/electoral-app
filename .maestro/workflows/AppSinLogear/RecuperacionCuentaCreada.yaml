@@ -1,0 +1,50 @@
+appId: com.tuvotodecide
+---
+# 1. EMPEZAR DESDE EL PRINCIPIO (Llamar al flujo de registro/verificación)
+- runFlow: VerificarYaRegistrado.yaml
+
+# 2. Click en "Usar archivo de recuperación"
+- extendedWaitUntil:
+    visible: { id: "selectRecuperationFileOption" }
+    timeout: 10000
+- tapOn: { id: "selectRecuperationFileOption" }
+
+# 3. Click en el card para "Seleccionar archivo"
+- extendedWaitUntil:
+    visible: { id: "recoveryFileUploadCard" }
+    timeout: 10000
+- tapOn: { id: "recoveryFileUploadCard" }
+
+# 4. Seleccionar el archivo de respaldo
+- scrollUntilVisible:
+    element: "Respaldo_de_cuenta_.*"
+    direction: DOWN
+- tapOn: "Respaldo_de_cuenta_.*"
+
+# 5. Click en "Continuar" tras cargar el archivo
+- extendedWaitUntil:
+    visible: { id: "recoveryFileContinueButton" }
+    timeout: 15000
+- tapOn: { id: "recoveryFileContinueButton" }
+
+# 6. Ingresar PIN nuevo
+- extendedWaitUntil:
+    visible: "Crea tu PIN de acceso"
+    timeout: 10000
+- inputText: "${MAESTRO_USER_1_PIN}"
+- back # Quitar teclado
+- tapOn: { id: "changePinNewContinueButton" }
+
+# 7. Verificar PIN nuevo
+- extendedWaitUntil:
+    visible: "Confirma tu PIN"
+    timeout: 10000
+- inputText: "${MAESTRO_USER_1_PIN}"
+- back # Quitar teclado
+- tapOn: { id: "changePinNewContinueButton" }
+
+# 8. Ingreso final al sistema con el PIN recuperado
+- extendedWaitUntil:
+    visible: { id: "loginUserTitle" }
+    timeout: 15000
+- inputText: "${MAESTRO_USER_1_PIN}"

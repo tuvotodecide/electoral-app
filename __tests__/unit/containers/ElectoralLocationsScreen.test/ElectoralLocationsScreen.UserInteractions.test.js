@@ -1,11 +1,10 @@
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { PermissionsAndroid, Platform } from 'react-native';
 import axios from 'axios';
 
 import ElectoralLocationsScreen from '../../../../src/container/Vote/ElectoralLocationsScreen';
-import { StackNav } from '../../../../src/navigation/NavigationKey';
 
 // Mock axios
 jest.mock('axios');
@@ -40,25 +39,6 @@ jest.mock('../../../../src/components/common/CText', () =>
 jest.mock('../../../../src/components/common/CustomModal', () => 
   require('../../../__mocks__/components/common/CustomModal')
 );
-
-// Mock FlatList
-jest.mock('react-native/Libraries/Lists/FlatList', () => {
-  const React = require('react');
-  
-  return function FlatList({ data, renderItem, testID, keyExtractor, contentContainerStyle, ...props }) {
-    if (!data || data.length === 0) {
-      return React.createElement('FlatList', { testID, ...props });
-    }
-
-    const items = data.map((item, index) => {
-      const key = keyExtractor ? keyExtractor(item, index) : index.toString();
-      const renderedItem = renderItem({ item, index });
-      return React.createElement('View', { key }, renderedItem);
-    });
-
-    return React.createElement('View', { testID, style: contentContainerStyle, ...props }, items);
-  };
-});
 
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {
@@ -253,8 +233,8 @@ describe('ElectoralLocationsScreen - Tests de Interacción del Usuario', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          const flatList = getByTestId('electoralLocationsList');
-          expect(flatList).toBeTruthy();
+          const flashList = getByTestId('electoralLocationsList');
+          expect(flashList).toBeTruthy();
         });
         
         // Verificar que axios se llamó al inicializar
@@ -271,9 +251,9 @@ describe('ElectoralLocationsScreen - Tests de Interacción del Usuario', () => {
         const { getByTestId } = renderComponent();
         
         await waitFor(() => {
-          const flatList = getByTestId('electoralLocationsList');
+          const flashList = getByTestId('electoralLocationsList');
           
-          fireEvent.scroll(flatList, {
+          fireEvent.scroll(flashList, {
             nativeEvent: {
               contentOffset: { y: 100 },
               contentSize: { height: 1000 },
@@ -281,7 +261,7 @@ describe('ElectoralLocationsScreen - Tests de Interacción del Usuario', () => {
             },
           });
           
-          expect(flatList).toBeTruthy();
+          expect(flashList).toBeTruthy();
         });
       });
 

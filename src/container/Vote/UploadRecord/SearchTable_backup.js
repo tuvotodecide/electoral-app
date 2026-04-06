@@ -2,15 +2,13 @@ import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 import {useSelector} from 'react-redux';
 
-import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
 
 import {
   fetchMesas,
   fetchNearbyMesas,
-  getMockMesas,
-  mapMesasToLegacyFormat,
 } from '../../../data/mockMesas';
+import { FlashList } from '@shopify/flash-list';
 
 export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -419,7 +417,7 @@ export default function SearchTable({navigation, route}) {
           </View>
 
           {/* Listado */}
-          <FlatList
+          <FlashList
             data={sortedMesas}
             renderItem={renderMesaItem}
             keyExtractor={(item, index) => {

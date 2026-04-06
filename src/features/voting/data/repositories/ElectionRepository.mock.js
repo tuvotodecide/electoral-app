@@ -52,6 +52,11 @@ const ElectionRepositoryMock = {
     return [];
   },
 
+  async getWitnessRecords() {
+    await delay(300);
+    return [];
+  },
+
   async registerParticipation(electionId, candidateId) {
     return this.submitVote(electionId, candidateId, '');
   },

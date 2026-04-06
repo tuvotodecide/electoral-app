@@ -115,7 +115,7 @@ const BaseSearchTableScreen = (props) => {
         children: locationData?.address || 'Dirección Test 123',
       })
     ),
-    // Tables list - En lugar de usar FlatList que no renderiza items en tests, 
+    // Tables list - En lugar de usar FlashList que no renderiza items en tests, 
     // crear los elementos directamente
     React.createElement(
       'View',

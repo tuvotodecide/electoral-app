@@ -1,7 +1,8 @@
+import { GATEWAY_BASE } from '@env';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import {GATEWAY_BASE} from '@env';
+
 import { STORAGE_KEY } from '../common/constants';
 
 export async function fetchProvision({ mock = true } = {}) {
