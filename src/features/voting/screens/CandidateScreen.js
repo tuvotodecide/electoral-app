@@ -43,6 +43,7 @@ import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
 import { useSelector } from 'react-redux';
+import { blankVote } from '../data/params';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -57,6 +58,8 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const getPrimaryCandidateName = candidate => {
+  if (!candidate) return UI_STRINGS.confirmVoteBlank;
+
   const primaryTicketEntry = Array.isArray(candidate?.ticketEntries)
     ? candidate.ticketEntries.find(entry => String(entry?.name || '').trim())
     : null;
@@ -159,7 +162,7 @@ const CandidateScreen = ({ route }) => {
   
   // State
   const [candidates, setCandidates] = useState([]);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [selectedCandidate, setSelectedCandidate] = useState(blankVote);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
@@ -238,12 +241,15 @@ const CandidateScreen = ({ route }) => {
 
   // Handle candidate selection
   const handleSelectCandidate = useCallback((candidate) => {
-    setSelectedCandidate(candidate);
-  }, []);
+    if (selectedCandidate?.id === candidate.id) {
+      setSelectedCandidate(blankVote);
+    } else {
+      setSelectedCandidate(candidate);
+    }
+  }, [selectedCandidate]);
 
   // Handle vote button press
   const handleVotePress = useCallback(() => {
-    if (!selectedCandidate) return;
     setShowConfirmModal(true);
   }, [selectedCandidate]);
 
@@ -333,7 +339,6 @@ const CandidateScreen = ({ route }) => {
         });
 
         // Online: Submit vote directly
-        console.log('Submitting vote for candidate:', selectedCandidate.id);
         const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.account, userData.privKey);
         console.log('Vote submission result:', result);
 
@@ -449,8 +454,8 @@ const CandidateScreen = ({ route }) => {
 
   // Get button text
   const getButtonText = () => {
-    if (!selectedCandidate) {
-      return UI_STRINGS.selectCandidate;
+    if (!selectedCandidate || selectedCandidate.id === blankVote.id) {
+      return UI_STRINGS.voteBlank;
     }
     const primaryName = getPrimaryCandidateName(selectedCandidate);
     const [firstName = '', secondName = ''] = primaryName.split(' ');
@@ -489,7 +494,6 @@ const CandidateScreen = ({ route }) => {
         <CButton
           title={getButtonText()}
           type="B16"
-          disabled={!selectedCandidate}
           onPress={handleVotePress}
           containerStyle={styles.voteButton}
           style={styles.voteButtonText}
@@ -510,9 +514,10 @@ const CandidateScreen = ({ route }) => {
       {/* Confirm Modal */}
       <ConfirmVoteModal
         visible={showConfirmModal}
+        isBlankVote={!selectedCandidate || selectedCandidate.id === blankVote.id}
         presidentName={getPrimaryCandidateName(selectedCandidate)}
         partyName={selectedCandidate?.partyName || ''}
-        partyColor={selectedCandidate?.partyColor || '#2563EB'}
+        partyColor={selectedCandidate?.partyColor}
         onConfirm={handleConfirmVote}
         onCancel={handleCancelConfirm}
         isLoading={isLoading}

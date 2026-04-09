@@ -254,7 +254,7 @@ describe('CandidateScreen', () => {
     expect(screen.getByText('Lista Verde')).toBeTruthy();
   });
 
-  it('mantiene el boton deshabilitado cuando no hay opciones o no existe seleccion', async () => {
+  it('mantiene el boton en voto blanco cuando no existe seleccion', async () => {
     repository.getCandidates.mockResolvedValueOnce([]);
 
     const screen = renderScreen({params: {election}});
@@ -264,10 +264,8 @@ describe('CandidateScreen', () => {
     });
 
     const voteButton = screen.getByTestId('voteButton');
-    expect(voteButton.props.accessibilityState.disabled).toBe(true);
-
-    fireEvent.press(voteButton);
-    expect(repository.submitVote).not.toHaveBeenCalled();
+    expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
+    expect(voteButton.props.accessibilityState.disabled).toBe(false);
   });
 
   it('permite seleccionar una opcion valida y cambiar la seleccion antes de votar', async () => {

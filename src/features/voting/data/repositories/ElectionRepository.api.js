@@ -820,9 +820,8 @@ const ElectionRepositoryApi = {
 
     try {
       const nullifier = await getNullifierForVote(electionId);
-      console.log('Nullifier for vote obtained:', nullifier);
 
-      const response = await executeOperation(
+      await executeOperation(
         '',
         '',
         CHAIN,
@@ -832,12 +831,10 @@ const ElectionRepositoryApi = {
         true
       );
 
-      console.log('Vote transaction response:', response);
       await saveNullifierForVote(electionId, nullifier);
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
       await clearVoteJournal(electionId);
-      console.log('Error during on-chain voting process:', error);
       return {
         success: false,
         error: 'Failed to submit vote:' + error.message,

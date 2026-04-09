@@ -18,6 +18,7 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
+import { blankVote } from '../data/params';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -26,6 +27,7 @@ const { width: screenWidth } = Dimensions.get('window');
  * @param {boolean} props.visible
  * @param {string} props.presidentName - Nombre del candidato para mostrar
  * @param {string} props.partyName - Nombre del partido
+ * @param {boolean} [props.isBlankVote] - Indica si es un voto en blanco
  * @param {string} props.partyColor - Color del partido
  * @param {() => void} props.onConfirm
  * @param {() => void} props.onCancel
@@ -35,7 +37,8 @@ const ConfirmVoteModal = ({
   visible,
   presidentName,
   partyName,
-  partyColor = '#2563EB',
+  isBlankVote = false,
+  partyColor = '#7d7e80',
   onConfirm,
   onCancel,
   isLoading = false,
@@ -52,7 +55,7 @@ const ConfirmVoteModal = ({
           {/* Header con color del partido */}
           <View style={[styles.partyHeader, { backgroundColor: partyColor }]}>
             <CText type="B14" style={styles.partyName}>
-              {partyName}
+              {partyName === blankVote.partyName ? UI_STRINGS.voteBlank : partyName}
             </CText>
           </View>
 
@@ -78,7 +81,7 @@ const ConfirmVoteModal = ({
 
               {/* Título */}
               <CText type="B18" style={styles.title}>
-                {UI_STRINGS.confirmVoteTitle} {presidentName}?
+                {isBlankVote ? UI_STRINGS.confirmVoteBlank : `${UI_STRINGS.confirmVoteTitle} ${presidentName}?`}
               </CText>
 
               {/* Subtexto NFT */}
