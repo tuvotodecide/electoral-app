@@ -30,6 +30,7 @@ import { UI_STRINGS } from '../data/mockData';
 import { useVotingState } from '../state/useVotingState';
 import { releaseVoteForElection } from '../offline/queueAdapter';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
+import { blankVote } from '../data/params';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -274,10 +275,12 @@ const VoteReceiptScreen = () => {
                   {UI_STRINGS.party}
                 </CText>
                 <CText type="M14" style={styles.selectionValue}>
-                  {participation.candidateSelected.partyName}
+                  {participation.candidateSelected.partyName === blankVote.partyName
+                    ? UI_STRINGS.votedBlank
+                    : participation.candidateSelected.partyName}
                 </CText>
               </View>
-              {selectionEntries.map(entry => (
+              {participation.candidateSelected.partyName !== blankVote.partyName && selectionEntries.map(entry => (
                 <View
                   key={`${entry.label}:${entry.value}`}
                   style={styles.selectionDetailRow}

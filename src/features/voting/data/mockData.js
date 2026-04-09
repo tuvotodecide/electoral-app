@@ -107,6 +107,8 @@ export const UI_STRINGS = {
   candidateHeader: 'Papeleta',
   chooseCandidate: 'Elige a un candidato',
   selectCandidate: 'Selecciona un candidato',
+  voteBlank: 'Votar en Blanco',
+  votedBlank: 'Votaste en Blanco',
   voteFor: 'VOTAR POR',
   voteSecureNote: 'Tu voto será registrado de forma segura y anónima',
   president: 'Presidente:',
@@ -114,6 +116,7 @@ export const UI_STRINGS = {
 
   // Confirm modal
   confirmVoteTitle: '¿Confirmar voto por',
+  confirmVoteBlank: '¿Confirmar voto en Blanco?',
   nftSubtext: 'Se generará un NFT de participación',
   confirmButton: 'Sí, confirmar mi voto',
   cancelButton: 'Cancelar',
