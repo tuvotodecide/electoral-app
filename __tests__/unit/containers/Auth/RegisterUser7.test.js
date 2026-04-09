@@ -1,10 +1,9 @@
-import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser7 from '../../../../src/container/Auth/RegisterUser7';
-import {biometryAvailability, biometricLogin} from '../../../../src/utils/Biometry';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
+import wira from 'wira-sdk';
 
 const route = {params: {ocrData: {dni: '00000000'}, dni: '00000000'}};
 
@@ -36,12 +35,12 @@ describe('RegisterUser7', () => {
       useBiometry: false,
       dni: '00000000',
     });
-    expect(biometryAvailability).toHaveBeenCalled();
-    expect(biometricLogin).toHaveBeenCalled();
+    expect(wira.Biometric.biometryAvailability).toHaveBeenCalled();
+    expect(wira.Biometric.biometricLogin).toHaveBeenCalled();
   });
 
   it('muestra modal informativo cuando el dispositivo no tiene biometria', async () => {
-    biometryAvailability.mockResolvedValueOnce({available: false, biometryType: null});
+    wira.Biometric.biometryAvailability.mockResolvedValueOnce({available: false, biometryType: null});
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const {getByTestId} = renderWithProviders(
       <RegisterUser7 navigation={localNavigation} route={route} />,

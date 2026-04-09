@@ -1,3 +1,4 @@
+import { BACKEND_RESULT } from '@env';
 import React from 'react';
 import {
   ScrollView,
@@ -25,7 +26,7 @@ import {
   MesaCard,
 } from './SearchTableComponents';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { BACKEND_RESULT } from '@env';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -415,15 +416,29 @@ const BaseSearchTableScreen = ({
                 : record.ipfsUri || null;
           const actaImage = actaImagePrimary;
           const presidentialParties = record.votes?.parties?.partyVotes || [];
+          const deputyParties = record.votes?.deputies?.partyVotes || [];
+          const deputyMap = deputyParties.reduce((acc, item) => {
+            const partyId = globalThis.String(item?.partyId ?? '')
+              .trim()
+              .toLowerCase();
+            if (!partyId) return acc;
+            acc[partyId] = item?.votes ?? 0;
+            return acc;
+          }, {});
 
           const partyResults = presidentialParties.map(presParty => {
+            const partyId = globalThis.String(presParty.partyId ?? '')
+              .trim()
+              .toLowerCase();
             return {
-              partyId: globalThis.String(presParty.partyId ?? '').trim().toLowerCase(),
+              partyId,
               presidente: presParty.votes,
+              diputado: deputyMap[partyId] ?? 0,
             };
           });
 
           const presVoteSummary = record.votes?.parties || {};
+          const depVoteSummary = record.votes?.deputies || {};
 
           return {
             ...record,
@@ -435,6 +450,10 @@ const BaseSearchTableScreen = ({
               presBlankVotes: presVoteSummary.blankVotes || 0,
               presNullVotes: presVoteSummary.nullVotes || 0,
               presTotalVotes: presVoteSummary.totalVotes || 0,
+              depValidVotes: depVoteSummary.validVotes || 0,
+              depBlankVotes: depVoteSummary.blankVotes || 0,
+              depNullVotes: depVoteSummary.nullVotes || 0,
+              depTotalVotes: depVoteSummary.totalVotes || 0,
             },
           };
         })
@@ -447,7 +466,8 @@ const BaseSearchTableScreen = ({
         existingRecords: enrichedRecords,
         totalRecords: enrichedRecords.length,
         isFromUnifiedFlow: true,
-        electionId:electionId
+        electionId:electionId,
+        electionType,
       });
     } catch (error) {
       // Check if it's a 404 or mesa not found error
@@ -460,7 +480,8 @@ const BaseSearchTableScreen = ({
           existingRecords: [],
           totalRecords: 0,
           isFromUnifiedFlow: true,
-          electionId:electionId
+          electionId:electionId,
+          electionType,
         });
       } else if (
         error.response &&
@@ -479,7 +500,8 @@ const BaseSearchTableScreen = ({
             existingRecords: [],
             totalRecords: 0,
             isFromUnifiedFlow: true,
-            electionId:electionId
+            electionId:electionId,
+            electionType,
           });
         } else {
           // Other API error

@@ -2,13 +2,25 @@ jest.mock('react-native', () => ({
   Platform: {OS: 'android'},
 }));
 
-jest.mock('react-native-fs', () => ({
-  DocumentDirectoryPath: '/docs',
-  copyFile: jest.fn(() => Promise.resolve()),
-  writeFile: jest.fn(() => Promise.resolve()),
-  exists: jest.fn(() => Promise.resolve(true)),
-  unlink: jest.fn(() => Promise.resolve()),
-}));
+const fileInstances = [];
+jest.mock('expo-file-system', () => {
+  const base = jest.requireActual('../../__mocks__/expo-file-system');
+
+  class TrackedFile extends base.File {
+    constructor(uri) {
+      super(uri);
+      fileInstances.push(this);
+    }
+  }
+
+  TrackedFile.downloadFileAsync = base.File.downloadFileAsync;
+
+  return {
+    ...base,
+    File: TrackedFile,
+    __fileInstances: fileInstances,
+  };
+});
 
 const mockBlobFetch = jest.fn();
 const mockBlobConfigFetch = jest.fn();
@@ -22,13 +34,14 @@ jest.mock('react-native-blob-util', () => ({
   },
 }));
 
-import RNFS from 'react-native-fs';
 import BlobUtil from 'react-native-blob-util';
+import {Paths, __fileInstances} from 'expo-file-system';
 import {persistLocalImage, removePersistedImage} from '../../../src/utils/persistLocalImage';
 
 describe('persistLocalImage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __fileInstances.length = 0;
     jest.spyOn(Date, 'now').mockReturnValue(123);
   });
 
@@ -45,11 +58,14 @@ describe('persistLocalImage', () => {
     });
 
     const out = await persistLocalImage('https://example.com/image.png');
-    expect(out).toBe('file:///docs/acta-123.png');
+    expect(out).toBe(`${Paths.document.uri}/acta-123.png`);
     expect(mockBlobFetch).toHaveBeenCalledWith('HEAD', 'https://example.com/image.png');
     expect(BlobUtil.config).toHaveBeenCalled();
-    expect(RNFS.copyFile).toHaveBeenCalledWith('/tmp/downloaded.tmp', '/docs/acta-123.png');
-    expect(RNFS.unlink).toHaveBeenCalledWith('/tmp/downloaded.tmp');
+    expect(__fileInstances).toHaveLength(2);
+    expect(__fileInstances[0].uri).toBe('file:///tmp/downloaded.tmp');
+    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.png`);
+    expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
+    expect(__fileInstances[0].delete).toHaveBeenCalled();
   });
 
   it('lanza error si la descarga HTTP no entrega path', async () => {
@@ -67,21 +83,30 @@ describe('persistLocalImage', () => {
 
   it('copia archivos file:// directamente', async () => {
     const out = await persistLocalImage('file:///src/photo.jpg');
-    expect(out).toBe('file:///docs/acta-123.jpg');
-    expect(RNFS.copyFile).toHaveBeenCalledWith('/src/photo.jpg', '/docs/acta-123.jpg');
+    expect(out).toBe(`${Paths.document.uri}/acta-123.jpg`);
+    expect(__fileInstances).toHaveLength(2);
+    expect(__fileInstances[0].uri).toBe('file:///src/photo.jpg');
+    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
+    expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
   });
 
   it('lee contenido content:// en android', async () => {
     const out = await persistLocalImage('content://media/1');
-    expect(out).toBe('file:///docs/acta-123.jpg');
+    expect(out).toBe(`${Paths.document.uri}/acta-123.jpg`);
     expect(BlobUtil.fs.readFile).toHaveBeenCalledWith('content://media/1', 'base64');
-    expect(RNFS.writeFile).toHaveBeenCalledWith('/docs/acta-123.jpg', 'ZGF0YQ==', 'base64');
+    expect(__fileInstances).toHaveLength(1);
+    expect(__fileInstances[0].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
+    expect(__fileInstances[0].write).toHaveBeenCalledWith('ZGF0YQ==', {
+      encoding: 'base64',
+    });
   });
 
   it('removePersistedImage elimina si existe', async () => {
-    await removePersistedImage('file:///docs/acta-1.jpg');
-    expect(RNFS.exists).toHaveBeenCalledWith('/docs/acta-1.jpg');
-    expect(RNFS.unlink).toHaveBeenCalledWith('/docs/acta-1.jpg');
+    await removePersistedImage('file:///mock/documents/acta-1.jpg');
+    expect(__fileInstances).toHaveLength(1);
+    expect(__fileInstances[0].uri).toBe('file:///mock/documents/acta-1.jpg');
+    expect(__fileInstances[0].info).toHaveBeenCalled();
+    expect(__fileInstances[0].delete).toHaveBeenCalled();
   });
 
   it('removePersistedImage ignora entradas invÃ¡lidas', async () => {

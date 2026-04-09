@@ -10,7 +10,6 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import Icono from '../../../components/common/Icono';
 import String from '../../../i18n/String';
-import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import {
   useGuardianInvitationActionQuery,
@@ -21,6 +20,7 @@ import {
 import GuardianInfoActionModal from '../../../components/modal/GuardianInfoModal';
 
 import { truncateDid } from '../../../utils/Address';
+import { FlashList } from '@shopify/flash-list';
 
 export default function GuardiansAdmin() {
   const colors = useSelector(state => state.theme.theme);
@@ -308,7 +308,7 @@ export default function GuardiansAdmin() {
         <CText testID="guardiansAdminInvitationsTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myInvitations}
         </CText>
-        <FlatList
+        <FlashList
           testID="guardiansAdminInvitationsList"
           data={invitations}
           keyExtractor={item => item.id}
@@ -317,12 +317,11 @@ export default function GuardiansAdmin() {
           scrollEnabled={false} 
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
-          initialNumToRender={8}
         />
         <CText testID="guardiansAdminRecoveryTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myRecovery}
         </CText>
-        <FlatList
+        <FlashList
           testID="guardiansAdminRecoveryList"
           data={recoveries}
           keyExtractor={item => item.requestId}
@@ -331,12 +330,11 @@ export default function GuardiansAdmin() {
           scrollEnabled={false} 
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
-          initialNumToRender={8}
         />
         <CText testID="guardiansAdminProtectedTitle" type={'B16'} align={'center'} marginTop={15}>
           {String.myProtectedInfo}
         </CText>
-        <FlatList
+        <FlashList
           testID="guardiansAdminProtectedList"
           data={accepted}
           keyExtractor={item => item.id}
@@ -345,7 +343,6 @@ export default function GuardiansAdmin() {
           scrollEnabled={false} 
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
-          initialNumToRender={8}
         />
       </KeyBoardAvoidWrapper>
       <GuardianInfoActionModal

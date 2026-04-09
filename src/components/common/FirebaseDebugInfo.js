@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
-import { FirebaseNotificationService } from '../../services/FirebaseNotificationService';
+import { firebaseNotificationService } from '../../services/FirebaseNotificationService';
 import database from '@react-native-firebase/database';
 
 export const FirebaseDebugInfo = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const userData = useSelector(state => state.wallet.payload);
-  const notificationService = new FirebaseNotificationService();
+  const notificationService = firebaseNotificationService;
 
   const loadUserInfo = async () => {
     if (!userData?.address) return;

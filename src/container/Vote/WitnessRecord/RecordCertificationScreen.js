@@ -1,3 +1,4 @@
+import { CHAIN, BACKEND_RESULT, BACKEND_SECRET } from '@env';
 import React, {useState} from 'react';
 import {
   View,
@@ -8,24 +9,19 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
-  Linking,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {moderateScale} from '../../../common/constants';
-import {StackNav} from '../../../navigation/NavigationKey';
 import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {executeOperation} from '../../../api/account';
-import {CHAIN, BACKEND_RESULT, BACKEND_SECRET} from '@env';
+
 import {oracleCalls, oracleReads} from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
-import {availableNetworks} from '../../../api/params';
 import axios from 'axios';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -75,7 +71,7 @@ const RecordCertificationScreen = () => {
   const uploadAttestation = async ballotId => {
     try {
       const url = `${BACKEND_RESULT}/api/v1/attestations`;
-      const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
+      const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
 
       const payload = {
         attestations: [
@@ -115,6 +111,7 @@ const RecordCertificationScreen = () => {
     try {
       const isRegistered = await oracleReads.isRegistered(
         CHAIN,
+        userData.privKey,
         userData.account,
         1,
       );
@@ -129,6 +126,7 @@ const RecordCertificationScreen = () => {
 
         const isRegistered = await oracleReads.isRegistered(
           CHAIN,
+          userData.privKey,
           userData.account,
           20,
         );

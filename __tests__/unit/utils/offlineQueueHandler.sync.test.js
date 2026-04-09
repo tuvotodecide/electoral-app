@@ -83,7 +83,7 @@ describe('offlineQueueHandler syncActaBackendHandler', () => {
     );
 
     expect(result).toEqual({success: true, backendBallotId: 'ballot1'});
-    expect(oracleReads.isUserJury).toHaveBeenCalledWith('testnet', '0xacc');
+    expect(oracleReads.isUserJury).toHaveBeenCalledWith('testnet', '0xpriv', '0xacc');
   });
 
   it('reintenta cuando backend responde 409', async () => {

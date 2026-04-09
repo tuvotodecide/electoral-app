@@ -1,6 +1,7 @@
 // Mock para variables de entorno (@env)
 const envConfig = {
   BACKEND_RESULT: 'https://test-backend.com',
+  FRONTEND_RESULTS: 'https://frontend-results.example',
   BACKEND: 'https://test-backend.com/',
   BACKEND_URL: 'https://test-backend.com/api',
   BACKEND_SECRET: 'test-secret',
@@ -29,6 +30,7 @@ const envConfig = {
 // Export por defecto y named exports para mayor compatibilidad  
 module.exports = envConfig;
 module.exports.BACKEND_RESULT = 'https://test-backend.com';
+module.exports.FRONTEND_RESULTS = 'https://frontend-results.example';
 module.exports.BACKEND = 'https://test-backend.com/';
 module.exports.BACKEND_URL = 'https://test-backend.com/api';
 module.exports.BACKEND_SECRET = 'test-secret';

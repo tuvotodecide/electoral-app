@@ -1,0 +1,62 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Click en "Enviar Acta Gobernador" en el Home
+- extendedWaitUntil:
+    visible: "Enviar Acta Gobernador"
+    timeout: 15000
+
+- tapOn: "Enviar Acta Gobernador"
+
+# 3. Esperar a que carguen los recintos y click en el primero
+# El usuario menciona que tarda unos 4 segundos, usamos un timeout generoso
+- extendedWaitUntil:
+    visible: ".* mesas"
+    timeout: 15000
+
+- tapOn:
+    index: 0
+    text: ".* mesas"
+
+# 4. Escribir el código de mesa y confirmar
+- extendedWaitUntil:
+    visible: "Código de mesa"
+    timeout: 10000
+
+- tapOn: "Código de mesa"
+- inputText: "205079-1" # El usuario pidió 2050791, pero el formato usual es con guión
+
+- tapOn: "Confirmar"
+- back
+# 5. Click en "Atestiguar" (en la pantalla WhichIsCorrect o Detail)
+- extendedWaitUntil:
+    visible: "Atestiguar"
+    timeout: 10000
+
+- tapOn: "Atestiguar"
+
+# 6. Click en "Están correctos"
+- extendedWaitUntil:
+    visible: "Están correctos"
+    timeout: 10000
+- tapOn: "Están correctos"
+
+# 7. Click en "Siguiente"
+- extendedWaitUntil:
+    visible: "Siguiente"
+    timeout: 10000
+- tapOn: "Siguiente"
+
+# 8. Click en "Publico y certifico" (Certificar)
+- extendedWaitUntil:
+    visible: "Publico y certifico"
+    timeout: 10000
+- tapOn: "Publico y certifico"
+
+# 9. Ir al inicio
+- extendedWaitUntil:
+    visible: "Ir al Inicio"
+    timeout: 10000
+- tapOn: "Ir al Inicio"

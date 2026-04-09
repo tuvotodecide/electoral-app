@@ -16,12 +16,12 @@ jest.mock('@/src/api/vote', () => ({
   getOwnVoteInfo: jest.fn(),
 }));
 
-jest.mock('@/src/data/voteNullifier', () => ({
+jest.mock('@/src/data/credentials', () => ({
   getNullifierForVote: jest.fn(),
 }));
 
 const {getOwnVoteInfo} = require('@/src/api/vote');
-const {getNullifierForVote} = require('@/src/data/voteNullifier');
+const {getNullifierForVote} = require('@/src/data/credentials');
 
 const createStorage = initialEntries => {
   const storage = new Map(Object.entries(initialEntries || {}));

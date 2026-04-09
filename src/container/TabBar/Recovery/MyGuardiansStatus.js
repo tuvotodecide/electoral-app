@@ -1,3 +1,4 @@
+import { BACKEND_IDENTITY } from '@env';
 import {KeyboardAvoidingView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 
@@ -14,20 +15,19 @@ import CText from '../../../components/common/CText';
 import Icono from '../../../components/common/Icono';
 
 import String from '../../../i18n/String';
-import {FlatList} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 import {AuthNav, StackNav} from '../../../navigation/NavigationKey';
 
 import {useGuardiansRecoveryDetailQuery} from '../../../data/guardians';
 import {ActivityIndicator} from 'react-native-paper';
-import {getDeviceId} from '../../../utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CButton from '../../../components/common/CButton';
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
-import { BACKEND_IDENTITY } from '@env';
+
 
 import { truncateDid } from '../../../utils/Address';
+import { FlashList } from '@shopify/flash-list';
 
 
 
@@ -123,7 +123,7 @@ export default function MyGuardiansStatus({navigation}) {
   }, [safeDetail, navigation, remove]);
 
   useEffect(() => {
-    getDeviceId().then(id => {
+    wira.DeviceId.getDeviceId().then(id => {
       deviceId.current = id;
       setReady(true);
     });
@@ -214,9 +214,9 @@ export default function MyGuardiansStatus({navigation}) {
         </CText>
         <View>
           { guardians.length > 0 ?
-            <FlatList
+            <FlashList
               testID="myGuardiansStatusList"
-          data={guardians}
+              data={guardians}
               keyExtractor={(g, i) => g.guardianDid || i}
               renderItem={renderGuardianOption}
               contentContainerStyle={styles.mt20}

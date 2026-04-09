@@ -19,7 +19,6 @@ import {
   subscribeToLocationTopic,
 } from './services/notifications';
 import { styles } from './themes';
-import { migrateIfNeeded } from './utils/migrateBundle';
 
 import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
@@ -166,10 +165,6 @@ const App = () => {
       dispatch(setPendingNav(null));
     }
   }, [auth.isAuthenticated, auth.pendingNav]);
-
-  useEffect(() => {
-    migrateIfNeeded();
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

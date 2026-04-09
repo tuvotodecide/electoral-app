@@ -1,0 +1,32 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Pulsar en el icono de notificaciones en el Home
+- extendedWaitUntil:
+    visible:
+      id: "notificationsButton"
+    timeout: 15000
+
+- tapOn:
+    id: "notificationsButton"
+
+# 3. Pulsar en la primera notificación (Acta publicada / Certificado)
+- extendedWaitUntil:
+    visible:
+      id: "notificationItem_0"
+    timeout: 10000
+- tapOn:
+    id: "notificationItem_0"
+
+# 4. Verificar que estamos en la pantalla de éxito (NFT/Certificado)
+- extendedWaitUntil:
+    visible: "NFT"
+    timeout: 15000
+
+# 5. Regresar a la lista de notificaciones
+- back
+
+# 6. Regresar al Home
+- back

@@ -16,9 +16,8 @@ import CAlert from '../../components/common/CAlert';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
-import {biometricLogin, biometryAvailability} from '../../utils/Biometry';
 import InfoModal from '../../components/modal/InfoModal';
-
+import wira from 'wira-sdk';
 
 export default function RegisterUser7({navigation, route}) {
   const {ocrData, dni} = route.params;
@@ -30,7 +29,7 @@ export default function RegisterUser7({navigation, route}) {
   };
 
   const handleActivateBio = async () => {
-    const {available, biometryType} = await biometryAvailability();
+    const {available, biometryType} = await wira.Biometric.biometryAvailability();
 
     if (!available) {
       return setModal({
@@ -45,7 +44,7 @@ export default function RegisterUser7({navigation, route}) {
       });
     }
 
-    const ok = await biometricLogin(
+    const ok = await wira.Biometric.biometricLogin(
       biometryType === 'FaceID'
         ? 'Escanea tu rostro'
         : 'Escanea tu huella dactilar',

@@ -1,6 +1,7 @@
+import { PROVIDER_NAME, BACKEND_IDENTITY } from '@env';
 import { useEffect, useState } from "react";
 import InfoModal from "../../../components/modal/InfoModal";
-import {PROVIDER_NAME, BACKEND_IDENTITY} from '@env';
+
 import wira from 'wira-sdk';
 import String from "../../../i18n/String";
 import { AuthNav } from "../../../navigation/NavigationKey";

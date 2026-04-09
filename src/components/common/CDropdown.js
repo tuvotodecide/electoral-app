@@ -1,4 +1,4 @@
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useSelector } from "react-redux";
 import { getHeight, moderateScale } from "../../common/constants";
 import { styles } from "../../themes";
@@ -8,6 +8,7 @@ import { useState } from "react";
 import CListCard from "./CLIstCard";
 import typography from "../../themes/typography";
 import CText from "./CText";
+import { FlashList } from "@shopify/flash-list";
 
 export default function CDropdown({
   data = [],
@@ -58,7 +59,7 @@ export default function CDropdown({
 						onDismiss={hideModal}
 						contentContainerStyle={[localStyle.selectModal, {backgroundColor: colors.inputBackground}]}
 					>
-						<FlatList
+						<FlashList
 							data={data}
 							renderItem={onRenderItem}
 							keyExtractor={dataItemKey}

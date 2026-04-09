@@ -24,7 +24,7 @@ export const PartyTableRow = ({
 }) => (
   <View testID={`partyTableRow_${rowIndex}`} style={styles.partyTableRow}>
     <CText testID={`partyNameText_${rowIndex}`} style={styles.partyNameText}>
-      {party.id || party.partyId}
+      {party.partido || party.party || party.partyId || party.id}
     </CText>
     <View
       testID={`partyVotePresidenteContainer_${rowIndex}`}
@@ -93,6 +93,8 @@ export const PartyTable = ({
   onUpdate,
   emptyDisplayWhenReadOnly = '0',
   showDeputy = true,
+  primaryLabel = 'PRESIDENTE/A',
+  secondaryLabel = 'DIPUTADO/A',
 }) => (
   <View testID="partyTableContainer" style={styles.partyTableContainer}>
     <View testID="partyTableHeader" style={styles.partyTableHeader}>
@@ -104,13 +106,13 @@ export const PartyTable = ({
       <CText
         testID="partyTableHeaderPresidente"
         style={styles.partyTableHeaderCenter}>
-        PRESIDENTE/A
+        {primaryLabel}
       </CText>
       {showDeputy && (
         <CText
           testID="partyTableHeaderDiputado"
           style={styles.partyTableHeaderCenter}>
-          DIPUTADO/A
+          {secondaryLabel}
         </CText>
       )}
     </View>

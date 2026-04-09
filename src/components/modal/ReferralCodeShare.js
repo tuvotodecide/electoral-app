@@ -1,5 +1,4 @@
-import {FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
-import React from 'react';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import ActionSheet from 'react-native-actions-sheet';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -11,6 +10,7 @@ import String from '../../i18n/String';
 import {getHeight, moderateScale} from '../../common/constants';
 import CButton from '../common/CButton';
 import {ShareReferralCodeMediaData} from '../../api/constant';
+import { FlashList } from '@shopify/flash-list';
 
 export default function ReferralCodeShare(props) {
   const {SheetRef, onPressClose} = props;
@@ -114,7 +114,7 @@ export default function ReferralCodeShare(props) {
             />
           </View>
         </View>
-        <FlatList
+        <FlashList
           data={ShareReferralCodeMediaData}
           renderItem={referralCodeShare}
           horizontal

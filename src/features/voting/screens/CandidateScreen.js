@@ -42,6 +42,8 @@ import { backendProbe, checkInternetConnection } from '../../../utils/networkUti
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
+import { useSelector } from 'react-redux';
+import { blankVote } from '../data/params';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -53,6 +55,21 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const getPrimaryCandidateName = candidate => {
+  if (!candidate) return UI_STRINGS.confirmVoteBlank;
+
+  const primaryTicketEntry = Array.isArray(candidate?.ticketEntries)
+    ? candidate.ticketEntries.find(entry => String(entry?.name || '').trim())
+    : null;
+
+  return String(
+    primaryTicketEntry?.name ||
+      candidate?.presidentName ||
+      candidate?.partyName ||
+      '',
+  ).trim();
 };
 
 const isLikelyNetworkVoteError = error => {
@@ -141,10 +158,11 @@ const CandidateScreen = ({ route }) => {
 
   const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
   const electionId = route?.params?.electionId || electionInfo?.id || '';
-
+  const userData = useSelector(state => state.wallet.payload);
+  
   // State
   const [candidates, setCandidates] = useState([]);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [selectedCandidate, setSelectedCandidate] = useState(blankVote);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
@@ -223,12 +241,15 @@ const CandidateScreen = ({ route }) => {
 
   // Handle candidate selection
   const handleSelectCandidate = useCallback((candidate) => {
-    setSelectedCandidate(candidate);
-  }, []);
+    if (selectedCandidate?.id === candidate.id) {
+      setSelectedCandidate(blankVote);
+    } else {
+      setSelectedCandidate(candidate);
+    }
+  }, [selectedCandidate]);
 
   // Handle vote button press
   const handleVotePress = useCallback(() => {
-    if (!selectedCandidate) return;
     setShowConfirmModal(true);
   }, [selectedCandidate]);
 
@@ -257,6 +278,7 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
@@ -290,6 +312,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -311,12 +334,12 @@ const CandidateScreen = ({ route }) => {
             partyName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
           },
         });
 
         // Online: Submit vote directly
-        console.log('Submitting vote for candidate:', selectedCandidate.id);
-        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName);
+        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.account, userData.privKey);
         console.log('Vote submission result:', result);
 
         if (result.success) {
@@ -331,6 +354,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
           });
 
@@ -358,6 +382,7 @@ const CandidateScreen = ({ route }) => {
               partyName: selectedCandidate.partyName,
               presidentName: selectedCandidate.presidentName,
               viceName: selectedCandidate.viceName,
+              ticketEntries: selectedCandidate.ticketEntries || [],
             },
             errorMessage: null,
           });
@@ -429,10 +454,12 @@ const CandidateScreen = ({ route }) => {
 
   // Get button text
   const getButtonText = () => {
-    if (!selectedCandidate) {
-      return UI_STRINGS.selectCandidate;
+    if (!selectedCandidate || selectedCandidate.id === blankVote.id) {
+      return UI_STRINGS.voteBlank;
     }
-    return `${UI_STRINGS.voteFor} ${selectedCandidate.presidentName.split(' ')[0].toUpperCase()} ${selectedCandidate.presidentName.split(' ')[1]?.toUpperCase() || ''}`.trim();
+    const primaryName = getPrimaryCandidateName(selectedCandidate);
+    const [firstName = '', secondName = ''] = primaryName.split(' ');
+    return `${UI_STRINGS.voteFor} ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
   };
 
   return (
@@ -467,7 +494,6 @@ const CandidateScreen = ({ route }) => {
         <CButton
           title={getButtonText()}
           type="B16"
-          disabled={!selectedCandidate}
           onPress={handleVotePress}
           containerStyle={styles.voteButton}
           style={styles.voteButtonText}
@@ -488,9 +514,10 @@ const CandidateScreen = ({ route }) => {
       {/* Confirm Modal */}
       <ConfirmVoteModal
         visible={showConfirmModal}
-        presidentName={selectedCandidate?.presidentName || ''}
+        isBlankVote={!selectedCandidate || selectedCandidate.id === blankVote.id}
+        presidentName={getPrimaryCandidateName(selectedCandidate)}
         partyName={selectedCandidate?.partyName || ''}
-        partyColor={selectedCandidate?.partyColor || '#2563EB'}
+        partyColor={selectedCandidate?.partyColor}
         onConfirm={handleConfirmVote}
         onCancel={handleCancelConfirm}
         isLoading={isLoading}

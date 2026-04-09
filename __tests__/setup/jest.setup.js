@@ -37,14 +37,6 @@ jest.mock('react-native', () => ({
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
     const Pressable = ({children, ...props}) =>
       React.createElement('View', props, children);
-    const FlatList = ({data = [], renderItem, keyExtractor, ...props}) => {
-      const children = (data || []).map((item, index) => {
-        const key = keyExtractor ? keyExtractor(item, index) : index;
-        const element = renderItem ? renderItem({item, index}) : null;
-        return React.createElement(React.Fragment, {key}, element);
-      });
-      return React.createElement('View', props, children);
-    };
     const SectionList = ({
       sections = [],
       renderItem,
@@ -74,7 +66,7 @@ jest.mock('react-native', () => ({
       });
       return React.createElement('View', props, children);
     };
-    return {MockImage, Pressable, FlatList, SectionList};
+    return {MockImage, Pressable, SectionList};
   })(),
   Platform: {
     OS: 'ios',
@@ -425,27 +417,20 @@ jest.mock('@react-native-firebase/functions', () => {
   return functions;
 });
 
-// Mock Biometrics
-jest.mock('react-native-biometrics', () => ({
-  default: {
-    isSensorAvailable: jest.fn(() => Promise.resolve({ available: true })),
-    simplePrompt: jest.fn(() => Promise.resolve({ success: true })),
-  },
+// Mock Keychain
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+  WHEN_UNLOCKED_THIS_DEVICE_ONLY: 1
 }));
 
-// Mock Keychain
-jest.mock('react-native-keychain', () => ({
-  setInternetCredentials: jest.fn(() => Promise.resolve()),
-  getInternetCredentials: jest.fn(() => Promise.resolve({ username: 'test', password: 'test' })),
-  resetInternetCredentials: jest.fn(() => Promise.resolve()),
-  setGenericPassword: jest.fn(() => Promise.resolve()),
-  getGenericPassword: jest.fn(() => Promise.resolve(null)),
-  resetGenericPassword: jest.fn(() => Promise.resolve()),
-  ACCESSIBLE: {
-    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
-  },
-  ACCESS_CONTROL: {
-    BIOMETRY_CURRENT_SET: 'BIOMETRY_CURRENT_SET',
+// Mock InternetCredentials
+jest.mock('../../src/data/client/internetCredentials', () => ({
+  InternetCredentials: {
+    getInternetCredentials: jest.fn(),
+    saveInternetCredentials: jest.fn(),
+    resetInternetCredentials: jest.fn(),
   },
 }));
 
@@ -498,25 +483,22 @@ jest.mock('react-native-vector-icons/Entypo', () => {
   return MockIcon;
 });
 
-// Mock react-native-localization to avoid native module usage
-jest.mock('react-native-localization', () => {
-  return class LocalizedStrings {
-    constructor(strings = {}) {
-      this._strings = strings;
-      const initial =
-        strings.en || strings.es || strings['es-ES'] || Object.values(strings)[0] || {};
-      Object.assign(this, initial);
-    }
-    setLanguage(lang) {
-      const next = this._strings[lang] || this._strings.en || {};
-      Object.assign(this, next);
-      return next;
-    }
-    getLanguage() {
-      return 'en';
-    }
-  };
-});
+// Mock expo-localization to avoid native module usage
+jest.mock('expo-localization', () => ({
+  getLocales: jest.fn(() => [
+    {
+      languageCode: 'en',
+      languageTag: 'en-US',
+      regionCode: 'US',
+      textDirection: 'ltr',
+      decimalSeparator: '.',
+      digitGroupingSeparator: ',',
+      measurementSystem: 'us',
+      currencyCode: 'USD',
+      temperatureUnit: 'fahrenheit',
+    },
+  ]),
+}));
 
 // Mock react-native-quick-crypto
 jest.mock('react-native-quick-crypto', () => ({
@@ -543,16 +525,32 @@ jest.mock('react-native-quick-crypto', () => ({
 }));
 
 // Mock Camera
-jest.mock('react-native-vision-camera', () => ({
-  Camera: 'Camera',
-  useCameraDevices: () => ({ back: null }),
-  requestCameraPermission: jest.fn(() => Promise.resolve('authorized')),
-}));
+jest.mock('expo-camera', () => 
+  jest.requireActual('../../../__mocks__/cameraScreen/expoCamera')
+);
 
-// Mock Image Picker
-jest.mock('react-native-image-picker', () => ({
-  launchImageLibrary: jest.fn(),
-  launchCamera: jest.fn(),
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'mock-image-uri.jpg', width: 100, height: 100 }],
+  }),
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({
+    granted: true,
+    status: 'granted',
+  }),
+  launchCameraAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'mock-camera-uri.jpg', width: 100, height: 100 }],
+  }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({
+    granted: true,
+    canAskAgain: true,
+    status: 'granted',
+  }),
+  CameraType: {
+    back: 'back',
+    front: 'front',
+  },
 }));
 
 jest.mock('react-native-blob-util', () => ({
@@ -634,27 +632,6 @@ jest.mock('@sentry/react-native', () => ({
   ReactNativeTracing: jest.fn(),
 }));
 
-// Mock Permissions
-jest.mock('react-native-permissions', () => ({
-  PERMISSIONS: {
-    ANDROID: {
-      CAMERA: 'android.permission.CAMERA',
-      READ_EXTERNAL_STORAGE: 'android.permission.READ_EXTERNAL_STORAGE',
-    },
-    IOS: {
-      CAMERA: 'ios.permission.CAMERA',
-      PHOTO_LIBRARY: 'ios.permission.PHOTO_LIBRARY',
-    },
-  },
-  RESULTS: {
-    GRANTED: 'granted',
-    DENIED: 'denied',
-    BLOCKED: 'blocked',
-  },
-  request: jest.fn(() => Promise.resolve('granted')),
-  check: jest.fn(() => Promise.resolve('granted')),
-}));
-
 // Mock NetInfo
 jest.mock('@react-native-community/netinfo', () => ({
   fetch: jest.fn(() => Promise.resolve({ isConnected: true })),
@@ -712,7 +689,7 @@ jest.mock('react-native-otp-textinput', () => {
 
 // Mock Gesture Handler components used in tests
 jest.mock('react-native-gesture-handler', () => {
-  const { View, TouchableOpacity, FlatList, ScrollView } = require('react-native');
+  const { View, TouchableOpacity, ScrollView } = require('react-native');
   return {
     Swipeable: View,
     DrawerLayout: View,
@@ -725,11 +702,11 @@ jest.mock('react-native-gesture-handler', () => {
     NativeViewGestureHandler: View,
     GestureHandlerRootView: View,
     TouchableOpacity,
-    FlatList,
     ScrollView,
   };
 });
 
+import { launchImageLibraryAsync } from 'expo-image-picker';
 // Mock Gesture Handler
 import 'react-native-gesture-handler/jestSetup';
 

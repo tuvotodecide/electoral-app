@@ -1,0 +1,53 @@
+appId: com.tuvotodecide
+---
+# 1. Navegar al Perfil usando la ruta básica
+- runFlow: RutaBasicaAPerfil.yaml
+
+# 2. Entrar en la sección de Guardianes
+- extendedWaitUntil:
+    visible:
+      id: "profileMenuItem_3"
+    timeout: 10000
+
+- tapOn:
+    id: "profileMenuItem_3"
+
+# 3. Click en "¿Que son los guardianes?"
+- extendedWaitUntil:
+    visible:
+      id: "guardiansInfoCard"
+    timeout: 10000
+
+- tapOn:
+    id: "guardiansInfoCard"
+
+# 4. Pasar onboarding (3 veces "Siguiente" con delay de 3s)
+- extendedWaitUntil:
+    visible:
+      id: "onboardingGuardiansGetStartedButton"
+    timeout: 10000
+
+# Click 1
+- tapOn:
+    id: "onboardingGuardiansGetStartedButton"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Click 2
+- tapOn:
+    id: "onboardingGuardiansGetStartedButton"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Click 3
+- tapOn:
+    id: "onboardingGuardiansGetStartedButton"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# 5. Salir del onboarding (Cerrar)
+- tapOn:
+    id: "onboardingGuardiansSkipButton"
+
+# 6. Regresar al Perfil
+- back

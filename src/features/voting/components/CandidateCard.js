@@ -26,6 +26,32 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const buildTicketEntries = candidate => {
+  const entries = Array.isArray(candidate?.ticketEntries)
+    ? candidate.ticketEntries
+        .map(entry => ({
+          label: String(entry?.roleName || '').trim(),
+          value: String(entry?.name || '').trim(),
+        }))
+        .filter(entry => entry.value)
+    : [];
+
+  if (entries.length > 0) {
+    return entries;
+  }
+
+  return [
+    {
+      label: String(UI_STRINGS.president || '').replace(/:$/, ''),
+      value: String(candidate?.presidentName || '').trim(),
+    },
+    {
+      label: String(UI_STRINGS.vicePresident || '').replace(/:$/, ''),
+      value: String(candidate?.viceName || '').trim(),
+    },
+  ].filter(entry => entry.value);
+};
+
 /**
  * @param {Object} props
  * @param {Object} props.candidate - Datos del candidato
@@ -34,6 +60,7 @@ const getResponsiveSize = (small, medium, large) => {
  */
 const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
   const isSpecial = candidate.isSpecial || false;
+  const ticketEntries = buildTicketEntries(candidate);
 
   // Render para votos especiales (Blanco/Nulo)
   if (isSpecial) {
@@ -123,34 +150,25 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
 
         {/* Info del candidato */}
         <View style={styles.info}>
-          <CText type="R12" style={styles.label}>
-            {UI_STRINGS.president}
-          </CText>
-          <CText
-            type="B16"
-            style={styles.name}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.78}
-          >
-            {candidate.presidentName}
-          </CText>
-          {candidate.viceName ? (
-            <>
+          {ticketEntries.map((entry, index) => (
+            <View
+              key={`${candidate.id}:${entry.label}:${entry.value}`}
+              style={index > 0 ? styles.ticketEntry : null}
+            >
               <CText type="R12" style={styles.label}>
-                {UI_STRINGS.vicePresident}
+                {entry.label}
               </CText>
               <CText
-                type="M14"
-                style={styles.viceName}
+                type={index === 0 ? 'B16' : 'M14'}
+                style={index === 0 ? styles.name : styles.secondaryName}
                 numberOfLines={2}
                 adjustsFontSizeToFit
-                minimumFontScale={0.8}
+                minimumFontScale={index === 0 ? 0.78 : 0.8}
               >
-                {candidate.viceName}
+                {entry.value}
               </CText>
-            </>
-          ) : null}
+            </View>
+          ))}
         </View>
 
         {/* Radio button / Check */}
@@ -260,6 +278,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  ticketEntry: {
+    marginTop: getResponsiveSize(6, 8, 10),
+  },
   label: {
     color: '#64748B',
     fontSize: getResponsiveSize(11, 12, 13),
@@ -271,7 +292,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: getResponsiveSize(6, 8, 10),
   },
-  viceName: {
+  secondaryName: {
     color: '#374151',
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '500',

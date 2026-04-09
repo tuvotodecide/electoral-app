@@ -5,7 +5,6 @@ import {
   useHasGuardiansQuery,
   useGuardiansRecoveryDetailQuery,
 } from '../../../../../src/data/guardians';
-import {getDeviceId} from '../../../../../src/utils/device-id';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 jest.mock('react-native-otp-textinput', () => {
@@ -30,17 +29,9 @@ jest.mock('../../../../../src/data/guardians', () => ({
   useGuardiansRecoveryDetailQuery: jest.fn(),
 }));
 
-jest.mock('../../../../../src/utils/device-id', () => ({
-  getDeviceId: jest.fn(async () => 'device-id-1'),
-}));
-
 jest.mock('../../../../../src/utils/Session', () => ({
   startSession: jest.fn(async () => undefined),
   startLocalSession: jest.fn(async () => undefined),
-}));
-
-jest.mock('../../../../../src/utils/migrateLegacy', () => ({
-  getLegacyData: jest.fn(async () => ({streamId: 'stream-1', privKey: 'priv-1'})),
 }));
 
 jest.mock('react-native-paper', () => ({
@@ -48,10 +39,9 @@ jest.mock('react-native-paper', () => ({
 }));
 
 jest.mock('react-native-gesture-handler', () => {
-  const {TouchableOpacity, View, FlatList, ScrollView} = require('react-native');
+  const {TouchableOpacity, View, ScrollView} = require('react-native');
   return {
     TouchableOpacity,
-    FlatList,
     ScrollView,
     PanGestureHandler: View,
     TapGestureHandler: View,
@@ -97,7 +87,7 @@ export const configurarMocksRecuperacion = () => {
     remove: jest.fn(),
   });
 
-  getDeviceId.mockResolvedValue('device-id-1');
+  wira.DeviceId.getDeviceId.mockResolvedValue('device-id-1');
   wira.Biometric.getBioFlag.mockResolvedValue(false);
   AsyncStorage.multiRemove = jest.fn(() => Promise.resolve());
 };

@@ -1,0 +1,42 @@
+appId: com.tuvotodecide
+---
+# 1. En el inicio, pulsar "Registrar cuenta"
+- extendedWaitUntil:
+    visible:
+        id: "connectRegisterButton"
+    timeout: 10000
+- tapOn:
+    id: "connectRegisterButton"
+
+# 2. Tiquear el checkbox de términos y continuar
+- extendedWaitUntil:
+    visible:
+        id: "termsCheckbox"
+    timeout: 10000
+- tapOn:
+    id: "termsCheckbox"
+
+- tapOn:
+    id: "registerUser1ContinueButton"
+
+# 3. Escribir el carnet
+- extendedWaitUntil:
+    visible:
+        id: "idNumberInput"
+    timeout: 10000
+- tapOn:
+    id: "idNumberInput"
+- inputText: "${MAESTRO_USER_1_CI}"
+
+# 4. Pulsar en el logo de cámara de Anverso
+- tapOn:
+    id: "frontCardUpload_imageBox"
+
+# 5. Volver atrás (para cerrar cámara)
+- back
+
+# 6. Pulsar "Recuperar cuenta" (en el modal que aparece al detectar carnet registrado)
+- extendedWaitUntil:
+    visible: "Recuperar cuenta"
+    timeout: 10000
+- tapOn: "Recuperar cuenta"

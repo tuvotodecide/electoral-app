@@ -4,10 +4,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  FlatList,
   TextInput,
 } from 'react-native';
 import CText from './CText';
+import { FlashList } from '@shopify/flash-list';
 
 export default function NearbyTablesList({
   visible,
@@ -52,7 +52,7 @@ export default function NearbyTablesList({
           style={styles.loader}
         />
       ) : filtered.length > 0 ? (
-        <FlatList
+        <FlashList
           data={filtered}
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (

@@ -1,7 +1,8 @@
+import { SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM } from '@env';
 import { arbitrum, arbitrumSepolia, base, baseSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
-import {SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM} from "@env";
+
 
 export const sponsorshipPolicyId = SPONSORSHIP_POLICY;
 export const FACTORY_ADDRESS = FACTORY;
@@ -17,6 +18,14 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xdCa6d6E8f4E69C3Cf86B656f0bBf9b460727Bed9',
     participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
+    getCustomPaymasterParams: (pimlicoClient, policyId) => ({
+      paymasterContext: { sponsorshipPolicyId: policyId },
+      userOperation: {
+        estimateFeesPerGas: async () => {
+          return (await pimlicoClient.getUserOperationGasPrice()).standard;
+        },
+      },
+    }),
   },
   'arbitrum': {
     chain: arbitrum,
@@ -28,6 +37,14 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xF81508fC99Ffcfbbb5421150785c9820F8cBA9b2',
     participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
+    getCustomPaymasterParams: (pimlicoClient, policyId) => ({
+      paymasterContext: { sponsorshipPolicyId: policyId },
+      userOperation: {
+        estimateFeesPerGas: async () => {
+          return (await pimlicoClient.getUserOperationGasPrice()).standard;
+        },
+      },
+    }),
   },
   'base-sepolia': {
     chain: baseSepolia,
@@ -51,7 +68,7 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xded7aD213240729cEB65c4196f4020d9DbC6C094',
     participationNft: '',
-    voteContract: ''
+    voteContract: '0x816Dab369fe073286cd644c43AD674B865F28a25'
   }
 };
 

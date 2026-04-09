@@ -1,13 +1,13 @@
-import {FlatList, Image, StyleSheet, View} from 'react-native';
-import React from 'react';
+import {Image, StyleSheet, View} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Feather';
 
 // custom import
-import {getHeight, moderateScale} from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 import {useSelector} from 'react-redux';
 import {styles} from '../../themes';
 import CText from '../common/CText';
 import String from '../../i18n/String';
+import { FlashList } from '@shopify/flash-list';
 
 export default function WalletPreview(props) {
   const colors = useSelector(state => state.theme.theme);
@@ -86,7 +86,7 @@ export default function WalletPreview(props) {
         </CText>
       )}
       <View style={localStyle.detailsContainer}>
-        <FlatList
+        <FlashList
           data={data}
           renderItem={renderDetails}
           showsVerticalScrollIndicator={false}

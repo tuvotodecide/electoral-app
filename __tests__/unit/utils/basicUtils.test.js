@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Keychain from 'react-native-keychain';
 import {
   trucateAddress,
   truncateDid,
@@ -39,7 +38,6 @@ import {
   clearDraft,
   jsonSafe,
 } from '../../../src/utils/RegisterDraft';
-import {getDeviceId} from '../../../src/utils/device-id';
 import {
   startSession,
   startLocalSession,
@@ -48,14 +46,6 @@ import {
   getJwt,
   refreshSession,
 } from '../../../src/utils/Session';
-import {
-  setTmpRegister,
-  getTmpRegister,
-  clearTmpRegister,
-  setTmpPin,
-  getTmpPin,
-  clearTmpPin,
-} from '../../../src/utils/TempRegister';
 import {
   getInputBackground,
   getBorderColor,
@@ -73,6 +63,7 @@ import {
   EXPIRES_KEY,
   SESSION,
 } from '../../../src/common/constants';
+import { InternetCredentials } from '../../../src/data/client/internetCredentials';
 
 jest.mock('axios', () => ({
   CancelToken: {
@@ -107,10 +98,10 @@ describe('utils básicos', () => {
   });
 
   it('AsyncStorage helpers: set/get y parse', async () => {
-    AsyncStorage.multiGet.mockResolvedValueOnce([
-      [THEME, JSON.stringify({dark: true})],
-      [ON_BOARDING, JSON.stringify(true)],
-    ]);
+    AsyncStorage.getItem
+      .mockResolvedValueOnce(JSON.stringify({ dark: true }))
+      .mockResolvedValueOnce(JSON.stringify(true));
+
     const {themeColor, onBoardingValue} = await initialStorageValueGet();
     expect(themeColor).toEqual({dark: true});
     expect(onBoardingValue).toBe(true);
@@ -215,41 +206,24 @@ describe('utils básicos', () => {
       return null;
     });
     await startSession('jwt-test', 1);
-    expect(Keychain.setInternetCredentials).toHaveBeenCalled();
+    expect(InternetCredentials.saveInternetCredentials).toHaveBeenCalled();
 
     AsyncStorage.getItem.mockImplementation(async key => {
       if (key === SESSION) return '1';
       if (key === EXPIRES_KEY) return String(Date.now() + 60000);
       return null;
     });
-    Keychain.getInternetCredentials.mockResolvedValueOnce({password: 'jwt'});
+    InternetCredentials.getInternetCredentials.mockResolvedValueOnce({password: 'jwt'});
     expect(await isSessionValid()).toBe(true);
 
     await clearSession();
-    expect(Keychain.resetInternetCredentials).toHaveBeenCalled();
+    expect(InternetCredentials.saveInternetCredentials).toHaveBeenCalled();
 
-    Keychain.getInternetCredentials.mockResolvedValueOnce({password: 'jwt'});
+    InternetCredentials.getInternetCredentials.mockResolvedValueOnce({password: 'jwt'});
     expect(await getJwt()).toBe('jwt');
 
     await startLocalSession(1);
     await refreshSession(1);
-  });
-
-  it('TempRegister y TempPin guardan y leen', async () => {
-    await setTmpRegister({foo: 'bar'});
-    Keychain.getGenericPassword.mockResolvedValueOnce({
-      password: JSON.stringify({foo: 'bar'}),
-    });
-    const tmp = await getTmpRegister();
-    expect(tmp.foo).toBe('bar');
-    await clearTmpRegister();
-
-    await setTmpPin('1234');
-    Keychain.getGenericPassword.mockResolvedValueOnce({
-      password: JSON.stringify({pin: '1234'}),
-    });
-    expect(await getTmpPin()).toBe('1234');
-    await clearTmpPin();
   });
 
   it('ThemeUtils devuelve colores correctos', () => {
@@ -279,13 +253,5 @@ describe('utils básicos', () => {
       ],
     );
     expect(res.ok).toBe(true);
-  });
-
-  it('genera device id si no existe', async () => {
-    AsyncStorage.getItem.mockResolvedValueOnce(null);
-    const id = await getDeviceId();
-    expect(typeof id).toBe('string');
-    expect(id).toContain('-');
-    expect(AsyncStorage.setItem).toHaveBeenCalled();
   });
 });

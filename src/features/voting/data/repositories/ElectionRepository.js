@@ -16,6 +16,7 @@
  * @property {string} partyName
  * @property {string} presidentName
  * @property {string} viceName
+ * @property {{roleName: string, name: string}[]} [ticketEntries]
  * @property {string|null} avatarUrl
  * @property {string} partyColor
  *

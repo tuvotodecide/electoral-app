@@ -48,6 +48,14 @@ jest.mock('axios', () => ({
   defaults: {headers: {common: {}}},
 }));
 
+jest.mock('expo-image', () => {
+  const React = require('react');
+  const MockExpoImage = props => React.createElement('Image', props, props.children);
+  return {
+    Image: MockExpoImage,
+  };
+});
+
 jest.mock('../../../../../src/components/common/CustomModal', () => {
   const ReactLib = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
@@ -283,11 +291,18 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     fireEvent.press(pressable);
 
     await waitFor(() => {
-      expect(navigation.navigate).toHaveBeenCalledWith(StackNav.ElectoralLocations, {
-        targetScreen: 'UnifiedParticipation',
-        electionType: 'ALCALDE',
-        electionId: 'election-1',
-      });
+      expect(navigation.navigate).toHaveBeenCalledWith(
+        StackNav.ElectoralLocations,
+        expect.objectContaining({
+          targetScreen: 'UnifiedParticipation',
+          electionType: 'ALCALDE',
+          electionId: 'election-1',
+          selectedElectionContext: expect.objectContaining({
+            electionId: 'election-1',
+            source: 'backend',
+          }),
+        }),
+      );
     });
 
     view.unmount();

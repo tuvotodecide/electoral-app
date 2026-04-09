@@ -1,12 +1,10 @@
+import { PINATA_API, PINATA_API_KEY, PINATA_API_SECRET, PINATA_JWT, BACKEND_RESULT } from '@env';
 import axios from 'axios';
-import RNFS from 'react-native-fs';
+import { File, Paths } from 'expo-file-system';
 import {
-  PINATA_API,
-  PINATA_API_KEY,
-  PINATA_API_SECRET,
-  PINATA_JWT,
-  BACKEND_RESULT,
-} from '@env';
+  getContextOfficeLabels,
+  hasSecondaryBlockElection,
+} from './electionContext';
 
 class PinataService {
   constructor() {
@@ -34,9 +32,9 @@ class PinataService {
 
   async downloadToCache(url, preferredName = 'electoral-act.jpg') {
     const src = this.isIpfsUrl(url) ? this.toHttpFromIpfs(url) : url;
-    const target = `${RNFS.CachesDirectoryPath}/${Date.now()}-${preferredName}`;
-    const res = await RNFS.downloadFile({ fromUrl: src, toFile: target }).promise;
-    if (res.statusCode >= 200 && res.statusCode < 300) return target;
+    const target = `${Paths.cache.uri}/${Date.now()}-${preferredName}`;
+    const res = await File.downloadFileAsync(src, target);
+    if (res.exists) return res.uri;
     throw new Error(`HTTP ${res.statusCode} al descargar imagen`);
   }
   async checkDuplicateBallot(voteData, electionId = null) {
@@ -71,24 +69,24 @@ class PinataService {
                 p.partyId === votes2.parties.partyVotes[i].partyId &&
                 p.votes === votes2.parties.partyVotes[i].votes,
             );
+          const hasDeputies = !!votes1?.deputies || !!votes2?.deputies;
+          const deputiesEqual = !hasDeputies
+            ? true
+            : votes1?.deputies?.validVotes === votes2?.deputies?.validVotes &&
+              votes1?.deputies?.nullVotes === votes2?.deputies?.nullVotes &&
+              votes1?.deputies?.blankVotes === votes2?.deputies?.blankVotes &&
+              votes1?.deputies?.totalVotes === votes2?.deputies?.totalVotes &&
+              Array.isArray(votes1?.deputies?.partyVotes) &&
+              Array.isArray(votes2?.deputies?.partyVotes) &&
+              votes1.deputies.partyVotes.length ===
+                votes2.deputies.partyVotes.length &&
+              votes1.deputies.partyVotes.every(
+                (p, i) =>
+                  p.partyId === votes2.deputies.partyVotes[i].partyId &&
+                  p.votes === votes2.deputies.partyVotes[i].votes,
+              );
 
-          // const deputiesEqual =
-          //   votes1.deputies.validVotes === votes2.deputies.validVotes &&
-          //   votes1.deputies.nullVotes === votes2.deputies.nullVotes &&
-          //   votes1.deputies.blankVotes === votes2.deputies.blankVotes &&
-          //   votes1.deputies.totalVotes === votes2.deputies.totalVotes &&
-          //   Array.isArray(votes1.deputies.partyVotes) &&
-          //   Array.isArray(votes2.deputies.partyVotes) &&
-          //   votes1.deputies.partyVotes.length ===
-          //     votes2.deputies.partyVotes.length &&
-          //   votes1.deputies.partyVotes.every(
-          //     (p, i) =>
-          //       p.partyId === votes2.deputies.partyVotes[i].partyId &&
-          //       p.votes === votes2.deputies.partyVotes[i].votes,
-          //   );
-
-          return partiesEqual;
-          // && deputiesEqual;
+          return partiesEqual && deputiesEqual;
         } catch {
           return false;
         }
@@ -135,21 +133,17 @@ class PinataService {
         localPath = await this.downloadToCache(filePathOrUrl, fileName);
       }
 
-      // 2) Normalizar ruta para RNFS/stat
-      const fsPath = localPath.startsWith('file://')
-        ? localPath.slice(7)
-        : localPath;
-
-      const fileExists = await RNFS.exists(fsPath);
-      if (!fileExists) throw new Error('El archivo no existe');
+      const fsPath = localPath
+      const file = new File(fsPath);
 
       // Obtener información del archivo
-      const fileInfo = await RNFS.stat(fsPath);
+      const { exists: fileExists, ...fileInfo } = file.info();
+      if (!fileExists) throw new Error('El archivo no existe');
 
       // Crear FormData para React Native
       const formData = new FormData();
       formData.append('file', {
-        uri: fsPath.startsWith('file://') ? fsPath : `file://${fsPath}`,
+        uri: fsPath,
         type: 'image/jpeg',
         name: fileName,
         size: fileInfo.size,
@@ -196,7 +190,9 @@ class PinataService {
         },
       };
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
-        RNFS.unlink(fsPath).catch(() => { });
+        try {
+          (new File(fsPath)).delete();
+        } catch (e) {}
       }
 
       return out;
@@ -312,6 +308,12 @@ class PinataService {
           minute: '2-digit',
         });
 
+      const selectedElectionContext = additionalData?.selectedElectionContext || {};
+      const resolvedElectionType =
+        selectedElectionContext?.electionType || additionalData?.electionType;
+      const officeLabels = getContextOfficeLabels(resolvedElectionType);
+      const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
+
       // 3. Construir attributes
       const attributes = [
         { trait_type: 'Table Number', value: tableNumber },
@@ -322,45 +324,53 @@ class PinataService {
       // Agregar votos por partido
       electoralData.partyResults.forEach(party => {
         attributes.push({
-          trait_type: `Presidente - ${party.partido}`,
+          trait_type: `${officeLabels.primary} - ${party.partido}`,
           value: parseInt(party.presidente, 10) || 0,
         });
 
-        // attributes.push({
-        //   trait_type: `Diputado - ${party.partido}`,
-        //   value: parseInt(party.diputado, 10) || 0,
-        // });
+        if (hasSecondaryFlow) {
+          attributes.push({
+            trait_type: `${officeLabels.secondary} - ${party.partido}`,
+            value: parseInt(party.diputado, 10) || 0,
+          });
+        }
       });
 
       // Agregar resumen de votos
       electoralData.voteSummaryResults.forEach(summary => {
         if (summary.label === 'Votos Válidos') {
           attributes.push({
-            trait_type: 'Presidente - Votos Válidos',
+            trait_type: `${officeLabels.primary} - Votos Válidos`,
             value: parseInt(summary.value1, 10) || 0,
           });
-          // attributes.push({
-          //   trait_type: 'Diputado - Votos Válidos',
-          //   value: parseInt(summary.value2, 10) || 0,
-          // });
+          if (hasSecondaryFlow) {
+            attributes.push({
+              trait_type: `${officeLabels.secondary} - Votos Válidos`,
+              value: parseInt(summary.value2, 10) || 0,
+            });
+          }
         } else if (summary.label === 'Votos en Blanco') {
           attributes.push({
-            trait_type: 'Presidente - Votos en Blanco',
+            trait_type: `${officeLabels.primary} - Votos en Blanco`,
             value: parseInt(summary.value1, 10) || 0,
           });
-          // attributes.push({
-          //   trait_type: 'Diputado - Votos en Blanco',
-          //   value: parseInt(summary.value2, 10) || 0,
-          // });
+          if (hasSecondaryFlow) {
+            attributes.push({
+              trait_type: `${officeLabels.secondary} - Votos en Blanco`,
+              value: parseInt(summary.value2, 10) || 0,
+            });
+          }
         } else if (summary.label === 'Votos Nulos') {
           attributes.push({
-            trait_type: 'Presidente - Votos Nulos',
+            trait_type: `${officeLabels.primary} - Votos Nulos`,
             value: parseInt(summary.value1, 10) || 0,
           });
-          // attributes.push({
-          //   trait_type: 'Diputado - Votos Nulos',
-          //   value: parseInt(summary.value2, 10) || 0,
-          // });
+          if (hasSecondaryFlow) {
+            attributes.push({
+              trait_type: `${officeLabels.secondary} - Votos Nulos`,
+              value: parseInt(summary.value2, 10) || 0,
+            });
+          }
         }
       });
 
@@ -382,10 +392,14 @@ class PinataService {
           nullVotes: getValue('Votos Nulos'),
           blankVotes: getValue('Votos en Blanco'),
           partyVotes: electoralData.partyResults.map(party => ({
-            partyId: String(party.partido || '')
+            partyId: String(party.id ?? party.partyId ?? party.partido ?? '')
               .trim()
               .toLowerCase(),
-            votes: parseInt(party.presidente, 10) || 0,
+            votes:
+              parseInt(
+                type === 'presidente' ? party.presidente : party.diputado,
+                10,
+              ) || 0,
           })),
           totalVotes:
             getValue('Votos Válidos') +
@@ -400,7 +414,7 @@ class PinataService {
         locationId: additionalData.idRecinto,
         votes: {
           parties: buildVoteData('presidente'),
-          // deputies: buildVoteData('diputado'),
+          ...(hasSecondaryFlow ? {deputies: buildVoteData('diputado')} : {}),
         },
       };
 
@@ -447,7 +461,7 @@ class PinataService {
       // 5. Construir metadata final
       const metadata = {
         name: `Acta Electoral Mesa ${tableNumber}`,
-        description: `Acta de escrutinio para la mesa ${tableNumber} (${tableCode}), registrada a las ${time}. Incluye resultados de votos para presidente por candidatura, así como el resumen de votos válidos, blancos, nulos y total.`,
+        description: `Acta de escrutinio para la mesa ${tableNumber} (${tableCode}), registrada a las ${time}. Incluye resultados de votos para ${officeLabels.primary.toLowerCase()}${hasSecondaryFlow ? ` y ${officeLabels.secondary.toLowerCase()}` : ''}, así como el resumen de votos válidos, blancos, nulos y total.`,
         image: `ipfs://${imageResult.data.ipfsHash}`,
         external_url: `https://tuapp.com/acta/${tableCode}`,
         attributes: attributes,

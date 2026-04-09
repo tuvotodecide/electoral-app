@@ -1,0 +1,18 @@
+appId: com.tuvotodecide
+---
+# 1. Iniciar sesión usando el flujo existente
+- runFlow: ../auth/loginCorrectPin.yaml
+
+# 2. Navegar a la pestaña de Perfil
+- extendedWaitUntil:
+    visible:
+      id: "tabButton_Profile"
+    timeout: 15000
+
+- tapOn:
+    id: "tabButton_Profile"
+
+# 3. Verificar que estamos en la pantalla de Perfil
+- extendedWaitUntil:
+    visible: "Perfil"
+    timeout: 10000

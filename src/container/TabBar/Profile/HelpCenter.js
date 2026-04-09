@@ -1,5 +1,4 @@
 import {
-  FlatList,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -22,6 +21,7 @@ import images from '../../../assets/images';
 import {helpAndCenterData} from '../../../api/constant';
 import {HeadSetIcon} from '../../../assets/svg';
 import {StackNav} from '../../../navigation/NavigationKey';
+import { FlashList } from '@shopify/flash-list';
 
 
 export default function HelpCenter({navigation}) {
@@ -195,7 +195,7 @@ export default function HelpCenter({navigation}) {
         <CText type={'R14'} color={colors.grayScale400}>
           {String.helpCenterText}
         </CText>
-        <FlatList
+        <FlashList
           data={searchData}
           renderItem={helpAndCenterDetails}
           showsVerticalScrollIndicator={false}

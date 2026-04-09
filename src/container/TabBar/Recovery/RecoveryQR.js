@@ -1,3 +1,4 @@
+import { BACKEND_IDENTITY } from '@env';
 import React, {useState} from 'react';
 import {
   View,
@@ -19,9 +20,8 @@ import {moderateScale} from '../../../common/constants';
 import {AuthNav} from '../../../navigation/NavigationKey';
 
 import wira from 'wira-sdk';
-import { getLegacyData } from '../../../utils/migrateLegacy';
 import CAlert from '../../../components/common/CAlert';
-import {BACKEND_IDENTITY} from '@env';
+
 
 const recoveryService = new wira.RecoveryService();
 
@@ -41,21 +41,6 @@ export default function RecoveryQr({navigation}) {
       let newPayload = {
         data: recoveredData,
       };
-
-      if(!recoveredData.identity) {
-        if(recoveredData.streamId && recoveredData.privKey) {
-          newPayload.legacyData = await getLegacyData(recoveredData);
-          const api = new wira.RegistryApi(BACKEND_IDENTITY);
-          const {exists} = await api.registryCheckByDni(recoveredData.dni);
-          if(exists) {
-            setErrorMsg(String.alreadyMigrated);
-            return;
-          }
-        } else {
-          setErrorMsg(String.notEnoughLegacyData);
-          return;
-        }
-      }
 
       setPayload(newPayload);
       setSelectFileLabel(String.processingSuccess);

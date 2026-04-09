@@ -1,5 +1,4 @@
 import {
-  FlatList,
   Modal,
   StyleSheet,
   TouchableOpacity,
@@ -17,6 +16,7 @@ import {SelectCountryData} from '../../api/constant';
 import String from '../../i18n/String';
 import CSafeAreaView from '../common/CSafeAreaView';
 import CInput from '../common/CInput';
+import { FlashList } from '@shopify/flash-list';
 
 export default function SelectCountryModal(props) {
   let {visible, selectedCountry , onPressClose} = props;
@@ -140,12 +140,11 @@ export default function SelectCountryModal(props) {
                   : colors.backgroundColor,
               },
             ]}>
-            <FlatList
+            <FlashList
               data={searchData}
               renderItem={RenderCountryData}
               keyExtractor={(item, index) => index.toString()}
               showsVerticalScrollIndicator={false}
-              vertical
             />
           </View>
         </View>

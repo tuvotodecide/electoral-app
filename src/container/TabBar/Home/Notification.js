@@ -1,7 +1,7 @@
+import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -14,7 +14,7 @@ import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import axios from 'axios';
-import { BACKEND_RESULT } from '@env';
+
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
 import {
@@ -25,6 +25,7 @@ import { getCache, setCache } from '../../../utils/lookupCache';
 import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
+import { FlashList } from '@shopify/flash-list';
 
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
@@ -68,6 +69,26 @@ const formatCountdownLabel = (target, now) => {
   }
 
   return `Inicia en ${pad2(hours)}:${pad2(minutes)}`;
+};
+
+export const resolveVotingEventDescription = (data = {}, body = '') => {
+  const eventName = String(
+    data?.eventName ||
+      data?.title ||
+      data?.eventTitle ||
+      '',
+  ).trim();
+  if (eventName) {
+    return eventName;
+  }
+
+  const normalizedBody = String(body || '').trim();
+  const quotedMatch = normalizedBody.match(/["“](.+?)["”]/);
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1].trim();
+  }
+
+  return normalizedBody;
 };
 
 export const getNotificationKind = ({ type, title, body }) => {
@@ -374,7 +395,7 @@ export default function Notification({ navigation }) {
       colegio: data?.locationName || n?.locationName || '',
       direccion:
         notificationKind === 'voting_event'
-          ? bodyFromBackend || dateRange
+          ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
             ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
             : data?.locationAddress || n?.locationAddress || '',
@@ -703,7 +724,7 @@ export default function Notification({ navigation }) {
           <Text style={localStyle.loaderText}>Cargando notificaciones...</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           testID="notificationList"
           data={displayItems}
           keyExtractor={item => String(item.id)}

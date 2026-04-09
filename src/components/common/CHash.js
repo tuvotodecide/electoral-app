@@ -41,7 +41,7 @@ export default function CHash({
   };
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(title);
+    await Clipboard.setStringAsync(text);
     showToast();
   };
 
