@@ -1032,10 +1032,10 @@ export default {
   // ========== VOTACIÓN / ELECTORAL COMPONENTS ==========
   // Home Screen
   homeWelcome: '¡Bienvenido,',
-  uploadActa: 'Subir Acta',
-  uploadActaDescription: 'Sube el acta de tu mesa.',
-  witnessActa: 'Atestiguar Acta',
-  witnessActaDescription: 'Valida un acta ya subida en una mesa.',
+  uploadActa: 'Subir Hoja de Trabajo',
+  uploadActaDescription: 'Sube la hoja de trabajo de tu mesa.',
+  witnessActa: 'Atestiguar Hoja de Trabajo',
+  witnessActaDescription: 'Valida una hoja de trabajo ya subida en una mesa.',
   announceCount: 'Anunciar Conteo',
   announceCountDescription: 'Avisar el inicio del conteo.',
   myWitnesses: `Mis atestiguamientos`,
@@ -1069,13 +1069,13 @@ export default {
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: 'Mis Atestiguamientos',
-  selectDocumentToReview: 'Selecciona el acta que deseas revisar',
+  selectDocumentToReview: 'Selecciona la hoja de trabajo que deseas revisar',
   errorLoadingWitnesses: 'Error al cargar los atestiguamientos',
   connectionError: 'Error de conexión',
   connectionErrorMessage:
     'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
   selectionRequired: 'Selección Requerida',
-  pleaseSelectDocument: 'Por favor, selecciona un acta para continuar.',
+  pleaseSelectDocument: 'Por favor, selecciona una hoja de trabajo para continuar.',
 
   // Photo Review Screen
   unidad: 'Unidad',
@@ -1114,7 +1114,7 @@ export default {
   // Detalle Mesa Screen
   photoSentTitle: '¡Foto Enviada!',
   photoSentMessage:
-    'Tu foto del acta ha sido enviada exitosamente y está siendo procesada.',
+    'Tu foto de la hoja de trabajo ha sido enviada exitosamente y está siendo procesada.',
   tableDetails: 'Detalles de la Mesa',
   takePhoto: 'Tomar Foto',
   retakePhoto: 'Tomar otra foto',
@@ -1147,7 +1147,7 @@ export default {
   loadingCountTables: 'Cargando mesas de conteo...',
   searchTableForCount: 'Buscar Mesa para Conteo',
   chooseTablePlease: 'Elije una mesa por favor:',
-  tableCodePlaceholder: 'Escribe el código de mesa del acta',
+  tableCodePlaceholder: 'Escribe el código de mesa de la hoja de trabajo',
   listBasedOnLocation: 'La siguiente lista se basa en su ubicación',
 
   // My Witnesses Detail Screen
@@ -1165,22 +1165,22 @@ export default {
 
   // WitnessRecord
   searchTablePlaceholder: 'Buscar mesa',
-  couldNotLoadActas: 'No se pudieron cargar las actas de esta mesa',
-  errorLoadingActas: 'Error al cargar las actas',
+  couldNotLoadActas: 'No se pudieron cargar las hojas de trabajo de esta mesa',
+  errorLoadingActas: 'Error al cargar las hojas de trabajo',
   pleaseSelectImageFirst: 'Por favor, selecciona una imagen primero.',
   information: 'Información',
   dataReportedAsIncorrect: 'Se ha reportado que los datos no son correctos.',
   table: 'Mesa',
   whichIsCorrect: '¿Cuál de estas es la correcta?',
-  loadingActas: 'Cargando actas de la mesa...',
+  loadingActas: 'Cargando hojas de trabajo de la mesa...',
   seeMoreDetails: 'Ver más detalles',
   dataNotCorrect: 'Estos datos no son correctos',
   correctData: 'Datos Correctos',
   itsData: 'Están Correctos',
-  reviewActaData: 'Revise los datos del acta',
-  actaCertification: 'Certificación del Acta',
+  reviewActaData: 'Revise los datos de la hoja de trabajo',
+  actaCertification: 'Certificación de la Hoja de Trabajo',
   certificationText:
-    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en la hoja de trabajo de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
   certify: 'Certifico',
   certifyInfoConfirmation:
     '¿Estás seguro de que deseas\nCertificar la información?',
@@ -1193,21 +1193,21 @@ export default {
   edit: 'Editar',
   next: 'Siguiente',
   save: 'Guardar',
-  reviewPhotoPlease: 'Revise la foto del acta',
+  reviewPhotoPlease: 'Revise la foto de la hoja de trabajo',
   saved: 'Guardado',
   changesSavedSuccessfully: 'Los cambios han sido guardados correctamente.',
-  acta: 'Acta',
+  acta: 'Hoja de Trabajo',
   infoReadyToLoad: 'Información lista para cargar',
   i: 'Yo',
   publishAndCertify: 'Publico y Certifico',
   actaCorrectConfirmation:
-    'que es la ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}',
+    'que es la HOJA DE TRABAJO CORRECTA de la mesa: {tableNumber} ubicada en: {location}',
   publishAndCertifyConfirmation:
     '¿Estás seguro de que deseas publicar y certificar la información?',
 
   // MyWitnesses
-  actaUploading: 'Acta subiendo...',
-  actaUploadingDescription: 'Tu acta se está subiendo en segundo plano',
+  actaUploading: 'Hoja de trabajo subiendo...',
+  actaUploadingDescription: 'Tu hoja de trabajo se está subiendo en segundo plano',
   loadingWitnesses: 'Cargando atestiguamientos...',
   seeMore: 'Ver más',
   understood: 'Entendido',
@@ -1357,10 +1357,10 @@ export default {
 
   // Home Screen
   participate: 'Participar',
-  sendAct: 'Enviar Acta',
-  sendActDescription: 'Revisa o sube un acta',
+  sendAct: 'Enviar Hoja de Trabajo',
+  sendActDescription: 'Revisa o sube una hoja de trabajo',
   participateDescription:
-    'Sube actas electorales o participa como testigo en el proceso de verificación ciudadana',
+    'Sube hojas de trabajo electorales o participa como testigo en el proceso de verificación ciudadana',
 
   // Oracle Participation
   oracleParticipationTitle: 'Participación en oráculos',
@@ -1399,16 +1399,16 @@ export default {
   offlineNoCacheSubtitle:
     'No pudimos cargar la configuración electoral ni los recintos cercanos, y no hay datos guardados para usar sin conexión. Conéctate a internet e inténtalo de nuevo.',
 
-  duplicateBallotTitle: 'Acta ya existe',
+  duplicateBallotTitle: 'Hoja de trabajo ya existe',
   duplicateBallotMessage:
-    'Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?',
+    'Ya existe una hoja de trabajo con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?',
   genericError: 'Ocurrió un error inesperado',
   uploadAnyway: 'Subir de todos modos',
   attestationFailed:
     'Certificación completada pero no se pudo registrar en el sistema',
   validationError: 'Error de validación en el servidor',
   oracleRegisterFail: 'No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo',
-  invalidActaData: 'Datos del acta no válidos',
+  invalidActaData: 'Datos de la hoja de trabajo no válidos',
   validationFailed: 'Validación fallida',
   validationError400: 'Datos de solicitud incorrectos',
   validationError401: 'No autorizado para validar',

@@ -203,12 +203,12 @@ const deriveQueueFailMessage = failedItems => {
     joinedErrors.includes('acta duplicada');
 
   if (alreadyAttested) {
-    return 'Acta ya atestiguada.';
+    return 'Hoja de trabajo ya atestiguada.';
   }
   if (duplicateVotes) {
-    return 'Ya existe un acta con los mismos votos para esta mesa.';
+    return 'Ya existe una hoja de trabajo con los mismos votos para esta mesa.';
   }
-  return 'Reintenta o elimina para subir otra acta.';
+  return 'Reintenta o elimina para subir otra hoja de trabajo.';
 };
 
 const deriveQueueFailTitle = failedItems => {
@@ -1715,7 +1715,7 @@ export default function HomeScreen({ navigation }) {
           <View style={stylesx.splitBtnContent}>
             <CText style={stylesx.activateLocationTitle}>Activar Ubicación</CText>
             <CText style={stylesx.activateLocationDescription}>
-              Activa tu ubicación para ver las opciones de envío de actas.
+              Activa tu ubicación para ver las opciones de envío de hojas de trabajo.
             </CText>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#D97706" />
@@ -1731,9 +1731,9 @@ export default function HomeScreen({ navigation }) {
         <View style={stylesx.warningContractCard}>
           <Ionicons name="warning-outline" size={32} color="#F59E0B" style={{ marginRight: 12 }} />
           <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>No puedes enviar actas desde aquí</CText>
+            <CText style={stylesx.warningContractTitle}>No puedes enviar hojas de trabajo desde aquí</CText>
             <CText style={stylesx.warningContractText}>
-              Esta ubicación no está habilitada para el envío de actas. Verifica tu ubicación o muevete a otra zona.
+              Esta ubicación no está habilitada para el envío de hojas de trabajo. Verifica tu ubicación o muevete a otra zona.
             </CText>
           </View>
         </View>
@@ -1755,8 +1755,8 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             <View style={stylesx.splitBtnContent}>
-              <CText style={stylesx.cardTitle}>Enviar Acta Alcalde</CText>
-              <CText style={stylesx.cardDescription}>Revisa o sube un acta municipal</CText>
+              <CText style={stylesx.cardTitle}>Enviar Hoja de Trabajo Alcalde</CText>
+              <CText style={stylesx.cardDescription}>Revisa o sube una hoja de trabajo municipal</CText>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
@@ -1775,8 +1775,8 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             <View style={stylesx.splitBtnContent}>
-              <CText style={stylesx.cardTitle}>Enviar Acta Gobernador</CText>
-              <CText style={stylesx.cardDescription}>Revisa o sube un acta departamental</CText>
+              <CText style={stylesx.cardTitle}>Enviar Hoja de Trabajo Gobernador</CText>
+              <CText style={stylesx.cardDescription}>Revisa o sube una hoja de trabajo departamental</CText>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />

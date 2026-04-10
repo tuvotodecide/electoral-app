@@ -46,7 +46,7 @@ describe('TableDetailScreen - Renderizado', () => {
 
     // El componente muestra el mensaje de alerta con el conteo de actas
     expect(
-      getByText(/La mesa ya tiene 2 actas publicadas/),
+      getByText(/La mesa ya tiene 2 hojas? de trabajo publicadas/),
     ).toBeTruthy();
     
     // No muestra actas individuales cuando hay más de 1, solo el botón de atestiguar
@@ -82,8 +82,8 @@ describe('TableDetailScreen - Renderizado', () => {
     });
 
     expect(getByText('Atestiguar')).toBeTruthy();
-    expect(queryByText('Subir hoja de trabajo')).toBeNull();
-    expect(queryByText(/La mesa ya tiene acta.*hoja de trabajo/i)).toBeNull();
+    expect(queryByText('Subir acta')).toBeNull();
+    expect(queryByText(/La mesa ya tiene hoja de trabajo.*acta/i)).toBeNull();
   });
 
   test('si hay hoja subida (online) mantiene botón para verla aunque ya exista acta', async () => {
@@ -107,7 +107,7 @@ describe('TableDetailScreen - Renderizado', () => {
       await flushPromises();
     });
 
-    expect(getByText('Ver hoja de trabajo')).toBeTruthy();
+    expect(getByText('Ver acta')).toBeTruthy();
   });
 
   test('cuando no hay mesa válida muestra el modo de búsqueda', () => {

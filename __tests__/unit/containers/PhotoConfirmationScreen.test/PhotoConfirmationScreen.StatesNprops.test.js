@@ -89,7 +89,7 @@ describe('PhotoConfirmationScreen - Estados y Props', () => {
     const messageText = Array.isArray(infoModalMessage.props.children)
       ? infoModalMessage.props.children.join(' ')
       : String(infoModalMessage.props.children);
-    expect(messageText).toContain('observacion del acta');
+    expect(messageText).toContain('observacion de la hoja de trabajo');
   });
 
   test('al confirmar encola el acta y muestra finalizacion del proceso', async () => {

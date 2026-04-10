@@ -636,8 +636,8 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
             <CText
               testID="whichIsCorrect_apiInfoText"
               style={styles.apiInfoText}>
-              Se encontraron {actaImages.length} acta
-              {actaImages.length > 1 ? 's' : ''} atestiguada
+              Se encontraron {actaImages.length} hoja
+              {actaImages.length > 1 ? 's' : ''} de trabajo atestiguada
               {actaImages.length > 1 ? 's' : ''} para esta mesa
             </CText>
           </View>
@@ -780,7 +780,7 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
             styles.datosNoCorrectosButtonText,
             allowAddNewActa && styles.addNewActaButtonText,
           ]}>
-          {allowAddNewActa ? 'Subir mi Acta' : Strings.dataNotCorrect}
+          {allowAddNewActa ? 'Subir mi Hoja de trabajo' : Strings.dataNotCorrect}
         </CText>
       </TouchableOpacity>
 

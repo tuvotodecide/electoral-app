@@ -159,7 +159,7 @@ const PhotoConfirmationScreen = ({ route }) => {
   const [isNameVisible, setIsNameVisible] = useState(true);
   const [certificateUri, setCertificateUri] = useState(null);
   const [finalStepMessage, setFinalStepMessage] = useState(
-    'Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.',
+    'Hoja de trabajo guardada. Por favor no cierres la aplicación mientras se sube tu hoja de trabajo.',
   );
   const [compareResult] = useState(() => {
     const fromRoute = route.params?.compareResult;
@@ -201,7 +201,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           diff?.ballotValue === null || diff?.ballotValue === undefined
             ? 'sin dato'
             : String(diff.ballotValue);
-        return `- ${field}: hoja ${worksheetValue}, acta ${ballotValue}`;
+        return `- ${field}: acta ${worksheetValue}, hoja de trabajo ${ballotValue}`;
       })
       .join('\n')
     : '';
@@ -315,7 +315,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           visible: true,
           title: I18nStrings.validationFailed,
           message:
-            'Debes escribir la observacion del acta antes de continuar.',
+            'Debes escribir la observacion de la hoja de trabajo antes de continuar.',
         });
         return;
       }
@@ -385,7 +385,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         setInfoModalData({
           visible: true,
           title: I18nStrings.genericError,
-          message: 'No se encontró la foto de la hoja de trabajo.',
+          message: 'No se encontró la foto del acta.',
         });
         setStep(0);
         return;
@@ -445,7 +445,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           errorMessage: undefined,
         });
         setFinalStepMessage(
-          'La hoja ya estaba en cola. Se subirá en segundo plano.',
+          'El acta ya estaba en cola. Se subirá en segundo plano.',
         );
         setStep(2);
         return;
@@ -502,14 +502,14 @@ const PhotoConfirmationScreen = ({ route }) => {
         retryPayload: worksheetTaskPayload,
       });
       setFinalStepMessage(
-        'Hoja encolada correctamente. Se subirá en segundo plano.',
+        'Acta encolada correctamente. Se subirá en segundo plano.',
       );
       setStep(2);
     } catch (error) {
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
-        message: error?.message || 'Error al registrar la hoja de trabajo.',
+        message: error?.message || 'Error al registrar el acta.',
       });
       setShowConfirmModal(false);
       setStep(0);
@@ -577,7 +577,7 @@ const PhotoConfirmationScreen = ({ route }) => {
         setInfoModalData({
           visible: true,
           title: I18nStrings.genericError,
-          message: 'No se encontró la foto del acta. Vuelve a capturarla.',
+          message: 'No se encontró la foto de la hoja de trabajo. Vuelve a capturarla.',
         });
         setShowConfirmModal(false);
         setStep(0);
@@ -657,7 +657,7 @@ const PhotoConfirmationScreen = ({ route }) => {
             undefined,
         },
       });
-      setFinalStepMessage('Acta guardada. Por favor no cierres la aplicación mientras se sube tu acta.');
+      setFinalStepMessage('Hoja de trabajo guardada. Por favor no cierres la aplicación mientras se sube tu hoja de trabajo.');
       setStep(2);
     } catch (error) {
       captureError(error, {
@@ -669,7 +669,7 @@ const PhotoConfirmationScreen = ({ route }) => {
       setInfoModalData({
         visible: true,
         title: I18nStrings.genericError,
-        message: error?.message || 'Error al encolar el acta',
+        message: error?.message || 'Error al encolar la hoja de trabajo',
       });
       setShowConfirmModal(false);
       setStep(0);
@@ -754,11 +754,11 @@ const PhotoConfirmationScreen = ({ route }) => {
               { borderColor: '#B42318', backgroundColor: '#FEF3F2' },
             ]}>
             <CText style={[styles.compareTitle, { color: '#B42318' }]}>
-              Aviso: la hoja de trabajo no coincide
+              Aviso: el acta no coincide
             </CText>
             <CText style={styles.compareText}>
               {compareResult?.message ||
-                'Se detectaron diferencias entre la hoja de trabajo y el acta.'}
+                'Se detectaron diferencias entre el acta y la hoja de trabajo.'}
             </CText>
             {worksheetMismatchDetails ? (
               <CText style={styles.compareDiffs}>{worksheetMismatchDetails}</CText>
@@ -771,7 +771,7 @@ const PhotoConfirmationScreen = ({ route }) => {
               <View style={styles.certificateBorder}>
                 {isWorksheetMode && (
                   <>
-                    <CText style={styles.nftName}>Hoja de Trabajo</CText>
+                    <CText style={styles.nftName}>Acta</CText>
                     <CText style={styles.nftCertDetail}>
                       {(tableLocationLabel || '').toUpperCase()}
                     </CText>
@@ -860,7 +860,7 @@ const PhotoConfirmationScreen = ({ route }) => {
                   </CText>
                   {'\n'}
                   Certifico que los datos que ingreso coinciden con la foto del
-                  acta de la mesa y declaro que no he{' '}
+                  hoja de trabajo de la mesa y declaro que no he{' '}
                   <CText style={modalStyles.boldText}>
                     inventado ni modificado
                   </CText>{' '}
@@ -916,8 +916,8 @@ const PhotoConfirmationScreen = ({ route }) => {
                   testID="photoConfirmationModalLoadingSubtext"
                   style={modalStyles.loadingSubtext}>
                   {isWorksheetMode
-                    ? 'Estamos registrando tu hoja de trabajo.'
-                    : 'Estamos guardando tu acta para subirla.'}
+                    ? 'Estamos registrando tu acta.'
+                    : 'Estamos guardando tu hoja de trabajo para subirla.'}
                 </CText>
               </>
             )}

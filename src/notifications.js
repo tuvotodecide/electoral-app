@@ -158,16 +158,16 @@ const NotificationTypeStrategies = {
       : 'Tu atestiguamiento se registró correctamente.',
   },
   acta_published: {
-    getTitle: () => 'Acta subida exitosamente',
+    getTitle: () => 'Hoja de trabajo subida exitosamente',
     getBody: (tableLabel) => tableLabel
-      ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
-      : 'Tu acta fue publicada correctamente.',
+      ? `Tu hoja de trabajo de la mesa ${tableLabel} fue publicada correctamente.`
+      : 'Tu hoja de trabajo fue publicada correctamente.',
   },
   worksheet_uploaded: {
-    getTitle: () => 'Hoja de trabajo subida',
+    getTitle: () => 'Acta subida',
     getBody: (tableLabel) => tableLabel
-      ? `Mesa ${tableLabel}: tu hoja ya está disponible para comparación.`
-      : 'Tu hoja de trabajo ya está disponible para comparación.',
+      ? `Mesa ${tableLabel}: tu acta ya está disponible para comparación.`
+      : 'Tu acta ya está disponible para comparación.',
     getRoute: () => ({
       name: StackNav.TabNavigation,
       params: {screen: TabNav.HomeScreen},
@@ -527,7 +527,7 @@ export async function showLocalNotification({
 }
 
 /**
- * Notificación local específica para “Acta publicada”.
+ * Notificación local específica para “Hoja de trabajo publicada”.
  * Navega a SuccessScreen con params serializados en data.routeParams.
  */
 export async function showActaPublishedNotification({
@@ -561,11 +561,11 @@ export async function showActaPublishedNotification({
       ).trim(),
     );
     const notificationType = 'acta_published';
-    const notificationTitle = 'Acta subida exitosamente';
+    const notificationTitle = 'Hoja de trabajo subida exitosamente';
     const mesaLabel = tableNumber || tableCode || '';
     const notificationBody = mesaLabel
-      ? `Tu acta de la mesa ${mesaLabel} fue publicada correctamente.`
-      : 'Tu acta fue publicada correctamente.';
+      ? `Tu hoja de trabajo de la mesa ${mesaLabel} fue publicada correctamente.`
+      : 'Tu hoja de trabajo fue publicada correctamente.';
 
     await showLocalNotification({
       title: notificationTitle,
@@ -593,7 +593,7 @@ export async function showActaDuplicateNotification({
   reason = 'Ya atestiguaste esta mesa.',
 } = {}) {
   await showLocalNotification({
-    title: 'Acta descartada',
+    title: 'Hoja de trabajo descartada',
     body: reason,
   });
 }

@@ -68,8 +68,8 @@ const BaseRecordReviewScreen = ({
   PhotoComponent,
   extraContent = null,
   highlightPhotoToggle = false,
-  photoToggleLabelCollapsed = 'Ver foto del acta',
-  photoToggleLabelExpanded = 'Ocultar foto del acta',
+  photoToggleLabelCollapsed = 'Ver foto de la hoja de trabajo',
+  photoToggleLabelExpanded = 'Ocultar foto de la hoja de trabajo',
 }) => {
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);

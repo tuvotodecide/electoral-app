@@ -2059,8 +2059,8 @@ export const publishWorksheetHandler = async (item, userData) => {
 
     try {
       await showLocalNotification({
-        title: 'Hoja de trabajo subida',
-        body: `Mesa ${tableNumber}: tu hoja ya está disponible para comparación.`,
+        title: 'Acta subida',
+        body: `Mesa ${tableNumber}: tu acta ya está disponible para comparación.`,
         data: {
           type: 'worksheet_uploaded',
           tableCode,

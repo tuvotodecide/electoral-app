@@ -336,7 +336,7 @@ export default function Notification({ navigation }) {
         bodyFromBackend ||
         'Resultados disponibles';
     } else if (String(data?.type || '').trim().toLowerCase() === 'acta_published') {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Acta publicada';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Hoja de trabajo publicada';
     } else if (data.tableNumber) {
       mesaLabel = `Mesa ${String(data.tableNumber)}`;
     } else if (data.tableCode) {
@@ -358,11 +358,11 @@ export default function Notification({ navigation }) {
     } else if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
-      tipo = 'Acta publicada';
+      tipo = 'Hoja de trabajo publicada';
     } else if (data?.type === 'participation_certificate') {
       tipo = 'Certificado de participación';
     } else if (data?.type === 'worksheet_uploaded') {
-      tipo = 'Hoja de trabajo subida';
+      tipo = 'Acta subida';
     }
     if (notificationKind === 'generic' && String(data?.type || '').trim().toLowerCase() === 'acta_published' && bodyFromBackend) {
       tipo = bodyFromBackend;

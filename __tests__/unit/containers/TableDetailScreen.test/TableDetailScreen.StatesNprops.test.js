@@ -34,7 +34,7 @@ describe('TableDetailScreen - Estados y Props', () => {
       },
     });
 
-    expect(getByText(/La mesa ya tiene 1 acta publicada/)).toBeTruthy();
+    expect(getByText(/La mesa ya tiene 1 hoja de trabajo publicada/)).toBeTruthy();
   });
 
   test('abre el modal de previsualizacion cuando la ruta incluye una imagen capturada', () => {
@@ -95,11 +95,11 @@ describe('TableDetailScreen - Estados y Props', () => {
 
     expect(
       getByText(
-        'La mesa ya tiene acta. La hoja de trabajo solo se permite antes del acta.',
+        'La mesa ya tiene hoja de trabajo. El acta solo se permite antes de la hoja de trabajo.',
       ),
     ).toBeTruthy();
 
-    fireEvent.press(getByText('Subir hoja de trabajo'));
+    fireEvent.press(getByText('Subir acta'));
     expect(navigation.navigate).not.toHaveBeenCalledWith(
       StackNav.CameraScreen,
       expect.objectContaining({mode: 'worksheet'}),
@@ -137,10 +137,10 @@ describe('TableDetailScreen - Estados y Props', () => {
     });
 
     await waitFor(() => {
-      expect(getByText('Ver hoja de trabajo')).toBeTruthy();
+      expect(getByText('Ver acta')).toBeTruthy();
     });
 
-    fireEvent.press(getByText('Ver hoja de trabajo'));
+    fireEvent.press(getByText('Ver acta'));
 
     await waitFor(() => {
       expect(navigation.navigate).toHaveBeenCalledWith(

@@ -21,7 +21,7 @@ describe('TableDetailScreen - Manejo de Errores y Casos Límite', () => {
 
     // El componente muestra las actas existentes sin mostrar el ID
     // Verifica que se renderiza la alerta de éxito con el conteo de actas
-    expect(getByText(/La mesa ya tiene 1 acta publicada/)).toBeTruthy();
+    expect(getByText(/La mesa ya tiene 1 hoja de trabajo publicada/)).toBeTruthy();
   });
 
   test('omite la visualización de imágenes cuando el registro carece de actaImage', () => {

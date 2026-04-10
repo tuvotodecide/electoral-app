@@ -54,7 +54,7 @@ describe('PhotoConfirmationScreen - Manejo de Errores', () => {
     });
 
     expect(getByTestId('photoConfirmationInfoModal')).toBeTruthy();
-    expect(getByText('No se encontró la foto del acta. Vuelve a capturarla.')).toBeTruthy();
+    expect(getByText('No se encontró la foto de la hoja de trabajo. Vuelve a capturarla.')).toBeTruthy();
   });
 
   test('muestra error específico cuando falla la cola offline', async () => {
