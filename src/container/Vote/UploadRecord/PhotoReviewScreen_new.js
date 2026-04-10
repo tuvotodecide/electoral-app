@@ -305,8 +305,9 @@ const PhotoReviewScreen = () => {
   const resolvedElectionType =
     effectiveElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const requiresOfficialPartyRows =
+  const isMultiOfficeElection =
     hasSecondaryBlockElection(resolvedElectionType);
+  const requiresOfficialPartyRows = isMultiOfficeElection;
   const mode =
     incomingMode ?? (isViewOnly && existingRecord ? 'attest' : 'upload');
   const isWorksheetMode = mode === 'worksheet';
@@ -530,13 +531,15 @@ const PhotoReviewScreen = () => {
     requiresOfficialPartyRows,
     offline,
   ]);
+  const hasSecondaryVoteContent = hasSecondaryVoteData({
+    partyResults,
+    voteSummaryResults,
+    voteSummary: existingRecord?.voteSummaryResults,
+  });
   const hasSecondaryFlow =
-    hasSecondaryBlockElection(resolvedElectionType) ||
-    hasSecondaryVoteData({
-      partyResults,
-      voteSummaryResults,
-      voteSummary: existingRecord?.voteSummaryResults,
-    });
+    isMultiOfficeElection || hasSecondaryVoteContent;
+  const showSecondaryOfficeColumns =
+    !isMultiOfficeElection && hasSecondaryVoteContent;
   const [hasObservation, setHasObservation] = useState(initialHasObservation);
   const [observationText, setObservationText] = useState(initialObservationText);
   const [isComparingWorksheet, setIsComparingWorksheet] = useState(false);
@@ -704,7 +707,7 @@ const PhotoReviewScreen = () => {
           visible: true,
           title: 'Error',
           message:
-            'Faltan datos obligatorios de mesa o usuario para encolar la hoja.',
+            'Faltan datos obligatorios de mesa o usuario para encolar el acta.',
         });
         setShowWorksheetConfirmModal(false);
         return;
@@ -864,13 +867,13 @@ const PhotoReviewScreen = () => {
     // 2) Validar que no haya campos vacíos antes de normalizar
     if (!isViewOnly) {
       const hasEmptyParty = partiesArray.some(p => (p.presidente ?? '') === '');
-      const hasEmptySecondaryParty = hasSecondaryFlow
+      const hasEmptySecondaryParty = showSecondaryOfficeColumns
         ? partiesArray.some(p => (p.diputado ?? '') === '')
         : false;
       const hasEmptySummary = summaryArray.some(
         v =>
           (v.value1 ?? '') === '' ||
-          (hasSecondaryFlow && (v.value2 ?? '') === ''),
+          (showSecondaryOfficeColumns && (v.value2 ?? '') === ''),
       );
 
       if (hasEmptyParty || hasEmptySecondaryParty || hasEmptySummary) {
@@ -1010,19 +1013,19 @@ const PhotoReviewScreen = () => {
             if (status === WorksheetCompareStatus.MATCH) {
               compareResult = buildResult(
                 status,
-                'Coincide con acta.',
+                'La hoja de trabajo coincide con el acta.',
                 data,
               );
             } else if (status === WorksheetCompareStatus.MISMATCH) {
               compareResult = buildResult(
                 status,
-                'No coincide con acta.',
+                'La hoja de trabajo no coincide con el acta.',
                 data,
               );
             } else if (status === WorksheetCompareStatus.NOT_AVAILABLE) {
               compareResult = buildResult(
                 status,
-                `Acta no disponible para comparar (${
+                `No hay acta disponible para comparar la hoja de trabajo (${
                   data?.worksheetStatus || 'SIN_ESTADO'
                 }).`,
                 data,
@@ -1038,7 +1041,7 @@ const PhotoReviewScreen = () => {
         } catch {
           compareResult = buildResult(
             WorksheetCompareStatus.ERROR,
-            'No se pudo comparar con el acta por timeout o error de red.',
+            'No se pudo comparar la hoja de trabajo con el acta por timeout o error de red.',
           );
         } finally {
           setIsComparingWorksheet(false);
@@ -1085,7 +1088,7 @@ const PhotoReviewScreen = () => {
       });
       setInfoModalData({
         visible: true,
-        title: 'Acta no coincide',
+        title: 'La hoja de trabajo no coincide con el acta',
         message: diffMessage
           ? `Se detectaron diferencias con el acta:\n${diffMessage}`
           : 'Se detectaron diferencias con el acta.',
@@ -1289,8 +1292,8 @@ const PhotoReviewScreen = () => {
         showTableInfo={true}
         tableData={getMesaInfo()}
         emptyDisplayWhenReadOnly={offline ? '' : '0'}
-        showDeputy={hasSecondaryFlow}
-        twoColumns={hasSecondaryFlow}
+        showDeputy={showSecondaryOfficeColumns}
+        twoColumns={showSecondaryOfficeColumns}
         primaryLabel={officeLabels.primary}
         secondaryLabel={officeLabels.secondary}
         highlightPhotoToggle={true}

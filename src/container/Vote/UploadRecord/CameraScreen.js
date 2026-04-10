@@ -10,8 +10,6 @@ import {
   Alert,
   AppState,
   StatusBar,
-  Modal,
-  Text,
   PanResponder,
   Animated,
 } from 'react-native';
@@ -22,9 +20,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
-import electoralActAnalyzer from '../../../utils/electoralActAnalyzer';
 import * as ImagePicker from 'expo-image-picker';
-
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
@@ -82,18 +78,11 @@ export default function CameraScreen({ navigation, route }) {
   const hasPermission = permission?.granted === true;
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
   const [cameraKey, setCameraKey] = useState(0); // Para forzar re-render
   const [orientation, setOrientation] = useState('portrait');
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    title: '',
-    message: '',
-    buttons: [],
-  });
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
   const [photoMeta, setPhotoMeta] = useState({ width: 0, height: 0 });
@@ -165,19 +154,6 @@ export default function CameraScreen({ navigation, route }) {
 
     return () => subscription?.remove();
   }, []);
-
-  // Función para mostrar modal personalizado
-  const showModal = (title, message, buttons = []) => {
-    setModalConfig({
-      title,
-      message,
-      buttons:
-        buttons.length > 0
-          ? buttons
-          : [{ text: 'OK', onPress: () => setModalVisible(false) }],
-    });
-    setModalVisible(true);
-  };
 
   const openGallery = async () => {
     try {
@@ -607,7 +583,6 @@ export default function CameraScreen({ navigation, route }) {
       Alert.alert(String.cameraErrorTitle, String.cameraErrorMessage, [
         {
           text: String.accept,
-          onPress: () => setModalVisible(false),
         },
       ]);
     } finally {
@@ -615,7 +590,7 @@ export default function CameraScreen({ navigation, route }) {
     }
   };
 
-  // Analizar acta electoral y navegar a siguiente pantalla
+  // Navegar a review manual sin consultar IA/OCR.
   const handleNext = async () => {
     if (!photo) {
       return;
@@ -648,138 +623,14 @@ export default function CameraScreen({ navigation, route }) {
       return;
     }
 
-    setAnalyzing(true);
-
-    try {
-      // Analizar la imagen con Gemini AI
-      const analysisResult = await electoralActAnalyzer.analyzeElectoralAct(
-        photo.path,
-        selectedElectionContext,
-      );
-
-
-      if (!analysisResult.success) {
-        console.error('[CAMERA-SCREEN]  Error en análisis AI:', analysisResult.error);
-        showModal(
-          'Error de Análisis',
-          analysisResult.error || 'No se pudo analizar la imagen',
-          [{ text: 'OK', onPress: () => setModalVisible(false) }],
-        );
-        setAnalyzing(false);
-        return;
-      }
-
-      const aiData = analysisResult.data;
-
-      // Verificar si es una acta electoral válida
-      if (!aiData.if_electoral_act) {
-        console.error('[CAMERA-SCREEN] ❌ Imagen no es acta electoral válida');
-        showModal(
-          'Imagen No Válida',
-          'La imagen no corresponde a un acta electoral válida. Por favor, tome otra fotografía del acta.',
-          [
-            {
-              text: 'Tomar Nueva Foto',
-              onPress: () => {
-                setPhoto(null);
-                setIsActive(true);
-                setAnalyzing(false);
-                setModalVisible(false);
-              },
-            },
-          ],
-        );
-        return;
-      }
-
-      // Verificar si la imagen no está clara
-      if (aiData.image_not_clear) {
-        showModal(
-          'Imagen No Clara',
-          'La imagen está borrosa o no se puede leer claramente. Por favor, tome otra fotografía más nítida.',
-          [
-            {
-              text: 'Tomar Nueva Foto',
-              onPress: () => {
-                setPhoto(null);
-                setIsActive(true);
-                setAnalyzing(false);
-                setModalVisible(false);
-              },
-            },
-          ],
-        );
-        return;
-      }
-
-      // Mapear datos de la IA al formato de la app
-      const mappedData = electoralActAnalyzer.mapToAppFormat(
-        aiData,
-        selectedElectionContext,
-      );
-
-      // Navegar a la pantalla de revisión con los datos analizados
-      navigation.navigate(StackNav.PhotoReviewScreen, {
-        photoUri: photo.path,
-        tableData: mesaInfo,
-        aiAnalysis: aiData,
-        mappedData: mappedData,
-        electionId,
-        electionType,
-        selectedElectionContext,
-        mode: flowMode,
-      });
-    } catch (error) {
-      console.error('[CAMERA-SCREEN] ❌ Error en handleNext:', error.message);
-      const isNetworkError =
-        !isOnline ||
-        /network|timeout|ENET|ECONN|ECONNABORTED|ECONNRESET|EAI_AGAIN/i.test(
-          global.String(error?.message || ''),
-        );
-
-
-      if (isNetworkError) {
-        navigation.navigate(StackNav.PhotoReviewScreen, {
-          photoUri: photo.path,
-          tableData: mesaInfo,
-          offline: true,
-          electionId,
-          electionType,
-          selectedElectionContext,
-          mode: flowMode,
-        });
-        return;
-      }
-      showModal(
-        'Error',
-        'Ocurrió un error al analizar la imagen. ¿Desea continuar sin análisis automático?',
-        [
-          {
-            text: 'Reintentar',
-            onPress: () => {
-              setModalVisible(false);
-              handleNext();
-            },
-          },
-          {
-            text: 'Continuar Sin Análisis',
-            onPress: () => {
-              setModalVisible(false);
-              navigation.navigate(StackNav.PhotoReviewScreen, {
-                photoUri: photo.path,
-                tableData: mesaInfo,
-                electionId,
-                electionType,
-                selectedElectionContext,
-                mode: flowMode,
-              });
-            },
-          },
-        ],
-      );
-    } finally {
-      setAnalyzing(false);
-    }
+    navigation.navigate(StackNav.PhotoReviewScreen, {
+      photoUri: photo.path,
+      tableData: mesaInfo,
+      electionId,
+      electionType,
+      selectedElectionContext,
+      mode: flowMode,
+    });
   };
 
   return (
@@ -906,42 +757,21 @@ export default function CameraScreen({ navigation, route }) {
                     <TouchableOpacity
                       testID="cameraScreenFooterAnalyzeButton"
                       style={[styles.actionButton, styles.analyzeButton]}
-                      onPress={handleNext}
-                      disabled={analyzing}>
-                      {analyzing ? (
-                        <View
-                          testID="cameraScreenFooterAnalyzingContainer"
-                          style={styles.analyzingContainer}>
-                          <ActivityIndicator
-                            testID="cameraScreenFooterAnalyzingIndicator"
-                            color="#fff"
-                            size="small"
-                            style={styles.analyzingIcon}
-                          />
-                          <CText
-                            testID="cameraScreenFooterAnalyzingText"
-                            style={styles.actionButtonText}>
-                            {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
-                          </CText>
-                        </View>
-                      ) : (
-                        <>
-                          <Ionicons
-                            name={
-                              isWorksheetMode
-                                ? 'arrow-forward-circle-outline'
-                                : 'analytics-outline'
-                            }
-                            size={20}
-                            color="#fff"
-                          />
-                          <CText
-                            testID="cameraScreenFooterAnalyzeText"
-                            style={styles.actionButtonText}>
-                            {isWorksheetMode ? 'Continuar' : 'Analizar'}
-                          </CText>
-                        </>
-                      )}
+                      onPress={handleNext}>
+                      <Ionicons
+                        name={
+                          isWorksheetMode
+                            ? 'arrow-forward-circle-outline'
+                            : 'analytics-outline'
+                        }
+                        size={20}
+                        color="#fff"
+                      />
+                      <CText
+                        testID="cameraScreenFooterAnalyzeText"
+                        style={styles.actionButtonText}>
+                        {isWorksheetMode ? 'Continuar' : 'Analizar'}
+                      </CText>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -1040,35 +870,19 @@ export default function CameraScreen({ navigation, route }) {
             {isOnline ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.analyzeButton]}
-                onPress={handleNext}
-                disabled={analyzing}>
-                {analyzing ? (
-                  <View style={styles.analyzingContainer}>
-                    <ActivityIndicator
-                      color="#fff"
-                      size="small"
-                      style={styles.analyzingIcon}
-                    />
-                    <CText style={styles.actionButtonText}>
-                      {isWorksheetMode ? 'Continuar...' : 'Analizando...'}
-                    </CText>
-                  </View>
-                ) : (
-                  <>
-                    <Ionicons
-                      name={
-                        isWorksheetMode
-                          ? 'arrow-forward-circle-outline'
-                          : 'analytics-outline'
-                      }
-                      size={20}
-                      color="#fff"
-                    />
-                    <CText style={styles.actionButtonText}>
-                      {isWorksheetMode ? 'Continuar' : 'Analizar'}
-                    </CText>
-                  </>
-                )}
+                onPress={handleNext}>
+                <Ionicons
+                  name={
+                    isWorksheetMode
+                      ? 'arrow-forward-circle-outline'
+                      : 'analytics-outline'
+                  }
+                  size={20}
+                  color="#fff"
+                />
+                <CText style={styles.actionButtonText}>
+                  {isWorksheetMode ? 'Continuar' : 'Analizar'}
+                </CText>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -1082,7 +896,6 @@ export default function CameraScreen({ navigation, route }) {
                     electionId,
                     electionType,
                     mode: flowMode,
-                    // flag opcional por si quieres mostrar un banner “modo offline”
                   });
                 }}>
                 <Ionicons
@@ -1097,33 +910,6 @@ export default function CameraScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Modal personalizado */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{modalConfig.title}</Text>
-            <Text style={styles.modalMessage}>{modalConfig.message}</Text>
-            <View style={styles.modalButtonContainer}>
-              {modalConfig.buttons.map((button, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.modalButton,
-                    index === modalConfig.buttons.length - 1 &&
-                    styles.modalButtonLast,
-                  ]}
-                  onPress={button.onPress}>
-                  <Text style={styles.modalButtonText}>{button.text}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1253,13 +1039,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  analyzingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  analyzingIcon: {
-    marginRight: 8,
-  },
   buttonDisabled: {
     opacity: 0.7,
   },
@@ -1369,59 +1148,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  // Estilos del Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    margin: 20,
-    maxWidth: 350,
-    width: '90%',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  modalMessage: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
-    lineHeight: 22,
-  },
-  modalButtonContainer: {
-    flexDirection: 'column',
-    gap: 10,
-  },
-  modalButton: {
-    backgroundColor: '#4F9858',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonLast: {
-    backgroundColor: '#666',
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   galleryButton: {
     width: 50,

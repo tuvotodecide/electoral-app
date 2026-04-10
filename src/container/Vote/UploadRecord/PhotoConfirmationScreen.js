@@ -407,7 +407,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           visible: true,
           title: I18nStrings.genericError,
           message:
-            'Faltan datos obligatorios de mesa o usuario para encolar la hoja.',
+            'Faltan datos obligatorios de mesa o usuario para encolar el acta.',
         });
         setStep(0);
         return;
@@ -754,11 +754,11 @@ const PhotoConfirmationScreen = ({ route }) => {
               { borderColor: '#B42318', backgroundColor: '#FEF3F2' },
             ]}>
             <CText style={[styles.compareTitle, { color: '#B42318' }]}>
-              Aviso: el acta no coincide
+              Aviso: la hoja de trabajo no coincide con el acta
             </CText>
             <CText style={styles.compareText}>
               {compareResult?.message ||
-                'Se detectaron diferencias entre el acta y la hoja de trabajo.'}
+                'Se detectaron diferencias entre la hoja de trabajo y el acta.'}
             </CText>
             {worksheetMismatchDetails ? (
               <CText style={styles.compareDiffs}>{worksheetMismatchDetails}</CText>
@@ -859,7 +859,7 @@ const PhotoConfirmationScreen = ({ route }) => {
                     Yo {userFullName}
                   </CText>
                   {'\n'}
-                  Certifico que los datos que ingreso coinciden con la foto del
+                  Certifico que los datos que ingreso coinciden con la foto de la
                   hoja de trabajo de la mesa y declaro que no he{' '}
                   <CText style={modalStyles.boldText}>
                     inventado ni modificado

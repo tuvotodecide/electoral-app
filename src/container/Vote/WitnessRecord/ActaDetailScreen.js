@@ -51,6 +51,8 @@ const ActaDetailScreen = () => {
   const resolvedElectionType =
     selectedElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
+  const isMultiOfficeElection =
+    hasSecondaryBlockElection(resolvedElectionType);
 
   const partyResultsTransformed = useMemo(() => {
     try {
@@ -98,8 +100,8 @@ const ActaDetailScreen = () => {
       return [];
     }
   }, [rawVoteSummaryResults]);
-  const hasSecondaryFlow =
-    hasSecondaryBlockElection(resolvedElectionType) ||
+  const showSecondaryOfficeColumns =
+    !isMultiOfficeElection &&
     hasSecondaryVoteData({
       partyResults: partyResultsTransformed,
       voteSummaryResults: voteSummaryTransformed,
@@ -301,8 +303,8 @@ const ActaDetailScreen = () => {
       PhotoComponent={PhotoComponent} // Pass our custom photo component
       partyResults={partyResultsTransformed || []}
       voteSummaryResults={voteSummaryTransformed || []}
-      showDeputy={hasSecondaryFlow}
-      twoColumns={hasSecondaryFlow}
+      showDeputy={showSecondaryOfficeColumns}
+      twoColumns={showSecondaryOfficeColumns}
       primaryLabel={officeLabels.primary}
       secondaryLabel={officeLabels.secondary}
       actionButtons={actionButtons}

@@ -1060,7 +1060,7 @@ export default function TableDetail({ navigation, route }) {
 
     if (requiresOfficialParties && !hasOfficialParties) {
       setElectionContextFeedback(
-        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir la hoja.',
+        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir el acta.',
       );
       setWorksheetFeedback(
         'No hay partidos oficiales cargados para esta eleccion y territorio.',
@@ -1432,8 +1432,8 @@ export default function TableDetail({ navigation, route }) {
     const showViewWorksheetLoader = canViewWorksheet && isWorksheetActionLoading;
     const showWorksheetLoader = showWorksheetCheckingLoader || showViewWorksheetLoader;
     const worksheetLoaderText = showWorksheetCheckingLoader
-      ? 'Espere, revisando hoja...'
-      : 'Cargando hoja...';
+      ? 'Espere, revisando acta...'
+      : 'Cargando acta...';
 
     return (
       <View style={stylesx.worksheetContainer}>

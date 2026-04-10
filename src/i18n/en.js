@@ -290,7 +290,7 @@ export default {
   downloadingFailed: 'Revisa tu conexión a internet.',
   initApp: 'Iniciando...',
   onBoardingTitleText1: 'Obtén tu identidad digital soberana',
-  onBoardingTitleText2: 'Actas electorales inalterables con NFTs',
+  onBoardingTitleText2: 'Hojas de trabajo electorales inalterables con NFTs',
   onBoardingTitleText3: 'Validación abierta, con firma electrónica',
   onBoardingTitleText4:
     'Transparencia con Blockchain e Inteligencia Artificial',
@@ -298,9 +298,9 @@ export default {
   onBoardingDescriptionText1:
     'Al registrarte obtienes un sistema de identidad digital, que protege tus datos con contratos inteligentes.',
   onBoardingDescriptionText2:
-    'Al sacar fotos de las actas el momento del conteo de votos, los firmas electrónicamente y los conviertes en NFTs.',
+    'Al sacar fotos de las hojas de trabajo al momento del conteo de votos, las firmas electrónicamente y las conviertes en NFTs.',
   onBoardingDescriptionText3:
-    'Cualquier persona que descargue la app podrá verificar, validar y firmar las actas subidas.',
+    'Cualquier persona que descargue la app podrá verificar, validar y firmar las hojas de trabajo subidas.',
   onBoardingDescriptionText4:
     'El código de los contratos inteligentes y las transacciones en blockchain son públicos y procesado con IA',
   onBoardingDescriptionText5: '',
@@ -1268,7 +1268,7 @@ export default {
 
   connectTitle: 'Aplicación Electoral',
   connectItem1: 'Obtén tu identidad digital soberana',
-  connectItem2: 'Convierte actas electorales en NFTs',
+  connectItem2: 'Convierte hojas de trabajo electorales en NFTs',
   connectItem3: 'Valida con tu firma electrónica',
   // connectBtnInfo: 'Más información',
   connectBtnRegister: 'Registrar cuenta',
@@ -1347,12 +1347,12 @@ export default {
   coincidences: 'coincidencias',
   trust: 'Confianza',
   nftsObtained: 'NFTs obtenidos',
-  uploadActaNFT: 'Subir Acta 2025',
+  uploadActaNFT: 'Subir Hoja de Trabajo 2025',
   uploadActaNFTDesc:
-    'Participó subiendo actas - Elecciones generales Bolivia 2025',
+    'Participó subiendo hojas de trabajo - Elecciones generales Bolivia 2025',
   witnessNFT: 'Atestiguamiento',
   witnessNFTDesc:
-    'Participó atestiguando actas - Elecciones generales Bolivia 2025',
+    'Participó atestiguando hojas de trabajo - Elecciones generales Bolivia 2025',
   selectFeaturedBadge: 'Seleccionar insignia destacada',
 
   // Home Screen

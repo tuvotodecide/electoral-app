@@ -33,8 +33,10 @@ const MyWitnessesDetailScreen = () => {
   const resolvedElectionType =
     electionType || attestationData?.ballotData?.electionType || null;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const hasSecondaryFlow =
-    hasSecondaryBlockElection(resolvedElectionType) ||
+  const isMultiOfficeElection =
+    hasSecondaryBlockElection(resolvedElectionType);
+  const showSecondaryOfficeColumns =
+    !isMultiOfficeElection &&
     hasSecondaryVoteData({
       partyResults,
       voteSummaryResults,
@@ -126,8 +128,8 @@ const MyWitnessesDetailScreen = () => {
       photoUri={photoUri}
       partyResults={partyResults}
       voteSummaryResults={voteSummaryResults}
-      showDeputy={hasSecondaryFlow}
-      twoColumns={hasSecondaryFlow}
+      showDeputy={showSecondaryOfficeColumns}
+      twoColumns={showSecondaryOfficeColumns}
       primaryLabel={officeLabels.primary}
       secondaryLabel={officeLabels.secondary}
       actionButtons={actionButtons}
