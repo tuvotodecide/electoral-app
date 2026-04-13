@@ -526,7 +526,7 @@ jest.mock('react-native-quick-crypto', () => ({
 
 // Mock Camera
 jest.mock('expo-camera', () => 
-  jest.requireActual('../../../__mocks__/cameraScreen/expoCamera')
+  jest.requireActual('../__mocks__/cameraScreen/expoCamera')
 );
 
 jest.mock('expo-image-picker', () => ({
