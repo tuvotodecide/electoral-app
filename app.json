@@ -111,6 +111,14 @@
           "keystorePath": "./native-files/keystores/identity-release.keystore"
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
       "@react-native-firebase/app",
       "./plugins/withNativeModules",
       "expo-secure-store",

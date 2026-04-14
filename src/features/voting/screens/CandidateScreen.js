@@ -5,7 +5,7 @@
  * Usa los componentes existentes del repo.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,6 +20,8 @@ import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import CustomModal from '../../../components/common/CustomModal';
+import CameraScannerModal from '../components/CameraScannerModal';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // Feature components
 import CandidateCard from '../components/CandidateCard';
@@ -44,6 +46,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
 import { useSelector } from 'react-redux';
 import { blankVote } from '../data/params';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -177,6 +180,9 @@ const CandidateScreen = ({ route }) => {
     message: '',
   });
   const isSubmittingVoteRef = useRef(false);
+  const isInPlaceVote = route?.params?.isInPlaceVote ?? false;
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [isCameraMounted, setIsCameraMounted] = useState(false);
 
   // Election state hook
   const {
@@ -253,6 +259,27 @@ const CandidateScreen = ({ route }) => {
     setShowConfirmModal(true);
   }, [selectedCandidate]);
 
+  const submitInPlaceVote = async () => {
+    setIsCameraMounted(true);
+  };
+
+  const handleBarcodeScanned = useCallback((result) => {
+    console.log('Código QR escaneado:', result);
+    setIsCameraMounted(false);
+
+    // Check if the scanned QR code contains the expected voting data (this is just a placeholder check)
+
+    if (!result?.data || !result.data.includes('voting_info')) {
+      setErrorModal({
+        visible: true,
+        title: UI_STRINGS.badQrTitle,
+        message: UI_STRINGS.badQrDesc,
+      });
+      return;
+    }
+    
+  }, []);
+
   // Handle confirm vote
   const handleConfirmVote = useCallback(async () => {
     if (!selectedCandidate || isSubmittingVoteRef.current) return;
@@ -292,6 +319,21 @@ const CandidateScreen = ({ route }) => {
       const isOnline = DEV_FLAGS.FORCE_OFFLINE_VOTING
         ? false
         : await checkInternetConnection();
+
+      if (isInPlaceVote) {
+        setShowConfirmModal(false);
+        if (!isOnline) {
+          setErrorModal({
+            visible: true,
+            title: UI_STRINGS.cantVoteOfflineTitle,
+            message: UI_STRINGS.cantVoteOfflineDesc,
+          });
+          return;
+        } else {
+          await submitInPlaceVote();
+          return;
+        }
+      }
 
       if (isOnline) {
         const probe = await backendProbe({ timeoutMs: 2000 });
@@ -504,12 +546,25 @@ const CandidateScreen = ({ route }) => {
           }}
           sinMargen
           testID="voteButton"
+          icon={<Ionicons
+            name={isInPlaceVote ? 'qr-code' : 'checkmark-circle'}
+            style={{marginLeft: moderateScale(8)}}
+            size={moderateScale(24)} color="white"
+          />}
         />
 
         <CText type="R12" style={styles.securityNote}>
           {UI_STRINGS.voteSecureNote}
         </CText>
       </View>
+
+      <CameraScannerModal
+        visible={isCameraMounted}
+        onClose={() => setIsCameraMounted(false)}
+        onBarcodeScanned={handleBarcodeScanned}
+        hasPermission={cameraPermission?.granted}
+        onRequestPermission={requestCameraPermission}
+      />
 
       {/* Confirm Modal */}
       <ConfirmVoteModal
