@@ -34,7 +34,7 @@ export default function RegisterUser7({navigation, route}) {
     if (!available) {
       return setModal({
         visible: true,
-        msg: 'Este dispositivo no tiene hardware biométrico.',
+        msg: 'Este dispositivo no tiene habilitado el hardware biométrico.',
       });
     }
     if (!biometryType) {

@@ -121,6 +121,12 @@ export const UI_STRINGS = {
   confirmButton: 'Sí, confirmar mi voto',
   cancelButton: 'Cancelar',
   processing: 'Procesando...',
+  cantVoteOfflineTitle: 'Sin conexión',
+  cantVoteOfflineDesc: 'No se puede votar presencialmente sin conexión, revise su internet',
+  cantVoteWithoutCameraTitle: 'Permiso de cámara requerido',
+  cantVoteWithoutCameraDesc: 'Para votar presencialmente, se requiere acceso a la cámara para escanear el código QR en el recinto de votación.',
+  badQrTitle: 'Código QR no reconocido',
+  badQrDesc: 'El código QR escaneado no es válido para esta votación. Por favor, asegúrate de estar escaneando el código correcto proporcionado en el recinto de votación.',
 
   // Offline modal
   offlineTitle: 'Voto Guardado en Dispositivo',

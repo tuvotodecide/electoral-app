@@ -1095,7 +1095,6 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const userData = useSelector(state => state.wallet.payload);
-  console.log('User data from store:', userData);
   const vc = userData?.vc;
   const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
   const dni =
