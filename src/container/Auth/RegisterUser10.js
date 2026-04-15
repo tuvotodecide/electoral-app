@@ -198,10 +198,13 @@ export default function RegisterUser10({ navigation, route }) {
           critical: true,
         });
 
+        let errMessage = err?.message || 'Ocurrió un error al registrar tu cuenta.';
+        if (errMessage.includes('User cancelled biometric change')) {
+          errMessage = String.biometricRejected;
+        }
+
         setLoading(false);
-        setErrorMessage(
-          err?.message || 'Ocurrió un error al registrar tu cuenta.',
-        );
+        setErrorMessage(errMessage);
         setErrorModalVisible(true);
       }
     })();

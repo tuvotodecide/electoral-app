@@ -144,6 +144,7 @@ export default {
   depositGas: 'Depositando gas en EntryPoint…',
   storeVC: 'Cifrando VC y guardando en Ceramic…',
   saveData: 'Guardando datos localmente…',
+  biometricRejected: 'No se pudo registrar tu cuenta porque se canceló el proceso de cambio biométrico. Por favor, vuelve a intentarlo y asegúrate de completar el proceso de cambio biométrico si has seleccionado esa opción.',
   doneRegister: '¡Registro completado!',
   //inicio de sesión
   walletAccess: 'Acceso a la billetera',
@@ -403,6 +404,11 @@ export default {
   balanceNotEnough: 'No tiene saldo suficiente',
   invalidAmount: 'Monto inválido',
   transactionFailed: 'Envío fallido, intente de nuevo más tarde',
+
+  //Qr modal
+  scanQrTitle: 'Escanea el código QR',
+  scanQrPermissionTitle: 'Permiso de cámara requerido',
+  scanQrPermissionMessage: 'Necesitamos acceso a tu cámara para escanear el código QR',
 
   //Send with id
   sendWithId: 'Pagar con Carnet',
