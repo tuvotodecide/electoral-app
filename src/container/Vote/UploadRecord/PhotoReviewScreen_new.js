@@ -36,6 +36,7 @@ import {
   getSelectedElectionContext,
   hasSecondaryBlockElection,
   hasSecondaryVoteData,
+  sanitizeElectoralDataForVisibleOffices,
 } from '../../../utils/electionContext';
 
 const normalizeComparableObservation = text =>
@@ -605,15 +606,22 @@ const PhotoReviewScreen = () => {
     normalizedPartyResults,
     normalizedVoteSummaryResults,
   }) => {
+    const sanitizedPayload = sanitizeElectoralDataForVisibleOffices(
+      {
+        partyResults: normalizedPartyResults,
+        voteSummaryResults: normalizedVoteSummaryResults,
+      },
+      resolvedElectionType,
+    );
     setWorksheetQueuePayload({
       mesaInfo,
-      partyResults: normalizedPartyResults,
-      voteSummaryResults: normalizedVoteSummaryResults.map(
+      partyResults: sanitizedPayload.partyResults || [],
+      voteSummaryResults: (sanitizedPayload.voteSummaryResults || []).map(
         ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
-          value2,
+          ...(value2 !== undefined ? {value2} : {}),
         }),
       ),
       photoUri: effectivePhotoUri,
@@ -636,11 +644,18 @@ const PhotoReviewScreen = () => {
 
     setIsWorksheetSubmitting(true);
     try {
-      const local = validateBallotLocally(
-        payload.partyResults || [],
-        payload.voteSummaryResults || [],
+      const sanitizedPayload = sanitizeElectoralDataForVisibleOffices(
         {
-          requireSecondary: hasSecondaryFlow,
+          partyResults: payload.partyResults || [],
+          voteSummaryResults: payload.voteSummaryResults || [],
+        },
+        resolvedElectionType,
+      );
+      const local = validateBallotLocally(
+        sanitizedPayload.partyResults || [],
+        sanitizedPayload.voteSummaryResults || [],
+        {
+          requireSecondary: hasSecondaryVoteData(sanitizedPayload),
           primaryLabel: officeLabels.primary,
           secondaryLabel: officeLabels.secondary,
         },
@@ -917,13 +932,27 @@ const PhotoReviewScreen = () => {
       value1: v.value1 === '' ? '0' : v.value1,
       value2: v.value2 === '' ? '0' : v.value2,
     }));
+    const sanitizedValidationData = sanitizeElectoralDataForVisibleOffices(
+      {
+        partyResults: normalizedPartyResults,
+        voteSummaryResults: normalizedVoteSummaryResults,
+      },
+      resolvedElectionType,
+    );
+    const sanitizedConfirmationData = sanitizeElectoralDataForVisibleOffices(
+      {
+        partyResults: cleanedPartyResults,
+        voteSummaryResults: normalizedVoteSummaryResults,
+      },
+      resolvedElectionType,
+    );
 
     if (!isViewOnly) {
       const check = validateBallotLocally(
-        normalizedPartyResults,
-        normalizedVoteSummaryResults,
+        sanitizedValidationData.partyResults || [],
+        sanitizedValidationData.voteSummaryResults || [],
         {
-          requireSecondary: hasSecondaryFlow,
+          requireSecondary: hasSecondaryVoteData(sanitizedValidationData),
           primaryLabel: officeLabels.primary,
           secondaryLabel: officeLabels.secondary,
         },
@@ -996,8 +1025,8 @@ const PhotoReviewScreen = () => {
                 electionId: electionIdValue,
                 tableCode,
                 votes: buildWorksheetCompareVotesPayload(
-                  cleanedPartyResults,
-                  normalizedVoteSummaryResults,
+                  sanitizedConfirmationData.partyResults || [],
+                  sanitizedConfirmationData.voteSummaryResults || [],
                 ),
               },
               {
@@ -1053,13 +1082,13 @@ const PhotoReviewScreen = () => {
       photoUri: effectivePhotoUri,
       tableData: mesaInfo,
       mesaData: mesaInfo,
-      partyResults: cleanedPartyResults,
-      voteSummaryResults: normalizedVoteSummaryResults.map(
+      partyResults: sanitizedConfirmationData.partyResults || [],
+      voteSummaryResults: (sanitizedConfirmationData.voteSummaryResults || []).map(
         ({id, label, value1, value2}) => ({
           id,
           label,
           value1,
-          value2,
+          ...(value2 !== undefined ? {value2} : {}),
         }),
       ),
       aiAnalysis,

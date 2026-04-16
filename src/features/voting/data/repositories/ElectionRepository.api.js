@@ -190,6 +190,21 @@ const mapTicketEntries = candidates =>
     }))
     .filter(candidate => candidate.name);
 
+const normalizeOptionColors = option => {
+  const colors = Array.isArray(option?.colors)
+    ? option.colors
+        .map(color => String(color || '').trim())
+        .filter(Boolean)
+    : [];
+
+  if (colors.length > 0) {
+    return colors;
+  }
+
+  const legacyColor = String(option?.color || '').trim();
+  return [legacyColor || '#2563EB'];
+};
+
 const mapOptionToCandidate = option => {
   const candidates = Array.isArray(option?.candidates) ? option.candidates : [];
   const ticketEntries = mapTicketEntries(candidates);
@@ -211,7 +226,8 @@ const mapOptionToCandidate = option => {
     viceName: vice?.name || '',
     ticketEntries,
     avatarUrl: president?.photoUrl || option?.logoUrl || null,
-    partyColor: option?.color || '#2563EB',
+    partyColor: normalizeOptionColors(option)[0] || '#2563EB',
+    partyColors: normalizeOptionColors(option),
   };
 };
 

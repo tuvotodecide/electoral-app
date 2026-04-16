@@ -9,10 +9,9 @@ import { useMemo } from 'react';
 import ElectionRepositoryMock from './repositories/ElectionRepository.mock';
 import ElectionRepositoryApi from './repositories/ElectionRepository.api';
 import {FEATURE_FLAGS} from '../../../config/featureFlags';
-import {APP_FLOWS, getAppFlow} from '../../../config/appMode';
 
 const getRepositoryType = () => {
-  if (FEATURE_FLAGS.ENABLE_VOTING_FLOW && getAppFlow() === APP_FLOWS.VOTING) {
+  if (FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
     return 'api';
   }
   return 'mock';

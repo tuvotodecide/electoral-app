@@ -132,7 +132,7 @@ describe('CameraScreen - Estados y Props', () => {
     expect(getAllByText('Analizar').length).toBeGreaterThan(0);
   });
 
-  test('ejecuta análisis y navega con resultados mapeados', async () => {
+  test('continúa a revisión al presionar analizar en línea', async () => {
     const {getByText, getAllByText} = render(
       <CameraScreen navigation={mockNavigation} route={buildMockRoute()} />,
     );
@@ -142,17 +142,12 @@ describe('CameraScreen - Estados y Props', () => {
     await pressFirstByText('Analizar', {getAllByText});
     await flushAsync();
 
-    expect(analyzer.analyzeElectoralAct).toHaveBeenCalledWith(
-      expect.stringMatching(/\.jpg$/),
-      undefined,
-    );
-    expect(analyzer.mapToAppFormat).toHaveBeenCalled();
+    expect(analyzer.analyzeElectoralAct).not.toHaveBeenCalled();
+    expect(analyzer.mapToAppFormat).not.toHaveBeenCalled();
     expect(mockNavigation.navigate).toHaveBeenCalledWith(
       StackNav.PhotoReviewScreen,
       expect.objectContaining({
         photoUri: expect.stringMatching(/^file:\/\/.*\.jpg$/),
-        aiAnalysis: expect.any(Object),
-        mappedData: {mapped: true},
       }),
     );
   });

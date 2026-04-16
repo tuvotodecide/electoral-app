@@ -52,6 +52,21 @@ const buildTicketEntries = candidate => {
   ].filter(entry => entry.value);
 };
 
+const getCandidateColors = candidate => {
+  const colors = Array.isArray(candidate?.partyColors)
+    ? candidate.partyColors
+        .map(color => String(color || '').trim())
+        .filter(Boolean)
+    : [];
+
+  if (colors.length > 0) {
+    return colors;
+  }
+
+  const fallback = String(candidate?.partyColor || '').trim();
+  return [fallback || '#2563EB'];
+};
+
 /**
  * @param {Object} props
  * @param {Object} props.candidate - Datos del candidato
@@ -61,6 +76,8 @@ const buildTicketEntries = candidate => {
 const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
   const isSpecial = candidate.isSpecial || false;
   const ticketEntries = buildTicketEntries(candidate);
+  const candidateColors = getCandidateColors(candidate);
+  const primaryColor = candidateColors[0] || '#2563EB';
 
   // Render para votos especiales (Blanco/Nulo)
   if (isSpecial) {
@@ -71,7 +88,7 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
         style={[
           styles.containerSpecial,
           isSelected && styles.containerSelected,
-          { borderLeftColor: candidate.partyColor },
+          { borderLeftColor: primaryColor },
         ]}
         onPress={onSelect}
         activeOpacity={0.8}
@@ -79,16 +96,16 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
       >
         <View style={styles.contentSpecial}>
           {/* Icono */}
-          <View style={[styles.specialIconContainer, { backgroundColor: candidate.partyColor + '20' }]}>
+          <View style={[styles.specialIconContainer, { backgroundColor: primaryColor + '20' }]}>
             <MaterialCommunityIcons
               name={iconName}
               size={28}
-              color={candidate.partyColor}
+              color={primaryColor}
             />
           </View>
 
           {/* Nombre */}
-          <CText type="B16" style={[styles.specialName, { color: candidate.partyColor }]}>
+          <CText type="B16" style={[styles.specialName, { color: primaryColor }]}>
             {candidate.partyName}
           </CText>
 
@@ -119,7 +136,16 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
       testID={`candidateCard_${candidate.id}`}
     >
       {/* Header con nombre del partido */}
-      <View style={[styles.partyHeader, { backgroundColor: candidate.partyColor || '#2563EB' }]}>
+      <View style={[styles.partyHeader, { backgroundColor: primaryColor }]}>
+        <View style={styles.partyHeaderColors} pointerEvents="none">
+          {candidateColors.map((color, index) => (
+            <View
+              key={`${candidate.id}:${color}:${index}`}
+              style={[styles.partyHeaderColorSegment, { backgroundColor: color }]}
+            />
+          ))}
+        </View>
+        <View style={styles.partyHeaderOverlay} pointerEvents="none" />
         <CText
           type="B14"
           style={styles.partyName}
@@ -219,17 +245,30 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   partyHeader: {
+    position: 'relative',
     paddingVertical: getResponsiveSize(10, 12, 14),
     paddingHorizontal: getResponsiveSize(14, 16, 18),
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: getResponsiveSize(52, 56, 60),
   },
+  partyHeaderColors: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+  },
+  partyHeaderColorSegment: {
+    flex: 1,
+  },
+  partyHeaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
   partyName: {
     color: '#FFFFFF',
     fontSize: getResponsiveSize(13, 14, 15),
     fontWeight: '700',
     textAlign: 'center',
+    zIndex: 1,
   },
   content: {
     flexDirection: 'row',

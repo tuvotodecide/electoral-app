@@ -142,7 +142,7 @@ describe('CameraScreen - Interacciones de Usuario', () => {
     );
   });
 
-  test('muestra modal de error cuando análisis falla', async () => {
+  test('en línea navega a revisión aunque exista mock viejo de análisis', async () => {
     netInfoModule.fetch.mockResolvedValue({
       isConnected: true,
       isInternetReachable: true,
@@ -161,6 +161,12 @@ describe('CameraScreen - Interacciones de Usuario', () => {
     await pressFirstByText('Analizar', {getAllByText});
     await flushAsync();
 
-    expect(getByText('No se pudo analizar')).toBeTruthy();
+    expect(analyzer.analyzeElectoralAct).not.toHaveBeenCalled();
+    expect(mockNavigation.navigate).toHaveBeenCalledWith(
+      StackNav.PhotoReviewScreen,
+      expect.objectContaining({
+        photoUri: expect.stringMatching(/^file:\/\/.*\.jpg$/),
+      }),
+    );
   });
 });

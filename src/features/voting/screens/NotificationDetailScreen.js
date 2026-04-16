@@ -6,6 +6,7 @@ import {
   Dimensions,
   Linking,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -67,19 +68,27 @@ const colorPalette = [
   '#f59e0b',
 ];
 
+const isAbsoluteUrl = value => /^https?:\/\//i.test(String(value || '').trim());
+
 const resolvePublicResultsUrl = notification => {
   const rawData = notification?.data || {};
   const directUrl =
     notification?.actionUrl ||
     rawData?.actionUrl ||
     rawData?.publicUrl ||
+    rawData?.deepLink ||
     null;
 
   if (directUrl) {
     return directUrl;
   }
 
-  const relativePath = rawData?.publicPath || rawData?.link || null;
+  const link = rawData?.link || null;
+  if (isAbsoluteUrl(link)) {
+    return link;
+  }
+
+  const relativePath = rawData?.publicPath || link || null;
   if (!relativePath || !String(relativePath).startsWith('/')) {
     return null;
   }
@@ -98,6 +107,21 @@ const resolvePublicResultsUrl = notification => {
   } catch {
     return null;
   }
+};
+
+const normalizeOptionColors = option => {
+  const colors = Array.isArray(option?.colors)
+    ? option.colors
+        .map(color => String(color || '').trim())
+        .filter(Boolean)
+    : [];
+
+  if (colors.length > 0) {
+    return colors;
+  }
+
+  const legacyColor = String(option?.color || '').trim();
+  return [legacyColor || null].filter(Boolean);
 };
 
 const mapResultsSummaryFromDetail = detail => {
@@ -119,7 +143,11 @@ const mapResultsSummaryFromDetail = detail => {
       id: String(option?.id ?? `option-${index + 1}`),
       name: firstCandidate?.name ?? partyName,
       party: partyName,
-      colorHex: option?.color ?? colorPalette[index % colorPalette.length],
+      colorHex:
+        normalizeOptionColors(option)[0] ??
+        option?.color ??
+        colorPalette[index % colorPalette.length],
+      colors: normalizeOptionColors(option),
       votes,
       percent: 0,
       isTied: false,
@@ -148,6 +176,8 @@ const NotificationDetailScreen = () => {
   const isScheduleUpdate =
     notification?.isScheduleUpdate === true ||
     String(rawData?.type || '').trim().toUpperCase() === 'INSTITUTIONAL_SCHEDULE_UPDATED';
+  const isNews = kind === 'news' ||
+    String(rawData?.type || '').trim().toUpperCase() === 'INSTITUTIONAL_NEWS';
   const statusTone = notification?.statusTone || 'success';
   const startsAtLabel = notification?.votingStartLabel || formatEventDate(rawData?.votingStart);
   const endsAtLabel = notification?.votingEndLabel || formatEventDate(rawData?.votingEnd);
@@ -155,6 +185,7 @@ const NotificationDetailScreen = () => {
   const [remoteResultsSummary, setRemoteResultsSummary] = useState([]);
   const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
   const resolvedPublicUrl = resolvePublicResultsUrl(notification);
+  const imageUrl = notification?.imageUrl || rawData?.imageUrl || null;
   const eventId = String(rawData?.eventId || notification?.eventId || '').trim();
   const resultsSummary = Array.isArray(notification?.resultsSummary) && notification.resultsSummary.length > 0
     ? notification.resultsSummary
@@ -222,6 +253,17 @@ const NotificationDetailScreen = () => {
       };
     }
 
+    if (isNews) {
+      return {
+        backgroundColor: '#0F766E',
+        iconName: 'newspaper-outline',
+        iconBg: 'rgba(255,255,255,0.16)',
+        title: rawData?.bannerTitle || 'Noticia',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
+    }
+
     if (kind === 'voting_event' && isScheduleUpdate) {
       return {
         backgroundColor: '#1F7A36',
@@ -252,7 +294,7 @@ const NotificationDetailScreen = () => {
       subtitle: '',
       textColor: '#FFFFFF',
     };
-  }, [isScheduleUpdate, kind, rawData?.bannerTitle, statusTone]);
+  }, [isNews, isScheduleUpdate, kind, rawData?.bannerTitle, statusTone]);
 
   const handlePrimaryAction = () => {
     const targetUrl = resolvedPublicUrl;
@@ -286,7 +328,24 @@ const NotificationDetailScreen = () => {
           ) : null}
         </View>
 
-        {kind === 'election_results' ? (
+        {isNews && imageUrl ? (
+          <Image
+            source={{uri: imageUrl}}
+            style={styles.newsImage}
+            resizeMode="cover"
+          />
+        ) : null}
+
+        {isNews ? (
+          <View style={styles.sectionCard}>
+            <CText type="B16" style={styles.sectionTitle}>
+              Noticia
+            </CText>
+            <CText type="R14" style={styles.emptyResultsText}>
+              {rawData?.body || notification?.direccion || notification?.body || 'Consulta la información publicada.'}
+            </CText>
+          </View>
+        ) : kind === 'election_results' ? (
           <View style={styles.sectionCard}>
             <CText type="B16" style={styles.sectionTitle}>
               Resultados
@@ -382,10 +441,17 @@ const NotificationDetailScreen = () => {
         )}
       </ScrollView>
 
-      {kind === 'election_results' ? (
+      {kind === 'election_results' || isNews || resolvedPublicUrl ? (
         <View style={styles.bottomContainer}>
           <CButton
-            title={notification?.actionLabel || 'Ver detalles'}
+            title={
+              notification?.actionLabel ||
+              (isNews
+                ? 'Abrir enlace'
+                : kind === 'election_results'
+                  ? 'Ver detalles'
+                  : 'Ver elección')
+            }
             type="B16"
             onPress={handlePrimaryAction}
             containerStyle={styles.actionButton}
@@ -446,6 +512,13 @@ const styles = StyleSheet.create({
     padding: getResponsiveSize(18, 22, 26),
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  newsImage: {
+    width: '100%',
+    height: getResponsiveSize(180, 210, 260),
+    borderRadius: moderateScale(18),
+    marginBottom: getResponsiveSize(18, 22, 26),
+    backgroundColor: '#E2E8F0',
   },
   sectionTitle: {
     color: '#0F172A',

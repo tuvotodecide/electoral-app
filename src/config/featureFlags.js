@@ -1,11 +1,10 @@
-import {isVotingAppFlow} from './appMode';
-
 /**
  * Feature Flags - Centralized feature toggle configuration
  */
 
 export const FEATURE_FLAGS = {
-  ENABLE_VOTING_FLOW: isVotingAppFlow(),
+  ENABLE_ATTESTATION_FLOW: true,
+  ENABLE_VOTING_FLOW: true,
 };
 
 /**

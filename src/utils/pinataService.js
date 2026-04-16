@@ -3,7 +3,8 @@ import axios from 'axios';
 import { File, Paths } from 'expo-file-system';
 import {
   getContextOfficeLabels,
-  hasSecondaryBlockElection,
+  hasSecondaryVoteData,
+  sanitizeElectoralDataForVisibleOffices,
 } from './electionContext';
 
 class PinataService {
@@ -312,7 +313,11 @@ class PinataService {
       const resolvedElectionType =
         selectedElectionContext?.electionType || additionalData?.electionType;
       const officeLabels = getContextOfficeLabels(resolvedElectionType);
-      const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
+      const sanitizedElectoralData = sanitizeElectoralDataForVisibleOffices(
+        electoralData,
+        resolvedElectionType,
+      );
+      const hasSecondaryFlow = hasSecondaryVoteData(sanitizedElectoralData);
 
       // 3. Construir attributes
       const attributes = [
@@ -322,7 +327,7 @@ class PinataService {
       ];
 
       // Agregar votos por partido
-      electoralData.partyResults.forEach(party => {
+      (sanitizedElectoralData.partyResults || []).forEach(party => {
         attributes.push({
           trait_type: `${officeLabels.primary} - ${party.partido}`,
           value: parseInt(party.presidente, 10) || 0,
@@ -337,7 +342,7 @@ class PinataService {
       });
 
       // Agregar resumen de votos
-      electoralData.voteSummaryResults.forEach(summary => {
+      (sanitizedElectoralData.voteSummaryResults || []).forEach(summary => {
         if (summary.label === 'Votos Válidos') {
           attributes.push({
             trait_type: `${officeLabels.primary} - Votos Válidos`,
@@ -378,7 +383,7 @@ class PinataService {
       const buildVoteData = type => {
         // Función auxiliar para obtener valores de forma segura
         const getValue = (label, defaultValue = 0) => {
-          const item = (electoralData.voteSummaryResults || []).find(
+          const item = (sanitizedElectoralData.voteSummaryResults || []).find(
             s => s.label === label,
           );
           if (!item) return defaultValue;
@@ -391,7 +396,7 @@ class PinataService {
           validVotes: getValue('Votos Válidos'),
           nullVotes: getValue('Votos Nulos'),
           blankVotes: getValue('Votos en Blanco'),
-          partyVotes: electoralData.partyResults.map(party => ({
+          partyVotes: (sanitizedElectoralData.partyResults || []).map(party => ({
             partyId: String(party.id ?? party.partyId ?? party.partido ?? '')
               .trim()
               .toLowerCase(),

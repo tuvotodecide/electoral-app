@@ -19,6 +19,7 @@ import {
   upsertWorksheetLocalStatus,
 } from './worksheetLocalStatus';
 import { enqueue, updateById } from './offlineQueue';
+import { sanitizeElectoralDataForVisibleOffices } from './electionContext';
 
 const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
 const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
@@ -620,7 +621,7 @@ export const publishActaHandler = async (item, userData) => {
       imageUri,
       certificateImageUri,
       aiAnalysis,
-      electoralData,
+      electoralData: rawElectoralData,
       additionalData,
       tableData,
     } = taskPayload;
@@ -682,6 +683,15 @@ export const publishActaHandler = async (item, userData) => {
         '',
     ).trim() || undefined;
     normalizedAdditional.electionId = electionId;
+    const resolvedElectionType =
+      normalizedAdditional?.selectedElectionContext?.electionType ||
+      normalizedAdditional?.electionType ||
+      taskPayload?.selectedElectionContext?.electionType ||
+      taskPayload?.electionType;
+    const electoralData = sanitizeElectoralDataForVisibleOffices(
+      rawElectoralData || {},
+      resolvedElectionType,
+    );
     const observationPayload = (() => {
       const hasObservationCandidate =
         typeof electoralData?.hasObservation === 'boolean'
@@ -1863,9 +1873,18 @@ export const publishWorksheetHandler = async (item, userData) => {
   const payload = item?.task?.payload || item?.payload || {};
   const imageUri = payload?.imageUri;
   const aiAnalysis = payload?.aiAnalysis || {};
-  const electoralData = payload?.electoralData || {};
+  const rawElectoralData = payload?.electoralData || {};
   const additionalData = payload?.additionalData || {};
   const tableData = payload?.tableData || {};
+  const resolvedElectionType =
+    additionalData?.selectedElectionContext?.electionType ||
+    additionalData?.electionType ||
+    payload?.selectedElectionContext?.electionType ||
+    payload?.electionType;
+  const electoralData = sanitizeElectoralDataForVisibleOffices(
+    rawElectoralData,
+    resolvedElectionType,
+  );
 
   const dniValue = String(
     additionalData?.dni ||
@@ -1911,6 +1930,7 @@ export const publishWorksheetHandler = async (item, userData) => {
 
   const retryPayload = {
     ...payload,
+    electoralData,
     additionalData: {
       ...additionalData,
       dni: dniValue,

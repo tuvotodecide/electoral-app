@@ -1,19 +1,14 @@
-import {APP_FLOW} from '@env';
-
 export const APP_FLOWS = {
   ATTESTATION: 'attestation',
+  COMBINED: 'combined',
   VOTING: 'voting',
 };
 
-const normalizeFlow = value => String(value || '').trim().toLowerCase();
-
 export const getAppFlow = () => {
-  const flow = normalizeFlow(APP_FLOW);
-  if (flow === APP_FLOWS.VOTING) {
-    return APP_FLOWS.VOTING;
-  }
-  return APP_FLOWS.ATTESTATION;
+  return APP_FLOWS.COMBINED;
 };
 
-export const isVotingAppFlow = () => getAppFlow() === APP_FLOWS.VOTING;
+export const isAttestationAppFlow = () => true;
+
+export const isVotingAppFlow = () => true;
 

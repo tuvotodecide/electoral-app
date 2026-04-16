@@ -329,7 +329,7 @@ describe('PhotoReviewScreen_new', () => {
 
     await waitFor(() => {
       expect(getByTestId('infoModalTitle').props.children).toBe(
-        'Acta no coincide',
+        'La hoja de trabajo no coincide con el acta',
       );
     });
 

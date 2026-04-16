@@ -2,6 +2,7 @@ import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -103,11 +104,24 @@ export const getNotificationKind = ({ type, title, body }) => {
     return 'election_results';
   }
 
+  if (normalizedType === 'INSTITUTIONAL_NEWS') {
+    return 'news';
+  }
+
   if (
     normalizedType === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
     normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED' ||
+    normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN' ||
+    normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_ENABLED' ||
     haystack.includes('convocatoria') ||
+    haystack.includes('habilitacion') ||
+    haystack.includes('habilitación') ||
+    haystack.includes('padron') ||
+    haystack.includes('padrón') ||
     haystack.includes('votacion') ||
+    haystack.includes('votación') ||
+    haystack.includes('publicada oficialmente') ||
     haystack.includes('cronograma') ||
     haystack.includes('horario')
   ) {
@@ -115,6 +129,20 @@ export const getNotificationKind = ({ type, title, body }) => {
   }
 
   return 'generic';
+};
+
+const isVotingNotificationType = type => {
+  const normalizedType = String(type || '').trim().toUpperCase();
+  return [
+    'ELECTION_RESULTS',
+    'INSTITUTIONAL_RESULTS_AVAILABLE',
+    'INSTITUTIONAL_EVENT_PUBLISHED',
+    'INSTITUTIONAL_SCHEDULE_UPDATED',
+    'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+    'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+    'INSTITUTIONAL_NEWS',
+    'INSTITUTIONAL_VOTING_ENABLED',
+  ].includes(normalizedType);
 };
 
 export const mapResultsSummary = data => {
@@ -168,9 +196,9 @@ export const buildNotificationNavigationTarget = (
     if (
       item?.kind === 'election_results' ||
       item?.kind === 'voting_event' ||
+      item?.kind === 'news' ||
       rawData?.type === 'election_results' ||
-      rawData?.type === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
-      rawData?.type === 'INSTITUTIONAL_SCHEDULE_UPDATED'
+      isVotingNotificationType(rawData?.type)
     ) {
       return {
         name: StackNav.VotingNotificationDetailScreen,
@@ -313,6 +341,10 @@ export default function Notification({ navigation }) {
     const bodyFromBackend = n?.body || data?.body || '';
     const normalizedType = String(data?.type || '').trim().toUpperCase();
     const isScheduleUpdate = normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED';
+    const isPadronReview = normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+    const isOfficialPublication =
+      normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED';
+    const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -320,7 +352,9 @@ export default function Notification({ navigation }) {
     });
 
     let mesaLabel = '';
-    if (notificationKind === 'voting_event') {
+    if (notificationKind === 'news') {
+      mesaLabel = titleFromBackend || data?.title || 'Noticia';
+    } else if (notificationKind === 'voting_event') {
       mesaLabel =
         titleFromBackend ||
         data?.title ||
@@ -348,13 +382,23 @@ export default function Notification({ navigation }) {
     let tipo = 'Actualizar';
     if (notificationKind === 'voting_event') {
       const startsAt = data?.votingStart || data?.startsAt;
-      tipo = isScheduleUpdate
-        ? 'Cronograma modificado'
-        : startsAt
+      if (isPadronReview) {
+        tipo = 'Revisar padrón';
+      } else if (isOfficialPublication) {
+        tipo = 'Publicación oficial';
+      } else if (isVotingEnabled) {
+        tipo = 'Votar';
+      } else if (isScheduleUpdate) {
+        tipo = 'Cronograma modificado';
+      } else {
+        tipo = startsAt
           ? formatCountdownLabel(Date.parse(String(startsAt)), now)
           : 'Ver convocatoria';
+      }
     } else if (notificationKind === 'election_results') {
       tipo = 'Ver ganador';
+    } else if (notificationKind === 'news') {
+      tipo = 'Ver noticia';
     } else if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
@@ -378,6 +422,7 @@ export default function Notification({ navigation }) {
     const actionUrl =
       data?.actionUrl ||
       data?.publicUrl ||
+      data?.link ||
       n?.actionUrl ||
       null;
     const eligibleFlag =
@@ -394,7 +439,9 @@ export default function Notification({ navigation }) {
       mesa: mesaLabel,
       colegio: data?.locationName || n?.locationName || '',
       direccion:
-        notificationKind === 'voting_event'
+        notificationKind === 'news'
+          ? bodyFromBackend || data?.summary || data?.body || ''
+          : notificationKind === 'voting_event'
           ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
             ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
@@ -411,6 +458,7 @@ export default function Notification({ navigation }) {
       votingStartLabel: startsAtLabel,
       votingEndLabel: endsAtLabel,
       actionUrl,
+      imageUrl: data?.imageUrl || n?.imageUrl || null,
       resultsSummary: mapResultsSummary(data),
       screen: data?.screen || null,
       routeParams: data?.routeParams || null,
@@ -609,6 +657,14 @@ export default function Notification({ navigation }) {
     switch (tipo) {
       case 'Conteo de Votos':
         return 'megaphone-outline';
+      case 'Ver noticia':
+        return 'newspaper-outline';
+      case 'Revisar padrón':
+        return 'person-circle-outline';
+      case 'Publicación oficial':
+        return 'checkmark-done-circle-outline';
+      case 'Votar':
+        return 'checkbox-outline';
       default:
         return 'sparkles-outline';
     }
@@ -643,7 +699,13 @@ export default function Notification({ navigation }) {
             ]}>
             <Ionicons
               testID={`notificationIcon_${index}`}
-              name={item.kind === 'election_results' ? 'podium-outline' : getIconName(item.tipo)}
+              name={
+                item.kind === 'election_results'
+                  ? 'podium-outline'
+                  : item.kind === 'news'
+                    ? 'newspaper-outline'
+                    : getIconName(item.tipo)
+              }
               size={26}
               color={item.statusTone === 'danger' ? '#B91C1C' : '#1F7A36'}
             />
@@ -686,6 +748,14 @@ export default function Notification({ navigation }) {
               style={localStyle.detailText}>
               {item.direccion}
             </Text>
+            {item.imageUrl ? (
+              <Image
+                testID={`notificationImage_${index}`}
+                source={{uri: item.imageUrl}}
+                style={localStyle.notificationImage}
+                resizeMode="cover"
+              />
+            ) : null}
             {Array.isArray(item.resultsSummary) && item.resultsSummary.length > 0 ? (
               <View style={localStyle.resultsPreview}>
                 {item.resultsSummary.slice(0, 2).map(result => (
@@ -826,6 +896,13 @@ const localStyle = StyleSheet.create({
     color: '#475569',
     marginTop: 6,
     fontWeight: '500',
+  },
+  notificationImage: {
+    width: '100%',
+    height: 128,
+    borderRadius: 14,
+    marginTop: 12,
+    backgroundColor: '#E2E8F0',
   },
   resultsPreview: {
     marginTop: 12,

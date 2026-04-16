@@ -44,6 +44,41 @@ export const hasSecondaryBlockElection = value => {
   return normalized === 'municipal' || normalized === 'departamental';
 };
 
+export const sanitizeElectoralDataForVisibleOffices = (
+  electoralData = {},
+  contextOrElectionType = null,
+) => {
+  const resolvedElectionType = normalizeElectionTypeParam(
+    contextOrElectionType?.electionType || contextOrElectionType,
+  );
+
+  if (!hasSecondaryBlockElection(resolvedElectionType)) {
+    return electoralData;
+  }
+
+  const partyResults = Array.isArray(electoralData?.partyResults)
+    ? electoralData.partyResults.map(row => {
+        if (!row || typeof row !== 'object') return row;
+        const {diputado, ...rest} = row;
+        return rest;
+      })
+    : electoralData?.partyResults;
+
+  const voteSummaryResults = Array.isArray(electoralData?.voteSummaryResults)
+    ? electoralData.voteSummaryResults.map(row => {
+        if (!row || typeof row !== 'object') return row;
+        const {value2, ...rest} = row;
+        return rest;
+      })
+    : electoralData?.voteSummaryResults;
+
+  return {
+    ...electoralData,
+    partyResults,
+    voteSummaryResults,
+  };
+};
+
 const hasMeaningfulValue = value =>
   value !== undefined && value !== null && String(value).trim() !== '';
 

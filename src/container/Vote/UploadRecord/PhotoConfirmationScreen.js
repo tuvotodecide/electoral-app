@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -32,7 +32,8 @@ import {
 } from '../../../utils/worksheetLocalStatus';
 import {
   getContextOfficeLabels,
-  hasSecondaryBlockElection,
+  hasSecondaryVoteData,
+  sanitizeElectoralDataForVisibleOffices,
 } from '../../../utils/electionContext';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -135,7 +136,32 @@ const PhotoConfirmationScreen = ({ route }) => {
   const resolvedElectionType =
     selectedElectionContext?.electionType || electionType;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
-  const hasSecondaryFlow = hasSecondaryBlockElection(resolvedElectionType);
+  const sanitizedElectoralData = useMemo(
+    () =>
+      sanitizeElectoralDataForVisibleOffices(
+        {
+          partyResults: partyResults || [],
+          voteSummaryResults: voteSummaryResults || [],
+          hasObservation: Boolean(hasObservation),
+          observationText: String(observationText || '').trim(),
+        },
+        resolvedElectionType,
+      ),
+    [
+      partyResults,
+      voteSummaryResults,
+      hasObservation,
+      observationText,
+      resolvedElectionType,
+    ],
+  );
+  const sanitizedPartyResults = sanitizedElectoralData.partyResults || [];
+  const sanitizedVoteSummaryResults =
+    sanitizedElectoralData.voteSummaryResults || [];
+  const shouldValidateSecondary = hasSecondaryVoteData({
+    partyResults: sanitizedPartyResults,
+    voteSummaryResults: sanitizedVoteSummaryResults,
+  });
 
   const flowMode = route.params?.mode || 'upload';
   const isWorksheetMode = flowMode === 'worksheet';
@@ -321,10 +347,10 @@ const PhotoConfirmationScreen = ({ route }) => {
       }
 
       const local = validateBallotLocally(
-        partyResults || [],
-        voteSummaryResults || [],
+        sanitizedPartyResults,
+        sanitizedVoteSummaryResults,
         {
-          requireSecondary: hasSecondaryFlow,
+          requireSecondary: shouldValidateSecondary,
           primaryLabel: officeLabels.primary,
           secondaryLabel: officeLabels.secondary,
         },
@@ -364,10 +390,10 @@ const PhotoConfirmationScreen = ({ route }) => {
     const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
-        partyResults || [],
-        voteSummaryResults || [],
+        sanitizedPartyResults,
+        sanitizedVoteSummaryResults,
         {
-          requireSecondary: hasSecondaryFlow,
+          requireSecondary: shouldValidateSecondary,
           primaryLabel: officeLabels.primary,
           secondaryLabel: officeLabels.secondary,
         },
@@ -467,8 +493,8 @@ const PhotoConfirmationScreen = ({ route }) => {
       };
 
       const electoralData = {
-        partyResults: partyResults || [],
-        voteSummaryResults: voteSummaryResults || [],
+        partyResults: sanitizedPartyResults,
+        voteSummaryResults: sanitizedVoteSummaryResults,
       };
 
       const worksheetTaskPayload = {
@@ -522,10 +548,10 @@ const PhotoConfirmationScreen = ({ route }) => {
     const eid = resolvedElectionId || undefined;
     try {
       const local = validateBallotLocally(
-        partyResults || [],
-        voteSummaryResults || [],
+        sanitizedPartyResults,
+        sanitizedVoteSummaryResults,
         {
-          requireSecondary: hasSecondaryFlow,
+          requireSecondary: shouldValidateSecondary,
           primaryLabel: officeLabels.primary,
           secondaryLabel: officeLabels.secondary,
         },
@@ -615,8 +641,8 @@ const PhotoConfirmationScreen = ({ route }) => {
       };
 
       const electoralData = {
-        partyResults: partyResults || [],
-        voteSummaryResults: voteSummaryResults || [],
+        partyResults: sanitizedPartyResults,
+        voteSummaryResults: sanitizedVoteSummaryResults,
         hasObservation: Boolean(hasObservation),
         observationText: String(observationText || '').trim(),
       };

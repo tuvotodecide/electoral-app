@@ -91,6 +91,45 @@ describe('Notification routing helpers', () => {
     });
   });
 
+  it('soporta tipos institucionales reales de revision, publicacion, noticias y habilitacion', () => {
+    expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        title: 'Revision de padron disponible',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+        title: 'La elección fue publicada oficialmente',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_NEWS',
+        title: 'Noticia',
+        body: '',
+      }),
+    ).toBe('news');
+
+    expect(
+      buildNotificationNavigationTarget({
+        data: {type: 'INSTITUTIONAL_VOTING_ENABLED'},
+      }, {enableVotingFlow: true}),
+    ).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          data: {type: 'INSTITUTIONAL_VOTING_ENABLED'},
+        },
+      },
+    });
+  });
+
   it('redirige worksheet_uploaded al home sin navegar a pantallas erradas', () => {
     expect(
       buildNotificationNavigationTarget({
