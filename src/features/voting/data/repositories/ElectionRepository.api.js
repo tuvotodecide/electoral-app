@@ -884,7 +884,7 @@ const ElectionRepositoryApi = {
   async verifyVoteQrCode(qrData) {
     const verifyUrl = `${API_BASE}/voting/presential-sessions/scan`;
     try {
-      await axios.post(
+      const response = await axios.post(
         verifyUrl,
         {
           token: qrData,
@@ -892,6 +892,7 @@ const ElectionRepositoryApi = {
         }
       );
 
+      return response.data.presentialSessionId;
     } catch (error) {
       throw new Error(`Qr verification failed: ${error?.response?.data?.message || error.message}`);
     }

@@ -279,7 +279,10 @@ const CandidateScreen = ({ route }) => {
       }
 
       try {
-        await repository.verifyVoteQrCode(result.data);
+        const presentialSessionId = await repository.verifyVoteQrCode(result.data);
+        if (!presentialSessionId) {
+          throw new Error('Invalid QR code: No session ID returned');
+        }
       } catch (error) {
         setErrorModal({
           visible: true,
@@ -289,7 +292,7 @@ const CandidateScreen = ({ route }) => {
         throw error;
       }
 
-      const voteResult = await submitVote();
+      const voteResult = await submitVote(presentialSessionId);
       if (!voteResult.success) {
         setErrorModal({
           visible: true,
