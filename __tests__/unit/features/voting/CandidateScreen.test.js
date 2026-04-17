@@ -310,9 +310,7 @@ describe('CandidateScreen', () => {
 
     expect(repository.submitVote).toHaveBeenCalledWith(
       'election-1',
-      'cand-1',
       'Lista Azul',
-      '0xtest',
       undefined,
     );
     expect(recordVote).toHaveBeenCalledWith('cand-1', true, {

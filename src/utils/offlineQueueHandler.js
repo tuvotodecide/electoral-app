@@ -2242,6 +2242,17 @@ export const syncActaBackendHandler = async (item, userData) => {
   return { success: true, backendBallotId: ballotId };
 };
 
+export const getVoteRequestForBackend = async () => {
+  const request = await axios.get(VERIFIER_REQUEST_ENDPOINT + '/vote');
+
+  const data = request.data;
+  if (!data.request) {
+    throw new Error('Invalid vote request response: missing message');
+  }
+
+  return data.request;
+}
+
 export const authenticateWithBackend = async (did, privateKey) => {
   const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
 

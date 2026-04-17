@@ -1,29 +1,6 @@
 [
   {
     "type": "function",
-    "name": "castVote",
-    "inputs": [
-      {
-        "name": "voteId",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "optionId",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "nullifier",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "getOwnVoteInfo",
     "inputs": [
       {
@@ -53,52 +30,6 @@
   },
   {
     "type": "function",
-    "name": "getProofStatus",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct IZKPVerifier.ProofStatus",
-        "components": [
-          {
-            "name": "isVerified",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "validatorVersion",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "blockNumber",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "blockTimestamp",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getVoteInfo",
     "inputs": [
       {
@@ -115,18 +46,23 @@
       },
       {
         "name": "startDate",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint48",
+        "internalType": "uint48"
       },
       {
         "name": "endDate",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint48",
+        "internalType": "uint48"
       },
       {
         "name": "resultsDate",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "totalVoters",
+        "type": "uint48",
+        "internalType": "uint48"
       },
       {
         "name": "options",
@@ -161,153 +97,6 @@
     "stateMutability": "view"
   },
   {
-    "type": "function",
-    "name": "getZKPRequest",
-    "inputs": [
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "zkpRequest",
-        "type": "tuple",
-        "internalType": "struct IZKPVerifier.ZKPRequest",
-        "components": [
-          {
-            "name": "metadata",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "validator",
-            "type": "address",
-            "internalType": "contract ICircuitValidator"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "isProofVerified",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "requestIdExists",
-    "inputs": [
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "submitZKPResponse",
-    "inputs": [
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "inputs",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      },
-      {
-        "name": "a",
-        "type": "uint256[2]",
-        "internalType": "uint256[2]"
-      },
-      {
-        "name": "b",
-        "type": "uint256[2][2]",
-        "internalType": "uint256[2][2]"
-      },
-      {
-        "name": "c",
-        "type": "uint256[2]",
-        "internalType": "uint256[2]"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "submitZKPResponseV2",
-    "inputs": [
-      {
-        "name": "responses",
-        "type": "tuple[]",
-        "internalType": "struct IZKPVerifier.ZKPResponse[]",
-        "components": [
-          {
-            "name": "requestId",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "zkProof",
-            "type": "bytes",
-            "internalType": "bytes"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      },
-      {
-        "name": "crossChainProof",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
     "type": "event",
     "name": "Voted",
     "inputs": [
@@ -322,34 +111,40 @@
   },
   {
     "type": "error",
-    "name": "LinkedProofError",
+    "name": "AddressEmptyCode",
     "inputs": [
       {
-        "name": "message",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "requestId",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "linkID",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "requestIdToCompare",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "linkIdToCompare",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "ERC1967InvalidImplementation",
+    "inputs": [
+      {
+        "name": "implementation",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC1967NonPayable",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FailedCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
   },
   {
     "type": "error",

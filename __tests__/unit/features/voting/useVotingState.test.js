@@ -17,11 +17,11 @@ jest.mock('@/src/api/vote', () => ({
 }));
 
 jest.mock('@/src/data/credentials', () => ({
-  getNullifierForVote: jest.fn(),
+  getCredentialForVote: jest.fn(),
 }));
 
 const {getOwnVoteInfo} = require('@/src/api/vote');
-const {getNullifierForVote} = require('@/src/data/credentials');
+const {getCredentialForVote} = require('@/src/data/credentials');
 
 const createStorage = initialEntries => {
   const storage = new Map(Object.entries(initialEntries || {}));
@@ -175,7 +175,13 @@ describe('useVotingState', () => {
         },
       ]),
     });
-    getNullifierForVote.mockResolvedValue('nullifier-1');
+    getCredentialForVote.mockResolvedValue({
+      info: {
+        credentialSubject: {
+          nullifier: 'nullifier-1',
+        },
+      },
+    });
     getOwnVoteInfo.mockResolvedValue([true, 'Lista Azul']);
 
     const {result} = renderHook(() => useVotingState('election-1'));
@@ -188,7 +194,7 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('participation-1');
     });
 
-    expect(getNullifierForVote).toHaveBeenCalledWith('election-1');
+    expect(getCredentialForVote).toHaveBeenCalledWith('election-1', 'did:example:123', undefined );
     expect(getOwnVoteInfo).toHaveBeenCalledWith('election-1', 'nullifier-1');
     expect(result.current.syncedWithBlockchain).toBe('synced');
   });
@@ -205,7 +211,7 @@ describe('useVotingState', () => {
         },
       ]),
     });
-    getNullifierForVote.mockResolvedValue(null);
+    getCredentialForVote.mockResolvedValue(null);
 
     const {result} = renderHook(() => useVotingState('election-1'));
 
@@ -233,7 +239,13 @@ describe('useVotingState', () => {
         },
       ]),
     });
-    getNullifierForVote.mockResolvedValue('nullifier-1');
+    getCredentialForVote.mockResolvedValue({
+      info: {
+        credentialSubject: {
+          nullifier: 'nullifier-1',
+        },
+      },
+    });
     getOwnVoteInfo.mockResolvedValue([true, 'Lista Verde']);
 
     const {result} = renderHook(() => useVotingState('election-1'));

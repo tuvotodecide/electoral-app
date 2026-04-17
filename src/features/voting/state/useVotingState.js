@@ -8,7 +8,8 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
-import { getNullifierForVote } from '@/src/data/credentials';
+import { getCredentialForVote, getNullifierForVote } from '@/src/data/credentials';
+import { useSelector } from 'react-redux';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -133,6 +134,7 @@ export const useVotingState = (electionId = '') => {
   const [lastReceipt, setLastReceipt] = useState(null);
   const [participations, setParticipations] = useState([]);
   const [syncedWithBlockchain, setSyncedWithBlockchain] = useState('loading');
+  const userData = useSelector(state => state.wallet.payload);
 
   // Cargar estado inicial desde AsyncStorage
   useEffect(() => {
@@ -202,12 +204,13 @@ export const useVotingState = (electionId = '') => {
 
     try {
       setSyncedWithBlockchain('loading');
-      const nullifier = await getNullifierForVote(electionId);
-      if(!nullifier) {
+      const credential = await getCredentialForVote(electionId, userData.did, userData.privKey);
+      if(!credential.info?.credentialSubject?.nullifier) {
         setSyncedWithBlockchain('failed');
-        throw new Error(`Nullifier not found for electionId ${electionId}`);
+        throw new Error(`Credential not found for electionId ${electionId}`);
       }
 
+      const nullifier = credential.info.credentialSubject.nullifier;
       const voteInfo = await getOwnVoteInfo(electionId, nullifier);
       if (Array.isArray(voteInfo) && voteInfo.length === 2) {
         const [hasVoted, option] = voteInfo;
@@ -218,6 +221,7 @@ export const useVotingState = (electionId = '') => {
         }
       }
     } catch (error) {
+      console.log('Error syncing with blockchain:', error);
       setSyncedWithBlockchain('failed');
     }
   }
