@@ -263,22 +263,58 @@ const CandidateScreen = ({ route }) => {
     setIsCameraMounted(true);
   };
 
-  const handleBarcodeScanned = useCallback((result) => {
-    console.log('Código QR escaneado:', result);
+  const handleBarcodeScanned = async (result) => {
+    isSubmittingVoteRef.current = true;
+    setIsLoading(true);
     setIsCameraMounted(false);
 
-    // Check if the scanned QR code contains the expected voting data (this is just a placeholder check)
+    try {
+      if (!result?.data) {
+        setErrorModal({
+          visible: true,
+          title: UI_STRINGS.badQrTitle,
+          message: UI_STRINGS.badQrDesc,
+        });
+        throw new Error('QR code data is empty');
+      }
 
-    if (!result?.data || !result.data.includes('voting_info')) {
-      setErrorModal({
-        visible: true,
-        title: UI_STRINGS.badQrTitle,
-        message: UI_STRINGS.badQrDesc,
+      try {
+        await repository.verifyVoteQrCode(result.data);
+      } catch (error) {
+        setErrorModal({
+          visible: true,
+          title: UI_STRINGS.badQrTitle,
+          message: UI_STRINGS.badQrDesc,
+        });
+        throw error;
+      }
+
+      const voteResult = await submitVote();
+      if (!voteResult.success) {
+        setErrorModal({
+          visible: true,
+          title: UI_STRINGS.qrVoteErrorTitle,
+          message: UI_STRINGS.qrVoteErrorDesc,
+        });
+        throw new Error(voteResult.error || 'Vote submission failed');
+      }
+    } catch (error) {
+      console.error('[CandidateScreen] Error in QR vote flow:', error);
+      captureError(voteResult.error, {
+        flow: 'qr_voting_flow',
+        step: 'submit_vote',
+        critical: false,
+        allowPii: false,
+        extra: {
+          electionId,
+        },
       });
-      return;
+    } finally {
+      setShowConfirmModal(false);
+      isSubmittingVoteRef.current = false;
+      setIsLoading(false);
     }
-    
-  }, []);
+  };
 
   // Handle confirm vote
   const handleConfirmVote = useCallback(async () => {
@@ -321,7 +357,6 @@ const CandidateScreen = ({ route }) => {
         : await checkInternetConnection();
 
       if (isInPlaceVote) {
-        setShowConfirmModal(false);
         if (!isOnline) {
           setErrorModal({
             visible: true,
@@ -365,49 +400,9 @@ const CandidateScreen = ({ route }) => {
           return;
         }
 
-        await startVoteJournal({
-          electionId,
-          candidateId: selectedCandidate.id,
-          candidateName: selectedCandidate.partyName,
-          presidentName: selectedCandidate.presidentName,
-          electionTitle: resolveElectionTitle(electionInfo),
-          organization: resolveElectionOrganization(electionInfo),
-          candidateSelected: {
-            partyName: selectedCandidate.partyName,
-            presidentName: selectedCandidate.presidentName,
-            viceName: selectedCandidate.viceName,
-            ticketEntries: selectedCandidate.ticketEntries || [],
-          },
-        });
+        const result = await submitVote();
 
-        // Online: Submit vote directly
-        const result = await repository.submitVote(electionId, selectedCandidate.id, selectedCandidate.partyName, userData.account, userData.privKey);
-        console.log('Vote submission result:', result);
-
-        if (result.success) {
-          const receipt = await recordVote(selectedCandidate.id, true, {
-            participationId: result.participationId,
-            participatedAt: result.participatedAt,
-            transactionId: result.transactionId || null,
-            electionId,
-            electionTitle: resolveElectionTitle(electionInfo),
-            organization: resolveElectionOrganization(electionInfo),
-            candidateSelected: {
-              partyName: selectedCandidate.partyName,
-              presidentName: selectedCandidate.presidentName,
-              viceName: selectedCandidate.viceName,
-              ticketEntries: selectedCandidate.ticketEntries || [],
-            },
-          });
-
-          setShowConfirmModal(false);
-
-          // Navigate to receipt/comprobante screen
-          navigation.replace(StackNav.VotingReceiptScreen, {
-            participationId: receipt?.id || result.participationId,
-            electionId,
-          });
-        } else if (result?.shouldQueueBackendSync && result?.blockchainCommitted) {
+        if (result?.shouldQueueBackendSync && result?.blockchainCommitted) {
           await enqueueBackendParticipationSync({
             electionId,
             candidateId: selectedCandidate.id,
@@ -473,6 +468,56 @@ const CandidateScreen = ({ route }) => {
       isSubmittingVoteRef.current = false;
       setIsLoading(false);
     }
+  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);
+
+  const submitVote = useCallback(async (presentialSessionId) => {
+    await startVoteJournal({
+      electionId,
+      candidateId: selectedCandidate.id,
+      candidateName: selectedCandidate.partyName,
+      presidentName: selectedCandidate.presidentName,
+      electionTitle: resolveElectionTitle(electionInfo),
+      organization: resolveElectionOrganization(electionInfo),
+      candidateSelected: {
+        partyName: selectedCandidate.partyName,
+        presidentName: selectedCandidate.presidentName,
+        viceName: selectedCandidate.viceName,
+        ticketEntries: selectedCandidate.ticketEntries || [],
+      },
+    });
+
+
+    // Online: Submit vote directly
+    const result = await repository.submitVote(electionId, selectedCandidate.partyName, presentialSessionId);
+
+    if (result.success) {
+      const receipt = await recordVote(selectedCandidate.id, true, {
+        participationId: result.participationId,
+        participatedAt: result.participatedAt,
+        transactionId: result.transactionId || null,
+        electionId,
+        electionTitle: resolveElectionTitle(electionInfo),
+        organization: resolveElectionOrganization(electionInfo),
+        candidateSelected: {
+          partyName: selectedCandidate.partyName,
+          presidentName: selectedCandidate.presidentName,
+          viceName: selectedCandidate.viceName,
+          ticketEntries: selectedCandidate.ticketEntries || [],
+        },
+      });
+
+      setShowConfirmModal(false);
+
+      // Navigate to receipt/comprobante screen
+      navigation.replace(StackNav.VotingReceiptScreen, {
+        participationId: receipt?.id || result.participationId,
+        electionId,
+      });
+    } else {
+      await clearVoteJournal(electionId);
+    }
+
+    return result;
   }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);
 
   // Handle cancel confirm

@@ -56,7 +56,7 @@ export async function claimForVote(voteId, dni, did, privKey) {
     );
 
     const response = await axios.get(
-      `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
+      `${BACKEND_RESULT}/api/v1/voting/events/vote/cred-vc?eventId=${voteId}&dni=${dni}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -66,23 +66,14 @@ export async function claimForVote(voteId, dni, did, privKey) {
       },
     );
 
-    if (!response?.data?.data || response.data.data.length === 0) {
-      throw new Error('No notifications found for user when trying to claim credential for vote.');
+    if (!response?.data?.vc) {
+      throw new Error('No credential data found in response when trying to claim credential for vote.');
     }
 
-    const notification = response.data.data.find(
-      notif => notif.data?.type === 'INSTITUTIONAL_EVENT_PUBLISHED' && notif.data?.eventId === voteId
-    );
-
-    if (!notification) {
-      throw new Error('No matching notification found for vote credential claim.');
-    }
-
-    await claimNewCredential(notification.data.credentialData, did, privKey);
+    await claimNewCredential(response.data.vc, did, privKey);
 
     return true;
   } catch (error) {
-
     const err = new Error(`Error fetching notifications for vote claim:`, error);
     captureError(
       err,

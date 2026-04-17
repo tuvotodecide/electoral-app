@@ -5,9 +5,10 @@ import store from '../../../../redux/store';
 import { executeOperation } from '@/src/api/account';
 import { castVote } from '@/src/api/vote';
 import { CHAIN } from "@env";
-import { getNullifierForVote, saveNullifierForVote } from '@/src/data/credentials';
-import { authenticateWithBackend } from '../../../../utils/offlineQueueHandler';
+import { getCredentialForVote, getNullifierForVote, saveNullifierForVote } from '@/src/data/credentials';
+import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
+import wira from 'wira-sdk';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
@@ -630,11 +631,11 @@ const fetchWitnessRecordsByDni = async dni => {
     );
 };
 
-const postParticipation = async (electionId, candidateId, dni) => {
+const postParticipation = async (electionId, candidateId, dni, presentialSessionId) => {
   try {
     const {data} = await axios.post(
       `${API_BASE}/voting/events/${encodeURIComponent(electionId)}/participations`,
-      {carnet: dni},
+      {carnet: dni, presentialSessionId},
       {
         headers: {
           'Content-Type': 'application/json',
@@ -803,7 +804,7 @@ const ElectionRepositoryApi = {
     return fetchWitnessRecordsByDni(dni);
   },
 
-  async submitVote(electionId, candidateId, candidateName) {
+  async submitVote(electionId, candidateId, presentialSessionId) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -835,19 +836,28 @@ const ElectionRepositoryApi = {
     }
 
     try {
-      const nullifier = await getNullifierForVote(electionId);
+      const did = getCurrentDid();
+      const privKey = getCurrentPrivKey();
 
-      await executeOperation(
-        '',
-        '',
-        CHAIN,
-        castVote(electionId, candidateName, nullifier),
-        null,
-        null,
-        true
+      const voteRequest = await getVoteRequestForBackend();
+      const callbackUrl = voteRequest.body.callbackUrl;
+      if(!callbackUrl) {
+        throw new Error('Callback URL not found in vote request');
+      }
+      voteRequest.body.callbackUrl = callbackUrl + `?optionId=${candidateId}`
+
+      const credential = await getCredentialForVote(electionId, did, privKey);
+      if (!credential) {
+        throw new Error('Credential for vote not found');
+      }
+
+      await wira.authenticateWithVerifier(
+        JSON.stringify(voteRequest),
+        did,
+        privKey,
+        [credential.id]
       );
 
-      await saveNullifierForVote(electionId, nullifier);
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
       await clearVoteJournal(electionId);
@@ -857,7 +867,7 @@ const ElectionRepositoryApi = {
       }
     }
 
-    const backendResult = await postParticipation(electionId, candidateId, dni);
+    const backendResult = await postParticipation(electionId, candidateId, dni, presentialSessionId);
     if (backendResult.success) {
       await clearVoteJournal(electionId);
       return backendResult;
@@ -869,6 +879,22 @@ const ElectionRepositoryApi = {
       blockchainCommitted: true,
       shouldQueueBackendSync: true,
     };
+  },
+
+  async verifyVoteQrCode(qrData) {
+    const verifyUrl = `${API_BASE}/voting/presential-sessions/scan`;
+    try {
+      await axios.post(
+        verifyUrl,
+        {
+          token: qrData,
+          carnet: getCurrentDni(),
+        }
+      );
+
+    } catch (error) {
+      throw new Error(`Qr verification failed: ${error?.response?.data?.message || error.message}`);
+    }
   },
 
   async registerParticipation(electionId, candidateId) {

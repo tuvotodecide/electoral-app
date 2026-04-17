@@ -94,7 +94,7 @@ import {
   useElectionRepository,
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
-import { claimNullifierForVote, hasNullifierForVote } from '@/src/data/credentials';
+import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
 import { FlashList } from '@shopify/flash-list';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -2327,17 +2327,14 @@ export default function HomeScreen({ navigation }) {
     }
 
     try {
-      const hasNullifier = await hasNullifierForVote(selectedElection.id);
-      if (!hasNullifier) {
-        await claimNullifierForVote(
-          selectedElection.id,
-          userData.dni,
-          userData.did,
-          userData.privKey,
-        );
+      const hasCredential = await checkClaimedCredForVote(selectedElection.id, userData.did, userData.privKey);
+      if (!hasCredential) {
+        const claimed = await claimForVote(selectedElection.id, userData.dni, userData.did, userData.privKey);
+        if (!claimed) {
+          throw new Error('Credential not claimed');
+        }
       }
     } catch (error) {
-      console.error('Error al reclamar nullifier para voto', error);
       captureError(error, {
         flow: 'voting_flow',
         step: 'claim_nullifier',
@@ -2358,6 +2355,7 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate(StackNav.VotingCandidateScreen, {
       electionId: selectedElection.id,
       election: selectedElection,
+      isInVotePlace: selectedElection.presentialKioskEnabled
     });
   };
   const handleVotingDetailsPress = targetElection => {

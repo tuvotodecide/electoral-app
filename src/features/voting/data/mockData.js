@@ -127,6 +127,8 @@ export const UI_STRINGS = {
   cantVoteWithoutCameraDesc: 'Para votar presencialmente, se requiere acceso a la cámara para escanear el código QR en el recinto de votación.',
   badQrTitle: 'Código QR no reconocido',
   badQrDesc: 'El código QR escaneado no es válido para esta votación. Por favor, asegúrate de estar escaneando el código correcto proporcionado en el recinto de votación.',
+  qrVoteErrorTitle: 'Error al procesar el voto',
+  qrVoteErrorDesc: 'Ocurrió un error al procesar tu voto. Puedes intentar escaneando el código QR nuevamente.',
 
   // Offline modal
   offlineTitle: 'Voto Guardado en Dispositivo',
