@@ -161,7 +161,6 @@ const CandidateScreen = ({ route }) => {
 
   const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
   const electionId = route?.params?.electionId || electionInfo?.id || '';
-  const userData = useSelector(state => state.wallet.payload);
   
   // State
   const [candidates, setCandidates] = useState([]);
@@ -180,7 +179,7 @@ const CandidateScreen = ({ route }) => {
     message: '',
   });
   const isSubmittingVoteRef = useRef(false);
-  const isInPlaceVote = route?.params?.isInPlaceVote ?? false;
+  const isInPlaceVote = route?.params?.isInPlaceVote === true;
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [isCameraMounted, setIsCameraMounted] = useState(false);
 
@@ -278,8 +277,9 @@ const CandidateScreen = ({ route }) => {
         throw new Error('QR code data is empty');
       }
 
+      let presentialSessionId;
       try {
-        const presentialSessionId = await repository.verifyVoteQrCode(result.data);
+        presentialSessionId = await repository.verifyVoteQrCode(result.data);
         if (!presentialSessionId) {
           throw new Error('Invalid QR code: No session ID returned');
         }
