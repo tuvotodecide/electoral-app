@@ -185,6 +185,73 @@ const NotificationTypeStrategies = {
   }
 };
 
+const INSTITUTIONAL_DETAIL_TYPES = new Set([
+  'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+  'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+  'INSTITUTIONAL_RESULTS_AVAILABLE',
+  'INSTITUTIONAL_SCHEDULE_UPDATED',
+  'INSTITUTIONAL_VOTING_ENABLED',
+  'INSTITUTIONAL_NEWS',
+]);
+
+const normalizeNotificationType = value =>
+  String(value || '')
+    .trim()
+    .toUpperCase();
+
+const buildInstitutionalNotificationForDetail = notification => {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+  const type = normalizeNotificationType(data?.type);
+  const title = notification?.title || data?.title || data?.eventName || '';
+  const body = notification?.body || data?.body || data?.summary || '';
+  const isNews = type === 'INSTITUTIONAL_NEWS';
+  const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
+  const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
+  const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+  const isScheduleUpdate = type === 'INSTITUTIONAL_SCHEDULE_UPDATED';
+
+  return {
+    id: notification?._id || notification?.id || `push_${Date.now()}`,
+    raw: notification,
+    data,
+    kind: isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
+    tipo: isVotingEnabled
+      ? 'Ver padrón'
+      : isPadronReview
+        ? 'Revisar padrón'
+        : isResults
+          ? 'Ver ganador'
+          : isNews
+            ? 'Ver noticia'
+            : isScheduleUpdate
+              ? 'Cronograma modificado'
+              : 'Publicación oficial',
+    mesa:
+      title ||
+      data?.bannerTitle ||
+      (isResults
+        ? 'Resultados disponibles'
+        : isNews
+          ? 'Noticia'
+          : 'Actualización institucional'),
+    direccion: body || data?.eventName || '',
+    timestamp: Date.now(),
+    estado: data?.status || 'iniciado',
+    statusTone: 'success',
+    actionLabel: isVotingEnabled || isPadronReview ? 'Ver padrón' : undefined,
+    actionUrl: data?.actionUrl || data?.publicUrl || null,
+    imageUrl: data?.imageUrl || notification?.imageUrl || null,
+    screen: null,
+    routeParams: null,
+    title,
+    body,
+    isScheduleUpdate,
+  };
+};
+
 export const buildNotificationTextFallback = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
@@ -638,6 +705,15 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
 export function buildRouteFromNotification(notification) {
   const data = notification?.data ?? {};
   const notificationType = data?.type;
+
+  if (INSTITUTIONAL_DETAIL_TYPES.has(normalizeNotificationType(notificationType))) {
+    return {
+      name: StackNav.VotingNotificationDetailScreen,
+      params: {
+        notification: buildInstitutionalNotificationForDetail(notification),
+      },
+    };
+  }
   
   // OCP: Utilizamos el mismo diccionario de estrategias previamente definido (Reutilización y OCP)
   const strategy = NotificationTypeStrategies[notificationType];

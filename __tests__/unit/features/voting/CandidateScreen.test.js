@@ -152,6 +152,22 @@ jest.mock('../../../../src/features/voting/components/OfflineQueuedModal', () =>
     ) : null;
 });
 
+jest.mock('../../../../src/features/voting/components/CameraScannerModal', () => {
+  const React = require('react');
+  const {Text, TouchableOpacity, View} = require('react-native');
+  return ({visible, onBarcodeScanned}) =>
+    visible ? (
+      <View>
+        <Text>Escanear QR</Text>
+        <TouchableOpacity
+          onPress={() => onBarcodeScanned({data: 'qr-token-1'})}
+          testID="scanQrButton">
+          <Text>Simular scan</Text>
+        </TouchableOpacity>
+      </View>
+    ) : null;
+});
+
 const {useNavigation} = require('@react-navigation/native');
 const {useElectionRepository} = require('../../../../src/features/voting/data/useElectionRepository');
 const {useVotingState} = require('../../../../src/features/voting/state/useVotingState');
@@ -190,6 +206,7 @@ describe('CandidateScreen', () => {
     getElection: jest.fn(),
     getCandidates: jest.fn(),
     submitVote: jest.fn(),
+    verifyVoteQrCode: jest.fn(),
   };
   const recordVote = jest.fn();
 
@@ -235,6 +252,7 @@ describe('CandidateScreen', () => {
       participatedAt: '2026-01-01T10:00:00.000Z',
       transactionId: '0xabc',
     });
+    repository.verifyVoteQrCode.mockResolvedValue('presential-session-1');
     recordVote.mockResolvedValue({id: 'local-participation'});
     checkInternetConnection.mockResolvedValue(true);
     backendProbe.mockResolvedValue({ok: true});
@@ -299,6 +317,7 @@ describe('CandidateScreen', () => {
         presidentName: 'Ana Perez',
         electionTitle: 'Consejo universitario',
         organization: 'UMSA',
+        presentialSessionId: null,
         candidateSelected: {
           partyName: 'Lista Azul',
           presidentName: 'Ana Perez',
@@ -310,7 +329,7 @@ describe('CandidateScreen', () => {
 
     expect(repository.submitVote).toHaveBeenCalledWith(
       'election-1',
-      'Lista Azul',
+      'cand-1',
       undefined,
     );
     expect(recordVote).toHaveBeenCalledWith('cand-1', true, {
@@ -332,6 +351,133 @@ describe('CandidateScreen', () => {
       participationId: 'local-participation',
       electionId: 'election-1',
     });
+  });
+
+  it('no pide QR cuando presentialKioskEnabled esta apagado', async () => {
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: false,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await waitFor(() => {
+      expect(repository.submitVote).toHaveBeenCalledWith(
+        'election-1',
+        'cand-1',
+        undefined,
+      );
+    });
+    expect(repository.verifyVoteQrCode).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('scanQrButton')).toBeNull();
+  });
+
+  it('pide QR cuando presentialKioskEnabled esta encendido y envia presentialSessionId al submit final', async () => {
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scanQrButton')).toBeTruthy();
+    });
+    expect(repository.submitVote).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByTestId('scanQrButton'));
+
+    await waitFor(() => {
+      expect(repository.verifyVoteQrCode).toHaveBeenCalledWith('qr-token-1');
+      expect(repository.submitVote).toHaveBeenCalledWith(
+        'election-1',
+        'cand-1',
+        'presential-session-1',
+      );
+    });
+  });
+
+  it('si el scan QR falla muestra error y no envia el voto', async () => {
+    repository.verifyVoteQrCode.mockRejectedValueOnce(new Error('Qr verification failed'));
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await screen.findByTestId('scanQrButton');
+    fireEvent.press(screen.getByTestId('scanQrButton'));
+
+    await waitFor(() => {
+      expect(repository.verifyVoteQrCode).toHaveBeenCalledWith('qr-token-1');
+      expect(repository.submitVote).not.toHaveBeenCalled();
+      expect(screen.getByText('Código QR no reconocido')).toBeTruthy();
+    });
+  });
+
+  it('si el voto QR queda emitido en cadena pero falla backend, encola sincronizacion con presentialSessionId', async () => {
+    repository.submitVote.mockResolvedValueOnce({
+      success: false,
+      error: 'Backend unavailable',
+      blockchainCommitted: true,
+      shouldQueueBackendSync: true,
+      presentialSessionId: 'presential-session-1',
+    });
+    recordVote.mockResolvedValueOnce({id: 'queued-backend-sync'});
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await screen.findByTestId('scanQrButton');
+    fireEvent.press(screen.getByTestId('scanQrButton'));
+
+    await waitFor(() => {
+      expect(enqueueBackendParticipationSync).toHaveBeenCalledWith({
+        electionId: 'election-1',
+        candidateId: 'cand-1',
+        candidateName: 'Lista Azul',
+        presidentName: 'Ana Perez',
+        electionTitle: 'Consejo universitario',
+        presentialSessionId: 'presential-session-1',
+      });
+    });
+
+    expect(screen.getByText('Voto emitido, sincronización pendiente')).toBeTruthy();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 
   it('encola el voto directamente cuando no hay internet', async () => {
@@ -417,6 +563,7 @@ describe('CandidateScreen', () => {
         candidateName: 'Lista Azul',
         presidentName: 'Ana Perez',
         electionTitle: 'Consejo universitario',
+        presentialSessionId: null,
       });
     });
 

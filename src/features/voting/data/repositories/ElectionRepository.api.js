@@ -634,9 +634,14 @@ const fetchWitnessRecordsByDni = async dni => {
 
 const postParticipation = async (electionId, candidateId, dni, presentialSessionId) => {
   try {
+    const body = {carnet: dni};
+    if (presentialSessionId) {
+      body.presentialSessionId = presentialSessionId;
+    }
+
     const {data} = await axios.post(
       `${API_BASE}/voting/events/${encodeURIComponent(electionId)}/participations`,
-      {carnet: dni, presentialSessionId},
+      body,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -879,6 +884,7 @@ const ElectionRepositoryApi = {
       error: backendResult.error,
       blockchainCommitted: true,
       shouldQueueBackendSync: true,
+      presentialSessionId: presentialSessionId || null,
     };
   },
 
@@ -899,7 +905,7 @@ const ElectionRepositoryApi = {
     }
   },
 
-  async registerParticipation(electionId, candidateId) {
+  async registerParticipation(electionId, candidateId, presentialSessionId) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -915,7 +921,7 @@ const ElectionRepositoryApi = {
       };
     }
 
-    return postParticipation(electionId, candidateId, dni);
+    return postParticipation(electionId, candidateId, dni, presentialSessionId);
   },
 };
 

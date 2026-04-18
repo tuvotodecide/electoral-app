@@ -58,6 +58,7 @@ jest.mock('../../src/navigation/NavigationKey', () => ({
     TabNavigation: 'TabNavigation',
     SuccessScreen: 'SuccessScreen',
     ClaimCredScreen: 'ClaimCredScreen',
+    VotingNotificationDetailScreen: 'VotingNotificationDetailScreen',
   },
   TabNav: {HomeScreen: 'HomeScreen'},
 }));
@@ -223,6 +224,57 @@ describe('notifications', () => {
     expect(buildRouteFromNotification({data: {type: 'announce_count'}})).toEqual({
       name: 'TabNavigation',
       params: {screen: 'HomeScreen'},
+    });
+  });
+
+  it('abre el detalle institucional desde push para tipos de votacion sin caer a Splash', () => {
+    const institutionalTypes = [
+      'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+      'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+      'INSTITUTIONAL_RESULTS_AVAILABLE',
+      'INSTITUTIONAL_SCHEDULE_UPDATED',
+    ];
+
+    institutionalTypes.forEach(type => {
+      const route = buildRouteFromNotification({
+        title: 'Titulo institucional',
+        body: 'Resumen institucional',
+        data: {
+          type,
+          eventId: 'event-1',
+          publicUrl: 'https://resultados.example/elections/event-1/public',
+        },
+      });
+
+      expect(route.name).toBe('VotingNotificationDetailScreen');
+      expect(route.params.notification).toMatchObject({
+        data: expect.objectContaining({type}),
+        mesa: 'Titulo institucional',
+        direccion: 'Resumen institucional',
+      });
+    });
+  });
+
+  it('mantiene habilitacion para votar como detalle informativo con CTA Ver padron desde push', () => {
+    const route = buildRouteFromNotification({
+      title: 'Ya puedes votar',
+      body: 'Tu habilitación ya está activa',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_ENABLED',
+        publicUrl: 'https://resultados.example/elections/event-1/public',
+      },
+    });
+
+    expect(route).toMatchObject({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'voting_event',
+          tipo: 'Ver padrón',
+          actionLabel: 'Ver padrón',
+          actionUrl: 'https://resultados.example/elections/event-1/public',
+        },
+      },
     });
   });
 

@@ -179,7 +179,10 @@ const CandidateScreen = ({ route }) => {
     message: '',
   });
   const isSubmittingVoteRef = useRef(false);
-  const isInPlaceVote = route?.params?.isInPlaceVote === true;
+  const isInPlaceVote =
+    route?.params?.isInPlaceVote ??
+    route?.params?.isInVotePlace ??
+    electionInfo?.presentialKioskEnabled === true;
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [isCameraMounted, setIsCameraMounted] = useState(false);
 
@@ -277,7 +280,8 @@ const CandidateScreen = ({ route }) => {
         throw new Error('QR code data is empty');
       }
 
-      let presentialSessionId;
+      let presentialSessionId = null;
+      let voteResult = null;
       try {
         presentialSessionId = await repository.verifyVoteQrCode(result.data);
         if (!presentialSessionId) {
@@ -292,7 +296,41 @@ const CandidateScreen = ({ route }) => {
         throw error;
       }
 
-      const voteResult = await submitVote(presentialSessionId);
+      voteResult = await submitVote(presentialSessionId);
+      if (voteResult?.shouldQueueBackendSync && voteResult?.blockchainCommitted) {
+        await enqueueBackendParticipationSync({
+          electionId,
+          candidateId: selectedCandidate.id,
+          candidateName: selectedCandidate.partyName,
+          presidentName: selectedCandidate.presidentName,
+          electionTitle: resolveElectionTitle(electionInfo),
+          presentialSessionId,
+        });
+
+        const receipt = await recordVote(selectedCandidate.id, false, {
+          electionId,
+          electionTitle: resolveElectionTitle(electionInfo),
+          organization: resolveElectionOrganization(electionInfo),
+          candidateSelected: {
+            partyName: selectedCandidate.partyName,
+            presidentName: selectedCandidate.presidentName,
+            viceName: selectedCandidate.viceName,
+            ticketEntries: selectedCandidate.ticketEntries || [],
+          },
+          errorMessage: null,
+        });
+
+        setOfflineModalCopy({
+          title: 'Voto emitido, sincronización pendiente',
+          message:
+            'Tu voto ya fue emitido, pero falta registrar la participación en el backend. La app lo reintentará automáticamente.',
+        });
+        setQueuedParticipationId(receipt?.id || null);
+        setShowConfirmModal(false);
+        setShowOfflineModal(true);
+        return;
+      }
+
       if (!voteResult.success) {
         setErrorModal({
           visible: true,
@@ -303,7 +341,7 @@ const CandidateScreen = ({ route }) => {
       }
     } catch (error) {
       console.error('[CandidateScreen] Error in QR vote flow:', error);
-      captureError(voteResult.error, {
+      captureError(error, {
         flow: 'qr_voting_flow',
         step: 'submit_vote',
         critical: false,
@@ -382,6 +420,7 @@ const CandidateScreen = ({ route }) => {
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
             electionTitle: resolveElectionTitle(electionInfo),
+            presentialSessionId: null,
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
@@ -481,6 +520,7 @@ const CandidateScreen = ({ route }) => {
       presidentName: selectedCandidate.presidentName,
       electionTitle: resolveElectionTitle(electionInfo),
       organization: resolveElectionOrganization(electionInfo),
+      presentialSessionId: presentialSessionId || null,
       candidateSelected: {
         partyName: selectedCandidate.partyName,
         presidentName: selectedCandidate.presidentName,
@@ -491,7 +531,7 @@ const CandidateScreen = ({ route }) => {
 
 
     // Online: Submit vote directly
-    const result = await repository.submitVote(electionId, selectedCandidate.partyName, presentialSessionId);
+    const result = await repository.submitVote(electionId, selectedCandidate.id, presentialSessionId);
 
     if (result.success) {
       const receipt = await recordVote(selectedCandidate.id, true, {

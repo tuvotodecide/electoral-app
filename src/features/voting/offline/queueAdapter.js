@@ -280,6 +280,7 @@ export const enqueueVote = async (voteData) => {
       candidateName: voteData.candidateName,
       presidentName: voteData.presidentName,
       electionTitle: voteData.electionTitle || '',
+      presentialSessionId: voteData.presentialSessionId || null,
       timestamp: Date.now(),
     },
   };
@@ -313,6 +314,7 @@ export const enqueueBackendParticipationSync = async voteData => {
       candidateName: voteData.candidateName,
       presidentName: voteData.presidentName,
       electionTitle: voteData.electionTitle || '',
+      presentialSessionId: voteData.presentialSessionId || null,
       timestamp: Date.now(),
     },
   });
@@ -329,7 +331,14 @@ export const handleVotingQueueVote = async (item) => {
     return;
   }
 
-  const { electionId, candidateId, candidateName, mode, electionTitle } = item.task.payload || {};
+  const {
+    electionId,
+    candidateId,
+    candidateName,
+    mode,
+    presentialSessionId,
+  } = item.task.payload || {};
+  const normalizedPresentialSessionId = presentialSessionId || null;
 
   if (!electionId || !candidateId || !candidateName) {
     // Item malformado, marcarlo como error terminal
@@ -343,8 +352,16 @@ export const handleVotingQueueVote = async (item) => {
     const repository = getElectionRepository();
     const result =
       mode === 'backendOnly'
-        ? await repository.registerParticipation(electionId, candidateId)
-        : await repository.submitVote(electionId, candidateId, candidateName);
+        ? await repository.registerParticipation(
+            electionId,
+            candidateId,
+            normalizedPresentialSessionId,
+          )
+        : await repository.submitVote(
+            electionId,
+            candidateId,
+            normalizedPresentialSessionId,
+          );
 
     if (!result.success) {
       throw new Error(result.error || 'Vote submission failed');

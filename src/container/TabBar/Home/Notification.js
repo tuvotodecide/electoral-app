@@ -72,6 +72,9 @@ const formatCountdownLabel = (target, now) => {
   return `Inicia en ${pad2(hours)}:${pad2(minutes)}`;
 };
 
+const isAbsoluteOrDeepLink = value =>
+  /^[a-z][a-z0-9+.-]*:\/\//i.test(String(value || '').trim());
+
 export const resolveVotingEventDescription = (data = {}, body = '') => {
   const eventName = String(
     data?.eventName ||
@@ -387,7 +390,7 @@ export default function Notification({ navigation }) {
       } else if (isOfficialPublication) {
         tipo = 'Publicación oficial';
       } else if (isVotingEnabled) {
-        tipo = 'Votar';
+        tipo = 'Ver padrón';
       } else if (isScheduleUpdate) {
         tipo = 'Cronograma modificado';
       } else {
@@ -422,7 +425,7 @@ export default function Notification({ navigation }) {
     const actionUrl =
       data?.actionUrl ||
       data?.publicUrl ||
-      data?.link ||
+      (isAbsoluteOrDeepLink(data?.link) ? data.link : null) ||
       n?.actionUrl ||
       null;
     const eligibleFlag =
@@ -458,6 +461,7 @@ export default function Notification({ navigation }) {
       votingStartLabel: startsAtLabel,
       votingEndLabel: endsAtLabel,
       actionUrl,
+      actionLabel: isVotingEnabled ? 'Ver padrón' : undefined,
       imageUrl: data?.imageUrl || n?.imageUrl || null,
       resultsSummary: mapResultsSummary(data),
       screen: data?.screen || null,

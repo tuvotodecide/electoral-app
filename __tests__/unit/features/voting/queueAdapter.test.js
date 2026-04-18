@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  enqueueBackendParticipationSync,
   enqueueVote,
   handleVotingQueueVote,
   markVoteFailed,
@@ -80,6 +81,7 @@ describe('queueAdapter voting flow', () => {
         candidateName: 'Lista Azul',
         presidentName: 'Ana Perez',
         electionTitle: 'Centro de estudiantes',
+        presentialSessionId: null,
         timestamp: expect.any(Number),
       },
     });
@@ -121,12 +123,13 @@ describe('queueAdapter voting flow', () => {
       ]),
     });
 
+    const submitVote = jest.fn().mockResolvedValue({
+      success: true,
+      participationId: 'server-1',
+      participatedAt: '2026-01-01T10:00:00.000Z',
+    });
     getElectionRepository.mockReturnValue({
-      submitVote: jest.fn().mockResolvedValue({
-        success: true,
-        participationId: 'server-1',
-        participatedAt: '2026-01-01T10:00:00.000Z',
-      }),
+      submitVote,
       registerParticipation: jest.fn(),
     });
 
@@ -147,6 +150,7 @@ describe('queueAdapter voting flow', () => {
       success: true,
       participationId: 'server-1',
     });
+    expect(submitVote).toHaveBeenCalledWith('election-1', 'candidate-1', null);
 
     const participations = JSON.parse(storage.get('voting.participations'));
     expect(participations[0]).toMatchObject({
@@ -243,7 +247,7 @@ describe('queueAdapter voting flow', () => {
       },
     });
 
-    expect(registerParticipation).toHaveBeenCalledWith('election-1', 'candidate-1');
+    expect(registerParticipation).toHaveBeenCalledWith('election-1', 'candidate-1', null);
     expect(result).toMatchObject({
       success: true,
       participationId: 'server-backend-1',
@@ -254,6 +258,85 @@ describe('queueAdapter voting flow', () => {
       synced: true,
       status: 'VOTO_REGISTRADO',
     });
+  });
+
+  it('conserva presentialSessionId en la cola y lo reenvia al sincronizar participacion backendOnly', async () => {
+    getAll.mockResolvedValueOnce([]);
+    enqueue.mockResolvedValueOnce('queue-presential-1');
+
+    const queueId = await enqueueBackendParticipationSync({
+      electionId: 'election-qr',
+      candidateId: 'candidate-qr',
+      candidateName: 'Lista QR',
+      presidentName: 'Ana QR',
+      electionTitle: 'Eleccion presencial',
+      presentialSessionId: 'session-qr-1',
+    });
+
+    expect(queueId).toBe('queue-presential-1');
+    expect(enqueue).toHaveBeenCalledWith({
+      type: 'votingFlowVote',
+      payload: {
+        mode: 'backendOnly',
+        electionId: 'election-qr',
+        candidateId: 'candidate-qr',
+        candidateName: 'Lista QR',
+        presidentName: 'Ana QR',
+        electionTitle: 'Eleccion presencial',
+        presentialSessionId: 'session-qr-1',
+        timestamp: expect.any(Number),
+      },
+    });
+
+    createStorage({
+      'voting.lastReceipt': JSON.stringify({
+        id: 'local-qr',
+        electionId: 'election-qr',
+        selectedCandidateId: 'candidate-qr',
+        synced: false,
+        status: 'EN_COLA',
+        statusLabel: 'EN COLA',
+      }),
+      'voting.participations': JSON.stringify([
+        {
+          id: 'local-qr',
+          electionId: 'election-qr',
+          selectedCandidateId: 'candidate-qr',
+          synced: false,
+          status: 'EN_COLA',
+          statusLabel: 'EN COLA',
+        },
+      ]),
+    });
+
+    const registerParticipation = jest.fn().mockResolvedValue({
+      success: true,
+      participationId: 'server-qr',
+      participatedAt: '2026-01-01T11:00:00.000Z',
+    });
+    getElectionRepository.mockReturnValue({
+      submitVote: jest.fn(),
+      registerParticipation,
+    });
+
+    await handleVotingQueueVote({
+      task: {
+        type: 'votingFlowVote',
+        payload: {
+          mode: 'backendOnly',
+          electionId: 'election-qr',
+          candidateId: 'candidate-qr',
+          candidateName: 'Lista QR',
+          presentialSessionId: 'session-qr-1',
+        },
+      },
+    });
+
+    expect(registerParticipation).toHaveBeenCalledWith(
+      'election-qr',
+      'candidate-qr',
+      'session-qr-1',
+    );
   });
 
   it('libera solo la eleccion solicitada y conserva otras participaciones', async () => {

@@ -68,45 +68,67 @@ const colorPalette = [
   '#f59e0b',
 ];
 
-const isAbsoluteUrl = value => /^https?:\/\//i.test(String(value || '').trim());
+const isAbsoluteOrDeepLink = value =>
+  /^[a-z][a-z0-9+.-]*:\/\//i.test(String(value || '').trim());
 
-const resolvePublicResultsUrl = notification => {
+export const resolvePublicResultsUrl = notification => {
   const rawData = notification?.data || {};
-  const directUrl =
-    notification?.actionUrl ||
-    rawData?.actionUrl ||
-    rawData?.publicUrl ||
-    rawData?.deepLink ||
-    null;
+  const directUrlCandidates = [
+    notification?.actionUrl,
+    rawData?.actionUrl,
+    rawData?.publicUrl,
+  ];
 
+  const directUrl = directUrlCandidates.find(isAbsoluteOrDeepLink);
   if (directUrl) {
     return directUrl;
   }
 
   const link = rawData?.link || null;
-  if (isAbsoluteUrl(link)) {
+  if (isAbsoluteOrDeepLink(link)) {
     return link;
   }
 
   const relativePath = rawData?.publicPath || link || null;
-  if (!relativePath || !String(relativePath).startsWith('/')) {
-    return null;
+  if (relativePath && String(relativePath).startsWith('/')) {
+    const frontendBase = String(FRONTEND_RESULTS || '').trim();
+    if (frontendBase) {
+      try {
+        const url = new URL(frontendBase);
+        url.pathname = String(relativePath);
+        url.search = '';
+        url.hash = '';
+        return url.toString();
+      } catch {}
+    }
   }
 
-  const frontendBase = String(FRONTEND_RESULTS || '').trim();
-  if (!frontendBase) {
-    return null;
+  return isAbsoluteOrDeepLink(rawData?.deepLink) ? rawData.deepLink : null;
+};
+
+export const resolveNotificationActionLabel = ({
+  notification,
+  kind,
+  isNews,
+  type,
+} = {}) => {
+  if (notification?.actionLabel) {
+    return notification.actionLabel;
   }
 
-  try {
-    const url = new URL(frontendBase);
-    url.pathname = String(relativePath);
-    url.search = '';
-    url.hash = '';
-    return url.toString();
-  } catch {
-    return null;
+  if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_VOTING_ENABLED') {
+    return 'Ver padrón';
   }
+
+  if (isNews) {
+    return 'Abrir enlace';
+  }
+
+  if (kind === 'election_results') {
+    return 'Ver detalles';
+  }
+
+  return 'Ver elección';
 };
 
 const normalizeOptionColors = option => {
@@ -173,11 +195,13 @@ const NotificationDetailScreen = () => {
   const notification = route?.params?.notification || DEFAULT_NOTIFICATION;
   const rawData = notification?.data || {};
   const kind = notification?.kind || 'generic';
+  const normalizedType = String(rawData?.type || '').trim().toUpperCase();
   const isScheduleUpdate =
     notification?.isScheduleUpdate === true ||
-    String(rawData?.type || '').trim().toUpperCase() === 'INSTITUTIONAL_SCHEDULE_UPDATED';
+    normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED';
   const isNews = kind === 'news' ||
-    String(rawData?.type || '').trim().toUpperCase() === 'INSTITUTIONAL_NEWS';
+    normalizedType === 'INSTITUTIONAL_NEWS';
+  const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
   const statusTone = notification?.statusTone || 'success';
   const startsAtLabel = notification?.votingStartLabel || formatEventDate(rawData?.votingStart);
   const endsAtLabel = notification?.votingEndLabel || formatEventDate(rawData?.votingEnd);
@@ -444,14 +468,12 @@ const NotificationDetailScreen = () => {
       {kind === 'election_results' || isNews || resolvedPublicUrl ? (
         <View style={styles.bottomContainer}>
           <CButton
-            title={
-              notification?.actionLabel ||
-              (isNews
-                ? 'Abrir enlace'
-                : kind === 'election_results'
-                  ? 'Ver detalles'
-                  : 'Ver elección')
-            }
+            title={resolveNotificationActionLabel({
+              notification,
+              kind,
+              isNews,
+              type: isVotingEnabled ? 'INSTITUTIONAL_VOTING_ENABLED' : normalizedType,
+            })}
             type="B16"
             onPress={handlePrimaryAction}
             containerStyle={styles.actionButton}
