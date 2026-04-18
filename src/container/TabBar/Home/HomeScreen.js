@@ -2355,7 +2355,7 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate(StackNav.VotingCandidateScreen, {
       electionId: selectedElection.id,
       election: selectedElection,
-      isInVotePlace: selectedElection.presentialKioskEnabled
+      isInPlaceVote: selectedElection.presentialKioskEnabled
     });
   };
   const handleVotingDetailsPress = targetElection => {

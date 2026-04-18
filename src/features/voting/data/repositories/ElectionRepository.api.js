@@ -176,6 +176,7 @@ const buildElectionModel = ({
     canVote: participationStatus?.canVote === true,
     alreadyVoted: participationStatus?.alreadyVoted === true,
     publicEligibilityEnabled: event?.publicEligibilityEnabled !== false,
+    presentialKioskEnabled: event?.presentialKioskEnabled === true,
     statusMessage,
   };
 };
