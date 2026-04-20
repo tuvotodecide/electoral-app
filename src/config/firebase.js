@@ -1,6 +1,7 @@
 import database from '@react-native-firebase/database';
 import messaging from '@react-native-firebase/messaging';
 import functions from '@react-native-firebase/functions';
+import {Platform} from 'react-native';
 
 // Configuración Firebase
 export const firebaseDatabase = database();

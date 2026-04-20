@@ -19,7 +19,6 @@ export const API_ENDPOINTS = {
   HAS: 'has',
   PUSHLOG: 'pushlog',
 
-  PUSHLOG: 'pushlog',
   RECOVERY: 'recovery',
   DETAIL: 'detail',
   ACCEPTED: 'accepted',

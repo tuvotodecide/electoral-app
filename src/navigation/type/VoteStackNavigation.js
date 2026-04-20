@@ -61,7 +61,7 @@ export default function VoteStackNavigation() {
       />
       <VoteStack.Screen
         name={StackNav.MyWitnesses}
-        component={StackRoute.MyWitnesses}
+        component={StackRoute.MyWitnessesListScreen}
       />
       <VoteStack.Screen
         name={StackNav.MyWitnessesListScreen}

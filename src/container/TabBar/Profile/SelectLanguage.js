@@ -86,7 +86,7 @@ export default function SelectLanguage({navigation}) {
   };
 
   const onPressChangeLanguage = () => {
-    navigation.navigate(TabNav.Profile);
+    navigation.navigate(StackNav.TabNavigation, {screen: TabNav.Profile});
   };
 
   return (

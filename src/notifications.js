@@ -5,7 +5,7 @@ import { StorageService as AsyncStorage } from './services/StorageService';
 import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {setPendingNav} from './redux/slices/authSlice';
-import {StackNav, TabNav} from './navigation/NavigationKey';
+import {AuthNav, StackNav, TabNav} from './navigation/NavigationKey';
 
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
@@ -695,11 +695,9 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
   const scr = d.screen;
   const auth = store.getState().auth;
 
-  // Si quieres validar pantalla válida:
-  // if (!scr || !StackNav[scr] || auth.isAuthenticated) return;
-  if (!scr || auth.isAuthenticated) return;
+  if (!scr || auth.isAuthenticated || !StackNav[scr]) return;
 
-  store.dispatch(setPendingNav({name: scr, params: d}));
+  store.dispatch(setPendingNav({name: StackNav[scr], params: d}));
 }
 
 export function buildRouteFromNotification(notification) {
@@ -751,7 +749,7 @@ export function handleNotificationPress(notification) {
     navigate(route.name, route.params);
   } else {
     store.dispatch(setPendingNav(route));
-    navigate('LoginUser');
+    navigate(StackNav.AuthNavigation, {screen: AuthNav.LoginUser});
   }
 }
 
