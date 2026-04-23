@@ -75,4 +75,18 @@ describe('NotificationDetailScreen helpers', () => {
       }),
     ).toBe('Abrir enlace');
   });
+
+  it('ajusta el CTA explicito viejo cuando la notificacion corresponde a un referendum', () => {
+    expect(
+      resolveNotificationActionLabel({
+        notification: {
+          actionLabel: 'Ver elección',
+        },
+        kind: 'voting_event',
+        isNews: false,
+        isReferendum: true,
+        type: 'INSTITUTIONAL_VOTING_ENABLED',
+      }),
+    ).toBe('Ver consulta');
+  });
 });

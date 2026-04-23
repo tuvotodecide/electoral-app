@@ -301,6 +301,51 @@ describe('CandidateScreen', () => {
     expect(screen.getByText('VOTAR POR BRUNO DIAZ')).toBeTruthy();
   });
 
+  it('usa la descripcion de la consulta y copy de opciones cuando es referendum', async () => {
+    repository.getElection.mockResolvedValue({
+      id: 'election-ref-1',
+      title: 'Consulta institucional',
+      organization: 'UMSA',
+      objective: '¿Aprueba la nueva normativa institucional?',
+      questionTitle: '¿Aprueba la nueva normativa institucional?',
+      isReferendum: true,
+    });
+    repository.getCandidates.mockResolvedValue([
+      {
+        id: 'cand-ref-1',
+        partyName: 'Sí',
+        presidentName: 'Sí',
+        partyColor: '#0F766E',
+        isReferendum: true,
+      },
+    ]);
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          id: 'election-ref-1',
+          title: 'Consulta institucional',
+          organization: 'UMSA',
+          objective: '¿Aprueba la nueva normativa institucional?',
+          questionTitle: '¿Aprueba la nueva normativa institucional?',
+          isReferendum: true,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('¿Aprueba la nueva normativa institucional?'),
+      ).toBeTruthy();
+    });
+
+    expect(screen.queryByText('Elige a un candidato')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('candidateCard_cand-ref-1'));
+
+    expect(screen.getByText('VOTAR ESTA OPCIÓN')).toBeTruthy();
+  });
+
   it('envia el voto online, construye el metadata real y navega al comprobante en exito', async () => {
     const screen = renderScreen({params: {election}});
 

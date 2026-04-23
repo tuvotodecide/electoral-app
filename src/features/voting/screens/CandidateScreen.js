@@ -110,7 +110,7 @@ const buildVoteErrorMessage = error => {
     message.includes('vote does not exist') ||
     message.includes('execution reverted')
   ) {
-    return 'No se pudo registrar el voto en blockchain. Puedes reintentar o volver a votar más tarde.';
+    return 'No se pudo confirmar el voto en este momento. Puedes reintentar o volver a votar más tarde.';
   }
   if (isLikelyNetworkVoteError(raw)) {
     return 'Hubo un problema de conexión al registrar el voto. Puedes reintentar.';
@@ -124,7 +124,7 @@ const buildPendingSyncCopy = ({
 } = {}) => {
   if (serverUnavailable) {
     return {
-      title: 'Conexion con servidor pendiente',
+      title: 'Conexión con el servidor pendiente',
       message:
         'Detectamos red disponible, pero el servidor no respondio. Tu voto quedo guardado y la app lo sincronizara automaticamente.',
     };
@@ -137,13 +137,30 @@ const buildPendingSyncCopy = ({
 };
 
 const resolveElectionTitle = election =>
-  String(
-    election?.title ||
-      election?.name ||
-      election?.eventName ||
-      election?.electionTitle ||
-      '',
-  ).trim() || 'Votación institucional';
+  (() => {
+    const isReferendum = election?.isReferendum === true;
+    const questionTitle = String(
+      election?.questionTitle ||
+        election?.objective ||
+        election?.description ||
+        election?.instituteName ||
+        '',
+    ).trim();
+
+    if (isReferendum && questionTitle) {
+      return questionTitle;
+    }
+
+    return (
+      String(
+        election?.title ||
+          election?.name ||
+          election?.eventName ||
+          election?.electionTitle ||
+          '',
+      ).trim() || 'Votación institucional'
+    );
+  })();
 
 const resolveElectionOrganization = election =>
   String(
@@ -154,6 +171,23 @@ const resolveElectionOrganization = election =>
       election?.tenantName ||
       '',
   ).trim();
+
+const buildSelectedOptionPayload = ({
+  selectedCandidate,
+  isReferendum,
+  electionTitle,
+}) => ({
+  partyName: selectedCandidate.partyName,
+  presidentName: selectedCandidate.presidentName,
+  viceName: selectedCandidate.viceName,
+  ticketEntries: selectedCandidate.ticketEntries || [],
+  ...(isReferendum
+    ? {
+        isReferendum: true,
+        questionTitle: electionTitle,
+      }
+    : {}),
+});
 
 const CandidateScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -185,6 +219,37 @@ const CandidateScreen = ({ route }) => {
     electionInfo?.presentialKioskEnabled === true;
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [isCameraMounted, setIsCameraMounted] = useState(false);
+  const electionCopySource = useMemo(() => {
+    const firstCandidate = candidates[0] || null;
+    const electionHasReferendumCopy = Boolean(
+      electionInfo?.questionTitle ||
+        electionInfo?.objective ||
+        electionInfo?.description,
+    );
+
+    if (
+      firstCandidate?.isReferendum === true &&
+      (electionInfo?.isReferendum !== true || !electionHasReferendumCopy)
+    ) {
+      return firstCandidate;
+    }
+
+    return electionInfo || firstCandidate || null;
+  }, [candidates, electionInfo]);
+  const isReferendumElection = useMemo(
+    () =>
+      electionInfo?.isReferendum === true ||
+      candidates.some(candidate => candidate?.isReferendum === true),
+    [candidates, electionInfo?.isReferendum],
+  );
+  const electionDisplayTitle = useMemo(() => {
+    if (!isReferendumElection) {
+      return UI_STRINGS.chooseCandidate;
+    }
+
+    const questionTitle = resolveElectionTitle(electionCopySource);
+    return questionTitle || UI_STRINGS.chooseOption;
+  }, [electionCopySource, isReferendumElection]);
 
   // Election state hook
   const {
@@ -303,27 +368,27 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: resolveElectionTitle(electionInfo),
+          electionTitle: resolveElectionTitle(electionCopySource),
           presentialSessionId,
         });
 
         const receipt = await recordVote(selectedCandidate.id, false, {
           electionId,
-          electionTitle: resolveElectionTitle(electionInfo),
+          electionTitle: resolveElectionTitle(electionCopySource),
           organization: resolveElectionOrganization(electionInfo),
-          candidateSelected: {
-            partyName: selectedCandidate.partyName,
-            presidentName: selectedCandidate.presidentName,
-            viceName: selectedCandidate.viceName,
-            ticketEntries: selectedCandidate.ticketEntries || [],
-          },
+          ...(isReferendumElection ? {isReferendum: true} : {}),
+          candidateSelected: buildSelectedOptionPayload({
+            selectedCandidate,
+            isReferendum: isReferendumElection,
+            electionTitle: resolveElectionTitle(electionCopySource),
+          }),
           errorMessage: null,
         });
 
         setOfflineModalCopy({
           title: 'Voto emitido, sincronización pendiente',
           message:
-            'Tu voto ya fue emitido, pero falta registrar la participación en el backend. La app lo reintentará automáticamente.',
+            'Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.',
         });
         setQueuedParticipationId(receipt?.id || null);
         setShowConfirmModal(false);
@@ -371,19 +436,19 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate.id,
           candidateName: selectedCandidate.partyName,
           presidentName: selectedCandidate.presidentName,
-          electionTitle: resolveElectionTitle(electionInfo),
+          electionTitle: resolveElectionTitle(electionCopySource),
         });
 
         const receipt = await recordVote(selectedCandidate.id, false, {
           electionId,
-          electionTitle: resolveElectionTitle(electionInfo),
+          electionTitle: resolveElectionTitle(electionCopySource),
           organization: resolveElectionOrganization(electionInfo),
-          candidateSelected: {
-            partyName: selectedCandidate.partyName,
-            presidentName: selectedCandidate.presidentName,
-            viceName: selectedCandidate.viceName,
-            ticketEntries: selectedCandidate.ticketEntries || [],
-          },
+          ...(isReferendumElection ? {isReferendum: true} : {}),
+          candidateSelected: buildSelectedOptionPayload({
+            selectedCandidate,
+            isReferendum: isReferendumElection,
+            electionTitle: resolveElectionTitle(electionCopySource),
+          }),
         });
 
         setOfflineModalCopy(buildPendingSyncCopy());
@@ -419,20 +484,20 @@ const CandidateScreen = ({ route }) => {
             candidateId: selectedCandidate.id,
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
-            electionTitle: resolveElectionTitle(electionInfo),
+            electionTitle: resolveElectionTitle(electionCopySource),
             presentialSessionId: null,
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
             electionId,
-            electionTitle: resolveElectionTitle(electionInfo),
+            electionTitle: resolveElectionTitle(electionCopySource),
             organization: resolveElectionOrganization(electionInfo),
-            candidateSelected: {
-              partyName: selectedCandidate.partyName,
-              presidentName: selectedCandidate.presidentName,
-              viceName: selectedCandidate.viceName,
-              ticketEntries: selectedCandidate.ticketEntries || [],
-            },
+            ...(isReferendumElection ? {isReferendum: true} : {}),
+            candidateSelected: buildSelectedOptionPayload({
+              selectedCandidate,
+              isReferendum: isReferendumElection,
+              electionTitle: resolveElectionTitle(electionCopySource),
+            }),
           });
 
           setOfflineModalCopy(buildPendingSyncCopy({ serverUnavailable: true }));
@@ -450,26 +515,26 @@ const CandidateScreen = ({ route }) => {
             candidateId: selectedCandidate.id,
             candidateName: selectedCandidate.partyName,
             presidentName: selectedCandidate.presidentName,
-            electionTitle: resolveElectionTitle(electionInfo),
+            electionTitle: resolveElectionTitle(electionCopySource),
           });
 
           const receipt = await recordVote(selectedCandidate.id, false, {
             electionId,
-            electionTitle: resolveElectionTitle(electionInfo),
+            electionTitle: resolveElectionTitle(electionCopySource),
             organization: resolveElectionOrganization(electionInfo),
-            candidateSelected: {
-              partyName: selectedCandidate.partyName,
-              presidentName: selectedCandidate.presidentName,
-              viceName: selectedCandidate.viceName,
-              ticketEntries: selectedCandidate.ticketEntries || [],
-            },
+            ...(isReferendumElection ? {isReferendum: true} : {}),
+            candidateSelected: buildSelectedOptionPayload({
+              selectedCandidate,
+              isReferendum: isReferendumElection,
+              electionTitle: resolveElectionTitle(electionCopySource),
+            }),
             errorMessage: null,
           });
 
           setOfflineModalCopy({
             title: 'Voto emitido, sincronización pendiente',
             message:
-              'Tu voto ya fue emitido, pero falta registrar la participación en el backend. La app lo reintentará automáticamente.',
+              'Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.',
           });
           setQueuedParticipationId(receipt?.id || null);
           setShowConfirmModal(false);
@@ -510,7 +575,7 @@ const CandidateScreen = ({ route }) => {
       isSubmittingVoteRef.current = false;
       setIsLoading(false);
     }
-  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);
+  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo, isReferendumElection]);
 
   const submitVote = useCallback(async (presentialSessionId) => {
     await startVoteJournal({
@@ -518,7 +583,7 @@ const CandidateScreen = ({ route }) => {
       candidateId: selectedCandidate.id,
       candidateName: selectedCandidate.partyName,
       presidentName: selectedCandidate.presidentName,
-      electionTitle: resolveElectionTitle(electionInfo),
+      electionTitle: resolveElectionTitle(electionCopySource),
       organization: resolveElectionOrganization(electionInfo),
       presentialSessionId: presentialSessionId || null,
       candidateSelected: {
@@ -539,14 +604,14 @@ const CandidateScreen = ({ route }) => {
         participatedAt: result.participatedAt,
         transactionId: result.transactionId || null,
         electionId,
-        electionTitle: resolveElectionTitle(electionInfo),
+        electionTitle: resolveElectionTitle(electionCopySource),
         organization: resolveElectionOrganization(electionInfo),
-        candidateSelected: {
-          partyName: selectedCandidate.partyName,
-          presidentName: selectedCandidate.presidentName,
-          viceName: selectedCandidate.viceName,
-          ticketEntries: selectedCandidate.ticketEntries || [],
-        },
+        ...(isReferendumElection ? {isReferendum: true} : {}),
+        candidateSelected: buildSelectedOptionPayload({
+          selectedCandidate,
+          isReferendum: isReferendumElection,
+          electionTitle: resolveElectionTitle(electionCopySource),
+        }),
       });
 
       setShowConfirmModal(false);
@@ -561,7 +626,7 @@ const CandidateScreen = ({ route }) => {
     }
 
     return result;
-  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo]);
+  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo, isReferendumElection]);
 
   // Handle cancel confirm
   const handleCancelConfirm = useCallback(() => {
@@ -587,6 +652,9 @@ const CandidateScreen = ({ route }) => {
     if (!selectedCandidate || selectedCandidate.id === blankVote.id) {
       return UI_STRINGS.voteBlank;
     }
+    if (isReferendumElection) {
+      return UI_STRINGS.voteForOption;
+    }
     const primaryName = getPrimaryCandidateName(selectedCandidate);
     const [firstName = '', secondName = ''] = primaryName.split(' ');
     return `${UI_STRINGS.voteFor} ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
@@ -594,7 +662,7 @@ const CandidateScreen = ({ route }) => {
 
   return (
     <CSafeAreaView style={styles.container}>
-      <CHeader title={UI_STRINGS.candidateHeader} />
+      <CHeader title={isReferendumElection ? UI_STRINGS.referendumHeader : UI_STRINGS.candidateHeader} />
 
       <ScrollView
         style={styles.scrollView}
@@ -603,7 +671,7 @@ const CandidateScreen = ({ route }) => {
       >
         {/* Title */}
         <CText type="B22" style={styles.title}>
-          {UI_STRINGS.chooseCandidate}
+          {electionDisplayTitle}
         </CText>
 
         {/* Candidate cards */}
@@ -661,6 +729,8 @@ const CandidateScreen = ({ route }) => {
         presidentName={getPrimaryCandidateName(selectedCandidate)}
         partyName={selectedCandidate?.partyName || ''}
         partyColor={selectedCandidate?.partyColor}
+        isReferendum={isReferendumElection}
+        questionTitle={resolveElectionTitle(electionCopySource)}
         onConfirm={handleConfirmVote}
         onCancel={handleCancelConfirm}
         isLoading={isLoading}

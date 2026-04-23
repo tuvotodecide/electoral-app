@@ -749,7 +749,12 @@ export function handleNotificationPress(notification) {
     navigate(route.name, route.params);
   } else {
     store.dispatch(setPendingNav(route));
-    navigate(StackNav.AuthNavigation, {screen: AuthNav.LoginUser});
+    const loginScreen = AuthNav?.LoginUser || 'LoginUser';
+    if (StackNav.AuthNavigation && AuthNav?.LoginUser) {
+      navigate(StackNav.AuthNavigation, {screen: loginScreen});
+    } else {
+      navigate(loginScreen);
+    }
   }
 }
 

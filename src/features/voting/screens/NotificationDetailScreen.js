@@ -111,9 +111,17 @@ export const resolveNotificationActionLabel = ({
   kind,
   isNews,
   type,
+  isReferendum = false,
 } = {}) => {
-  if (notification?.actionLabel) {
-    return notification.actionLabel;
+  const explicitLabel = String(notification?.actionLabel || '').trim();
+  if (explicitLabel) {
+    if (
+      isReferendum &&
+      explicitLabel.toLowerCase() === 'ver elección'
+    ) {
+      return 'Ver consulta';
+    }
+    return explicitLabel;
   }
 
   if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_VOTING_ENABLED') {
@@ -128,7 +136,7 @@ export const resolveNotificationActionLabel = ({
     return 'Ver detalles';
   }
 
-  return 'Ver elección';
+  return isReferendum ? 'Ver consulta' : 'Ver elección';
 };
 
 const normalizeOptionColors = option => {
@@ -149,6 +157,7 @@ const normalizeOptionColors = option => {
 const mapResultsSummaryFromDetail = detail => {
   const options = Array.isArray(detail?.options) ? detail.options : [];
   const resultRows = Array.isArray(detail?.results) ? detail.results : [];
+  const isReferendum = detail?.isReferendum === true;
   const votesByOption = new Map(
     resultRows.map(result => [String(result?.option ?? ''), Number(result?.votes ?? 0)]),
   );
@@ -163,8 +172,8 @@ const mapResultsSummaryFromDetail = detail => {
 
     return {
       id: String(option?.id ?? `option-${index + 1}`),
-      name: firstCandidate?.name ?? partyName,
-      party: partyName,
+      name: isReferendum ? partyName : firstCandidate?.name ?? partyName,
+      party: isReferendum ? 'Opción' : partyName,
       colorHex:
         normalizeOptionColors(option)[0] ??
         option?.color ??
@@ -208,6 +217,10 @@ const NotificationDetailScreen = () => {
   const resultsAtLabel = formatEventDate(rawData?.resultsPublishAt);
   const [remoteResultsSummary, setRemoteResultsSummary] = useState([]);
   const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
+  const [detailMeta, setDetailMeta] = useState({
+    isReferendum: false,
+    questionTitle: '',
+  });
   const resolvedPublicUrl = resolvePublicResultsUrl(notification);
   const imageUrl = notification?.imageUrl || rawData?.imageUrl || null;
   const eventId = String(rawData?.eventId || notification?.eventId || '').trim();
@@ -247,9 +260,17 @@ const NotificationDetailScreen = () => {
           return;
         }
 
+        setDetailMeta({
+          isReferendum: detail?.isReferendum === true,
+          questionTitle: String(detail?.objective || detail?.description || '').trim(),
+        });
         setRemoteResultsSummary(mapResultsSummaryFromDetail(detail));
       } catch {
         if (mounted) {
+          setDetailMeta({
+            isReferendum: false,
+            questionTitle: '',
+          });
           setRemoteResultsSummary([]);
         }
       } finally {
@@ -330,6 +351,13 @@ const NotificationDetailScreen = () => {
     Linking.openURL(targetUrl).catch(() => {});
   };
 
+  const isReferendumResults = kind === 'election_results' && detailMeta.isReferendum;
+  const isReferendumNotification = isReferendumResults || rawData?.isReferendum === true;
+  const heroTitle =
+    isReferendumResults && detailMeta.questionTitle
+      ? detailMeta.questionTitle
+      : notification?.mesa || notification?.title || heroConfig.title || DEFAULT_NOTIFICATION.title;
+
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader title={UI_STRINGS.notificationHeader} />
@@ -343,7 +371,7 @@ const NotificationDetailScreen = () => {
             <Ionicons name={heroConfig.iconName} size={34} color="#FFFFFF" />
           </View>
           <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
-            {notification?.mesa || notification?.title || heroConfig.title || DEFAULT_NOTIFICATION.title}
+            {heroTitle}
           </CText>
           {kind !== 'election_results' && (rawData?.body || notification?.direccion) ? (
             <CText type="R14" style={styles.heroSubtitle}>
@@ -372,7 +400,7 @@ const NotificationDetailScreen = () => {
         ) : kind === 'election_results' ? (
           <View style={styles.sectionCard}>
             <CText type="B16" style={styles.sectionTitle}>
-              Resultados
+              {isReferendumResults ? 'Resultados de la consulta' : 'Resultados'}
             </CText>
             {hasTie ? (
               <View
@@ -407,7 +435,7 @@ const NotificationDetailScreen = () => {
                       {result?.name}
                     </CText>
                     <CText type="R12" style={styles.resultParty}>
-                      {result?.party || 'Candidato'}
+                      {result?.party || (isReferendumResults ? 'Opción' : 'Candidato')}
                     </CText>
                     {Number(result?.votes || 0) > 0 ? (
                       <CText type="R12" style={styles.resultVotes}>
@@ -422,14 +450,16 @@ const NotificationDetailScreen = () => {
               ))
             ) : (
               <CText type="R14" style={styles.emptyResultsText}>
-                Resultados listos para consultar en detalle.
+                {isReferendumResults
+                  ? 'Resultados de la consulta listos para consultar en detalle.'
+                  : 'Resultados listos para consultar en detalle.'}
               </CText>
             )}
           </View>
         ) : (
           <View style={styles.sectionCard}>
             <CText type="B16" style={styles.sectionTitle}>
-              Fechas de la elección
+              {isReferendumNotification ? 'Fechas de la consulta' : 'Fechas de la elección'}
             </CText>
             {startsAtLabel ? (
               <View style={styles.scheduleRow}>
@@ -472,6 +502,7 @@ const NotificationDetailScreen = () => {
               notification,
               kind,
               isNews,
+              isReferendum: isReferendumNotification,
               type: isVotingEnabled ? 'INSTITUTIONAL_VOTING_ENABLED' : normalizedType,
             })}
             type="B16"

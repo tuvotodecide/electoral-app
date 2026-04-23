@@ -178,6 +178,42 @@ describe('ElectionRepository.api', () => {
     ]);
   });
 
+  it('preserva isReferendum y objective como questionTitle para la papeleta de consulta', async () => {
+    axios.get.mockResolvedValueOnce({
+      data: {
+        isReferendum: true,
+        objective: '¿Aprueba la nueva normativa institucional?',
+        options: [
+          {
+            id: 'option-1',
+            name: 'Sí',
+            active: true,
+            logoUrl: 'https://img.test/si.png',
+            candidates: [],
+          },
+        ],
+      },
+    });
+
+    const candidates = await ElectionRepositoryApi.getCandidates('event-ref-1');
+
+    expect(candidates).toEqual([
+      {
+        id: 'option-1',
+        partyName: 'Sí',
+        presidentName: 'Sí',
+        viceName: '',
+        ticketEntries: [],
+        avatarUrl: 'https://img.test/si.png',
+        partyColor: '#2563EB',
+        partyColors: ['#2563EB'],
+        isReferendum: true,
+        questionTitle: '¿Aprueba la nueva normativa institucional?',
+        electionObjective: '¿Aprueba la nueva normativa institucional?',
+      },
+    ]);
+  });
+
   it('verifica QR presencial enviando token y carnet y devuelve presentialSessionId', async () => {
     axios.post.mockResolvedValueOnce({
       data: {

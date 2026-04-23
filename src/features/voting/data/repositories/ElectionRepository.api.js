@@ -87,7 +87,7 @@ const getVotingAuthHeaders = async () => {
   const privKey = getCurrentPrivKey();
 
   if (!did || !privKey) {
-    throw new Error('No se encontraron credenciales zk para autenticar la consulta');
+    throw new Error('No se pudo validar tu acceso para esta consulta');
   }
 
   const apiKey = await authenticateWithBackend(did, privKey);
@@ -848,13 +848,13 @@ const ElectionRepositoryApi = {
       const voteRequest = await getVoteRequestForBackend();
       const callbackUrl = voteRequest.body.callbackUrl;
       if(!callbackUrl) {
-        throw new Error('Callback URL not found in vote request');
+        throw new Error('No se pudo preparar la confirmación del voto');
       }
       voteRequest.body.callbackUrl = callbackUrl + `?optionId=${candidateId}`
 
       const credential = await getCredentialForVote(electionId, did, privKey);
       if (!credential) {
-        throw new Error('Credential for vote not found');
+        throw new Error('No se pudo validar tu acceso para emitir el voto');
       }
 
       await wira.authenticateWithVerifier(
@@ -869,7 +869,7 @@ const ElectionRepositoryApi = {
       await clearVoteJournal(electionId);
       return {
         success: false,
-        error: 'Failed to submit vote:' + error.message,
+        error: 'No se pudo registrar el voto. Intenta nuevamente.',
       }
     }
 
@@ -901,7 +901,7 @@ const ElectionRepositoryApi = {
 
       return response.data.presentialSessionId;
     } catch (error) {
-      throw new Error(`Qr verification failed: ${error?.response?.data?.message || error.message}`);
+      throw new Error(`No se pudo validar el código QR.`);
     }
   },
 

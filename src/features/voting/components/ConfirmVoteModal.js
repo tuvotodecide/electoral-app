@@ -29,6 +29,8 @@ const { width: screenWidth } = Dimensions.get('window');
  * @param {string} props.partyName - Nombre del partido
  * @param {boolean} [props.isBlankVote] - Indica si es un voto en blanco
  * @param {string} props.partyColor - Color del partido
+ * @param {boolean} [props.isReferendum]
+ * @param {string} [props.questionTitle]
  * @param {() => void} props.onConfirm
  * @param {() => void} props.onCancel
  * @param {boolean} [props.isLoading]
@@ -39,10 +41,19 @@ const ConfirmVoteModal = ({
   partyName,
   isBlankVote = false,
   partyColor = '#7d7e80',
+  isReferendum = false,
+  questionTitle = '',
   onConfirm,
   onCancel,
   isLoading = false,
 }) => {
+  const isReferendumVote = isReferendum && !isBlankVote;
+  const title = isBlankVote
+    ? UI_STRINGS.confirmVoteBlank
+    : isReferendumVote
+      ? questionTitle || UI_STRINGS.confirmReferendumVoteTitle
+      : `${UI_STRINGS.confirmVoteTitle} ${presidentName}?`;
+
   return (
     <Modal
       visible={visible}
@@ -81,8 +92,14 @@ const ConfirmVoteModal = ({
 
               {/* Título */}
               <CText type="B18" style={styles.title}>
-                {isBlankVote ? UI_STRINGS.confirmVoteBlank : `${UI_STRINGS.confirmVoteTitle} ${presidentName}?`}
+                {title}
               </CText>
+
+              {isReferendumVote ? (
+                <CText type="M14" style={styles.selectionText}>
+                  {`${UI_STRINGS.option}: ${partyName}`}
+                </CText>
+              ) : null}
 
               {/* Subtexto NFT */}
               <View style={styles.nftBadge}>
@@ -166,6 +183,13 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontSize: moderateScale(18),
     fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: moderateScale(24),
+    marginBottom: moderateScale(12),
+  },
+  selectionText: {
+    color: '#4B5563',
+    fontSize: moderateScale(14),
     textAlign: 'center',
     paddingHorizontal: moderateScale(24),
     marginBottom: moderateScale(12),

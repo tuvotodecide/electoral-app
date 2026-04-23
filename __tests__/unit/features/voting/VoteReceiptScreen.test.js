@@ -133,6 +133,39 @@ describe('VoteReceiptScreen', () => {
     expect(syncStateWithBlockchain).not.toHaveBeenCalled();
   });
 
+  it('muestra detalle de respuesta cuando la participacion corresponde a un referendum', () => {
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'election-1',
+          electionTitle: '¿Aprueba la nueva normativa institucional?',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          isReferendum: true,
+          candidateSelected: {
+            partyName: 'Sí',
+            presidentName: 'Sí',
+            isReferendum: true,
+            questionTitle: '¿Aprueba la nueva normativa institucional?',
+          },
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    fireEvent.press(screen.getByText('Detalle de mi respuesta'));
+
+    expect(screen.getByText('Sí')).toBeTruthy();
+    expect(screen.getByText('Opción')).toBeTruthy();
+    expect(screen.queryByText('Partido')).toBeNull();
+  });
+
   it('permite liberar un voto fallido y volver al inicio', async () => {
     useVotingState.mockReturnValue({
       participations: [

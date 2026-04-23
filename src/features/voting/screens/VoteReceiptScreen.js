@@ -44,6 +44,22 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const buildSelectionEntries = candidateSelected => {
+  if (candidateSelected?.isReferendum) {
+    const responseValue = String(candidateSelected?.presidentName || '').trim();
+    const optionName = String(candidateSelected?.partyName || '').trim();
+
+    if (!responseValue || responseValue === optionName) {
+      return [];
+    }
+
+    return [
+      {
+        label: UI_STRINGS.response,
+        value: responseValue,
+      },
+    ];
+  }
+
   const ticketEntries = Array.isArray(candidateSelected?.ticketEntries)
     ? candidateSelected.ticketEntries
         .map(entry => ({
@@ -96,6 +112,9 @@ const VoteReceiptScreen = () => {
   const isFailedParticipation = participation?.status === 'ERROR';
   const isQueuedParticipation =
     participation?.synced === false && !isFailedParticipation;
+  const isReferendum = Boolean(
+    participation?.isReferendum || participation?.candidateSelected?.isReferendum,
+  );
   const selectionEntries = buildSelectionEntries(participation?.candidateSelected);
 
   const toggleDetail = () => {
@@ -258,7 +277,9 @@ const VoteReceiptScreen = () => {
             activeOpacity={0.7}
           >
             <CText type="M14" style={styles.expandableTitle}>
-              {UI_STRINGS.selectionDetail}
+              {isReferendum
+                ? UI_STRINGS.selectionDetailReferendum
+                : UI_STRINGS.selectionDetail}
             </CText>
             <Ionicons
               name={isDetailExpanded ? 'chevron-up' : 'chevron-down'}
@@ -272,7 +293,7 @@ const VoteReceiptScreen = () => {
             <View style={styles.expandedContent}>
               <View style={styles.selectionDetailRow}>
                 <CText type="R12" style={styles.selectionLabel}>
-                  {UI_STRINGS.party}
+                  {isReferendum ? UI_STRINGS.option : UI_STRINGS.party}
                 </CText>
                 <CText type="M14" style={styles.selectionValue}>
                   {participation.candidateSelected.partyName === blankVote.partyName

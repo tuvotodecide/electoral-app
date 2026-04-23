@@ -27,6 +27,20 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const buildTicketEntries = candidate => {
+  if (candidate?.isReferendum) {
+    const responseValue = String(candidate?.presidentName || '').trim();
+    if (!responseValue || responseValue === String(candidate?.partyName || '').trim()) {
+      return [];
+    }
+
+    return [
+      {
+        label: UI_STRINGS.response,
+        value: responseValue,
+      },
+    ];
+  }
+
   const entries = Array.isArray(candidate?.ticketEntries)
     ? candidate.ticketEntries
         .map(entry => ({

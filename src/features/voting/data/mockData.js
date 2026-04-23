@@ -105,18 +105,24 @@ export const UI_STRINGS = {
 
   // Candidate screen
   candidateHeader: 'Papeleta',
+  referendumHeader: 'Consulta',
   chooseCandidate: 'Elige a un candidato',
+  chooseOption: 'Selecciona una opción',
   selectCandidate: 'Selecciona un candidato',
   voteBlank: 'Votar en Blanco',
   votedBlank: 'Votaste en Blanco',
   voteFor: 'VOTAR POR',
+  voteForOption: 'VOTAR ESTA OPCIÓN',
   voteSecureNote: 'Tu voto será registrado de forma segura y anónima',
   president: 'Presidente:',
   vicePresident: 'Vicepresidente:',
+  option: 'Opción',
+  response: 'Respuesta',
 
   // Confirm modal
   confirmVoteTitle: '¿Confirmar voto por',
   confirmVoteBlank: '¿Confirmar voto en Blanco?',
+  confirmReferendumVoteTitle: '¿Confirmar tu respuesta?',
   nftSubtext: 'Se generará un NFT de participación',
   confirmButton: 'Sí, confirmar mi voto',
   cancelButton: 'Cancelar',
@@ -139,6 +145,7 @@ export const UI_STRINGS = {
   receiptHeader: 'Comprobante',
   voteRegisteredSuccess: 'Voto registrado exitosamente',
   selectionDetail: 'Detalle de mi selección',
+  selectionDetailReferendum: 'Detalle de mi respuesta',
   dateTime: 'Fecha y hora',
   organization: 'Organización',
   transactionId: 'ID de transacción',
