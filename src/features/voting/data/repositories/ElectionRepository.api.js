@@ -126,6 +126,15 @@ const phaseToCardStatus = phase => {
   return 'ACTIVA';
 };
 
+const resolveReferendumQuestion = event =>
+  String(
+    event?.objective ||
+      event?.description ||
+      event?.questionTitle ||
+      event?.name ||
+      '',
+  ).trim();
+
 const buildElectionModel = ({
   event,
   eligibility,
@@ -157,14 +166,18 @@ const buildElectionModel = ({
     event?.tenant?.name ||
     event?.name ||
     '';
+  const isReferendum = event?.isReferendum === true;
+  const questionTitle = resolveReferendumQuestion(event);
 
   return {
     id: String(event?.id || ''),
     title: event?.name || 'Votación institucional',
+    questionTitle,
+    objective: questionTitle,
     status: phaseToCardStatus(event?.phase),
     closesInLabel:
       event?.phase === 'UPCOMING' ? 'Inicia pronto' : 'Cierra pronto',
-    instituteName: event?.objective || '',
+    instituteName: questionTitle,
     organization: organizationName,
     startsAt: event?.votingStart ? new Date(event.votingStart).getTime() : null,
     closesAt: event?.votingEnd ? new Date(event.votingEnd).getTime() : null,
@@ -177,6 +190,7 @@ const buildElectionModel = ({
     alreadyVoted: participationStatus?.alreadyVoted === true,
     publicEligibilityEnabled: event?.publicEligibilityEnabled !== false,
     presentialKioskEnabled: event?.presentialKioskEnabled === true,
+    isReferendum,
     statusMessage,
   };
 };
@@ -207,7 +221,9 @@ const normalizeOptionColors = option => {
   return [legacyColor || '#2563EB'];
 };
 
-const mapOptionToCandidate = option => {
+const mapOptionToCandidate = (option, event = null) => {
+  const isReferendum = event?.isReferendum === true;
+  const questionTitle = resolveReferendumQuestion(event);
   const candidates = Array.isArray(option?.candidates) ? option.candidates : [];
   const ticketEntries = mapTicketEntries(candidates);
   const president =
@@ -230,6 +246,13 @@ const mapOptionToCandidate = option => {
     avatarUrl: president?.photoUrl || option?.logoUrl || null,
     partyColor: normalizeOptionColors(option)[0] || '#2563EB',
     partyColors: normalizeOptionColors(option),
+    ...(isReferendum
+      ? {
+          isReferendum: true,
+          questionTitle,
+          electionObjective: questionTitle,
+        }
+      : {}),
   };
 };
 
@@ -302,7 +325,7 @@ const requestCandidates = async electionId => {
   const options = Array.isArray(detail?.options) ? detail.options : [];
   return options
     .filter(option => option?.active !== false)
-    .map(mapOptionToCandidate)
+    .map(option => mapOptionToCandidate(option, detail))
     .filter(candidate => candidate.id);
 };
 

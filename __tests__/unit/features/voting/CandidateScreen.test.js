@@ -612,7 +612,7 @@ describe('CandidateScreen', () => {
       });
     });
 
-    expect(screen.getByText('Conexion con servidor pendiente')).toBeTruthy();
+    expect(screen.getByText('Conexión con el servidor pendiente')).toBeTruthy();
     expect(repository.submitVote).not.toHaveBeenCalled();
   });
 
