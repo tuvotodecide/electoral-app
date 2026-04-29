@@ -5,6 +5,7 @@
 
 import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
+import axios from 'axios';
 import Notification from '../../../../../src/container/TabBar/Home/Notification';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
 
@@ -46,6 +47,17 @@ jest.mock('../../../../../src/services/notifications', () => ({
 }));
 
 jest.mock('../../../../../src/notifications', () => ({
+  buildNotificationTextFallback: jest.fn(notification => ({
+    title:
+      notification?.title ||
+      notification?.data?.title ||
+      '',
+    body:
+      notification?.body ||
+      notification?.data?.body ||
+      '',
+    data: notification?.data || {},
+  })),
   getLocalStoredNotifications: jest.fn(() => Promise.resolve([])),
   mergeAndDedupeNotifications: jest.fn(({localList, remoteList}) => remoteList),
 }));
@@ -86,6 +98,25 @@ jest.mock('../../../../../src/components/common/CStandardHeader', () => {
         React.createElement(Text, null, 'Back'),
       ),
     );
+});
+
+jest.mock('@shopify/flash-list', () => {
+  const React = require('react');
+  const {View} = require('react-native');
+
+  return {
+    FlashList: ({data = [], renderItem, testID, ListEmptyComponent}) => (
+      <View testID={testID}>
+        {data.length > 0
+          ? data.map((item, index) => (
+              <React.Fragment key={String(item?.id ?? index)}>
+                {renderItem({item, index})}
+              </React.Fragment>
+            ))
+          : ListEmptyComponent || null}
+      </View>
+    ),
+  };
 });
 
 describe('Notification Screen', () => {
@@ -243,6 +274,65 @@ describe('Notification Screen', () => {
       );
 
       expect(UNSAFE_root).toBeTruthy();
+    });
+
+    it('no muestra preview de imagen en la lista aunque la noticia traiga imageUrl', async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              _id: 'news-1',
+              title: 'Nueva noticia',
+              body: 'Se publicó una novedad.',
+              createdAt: new Date().toISOString(),
+              data: {
+                type: 'INSTITUTIONAL_NEWS',
+              },
+              imageUrl: 'https://cdn.example.com/noticia.png',
+            },
+          ],
+        },
+      });
+
+      const {queryByTestId, getByTestId} = renderWithProviders(
+        <Notification navigation={navigationWithListener} />,
+        {initialState: mockStore},
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('notificationItem_0')).toBeTruthy();
+      });
+
+      expect(queryByTestId('notificationImage_0')).toBeNull();
+    });
+
+    it('evita repetir la misma idea entre titulo y subtitulo en notificaciones institucionales', async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              _id: 'schedule-1',
+              title: 'Horario actualizado',
+              body: 'Se actualizó el horario de la votación.',
+              createdAt: new Date().toISOString(),
+              data: {
+                type: 'INSTITUTIONAL_SCHEDULE_UPDATED',
+              },
+            },
+          ],
+        },
+      });
+
+      const {getByText} = renderWithProviders(
+        <Notification navigation={navigationWithListener} />,
+        {initialState: mockStore},
+      );
+
+      await waitFor(() => {
+        expect(getByText('Horario actualizado')).toBeTruthy();
+      });
+
+      expect(getByText('Ver fechas')).toBeTruthy();
     });
   });
 

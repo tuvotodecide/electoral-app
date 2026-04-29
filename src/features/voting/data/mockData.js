@@ -105,7 +105,7 @@ export const UI_STRINGS = {
 
   // Candidate screen
   candidateHeader: 'Papeleta',
-  referendumHeader: 'Consulta',
+  referendumHeader: 'Referéndum',
   chooseCandidate: 'Elige a un candidato',
   chooseOption: 'Selecciona una opción',
   selectCandidate: 'Selecciona un candidato',
@@ -145,7 +145,7 @@ export const UI_STRINGS = {
   receiptHeader: 'Comprobante',
   voteRegisteredSuccess: 'Voto registrado exitosamente',
   selectionDetail: 'Detalle de mi selección',
-  selectionDetailReferendum: 'Detalle de mi respuesta',
+  selectionDetailReferendum: 'Detalle de tu opción',
   dateTime: 'Fecha y hora',
   organization: 'Organización',
   transactionId: 'ID de transacción',

@@ -1,6 +1,7 @@
 import {Platform, PermissionsAndroid} from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, {AndroidImportance} from '@notifee/react-native';
+import { buildNotificationTextFallback } from '../notifications';
 
 export async function ensureFCMSetup() {
   await messaging().registerDeviceForRemoteMessages();
@@ -87,7 +88,21 @@ export async function unsubscribeFromPushTopic(topic) {
 export function registerBackgroundHandler() {
   // Se ejecuta cuando el app está en background/quit y llega un mensaje data-only o para procesar info
   messaging().setBackgroundMessageHandler(async remoteMessage => {
+    if (remoteMessage?.notification?.title || remoteMessage?.notification?.body) {
+      return;
+    }
 
+    const notificationCopy = buildNotificationTextFallback({
+      title: remoteMessage?.notification?.title,
+      body: remoteMessage?.notification?.body,
+      data: remoteMessage?.data ?? {},
+    });
+
+    await showLocalNotification({
+      title: notificationCopy.title,
+      body: notificationCopy.body,
+      data: remoteMessage?.data ?? {},
+    });
   });
 }
 

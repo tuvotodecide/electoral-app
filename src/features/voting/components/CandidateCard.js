@@ -87,8 +87,14 @@ const getCandidateColors = candidate => {
  * @param {boolean} props.isSelected - Si está seleccionado
  * @param {() => void} props.onSelect - Handler de selección
  */
-const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
+const CandidateCard = ({
+  candidate,
+  isSelected = false,
+  onSelect,
+  displayIndex = null,
+}) => {
   const isSpecial = candidate.isSpecial || false;
+  const isReferendum = candidate?.isReferendum === true;
   const ticketEntries = buildTicketEntries(candidate);
   const candidateColors = getCandidateColors(candidate);
   const primaryColor = candidateColors[0] || '#2563EB';
@@ -167,48 +173,87 @@ const CandidateCard = ({ candidate, isSelected = false, onSelect }) => {
           adjustsFontSizeToFit
           minimumFontScale={0.8}
         >
-          {candidate.partyName}
+          {isReferendum && Number.isFinite(displayIndex)
+            ? `Opción ${displayIndex + 1}`
+            : candidate.partyName}
         </CText>
       </View>
 
       {/* Contenido */}
       <View style={styles.content}>
-        {/* Avatar / Foto */}
-        <View style={styles.avatarContainer}>
-          {candidate.avatarUrl ? (
-            <Image
-              source={{ uri: candidate.avatarUrl }}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={32} color="#CBD5E1" />
-            </View>
-          )}
-        </View>
+        {!isReferendum ? (
+          <View style={styles.avatarContainer}>
+            {candidate.avatarUrl ? (
+              <Image
+                source={{ uri: candidate.avatarUrl }}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={32} color="#CBD5E1" />
+              </View>
+            )}
+          </View>
+        ) : null}
 
         {/* Info del candidato */}
         <View style={styles.info}>
-          {ticketEntries.map((entry, index) => (
-            <View
-              key={`${candidate.id}:${entry.label}:${entry.value}`}
-              style={index > 0 ? styles.ticketEntry : null}
-            >
+          {isReferendum ? (
+            <View>
               <CText type="R12" style={styles.label}>
-                {entry.label}
+                {UI_STRINGS.option}
               </CText>
               <CText
-                type={index === 0 ? 'B16' : 'M14'}
-                style={index === 0 ? styles.name : styles.secondaryName}
-                numberOfLines={2}
+                type="B16"
+                style={styles.name}
+                numberOfLines={3}
                 adjustsFontSizeToFit
-                minimumFontScale={index === 0 ? 0.78 : 0.8}
+                minimumFontScale={0.8}
               >
-                {entry.value}
+                {candidate.partyName}
               </CText>
+              {ticketEntries.map(entry => (
+                <View
+                  key={`${candidate.id}:${entry.label}:${entry.value}`}
+                  style={styles.ticketEntry}
+                >
+                  <CText type="R12" style={styles.label}>
+                    {entry.label}
+                  </CText>
+                  <CText
+                    type="M14"
+                    style={styles.secondaryName}
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {entry.value}
+                  </CText>
+                </View>
+              ))}
             </View>
-          ))}
+          ) : (
+            ticketEntries.map((entry, index) => (
+              <View
+                key={`${candidate.id}:${entry.label}:${entry.value}`}
+                style={index > 0 ? styles.ticketEntry : null}
+              >
+                <CText type="R12" style={styles.label}>
+                  {entry.label}
+                </CText>
+                <CText
+                  type={index === 0 ? 'B16' : 'M14'}
+                  style={index === 0 ? styles.name : styles.secondaryName}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={index === 0 ? 0.78 : 0.8}
+                >
+                  {entry.value}
+                </CText>
+              </View>
+            ))
+          )}
         </View>
 
         {/* Radio button / Check */}

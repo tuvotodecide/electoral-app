@@ -676,10 +676,11 @@ const CandidateScreen = ({ route }) => {
 
         {/* Candidate cards */}
         <View style={styles.candidatesList}>
-          {candidates.map((candidate) => (
+          {candidates.map((candidate, index) => (
             <CandidateCard
               key={candidate.id}
               candidate={candidate}
+              displayIndex={isReferendumElection ? index : null}
               isSelected={selectedCandidate?.id === candidate.id}
               onSelect={() => handleSelectCandidate(candidate)}
             />

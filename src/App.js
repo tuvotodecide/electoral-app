@@ -9,7 +9,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LAST_TOPIC_KEY, LAST_USER_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
-import { handleNotificationPress, registerNotifications } from './notifications';
+import {
+  buildNotificationTextFallback,
+  handleNotificationPress,
+  markNotificationAsAlerted,
+  registerNotifications,
+} from './notifications';
 import { setPendingNav } from './redux/slices/authSlice';
 import {
   ensureFCMSetup,
@@ -28,7 +33,15 @@ const queryClient = new QueryClient();
 const App = () => {
   const colors = useSelector(state => state.theme.theme);
   const auth = useSelector(s => s.auth);
+  const userData = useSelector(state => state.wallet?.payload);
   const dispatch = useDispatch();
+  const vc = userData?.vc;
+  const credentialSubject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const notificationDni =
+    credentialSubject?.nationalIdNumber ||
+    credentialSubject?.documentNumber ||
+    credentialSubject?.governmentIdentifier ||
+    userData?.dni;
 
   const [mustUpdate, setMustUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -100,10 +113,23 @@ const App = () => {
       cleanup = await initNotifications({
         onForegroundMessage: async msg => {
           try {
+            const notificationCopy = buildNotificationTextFallback({
+              title: msg?.notification?.title,
+              body: msg?.notification?.body,
+              data: msg?.data ?? {},
+            });
             await showLocalNotification({
-              title: msg?.notification?.title ?? msg?.data?.title,
-              body: msg?.notification?.body ?? msg?.data?.body,
+              title: notificationCopy.title,
+              body: notificationCopy.body,
               data: msg?.data,
+            });
+            await markNotificationAsAlerted({
+              dni: notificationDni,
+              notification: {
+                title: notificationCopy.title,
+                body: notificationCopy.body,
+                data: msg?.data ?? {},
+              },
             });
           } catch (e) {
             captureError(e, {
@@ -131,7 +157,7 @@ const App = () => {
     return () => {
       cleanup && cleanup();
     };
-  }, []);
+  }, [notificationDni]);
   useEffect(() => {
     const resubscribeStoredTopics = async () => {
       const lastLocationTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);

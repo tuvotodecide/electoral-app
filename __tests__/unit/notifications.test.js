@@ -69,6 +69,7 @@ import {
   buildNotificationTextFallback,
   buildRouteFromNotification,
   handleNotificationPress,
+  markNotificationAsAlerted,
   mergeAndDedupeNotifications,
   maybeStorePendingNavFromRemote,
   showActaPublishedNotification,
@@ -148,6 +149,31 @@ describe('notifications', () => {
     });
   });
 
+  it('normaliza copy institucional util para revision de padron y publicacion oficial', () => {
+    expect(
+      buildNotificationTextFallback({
+        data: {
+          type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+          eventName: 'Referéndum UMSA',
+        },
+      }),
+    ).toMatchObject({
+      title: 'Revisa tu padrón',
+      body: expect.stringContaining('te invita a revisar Referéndum UMSA'),
+    });
+
+    expect(
+      buildNotificationTextFallback({
+        data: {
+          type: 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+        },
+      }),
+    ).toMatchObject({
+      title: 'La votación fue publicada oficialmente',
+      body: expect.stringContaining('Verifica si te encuentras habilitado'),
+    });
+  });
+
   it('alerta solo una vez por notificacion backend deduplicada y persiste la marca', async () => {
     const notification = {
       _id: 'remote-1',
@@ -168,6 +194,41 @@ describe('notifications', () => {
     expect(notifee.displayNotification).toHaveBeenCalledTimes(1);
     expect(mockStorage.get('@backend-notifications:alerted:v1:123')).toContain(
       'id:remote-1',
+    );
+  });
+
+  it('permite marcar una notificacion como ya alertada para evitar duplicados entre foreground y fetch backend', async () => {
+    const notification = {
+      title: 'Horario actualizado',
+      body: 'Se actualizó el horario de Referéndum UMSA',
+      data: {
+        type: 'INSTITUTIONAL_SCHEDULE_UPDATED',
+        eventId: 'event-1',
+        eventName: 'Referéndum UMSA',
+      },
+    };
+
+    await markNotificationAsAlerted({
+      dni: '123',
+      notification,
+    });
+
+    await alertNewBackendNotifications({
+      dni: '123',
+      notifications: [
+        {
+          _id: 'remote-schedule-1',
+          createdAt: '2026-01-01T10:00:00.000Z',
+          title: notification.title,
+          body: notification.body,
+          data: notification.data,
+        },
+      ],
+    });
+
+    expect(notifee.displayNotification).not.toHaveBeenCalled();
+    expect(mockStorage.get('@backend-notifications:alerted:v1:123')).toContain(
+      'sem:text:institutional_schedule_updated:::horario actualizado:se actualizó el horario de referéndum umsa',
     );
   });
 
@@ -249,8 +310,8 @@ describe('notifications', () => {
       expect(route.name).toBe('VotingNotificationDetailScreen');
       expect(route.params.notification).toMatchObject({
         data: expect.objectContaining({type}),
-        mesa: 'Titulo institucional',
-        direccion: 'Resumen institucional',
+        mesa: expect.any(String),
+        direccion: expect.any(String),
       });
     });
   });
@@ -270,7 +331,7 @@ describe('notifications', () => {
       params: {
         notification: {
           kind: 'voting_event',
-          tipo: 'Ver padrón',
+          tipo: 'Abrir votación',
           actionLabel: 'Ver padrón',
           actionUrl: 'https://resultados.example/elections/event-1/public',
         },

@@ -2,7 +2,6 @@ import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -19,6 +18,7 @@ import axios from 'axios';
 import { requestPushPermissionExplicit } from '../../../services/pushPermission';
 import { formatTiempoRelativo } from '../../../services/notifications';
 import {
+  buildNotificationTextFallback,
   getLocalStoredNotifications,
   mergeAndDedupeNotifications,
 } from '../../../notifications';
@@ -340,8 +340,9 @@ export default function Notification({ navigation }) {
   const mapServerToUi = useCallback((n, now = Date.now()) => {
     const data = n?.data || {};
     const created = n?.createdAt || n?.timestamp || new Date().toISOString();
-    const titleFromBackend = n?.title || data?.title || '';
-    const bodyFromBackend = n?.body || data?.body || '';
+    const normalizedText = buildNotificationTextFallback(n);
+    const titleFromBackend = normalizedText.title || n?.title || data?.title || '';
+    const bodyFromBackend = normalizedText.body || n?.body || data?.body || '';
     const normalizedType = String(data?.type || '').trim().toUpperCase();
     const isScheduleUpdate = normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED';
     const isPadronReview = normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
@@ -386,13 +387,13 @@ export default function Notification({ navigation }) {
     if (notificationKind === 'voting_event') {
       const startsAt = data?.votingStart || data?.startsAt;
       if (isPadronReview) {
-        tipo = 'Revisar padrón';
-      } else if (isOfficialPublication) {
-        tipo = 'Publicación oficial';
-      } else if (isVotingEnabled) {
         tipo = 'Ver padrón';
+      } else if (isOfficialPublication) {
+        tipo = 'Ver fechas';
+      } else if (isVotingEnabled) {
+        tipo = 'Abrir votación';
       } else if (isScheduleUpdate) {
-        tipo = 'Cronograma modificado';
+        tipo = 'Ver fechas';
       } else {
         tipo = startsAt
           ? formatCountdownLabel(Date.parse(String(startsAt)), now)
@@ -461,7 +462,10 @@ export default function Notification({ navigation }) {
       votingStartLabel: startsAtLabel,
       votingEndLabel: endsAtLabel,
       actionUrl,
-      actionLabel: isVotingEnabled ? 'Ver padrón' : undefined,
+      actionLabel:
+        isVotingEnabled || isPadronReview
+          ? 'Ver padrón'
+          : undefined,
       imageUrl: data?.imageUrl || n?.imageUrl || null,
       resultsSummary: mapResultsSummary(data),
       screen: data?.screen || null,
@@ -752,14 +756,6 @@ export default function Notification({ navigation }) {
               style={localStyle.detailText}>
               {item.direccion}
             </Text>
-            {item.imageUrl ? (
-              <Image
-                testID={`notificationImage_${index}`}
-                source={{uri: item.imageUrl}}
-                style={localStyle.notificationImage}
-                resizeMode="cover"
-              />
-            ) : null}
             {Array.isArray(item.resultsSummary) && item.resultsSummary.length > 0 ? (
               <View style={localStyle.resultsPreview}>
                 {item.resultsSummary.slice(0, 2).map(result => (
@@ -934,4 +930,3 @@ const localStyle = StyleSheet.create({
   },
   separator: { height: 14 },
 });
-

@@ -148,6 +148,25 @@ const buildBackendNotificationAlertKey = notification => {
   return `fallback:${timestamp}:${title}:${body}`;
 };
 
+const buildBackendNotificationAlertKeys = notification => {
+  const keys = [];
+  const rawId = normalizeNotificationField(notification?._id || notification?.id);
+  const semanticKey = buildNotificationSemanticKey(notification);
+  const fallbackKey = buildBackendNotificationAlertKey(notification);
+
+  if (rawId && !rawId.startsWith('local_')) {
+    keys.push(`id:${rawId}`);
+  }
+  if (semanticKey) {
+    keys.push(`sem:${semanticKey}`);
+  }
+  if (fallbackKey) {
+    keys.push(fallbackKey);
+  }
+
+  return Array.from(new Set(keys.filter(Boolean)));
+};
+
 // OCP: Strategy pattern dictionary. 
 // Para extender nuevos tipos de notificación, simplemente añade una entrada aquí sin modificar la función principal.
 const NotificationTypeStrategies = {
@@ -199,14 +218,89 @@ const normalizeNotificationType = value =>
     .trim()
     .toUpperCase();
 
+const formatShortNotificationDate = rawValue => {
+  const parsed = Date.parse(String(rawValue || ''));
+  if (!Number.isFinite(parsed)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-BO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(parsed));
+};
+
+const buildInstitutionalNotificationCopy = notification => {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+  const type = normalizeNotificationType(data?.type);
+  const eventName = String(data?.eventName || data?.title || '').trim();
+  const startLabel = formatShortNotificationDate(data?.votingStart || data?.startsAt);
+
+  switch (type) {
+    case 'INSTITUTIONAL_PADRON_REVIEW_OPEN':
+      return {
+        title: 'Revisa tu padrón',
+        body: eventName
+          ? `El creador de la elección te invita a revisar ${eventName} para verificar si estás habilitado para participar.`
+          : 'El creador de la elección te invita a revisar la elección para verificar si estás habilitado para participar.',
+      };
+    case 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED':
+      return {
+        title: 'La votación fue publicada oficialmente',
+        body: startLabel
+          ? `La votación iniciará el ${startLabel}. Verifica si te encuentras habilitado para participar.`
+          : 'Se aproxima el proceso de votación. Verifica si te encuentras habilitado para participar.',
+      };
+    case 'INSTITUTIONAL_VOTING_ENABLED':
+      return {
+        title: 'Ya puedes votar',
+        body: eventName
+          ? `Tu habilitación para ${eventName} ya está activa. Ingresa para emitir tu voto.`
+          : 'Tu habilitación ya está activa. Ingresa para emitir tu voto.',
+      };
+    case 'INSTITUTIONAL_SCHEDULE_UPDATED':
+      return {
+        title: 'Cronograma actualizado',
+        body: eventName
+          ? `Se actualizaron las fechas de ${eventName}. Revisa el nuevo cronograma.`
+          : 'Se actualizaron las fechas de la votación. Revisa el nuevo cronograma.',
+      };
+    case 'INSTITUTIONAL_RESULTS_AVAILABLE':
+      return {
+        title: 'Resultados disponibles',
+        body: eventName
+          ? `Ya puedes consultar los resultados de ${eventName}.`
+          : 'Ya puedes consultar los resultados de la votación.',
+      };
+    default:
+      return null;
+  }
+};
+
 const buildInstitutionalNotificationForDetail = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
       : {};
   const type = normalizeNotificationType(data?.type);
-  const title = notification?.title || data?.title || data?.eventName || '';
-  const body = notification?.body || data?.body || data?.summary || '';
+  const institutionalCopy = buildInstitutionalNotificationCopy(notification);
+  const title =
+    institutionalCopy?.title ||
+    notification?.title ||
+    data?.title ||
+    data?.eventName ||
+    '';
+  const body =
+    institutionalCopy?.body ||
+    notification?.body ||
+    data?.body ||
+    data?.summary ||
+    '';
   const isNews = type === 'INSTITUTIONAL_NEWS';
   const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
@@ -219,16 +313,16 @@ const buildInstitutionalNotificationForDetail = notification => {
     data,
     kind: isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
     tipo: isVotingEnabled
-      ? 'Ver padrón'
+      ? 'Abrir votación'
       : isPadronReview
-        ? 'Revisar padrón'
+        ? 'Ver padrón'
         : isResults
           ? 'Ver ganador'
           : isNews
             ? 'Ver noticia'
             : isScheduleUpdate
-              ? 'Cronograma modificado'
-              : 'Publicación oficial',
+              ? 'Ver fechas'
+              : 'Ver fechas',
     mesa:
       title ||
       data?.bannerTitle ||
@@ -260,6 +354,15 @@ export const buildNotificationTextFallback = notification => {
   const notificationType = normalizeNotificationField(data?.type);
   const tableLabel = String(data?.tableNumber || data?.tableCode || '')
     .trim();
+  const institutionalCopy = buildInstitutionalNotificationCopy(notification);
+
+  if (institutionalCopy) {
+    return {
+      title: institutionalCopy.title,
+      body: institutionalCopy.body,
+      data,
+    };
+  }
 
   // Obtenemos la estrategia dinámica en lugar de bifurcaciones (OCP resuelto)
   const strategy = NotificationTypeStrategies[notificationType] || NotificationTypeStrategies.default;
@@ -476,8 +579,11 @@ export async function alertNewBackendNotifications({
       if (timestamp <= minTs) {
         continue;
       }
-      const alertKey = buildBackendNotificationAlertKey(notification);
-      if (!alertKey || alertedKeys.has(alertKey) || isKeyRecentlyAlerted(alertKey)) {
+      const alertKeys = buildBackendNotificationAlertKeys(notification);
+      if (
+        alertKeys.length === 0 ||
+        alertKeys.some(alertKey => alertedKeys.has(alertKey) || isKeyRecentlyAlerted(alertKey))
+      ) {
         continue;
       }
 
@@ -487,8 +593,10 @@ export async function alertNewBackendNotifications({
         body: payload.body,
         data: payload.data,
       });
-      alertedKeys.add(alertKey);
-      markKeyAsRecentlyAlerted(alertKey);
+      alertKeys.forEach(alertKey => {
+        alertedKeys.add(alertKey);
+        markKeyAsRecentlyAlerted(alertKey);
+      });
       shownCount += 1;
     }
 
@@ -501,6 +609,27 @@ export async function alertNewBackendNotifications({
 
   backendAlertQueue = backendAlertQueue.then(run, run);
   return backendAlertQueue;
+}
+
+export async function markNotificationAsAlerted({
+  dni,
+  notification,
+} = {}) {
+  const alertKeys = buildBackendNotificationAlertKeys(notification);
+  if (alertKeys.length === 0) {
+    return false;
+  }
+
+  const {storageKey, keys} = await getAlertedBackendNotificationKeys(dni);
+  const alertedKeys = new Set(keys);
+
+  alertKeys.forEach(alertKey => {
+    alertedKeys.add(alertKey);
+    markKeyAsRecentlyAlerted(alertKey);
+  });
+
+  await setAlertedBackendNotificationKeys(storageKey, Array.from(alertedKeys));
+  return true;
 }
 
 async function appendLocalStoredNotification({title, body, data, dni}) {

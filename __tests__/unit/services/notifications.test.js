@@ -26,13 +26,27 @@ jest.mock('@react-native-firebase/messaging', () => {
   return messaging;
 });
 
-jest.mock('@notifee/react-native', () => ({
-  createChannel: jest.fn(() => Promise.resolve('channel-id')),
-  displayNotification: jest.fn(() => Promise.resolve()),
-  AndroidImportance: {
-    HIGH: 4,
-  },
-}));
+jest.mock('@notifee/react-native', () => {
+  const api = {
+    createChannel: jest.fn(() => Promise.resolve('channel-id')),
+    displayNotification: jest.fn(() => Promise.resolve()),
+    onBackgroundEvent: jest.fn(),
+    onForegroundEvent: jest.fn(),
+    requestPermission: jest.fn(() => Promise.resolve()),
+  };
+
+  return {
+    __esModule: true,
+    default: api,
+    ...api,
+    AndroidImportance: {
+      HIGH: 4,
+    },
+    EventType: {
+      PRESS: 'PRESS',
+    },
+  };
+});
 
 describe('notifications service', () => {
   beforeEach(() => {
@@ -194,6 +208,43 @@ describe('notifications service', () => {
       registerBackgroundHandler();
 
       expect(mockMessaging.setBackgroundMessageHandler).toHaveBeenCalled();
+    });
+
+    it('muestra notificacion local cuando llega un mensaje institucional data-only', async () => {
+      const notifee = require('@notifee/react-native');
+      const {registerBackgroundHandler} = require('../../../src/services/notifications');
+
+      registerBackgroundHandler();
+      const handler = mockMessaging.setBackgroundMessageHandler.mock.calls[0][0];
+
+      await handler({
+        data: {
+          type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+          eventName: 'Referéndum institucional',
+        },
+      });
+
+      expect(notifee.displayNotification).toHaveBeenCalled();
+    });
+
+    it('no duplica banner local cuando firebase ya trae notification.title/body', async () => {
+      const notifee = require('@notifee/react-native');
+      const {registerBackgroundHandler} = require('../../../src/services/notifications');
+
+      registerBackgroundHandler();
+      const handler = mockMessaging.setBackgroundMessageHandler.mock.calls[0][0];
+
+      await handler({
+        notification: {
+          title: 'Ya puedes votar',
+          body: 'Tu habilitación está activa.',
+        },
+        data: {
+          type: 'INSTITUTIONAL_VOTING_ENABLED',
+        },
+      });
+
+      expect(notifee.displayNotification).not.toHaveBeenCalled();
     });
   });
 

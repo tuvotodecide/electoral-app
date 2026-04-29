@@ -6,6 +6,7 @@ import {useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
+import messaging from '@react-native-firebase/messaging';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CText from './CText';
@@ -217,6 +218,23 @@ const UniversalHeader = ({
         clearInterval(intervalId);
       };
     }, [refreshNotificationBadgeCount]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!auth?.isAuthenticated || !showNotification) return undefined;
+
+      const unsubscribe = messaging().onMessage(() => {
+        setNotificationUnreadCount(prev => (prev < 99 ? prev + 1 : 99));
+        setTimeout(() => {
+          refreshNotificationBadgeCount();
+        }, 1200);
+      });
+
+      return () => {
+        unsubscribe && unsubscribe();
+      };
+    }, [auth?.isAuthenticated, refreshNotificationBadgeCount, showNotification]),
   );
 
   const handleNotificationPress = async () => {

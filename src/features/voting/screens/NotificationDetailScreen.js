@@ -9,7 +9,10 @@ import {
   Image,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
@@ -71,6 +74,35 @@ const colorPalette = [
 const isAbsoluteOrDeepLink = value =>
   /^[a-z][a-z0-9+.-]*:\/\//i.test(String(value || '').trim());
 
+const IMAGE_URL_PATTERN = /\.(avif|bmp|gif|jpe?g|png|svg|webp)(?:$|[?#])/i;
+
+export const resolveValidImageUrl = value => {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(rawValue);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    if (!IMAGE_URL_PATTERN.test(parsed.pathname || '')) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+};
+
+const buildNotificationSeenKey = dniValue => {
+  const normalized = String(dniValue || '')
+    .trim()
+    .toLowerCase();
+  return `@notifications:last-seen:${normalized || 'anon'}`;
+};
+
 export const resolvePublicResultsUrl = notification => {
   const rawData = notification?.data || {};
   const directUrlCandidates = [
@@ -119,12 +151,16 @@ export const resolveNotificationActionLabel = ({
       isReferendum &&
       explicitLabel.toLowerCase() === 'ver elección'
     ) {
-      return 'Ver consulta';
+      return 'Ver referéndum';
     }
     return explicitLabel;
   }
 
   if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_VOTING_ENABLED') {
+    return 'Ver padrón';
+  }
+
+  if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_PADRON_REVIEW_OPEN') {
     return 'Ver padrón';
   }
 
@@ -136,7 +172,7 @@ export const resolveNotificationActionLabel = ({
     return 'Ver detalles';
   }
 
-  return isReferendum ? 'Ver consulta' : 'Ver elección';
+  return isReferendum ? 'Ver referéndum' : 'Ver elección';
 };
 
 const normalizeOptionColors = option => {
@@ -173,7 +209,7 @@ const mapResultsSummaryFromDetail = detail => {
     return {
       id: String(option?.id ?? `option-${index + 1}`),
       name: isReferendum ? partyName : firstCandidate?.name ?? partyName,
-      party: isReferendum ? 'Opción' : partyName,
+      party: isReferendum ? `Opción ${index + 1}` : partyName,
       colorHex:
         normalizeOptionColors(option)[0] ??
         option?.color ??
@@ -201,6 +237,8 @@ const mapResultsSummaryFromDetail = detail => {
 
 const NotificationDetailScreen = () => {
   const route = useRoute();
+  const insets = useSafeAreaInsets();
+  const userData = useSelector(state => state.wallet?.payload);
   const notification = route?.params?.notification || DEFAULT_NOTIFICATION;
   const rawData = notification?.data || {};
   const kind = notification?.kind || 'generic';
@@ -222,8 +260,15 @@ const NotificationDetailScreen = () => {
     questionTitle: '',
   });
   const resolvedPublicUrl = resolvePublicResultsUrl(notification);
-  const imageUrl = notification?.imageUrl || rawData?.imageUrl || null;
+  const imageUrl = resolveValidImageUrl(notification?.imageUrl || rawData?.imageUrl || null);
   const eventId = String(rawData?.eventId || notification?.eventId || '').trim();
+  const vc = userData?.vc;
+  const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
+  const dni =
+    subject?.nationalIdNumber ||
+    subject?.documentNumber ||
+    subject?.governmentIdentifier ||
+    userData?.dni;
   const resultsSummary = Array.isArray(notification?.resultsSummary) && notification.resultsSummary.length > 0
     ? notification.resultsSummary
     : remoteResultsSummary;
@@ -232,6 +277,20 @@ const NotificationDetailScreen = () => {
     [resultsSummary],
   );
   const hasTie = tiedLeaders.length > 1;
+
+  useEffect(() => {
+    if (!dni) {
+      return;
+    }
+
+    const seenKey = buildNotificationSeenKey(dni);
+    const seenAt = Math.max(
+      Date.now(),
+      Date.parse(String(notification?.createdAt || notification?.timestamp || '')) || 0,
+    );
+
+    AsyncStorage.setItem(seenKey, String(seenAt)).catch(() => {});
+  }, [dni, notification?.createdAt, notification?.timestamp]);
 
   useEffect(() => {
     if (kind !== 'election_results' || !eventId) {
@@ -353,6 +412,18 @@ const NotificationDetailScreen = () => {
 
   const isReferendumResults = kind === 'election_results' && detailMeta.isReferendum;
   const isReferendumNotification = isReferendumResults || rawData?.isReferendum === true;
+  const hasScheduleDates = Boolean(startsAtLabel || endsAtLabel || resultsAtLabel);
+  const showPrimaryAction = kind === 'election_results' || Boolean(resolvedPublicUrl);
+  const detailBody =
+    notification?.direccion ||
+    notification?.body ||
+    rawData?.body ||
+    (isNews ? 'Consulta la información publicada.' : 'Revisa la información publicada para esta votación.');
+  const heroSubtitle =
+    kind === 'election_results' || isNews
+      ? ''
+      : String(heroConfig.subtitle || rawData?.bannerSubtitle || '')
+          .trim();
   const heroTitle =
     isReferendumResults && detailMeta.questionTitle
       ? detailMeta.questionTitle
@@ -373,15 +444,16 @@ const NotificationDetailScreen = () => {
           <CText type="B18" style={[styles.heroTitle, { color: heroConfig.textColor }]}>
             {heroTitle}
           </CText>
-          {kind !== 'election_results' && (rawData?.body || notification?.direccion) ? (
+          {heroSubtitle && heroSubtitle !== detailBody ? (
             <CText type="R14" style={styles.heroSubtitle}>
-              {rawData?.body || notification?.direccion || ''}
+              {heroSubtitle}
             </CText>
           ) : null}
         </View>
 
         {isNews && imageUrl ? (
           <Image
+            testID="notificationDetailNewsImage"
             source={{uri: imageUrl}}
             style={styles.newsImage}
             resizeMode="cover"
@@ -394,13 +466,13 @@ const NotificationDetailScreen = () => {
               Noticia
             </CText>
             <CText type="R14" style={styles.emptyResultsText}>
-              {rawData?.body || notification?.direccion || notification?.body || 'Consulta la información publicada.'}
+              {detailBody}
             </CText>
           </View>
         ) : kind === 'election_results' ? (
           <View style={styles.sectionCard}>
             <CText type="B16" style={styles.sectionTitle}>
-              {isReferendumResults ? 'Resultados de la consulta' : 'Resultados'}
+              {isReferendumResults ? 'Resultados del referéndum' : 'Resultados'}
             </CText>
             {hasTie ? (
               <View
@@ -451,52 +523,69 @@ const NotificationDetailScreen = () => {
             ) : (
               <CText type="R14" style={styles.emptyResultsText}>
                 {isReferendumResults
-                  ? 'Resultados de la consulta listos para consultar en detalle.'
+                  ? 'Resultados del referéndum listos para consultar en detalle.'
                   : 'Resultados listos para consultar en detalle.'}
               </CText>
             )}
           </View>
         ) : (
-          <View style={styles.sectionCard}>
-            <CText type="B16" style={styles.sectionTitle}>
-              {isReferendumNotification ? 'Fechas de la consulta' : 'Fechas de la elección'}
-            </CText>
-            {startsAtLabel ? (
-              <View style={styles.scheduleRow}>
-                <CText type="R14" style={styles.scheduleLabel}>
-                  Inicio
+          <>
+            <View style={styles.sectionCard}>
+              <CText type="B16" style={styles.sectionTitle}>
+                {isReferendumNotification ? 'Referéndum' : 'Votación'}
+              </CText>
+              <CText type="R14" style={styles.emptyResultsText}>
+                {detailBody}
+              </CText>
+            </View>
+            {hasScheduleDates ? (
+              <View style={[styles.sectionCard, styles.scheduleCard]}>
+                <CText type="B16" style={styles.sectionTitle}>
+                  {isReferendumNotification ? 'Fechas del referéndum' : 'Fechas de la votación'}
                 </CText>
-                <CText type="M14" style={styles.scheduleValue}>
-                  {startsAtLabel}
-                </CText>
+                {startsAtLabel ? (
+                  <View style={styles.scheduleRow}>
+                    <CText type="R14" style={styles.scheduleLabel}>
+                      Inicio
+                    </CText>
+                    <CText type="M14" style={styles.scheduleValue}>
+                      {startsAtLabel}
+                    </CText>
+                  </View>
+                ) : null}
+                {endsAtLabel ? (
+                  <View style={styles.scheduleRow}>
+                    <CText type="R14" style={styles.scheduleLabel}>
+                      Cierre
+                    </CText>
+                    <CText type="M14" style={styles.scheduleValue}>
+                      {endsAtLabel}
+                    </CText>
+                  </View>
+                ) : null}
+                {resultsAtLabel ? (
+                  <View style={styles.scheduleRow}>
+                    <CText type="R14" style={styles.scheduleLabel}>
+                      Resultados
+                    </CText>
+                    <CText type="M14" style={styles.scheduleValue}>
+                      {resultsAtLabel}
+                    </CText>
+                  </View>
+                ) : null}
               </View>
             ) : null}
-            {endsAtLabel ? (
-              <View style={styles.scheduleRow}>
-                <CText type="R14" style={styles.scheduleLabel}>
-                  Cierre
-                </CText>
-                <CText type="M14" style={styles.scheduleValue}>
-                  {endsAtLabel}
-                </CText>
-              </View>
-            ) : null}
-            {resultsAtLabel ? (
-              <View style={styles.scheduleRow}>
-                <CText type="R14" style={styles.scheduleLabel}>
-                  Resultados
-                </CText>
-                <CText type="M14" style={styles.scheduleValue}>
-                  {resultsAtLabel}
-                </CText>
-              </View>
-            ) : null}
-          </View>
+          </>
         )}
       </ScrollView>
 
-      {kind === 'election_results' || isNews || resolvedPublicUrl ? (
-        <View style={styles.bottomContainer}>
+      {showPrimaryAction ? (
+        <View
+          style={[
+            styles.bottomContainer,
+            { paddingBottom: Math.max(insets.bottom, getResponsiveSize(16, 18, 20)) + 10 },
+          ]}
+        >
           <CButton
             title={resolveNotificationActionLabel({
               notification,
@@ -529,7 +618,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingTop: getResponsiveSize(12, 16, 20),
-    paddingBottom: getResponsiveSize(120, 128, 136),
+    paddingBottom: getResponsiveSize(132, 144, 152),
   },
   heroCard: {
     borderRadius: moderateScale(18),
@@ -565,6 +654,9 @@ const styles = StyleSheet.create({
     padding: getResponsiveSize(18, 22, 26),
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  scheduleCard: {
+    marginTop: getResponsiveSize(16, 18, 20),
   },
   newsImage: {
     width: '100%',

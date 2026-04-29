@@ -133,7 +133,7 @@ describe('VoteReceiptScreen', () => {
     expect(syncStateWithBlockchain).not.toHaveBeenCalled();
   });
 
-  it('muestra detalle de respuesta cuando la participacion corresponde a un referendum', () => {
+  it('muestra detalle de opcion cuando la participacion corresponde a un referendum', () => {
     useVotingState.mockReturnValue({
       participations: [
         {
@@ -159,7 +159,7 @@ describe('VoteReceiptScreen', () => {
 
     const screen = render(<VoteReceiptScreen />);
 
-    fireEvent.press(screen.getByText('Detalle de mi respuesta'));
+    fireEvent.press(screen.getByText('Detalle de tu opción'));
 
     expect(screen.getByText('Sí')).toBeTruthy();
     expect(screen.getByText('Opción')).toBeTruthy();

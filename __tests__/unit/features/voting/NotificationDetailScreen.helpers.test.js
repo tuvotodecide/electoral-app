@@ -87,6 +87,6 @@ describe('NotificationDetailScreen helpers', () => {
         isReferendum: true,
         type: 'INSTITUTIONAL_VOTING_ENABLED',
       }),
-    ).toBe('Ver consulta');
+    ).toBe('Ver referéndum');
   });
 });

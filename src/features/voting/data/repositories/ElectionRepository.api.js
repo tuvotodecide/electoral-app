@@ -87,7 +87,7 @@ const getVotingAuthHeaders = async () => {
   const privKey = getCurrentPrivKey();
 
   if (!did || !privKey) {
-    throw new Error('No se pudo validar tu acceso para esta consulta');
+    throw new Error('No se pudo validar tu acceso para esta votación');
   }
 
   const apiKey = await authenticateWithBackend(did, privKey);
@@ -147,7 +147,7 @@ const buildElectionModel = ({
   if (eligibilityStatus === 'ROLL_IN_VALIDATION') {
     statusMessage = 'Padrón en validación';
   } else if (eligibilityStatus === 'PUBLIC_CHECK_DISABLED') {
-    statusMessage = 'Consulta no disponible';
+    statusMessage = 'Revisión de padrón no disponible';
   } else if (eligibilityStatus === 'DISABLED') {
     statusMessage = 'Estás empadronado, pero no habilitado para votar';
   } else if (eligibilityStatus === 'NOT_ELIGIBLE') {

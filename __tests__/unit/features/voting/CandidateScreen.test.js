@@ -339,6 +339,7 @@ describe('CandidateScreen', () => {
       ).toBeTruthy();
     });
 
+    expect(screen.getByText('Referéndum')).toBeTruthy();
     expect(screen.queryByText('Elige a un candidato')).toBeNull();
 
     fireEvent.press(screen.getByTestId('candidateCard_cand-ref-1'));
