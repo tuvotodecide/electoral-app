@@ -105,7 +105,7 @@ function withNativeModules(config) {
     config.modResults.push({
       type: 'property',
       key: 'reactNativeArchitectures',
-      value: 'armeabi-v7a,arm64-v8a',
+      value: 'arm64-v8a',
     });
 
     return config;
@@ -151,7 +151,7 @@ function addRepositories(contents) {
   // Replace the entire repositories block with the new content
   const newRepositories = `
     // Native module repositories
-    maven {url file('C:/apps/sdk-flutter-example/build/host/outputs/repo') }
+    maven { url "$rootDir/../../wira-sdk-flutter-component/build/host/outputs/repo" }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }

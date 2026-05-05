@@ -13,7 +13,7 @@
       "bundleIdentifier": "com.tuvotodecide"
     },
     "android": {
-      "versionCode": 42,
+      "versionCode": 63,
       "googleServicesFile": "./native-files/google-services.json",
       "package": "com.tuvotodecide",
       "usesFeatures": [
