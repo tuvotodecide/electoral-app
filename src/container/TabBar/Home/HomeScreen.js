@@ -5,7 +5,6 @@ import {
   Dimensions,
   Linking,
   Modal,
-  PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
@@ -96,6 +95,7 @@ import {
 } from '../../../features/voting';
 import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
 import { FlashList } from '@shopify/flash-list';
+import { checkAndRequestLocationPermission, checkLocationPermission } from '../../../utils/geoLocation';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -695,16 +695,7 @@ export default function HomeScreen({ navigation }) {
   /** Solo VERIFICA el permiso, nunca muestra diálogo del sistema */
   const checkLocationPermissionOnly = useCallback(async () => {
     try {
-      if (Platform.OS === 'android') {
-        const ok = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        return ok;
-      }
-      // iOS: no hay .check() puro, pero requestAuthorization con 'whenInUse'
-      // no vuelve a mostrar el diálogo si ya se contestó
-      const status = await Geolocation.requestAuthorization('whenInUse');
-      return status === 'granted';
+      return checkLocationPermission();
     } catch {
       return false;
     }
@@ -712,24 +703,7 @@ export default function HomeScreen({ navigation }) {
 
 
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Permiso de ubicación',
-          message:
-            'La aplicación necesita acceso a tu ubicación para verificar disponibilidad de envío.',
-          buttonNeutral: 'Preguntar después',
-          buttonNegative: 'Cancelar',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-
-    // iOS
-    const status = await Geolocation.requestAuthorization('whenInUse');
-    return status === 'granted';
+    return checkAndRequestLocationPermission();
   }, []);
 
   const getCurrentPositionAsync = (useHighAccuracy = true) =>

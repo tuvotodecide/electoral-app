@@ -43,6 +43,11 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(),
 }));
 
+jest.mock('../../../../../src/utils/geoLocation', () => ({
+  checkLocationPermission: jest.fn(() => Promise.resolve(true)),
+  checkAndRequestLocationPermission: jest.fn(() => Promise.resolve(true)),
+}));
+
 jest.mock('axios', () => ({
   get: jest.fn(),
   defaults: {headers: {common: {}}},

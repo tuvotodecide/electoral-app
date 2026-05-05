@@ -10,7 +10,27 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuvotodecide"
+      "bundleIdentifier": "com.tuvotodecide",
+      "buildNumber": "43",
+      "icon": "./assets/images/ic_launcher.png",
+      "googleServicesFile": "./native-files/GoogleService-Info.plist",
+      "usesAppleSignIn": false,
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galería de fotos",
+        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación en segundo plano",
+        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticación",
+        "UIBackgroundModes": ["remote-notification", "fetch"],
+        "ITSAppUsesNonExemptEncryption": true
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "versionCode": 63,
@@ -83,6 +103,18 @@
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "useLegacyPackaging": false
+          },
+          "ios": {
+            "deploymentTarget": "16.0",
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBDatabase",
+              "RNFBFunctions",
+              "RNFBMessaging",
+              "VisionCamera"
+            ]
           }
         }
       ],
@@ -119,10 +151,22 @@
           "barcodeScannerEnabled": true
         }
       ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "note": "Use SENTRY_AUTH_TOKEN env to authenticate with Sentry.",
+          "project": "react-native",
+          "organization": "tu-voto-decide"
+        }
+      ],
       "@react-native-firebase/app",
-      "./plugins/withNativeModules",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "./plugins/withIOSCodesigning",
+      "./plugins/withIOSNativeModules",
+      "./plugins/withNativeModules",
+      "./plugins/withIOSOrientation"
     ],
     "experiments": {
       "reactCompiler": true

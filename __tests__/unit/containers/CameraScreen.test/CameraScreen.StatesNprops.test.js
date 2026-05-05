@@ -133,6 +133,7 @@ describe('CameraScreen - Estados y Props', () => {
   });
 
   test('continúa a revisión al presionar analizar en línea', async () => {
+    console.log('[TEST] Continúa a revisión al presionar analizar en línea');
     const {getByText, getAllByText} = render(
       <CameraScreen navigation={mockNavigation} route={buildMockRoute()} />,
     );

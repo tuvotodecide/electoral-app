@@ -82,16 +82,18 @@ export default function Security({navigation}) {
               {item.title}
             </CText>
           </View>
-          <Switch
-            testID="securityBiometricSwitch"
-            value={bioEnabled}
-            onValueChange={toggleBio}
-            trackColor={{
-              false: color.grayScale300,
-              true: color.primary,
-            }}
-            thumbColor={color.white}
-          />
+          <View>
+            <Switch
+              testID="securityBiometricSwitch"
+              value={bioEnabled}
+              onValueChange={toggleBio}
+              trackColor={{
+                false: color.grayScale300,
+                true: color.primary,
+              }}
+              thumbColor={color.white}
+            />
+          </View>
         </View>
       );
     }

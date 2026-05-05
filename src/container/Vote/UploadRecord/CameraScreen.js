@@ -12,6 +12,7 @@ import {
   StatusBar,
   PanResponder,
   Animated,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -98,6 +99,8 @@ export default function CameraScreen({ navigation, route }) {
     y: 0,
   });
   const [isOnline, setIsOnline] = useState(true);
+  const [imageVisible, setImageVisible] = useState(true);
+
   const initialDistance = useRef(null);
   const focusIndicatorTimeoutRef = useRef(null);
   const tapFocusTimeoutRef = useRef(null);
@@ -509,7 +512,28 @@ export default function CameraScreen({ navigation, route }) {
     };
   }, []);
 
-  if (!hasPermission) {
+  const pickFromGallery = async() => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      return;
+    }
+
+    const libResult = await ImagePicker.launchImageLibraryAsync({
+      quality: 1,
+    });
+
+    if (libResult.canceled || !libResult.assets) {
+      return;
+    }
+    const firstResult = libResult.assets[0];
+
+    return firstResult;
+  };
+
+  if (__DEV__ && Platform.OS === 'ios') {
+    //pickFromGallery();
+  } else if (!hasPermission) {
     return (
       <View style={styles.centered}>
         <CText style={styles.errorText}>{String.cameraNotAvailable}</CText>
@@ -519,22 +543,36 @@ export default function CameraScreen({ navigation, route }) {
 
   // Toma la foto y muestra el loading
   const takePhoto = async () => {
-    if (!camera.current || loading || !isActive) {
+    console.log('[CAMERA-SCREEN] Iniciando captura de foto...');
+    console.log({isActive, dev: __DEV__, platform: Platform.OS});
+    if (__DEV__ && Platform.OS === 'ios') {
+    } else if (!camera.current || loading || !isActive) {
       return;
     }
+    console.log('[CAMERA-SCREEN] Cámara lista, tomando foto...');
 
     setLoading(true);
 
     try {
-      const firstResult = await camera.current.takePictureAsync({
-        flash: 'off',
-        enableAutoRedEyeReduction: false,
-        shutterSound: false,
-      });
+      let finalUri;
+      let finalWidth = 0;
+      let finalHeight = 0;
 
-      let finalUri = firstResult.uri;
-      let finalWidth = firstResult.width || 0;
-      let finalHeight = firstResult.height || 0;
+      if (__DEV__ && Platform.OS === 'ios') {
+        const firstResult = await pickFromGallery();
+        finalUri = firstResult.uri;
+        finalWidth = firstResult.width || 0;
+        finalHeight = firstResult.height || 0;
+      } else {
+        const firstResult = await camera.current.takePictureAsync({
+          flash: 'off',
+          enableAutoRedEyeReduction: false,
+          shutterSound: false,
+        });
+        finalUri = firstResult.uri;
+        finalWidth = firstResult.width || 0;
+        finalHeight = firstResult.height || 0;
+      }
 
       if (finalHeight > MAX_CAPTURE_HEIGHT) {
         const imageContext = ImageManipulator.manipulate(finalUri);
@@ -563,7 +601,7 @@ export default function CameraScreen({ navigation, route }) {
 
       setIsActive(false);
     } catch (err) {
-      console.error('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
+      console.log('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
       // Specific handling for "camera already in use" error
       if (
         err.code === 'E_CAMERA_IS_BEING_USED' ||
@@ -596,6 +634,7 @@ export default function CameraScreen({ navigation, route }) {
       return;
     }
     const mesaInfo = route.params?.tableData || {};
+    setImageVisible(false);
 
     if (isWorksheetMode) {
       navigation.navigate(StackNav.PhotoReviewScreen, {
@@ -637,7 +676,7 @@ export default function CameraScreen({ navigation, route }) {
     <View testID="cameraScreenMainContainer" style={styles.mainContainer}>
       {!photo ? (
         <>
-          {isActive && (
+          {isActive && (Platform.OS === 'android' || (Platform.OS === 'ios' && !__DEV__)) && (
             <CameraView
               testID="cameraScreenCamera"
               key={cameraKey}
@@ -726,7 +765,7 @@ export default function CameraScreen({ navigation, route }) {
           <View style={styles.fullContainer}>
             <ImageViewing
               images={[{ uri: photo.path }]}
-              visible={true}
+              visible={imageVisible}
               onRequestClose={() => {
                 /* no cerramos, controlas tú el flujo */
               }}

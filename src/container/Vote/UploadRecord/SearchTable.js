@@ -14,6 +14,10 @@ export default function SearchTable({navigation, route}) {
   const [mesas, setMesas] = useState([]);
   const [locationData, setLocationData] = useState(null);
 
+  const handleSearchChange = value => {
+    setSearchText(typeof value === 'string' ? value : '');
+  };
+
   
   // Cargar mesas al montar el componente
   useEffect(() => {
@@ -67,9 +71,10 @@ export default function SearchTable({navigation, route}) {
 
   // Filter mesas based on search text
   const filteredMesas = mesas.filter(mesa => {
-    if (!mesa || !searchText) return true;
+    const normalizedSearchText = typeof searchText === 'string' ? searchText : '';
+    if (!mesa || !normalizedSearchText) return true;
 
-    const searchLower = searchText.toLowerCase();
+    const searchLower = normalizedSearchText.toLowerCase();
 
     // Buscar en número/tableNumber
     const tableNumber = mesa.numero || mesa.tableNumber || mesa.number || '';
@@ -79,7 +84,7 @@ export default function SearchTable({navigation, route}) {
 
     // Buscar en código
     const codigo = mesa.codigo || mesa.code || '';
-    if (codigo.toString().includes(searchText)) {
+    if (codigo.toString().includes(normalizedSearchText)) {
       return true;
     }
 
@@ -102,7 +107,7 @@ export default function SearchTable({navigation, route}) {
         chooseTableText={String.chooseTableText}
         searchPlaceholder={String.tableCodePlaceholder}
         searchValue={searchText}
-        onSearchChange={setSearchText}
+        onSearchChange={handleSearchChange}
         tables={[]}
         enableAutoVerification={true}
         apiEndpoint="http://192.168.1.16:3000/api/v1/mesa"
@@ -120,7 +125,7 @@ export default function SearchTable({navigation, route}) {
       chooseTableText={String.chooseTableText}
       searchPlaceholder={String.tableCodePlaceholder}
       searchValue={searchText}
-      onSearchChange={setSearchText}
+      onSearchChange={handleSearchChange}
       tables={filteredMesas}
       enableAutoVerification={true}
       apiEndpoint="http://192.168.1.16:3000/api/v1/mesa"

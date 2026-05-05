@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   StyleSheet,
   View,
 } from 'react-native';
@@ -59,7 +60,27 @@ export default function RegisterUser4({navigation, route}) {
       }
     };
 
-    openCamera();
+    const pickFromGallery = async() => {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets) {
+        setSelfie(result.assets[0]);
+      }
+    };
+
+    if (__DEV__ && Platform.OS === 'ios') {
+      pickFromGallery();
+    } else {
+      openCamera();
+    }
   }, []);
 
   const requestCameraPermission = async () => {

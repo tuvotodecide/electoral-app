@@ -14,7 +14,10 @@ describe('RegisterUser4', () => {
   });
 
   it('navega a RegisterUser5 despues de capturar selfie', async () => {
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
+    ImagePicker.requestMediaLibraryPermissionsAsync.mockImplementationOnce(() =>
+      Promise.resolve({granted: true}),
+    );
+    ImagePicker.launchImageLibraryAsync.mockImplementationOnce((_options) =>
       Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
     );
 
@@ -48,7 +51,9 @@ describe('RegisterUser4', () => {
 
   it('muestra alerta si se intenta continuar sin selfie', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) => Promise.resolve({}));
+    ImagePicker.requestMediaLibraryPermissionsAsync.mockImplementationOnce(() =>
+      Promise.resolve({granted: false}),
+    );
 
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const route = {
