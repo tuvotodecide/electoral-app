@@ -67,7 +67,9 @@ const SuccessScreen = () => {
   const ipfsData = parseParamObject(params.ipfsData);
   const nftData = parseParamObject(params.nftData);
   const tableData = parseParamObject(params.tableData);
+  const ballotData = parseParamObject(params.ballotData);
   const certificateData = parseParamObject(params.certificateData);
+  const attestationData = parseParamObject(params.attestationData);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [infoModalData, setInfoModalData] = useState({
@@ -105,13 +107,28 @@ const SuccessScreen = () => {
   const normalizedCertificateUrl = normalizeUri(certificateUrl);
   const actaUrl = pickFirstUrl(
     ipfsData.imageUrl,
+    ipfsData.image,
     ipfsData.jsonUrl,
     ipfsData.ipfsUri,
     ipfsData.url,
     params.actaUrl,
     params.imageUrl,
+    params.photoUri,
+    params.image,
     tableData.imageUrl,
+    tableData.imagen,
     tableData.image,
+    tableData.ipfsUri,
+    ballotData.imageUrl,
+    ballotData.imagen,
+    ballotData.image,
+    ballotData.ipfsUri,
+    attestationData.imageUrl,
+    attestationData.imagen,
+    attestationData.image,
+    attestationData.ipfsUri,
+    attestationData.ballotData?.image,
+    attestationData.ballotData?.ipfsUri,
     ipfsUrl,
   );
 
@@ -221,7 +238,7 @@ const SuccessScreen = () => {
       }
       const shareOptions = {
         title: 'Compartir acta (resultados)',
-        message: `Acta publicada en IPFS: ${normalizedActaUrl}`,
+        message: `Resultados del acta: ${normalizedActaUrl}`,
         url: normalizedActaUrl,
         subject: 'Acta en IPFS',
       };

@@ -582,6 +582,7 @@ const mapWitnessRecord = (attestation, ballot) => {
     photoUri: ballot?.image
       ? String(ballot.image).replace('ipfs://', 'https://ipfs.io/ipfs/')
       : null,
+    ballotData: ballot || null,
     mesaData: {
       tableNumber,
       tableCode: ballot?.tableCode || null,
@@ -600,6 +601,10 @@ const mapWitnessRecord = (attestation, ballot) => {
         minute: '2-digit',
       }),
       certificateUrl,
+      image: ballot?.image || null,
+      ipfsCid: ballot?.ipfsCid || null,
+      ipfsUri: ballot?.ipfsUri || null,
+      ballotData: ballot || null,
     },
     certificateUrl,
   };

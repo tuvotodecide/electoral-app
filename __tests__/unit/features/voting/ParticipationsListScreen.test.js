@@ -109,11 +109,25 @@ describe('ParticipationsListScreen', () => {
         participatedAt: '2026-01-03T13:00:00.000Z',
         nftImageUrl: 'https://example.com/certificate.png',
         photoUri: 'https://example.com/mesa.png',
+        ballotData: {
+          _id: 'ballot-12',
+          image: 'ipfs://QmMesa12',
+          electionType: 'general',
+        },
         mesaData: {tableNumber: 12},
         partyResults: [],
         voteSummaryResults: [],
-        attestationData: {tableNumber: 12, certificateUrl: 'https://example.com/certificate.png'},
+        attestationData: {
+          tableNumber: 12,
+          certificateUrl: 'https://example.com/certificate.png',
+          ballotData: {
+            _id: 'ballot-12',
+            image: 'ipfs://QmMesa12',
+            electionType: 'general',
+          },
+        },
         certificateUrl: 'https://example.com/certificate.png',
+        electionType: 'general',
       },
     ]);
 
@@ -149,10 +163,15 @@ describe('ParticipationsListScreen', () => {
       StackNav.MyWitnessesDetailScreen,
       expect.objectContaining({
         photoUri: 'https://example.com/mesa.png',
+        ballotData: expect.objectContaining({
+          _id: 'ballot-12',
+        }),
+        actaUrl: 'https://example.com/mesa.png',
         certificateUrl: 'https://example.com/certificate.png',
         attestationData: expect.objectContaining({
           tableNumber: 12,
         }),
+        electionType: 'general',
       }),
     );
   });

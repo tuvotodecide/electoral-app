@@ -21,6 +21,8 @@ const MyWitnessesDetailScreen = () => {
     partyResults: apiPartyResults,
     voteSummaryResults: apiVoteSummaryResults,
     attestationData,
+    ballotData: routeBallotData,
+    actaUrl: routeActaUrl,
     certificateUrl: routeCertificateUrl,
     electionType,
   } = route.params || {};
@@ -30,6 +32,17 @@ const MyWitnessesDetailScreen = () => {
   const voteSummaryResults = apiVoteSummaryResults || [];
   const certificateUrl =
     routeCertificateUrl || attestationData?.certificateUrl || null;
+  const resolvedBallotData =
+    routeBallotData || attestationData?.ballotData || null;
+  const resolvedActaUrl =
+    routeActaUrl ||
+    photoUri ||
+    mesaData?.imagen ||
+    attestationData?.imagen ||
+    attestationData?.image ||
+    resolvedBallotData?.image ||
+    resolvedBallotData?.ipfsUri ||
+    null;
   const resolvedElectionType =
     electionType || attestationData?.ballotData?.electionType || null;
   const officeLabels = getContextOfficeLabels(resolvedElectionType);
@@ -57,6 +70,11 @@ const MyWitnessesDetailScreen = () => {
       nftData: {
         nftUrl: certificateUrl,
       },
+      tableData: resolvedBallotData,
+      ballotData: resolvedBallotData,
+      attestationData,
+      actaUrl: resolvedActaUrl,
+      imageUrl: resolvedActaUrl,
     });
   };
 

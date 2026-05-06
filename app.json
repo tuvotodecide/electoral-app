@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuvotodecide"
+      "bundleIdentifier": "com.tuvotodecide",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": true
+      }
     },
     "android": {
       "versionCode": 42,

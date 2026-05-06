@@ -134,6 +134,11 @@ jest.mock('react-native', () => ({
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
+  Share: {
+    share: jest.fn(() => Promise.resolve({action: 'sharedAction'})),
+    sharedAction: 'sharedAction',
+    dismissedAction: 'dismissedAction',
+  },
   DeviceEventEmitter: {
     addListener: jest.fn(() => ({remove: jest.fn()})),
     removeAllListeners: jest.fn(),

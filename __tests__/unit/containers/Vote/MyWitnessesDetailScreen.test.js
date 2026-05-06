@@ -30,6 +30,17 @@ const mockRouteWithParams = {
       tableNumber: '001',
       fecha: '2025-05-10',
       certificateUrl: 'https://example.com/certificate.pdf',
+      image: 'ipfs://QmActaDetalle123',
+      ballotData: {
+        _id: 'ballot-1',
+        tableNumber: '001',
+        image: 'ipfs://QmActaDetalle123',
+      },
+    },
+    ballotData: {
+      _id: 'ballot-1',
+      tableNumber: '001',
+      image: 'ipfs://QmActaDetalle123',
     },
     certificateUrl: 'https://example.com/certificate.pdf',
   },
@@ -151,6 +162,13 @@ describe('MyWitnessesDetailScreen', () => {
         expect.objectContaining({
           certificateData: expect.any(Object),
           nftData: expect.any(Object),
+          tableData: expect.objectContaining({
+            _id: 'ballot-1',
+          }),
+          ballotData: expect.objectContaining({
+            _id: 'ballot-1',
+          }),
+          actaUrl: 'file://photo.jpg',
         }),
       );
     });

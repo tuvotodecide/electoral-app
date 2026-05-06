@@ -2,6 +2,7 @@ import React from 'react';
 import {render, fireEvent} from '@testing-library/react-native';
 import SuccessScreen from '../../../../src/container/Vote/common/SuccessScreen';
 import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
+import {Share} from 'react-native';
 
 const mockNavigation = {
   reset: jest.fn(),
@@ -69,7 +70,14 @@ jest.mock('../../../../src/utils/Cifrate', () => ({
   getCredentialSubjectFromPayload: () => ({fullName: 'Test User'}),
 }));
 jest.mock('../../../../src/utils/normalizedUri', () => ({
-  normalizeUri: value => value || null,
+  normalizeUri: value => {
+    if (!value) return null;
+    const raw = String(value);
+    if (raw.startsWith('ipfs://')) {
+      return `https://ipfs.io/ipfs/${raw.slice(7)}`;
+    }
+    return raw;
+  },
 }));
 jest.mock('react-native-paper', () => ({
   ActivityIndicator: 'ActivityIndicator',
@@ -82,6 +90,7 @@ jest.mock('react-native-vector-icons/Ionicons', () => {
 describe('SuccessScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Share.share.mockResolvedValue({action: Share.sharedAction});
     mockRoute.params = {
       fromNotifications: false,
       certificateData: {imageUrl: 'https://ipfs/certificate.png'},
@@ -130,5 +139,30 @@ describe('SuccessScreen', () => {
 
     expect(mockNavigation.goBack).toHaveBeenCalled();
     expect(mockNavigation.reset).not.toHaveBeenCalled();
+  });
+
+  test('comparte el acta usando image ipfs cuando llega en tableData', () => {
+    mockRoute.params = {
+      fromNotifications: false,
+      certificateData: {imageUrl: 'https://ipfs/certificate.png'},
+      tableData: {
+        image: 'ipfs://QmActa1234567890',
+      },
+    };
+
+    const {getByText} = render(<SuccessScreen />);
+
+    fireEvent.press(getByText('Compartir acta (resultados)'));
+
+    expect(Share.share).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Compartir acta (resultados)',
+        message: 'Resultados del acta: https://ipfs.io/ipfs/QmActa1234567890',
+        url: 'https://ipfs.io/ipfs/QmActa1234567890',
+      }),
+      expect.objectContaining({
+        dialogTitle: 'Compartir acta (resultados)',
+      }),
+    );
   });
 });
