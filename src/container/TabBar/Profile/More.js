@@ -24,6 +24,7 @@ import {changeThemeAction} from '../../../redux/action/themeAction';
 import {setAsyncStorageData} from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
 import {logOut} from '../../../utils/auth';
+import CHeader from '../../../components/common/CHeader';
 
 
 export default function More({navigation}) {
@@ -147,6 +148,7 @@ export default function More({navigation}) {
 
   return (
     <CSafeAreaView testID="moreContainer">
+      <CHeader testID="moreHeader" title={String.more} />
       <ScrollView testID="moreScrollView" showsVerticalScrollIndicator={false} bounces={false}>
         <View testID="moreMainContainer" style={localStyle.mainContainer}>
           <SectionList

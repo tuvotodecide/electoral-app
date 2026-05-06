@@ -509,6 +509,10 @@ const CandidateScreen = ({ route }) => {
 
         const result = await submitVote();
 
+        if (result?.success) {
+          return;
+        }
+
         if (result?.shouldQueueBackendSync && result?.blockchainCommitted) {
           await enqueueBackendParticipationSync({
             electionId,

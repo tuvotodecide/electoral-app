@@ -161,7 +161,18 @@ const ParticipationsListScreen = () => {
         partyResults: item.partyResults || [],
         voteSummaryResults: item.voteSummaryResults || [],
         attestationData: item.attestationData || null,
+        ballotData: item.ballotData || item.attestationData?.ballotData || null,
+        actaUrl:
+          item.photoUri ||
+          item.ballotData?.image ||
+          item.attestationData?.image ||
+          null,
         certificateUrl: item.certificateUrl || null,
+        electionType:
+          item.electionType ||
+          item.ballotData?.electionType ||
+          item.attestationData?.ballotData?.electionType ||
+          null,
       });
       return;
     }
