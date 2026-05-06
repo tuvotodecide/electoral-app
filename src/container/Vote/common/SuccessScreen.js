@@ -3,7 +3,7 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState,useEffect } from 'react';
 import {
   BackHandler,
   Dimensions,
@@ -64,6 +64,9 @@ const SuccessScreen = () => {
   const colors = useSelector(state => state.theme.theme);
 
   const params = route?.params || {};
+  useEffect(() => {
+    console.log('SuccessScreen params:', params)
+  }, [params]);
   const ipfsData = parseParamObject(params.ipfsData);
   const nftData = parseParamObject(params.nftData);
   const tableData = parseParamObject(params.tableData);

@@ -2,7 +2,7 @@
   "expo": {
     "name": "TU VOTO DECIDE",
     "slug": "electoral-app-expo",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/ic_launcher.png",
     "scheme": "electoralappexpo",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
-      "buildNumber": "43",
+      "buildNumber": "44",
       "icon": "./assets/images/ic_launcher.png",
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
