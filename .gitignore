@@ -52,6 +52,7 @@ app-example
 
 # inserted by Expo
 /native-files
+!native-files/GoogleService-Info.plist
 credentials.json
 
 #claude
