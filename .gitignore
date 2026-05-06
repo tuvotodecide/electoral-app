@@ -51,8 +51,9 @@ app-example
 /android
 
 # inserted by Expo
-/native-files
-!native-files/GoogleService-Info.plist
+/native-files/*
+!/native-files/
+!/native-files/GoogleService-Info.plist
 credentials.json
 
 #claude
