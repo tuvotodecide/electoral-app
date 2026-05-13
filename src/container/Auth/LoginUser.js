@@ -303,6 +303,12 @@ export default function LoginUser({ navigation, route }) {
             return;
           }
 
+          captureError(res.error ?? new Error('Unexpected verifyPin result'), {
+            flow: 'login',
+            step: 'verify_pin',
+            critical: false,
+          });
+
           logNetworkIssue('unexpected_verify_result', res.error ?? null, {
             resultType: res.type,
           });

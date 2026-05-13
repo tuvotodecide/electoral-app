@@ -10,20 +10,20 @@ import { UI_STRINGS } from '../data/mockData';
 import { DEV_FLAGS } from '../../../config/featureFlags';
 
 /**
- * Formatea milisegundos a HH:MM:SS
+ * Formatea milisegundos a d h m s
  * @param {number} ms - milisegundos restantes
- * @returns {string} formato "HH:MM:SS"
+ * @returns {string} formato "Xd Xh Xm Xs"
  */
 const formatToHHMMSS = (ms) => {
-  if (ms <= 0) return '00:00:00';
+  if (ms <= 0) return '0d 0h 0m 0s';
 
   const totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 };
 
 /**
