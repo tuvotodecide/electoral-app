@@ -9,6 +9,7 @@ import { getCredentialForVote, getNullifierForVote, saveNullifierForVote } from 
 import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 import wira from 'wira-sdk';
+import { captureError } from '@/src/config/sentry';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
@@ -894,6 +895,13 @@ const ElectionRepositoryApi = {
 
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
+      captureError(
+        error,{ 
+          flow: 'submitVote',
+          critical: true,
+          step: 'blockchainSubmission',
+        }
+      )
       await clearVoteJournal(electionId);
       return {
         success: false,
