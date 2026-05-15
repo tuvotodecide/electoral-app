@@ -1,4 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { reportAppError } from '../config/sentry';
+
+const reportStorageError = (error, operation, keyOrKeys) => {
+  reportAppError(error, {
+    flow: 'local_storage',
+    module: 'StorageService',
+    step: operation,
+    critical: false,
+    storage_key:
+      Array.isArray(keyOrKeys) ? keyOrKeys.map(String).slice(0, 20) : String(keyOrKeys || ''),
+  });
+};
 
 /**
  * Liskov Substitution Principle (LSP):
@@ -14,6 +26,7 @@ export const StorageService = {
     try {
       return await AsyncStorage.getItem(key);
     } catch (e) {
+      reportStorageError(e, 'getItem', key);
       return null;
     }
   },
@@ -22,7 +35,7 @@ export const StorageService = {
     try {
       await AsyncStorage.setItem(key, value);
     } catch (e) {
-      // Ignorar manejo de errores bajo nivel
+      reportStorageError(e, 'setItem', key);
     }
   },
 
@@ -30,7 +43,7 @@ export const StorageService = {
     try {
       await AsyncStorage.removeItem(key);
     } catch (e) {
-      // Ignorar errores
+      reportStorageError(e, 'removeItem', key);
     }
   },
 
@@ -38,6 +51,7 @@ export const StorageService = {
     try {
       return await AsyncStorage.multiGet(keys);
     } catch (e) {
+      reportStorageError(e, 'multiGet', keys);
       return [];
     }
   }

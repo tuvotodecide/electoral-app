@@ -1,4 +1,6 @@
-import { SENTRY_DSN_KEY } from '@env';
+import { SENTRY_DSN_KEY, SENTRY_TESTFLIGHT_SMOKE_TEST } from '@env';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 
 
@@ -6,20 +8,149 @@ import * as Sentry from '@sentry/react-native';
 // CONFIGURACION SENTRY - App Electoral
 // ============================================================================
 
-// DSN de Sentry - Reemplazar con tu DSN real despues del paso 1
-// Formato: https://xxx@xxx.ingest.sentry.io/xxx
-const SENTRY_DSN = SENTRY_DSN_KEY;
+const SENTRY_TESTFLIGHT_SMOKE_ENABLED =true
+    // String(SENTRY_TESTFLIGHT_SMOKE_TEST || '').toLowerCase() === 'true';
+const isSentryDsnConfigured = () => !!String(SENTRY_DSN_KEY || '').trim();
+let sentryInitialized = false;
+let sentrySmokeTestSent = false;
+
+const SENSITIVE_KEYS = [
+    'authorization',
+    'bearer',
+    'credential',
+    'dni',
+    'document',
+    'nationalid',
+    'password',
+    'pin',
+    'privkey',
+    'privatekey',
+    'secret',
+    'token',
+    'vc',
+];
+
+const getBuildProfile = () =>
+    (typeof process !== 'undefined' ? process.env?.EAS_BUILD_PROFILE : null) ||
+    Constants.expoConfig?.extra?.buildProfile ||
+    (__DEV__ ? 'development' : 'production');
+
+const getAppDiagnostics = () => ({
+    platform: Platform.OS,
+    sentry_dsn_configured: isSentryDsnConfigured(),
+    sentry_testflight_smoke_enabled: SENTRY_TESTFLIGHT_SMOKE_ENABLED,
+    app_version:
+        Constants.nativeApplicationVersion ||
+        Constants.expoConfig?.version ||
+        'unknown',
+    build_number:
+        Constants.nativeBuildVersion ||
+        Constants.expoConfig?.ios?.buildNumber ||
+        Constants.expoConfig?.android?.versionCode ||
+        'unknown',
+    environment: __DEV__ ? 'development' : 'production',
+    build_profile: getBuildProfile(),
+    execution_environment: Constants.executionEnvironment || 'unknown',
+    app_ownership: Constants.appOwnership || 'unknown',
+});
+
+const redactValue = (key, value) => {
+    const normalizedKey = String(key || '').toLowerCase();
+    const isSensitive = SENSITIVE_KEYS.some(k => normalizedKey.includes(k));
+
+    if (isSensitive) {
+        return '[redacted]';
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .replace(/(token|authorization|password|pin|secret)=([^&\s]+)/gi, '$1=[redacted]')
+            .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]');
+    }
+
+    return value;
+};
+
+export const sanitizeForSentry = (value, depth = 0) => {
+    if (value == null) {
+        return value;
+    }
+
+    if (depth > 4) {
+        return '[max-depth]';
+    }
+
+    if (Array.isArray(value)) {
+        return value.slice(0, 20).map(item => sanitizeForSentry(item, depth + 1));
+    }
+
+    if (typeof value === 'object') {
+        const safe = {};
+        Object.keys(value).slice(0, 50).forEach(key => {
+            safe[key] = sanitizeForSentry(redactValue(key, value[key]), depth + 1);
+        });
+        return safe;
+    }
+
+    return redactValue('', value);
+};
+
+const toError = (error, fallbackMessage = 'Unknown application error') => {
+    if (error instanceof Error) {
+        return error;
+    }
+
+    if (typeof error === 'string') {
+        return new Error(error);
+    }
+
+    const wrapped = new Error(fallbackMessage);
+    wrapped.originalError = sanitizeForSentry(error);
+    return wrapped;
+};
+
+const safeSetContext = (name, context) => {
+    if (sentryInitialized && typeof Sentry.setContext === 'function') {
+        Sentry.setContext(name, context);
+    }
+};
+
+const safeSetTag = (name, value) => {
+    if (sentryInitialized && typeof Sentry.setTag === 'function') {
+        Sentry.setTag(name, value);
+    }
+};
+
+const safeAddBreadcrumb = (breadcrumb) => {
+    if (sentryInitialized && typeof Sentry.addBreadcrumb === 'function') {
+        Sentry.addBreadcrumb(breadcrumb);
+    }
+};
+
+export const getSafeUrl = (url = '') =>
+    String(url || '')
+        .replace(/([?&](dni|document|nationalId|token|authorization|pin|password|secret)=)[^&]+/gi, '$1[redacted]')
+        .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]');
 
 /**
  * Inicializa Sentry - DEBE llamarse antes de cualquier otro codigo
  */
 export const initSentry = () => {
+    if (!isSentryDsnConfigured()) {
+        sentryInitialized = false;
+        if (__DEV__) {
+            console.warn('[Sentry] SENTRY_DSN_KEY is missing. Runtime events will not be sent.');
+        }
+        return;
+    }
 
     Sentry.init({
-        dsn: SENTRY_DSN,
+        dsn: SENTRY_DSN_KEY,
 
         // Entorno para filtrar en dashboard
         environment: __DEV__ ? 'development' : 'production',
+        release: `${Constants.expoConfig?.slug || 'electoral-app-expo'}@${getAppDiagnostics().app_version}`,
+        dist: String(getAppDiagnostics().build_number),
 
         // Capturar transacciones (performance)
         // En dev 100%, en prod 20% para no sobrecargar
@@ -38,12 +169,8 @@ export const initSentry = () => {
         // Filtrar eventos antes de enviar
         beforeSend(event) {
             // Limpiar cualquier dato sensible que pudiera filtrarse
-            if (event.extra) {
-                delete event.extra.dni;
-                delete event.extra.token;
-                delete event.extra.privKey;
-                delete event.extra.pin;
-            }
+            event.extra = sanitizeForSentry(event.extra);
+            event.contexts = sanitizeForSentry(event.contexts);
 
 
             // No permitir PII en prod aunque alguien lo setee por error
@@ -70,6 +197,42 @@ export const initSentry = () => {
             return breadcrumb;
         },
     });
+    sentryInitialized = true;
+
+    const diagnostics = getAppDiagnostics();
+    safeSetContext('app_diagnostics', diagnostics);
+    safeSetTag('platform', diagnostics.platform);
+    safeSetTag('build_profile', diagnostics.build_profile);
+    safeSetTag('app_version', diagnostics.app_version);
+    safeSetTag('build_number', String(diagnostics.build_number));
+
+    safeAddBreadcrumb({
+        category: 'app.startup',
+        message: 'Sentry initialized',
+        level: 'info',
+        data: diagnostics,
+    });
+
+    if (!__DEV__ && Platform.OS === 'ios' && SENTRY_TESTFLIGHT_SMOKE_ENABLED && !sentrySmokeTestSent) {
+        sentrySmokeTestSent = true;
+        Sentry.withScope((scope) => {
+            scope.setTag('flow', 'sentry_smoke_test');
+            scope.setTag('platform', 'ios');
+            scope.setTag('build_profile', diagnostics.build_profile);
+            scope.setLevel('warning');
+            scope.setContext('smoke_test', {
+                purpose: 'Validate runtime Sentry events from iOS/TestFlight',
+                remove_or_disable_after_validation: true,
+                dsn_configured: isSentryDsnConfigured(),
+                app_version: diagnostics.app_version,
+                build_number: diagnostics.build_number,
+                environment: diagnostics.environment,
+                platform: diagnostics.platform,
+            });
+            Sentry.captureException(new Error('Sentry iOS TestFlight smoke test'));
+        });
+        Sentry.flush(2000).catch(() => {});
+    }
 };
 
 // ============================================================================
@@ -82,6 +245,10 @@ export const initSentry = () => {
  * @param {Object} userData - Datos del usuario
  */
 export const setUserContext = (userData) => {
+    if (!sentryInitialized) {
+        return;
+    }
+
     if (!userData) {
         Sentry.setUser(null);
         return;
@@ -104,6 +271,10 @@ export const setUserContext = (userData) => {
  * Limpiar contexto de usuario (logout)
  */
 export const clearUserContext = () => {
+    if (!sentryInitialized) {
+        return;
+    }
+
     Sentry.setUser(null);
     Sentry.setContext('user_context', null);
     Sentry.setContext('electoral_location', null);
@@ -114,6 +285,10 @@ export const clearUserContext = () => {
  * @param {Object} data - Datos de ubicacion
  */
 export const setElectoralContext = (data) => {
+    if (!sentryInitialized) {
+        return;
+    }
+
     Sentry.setContext('electoral_location', {
         province_code: data.provinceCode || data.province,
         table_code: data.tableCode,
@@ -138,7 +313,7 @@ export const addNavigationBreadcrumb = (routeName, params = {}) => {
     if (params.step) safeParams.step = params.step;
     if (params.electionId) safeParams.electionId = params.electionId;
 
-    Sentry.addBreadcrumb({
+    safeAddBreadcrumb({
         category: 'navigation',
         message: `Screen: ${routeName}`,
         level: 'info',
@@ -152,11 +327,20 @@ export const addNavigationBreadcrumb = (routeName, params = {}) => {
  * @param {Object} data - Datos adicionales (sin PII)
  */
 export const addActionBreadcrumb = (action, data = {}) => {
-    Sentry.addBreadcrumb({
+    safeAddBreadcrumb({
         category: 'user.action',
         message: action,
         level: 'info',
-        data,
+        data: sanitizeForSentry(data),
+    });
+};
+
+export const addAppBreadcrumb = (message, data = {}, level = 'info') => {
+    safeAddBreadcrumb({
+        category: 'app.startup',
+        message,
+        level,
+        data: sanitizeForSentry(data),
     });
 };
 
@@ -169,11 +353,9 @@ export const addActionBreadcrumb = (action, data = {}) => {
  */
 export const addHttpBreadcrumb = (method, url, statusCode, duration) => {
     // Limpiar URL de posibles datos sensibles
-    const cleanUrl = url
-        .replace(/dni=[^&]+/gi, 'dni=***')
-        .replace(/token=[^&]+/gi, 'token=***');
+    const cleanUrl = getSafeUrl(url);
 
-    Sentry.addBreadcrumb({
+    safeAddBreadcrumb({
         category: 'http',
         message: `${method} ${cleanUrl}`,
         level: statusCode >= 400 ? 'error' : 'info',
@@ -192,7 +374,7 @@ export const addHttpBreadcrumb = (method, url, statusCode, duration) => {
  * @param {Object} data - Datos de contexto
  */
 export const addBlockchainBreadcrumb = (operation, data = {}) => {
-    Sentry.addBreadcrumb({
+    safeAddBreadcrumb({
         category: 'blockchain',
         message: `Blockchain: ${operation}`,
         level: 'info',
@@ -229,7 +411,17 @@ export const addBlockchainBreadcrumb = (operation, data = {}) => {
  *   tableCode: '12345'
  * });
  */
-export const captureError = (error, context = {}) => {
+export const reportAppError = (error, context = {}) => {
+    const normalizedError = toError(error);
+    const diagnostics = getAppDiagnostics();
+
+    if (!sentryInitialized) {
+        if (__DEV__ && (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test')) {
+            console.error(`[${context.flow || 'ERROR'}]`, normalizedError.message, sanitizeForSentry(context));
+        }
+        return;
+    }
+
     Sentry.withScope((scope) => {
         const allowPii = __DEV__ && context.allowPii === true;
         // Tags para filtrar en dashboard
@@ -238,21 +430,26 @@ export const captureError = (error, context = {}) => {
         if (context.step) scope.setTag('step', context.step);
         if (context.tableCode) scope.setTag('table_code', context.tableCode);
         if (context.chain) scope.setTag('blockchain_chain', context.chain);
+        if (context.module) scope.setTag('module', context.module);
+        if (context.endpoint) scope.setTag('endpoint', getSafeUrl(context.endpoint));
+        scope.setTag('platform', diagnostics.platform);
+        scope.setTag('build_profile', diagnostics.build_profile);
+        scope.setTag('app_version', diagnostics.app_version);
+        scope.setTag('build_number', String(diagnostics.build_number));
 
         // Nivel segun criticidad
         scope.setLevel(context.critical ? 'error' : 'warning');
 
         // Contexto extra (sin PII)
-        const safeContext = { ...context };
+        const safeContext = sanitizeForSentry({ ...context });
         delete safeContext.allowPii;
-        delete safeContext.token;
-        delete safeContext.privKey;
-        delete safeContext.pin;
 
         scope.setContext('error_context', {
             ...safeContext,
             timestamp: new Date().toISOString(),
         });
+
+        scope.setContext('app_diagnostics', diagnostics);
 
         // Adjuntar PII solo en desarrollo y cuando se solicite explicitamente
         if (allowPii) {
@@ -262,22 +459,28 @@ export const captureError = (error, context = {}) => {
         }
 
         // Si hay info de API debug, agregarla
-        if (error.apiDebug) {
-            scope.setContext('api_debug', {
-                url: error.apiDebug.url,
-                method: error.apiDebug.method,
-                status: error.apiDebug.status,
-            });
+        if (normalizedError.apiDebug) {
+            scope.setContext('api_debug', sanitizeForSentry({
+                url: getSafeUrl(normalizedError.apiDebug.url),
+                method: normalizedError.apiDebug.method,
+                status: normalizedError.apiDebug.status,
+                code: normalizedError.apiDebug.code,
+                timeout: normalizedError.apiDebug.timeout,
+                statusText: normalizedError.apiDebug.statusText,
+                responseData: normalizedError.apiDebug.responseData,
+            }));
         }
 
-        Sentry.captureException(error);
+        Sentry.captureException(normalizedError);
     });
 
     // Mantener console.error en dev para debugging local
-    if (__DEV__) {
-        console.error(`[${context.flow || 'ERROR'}]`, error.message, context);
+    if (__DEV__ && (typeof process === 'undefined' || process.env?.NODE_ENV !== 'test')) {
+        console.error(`[${context.flow || 'ERROR'}]`, normalizedError.message, sanitizeForSentry(context));
     }
 };
+
+export const captureError = reportAppError;
 
 /**
  * Capturar mensaje informativo o warning (sin excepcion)
@@ -286,6 +489,10 @@ export const captureError = (error, context = {}) => {
  * @param {Object} context - Contexto adicional
  */
 export const captureMessage = (message, level = 'info', context = {}) => {
+    if (!sentryInitialized) {
+        return;
+    }
+
     Sentry.withScope((scope) => {
         if (context.flow) scope.setTag('flow', context.flow);
 
@@ -300,6 +507,10 @@ export const captureMessage = (message, level = 'info', context = {}) => {
  * Util en etapas tempranas del arranque.
  */
 export const flushSentry = async (timeoutMs = 2000) => {
+    if (!sentryInitialized) {
+        return false;
+    }
+
     try {
         return await Sentry.flush(timeoutMs);
     } catch {

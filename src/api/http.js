@@ -1,7 +1,7 @@
 import { BACKEND_IDENTITY } from '@env';
 import axios from 'axios';
 
-import { captureError, addHttpBreadcrumb } from '../config/sentry';
+import { addHttpBreadcrumb, getSafeUrl, reportAppError } from '../config/sentry';
 
 
 const formatDebugPayload = (payload) => {
@@ -18,7 +18,7 @@ const formatDebugPayload = (payload) => {
     }
 
     return `${serialized.slice(0, 500)}…(truncated)`;
-  } catch (err) {
+  } catch (_err) {
     return '[unserializable payload]';
   }
 };
@@ -64,7 +64,7 @@ API.interceptors.response.use(
     // Breadcrumb del error HTTP
     addHttpBreadcrumb(
       config.method?.toUpperCase() || 'UNKNOWN',
-      config.url || '',
+      getSafeUrl(requestUrl || config.url || ''),
       status,
       duration
     );
@@ -81,19 +81,24 @@ API.interceptors.response.use(
     // ========================================================================
     const isServerError = status >= 500;
     const isTimeout = e.code === 'ECONNABORTED';
-    const isNetworkError = e.message === 'Network Error';
+    const isNetworkError = e.message === 'Network Error' || !e.response;
+    const isClientError = status >= 400 && status < 500;
 
-    if (isServerError || isTimeout) {
-      captureError(e, {
+    if (isServerError || isTimeout || isNetworkError || isClientError) {
+      reportAppError(e, {
         flow: 'http_request',
         critical: isServerError,
-        step: config.url,
-        endpoint: config.url,
+        module: 'src/api/http',
+        step: isTimeout ? 'timeout' : isNetworkError ? 'network_error' : `http_${status}`,
+        endpoint: getSafeUrl(requestUrl || config.url),
         method: config.method,
         status: status,
+        status_family: status ? `${Math.floor(status / 100)}xx` : 'network',
         duration_ms: duration,
+        timeout_ms: config.timeout,
         is_timeout: isTimeout,
         is_network_error: isNetworkError,
+        is_client_error: isClientError,
       });
     }
     // ========================================================================
@@ -110,8 +115,10 @@ API.interceptors.response.use(
     const msg = e?.response?.data?.message || e.message || 'Network error';
     const normalizedError = new Error(msg);
     normalizedError.apiDebug = {
-      url: requestUrl || null,
+      url: getSafeUrl(requestUrl || ''),
       ...debugPayload,
+      code: e?.code,
+      timeout: config.timeout,
     };
     normalizedError.cause = e;
 

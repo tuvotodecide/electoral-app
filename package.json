@@ -5,7 +5,7 @@
   "scripts": {
     "start": "expo start",
     "prepare": "husky",
-    "test": "node scripts/run-jest.js --coverage=false",
+"eas-build-pre-install": "bash ./scripts/write_env.sh && bash ./scripts/fetch_vendor.sh && bash ./scripts/setup_flutter_vendor.sh && bash ./scripts/build_wira_sdk.sh && node ./scripts/patch_wira_sdk_package.js",    "test": "node scripts/run-jest.js --coverage=false",
     "test:coverage:json": "node scripts/run-jest.js --coverage --json --outputFile=jest-results.json",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
@@ -118,7 +118,7 @@
     "util": "^0.12.5",
     "viem": "^2.31.3",
     "vm-browserify": "^1.1.2",
-    "wira-sdk": "file:../wira-sdk"
+    "wira-sdk": "file:vendor/wira-sdk"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

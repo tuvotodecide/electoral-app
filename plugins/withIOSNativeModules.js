@@ -21,7 +21,7 @@ const path = require("path");
 
 /** Relative path (from project root) to the Flutter module framework output */
 const FLUTTER_FRAMEWORK_SOURCE = path.join(
-  "..",
+  "vendor",
   "wira-sdk-flutter-component",
   "build",
   "ios",
@@ -95,7 +95,7 @@ function withIOSNativeModules(config) {
 
       // ---- Ensure Flutter podhelper lines are present ----
       const flutterPathLine =
-        "flutter_application_path = '../../wira-sdk-flutter-component'";
+        "flutter_application_path = '../vendor/wira-sdk-flutter-component'";
       const flutterLoadLine =
         "load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb')";
 

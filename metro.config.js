@@ -1,3 +1,4 @@
+const fs = require("fs");
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 
@@ -71,6 +72,14 @@ config.resolver = {
   blockList: [/wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/],
 };
 
-config.watchFolders = [path.resolve(projectRoot, "../wira-sdk")];
+const vendorWiraSdkPath = path.resolve(projectRoot, "vendor", "wira-sdk");
+const externalWiraSdkPath = path.resolve(projectRoot, "..", "wira-sdk");
+
+config.watchFolders = [];
+if (fs.existsSync(vendorWiraSdkPath)) {
+  config.watchFolders.push(vendorWiraSdkPath);
+} else if (fs.existsSync(externalWiraSdkPath)) {
+  config.watchFolders.push(externalWiraSdkPath);
+}
 
 module.exports = config;

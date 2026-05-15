@@ -3,7 +3,7 @@ import messaging from '@react-native-firebase/messaging';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
-import { captureError } from './config/sentry';
+import { addAppBreadcrumb, reportAppError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { LAST_TOPIC_KEY, LAST_USER_TOPIC_KEY } from './common/constants';
@@ -58,14 +58,27 @@ const App = () => {
     const checkUpdate = async () => {
       if (updateCheckedRef.current) return;
       updateCheckedRef.current = true;
+      addAppBreadcrumb('Android in-app update check started', {
+        flow: 'app_update',
+        step: 'check_needs_update',
+      });
 
       try {
         const result = await inAppUpdatesRef.current.checkNeedsUpdate();
+        addAppBreadcrumb('Android in-app update check completed', {
+          flow: 'app_update',
+          step: 'check_needs_update_done',
+          should_update: !!result?.shouldUpdate,
+        });
         if (!result?.shouldUpdate) {
           return;
         }
         try {
           setIsUpdating(true);
+          addAppBreadcrumb('Android immediate update started', {
+            flow: 'app_update',
+            step: 'start_update',
+          });
           await inAppUpdatesRef.current.startUpdate({
             updateType: IAUUpdateKind.IMMEDIATE,
           });
@@ -75,12 +88,23 @@ const App = () => {
             setMustUpdate(true);
           }
         } catch (e) {
+          reportAppError(e, {
+            flow: 'app_update',
+            module: 'App',
+            step: 'start_update',
+            critical: false,
+          });
           setMustUpdate(true);
         } finally {
           setIsUpdating(false);
         }
       } catch (e) {
-
+        reportAppError(e, {
+          flow: 'app_update',
+          module: 'App',
+          step: 'check_needs_update',
+          critical: false,
+        });
       }
     };
 
@@ -92,6 +116,10 @@ const App = () => {
     if (!inAppUpdatesRef.current || isUpdating) return;
     try {
       setIsUpdating(true);
+      addAppBreadcrumb('Manual Android update started', {
+        flow: 'app_update',
+        step: 'manual_start_update',
+      });
       await inAppUpdatesRef.current.startUpdate({
         updateType: IAUUpdateKind.IMMEDIATE,
       });
@@ -101,6 +129,12 @@ const App = () => {
         setMustUpdate(false);
       }
     } catch (e) {
+      reportAppError(e, {
+        flow: 'app_update',
+        module: 'App',
+        step: 'manual_start_update',
+        critical: false,
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -132,7 +166,7 @@ const App = () => {
               },
             });
           } catch (e) {
-            captureError(e, {
+            reportAppError(e, {
               flow: 'notification',
               step: 'foreground_handler',
               critical: false,
@@ -145,7 +179,7 @@ const App = () => {
             if (!data || Object.keys(data).length === 0) return;
             handleNotificationPress({ data });
           } catch (e) {
-            captureError(e, {
+            reportAppError(e, {
               flow: 'notification',
               step: 'opened_from_notification',
               critical: false,
@@ -165,20 +199,49 @@ const App = () => {
         const rawId = lastLocationTopic.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) { }
+        } catch (e) {
+          reportAppError(e, {
+            flow: 'notification',
+            module: 'App',
+            step: 'resubscribe_location_topic',
+            critical: false,
+            topic_type: 'location',
+          });
+        }
       }
 
       const lastUserTopic = await AsyncStorage.getItem(LAST_USER_TOPIC_KEY);
       if (lastUserTopic) {
         try {
           await subscribeToPushTopic(lastUserTopic);
-        } catch (e) { }
+        } catch (e) {
+          reportAppError(e, {
+            flow: 'notification',
+            module: 'App',
+            step: 'resubscribe_user_topic',
+            critical: false,
+            topic_type: 'user',
+          });
+        }
       }
     };
 
     (async () => {
-      await ensureFCMSetup();
-      await resubscribeStoredTopics();
+      try {
+        addAppBreadcrumb('FCM setup started', {
+          flow: 'notification',
+          step: 'ensure_fcm_setup',
+        });
+        await ensureFCMSetup();
+        await resubscribeStoredTopics();
+      } catch (e) {
+        reportAppError(e, {
+          flow: 'notification',
+          module: 'App',
+          step: 'fcm_setup_or_resubscribe',
+          critical: false,
+        });
+      }
     })();
     const unsub = messaging().onTokenRefresh(async () => {
       await resubscribeStoredTopics();
@@ -190,7 +253,7 @@ const App = () => {
       navigate(auth.pendingNav.name, auth.pendingNav.params);
       dispatch(setPendingNav(null));
     }
-  }, [auth.isAuthenticated, auth.pendingNav]);
+  }, [auth.isAuthenticated, auth.pendingNav, dispatch]);
 
   return (
     <QueryClientProvider client={queryClient}>

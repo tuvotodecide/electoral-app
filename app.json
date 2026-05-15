@@ -29,7 +29,7 @@
           "remote-notification",
           "fetch"
         ],
-        "ITSAppUsesNonExemptEncryption": true
+        "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "aps-environment": "production"
@@ -169,6 +169,7 @@
       "expo-localization",
       "./plugins/withIOSCodesigning",
       "./plugins/withIOSNativeModules",
+      "./plugins/withVendorFlutterPodfile",
       "./plugins/withNativeModules",
       "./plugins/withIOSOrientation"
     ],

@@ -8,6 +8,7 @@ node_modules/
 
 # Expo
 .expo/
+.flutter/
 dist/
 web-build/
 expo-env.d.ts
@@ -49,6 +50,9 @@ app-example
 # generated native folders
 /ios
 /android
+vendor/
+vendor.zip
+scripts/*.zip
 
 # inserted by Expo
 /native-files/*
