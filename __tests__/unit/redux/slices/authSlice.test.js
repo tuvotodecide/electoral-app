@@ -13,6 +13,8 @@
 import authSlice, { 
   setAuthenticated, 
   setPendingNav, 
+  setPendingNotificationNavigation,
+  clearPendingNotificationNavigation,
   clearAuth 
 } from '../../../../src/redux/slices/authSlice';
 
@@ -25,6 +27,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(initialState).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
 
@@ -33,6 +36,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       
       expect(typeof initialState.isAuthenticated).toBe('boolean');
       expect(initialState.pendingNav).toBe(null);
+      expect(initialState.pendingNotificationNavigation).toBe(null);
     });
 
     it('debe ser inmutable el estado inicial', () => {
@@ -209,6 +213,52 @@ describe('authSlice - Tests Comprehensivos', () => {
     });
   });
 
+  describe('🔔 Acción pendingNotificationNavigation', () => {
+    it('debe establecer navegación pendiente específica de notificación', () => {
+      const initialState = {
+        isAuthenticated: false,
+        pendingNav: null,
+        pendingNotificationNavigation: null,
+      };
+      const intent = {
+        type: 'notification',
+        targetRoute: 'NotificationDetail',
+        params: {notificationId: 'abc'},
+        createdAt: 1000,
+        dedupeKey: 'notification:abc',
+      };
+
+      const newState = authSlice(
+        initialState,
+        setPendingNotificationNavigation(intent),
+      );
+
+      expect(newState.pendingNotificationNavigation).toEqual(intent);
+      expect(newState.pendingNav).toBe(null);
+    });
+
+    it('debe limpiar navegación pendiente específica de notificación', () => {
+      const initialState = {
+        isAuthenticated: true,
+        pendingNav: 'OtherPending',
+        pendingNotificationNavigation: {
+          type: 'notification',
+          targetRoute: 'NotificationDetail',
+          createdAt: 1000,
+          dedupeKey: 'notification:abc',
+        },
+      };
+
+      const newState = authSlice(
+        initialState,
+        clearPendingNotificationNavigation(),
+      );
+
+      expect(newState.pendingNotificationNavigation).toBe(null);
+      expect(newState.pendingNav).toBe('OtherPending');
+    });
+  });
+
   describe('🗑️ Acción clearAuth', () => {
     it('debe limpiar completamente el estado de autenticación', () => {
       const initialState = {
@@ -222,6 +272,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(newState).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
 
@@ -237,6 +288,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(newState).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
 
@@ -255,6 +307,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(newState).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
 
@@ -331,6 +384,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(state).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
   });
@@ -432,6 +486,7 @@ describe('authSlice - Tests Comprehensivos', () => {
       expect(state).toEqual({
         isAuthenticated: false,
         pendingNav: null,
+        pendingNotificationNavigation: null,
       });
     });
 

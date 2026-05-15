@@ -11,11 +11,13 @@ import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
 import {
   buildNotificationTextFallback,
+  consumePendingNotificationNavigation,
   handleNotificationPress,
   markNotificationAsAlerted,
   registerNotifications,
 } from './notifications';
 import { setPendingNav } from './redux/slices/authSlice';
+import { isSessionValid } from './utils/Session';
 import {
   ensureFCMSetup,
   initNotifications,
@@ -186,11 +188,36 @@ const App = () => {
     return () => unsub();
   }, []);
   useEffect(() => {
+    let active = true;
     if (auth.isAuthenticated && auth.pendingNav) {
-      navigate(auth.pendingNav.name, auth.pendingNav.params);
-      dispatch(setPendingNav(null));
+      (async () => {
+        let valid = false;
+        try {
+          valid = await isSessionValid();
+        } catch {
+          valid = false;
+        }
+        if (!active || !valid) return;
+        navigate(auth.pendingNav.name, auth.pendingNav.params);
+        dispatch(setPendingNav(null));
+      })();
     }
-  }, [auth.isAuthenticated, auth.pendingNav]);
+    return () => {
+      active = false;
+    };
+  }, [auth.isAuthenticated, auth.pendingNav, dispatch]);
+
+  useEffect(() => {
+    if (!auth.pendingNotificationNavigation) return undefined;
+    let active = true;
+    (async () => {
+      if (!active) return;
+      await consumePendingNotificationNavigation();
+    })();
+    return () => {
+      active = false;
+    };
+  }, [auth.isAuthenticated, auth.pendingNotificationNavigation]);
 
   return (
     <QueryClientProvider client={queryClient}>

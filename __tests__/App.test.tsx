@@ -32,6 +32,11 @@ jest.mock('../src/services/notifications', () => ({
 jest.mock('../src/notifications', () => ({
   registerNotifications: jest.fn(() => Promise.resolve()),
   handleNotificationPress: jest.fn(),
+  consumePendingNotificationNavigation: jest.fn(() => Promise.resolve(false)),
+}));
+
+jest.mock('../src/utils/Session', () => ({
+  isSessionValid: jest.fn(() => Promise.resolve(true)),
 }));
 
 jest.mock('@react-native-firebase/messaging', () => {

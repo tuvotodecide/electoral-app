@@ -1672,28 +1672,28 @@ export default function HomeScreen({ navigation }) {
   };
 
   const ActionButtonsGroup = () => {
-    // Si está offline y no tiene recinto registrado, mostrar mensaje claro antes de acciones.
-    if (shouldShowRegisterAlert && !isHomeOnline) {
-      return (
-        <View style={stylesx.warningContractCard}>
-          <Ionicons
-            name="information-circle-outline"
-            size={32}
-            color="#F59E0B"
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>
-              Registra tu recinto para usar modo sin internet
-            </CText>
-            <CText style={stylesx.warningContractText}>
-              No tienes recinto registrado. Conéctate a internet para registrar tu recinto y
-              luego podrás continuar con datos locales.
-            </CText>
-          </View>
-        </View>
-      );
-    }
+    // // Si está offline y no tiene recinto registrado, mostrar mensaje claro antes de acciones.
+    // if (shouldShowRegisterAlert && !isHomeOnline) {
+    //   return (
+    //     <View style={stylesx.warningContractCard}>
+    //       <Ionicons
+    //         name="information-circle-outline"
+    //         size={32}
+    //         color="#F59E0B"
+    //         style={{ marginRight: 12 }}
+    //       />
+    //       <View style={{ flex: 1 }}>
+    //         <CText style={stylesx.warningContractTitle}>
+    //           Registra tu recinto para usar modo sin internet
+    //         </CText>
+    //         <CText style={stylesx.warningContractText}>
+    //           No tienes recinto registrado. Conéctate a internet para registrar tu recinto y
+    //           luego podrás continuar con datos locales.
+    //         </CText>
+    //       </View>
+    //     </View>
+    //   );
+    // }
 
     const electionWindow = resolveElectionWindowState(electionStatus);
     if (electionWindow.known && !electionWindow.enabled) {
@@ -2693,13 +2693,13 @@ export default function HomeScreen({ navigation }) {
             />
           )}
 
-          {!checkingVotePlace && shouldShowRegisterAlert && (
+          {/* {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               title={I18nStrings.registerPlace}
               description={I18nStrings.registerPlaceDescription}
               onPress={handleRegisterPlacePress}
             />
-          )}
+          )} */}
 
           <View style={stylesx.tabletRightColumn}>
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
@@ -2868,13 +2868,13 @@ export default function HomeScreen({ navigation }) {
               />
             )}
 
-            {!checkingVotePlace && shouldShowRegisterAlert && (
+            {/* {!checkingVotePlace && shouldShowRegisterAlert && (
               <RegisterAlertCard
                 title={I18nStrings.registerPlace}
                 description={I18nStrings.registerPlaceDescription}
                 onPress={handleRegisterPlacePress}
               />
-            )}
+            )} */}
 
             {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
             <View style={stylesx.gridParent}>

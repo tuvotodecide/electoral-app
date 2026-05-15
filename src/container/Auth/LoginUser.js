@@ -37,6 +37,7 @@ import { commonColor } from '../../themes/colors';
 import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
 import {startLocalSession} from '../../utils/Session';
+import {consumePendingNotificationNavigation} from '../../notifications';
 
 
 const sharedSession = new wira.SharedSession(
@@ -163,6 +164,7 @@ export default function LoginUser({ navigation, route }) {
     }
 
     navigation.reset({ index: 0, routes: [{ name: StackNav.TabNavigation }] });
+    await consumePendingNotificationNavigation();
   }
 
   const onPressLoginUser1 = () => {

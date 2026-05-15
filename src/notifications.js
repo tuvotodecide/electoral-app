@@ -4,8 +4,13 @@ import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import { StorageService as AsyncStorage } from './services/StorageService';
 import {navigate} from './navigation/RootNavigation';
 import store from './redux/store';
-import {setPendingNav} from './redux/slices/authSlice';
+import {
+  clearPendingNotificationNavigation,
+  setPendingNav,
+  setPendingNotificationNavigation,
+} from './redux/slices/authSlice';
 import {AuthNav, StackNav, TabNav} from './navigation/NavigationKey';
+import {isSessionValid} from './utils/Session';
 
 export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
@@ -16,11 +21,14 @@ const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
   'acta_published',
   'participation_certificate',
 ]);
+const NOTIFICATION_NAV_DEDUPE_TTL_MS = 5000;
+export const PENDING_NOTIFICATION_NAV_TTL_MS = 10 * 60 * 1000;
 let backendAlertQueue = Promise.resolve(0);
 
 // In-memory cache to prevent duplicate alerts within a short time window
 const recentlyAlertedKeys = new Set();
 const RECENT_ALERT_TTL_MS = 30000; // 30 seconds
+const recentlyProcessedNavigationKeys = new Map();
 
 const markKeyAsRecentlyAlerted = key => {
   if (!key) return;
@@ -32,6 +40,53 @@ const markKeyAsRecentlyAlerted = key => {
 
 const isKeyRecentlyAlerted = key => {
   return key && recentlyAlertedKeys.has(key);
+};
+
+const pruneRecentlyProcessedNavigationKeys = now => {
+  recentlyProcessedNavigationKeys.forEach((expiresAt, key) => {
+    if (expiresAt <= now) {
+      recentlyProcessedNavigationKeys.delete(key);
+    }
+  });
+};
+
+const markNavigationKeyAsRecentlyProcessed = key => {
+  if (!key) return;
+  const now = Date.now();
+  pruneRecentlyProcessedNavigationKeys(now);
+  recentlyProcessedNavigationKeys.set(key, now + NOTIFICATION_NAV_DEDUPE_TTL_MS);
+};
+
+const isNavigationKeyRecentlyProcessed = key => {
+  if (!key) return false;
+  const now = Date.now();
+  pruneRecentlyProcessedNavigationKeys(now);
+  const expiresAt = recentlyProcessedNavigationKeys.get(key);
+  if (!expiresAt || expiresAt <= now) {
+    recentlyProcessedNavigationKeys.delete(key);
+    return false;
+  }
+  return true;
+};
+
+const stableStringify = value => {
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(value, (key, item) => {
+      if (!item || typeof item !== 'object') return item;
+      if (seen.has(item)) return undefined;
+      seen.add(item);
+      if (Array.isArray(item)) return item;
+      return Object.keys(item)
+        .sort()
+        .reduce((acc, objectKey) => {
+          acc[objectKey] = item[objectKey];
+          return acc;
+        }, {});
+    });
+  } catch {
+    return String(value ?? '');
+  }
 };
 
 const safeParse = raw => {
@@ -865,29 +920,129 @@ export function buildRouteFromNotification(notification) {
   return {name, params};
 }
 
+export function buildNotificationNavigationDedupeKey(notification, route) {
+  const data =
+    notification?.data && typeof notification.data === 'object'
+      ? notification.data
+      : {};
+  const explicitId =
+    notification?.id ||
+    notification?._id ||
+    notification?.messageId ||
+    data?.notificationId ||
+    data?.id ||
+    data?._id ||
+    data?.messageId ||
+    data?.eventId ||
+    data?.electionId ||
+    '';
+  const notificationType =
+    data?.type || data?.notificationType || notification?.type || 'generic';
+  const routeName = route?.name || 'unknown';
+
+  if (explicitId) {
+    return `notification:${notificationType}:${routeName}:${explicitId}`;
+  }
+
+  return `notification:${notificationType}:${routeName}:${stableStringify(data)}`;
+}
+
+export function buildNotificationNavigationIntent(notification) {
+  const route = buildRouteFromNotification(notification);
+  if (!route?.name) return null;
+
+  const dedupeKey = buildNotificationNavigationDedupeKey(notification, route);
+  return {
+    type: 'notification',
+    targetRoute: route.name,
+    params: route.params ?? {},
+    createdAt: Date.now(),
+    dedupeKey,
+  };
+}
+
+export function isPendingNotificationNavigationExpired(intent) {
+  if (!intent?.createdAt) return true;
+  return Date.now() - Number(intent.createdAt) > PENDING_NOTIFICATION_NAV_TTL_MS;
+}
+
+async function canOpenProtectedNotificationRoute() {
+  const {isAuthenticated} = store.getState().auth || {};
+  if (!isAuthenticated) return false;
+  try {
+    return await isSessionValid();
+  } catch {
+    return false;
+  }
+}
+
+function navigateToLoginUser() {
+  const loginScreen = AuthNav?.LoginUser || 'LoginUser';
+  if (StackNav.AuthNavigation && AuthNav?.LoginUser) {
+    navigate(StackNav.AuthNavigation, {screen: loginScreen});
+  } else {
+    navigate(loginScreen);
+  }
+}
+
+function navigateToNotificationIntent(intent) {
+  if (!intent?.targetRoute) return false;
+  navigate(intent.targetRoute, intent.params);
+  store.dispatch(clearPendingNotificationNavigation());
+  markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
+  return true;
+}
+
+export async function processNotificationNavigationIntent(
+  intent,
+  {fromPending = false} = {},
+) {
+  if (!intent?.targetRoute) {
+    store.dispatch(clearPendingNotificationNavigation());
+    return false;
+  }
+
+  if (isPendingNotificationNavigationExpired(intent)) {
+    store.dispatch(clearPendingNotificationNavigation());
+    return false;
+  }
+
+  if (!fromPending && isNavigationKeyRecentlyProcessed(intent.dedupeKey)) {
+    return false;
+  }
+
+  if (await canOpenProtectedNotificationRoute()) {
+    return navigateToNotificationIntent(intent);
+  }
+
+  store.dispatch(setPendingNotificationNavigation(intent));
+  markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
+  navigateToLoginUser();
+  return false;
+}
+
+export async function consumePendingNotificationNavigation() {
+  const intent = store.getState().auth?.pendingNotificationNavigation;
+  if (!intent) return false;
+  return processNotificationNavigationIntent(intent, {fromPending: true});
+}
+
 /**
  * Handler de taps en notificaciones (locales o remotas a través de notifee).
  * Soporta data.routeParams (JSON) para pantallas que necesiten objetos complejos.
  */
-export function handleNotificationPress(notification) {
-  const route = buildRouteFromNotification(notification);
-
-  const {isAuthenticated} = store.getState().auth;
-
-  if (isAuthenticated) {
-    navigate(route.name, route.params);
-  } else {
-    store.dispatch(setPendingNav(route));
-    const loginScreen = AuthNav?.LoginUser || 'LoginUser';
-    if (StackNav.AuthNavigation && AuthNav?.LoginUser) {
-      navigate(StackNav.AuthNavigation, {screen: loginScreen});
-    } else {
-      navigate(loginScreen);
-    }
-  }
+export async function handleNotificationPress(notification) {
+  const intent = buildNotificationNavigationIntent(notification);
+  return processNotificationNavigationIntent(intent);
 }
 
 export function handleNotificationPressBackground(notification) {
-  const route = buildRouteFromNotification(notification);
-  store.dispatch(setPendingNav(route));
+  const intent = buildNotificationNavigationIntent(notification);
+  if (!intent || isPendingNotificationNavigationExpired(intent)) {
+    store.dispatch(clearPendingNotificationNavigation());
+    return;
+  }
+  if (isNavigationKeyRecentlyProcessed(intent.dedupeKey)) return;
+  store.dispatch(setPendingNotificationNavigation(intent));
+  markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
 }

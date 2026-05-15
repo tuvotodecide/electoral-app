@@ -29,7 +29,12 @@ jest.mock('@notifee/react-native', () => {
 });
 
 jest.mock('../../src/redux/store', () => {
-  const state = {auth: {isAuthenticated: false}};
+  const state = {
+    auth: {
+      isAuthenticated: false,
+      pendingNotificationNavigation: null,
+    },
+  };
   const dispatch = jest.fn();
   return {
     __esModule: true,
@@ -46,10 +51,21 @@ jest.mock('../../src/redux/store', () => {
 
 jest.mock('../../src/redux/slices/authSlice', () => ({
   setPendingNav: payload => ({type: 'setPendingNav', payload}),
+  setPendingNotificationNavigation: payload => ({
+    type: 'setPendingNotificationNavigation',
+    payload,
+  }),
+  clearPendingNotificationNavigation: () => ({
+    type: 'clearPendingNotificationNavigation',
+  }),
 }));
 
 jest.mock('../../src/navigation/RootNavigation', () => ({
   navigate: jest.fn(),
+}));
+
+jest.mock('../../src/utils/Session', () => ({
+  isSessionValid: jest.fn(() => Promise.resolve(true)),
 }));
 
 jest.mock('../../src/navigation/NavigationKey', () => ({
@@ -68,6 +84,7 @@ import {
   buildNotificationSemanticKey,
   buildNotificationTextFallback,
   buildRouteFromNotification,
+  consumePendingNotificationNavigation,
   handleNotificationPress,
   markNotificationAsAlerted,
   mergeAndDedupeNotifications,
@@ -79,12 +96,17 @@ import {
 const notifee = require('@notifee/react-native').default;
 const storeModule = require('../../src/redux/store');
 const rootNav = require('../../src/navigation/RootNavigation');
+const session = require('../../src/utils/Session');
 
 describe('notifications', () => {
   beforeEach(() => {
     mockStorage.clear();
     jest.clearAllMocks();
-    storeModule.__setAuthState({isAuthenticated: false});
+    storeModule.__setAuthState({
+      isAuthenticated: false,
+      pendingNotificationNavigation: null,
+    });
+    session.isSessionValid.mockResolvedValue(true);
   });
 
   it('deduplica notificaciones semanticas y prioriza la remota frente a la local', () => {
@@ -339,25 +361,26 @@ describe('notifications', () => {
     });
   });
 
-  it('navega directamente cuando el usuario esta autenticado', () => {
+  it('navega directamente cuando el usuario esta autenticado y la sesion local esta vigente', async () => {
     storeModule.__setAuthState({isAuthenticated: true});
 
-    handleNotificationPress({
+    await handleNotificationPress({
       data: {
         screen: 'ClaimCredScreen',
         routeParams: JSON.stringify({notificationId: 'abc'}),
       },
     });
 
+    expect(session.isSessionValid).toHaveBeenCalled();
     expect(rootNav.navigate).toHaveBeenCalledWith('ClaimCredScreen', {
       notificationId: 'abc',
     });
   });
 
-  it('guarda navegacion pendiente y manda al login cuando no hay auth', () => {
+  it('guarda navegacion pendiente y manda al login cuando no hay auth', async () => {
     storeModule.__setAuthState({isAuthenticated: false});
 
-    handleNotificationPress({
+    await handleNotificationPress({
       data: {
         screen: 'SuccessScreen',
         routeParams: '{bad-json',
@@ -366,11 +389,80 @@ describe('notifications', () => {
 
     expect(storeModule.__getDispatch()).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'setPendingNav',
-        payload: expect.objectContaining({name: 'SuccessScreen'}),
+        type: 'setPendingNotificationNavigation',
+        payload: expect.objectContaining({
+          type: 'notification',
+          targetRoute: 'SuccessScreen',
+        }),
       }),
     );
     expect(rootNav.navigate).toHaveBeenCalledWith('LoginUser');
+  });
+
+  it('con auth persistida pero sesion expirada guarda pending y no navega al destino', async () => {
+    storeModule.__setAuthState({isAuthenticated: true});
+    session.isSessionValid.mockResolvedValue(false);
+
+    await handleNotificationPress({
+      data: {
+        screen: 'ClaimCredScreen',
+        routeParams: JSON.stringify({notificationId: 'expired-session'}),
+      },
+    });
+
+    expect(rootNav.navigate).not.toHaveBeenCalledWith('ClaimCredScreen', {
+      notificationId: 'expired-session',
+    });
+    expect(storeModule.__getDispatch()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'setPendingNotificationNavigation',
+        payload: expect.objectContaining({
+          targetRoute: 'ClaimCredScreen',
+          params: {notificationId: 'expired-session'},
+        }),
+      }),
+    );
+    expect(rootNav.navigate).toHaveBeenCalledWith('LoginUser');
+  });
+
+  it('consume pending de notificacion cuando la sesion ya es valida', async () => {
+    const pendingIntent = {
+      type: 'notification',
+      targetRoute: 'ClaimCredScreen',
+      params: {notificationId: 'after-pin'},
+      createdAt: Date.now(),
+      dedupeKey: 'notification:test:ClaimCredScreen:after-pin',
+    };
+    storeModule.__setAuthState({
+      isAuthenticated: true,
+      pendingNotificationNavigation: pendingIntent,
+    });
+    session.isSessionValid.mockResolvedValue(true);
+
+    await consumePendingNotificationNavigation();
+
+    expect(rootNav.navigate).toHaveBeenCalledWith('ClaimCredScreen', {
+      notificationId: 'after-pin',
+    });
+    expect(storeModule.__getDispatch()).toHaveBeenCalledWith({
+      type: 'clearPendingNotificationNavigation',
+    });
+  });
+
+  it('no procesa dos veces la misma notificacion en ventana corta', async () => {
+    storeModule.__setAuthState({isAuthenticated: true});
+    const notification = {
+      data: {
+        id: 'dedupe-1',
+        screen: 'ClaimCredScreen',
+        routeParams: JSON.stringify({notificationId: 'dedupe-1'}),
+      },
+    };
+
+    await handleNotificationPress(notification);
+    await handleNotificationPress(notification);
+
+    expect(rootNav.navigate).toHaveBeenCalledTimes(1);
   });
 
   it('no guarda navegacion pendiente si el payload remoto no trae screen valido', () => {
