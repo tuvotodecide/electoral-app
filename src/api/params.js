@@ -56,7 +56,7 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
     participationNft: '',
-    voteContract: '0xB17565250424aDf809FD9f9d71BBf20d041Ad4Ad',
+    voteContract: '0xB8a6401df3fD1615A0BCdEF5F4D76244c8b6CBa5',
   },
   'base': {
     chain: base,
@@ -68,7 +68,7 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xded7aD213240729cEB65c4196f4020d9DbC6C094',
     participationNft: '',
-    voteContract: '0x816Dab369fe073286cd644c43AD674B865F28a25'
+    voteContract: '0x759eaD345d65CaC5112205C537e90f4B4c5ED72A'
   }
 };
 
