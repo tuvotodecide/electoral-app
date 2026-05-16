@@ -64,6 +64,7 @@ import {
   NotificationDetailScreen as VotingNotificationDetailScreen,
   ClaimCredScreen,
 } from '../features/voting';
+import PublicElectionWebViewScreen from '../features/voting/screens/PublicElectionWebViewScreen';
 
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
@@ -151,6 +152,7 @@ export const StackRoute = {
   VotingReceiptScreen,
   VotingParticipationsScreen,
   VotingNotificationDetailScreen,
+  PublicElectionWebViewScreen,
   ClaimCredScreen,
 
   // Profile y configuración

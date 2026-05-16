@@ -1,4 +1,4 @@
-import {navigate, navigationRef} from '../../../src/navigation/RootNavigation';
+import {navigate, navigationRef, safeNavigate} from '../../../src/navigation/RootNavigation';
 
 describe('RootNavigation', () => {
   beforeEach(() => {
@@ -14,6 +14,17 @@ describe('RootNavigation', () => {
   it('no navega si el ref no estÃ¡ listo', () => {
     navigationRef.isReady = jest.fn(() => false);
     navigate('ScreenB');
+    expect(navigationRef.navigate).not.toHaveBeenCalled();
+  });
+
+  it('safeNavigate retorna true solo cuando navega', () => {
+    expect(safeNavigate('ScreenC', {id: 3})).toBe(true);
+    expect(navigationRef.navigate).toHaveBeenCalledWith('ScreenC', {id: 3});
+
+    navigationRef.navigate.mockClear();
+    navigationRef.isReady = jest.fn(() => false);
+
+    expect(safeNavigate('ScreenD')).toBe(false);
     expect(navigationRef.navigate).not.toHaveBeenCalled();
   });
 });

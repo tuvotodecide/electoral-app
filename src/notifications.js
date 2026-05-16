@@ -2,7 +2,7 @@
 
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import { StorageService as AsyncStorage } from './services/StorageService';
-import {navigate} from './navigation/RootNavigation';
+import {navigate, safeNavigate} from './navigation/RootNavigation';
 import store from './redux/store';
 import {
   clearPendingNotificationNavigation,
@@ -987,7 +987,10 @@ function navigateToLoginUser() {
 
 function navigateToNotificationIntent(intent) {
   if (!intent?.targetRoute) return false;
-  navigate(intent.targetRoute, intent.params);
+  const navigated = safeNavigate(intent.targetRoute, intent.params);
+  if (!navigated) {
+    return false;
+  }
   store.dispatch(clearPendingNotificationNavigation());
   markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
   return true;

@@ -223,6 +223,16 @@ export default function StackNavigation() {
         options={{headerShown: false}}
       />
       <Stack.Screen
+        name={StackNav.PublicElectionWebViewScreen}
+        component={StackRoute.PublicElectionWebViewScreen}
+        options={{
+          headerShown: true,
+          title: 'Elección',
+          headerTitleAlign: 'center',
+          headerBackTitleVisible: false,
+        }}
+      />
+      <Stack.Screen
         name={StackNav.ClaimCredScreen}
         component={StackRoute.ClaimCredScreen}
         options={{headerShown: false}}

@@ -208,14 +208,34 @@ const App = () => {
   }, [auth.isAuthenticated, auth.pendingNav, dispatch]);
 
   useEffect(() => {
-    if (!auth.pendingNotificationNavigation) return undefined;
+    if (!auth.pendingNotificationNavigation || !auth.isAuthenticated) return undefined;
     let active = true;
-    (async () => {
+    let retryTimer = null;
+    const tryConsumePendingNotification = async () => {
       if (!active) return;
-      await consumePendingNotificationNavigation();
-    })();
+      let valid = false;
+      try {
+        valid = await isSessionValid();
+      } catch {
+        valid = false;
+      }
+      if (!active) return;
+      if (!valid) {
+        retryTimer = setTimeout(tryConsumePendingNotification, 250);
+        return;
+      }
+
+      const consumed = await consumePendingNotificationNavigation();
+      if (!active || consumed) return;
+      retryTimer = setTimeout(tryConsumePendingNotification, 250);
+    };
+
+    tryConsumePendingNotification();
     return () => {
       active = false;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
     };
   }, [auth.isAuthenticated, auth.pendingNotificationNavigation]);
 

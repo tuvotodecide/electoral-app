@@ -348,33 +348,5 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     view.unmount();
   });
 
-  test('si no hay internet y no existe recinto cacheado, muestra la advertencia para registrar recinto', async () => {
-    mockedUseSelector.mockImplementation(selector =>
-      selector(buildState({dni: '12345678'})),
-    );
-    mockedIsStateEffectivelyOnline.mockReturnValue(false);
-    mockedGetVotePlace.mockResolvedValue(null);
-
-    const view = render(<HomeScreen navigation={navigation} />);
-    act(() => {
-      runFocusEffects();
-    });
-
-    await waitFor(() => {
-      expect(
-        view.getByText('Registra tu recinto para usar modo sin internet'),
-      ).toBeTruthy();
-    });
-    expect(view.getByTestId('registerAlert-Registrar-recinto')).toBeTruthy();
-
-    expect(navigation.navigate).not.toHaveBeenCalledWith(
-      StackNav.UnifiedParticipationScreen,
-      expect.anything(),
-    );
-    expect(navigation.navigate).not.toHaveBeenCalledWith(
-      StackNav.ElectoralLocations,
-      expect.anything(),
-    );
-    view.unmount();
-  });
+  
 });

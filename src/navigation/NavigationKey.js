@@ -49,6 +49,7 @@ export const StackNav = {
   VotingReceiptScreen: 'VotingReceiptScreen',
   VotingParticipationsScreen: 'VotingParticipationsScreen',
   VotingNotificationDetailScreen: 'VotingNotificationDetailScreen',
+  PublicElectionWebViewScreen: 'PublicElectionWebViewScreen',
   ClaimCredScreen: 'ClaimCredScreen',
 
   // Profile y configuración

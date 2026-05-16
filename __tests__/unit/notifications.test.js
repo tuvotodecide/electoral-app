@@ -60,9 +60,16 @@ jest.mock('../../src/redux/slices/authSlice', () => ({
   }),
 }));
 
-jest.mock('../../src/navigation/RootNavigation', () => ({
-  navigate: jest.fn(),
-}));
+jest.mock('../../src/navigation/RootNavigation', () => {
+  const navigate = jest.fn();
+  return {
+    navigate,
+    safeNavigate: jest.fn((name, params) => {
+      navigate(name, params);
+      return true;
+    }),
+  };
+});
 
 jest.mock('../../src/utils/Session', () => ({
   isSessionValid: jest.fn(() => Promise.resolve(true)),
@@ -445,6 +452,33 @@ describe('notifications', () => {
       notificationId: 'after-pin',
     });
     expect(storeModule.__getDispatch()).toHaveBeenCalledWith({
+      type: 'clearPendingNotificationNavigation',
+    });
+  });
+
+  it('conserva pending de notificacion si el navigator aun no esta listo', async () => {
+    const pendingIntent = {
+      type: 'notification',
+      targetRoute: 'VotingNotificationDetailScreen',
+      params: {notification: {title: 'Convocatoria'}},
+      createdAt: Date.now(),
+      dedupeKey: 'notification:test:VotingNotificationDetailScreen:not-ready',
+    };
+    storeModule.__setAuthState({
+      isAuthenticated: true,
+      pendingNotificationNavigation: pendingIntent,
+    });
+    session.isSessionValid.mockResolvedValue(true);
+    rootNav.safeNavigate.mockReturnValueOnce(false);
+
+    const consumed = await consumePendingNotificationNavigation();
+
+    expect(consumed).toBe(false);
+    expect(rootNav.safeNavigate).toHaveBeenCalledWith(
+      'VotingNotificationDetailScreen',
+      {notification: {title: 'Convocatoria'}},
+    );
+    expect(storeModule.__getDispatch()).not.toHaveBeenCalledWith({
       type: 'clearPendingNotificationNavigation',
     });
   });

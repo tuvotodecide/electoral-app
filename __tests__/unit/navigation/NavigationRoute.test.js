@@ -91,6 +91,7 @@ const mockPaths = [
   '../../../src/navigation/type/AuthNavigation',
   '../../../src/navigation/type/TabNavigation',
   '../../../src/navigation/type/HomeStackNavigation',
+  '../../../src/features/voting/screens/PublicElectionWebViewScreen',
 ];
 
 mockPaths.forEach((path) => {

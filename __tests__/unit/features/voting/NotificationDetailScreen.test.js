@@ -1,11 +1,15 @@
 import React from 'react';
-import {waitFor} from '@testing-library/react-native';
+import {fireEvent, waitFor} from '@testing-library/react-native';
+import {Linking, Text} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {StackNav} from '../../../../src/navigation/NavigationKey';
 import NotificationDetailScreen, {
+  resolvePublicElectionUrl,
   resolveValidImageUrl,
 } from '../../../../src/features/voting/screens/NotificationDetailScreen';
 
 const mockUseRoute = jest.fn();
+const mockNavigate = jest.fn();
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://backend.example',
@@ -14,6 +18,11 @@ jest.mock('@env', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useRoute: () => mockUseRoute(),
+  useNavigation: () => ({
+    navigate: mockNavigate,
+    goBack: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  }),
   NavigationContainer: ({children}) => children,
   createNavigationContainerRef: () => ({
     current: null,
@@ -76,9 +85,17 @@ describe('NotificationDetailScreen', () => {
     });
   };
 
+  const mockEligibilityResponse = status => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({status}),
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
+    Linking.openURL = jest.fn(() => Promise.resolve());
   });
 
   it('marca localmente la notificacion como vista al abrir el detalle', async () => {
@@ -222,7 +239,7 @@ describe('NotificationDetailScreen', () => {
     expect(screen.queryAllByText(description)).toHaveLength(1);
   });
 
-  it('usa CTA y copy coherentes para un referendum', () => {
+  it('usa CTA Ver elección para publicación oficial aunque sea referendum', () => {
     const screen = renderScreen({
       title: 'Referéndum institucional',
       body: 'Consulta tu habilitación.',
@@ -236,7 +253,305 @@ describe('NotificationDetailScreen', () => {
     });
 
     expect(screen.getByText('Referéndum')).toBeTruthy();
-    expect(screen.getByText('Ver referéndum')).toBeTruthy();
+    expect(screen.getByText('Ver elección')).toBeTruthy();
+    expect(screen.queryByText('Ver elección pública')).toBeNull();
+  });
+
+  it('muestra badge Habilitado para convocatoria cuando eligibility responde ELIGIBLE', async () => {
+    mockEligibilityResponse('ELIGIBLE');
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-1',
+        publicPath: '/votacion/elecciones/event-1/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Habilitado')).toBeTruthy();
+    });
+
+    const renderedTexts = screen.UNSAFE_root.findAllByType(Text)
+      .map(node => node.props.children)
+      .filter(value => typeof value === 'string');
+    expect(renderedTexts.indexOf('Revisión de padrón')).toBeLessThan(
+      renderedTexts.indexOf('Habilitado'),
+    );
+    expect(renderedTexts.indexOf('Habilitado')).toBeLessThan(
+      renderedTexts.indexOf('Votación'),
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://backend.example/api/v1/voting/events/event-1/eligibility/public?carnet=12345678',
+      {
+        method: 'GET',
+        headers: {Accept: 'application/json'},
+      },
+    );
+  });
+
+  it('muestra No habilitado cuando eligibility responde DISABLED', async () => {
+    mockEligibilityResponse('DISABLED');
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-2',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-2/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('No habilitado')).toBeTruthy();
+    });
+  });
+
+  it('carga fechas de votación para los 3 tipos si el payload no las trae', async () => {
+    global.fetch = jest.fn(url => {
+      if (String(url).includes('/eligibility/public')) {
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({status: 'ELIGIBLE'}),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          votingStart: '2026-04-18T08:00:00.000Z',
+          votingEnd: '2026-04-18T18:00:00.000Z',
+          resultsPublishAt: '2026-04-18T19:00:00.000Z',
+        }),
+      });
+    });
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-dates',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-dates/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Fechas de la votación')).toBeTruthy();
+    });
+    expect(screen.getByText('Inicio')).toBeTruthy();
+    expect(screen.getByText('Cierre')).toBeTruthy();
+    expect(screen.getByText('Resultados')).toBeTruthy();
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://backend.example/api/v1/voting/events/public/detail/event-dates',
+      {
+        method: 'GET',
+        headers: {Accept: 'application/json'},
+      },
+    );
+  });
+
+  it('muestra badge y botón WebView para publicación oficial y habilitación manual', async () => {
+    mockEligibilityResponse('ELIGIBLE');
+
+    const officialScreen = renderScreen({
+      title: 'Publicación oficial',
+      body: 'La votación fue publicada oficialmente.',
+      kind: 'voting_event',
+      direccion: 'La votación fue publicada oficialmente.',
+      data: {
+        type: 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+        eventId: 'event-3',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-3/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(officialScreen.getByText('Habilitado')).toBeTruthy();
+    });
+    expect(officialScreen.getByText('Ver elección')).toBeTruthy();
+    expect(officialScreen.queryByText('Ver elección pública')).toBeNull();
+
+    mockEligibilityResponse('ELIGIBLE');
+    const enabledScreen = renderScreen({
+      title: 'Ya puedes votar',
+      body: 'Tu habilitación ya está activa.',
+      kind: 'voting_event',
+      direccion: 'Tu habilitación ya está activa.',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_ENABLED',
+        eventId: 'event-4',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-4/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(enabledScreen.getByText('Habilitado')).toBeTruthy();
+    });
+    expect(enabledScreen.getByText('Ver elección')).toBeTruthy();
+    expect(enabledScreen.queryByText('Ver elección pública')).toBeNull();
+  });
+
+  it('si eligibility falla no rompe la pantalla ni muestra badge tecnico', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('network'));
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-5',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-5/publica',
+      },
+    });
+
+    expect(screen.getByText('Consulta tu habilitación.')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('eligibilityBadge')).toBeNull();
+    });
+    expect(screen.queryByText('eligibility failed')).toBeNull();
+  });
+
+  it('no muestra badge para resultados disponibles ni noticia institucional', () => {
+    const resultsScreen = renderScreen({
+      title: 'Resultados disponibles',
+      body: 'Consulta los resultados.',
+      kind: 'election_results',
+      direccion: 'Consulta los resultados.',
+      data: {
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+      },
+      resultsSummary: [
+        {id: '1', name: 'Opción A', party: 'A', votes: 10, percent: 100},
+      ],
+    });
+
+    expect(resultsScreen.queryByTestId('eligibilityBadge')).toBeNull();
+
+    const newsScreen = renderScreen({
+      title: 'Nueva noticia',
+      body: 'Se publicó una novedad.',
+      kind: 'news',
+      direccion: 'Se publicó una novedad.',
+      data: {
+        type: 'INSTITUTIONAL_NEWS',
+        eventId: 'event-news',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-news/publica',
+      },
+    });
+
+    expect(newsScreen.queryByTestId('eligibilityBadge')).toBeNull();
+  });
+
+  it('oculta el botón Ver elección si no hay URL pública válida', () => {
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        publicUrl: 'https://frontend-results.example/noticias/externa',
+      },
+    });
+
+    expect(screen.queryByText('Ver elección')).toBeNull();
+    expect(screen.queryByTestId('goToResultsButton')).toBeNull();
+  });
+
+  it('el botón Ver elección navega a WebView interno y no abre navegador externo', async () => {
+    mockEligibilityResponse('ELIGIBLE');
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-6',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-6/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Ver elección')).toBeTruthy();
+    });
+    expect(screen.queryByText('Ver elección pública')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('goToResultsButton'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
+      url: 'https://frontend-results.example/votacion/elecciones/event-6/publica',
+      title: 'Elección',
+    });
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
+
+  it('valida y resuelve URLs públicas de elección en el orden esperado', () => {
+    expect(resolvePublicElectionUrl({
+      data: {
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/public-url/publica',
+        actionUrl: 'https://frontend-results.example/votacion/elecciones/action-url/publica',
+      },
+    })).toBe('https://frontend-results.example/votacion/elecciones/public-url/publica');
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        actionUrl: 'https://frontend-results.example/votacion/elecciones/action-url/publica',
+      },
+    })).toBe('https://frontend-results.example/votacion/elecciones/action-url/publica');
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        link: 'https://frontend-results.example/votacion/elecciones/link-url/publica',
+      },
+    })).toBe('https://frontend-results.example/votacion/elecciones/link-url/publica');
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        publicPath: '/votacion/elecciones/path-url/publica',
+      },
+    })).toBe('https://frontend-results.example/votacion/elecciones/path-url/publica');
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        eventId: 'fallback-url',
+      },
+    })).toBe('https://frontend-results.example/votacion/elecciones/fallback-url/publica');
+  });
+
+  it('rechaza URLs no http/https o externas que no apuntan a elección pública', () => {
+    expect(resolvePublicElectionUrl({
+      data: {
+        publicUrl: 'ftp://frontend-results.example/votacion/elecciones/event-1/publica',
+      },
+    })).toBeNull();
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        publicUrl: 'https://frontend-results.example/noticias/externa',
+      },
+    })).toBeNull();
+
+    expect(resolvePublicElectionUrl({
+      data: {
+        link: 'https://external.example/article',
+      },
+    })).toBeNull();
   });
 
   it('valida imagenes de noticia con protocolo seguro y extension conocida', () => {
