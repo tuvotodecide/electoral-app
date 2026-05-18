@@ -35,7 +35,7 @@ module.exports = {
     '<rootDir>/__tests__/setup/jest.setup.js',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|@twotalltotems|react-redux|@reduxjs|immer|jest-expo|expo-modules-core|expo|expo-router|expo-font|expo-haptics|expo-image|expo-linking|expo-splash-screen|expo-status-bar|expo-system-ui|expo-web-browser|expo-linking|expo-constants)/)',
+    'node_modules/(?!(?:\\.pnpm/)?(react-native|@react-native|@react-navigation|react-native-vector-icons|@react-native-firebase|@twotalltotems|react-redux|@reduxjs|immer|jest-expo|expo-modules-core|expo|expo-router|expo-font|expo-haptics|expo-image|expo-linking|expo-splash-screen|expo-status-bar|expo-system-ui|expo-web-browser|expo-constants)/)'
   ],
   testPathIgnorePatterns: [
     '/node_modules/',

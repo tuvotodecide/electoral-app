@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 
@@ -186,6 +186,26 @@ describe('ElectionCard', () => {
       );
 
       expect(queryByTestId('electionCardButton')).toBeNull();
+    });
+
+    test('permite abrir detalle sin mostrar aviso cuando allowIneligibleDetails=true', () => {
+      const { getByTestId, getByText, queryByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          isEligible={false}
+          allowIneligibleDetails={true}
+          election={mockElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(queryByText(/no está habilitado/i)).toBeNull();
+      expect(getByText('Cierra en 2h')).toBeTruthy();
+
+      fireEvent.press(getByTestId('electionCardButton'));
+      expect(mockOnDetailsPress).toHaveBeenCalledTimes(1);
+      expect(mockOnVotePress).not.toHaveBeenCalled();
     });
   });
 

@@ -80,7 +80,7 @@ describe('NotificationDetailScreen helpers', () => {
     expect(
       resolveNotificationActionLabel({
         notification: {
-          actionLabel: 'Ver elección',
+          actionLabel: 'Ver votación',
         },
         kind: 'voting_event',
         isNews: false,

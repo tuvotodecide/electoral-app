@@ -227,7 +227,7 @@ export default function StackNavigation() {
         component={StackRoute.PublicElectionWebViewScreen}
         options={{
           headerShown: true,
-          title: 'Elección',
+          title: 'Votación',
           headerTitleAlign: 'center',
           headerBackTitleVisible: false,
         }}

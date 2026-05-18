@@ -842,7 +842,7 @@ const NotificationDetailScreen = () => {
           <CButton
             title={
               supportsPublicElectionWebView
-                ? 'Ver elección'
+                ? 'Ver votación'
                 : resolveNotificationActionLabel({
                     notification,
                     kind,

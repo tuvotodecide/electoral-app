@@ -141,11 +141,22 @@ jest.mock('../../../../../src/features/voting', () => {
   const {Text, TouchableOpacity} = require('react-native');
 
   return {
-    ElectionCard: ({election, onVotePress}) =>
+    ElectionCard: ({allowIneligibleDetails, election, onDetailsPress, onVotePress}) =>
       ReactLib.createElement(
-        TouchableOpacity,
-        {testID: `votingCard_${election.id}`, onPress: onVotePress},
-        ReactLib.createElement(Text, null, election.title),
+        ReactLib.Fragment,
+        null,
+        ReactLib.createElement(
+          TouchableOpacity,
+          {testID: `votingCard_${election.id}`, onPress: onVotePress},
+          ReactLib.createElement(Text, null, election.title),
+        ),
+        allowIneligibleDetails
+          ? ReactLib.createElement(
+              TouchableOpacity,
+              {testID: `votingDetails_${election.id}`, onPress: onDetailsPress},
+              ReactLib.createElement(Text, null, 'Ver detalles'),
+            )
+          : null,
       ),
     handleVotingQueueVote: jest.fn(() => Promise.resolve()),
     markVoteFailed: jest.fn(() => Promise.resolve()),
@@ -284,5 +295,76 @@ describe('HomeScreen voting flow routing', () => {
         },
       );
     });
+  });
+
+  it('permite abrir detalle informativo para usuario DISABLED con datos para badge y WebView', async () => {
+    const startsAt = Date.now() + 60 * 60 * 1000;
+    const closesAt = startsAt + 2 * 60 * 60 * 1000;
+    const election = {
+      id: 'event-disabled',
+      title: 'Eleccion con padron',
+      instituteName: 'Instituto Test',
+      isEligible: false,
+      eligibilityStatus: 'DISABLED',
+      canVote: false,
+      alreadyVoted: false,
+      startsAt,
+      closesAt,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('votingDetails_event-disabled')).toBeTruthy();
+    });
+    fireEvent.press(view.getByTestId('votingDetails_event-disabled'));
+
+    await waitFor(() => {
+      expect(navigation.navigate).toHaveBeenCalledWith(
+        StackNav.VotingNotificationDetailScreen,
+        expect.objectContaining({
+          notification: expect.objectContaining({
+            kind: 'voting_event',
+            eventId: 'event-disabled',
+            data: expect.objectContaining({
+              type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+              eventId: 'event-disabled',
+              publicPath: '/votacion/elecciones/event-disabled/publica',
+              link: '/votacion/elecciones/event-disabled/publica',
+            }),
+          }),
+        }),
+      );
+    });
+  });
+
+  it('mantiene bloqueado al usuario DISABLED cuando la votacion ya empezo', async () => {
+    const election = {
+      id: 'event-disabled-active',
+      title: 'Eleccion activa inhabilitada',
+      instituteName: 'Instituto Test',
+      isEligible: false,
+      eligibilityStatus: 'DISABLED',
+      canVote: false,
+      alreadyVoted: false,
+      startsAt: Date.now() - 60 * 60 * 1000,
+      closesAt: Date.now() + 2 * 60 * 60 * 1000,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('votingCard_event-disabled-active')).toBeTruthy();
+    });
+
+    expect(view.queryByTestId('votingDetails_event-disabled-active')).toBeNull();
   });
 });

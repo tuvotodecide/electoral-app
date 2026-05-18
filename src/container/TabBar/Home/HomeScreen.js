@@ -118,6 +118,19 @@ const QUEUE_WRITE_TASK_TYPES = new Set([
   'votingFlowVote',
 ]);
 
+const HOME_VOTING_DETAIL_NOTIFICATION_TYPE = 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+const canOpenDisabledVotingDetail = election => {
+  const eligibilityStatus = String(election?.eligibilityStatus || '')
+    .trim()
+    .toUpperCase();
+  const startsAt = Number(election?.startsAt || 0);
+  return (
+    eligibilityStatus === 'DISABLED' &&
+    startsAt > Date.now() &&
+    !election?.alreadyVoted
+  );
+};
+
 const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
 const RETRIABLE_NETWORK_ERROR_TYPES = new Set([
   'NETWORK_TIMEOUT',
@@ -2363,37 +2376,56 @@ export default function HomeScreen({ navigation }) {
     const isUpcomingElection =
       Number(selectedElection?.startsAt || 0) > Date.now() &&
       !selectedElection?.alreadyVoted;
+    const shouldOpenElectionDetail =
+      isUpcomingElection || canOpenDisabledVotingDetail(selectedElection);
+    const toIsoDate = value => {
+      const parsed = Date.parse(String(value || ''));
+      return Number.isFinite(parsed) ? new Date(parsed).toISOString() : '';
+    };
+    const formatVotingDate = value => {
+      const isoDate = toIsoDate(value);
+      return isoDate
+        ? new Intl.DateTimeFormat('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(new Date(isoDate))
+        : '';
+    };
 
-    if (isUpcomingElection) {
+    if (shouldOpenElectionDetail) {
+      const eventId = String(selectedElection?.id || '').trim();
+      const publicPath = eventId
+        ? `/votacion/elecciones/${eventId}/publica`
+        : '';
+      const votingStartLabel = formatVotingDate(selectedElection?.startsAt);
+      const votingEndLabel = formatVotingDate(selectedElection?.closesAt);
+
       navigation.navigate(StackNav.VotingNotificationDetailScreen, {
         notification: {
           mesa: selectedElection?.title || 'Detalle de elección',
           kind: 'voting_event',
-          statusTone: selectedElection?.isEligible ? 'success' : 'danger',
+          statusTone: 'success',
           direccion: selectedElection?.instituteName || '',
-          votingStartLabel: selectedElection?.startsAt
-            ? new Intl.DateTimeFormat('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }).format(new Date(selectedElection.startsAt))
-            : '',
-          votingEndLabel: selectedElection?.closesAt
-            ? new Intl.DateTimeFormat('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }).format(new Date(selectedElection.closesAt))
-            : '',
+          eventId,
+          votingStartLabel,
+          votingEndLabel,
           data: {
+            type: HOME_VOTING_DETAIL_NOTIFICATION_TYPE,
+            eventId,
+            electionId: eventId,
+            eventName: selectedElection?.title || '',
             bannerTitle: selectedElection?.isEligible
               ? 'Habilitado para votar'
-              : 'No habilitado para votar',
+              : selectedElection?.title || 'Detalle de elección',
             body: selectedElection?.instituteName || '',
+            votingStart: toIsoDate(selectedElection?.startsAt),
+            votingEnd: toIsoDate(selectedElection?.closesAt),
+            resultsPublishAt: toIsoDate(selectedElection?.resultsAt),
+            publicPath,
+            link: publicPath,
           },
         },
       });
@@ -2450,6 +2482,7 @@ export default function HomeScreen({ navigation }) {
           hasVoted={hasVotedForElection}
           voteSynced={isSyncedForElection}
           isEligible={Boolean(item?.isEligible)}
+          allowIneligibleDetails={canOpenDisabledVotingDetail(item)}
           election={item}
           onVotePress={() => handleVotingPress(item)}
           onDetailsPress={() => handleVotingDetailsPress(item)}

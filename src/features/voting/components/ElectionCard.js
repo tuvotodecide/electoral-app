@@ -36,6 +36,7 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {() => void} props.onDetailsPress - Handler para botón "Ver detalles"
  * @param {Object} [props.election] - Datos de la elección (opcional, usa mock si no se provee)
  * @param {string|null} [props.loadMsg] - Mensaje de carga para mostrar en el botón (opcional)
+ * @param {boolean} [props.allowIneligibleDetails=false] - Permite abrir detalle informativo aun sin habilitación
  */
 const ElectionCard = ({
   hasVoted = false,
@@ -44,7 +45,8 @@ const ElectionCard = ({
   onVotePress,
   onDetailsPress,
   election = MOCK_ELECTION,
-  loadMsg = null
+  loadMsg = null,
+  allowIneligibleDetails = false,
 }) => {
   const colors = useSelector((state) => state.theme.theme);
 
@@ -70,8 +72,14 @@ const ElectionCard = ({
   const timerDisplay = getTimerDisplay();
 
   const getButtonConfig = () => {
-    // Si no está habilitado, no mostrar botón
     if (!effectiveIsEligible) {
+      if (allowIneligibleDetails) {
+        return {
+          title: UI_STRINGS.viewDetails || 'Ver detalle',
+          disabled: false,
+          onPress: onDetailsPress,
+        };
+      }
       return null;
     }
 
@@ -141,8 +149,8 @@ const ElectionCard = ({
       );
     }
 
-    // Estado: No habilitado
-    if (!effectiveIsEligible) {
+    // Estado: No habilitado sin detalle disponible
+    if (!effectiveIsEligible && !allowIneligibleDetails) {
       return (
         <View style={styles.notEligibleContainer}>
           <View style={styles.redDot} />
@@ -204,7 +212,7 @@ const ElectionCard = ({
         </CText>
       )}
 
-      {/* Botón de acción - solo si está habilitado */}
+      {/* Botón de acción */}
       {buttonConfig && (
         <CButton
           title={buttonConfig.title}
