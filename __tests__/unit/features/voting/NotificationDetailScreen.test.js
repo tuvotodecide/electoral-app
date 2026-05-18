@@ -501,6 +501,33 @@ describe('NotificationDetailScreen', () => {
     expect(Linking.openURL).not.toHaveBeenCalled();
   });
 
+  it('el botón Ver detalles de resultados navega a WebView interno y no abre navegador externo', () => {
+    const screen = renderScreen({
+      title: 'Resultados disponibles',
+      body: 'Consulta los resultados.',
+      kind: 'election_results',
+      direccion: 'Consulta los resultados.',
+      data: {
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+        eventId: 'event-results',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
+      },
+      resultsSummary: [
+        {id: '1', name: 'Opción A', party: 'A', votes: 10, percent: 100},
+      ],
+    });
+
+    expect(screen.getByText('Ver detalles')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('goToResultsButton'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
+      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
+      title: 'Resultados',
+    });
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
+
   it('valida y resuelve URLs públicas de elección en el orden esperado', () => {
     expect(resolvePublicElectionUrl({
       data: {

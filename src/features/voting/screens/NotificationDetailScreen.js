@@ -619,32 +619,36 @@ const NotificationDetailScreen = () => {
     };
   }, [isNews, isScheduleUpdate, kind, rawData?.bannerTitle, statusTone]);
 
-  const handlePrimaryAction = () => {
-    const targetUrl = supportsPublicElectionWebView
-      ? resolvedPublicElectionUrl
-      : resolvedPublicUrl;
+  const isElectionResults = kind === 'election_results';
+  const resultsWebViewUrl = isElectionResults ? resolvedPublicElectionUrl : null;
+  const shouldOpenPrimaryActionInWebView =
+    supportsPublicElectionWebView || isElectionResults;
+  const primaryActionUrl = shouldOpenPrimaryActionInWebView
+    ? (supportsPublicElectionWebView ? resolvedPublicElectionUrl : resultsWebViewUrl)
+    : resolvedPublicUrl;
 
-    if (!targetUrl) {
+  const handlePrimaryAction = () => {
+    if (!primaryActionUrl) {
       return;
     }
 
-    if (supportsPublicElectionWebView) {
+    if (shouldOpenPrimaryActionInWebView) {
       navigation.navigate(StackNav.PublicElectionWebViewScreen, {
-        url: targetUrl,
-        title: 'Elección',
+        url: primaryActionUrl,
+        title: isElectionResults ? 'Resultados' : 'Elección',
       });
       return;
     }
 
-    Linking.openURL(targetUrl).catch(() => {});
+    Linking.openURL(primaryActionUrl).catch(() => {});
   };
 
-  const isReferendumResults = kind === 'election_results' && detailMeta.isReferendum;
+  const isReferendumResults = isElectionResults && detailMeta.isReferendum;
   const isReferendumNotification = isReferendumResults || rawData?.isReferendum === true;
   const hasScheduleDates = Boolean(startsAtLabel || endsAtLabel || resultsAtLabel);
-  const showPrimaryAction = supportsPublicElectionWebView
-    ? Boolean(resolvedPublicElectionUrl)
-    : kind === 'election_results' || Boolean(resolvedPublicUrl);
+  const showPrimaryAction = shouldOpenPrimaryActionInWebView
+    ? Boolean(primaryActionUrl)
+    : Boolean(resolvedPublicUrl);
   const detailBody =
     notification?.direccion ||
     notification?.body ||
@@ -855,8 +859,8 @@ const NotificationDetailScreen = () => {
             onPress={handlePrimaryAction}
             containerStyle={styles.actionButton}
             disabled={
-              supportsPublicElectionWebView
-                ? !resolvedPublicElectionUrl
+              shouldOpenPrimaryActionInWebView
+                ? !primaryActionUrl
                 : !resolvedPublicUrl
             }
             sinMargen
