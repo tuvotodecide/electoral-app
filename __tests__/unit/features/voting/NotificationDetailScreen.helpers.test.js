@@ -76,7 +76,7 @@ describe('NotificationDetailScreen helpers', () => {
     ).toBe('Abrir enlace');
   });
 
-  it('ajusta el CTA explicito viejo cuando la notificacion corresponde a un referendum', () => {
+  it('respeta el CTA Ver votación aunque la notificacion corresponde a un referendum', () => {
     expect(
       resolveNotificationActionLabel({
         notification: {
@@ -87,6 +87,6 @@ describe('NotificationDetailScreen helpers', () => {
         isReferendum: true,
         type: 'INSTITUTIONAL_VOTING_ENABLED',
       }),
-    ).toBe('Ver referéndum');
+    ).toBe('Ver votación');
   });
 });

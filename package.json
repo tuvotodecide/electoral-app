@@ -5,7 +5,7 @@
   "scripts": {
     "start": "expo start",
     "prepare": "husky",
-    "test": "node scripts/run-jest.js --coverage=false",
+    "test": "node scripts/run-jest.js --coverage=false --runInBand --no-watchman --forceExit",
     "test:coverage:json": "node scripts/run-jest.js --coverage --json --outputFile=jest-results.json",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
@@ -143,6 +143,7 @@
     "@types/react-test-renderer": "^19.0.0",
     "babel-plugin-transform-define": "^2.1.4",
     "babel-plugin-transform-import-meta": "^2.3.3",
+    "babel-preset-expo": "~54.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "husky": "^9.1.7",

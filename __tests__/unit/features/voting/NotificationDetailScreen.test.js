@@ -239,7 +239,7 @@ describe('NotificationDetailScreen', () => {
     expect(screen.queryAllByText(description)).toHaveLength(1);
   });
 
-  it('usa CTA Ver elección para publicación oficial aunque sea referendum', () => {
+  it('usa CTA Ver votación para publicación oficial aunque sea referendum', () => {
     const screen = renderScreen({
       title: 'Referéndum institucional',
       body: 'Consulta tu habilitación.',
@@ -253,7 +253,7 @@ describe('NotificationDetailScreen', () => {
     });
 
     expect(screen.getByText('Referéndum')).toBeTruthy();
-    expect(screen.getByText('Ver elección')).toBeTruthy();
+    expect(screen.getByText('Ver votación')).toBeTruthy();
     expect(screen.queryByText('Ver elección pública')).toBeNull();
   });
 
@@ -379,7 +379,7 @@ describe('NotificationDetailScreen', () => {
     await waitFor(() => {
       expect(officialScreen.getByText('Habilitado')).toBeTruthy();
     });
-    expect(officialScreen.getByText('Ver elección')).toBeTruthy();
+    expect(officialScreen.getByText('Ver votación')).toBeTruthy();
     expect(officialScreen.queryByText('Ver elección pública')).toBeNull();
 
     mockEligibilityResponse('ELIGIBLE');
@@ -398,7 +398,7 @@ describe('NotificationDetailScreen', () => {
     await waitFor(() => {
       expect(enabledScreen.getByText('Habilitado')).toBeTruthy();
     });
-    expect(enabledScreen.getByText('Ver elección')).toBeTruthy();
+    expect(enabledScreen.getByText('Ver votación')).toBeTruthy();
     expect(enabledScreen.queryByText('Ver elección pública')).toBeNull();
   });
 
@@ -456,7 +456,7 @@ describe('NotificationDetailScreen', () => {
     expect(newsScreen.queryByTestId('eligibilityBadge')).toBeNull();
   });
 
-  it('oculta el botón Ver elección si no hay URL pública válida', () => {
+  it('oculta el botón Ver votación si no hay URL pública válida', () => {
     const screen = renderScreen({
       title: 'Revisión de padrón',
       body: 'Consulta tu habilitación.',
@@ -468,11 +468,11 @@ describe('NotificationDetailScreen', () => {
       },
     });
 
-    expect(screen.queryByText('Ver elección')).toBeNull();
+    expect(screen.queryByText('Ver votación')).toBeNull();
     expect(screen.queryByTestId('goToResultsButton')).toBeNull();
   });
 
-  it('el botón Ver elección navega a WebView interno y no abre navegador externo', async () => {
+  it('el botón Ver votación navega a WebView interno y no abre navegador externo', async () => {
     mockEligibilityResponse('ELIGIBLE');
 
     const screen = renderScreen({
@@ -488,7 +488,7 @@ describe('NotificationDetailScreen', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Ver elección')).toBeTruthy();
+      expect(screen.getByText('Ver votación')).toBeTruthy();
     });
     expect(screen.queryByText('Ver elección pública')).toBeNull();
 

@@ -1,7 +1,8 @@
 const {spawn} = require('child_process');
 
 const jestBin = require.resolve('jest/bin/jest');
-const args = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const args = rawArgs.filter(arg => arg !== '--');
 
 const normalizePath = value => {
   const text = String(value);
