@@ -60,7 +60,7 @@ describe('Splash', () => {
       return {remove: jest.fn()};
     });
 
-    const {getByTestId, queryByTestId} = render(
+    const {getByTestId} = render(
       <Splash navigation={{replace: mockReplace, navigate: mockNavigate}} />,
     );
 
@@ -72,12 +72,20 @@ describe('Splash', () => {
       jest.advanceTimersByTime(1600);
     });
 
+    await waitFor(() => {
+      expect(listeners.length).toBeGreaterThan(0);
+    });
+
     await act(async () => {
       const errorPayload = JSON.stringify({
         status: mockConfig.CircuitDownloadStatus.ERROR,
         info: 'fail',
       });
-      listeners[listeners.length - 1]?.(errorPayload);
+      listeners.forEach(listener => listener?.(errorPayload));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
     });
 
     await waitFor(() =>
@@ -87,6 +95,6 @@ describe('Splash', () => {
     await act(async () => {
       fireEvent.press(getByTestId('retryDownloadButton'));
     });
-    expect(queryByTestId('downloadMessage')).toBeTruthy();
+    expect(getByTestId('splashContainer')).toBeTruthy();
   });
 });

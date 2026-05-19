@@ -64,6 +64,8 @@ const DEFAULT_NOTIFICATION = {
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 
 const PUBLIC_ELECTION_WEBVIEW_TYPES = new Set([
+  'INSTITUTIONAL_EVENT_PUBLISHED',
+  'INSTITUTIONAL_SCHEDULE_UPDATED',
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
   'INSTITUTIONAL_VOTING_ENABLED',
@@ -190,7 +192,9 @@ export const resolvePublicElectionUrl = notification => {
   }
 
   const frontendBase = String(FRONTEND_RESULTS || '').trim();
-  const relativePath = String(rawData?.publicPath || '').trim();
+  const relativePath = String(
+    rawData?.publicPath || (!isAbsoluteOrDeepLink(link) ? link : ''),
+  ).trim();
   if (frontendBase && isPublicElectionPath(relativePath)) {
     try {
       const url = new URL(frontendBase);

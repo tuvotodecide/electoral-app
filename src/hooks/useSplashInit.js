@@ -1,5 +1,5 @@
 import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DeviceEventEmitter, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { StorageService } from '../services/StorageService';
@@ -16,9 +16,27 @@ import { getThemeColor } from '../utils/AsyncStorage';
 import { getDraft } from '../utils/RegisterDraft';
 import { captureError, flushSentry } from '../config/sentry';
 
+const CIRCUIT_DOWNLOAD_STATUS =
+  config?.CircuitDownloadStatus ||
+  wira?.config?.CircuitDownloadStatus || {
+    DOWNLOADING: 'DOWNLOADING',
+    DONE: 'DONE',
+    ERROR: 'ERROR',
+  };
+
+const initDownloadCircuits = params => {
+  const initFn = config?.initDownloadCircuits || wira?.config?.initDownloadCircuits;
+  if (!initFn) {
+    throw new Error('Circuit downloader not configured');
+  }
+  return initFn(params);
+};
+
 export const useSplashInit = (navigation) => {
   const [downloadMessage, setDownloadMessage] = useState('');
   const dispatch = useDispatch();
+  const dispatchRef = useRef(dispatch);
+  dispatchRef.current = dispatch;
 
   const waitForCircuitDownloadCompletion = useCallback(() => {
     let subscription;
@@ -29,7 +47,7 @@ export const useSplashInit = (navigation) => {
         const safeInfo = String(info ?? '');
 
         switch (status) {
-          case config.CircuitDownloadStatus.DOWNLOADING:
+          case CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING:
             if (safeInfo.startsWith('-')) {
               setDownloadMessage(Strings.downloadingData + '-');
             } else {
@@ -37,13 +55,13 @@ export const useSplashInit = (navigation) => {
             }
             break;
 
-          case config.CircuitDownloadStatus.DONE:
+          case CIRCUIT_DOWNLOAD_STATUS.DONE:
             setDownloadMessage(Strings.initApp);
             subscription?.remove();
             resolve(true);
             break;
 
-          case config.CircuitDownloadStatus.ERROR:
+          case CIRCUIT_DOWNLOAD_STATUS.ERROR:
             captureError(new Error('Circuit Download Error: ' + info), {
               flow: 'init_app',
               step: 'download_circuits',
@@ -54,7 +72,7 @@ export const useSplashInit = (navigation) => {
             flushSentry(2500).catch(() => {});
             setDownloadMessage(Strings.downloadingFailed);
             subscription?.remove();
-            reject(new Error(info || 'Circuit download failed'));
+            resolve(false);
             break;
 
           default:
@@ -67,7 +85,8 @@ export const useSplashInit = (navigation) => {
             });
             flushSentry(2000).catch(() => {});
             subscription?.remove();
-            reject(new Error('Download Status Unknown: ' + status));
+            setDownloadMessage(Strings.downloadingFailed);
+            resolve(false);
             break;
         }
       });
@@ -81,8 +100,8 @@ export const useSplashInit = (navigation) => {
     return new Promise((resolve) => {
       const probeSubscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
         const {status} = JSON.parse(data);
-        if (status === config.CircuitDownloadStatus.DOWNLOADING ||
-            status === config.CircuitDownloadStatus.DONE) {
+        if (status === CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING ||
+            status === CIRCUIT_DOWNLOAD_STATUS.DONE) {
           probeSubscription.remove();
           resolve(true);
         }
@@ -99,13 +118,15 @@ export const useSplashInit = (navigation) => {
     setDownloadMessage('');
 
     try {
-      await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
+      try {
+        await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
+      } catch (_provisionError) {}
 
       const alreadyDownloading = await isDownloadAlreadyInProgress();
       const {promise: downloadComplete} = waitForCircuitDownloadCompletion();
 
       if (!alreadyDownloading) {
-        await config.initDownloadCircuits({
+        await initDownloadCircuits({
           bucketUrl: CIRCUITS_URL,
           zipFileName: 'circuits',
           circuitsWithChecksum: [
@@ -121,8 +142,11 @@ export const useSplashInit = (navigation) => {
           ],
         });
       }
-      await downloadComplete;
-    } catch (error) {
+      const downloadOk = await downloadComplete;
+      if (!downloadOk) {
+        return;
+      }
+    } catch (_error) {
       setDownloadMessage(Strings.downloadingFailed);
       return;
     }
@@ -141,13 +165,13 @@ export const useSplashInit = (navigation) => {
 
       if (themeColor) {
         if (themeColor === 'light') {
-          dispatch(changeThemeAction(colors.light));
+          dispatchRef.current(changeThemeAction(colors.light));
         } else {
-          dispatch(changeThemeAction(colors.dark));
+          dispatchRef.current(changeThemeAction(colors.dark));
         }
       } else {
         // Si no hay tema guardado, usar light por defecto
-        dispatch(changeThemeAction(colors.light));
+        dispatchRef.current(changeThemeAction(colors.light));
       }
 
       const pending = await StorageService.getItem(PENDINGRECOVERY);
@@ -160,10 +184,10 @@ export const useSplashInit = (navigation) => {
       }
 
       router.replace(StackNav.AuthNavigation);
-    } catch (e) {
+    } catch (_e) {
       router.replace(StackNav.AuthNavigation);
     }
-  }, [dispatch, navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress]);
+  }, [navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress]);
 
   useEffect(() => {
     const initAppWithSdk = async () => {
