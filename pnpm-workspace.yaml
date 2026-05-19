@@ -1,3 +1,10 @@
+packages:
+  - "."
+
+nodeLinker: hoisted
+virtualStoreDir: "C:/.pnpm-electoral"
+virtualStoreDirMaxLength: 20
+
 allowBuilds:
   '@firebase/util': true
   '@sentry/cli': true
