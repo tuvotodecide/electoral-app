@@ -1,7 +1,7 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {memo} from 'react';
 import {useNavigation} from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import {useSelector} from 'react-redux';
 
 // Custom Imports

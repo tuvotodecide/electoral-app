@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';

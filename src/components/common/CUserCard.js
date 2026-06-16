@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { useSelector } from "react-redux";
 import { moderateScale } from "../../common/constants";
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CText from "./CText";
 import { styles } from "../../themes";
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 
 import { getHeight, moderateScale } from '../../common/constants';

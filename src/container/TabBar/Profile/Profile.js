@@ -9,10 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Feather from 'react-native-vector-icons/Feather';
-import Entypo from 'react-native-vector-icons/Entypo';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, Feather, Entypo } from '@expo/vector-icons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import { THEME, getHeight, moderateScale } from '../../../common/constants';

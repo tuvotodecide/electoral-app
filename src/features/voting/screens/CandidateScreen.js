@@ -21,7 +21,7 @@ import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import CustomModal from '../../../components/common/CustomModal';
 import CameraScannerModal from '../components/CameraScannerModal';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // Feature components
 import CandidateCard from '../components/CandidateCard';

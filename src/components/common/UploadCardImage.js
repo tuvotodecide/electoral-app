@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { moderateScale } from '../../common/constants';
 import CText from './CText';
@@ -65,7 +65,7 @@ export default function UploadCardImage({label, image, setImage, testID, editabl
         {image ? (
           <Image source={{uri: image.uri}} style={styles.image} />
         ) : (
-          <Icon name="camera" size={40} color={editable ? colors.primary : colors.grayScale200} />
+          <MaterialCommunityIcons name="camera" size={40} color={editable ? colors.primary : colors.grayScale200} />
         )}
       </TouchableOpacity>
 

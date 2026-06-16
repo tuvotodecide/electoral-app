@@ -5,7 +5,7 @@ import {
   View,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // custom import
 import CText from '../common/CText';

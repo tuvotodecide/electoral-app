@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';

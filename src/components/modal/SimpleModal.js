@@ -4,7 +4,7 @@ import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import CButton from '../common/CButton';
 import { moderateScale } from '../../common/constants';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 
 export default function SimpleModal({ visible, message, okBtn, onPressOk, closeCornerBtn, onClose }) {

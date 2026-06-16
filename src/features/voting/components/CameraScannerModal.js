@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';

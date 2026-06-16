@@ -1,7 +1,7 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
-import Icons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import ActionSheet from 'react-native-actions-sheet';
 
 // custom import
@@ -79,7 +79,7 @@ export default function CollectionFilter(props) {
   const RightIcon = () => {
     return (
       <TouchableOpacity>
-        <Icons
+        <Ionicons
           name={'chevron-down-outline'}
           size={moderateScale(22)}
           color={colors.grayScale500}
@@ -130,7 +130,7 @@ export default function CollectionFilter(props) {
         <View style={localStyle.headerFilter}>
           <CText type={'B16'}>{String.filter}</CText>
           <TouchableOpacity onPress={onPressClose}>
-            <Icons
+            <Ionicons
               name={'close'}
               size={moderateScale(24)}
               color={colors.grayScale500}

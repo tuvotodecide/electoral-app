@@ -1,5 +1,5 @@
 import {Image, StyleSheet, View} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 
 // custom import
 import {moderateScale} from '../../common/constants';
@@ -71,7 +71,7 @@ export default function WalletPreview(props) {
 
       {!!depositValue ? (
         <View style={styles.rowCenter}>
-          <Ionicons
+          <Feather
             name={'plus'}
             size={moderateScale(18)}
             color={colors.textColor}

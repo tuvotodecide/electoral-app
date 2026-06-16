@@ -13,9 +13,9 @@ import {
   AppState,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';
 import axios from 'axios';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
@@ -233,108 +233,69 @@ const ElectoralLocations = ({ navigation, route }) => {
         if (retryCount > 0) {
         }
 
-        // Pedir permisos en Android
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title:
-                i18nString.locationPermissionTitle || 'Permiso de ubicación',
-              message:
-                i18nString.locationPermissionMessage ||
-                'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-              buttonNeutral: i18nString.askMeLater || 'Preguntar después',
-              buttonNegative: i18nString.cancel || 'Cancelar',
-              buttonPositive: i18nString.ok || 'OK',
-            },
+        // Pedir permisos 
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          showModal(
+            'settings',
+            i18nString.locationPermissionRequired,
+            i18nString.locationPermissionDeniedMessage,
+            i18nString.openSettings,
+            openLocationSettings,
+            i18nString.cancel,
+            closeModal,
           );
-
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            showModal(
-              'settings',
-              i18nString.locationPermissionRequired,
-              i18nString.locationPermissionDeniedMessage,
-              i18nString.openSettings,
-              openLocationSettings,
-              i18nString.cancel,
-              closeModal,
-            );
-            setLoadingLocation(false);
-            return;
-          }
-        } else {
-          // iOS
-          const status = await Geolocation.requestAuthorization('whenInUse');
-          if (status !== 'granted') {
-            showModal(
-              'settings',
-              i18nString.locationPermissionRequired,
-              i18nString.locationPermissionDeniedMessage,
-              i18nString.openSettings,
-              () => {
-                pendingPermissionFromSettings.current = true;
-                openLocationSettings();
-              },
-              i18nString.cancel,
-              closeModal,
-            );
-            setLoadingLocation(false);
-            return;
-          }
+          setLoadingLocation(false);
+          return;
         }
 
         // Obtener ubicación
-        Geolocation.getCurrentPosition(
-          position => {
-            const { latitude, longitude } = position.coords;
+        try {
+          const position = await Location.getCurrentPositionAsync({
+            accuracy: useHighAccuracy ? Location.LocationAccuracy.High : Location.LocationAccuracy.Low
+          });
+          const { latitude, longitude } = position.coords;
 
-            setUserLocation({ latitude, longitude });
-            setLoadingLocation(false);
-            fetchNearbyLocations(latitude, longitude);
-          },
-          error => {
-            // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
-            if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
-              getCurrentLocation(retryCount + 1, false);
-              return;
-            }
+          setUserLocation({ latitude, longitude });
+          setLoadingLocation(false);
+          fetchNearbyLocations(latitude, longitude);
+        } catch (error) {
+          // Fallback: si falla con highAccuracy, intentamos de nuevo con lowAccuracy
+          if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+            getCurrentLocation(retryCount + 1, false);
+            return;
+          }
 
-            // Manejo de errores final
-            let errorMessage = i18nString.locationError;
-            let modalTitle = i18nString.error;
-            let action = null;
+          // Manejo de errores final
+          let errorMessage = i18nString.locationError;
+          let modalTitle = i18nString.error;
+          let action = null;
 
-            if (error.code === 1) {
-              // PERMISSION_DENIED
-              errorMessage = i18nString.locationPermissionDeniedMessage;
-              modalTitle = i18nString.locationPermissionRequired;
-              action = openLocationSettings;
-            } else if (error.code === 2 || error.code === 3) {
-              // POSITION_UNAVAILABLE o TIMEOUT
-              errorMessage = i18nString.locationDisabledMessage;
-              modalTitle = i18nString.locationRequired;
-              action = openLocationSettings;
-            }
+          if (error.code === 1) {
+            // PERMISSION_DENIED
+            errorMessage = i18nString.locationPermissionDeniedMessage;
+            modalTitle = i18nString.locationPermissionRequired;
+            action = openLocationSettings;
+          } else if (error.code === 2 || error.code === 3) {
+            // POSITION_UNAVAILABLE o TIMEOUT
+            errorMessage = i18nString.locationDisabledMessage;
+            modalTitle = i18nString.locationRequired;
+            action = openLocationSettings;
+          }
 
-            showModal(
-              'settings',
-              modalTitle,
-              errorMessage,
-              i18nString.openSettings,
-              action,
-              i18nString.cancel,
-              closeModal,
-            );
+          showModal(
+            'settings',
+            modalTitle,
+            errorMessage,
+            i18nString.openSettings,
+            action,
+            i18nString.cancel,
+            closeModal,
+          );
 
-            setLoadingLocation(false);
-            setLoading(false);
-          },
-          {
-            enableHighAccuracy: useHighAccuracy,
-            timeout: useHighAccuracy ? 10000 : 15000, // menos estricto en fallback
-            maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
-          },
-        );
+          setLoadingLocation(false);
+          setLoading(false);
+        }
       } catch (error) {
         showModal(
           'error',
@@ -412,42 +373,23 @@ const ElectoralLocations = ({ navigation, route }) => {
       if (state === 'active' && pendingPermissionFromSettings.current) {
         pendingPermissionFromSettings.current = false;
         try {
-          if (Platform.OS === 'android') {
-            const ok = await PermissionsAndroid.check(
-              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            showModal(
+              'settings',
+              i18nString.locationPermissionRequired,
+              i18nString.locationPermissionDeniedMessage,
+              i18nString.openSettings,
+              openLocationSettings,
+              i18nString.cancel,
+              closeModal,
             );
-            if (ok) {
-              setModalVisible(false);
-              getCurrentLocation(0, true);
-            } else {
-              showModal(
-                'settings',
-                i18nString.locationPermissionRequired,
-                i18nString.locationPermissionDeniedMessage,
-                i18nString.openSettings,
-                openLocationSettings,
-                i18nString.cancel,
-                closeModal,
-              );
-            }
-          } else {
-            const status = await Geolocation.requestAuthorization('whenInUse');
-            if (status === 'granted') {
-              setModalVisible(false);
-              getCurrentLocation(0, true);
-            } else {
-              showModal(
-                'settings',
-                i18nString.locationPermissionRequired,
-                i18nString.locationPermissionDeniedMessage,
-                i18nString.openSettings,
-                openLocationSettings,
-                i18nString.cancel,
-                closeModal,
-              );
-            }
+            setLoadingLocation(false);
+            return;
           }
-        } catch (e) { }
+        } catch (e) {
+          console.error('Error requesting location permission after config:', error);
+        }
       }
     });
     return () => sub.remove();

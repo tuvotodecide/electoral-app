@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import BlobUtil from 'react-native-blob-util';
 import { File, Paths } from 'expo-file-system';
 
 const isHttp = uri => /^https?:\/\//i.test(String(uri || ''));
@@ -29,35 +28,18 @@ export const persistLocalImage = async uri => {
   }
   if (isHttp(safeUri)) {
     // 1) Primero pide headers para inferir Content-Type (opcional)
-    const head = await BlobUtil.fetch('HEAD', safeUri).catch(() => null);
-    const ct =
-      head?.respInfo?.headers?.['Content-Type'] ||
-      head?.respInfo?.headers?.['content-type'] ||
-      '';
+    const head = await fetch(safeUri, { method: 'HEAD' }).catch(() => null);
+    const ct = head?.headers?.get?.('content-type') || '';
 
     const ext = guessExt(safeUri, ct);
     const destPath = `${Paths.document.uri}/acta-${Date.now()}.${ext}`;
 
-    // 2) DESCARGA A DISCO (fileCache true) y además escribe directo a destPath
-    const res = await BlobUtil.config({
-      fileCache: true,
-      path: destPath.replace('file://', ''),     // escribe aquí directamente
-      appendExt: ext,     // por si el FS necesita extensión
-    }).fetch('GET', safeUri);
-
-    const savedPath = res?.path() ? 'file://' + res?.path() : null;
+    // 2) Descarga directa con expo-file-system
+    const res = await File.downloadFileAsync(safeUri, destPath);
 
     // 3) Validación fuerte
-    if (!savedPath) {
-      throw new Error('[persistLocalImage] Descarga HTTP sin path (fileCache falló).');
-    }
-
-    // Si BlobUtil respetó "path", savedPath suele ser destPath. Si no, asegúralo:
-    if (savedPath !== destPath) {
-      const savedFile = new File(savedPath);
-      const copiedFile = new File(destPath);
-      savedFile.copy(copiedFile);
-      try { savedFile.delete(); } catch (e) { }
+    if (!res?.exists) {
+      throw new Error('[persistLocalImage] Descarga HTTP sin archivo generado.');
     }
 
     return destPath;
@@ -77,12 +59,12 @@ export const persistLocalImage = async uri => {
   if (isFile) {
     (new File(safeUri)).copy(new File(destPath));
   } else if (isAndroidContent || isIOSAsset) {
-    const base64 = await BlobUtil.fs.readFile(safeUri, 'base64');
+    const base64 = await (new File(safeUri)).base64();
     (new File(destPath)).write(base64, {
       encoding: 'base64'
     });
   } else {
-    const base64 = await BlobUtil.fs.readFile(safeUri, 'base64');
+    const base64 = await (new File(safeUri)).base64();
     (new File(destPath)).write(base64, {
       encoding: 'base64'
     });

@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';

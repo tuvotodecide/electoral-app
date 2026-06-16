@@ -15,7 +15,7 @@ import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import i18nString from '../../../i18n/String';
 import nftImage from '../../../assets/images/nft-medal.png';
 import {executeOperation} from '../../../api/account';

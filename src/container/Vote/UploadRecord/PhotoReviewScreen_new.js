@@ -21,7 +21,7 @@ import VoteValidationModal from '../../../components/modal/VoteValidationModal';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 import {normalizeUri} from '../../../utils/normalizedUri';
 import CText from '../../../components/common/CText';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 import {authenticateWithBackend} from '../../../utils/offlineQueueHandler';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';

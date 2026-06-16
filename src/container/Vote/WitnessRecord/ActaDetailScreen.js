@@ -10,7 +10,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
 import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewScreen';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import String from '../../../i18n/String';
 import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
 import {

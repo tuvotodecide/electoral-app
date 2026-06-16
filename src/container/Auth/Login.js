@@ -1,7 +1,7 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {memo, useState} from 'react';
 import {useSelector} from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';

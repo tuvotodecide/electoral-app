@@ -122,6 +122,12 @@
           "barcodeScannerEnabled": true
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación."
+        }
+      ],
       "@react-native-firebase/app",
       "./plugins/withNativeModules",
       "expo-secure-store",

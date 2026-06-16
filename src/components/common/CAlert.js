@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import CText from './CText';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const iconMap = {
   success: 'check-circle-outline',
@@ -63,7 +63,7 @@ export default function CAlert({testID, status = 'info', message = ''}) {
           borderColor: mainColor,
         },
       ]}>
-      <Icon
+      <MaterialCommunityIcons
         testID={testID ? `${testID}Icon` : undefined}
         name={iconMap[status]}
         size={24}

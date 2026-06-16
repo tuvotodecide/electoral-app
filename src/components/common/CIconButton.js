@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Animated, Easing, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {useSelector} from 'react-redux';
 
 export default function CIconButton({name, onPress, size = 24, color, style = {}, rotate = false}) {
@@ -56,7 +56,7 @@ export default function CIconButton({name, onPress, size = 24, color, style = {}
   return (
     <TouchableOpacity onPress={handlePress} disabled={disabled}>
       <Animated.View style={animatedStyle}>
-        <Icon
+        <MaterialCommunityIcons
           name={icon}
           size={size}
           color={color || colors.textColor}

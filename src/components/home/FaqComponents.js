@@ -1,6 +1,6 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useState} from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // custom import
 import {useSelector} from 'react-redux';

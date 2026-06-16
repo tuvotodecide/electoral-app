@@ -14,8 +14,7 @@ import CText from '../../../components/common/CText'; // Adjust path as needed
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import {moderateScale} from '../../../common/constants'; // Adjust path as needed
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';

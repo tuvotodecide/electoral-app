@@ -7,8 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Feather from 'react-native-vector-icons/Feather';
+import { Ionicons } from '@expo/vector-icons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';

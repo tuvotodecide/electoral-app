@@ -18,7 +18,7 @@ import CButton from '../components/common/CButton';
 import String from '../i18n/String';
 import {setOnBoarding} from '../utils/AsyncStorage';
 import {AuthNav, StackNav} from '../navigation/NavigationKey';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function OnBoarding({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -98,7 +98,7 @@ export default function OnBoarding({navigation}) {
           ]}
           onPress={onPressSkip}
           testID="onboardingSkipButton">
-          <Icon name="close" size={20} color={colors.white} />
+          <MaterialCommunityIcons name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
       <FlashList

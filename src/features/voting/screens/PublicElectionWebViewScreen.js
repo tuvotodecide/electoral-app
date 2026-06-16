@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import {WebView} from 'react-native-webview';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';

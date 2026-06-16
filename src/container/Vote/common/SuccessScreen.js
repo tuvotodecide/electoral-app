@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';

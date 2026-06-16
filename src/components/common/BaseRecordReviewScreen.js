@@ -17,7 +17,7 @@ import {
   VoteSummaryTable,
   ActionButtons,
 } from './RecordReviewComponents';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 

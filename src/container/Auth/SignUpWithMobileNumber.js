@@ -6,7 +6,7 @@ import CountryPicker, {
   DARK_THEME,
   DEFAULT_THEME,
 } from 'react-native-country-picker-modal';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';

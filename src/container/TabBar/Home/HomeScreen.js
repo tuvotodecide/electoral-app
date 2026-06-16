@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { clearWallet } from '../../../redux/action/walletAction';
 import { clearAuth } from '../../../redux/slices/authSlice';
@@ -708,16 +708,8 @@ export default function HomeScreen({ navigation }) {
   /** Solo VERIFICA el permiso, nunca muestra diálogo del sistema */
   const checkLocationPermissionOnly = useCallback(async () => {
     try {
-      if (Platform.OS === 'android') {
-        const ok = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        return ok;
-      }
-      // iOS: no hay .check() puro, pero requestAuthorization con 'whenInUse'
-      // no vuelve a mostrar el diálogo si ya se contestó
-      const status = await Geolocation.requestAuthorization('whenInUse');
-      return status === 'granted';
+      const permission = await Location.getForegroundPermissionsAsync();
+      return permission?.status === 'granted';
     } catch {
       return false;
     }
@@ -725,38 +717,17 @@ export default function HomeScreen({ navigation }) {
 
 
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Permiso de ubicación',
-          message:
-            'La aplicación necesita acceso a tu ubicación para verificar disponibilidad de envío.',
-          buttonNeutral: 'Preguntar después',
-          buttonNegative: 'Cancelar',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-
-    // iOS
-    const status = await Geolocation.requestAuthorization('whenInUse');
+    const { status } = await Location.requestForegroundPermissionsAsync();
     return status === 'granted';
   }, []);
 
-  const getCurrentPositionAsync = (useHighAccuracy = true) =>
-    new Promise((resolve, reject) => {
-      Geolocation.getCurrentPosition(
-        pos => resolve(pos),
-        err => reject(err),
-        {
-          enableHighAccuracy: useHighAccuracy,
-          timeout: useHighAccuracy ? 15000 : 30000,
-          maximumAge: useHighAccuracy ? 10000 : 60000,
-        },
-      );
+  const getCurrentPositionAsync = async (useHighAccuracy = true) => {
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: useHighAccuracy ? Location.LocationAccuracy.High : Location.LocationAccuracy.Low
     });
+
+    return location;
+  }
 
   /**
 * Obtiene la ubicación SIN mostrar modales.
