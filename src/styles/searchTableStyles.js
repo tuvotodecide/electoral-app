@@ -1,5 +1,4 @@
 import {StyleSheet, Dimensions} from 'react-native';
-import {moderateScale} from '../common/constants';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -11,13 +10,6 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
-};
-
-// Use fixed sizes instead of moderateScale for better consistency
-const getFixedSize = size => {
-  if (isSmallPhone) return size * 0.85;
-  if (isTablet) return size * 1.1;
-  return size;
 };
 
 export const createSearchTableStyles = () => {

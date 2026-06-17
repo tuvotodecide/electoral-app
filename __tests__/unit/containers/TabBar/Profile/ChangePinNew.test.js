@@ -4,10 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent} from '@testing-library/react-native';
 import ChangePinNew from '../../../../../src/container/TabBar/Profile/ChangePinNew';
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../../setup/test-utils';
-import {StackNav} from '../../../../../src/navigation/NavigationKey';
 
 // Mocks
 jest.mock('../../../../../src/utils/ThemeUtils', () => ({

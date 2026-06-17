@@ -4,10 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent, waitFor} from '@testing-library/react-native';
 import ChangePinNewConfirm from '../../../../../src/container/TabBar/Profile/ChangePinNewConfirm';
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../../setup/test-utils';
-import {StackNav} from '../../../../../src/navigation/NavigationKey';
 
 // Mocks
 jest.mock('wira-sdk', () => ({

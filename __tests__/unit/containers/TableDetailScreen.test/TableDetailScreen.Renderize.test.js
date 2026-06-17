@@ -5,7 +5,6 @@ import String from '../../../__mocks__/String';
 import {
   act,
   renderTableDetail,
-  defaultMesa,
   buildRoute,
   StackNav,
   NetInfo,

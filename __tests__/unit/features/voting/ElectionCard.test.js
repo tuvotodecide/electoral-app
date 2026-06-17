@@ -13,6 +13,10 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 
+// Import después de los mocks
+import ElectionCard from '../../../../src/features/voting/components/ElectionCard';
+import { useCountdown } from '../../../../src/features/voting/utils/useCountdown';
+
 // Mock del módulo de feature flags
 jest.mock('../../../../src/config/featureFlags', () => ({
   DEV_FLAGS: {
@@ -35,10 +39,6 @@ jest.mock('../../../../src/features/voting/utils/useCountdown', () => ({
 
 // Mock de react-native-vector-icons
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
-
-// Import después de los mocks
-import ElectionCard from '../../../../src/features/voting/components/ElectionCard';
-import { useCountdown } from '../../../../src/features/voting/utils/useCountdown';
 
 // Helper para crear store de Redux mock
 const createMockStore = () => {

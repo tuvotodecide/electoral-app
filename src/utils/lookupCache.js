@@ -1,21 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOOKUP_CACHE_PREFIX = '@lookup-cache:v1:';
-const CACHE_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 const buildKey = key => `${LOOKUP_CACHE_PREFIX}${String(key || '').trim()}`;
-
-const summarizeData = value => {
-  if (Array.isArray(value)) {
-    return { kind: 'array', size: value.length };
-  }
-  if (value && typeof value === 'object') {
-    return { kind: 'object', size: Object.keys(value).length };
-  }
-  return { kind: typeof value };
-};
-
-
 
 export const getCache = async key => {
   const normalizedKey = buildKey(key);

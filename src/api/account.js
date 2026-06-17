@@ -1,7 +1,6 @@
 
 import { CHAIN } from '@env';
 import { createSmartAccountClient } from 'permissionless';
-import { toSimpleSmartAccount } from 'permissionless/accounts';
 import { createPimlicoClient } from 'permissionless/clients/pimlico';
 import { createPublicClient, getContract, http } from 'viem';
 import { entryPoint07Address, toCoinbaseSmartAccount } from 'viem/account-abstraction';
@@ -9,7 +8,6 @@ import { privateKeyToAccount } from 'viem/accounts';
 import walletAbi from './contracts/SimpleAccount.json';
 import {
   availableNetworks,
-  FACTORY_ADDRESS,
   sponsorshipPolicyId,
 } from './params';
 import { ethers } from 'ethers';

@@ -1,5 +1,4 @@
 import React, {useEffect, useRef} from 'react';
-import {useSelector} from 'react-redux';
 import {
   AppState,
   StyleSheet,
@@ -86,7 +85,7 @@ function useKeepAlive() {
   }, [navigation]);
 }
 
-function CustomTabBar({state, descriptors, navigation, colors}) {
+function CustomTabBar({state, descriptors, navigation}) {
   const insets = useSafeAreaInsets();
 
   // Verificar si estamos en una pantalla donde debemos ocultar el tab bar
@@ -116,7 +115,7 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
           paddingBottom: insets.bottom,
         },
       ]}>
-      {state.routes.map((route, index) => {
+      {state.routes.map((route) => {
         const {options} = descriptors[route.key];
         const label =
           options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
@@ -162,7 +161,6 @@ function CustomTabBar({state, descriptors, navigation, colors}) {
 
 export default function TabNavigation() {
   useKeepAlive();
-  const colors = useSelector(state => state.theme.theme);
   const Tab = createBottomTabNavigator();
 
   return (
@@ -171,7 +169,7 @@ export default function TabNavigation() {
       screenOptions={{
         headerShown: false,
       }}
-      tabBar={props => <CustomTabBar {...props} colors={colors} />}>
+      tabBar={props => <CustomTabBar {...props} />}>
       <Tab.Screen
         name={TabNav.HomeScreen}
         component={TabRoute.HomeScreen}

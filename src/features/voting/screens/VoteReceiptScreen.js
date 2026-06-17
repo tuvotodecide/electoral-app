@@ -174,7 +174,7 @@ const VoteReceiptScreen = () => {
     if (participationId && !isQueuedParticipation && !isFailedParticipation) {
       syncStateWithBlockchain(participationId)
     }
-  }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
+  }, [isFailedParticipation, isQueuedParticipation, participationId, participations, syncStateWithBlockchain]);
 
   const renderSyncStatus = () => {
     if (isFailedParticipation) {

@@ -102,16 +102,6 @@ describe('notifications service', () => {
     });
   });
 
-  describe('getFCMToken', () => {
-    it('obtiene token FCM', async () => {
-      const {getFCMToken} = require('../../../src/services/notifications');
-
-      const token = await getFCMToken();
-
-      expect(token).toBe('mock-fcm-token');
-    });
-  });
-
   describe('makeLocationTopicKey', () => {
     it('genera key de tópico con prefijo loc_', () => {
       const {makeLocationTopicKey} = require('../../../src/services/notifications');

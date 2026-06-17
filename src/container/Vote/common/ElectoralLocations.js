@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
-  PermissionsAndroid,
   Platform,
   Dimensions,
   Linking,
@@ -46,7 +45,6 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const ElectoralLocations = ({ navigation, route }) => {
-  const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const dni = userData?.vc?.credentialSubject?.governmentIdentifier;
   const [offline, setOffline] = useState(false);
@@ -56,7 +54,6 @@ const ElectoralLocations = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  const [locationRetries, setLocationRetries] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     type: 'info',
@@ -227,7 +224,6 @@ const ElectoralLocations = ({ navigation, route }) => {
     async (retryCount = 0, useHighAccuracy = true) => {
       try {
         setLoadingLocation(true);
-        setLocationRetries(retryCount);
 
         // Mostrar mensaje de reintento si corresponde
         if (retryCount > 0) {
@@ -296,7 +292,7 @@ const ElectoralLocations = ({ navigation, route }) => {
           setLoadingLocation(false);
           setLoading(false);
         }
-      } catch (error) {
+      } catch (_) {
         showModal(
           'error',
           i18nString.error,
@@ -306,7 +302,7 @@ const ElectoralLocations = ({ navigation, route }) => {
         setLoading(false);
       }
     },
-    [fetchNearbyLocations],
+    [closeModal, fetchNearbyLocations],
   );
   const navigateWithCachedVotePlace = useCallback(() => {
     const cachedLocationId =
@@ -387,13 +383,13 @@ const ElectoralLocations = ({ navigation, route }) => {
             setLoadingLocation(false);
             return;
           }
-        } catch (e) {
+        } catch (error) {
           console.error('Error requesting location permission after config:', error);
         }
       }
     });
     return () => sub.remove();
-  }, [getCurrentLocation]);
+  }, [closeModal, getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
     try {
@@ -522,15 +518,14 @@ const ElectoralLocations = ({ navigation, route }) => {
     setModalVisible(true);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     if (modalConfig.onCloseAction) {
       modalConfig.onCloseAction();
     }
     setModalVisible(false);
-  };
+  }, [modalConfig]);
 
   const handleRetryLocation = () => {
-    setLocationRetries(0);
     getCurrentLocation(0, true);
   };
 
@@ -627,15 +622,13 @@ const ElectoralLocations = ({ navigation, route }) => {
     const startDate = new Date(electionStatus.config.votingStartDateBolivia);
     const endDate = new Date(electionStatus.config.votingEndDateBolivia);
 
-    let title, subtitle, statusText;
+    let subtitle, statusText;
     if (currentTime < startDate) {
       // La votación aún no ha comenzado
-      title = i18nString.votingUpcoming;
       subtitle = i18nString.votingUpcomingSubtitle;
       statusText = i18nString.votingWillTakePlace;
     } else if (currentTime > endDate) {
       // La votación ya finalizó
-      title = i18nString.votingFinished;
       subtitle = i18nString.votingFinishedSubtitle;
       statusText = i18nString.votingTookPlace;
     } else {
@@ -688,7 +681,7 @@ const ElectoralLocations = ({ navigation, route }) => {
     } else {
       rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
     }
-  }, [isAnyLoading]);
+  }, [isAnyLoading, rotateAnim]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],

@@ -1,6 +1,6 @@
 import { BACKEND_IDENTITY } from '@env';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 // Custom imports

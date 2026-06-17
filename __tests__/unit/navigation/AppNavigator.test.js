@@ -1,6 +1,11 @@
 import React from 'react';
 import {render, waitFor} from '@testing-library/react-native';
 
+import AppNavigator from '../../../src/navigation';
+import {handleNotificationPress} from '../../../src/notifications';
+import {navLog} from '../../../src/config/navigationLogConfig';
+import {addNavigationBreadcrumb} from '../../../src/config/sentry';
+
 let capturedOnStateChange;
 
 jest.mock('@react-navigation/native', () => ({
@@ -63,11 +68,6 @@ jest.mock('../../../src/navigation/type/StackNavigation', () => () => null);
 jest.mock('../../../src/components/common/NavigationDebugOverlay', () => () =>
   'NavigationDebugOverlay',
 );
-
-import AppNavigator from '../../../src/navigation';
-import {handleNotificationPress} from '../../../src/notifications';
-import {navLog} from '../../../src/config/navigationLogConfig';
-import {addNavigationBreadcrumb} from '../../../src/config/sentry';
 
 describe('AppNavigator', () => {
   it('procesa notificaciones iniciales y registra cambios de navegaciÃ³n', async () => {

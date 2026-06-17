@@ -1,11 +1,8 @@
 import axios from 'axios';
-import {BACKEND_RESULT} from '@env';
+import {BACKEND_RESULT } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import store from '../../../../redux/store';
-import { executeOperation } from '@/src/api/account';
-import { castVote } from '@/src/api/vote';
-import { CHAIN } from "@env";
-import { getCredentialForVote, getNullifierForVote, saveNullifierForVote } from '@/src/data/credentials';
+import { getCredentialForVote } from '@/src/data/credentials';
 import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 import wira from 'wira-sdk';
@@ -936,7 +933,7 @@ const ElectionRepositoryApi = {
       );
 
       return response.data.presentialSessionId;
-    } catch (error) {
+    } catch (_) {
       throw new Error(`No se pudo validar el código QR.`);
     }
   },

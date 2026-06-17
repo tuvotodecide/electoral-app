@@ -14,8 +14,7 @@ import CText from '../../../components/common/CText';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import {moderateScale} from '../../../common/constants';
+import { MaterialIcons } from '@expo/vector-icons';
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
@@ -36,7 +35,7 @@ const WhichIsCorrectScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
-  const {tableData, photoUri, isFromUnifiedFlow} = route.params || {};
+  const {tableData, photoUri} = route.params || {};
 
   // State management
   const [selectedImageId, setSelectedImageId] = useState(null);
@@ -56,6 +55,79 @@ const WhichIsCorrectScreen = () => {
 
   // Load actas when component mounts
   useEffect(() => {
+    const loadActasByMesa = async mesaId => {
+      try {
+        setIsLoadingActas(true);
+
+        let numericId = mesaId;
+        if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
+          const match = mesaId.match(/\d+/);
+          if (match) {
+            numericId = parseInt(match[0], 10);
+          }
+        }
+
+        const response = await fetchActasByMesa(numericId);
+
+        if (response.success) {
+          setActaImages(response.data.images);
+          setPartyResults(response.data.partyResults);
+          setVoteSummaryResults(response.data.voteSummaryResults);
+        } else {
+          showModal('error', String.error, String.couldNotLoadActas);
+          // Fallback data
+          setActaImages([
+            {
+              id: '1',
+              uri:
+                photoUri ||
+                'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+            },
+          ]);
+          setPartyResults([
+            {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
+            {
+              id: 'mas-ipsp',
+              partido: 'MAS-IPSP',
+              presidente: '12',
+              diputado: '8',
+            },
+            {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
+            {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
+          ]);
+          setVoteSummaryResults([
+            {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
+            {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
+            {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
+          ]);
+        }
+      } catch (_) {
+        showModal('error', String.error, String.errorLoadingActas);
+        // Fallback data
+        setActaImages([
+          {
+            id: '1',
+            uri:
+              photoUri ||
+              'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
+          },
+        ]);
+        setPartyResults([
+          {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
+          {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
+          {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
+          {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
+        ]);
+        setVoteSummaryResults([
+          {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
+          {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
+          {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
+        ]);
+      } finally {
+        setIsLoadingActas(false);
+      }
+    };
+
     const mesaId =
       tableData?.id ||
       tableData?.numero ||
@@ -77,79 +149,6 @@ const WhichIsCorrectScreen = () => {
       setIsLoadingActas(false);
     }
   }, [tableData, photoUri]);
-
-  const loadActasByMesa = async mesaId => {
-    try {
-      setIsLoadingActas(true);
-
-      let numericId = mesaId;
-      if (typeof mesaId === 'string' && mesaId.includes('Mesa')) {
-        const match = mesaId.match(/\d+/);
-        if (match) {
-          numericId = parseInt(match[0], 10);
-        }
-      }
-
-      const response = await fetchActasByMesa(numericId);
-
-      if (response.success) {
-        setActaImages(response.data.images);
-        setPartyResults(response.data.partyResults);
-        setVoteSummaryResults(response.data.voteSummaryResults);
-      } else {
-        showModal('error', String.error, String.couldNotLoadActas);
-        // Fallback data
-        setActaImages([
-          {
-            id: '1',
-            uri:
-              photoUri ||
-              'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-          },
-        ]);
-        setPartyResults([
-          {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-          {
-            id: 'mas-ipsp',
-            partido: 'MAS-IPSP',
-            presidente: '12',
-            diputado: '8',
-          },
-          {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
-          {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
-        ]);
-        setVoteSummaryResults([
-          {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
-          {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
-          {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
-        ]);
-      }
-    } catch (error) {
-      showModal('error', String.error, String.errorLoadingActas);
-      // Fallback data
-      setActaImages([
-        {
-          id: '1',
-          uri:
-            photoUri ||
-            'https://boliviaverifica.bo/wp-content/uploads/2021/03/Captura-1.jpg',
-        },
-      ]);
-      setPartyResults([
-        {id: 'unidad', partido: 'Unidad', presidente: '45', diputado: '42'},
-        {id: 'mas-ipsp', partido: 'MAS-IPSP', presidente: '12', diputado: '8'},
-        {id: 'pdc', partido: 'PDC', presidente: '28', diputado: '31'},
-        {id: 'morena', partido: 'Morena', presidente: '3', diputado: '2'},
-      ]);
-      setVoteSummaryResults([
-        {id: 'validos', label: 'Válidos', value1: '88', value2: '83'},
-        {id: 'blancos', label: 'Blancos', value1: '15', value2: '12'},
-        {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
-      ]);
-    } finally {
-      setIsLoadingActas(false);
-    }
-  };
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
@@ -678,5 +677,3 @@ const styles = StyleSheet.create({
     color: '#D32F2F',
   },
 });
-
-export default WhichIsCorrectScreen;

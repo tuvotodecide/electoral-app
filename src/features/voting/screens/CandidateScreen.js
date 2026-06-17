@@ -44,9 +44,8 @@ import { backendProbe, checkInternetConnection } from '../../../utils/networkUti
 import { moderateScale, getHeight } from '../../../common/constants';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
-import { useSelector } from 'react-redux';
 import { blankVote } from '../data/params';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -324,7 +323,7 @@ const CandidateScreen = ({ route }) => {
   // Handle vote button press
   const handleVotePress = useCallback(() => {
     setShowConfirmModal(true);
-  }, [selectedCandidate]);
+  }, []);
 
   const submitInPlaceVote = async () => {
     setIsCameraMounted(true);
@@ -579,7 +578,7 @@ const CandidateScreen = ({ route }) => {
       isSubmittingVoteRef.current = false;
       setIsLoading(false);
     }
-  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo, isReferendumElection]);
+  }, [selectedCandidate, isInPlaceVote, electionId, electionCopySource, recordVote, electionInfo, isReferendumElection, submitVote]);
 
   const submitVote = useCallback(async (presentialSessionId) => {
     await startVoteJournal({
@@ -630,7 +629,7 @@ const CandidateScreen = ({ route }) => {
     }
 
     return result;
-  }, [selectedCandidate, electionId, repository, recordVote, navigation, electionInfo, isReferendumElection]);
+  }, [electionId, selectedCandidate, electionCopySource, electionInfo, repository, recordVote, isReferendumElection, navigation]);
 
   // Handle cancel confirm
   const handleCancelConfirm = useCallback(() => {

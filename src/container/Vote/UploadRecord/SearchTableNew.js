@@ -8,9 +8,6 @@ import String from '../../../i18n/String';
 
 import {
   fetchMesas,
-  fetchNearbyMesas,
-  getMockMesas,
-  mapMesasToLegacyFormat,
 } from '../../../data/mockMesas';
 
 export default function SearchTable({navigation, route}) {

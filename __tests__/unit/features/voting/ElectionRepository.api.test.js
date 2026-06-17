@@ -35,7 +35,6 @@ jest.mock('@/src/api/vote', () => ({
 jest.mock('@/src/data/credentials', () => ({
   getCredentialForVote: jest.fn(() => Promise.resolve({id: 'credential-1'})),
   getNullifierForVote: jest.fn(),
-  saveNullifierForVote: jest.fn(),
 }));
 
 jest.mock('../../../../src/utils/offlineQueueHandler', () => ({

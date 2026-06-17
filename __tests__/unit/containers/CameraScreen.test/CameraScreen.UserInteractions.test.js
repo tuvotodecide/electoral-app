@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, act, fireEvent, waitFor} from '@testing-library/react-native';
+import {render, act, fireEvent} from '@testing-library/react-native';
 import CameraScreen from '../../../../src/container/Vote/UploadRecord/CameraScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
@@ -28,9 +28,6 @@ jest.mock('@react-native-community/netinfo', () =>
 );
 jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
   jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
-jest.mock('../../../../src/hooks/useNavigationLogger', () =>
-  jest.requireActual('../../../__mocks__/hooks/useNavigationLogger'),
 );
 jest.mock(
   '../../../../src/i18n/String',

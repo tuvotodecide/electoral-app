@@ -8,11 +8,11 @@ const KEY_CONTEXT = dni =>
 const KEY_CONTEXT_SCOPED = dni =>
   `@selected-election-context-scoped:v1:${String(dni || 'unknown')}`;
 
-export const MUNICIPAL_EXPECTED_BLOCKS = Object.freeze([
+const MUNICIPAL_EXPECTED_BLOCKS = Object.freeze([
   {blockId: 'ALCALDE', label: 'ALCALDE', order: 1},
   {blockId: 'CONCEJAL', label: 'CONCEJAL', order: 2},
 ]);
-export const DEPARTAMENTAL_EXPECTED_BLOCKS = Object.freeze([
+const DEPARTAMENTAL_EXPECTED_BLOCKS = Object.freeze([
   {blockId: 'GOBERNADOR', label: 'GOBERNADOR', order: 1},
   {
     blockId: 'ASAMBLEISTA_TERRITORIO',
@@ -35,9 +35,9 @@ export const normalizeElectionTypeParam = value => {
   return raw;
 };
 
-export const isMunicipalElection = value =>
+const isMunicipalElection = value =>
   normalizeElectionTypeParam(value) === 'municipal';
-export const isDepartmentalElection = value =>
+const isDepartmentalElection = value =>
   normalizeElectionTypeParam(value) === 'departamental';
 export const hasSecondaryBlockElection = value => {
   const normalized = normalizeElectionTypeParam(value);
@@ -59,7 +59,7 @@ export const sanitizeElectoralDataForVisibleOffices = (
   const partyResults = Array.isArray(electoralData?.partyResults)
     ? electoralData.partyResults.map(row => {
         if (!row || typeof row !== 'object') return row;
-        const {diputado, ...rest} = row;
+        const {diputado: _ignored, ...rest} = row;
         return rest;
       })
     : electoralData?.partyResults;
@@ -67,7 +67,7 @@ export const sanitizeElectoralDataForVisibleOffices = (
   const voteSummaryResults = Array.isArray(electoralData?.voteSummaryResults)
     ? electoralData.voteSummaryResults.map(row => {
         if (!row || typeof row !== 'object') return row;
-        const {value2, ...rest} = row;
+        const {value2: _ignored, ...rest} = row;
         return rest;
       })
     : electoralData?.voteSummaryResults;
@@ -388,7 +388,7 @@ export async function getSelectedElectionContext(dni, scope = null) {
   }
 }
 
-export async function fetchElectionPartiesForTerritory(context = {}) {
+async function fetchElectionPartiesForTerritory(context = {}) {
   const electionId = String(context?.electionId || '').trim();
   if (!electionId) return [];
 
@@ -450,8 +450,4 @@ export async function enrichSelectedElectionContext(context = {}) {
 
     return built;
   }
-}
-
-export async function enrichMunicipalElectionContext(context = {}) {
-  return enrichSelectedElectionContext(context);
 }

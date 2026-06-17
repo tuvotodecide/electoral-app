@@ -6,11 +6,11 @@ import CText from './CText';
 const hexToRgba = (hex, opacity = 0.1) => {
   const cleanHex = hex.replace('#', '');
   const bigint = parseInt(cleanHex, 16);
-  // eslint-disable-next-line no-bitwise
+   
   const r = (bigint >> 16) & 255;
-  // eslint-disable-next-line no-bitwise
+   
   const g = (bigint >> 8) & 255;
-  // eslint-disable-next-line no-bitwise
+   
   const b = bigint & 255;
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };

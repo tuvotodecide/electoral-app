@@ -3,7 +3,6 @@ import './jestMocks';
 import {
   renderPhotoConfirmation,
   buildRouteParams,
-  String,
   resetMocks,
 } from './testUtils';
 

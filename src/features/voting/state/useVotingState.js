@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
-import { getCredentialForVote, getNullifierForVote } from '@/src/data/credentials';
+import { getCredentialForVote } from '@/src/data/credentials';
 import { useSelector } from 'react-redux';
 
 // Storage keys - namespaced para evitar colisiones
@@ -214,7 +214,7 @@ export const useVotingState = (electionId = '') => {
       const voteInfo = await getOwnVoteInfo(electionId, nullifier);
       if (Array.isArray(voteInfo) && voteInfo.length === 2) {
         const [hasVoted, option] = voteInfo;
-        if (hasVoted && option == localParticipation?.candidateSelected?.partyName) {
+        if (hasVoted && option === localParticipation?.candidateSelected?.partyName) {
           setSyncedWithBlockchain('synced');
         } else {
           setSyncedWithBlockchain('not_synced');
@@ -412,7 +412,7 @@ export const useVotingState = (electionId = '') => {
     } catch (error) {
       console.error('[Voting] Error refreshing state:', error);
     }
-  }, []);
+  }, [electionId]);
 
   // DEV_FLAG: Forzar estado "no ha votado" para testing
   const effectiveHasVoted = DEV_FLAGS.FORCE_HAS_NOT_VOTED ? false : hasVoted;
@@ -435,5 +435,3 @@ export const useVotingState = (electionId = '') => {
     refreshState,
   };
 };
-
-export default useVotingState;

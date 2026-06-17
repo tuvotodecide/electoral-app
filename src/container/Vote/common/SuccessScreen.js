@@ -8,7 +8,6 @@ import {
   BackHandler,
   Dimensions,
   Image,
-  Linking,
   ScrollView,
   Share,
   StyleSheet,
@@ -23,7 +22,6 @@ import CText from '../../../components/common/CText';
 import InfoModal from '../../../components/modal/InfoModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
-import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 import { normalizeUri } from '../../../utils/normalizedUri';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -174,23 +172,6 @@ const SuccessScreen = () => {
     }, [fromNotifications, navigateHome, navigation]),
   );
 
-  const handleViewNFT = async () => {
-    try {
-      const supported = await Linking.canOpenURL(nftData.nftUrl);
-      if (supported) {
-        await Linking.openURL(nftData.nftUrl);
-      } else {
-      }
-    } catch (error) {
-      console.error('[SUCCESS] open nft url error', error);
-      setInfoModalData({
-        visible: true,
-        title: 'Error',
-        message: 'No se pudo abrir el menú de compartir.',
-      });
-    }
-  };
-
   const handleShareNft = async () => {
     try {
       if (!normalizedCertificateUrl) {
@@ -255,11 +236,6 @@ const SuccessScreen = () => {
       });
     }
   };
-
-  // Obtener nombre real del usuario desde Redux
-  const userData = useSelector(state => state.wallet.payload);
-  const subject = getCredentialSubjectFromPayload(userData) || {};
-  const nombre = subject?.fullName || '(sin nombre)';
 
   return (
     <CSafeAreaView style={styles.container}>

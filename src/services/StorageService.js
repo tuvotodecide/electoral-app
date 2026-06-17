@@ -13,7 +13,7 @@ export const StorageService = {
   getItem: async (key) => {
     try {
       return await AsyncStorage.getItem(key);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   },
@@ -21,7 +21,7 @@ export const StorageService = {
   setItem: async (key, value) => {
     try {
       await AsyncStorage.setItem(key, value);
-    } catch (e) {
+    } catch (_) {
       // Ignorar manejo de errores bajo nivel
     }
   },
@@ -29,7 +29,7 @@ export const StorageService = {
   removeItem: async (key) => {
     try {
       await AsyncStorage.removeItem(key);
-    } catch (e) {
+    } catch (_) {
       // Ignorar errores
     }
   },
@@ -37,7 +37,7 @@ export const StorageService = {
   multiGet: async (keys) => {
     try {
       return await AsyncStorage.multiGet(keys);
-    } catch (e) {
+    } catch (_) {
       return [];
     }
   }

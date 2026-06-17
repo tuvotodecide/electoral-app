@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {fireEvent} from '@testing-library/react-native';
 import {AuthNav, StackNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser1 from '../../../../src/container/Auth/RegisterUser1';

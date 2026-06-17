@@ -16,7 +16,6 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import Strings from '../../../i18n/String';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import CustomModal from '../../../components/common/CustomModal';
-import {moderateScale} from '../../../common/constants';
 import {StackNav} from '../../../navigation/NavigationKey';
 //import {fetchUserAttestations} from '../../../api/account';
 

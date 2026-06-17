@@ -25,7 +25,7 @@ const RenderEtiqueta = ({title, subtitle, colors, testId}) => {
   );
 };
 
-export default function ConditionsRegister({navigation}) {
+export default function ConditionsRegister() {
   const colors = useSelector(state => state.theme.theme);
 
   return (

@@ -1,3 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  clearCache,
+  getCache,
+  isFresh,
+  setCache,
+} from '../../../src/utils/lookupCache';
+
 const store = {};
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(key => Promise.resolve(store[key] ?? null)),
@@ -14,14 +22,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     return Promise.resolve();
   }),
 }));
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  clearCache,
-  getCache,
-  isFresh,
-  setCache,
-} from '../../../src/utils/lookupCache';
 
 describe('lookupCache', () => {
   beforeEach(async () => {

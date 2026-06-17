@@ -16,14 +16,8 @@ import {StackNav} from '../../navigation/NavigationKey';
 import Strings from '../../i18n/String';
 import {
   SearchTableHeader,
-  ChooseTableText,
-  LocationInfoBar,
   SearchInput,
   TableCard,
-  // Legacy support
-  SearchMesaHeader,
-  ChooseMesaText,
-  MesaCard,
 } from './SearchTableComponents';
 import { Ionicons } from '@expo/vector-icons';
 

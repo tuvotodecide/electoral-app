@@ -1,3 +1,12 @@
+import NetInfo from '@react-native-community/netinfo';
+import {
+  checkInternetConnection,
+  backendProbe,
+  validateBackendConnectivity,
+  showNetworkErrorAlert,
+  retryWithBackoff,
+} from '../../../src/utils/networkUtils';
+
 jest.mock('@react-native-community/netinfo', () => ({
   fetch: jest.fn(),
 }));
@@ -7,15 +16,6 @@ jest.mock('@env', () => ({
   BACKEND_BLOCKCHAIN: 'https://blockchain.example',
   BACKEND_RESULT: 'https://result.example',
 }));
-
-import NetInfo from '@react-native-community/netinfo';
-import {
-  checkInternetConnection,
-  backendProbe,
-  validateBackendConnectivity,
-  showNetworkErrorAlert,
-  retryWithBackoff,
-} from '../../../src/utils/networkUtils';
 
 describe('networkUtils', () => {
   beforeEach(() => {

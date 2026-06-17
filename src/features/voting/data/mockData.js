@@ -55,44 +55,6 @@ export const MOCK_CANDIDATES = [
 ];
 
 /**
- * Mock de participaciones del usuario
- */
-export const MOCK_PARTICIPATIONS = [
-  {
-    id: 'participation_1',
-    electionTitle: 'Votación general',
-    status: 'VOTO_REGISTRADO',
-    statusLabel: 'VOTO REGISTRADO',
-    date: '12 Feb',
-    time: '09:12',
-    fullDate: '12 Feb 2026 · 09:12',
-    organization: 'UMSA',
-    transactionId: '0x7a8f...3d2e',
-    blockchainHash: 'b4c9...8f1a',
-    candidateSelected: {
-      partyName: 'Informatica por siempre',
-      presidentName: 'Juan Perez',
-      viceName: 'Ana Gomez',
-    },
-    nftId: 'nft_12345',
-  },
-  {
-    id: 'participation_2',
-    electionTitle: 'Elección Municipal',
-    status: 'EN_COLA',
-    statusLabel: 'EN COLA',
-    date: '11 Feb',
-    time: '16:23',
-    fullDate: '11 Feb 2026 · 16:23',
-    organization: 'Municipio',
-    transactionId: null,
-    blockchainHash: null,
-    candidateSelected: null,
-    nftId: null,
-  },
-];
-
-/**
  * Mensajes de UI
  */
 export const UI_STRINGS = {

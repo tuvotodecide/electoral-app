@@ -5,7 +5,7 @@
  * Muestra información sobre resultados disponibles con botón de acción.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,13 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import strings from '@/src/i18n/String';
-import wira from 'wira-sdk';
-import { useSelector } from 'react-redux';
-import { checkClaimedCredForVote } from '@/src/data/credentials';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,88 +35,14 @@ const getResponsiveSize = (small, medium, large) => {
 
 const ClaimCredScreen = () => {
   const route = useRoute();
-  const userData = useSelector(state => state.wallet.payload);
-  const [claimStatus, setClaimStatus] = React.useState('idle'); // 'idle' | 'claiming' | 'claimed' | 'error'
 
   const notification = route?.params?.notification;
-
-  useEffect(() => {
-    const checkClaimStatus = async () => {
-      const voteId = notification?.data?.eventId
-      if (!voteId) {
-        console.warn('No eventId found in notification data');
-        return;
-      }
-
-      try {
-        const hasCredForVote = await checkClaimedCredForVote(
-          voteId,
-          userData.did,
-          userData.privKey
-        );       
-        if (hasCredForVote) {
-          setClaimStatus('claimed');
-        }
-      } catch (error) {
-        console.error('Error fetching user credentials:', error);
-      }
-    };
-
-    checkClaimStatus();
-  }, [])
-
-  const handleClaim = async () => {
-    if (notification?.data?.credentialData && userData) {
-      setClaimStatus('claiming');
-      try {
-        await wira.claimNewCredential(
-          notification.data.credentialData,
-          userData.did,
-          userData.privKey
-        );
-        setClaimStatus('claimed');
-      } catch (error) {
-        console.error('Error claiming credential:', error);
-        setClaimStatus('error');
-      }
-    }
-  };
 
   const formattedDate = useMemo(() => {
     const options = { dateStyle: "full", timeStyle: "medium", };
     const formatter = new Intl.DateTimeFormat('es-ES', options);
     return formatter.format(new Date(notification.timestamp));
   }, [notification.timestamp]);
-
-  const renderButtonText = useMemo(() => {
-    switch (claimStatus) {
-      case 'idle':
-        return {
-          title: strings.claimCredentials,
-          msg: strings.claimCredendialsDesc
-        };
-      case 'claiming':
-        return {
-          title: strings.claimingCredentials,
-          msg: strings.claimCredendialsDesc
-        };
-      case 'claimed':
-        return {
-          title: strings.credentialsClaimed,
-          msg: strings.credentialsClaimedDesc
-        };
-      case 'error':
-        return {
-          title: strings.retry,
-          msg: strings.claimError
-        };
-      default:
-        return {
-          title: strings.claimCredentials,
-          msg: strings.claimCredendialsDesc
-        };
-    }
-  }, [claimStatus]);
 
   return (
     <CSafeAreaView style={styles.container}>

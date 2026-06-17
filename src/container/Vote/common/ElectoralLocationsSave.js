@@ -4,7 +4,6 @@ import {
   View,
   TouchableOpacity,
   ActivityIndicator,
-  PermissionsAndroid,
   Platform,
   Dimensions,
   Linking,
@@ -28,7 +27,7 @@ import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LAST_TOPIC_KEY } from '../../../common/constants';
 import { saveVotePlace } from '../../../utils/offlineQueue';
-import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
+import { getCache, setCache } from '../../../utils/lookupCache';
 import { backendProbe } from '../../../utils/networkUtils';
 import {
   subscribeToLocationTopic,
@@ -52,12 +51,6 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const LOOKUP_CACHE_TTL = {
-  nearbyLocationsMs: 10 * 60 * 1000,
-  electionStatusMs: 10 * 60 * 1000,
-  tablesByLocationMs: 6 * 60 * 60 * 1000,
-};
-
 const getNearbyLocationCacheKey = (latitude, longitude) => {
   const lat = Number(latitude || 0).toFixed(3);
   const lng = Number(longitude || 0).toFixed(3);
@@ -66,8 +59,6 @@ const getNearbyLocationCacheKey = (latitude, longitude) => {
 
 const getTablesByLocationCacheKey = locationId =>
   `tables-by-location:${String(locationId || '').trim()}`;
-
-const LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 const warmTablesCacheByLocationId = async ({
   locationId,
@@ -78,8 +69,6 @@ const warmTablesCacheByLocationId = async ({
   if (!normalizedLocationId) return;
 
   const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
-  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
-
 
   if (Array.isArray(seedTables) && seedTables.length > 0) {
     await setCache(cacheKey, seedTables, { version: 'tables-v1' });
@@ -97,7 +86,7 @@ const warmTablesCacheByLocationId = async ({
 
       return;
     }
-  } catch (error) {
+  } catch (_) {
 
   }
 
@@ -109,13 +98,12 @@ const warmTablesCacheByLocationId = async ({
       await setCache(cacheKey, list, { version: 'tables-v1' });
 
     }
-  } catch (error) {
+  } catch (_) {
 
   }
 };
 
 const ElectoralLocationsSave = ({ navigation, route }) => {
-  const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
@@ -132,7 +120,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     onCloseAction: null,
   });
   const dni = route?.params?.dni;
-  const [electionStatus, setElectionStatus] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -234,9 +221,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
 
       }
 
-      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.nearbyLocationsMs);
-
-
       const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
 
@@ -278,28 +262,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
       setLoadingLocation(false);
     }
   }, []);
-
-  const formatIsoNoT = iso => {
-    if (!iso) return '';
-    return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
-  };
-
-  const formatDate = isoDate => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}/${month}/${day}`;
-  };
-
-  const formatTime = isoDate => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
 
   const openLocationSettings = () => {
     setModalVisible(false);
@@ -403,7 +365,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         setLoading(false);
       }
     },
-    [fetchNearbyLocations],
+    [closeModal, fetchNearbyLocations],
   );
 
   useEffect(() => {
@@ -431,7 +393,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
       }
     });
     return () => sub.remove();
-  }, [getCurrentLocation]);
+  }, [closeModal, getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
     const cacheKey = 'electoral-locations:config-status';
@@ -442,13 +404,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     try {
       setConfigLoading(true);
       setConfigError(false);
-      if (cachedData) {
-
-        setElectionStatus(cachedData);
-      }
-
-      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.electionStatusMs);
-
 
       const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
@@ -464,8 +419,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         { timeout: 12000 }, // 12 segundos timeout
       );
       if (response.data) {
-
-        setElectionStatus(response.data);
         await setCache(cacheKey, response.data, { version: 'election-config-v1' });
       } else {
 
@@ -534,12 +487,12 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     setModalVisible(true);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     if (modalConfig.onCloseAction) {
       modalConfig.onCloseAction();
     }
     setModalVisible(false);
-  };
+  }, [modalConfig]);
 
   const handleRetryLocation = () => {
     setLocationRetries(0);
@@ -704,7 +657,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     } else {
       rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
     }
-  }, [configLoading]);
+  }, [configLoading, rotateAnim]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', e => {

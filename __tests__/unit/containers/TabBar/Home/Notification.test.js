@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {fireEvent, waitFor} from '@testing-library/react-native';
+import { waitFor} from '@testing-library/react-native';
 import axios from 'axios';
 import Notification from '../../../../../src/container/TabBar/Home/Notification';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';

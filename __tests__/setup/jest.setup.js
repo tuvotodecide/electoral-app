@@ -4,6 +4,9 @@
  */
 
 // Setup window object before anything else
+// Mock Gesture Handler
+import 'react-native-gesture-handler/jestSetup';
+
 if (typeof window === 'undefined') {
   global.window = {};
 }
@@ -710,10 +713,6 @@ jest.mock('react-native-gesture-handler', () => {
     ScrollView,
   };
 });
-
-import { launchImageLibraryAsync } from 'expo-image-picker';
-// Mock Gesture Handler
-import 'react-native-gesture-handler/jestSetup';
 
 // Silence console warnings during tests
 const originalConsoleError = console.error;

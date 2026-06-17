@@ -9,7 +9,6 @@ import NetInfo from '@react-native-community/netinfo';
 import messaging from '@react-native-firebase/messaging';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
 import {StackNav} from '../../navigation/NavigationKey';
 
 import {authenticateWithBackend} from '../../utils/offlineQueueHandler';

@@ -2,7 +2,6 @@ import React from 'react';
 import { render, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import axios from 'axios';
-import TestRenderer from 'react-test-renderer';
 import SearchTable from '../../../../src/container/Vote/UploadRecord/SearchTable';
 
 // Mock axios
@@ -29,14 +28,6 @@ jest.mock('react-redux');
 jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => 
   require('../../../__mocks__/components/common/BaseSearchTableScreen').default
 );
-
-// Mock hooks
-jest.mock('../../../../src/hooks/useNavigationLogger', () => ({
-  useNavigationLogger: jest.fn(() => ({
-    logAction: jest.fn(),
-    logNavigation: jest.fn(),
-  })),
-}));
 
 // Create a simple mock store using Redux Toolkit
 const createMockStore = () => {

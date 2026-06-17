@@ -5,7 +5,6 @@ import {
   Dimensions,
   Linking,
   Modal,
-  PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,14 +16,13 @@ import messaging from '@react-native-firebase/messaging';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useDispatch } from 'react-redux';
+import { useDispatch , useSelector } from 'react-redux';
 import { clearWallet } from '../../../redux/action/walletAction';
 import { clearAuth } from '../../../redux/slices/authSlice';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
 import images from '../../../assets/images';
 import {
   LAST_USER_TOPIC_KEY,

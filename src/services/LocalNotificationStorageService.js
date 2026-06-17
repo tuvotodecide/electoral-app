@@ -37,7 +37,7 @@ class LocalNotificationStorageService {
     try {
       const notifications = await AsyncStorage.getItem('local_notifications');
       return notifications ? JSON.parse(notifications) : [];
-    } catch (error) {
+    } catch (_) {
       return [];
     }
   }

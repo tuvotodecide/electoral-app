@@ -193,7 +193,7 @@ class PinataService {
       if (this.isHttpUrl(filePathOrUrl) || this.isIpfsUrl(filePathOrUrl)) {
         try {
           (new File(fsPath)).delete();
-        } catch (e) {}
+        } catch (_) {}
       }
 
       return out;

@@ -1,3 +1,17 @@
+import {
+  alertNewBackendNotifications,
+  buildNotificationSemanticKey,
+  buildNotificationTextFallback,
+  buildRouteFromNotification,
+  consumePendingNotificationNavigation,
+  handleNotificationPress,
+  markNotificationAsAlerted,
+  mergeAndDedupeNotifications,
+  maybeStorePendingNavFromRemote,
+  showActaPublishedNotification,
+  showLocalNotification,
+} from '../../src/notifications';
+
 const mockStorage = new Map();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -85,20 +99,6 @@ jest.mock('../../src/navigation/NavigationKey', () => ({
   },
   TabNav: {HomeScreen: 'HomeScreen'},
 }));
-
-import {
-  alertNewBackendNotifications,
-  buildNotificationSemanticKey,
-  buildNotificationTextFallback,
-  buildRouteFromNotification,
-  consumePendingNotificationNavigation,
-  handleNotificationPress,
-  markNotificationAsAlerted,
-  mergeAndDedupeNotifications,
-  maybeStorePendingNavFromRemote,
-  showActaPublishedNotification,
-  showLocalNotification,
-} from '../../src/notifications';
 
 const notifee = require('@notifee/react-native').default;
 const storeModule = require('../../src/redux/store');

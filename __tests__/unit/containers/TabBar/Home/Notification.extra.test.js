@@ -1,5 +1,5 @@
 import React from 'react';
-import {fireEvent, waitFor, render} from '@testing-library/react-native';
+import { waitFor, render} from '@testing-library/react-native';
 import Notification from '../../../../../src/container/TabBar/Home/Notification';
 
 const mockNavigate = jest.fn();

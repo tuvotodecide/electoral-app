@@ -1,4 +1,3 @@
-import { BACKEND_IDENTITY } from '@env';
 import React, {useState} from 'react';
 import {
   View,

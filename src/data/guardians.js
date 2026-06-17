@@ -1,7 +1,7 @@
 
 import { BACKEND_IDENTITY } from '@env';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import wira from 'wira-sdk';
 
 export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY);
@@ -30,7 +30,7 @@ export const useGuardiansRecoveryRequestQuery = () => {
     },
 
     onError: error => {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
       }
     },
     onSettled: () => {
@@ -53,7 +53,7 @@ export const useGuardianDeleteQuery = () => {
     },
 
     onError: error => {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
       }
     },
     onSettled: () => {
@@ -76,7 +76,7 @@ export const useGuardianPatchQuery = () => {
     },
 
     onError: error => {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
       }
     },
     onSettled: () => {
@@ -97,7 +97,7 @@ export const useGuardianInvitationActionQuery = () => {
     },
 
     onError: error => {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
       }
     },
     onSettled: () => {
@@ -120,7 +120,7 @@ export const useRecoveryActionQuery = () => {
     },
 
     onError: error => {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
       }
     },
     onSettled: () => {
@@ -150,16 +150,6 @@ export function useGuardiansRecoveryDetailQuery(deviceId, enabled = true) {
   });
   const remove = () => queryClient.removeQueries({queryKey: ['recovery-detail', deviceId]});
   return {data: data, loading: isLoading, remove};
-}
-export function useGuardiansRecoveryStatusQuery(deviceId, enabled = true) {
-  const {data, isLoading} = useQuery({
-    queryKey: ['recovery-detail', deviceId],
-    queryFn: () => guardianApi.recoveryStatus(deviceId),
-    enabled: !!deviceId && enabled,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
-  });
-  return {data: data, loading: isLoading};
 }
 
 export const useMyGuardiansAllListQuery = options => {

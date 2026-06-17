@@ -1,3 +1,7 @@
+import axios from 'axios';
+import {oracleReads} from '../../../src/api/oracle';
+import {syncActaBackendHandler} from '../../../src/utils/offlineQueueHandler';
+
 jest.mock('../../../src/utils/pinataService', () => ({}));
 jest.mock('../../../src/api/oracle', () => ({
   oracleCalls: {},
@@ -41,10 +45,6 @@ jest.mock('axios', () => ({
   get: jest.fn(),
   post: jest.fn(),
 }));
-
-import axios from 'axios';
-import {oracleReads} from '../../../src/api/oracle';
-import {syncActaBackendHandler} from '../../../src/utils/offlineQueueHandler';
 
 describe('offlineQueueHandler syncActaBackendHandler', () => {
   beforeEach(() => {

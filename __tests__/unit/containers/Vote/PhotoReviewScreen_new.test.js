@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import {fireEvent, waitFor, act} from '@testing-library/react-native';
 import PhotoReviewScreen from '../../../../src/container/Vote/UploadRecord/PhotoReviewScreen_new';
 import {renderWithProviders, mockNavigation, mockRoute} from '../../../setup/test-utils';
 

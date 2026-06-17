@@ -13,7 +13,6 @@ import {
   resetMocks,
   upsertWorksheetLocalStatus,
   validateBallotLocally,
-  WorksheetStatus,
   pinataService,
 } from './testUtils';
 

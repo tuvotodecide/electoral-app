@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import {waitFor} from '@testing-library/react-native';
 import PersonalDetails from '../../../../../src/container/TabBar/Profile/PersonalDetails';
 import {renderWithProviders} from '../../../../setup/test-utils';
 

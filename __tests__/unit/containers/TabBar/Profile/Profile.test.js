@@ -4,10 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent} from '@testing-library/react-native';
 import Profile from '../../../../../src/container/TabBar/Profile/Profile';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
-import {StackNav} from '../../../../../src/navigation/NavigationKey';
 
 // Mocks
 jest.mock('../../../../../src/utils/Cifrate', () => ({

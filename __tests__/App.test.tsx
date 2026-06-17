@@ -1,6 +1,8 @@
 import React from 'react';
 import {render, waitFor} from '@testing-library/react-native';
 
+import App from '../src/App';
+
 const mockOnTokenRefresh = jest.fn();
 const mockSubscribeToLocationTopic = jest.fn(() => Promise.resolve());
 const mockSubscribeToPushTopic = jest.fn(() => Promise.resolve());
@@ -57,8 +59,6 @@ jest.mock('react-redux', () => ({
       theme: {theme: {dark: 'light'}},
     }),
 }));
-
-import App from '../src/App';
 
 describe('src/App', () => {
   beforeEach(() => {

@@ -1,3 +1,7 @@
+import BlobUtil from 'react-native-blob-util';
+import {Paths, __fileInstances} from 'expo-file-system';
+import {persistLocalImage, removePersistedImage} from '../../../src/utils/persistLocalImage';
+
 jest.mock('react-native', () => ({
   Platform: {OS: 'android'},
 }));
@@ -33,10 +37,6 @@ jest.mock('react-native-blob-util', () => ({
     readFile: jest.fn(() => Promise.resolve('ZGF0YQ==')),
   },
 }));
-
-import BlobUtil from 'react-native-blob-util';
-import {Paths, __fileInstances} from 'expo-file-system';
-import {persistLocalImage, removePersistedImage} from '../../../src/utils/persistLocalImage';
 
 describe('persistLocalImage', () => {
   beforeEach(() => {

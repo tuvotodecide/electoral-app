@@ -1,6 +1,6 @@
 import CText from "../common/CText";
 import String from "../../i18n/String";
-import { Modal, Portal, Surface } from "react-native-paper";
+import { Modal, Portal } from "react-native-paper";
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale } from "../../common/constants";
 import { useSelector } from "react-redux";

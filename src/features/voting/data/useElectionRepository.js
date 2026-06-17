@@ -48,5 +48,3 @@ export const getElectionRepository = () => {
       return ElectionRepositoryMock;
   }
 };
-
-export default useElectionRepository;

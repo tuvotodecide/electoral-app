@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY, LOCK_KEY, LOCK_MS } from '../common/constants';
 
 
-export async function getAttempts() {
+async function getAttempts() {
   const n = await AsyncStorage.getItem(KEY);
   return n ? parseInt(n, 10) : 0;
 }

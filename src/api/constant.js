@@ -25,8 +25,6 @@ import {
   DiscordIcon,
   DollarIcon,
   Dollar_White,
-  Email_Dark,
-  Email_Light,
   EnergyIcon,
   EspanolIcon,
   FinanceIcon,
@@ -62,8 +60,6 @@ import {
   NFTIcon,
   NFTs_Dark,
   NFTs_Light,
-  News_Dark,
-  News_Light,
   PassportIcon,
   Passport_Dark,
   PayPalIcon,
@@ -74,8 +70,6 @@ import {
   Privacy_Light,
   Profile_Dark,
   Profile_Light,
-  Promotion_Dark,
-  Promotion_Light,
   PushNotification_Dark,
   PushNotification_Light,
   RealEstateIcon,
@@ -86,12 +80,8 @@ import {
   StockIcon,
   Stock_Dark,
   Stock_Light,
-  TabIcon,
-  Tab_Light,
   TechnologyIcon,
   Telegram_Blue,
-  Telegram_Dark,
-  Telegram_Light,
   TermsAndCondition_Dark,
   TermsAndCondition_Light,
   UKFlagIcon,
@@ -100,15 +90,12 @@ import {
   UrgauayIcon,
   UtilitiesIcon,
   VisaIcon,
-  WellFegroIcon,
   WellsFargo,
-  Whatsapp_Dark,
-  Whatsapp_Light,
   WithdrawIcon,
 } from '../assets/svg';
 import {moderateScale} from '../common/constants';
 import String from '../i18n/String';
-import {AuthNav, StackNav} from '../navigation/NavigationKey';
+import { StackNav} from '../navigation/NavigationKey';
 import {colors} from '../themes/colors';
 
 export const OnBoardingData = [

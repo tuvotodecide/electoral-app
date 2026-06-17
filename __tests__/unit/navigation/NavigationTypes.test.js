@@ -1,6 +1,13 @@
 import React from 'react';
 import {renderWithProviders} from '../../setup/test-utils';
 
+import AuthNavigation from '../../../src/navigation/type/AuthNavigation';
+import HomeStackNavigation from '../../../src/navigation/type/HomeStackNavigation';
+import StackNavigation from '../../../src/navigation/type/StackNavigation';
+import StackNavigationClean from '../../../src/navigation/type/StackNavigationClean';
+import TabNavigation from '../../../src/navigation/type/TabNavigation';
+import VoteStackNavigation from '../../../src/navigation/type/VoteStackNavigation';
+
 const mockComponent = () => null;
 
 jest.mock('../../../src/navigation/NavigationRoute', () => {
@@ -21,13 +28,6 @@ jest.mock('../../../src/utils/Session', () => ({
   isSessionValid: jest.fn(() => Promise.resolve(true)),
   refreshSession: jest.fn(() => Promise.resolve()),
 }));
-
-import AuthNavigation from '../../../src/navigation/type/AuthNavigation';
-import HomeStackNavigation from '../../../src/navigation/type/HomeStackNavigation';
-import StackNavigation from '../../../src/navigation/type/StackNavigation';
-import StackNavigationClean from '../../../src/navigation/type/StackNavigationClean';
-import TabNavigation from '../../../src/navigation/type/TabNavigation';
-import VoteStackNavigation from '../../../src/navigation/type/VoteStackNavigation';
 
 describe('Navigation type components', () => {
   it('renderiza AuthNavigation', () => {

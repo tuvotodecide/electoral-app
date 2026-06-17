@@ -1,8 +1,8 @@
 import { BACKEND } from '@env';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 
 import { InternetCredentials } from './internetCredentials';
-import {JWT_KEY, JWT_KEY_EXPO} from '../../common/constants';
+import { JWT_KEY_EXPO} from '../../common/constants';
 
 const Axios = axios.create({
   baseURL: BACKEND,
@@ -153,13 +153,13 @@ export class Http {
     }
   }
   static getFormErrors(error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       return error.response?.data?.message;
     }
     return null;
   }
   static getFieldErrors(error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       return error.response?.data?.errors;
     }
     return null;

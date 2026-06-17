@@ -2,6 +2,9 @@ import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import {renderWithProviders} from '../../../../setup/test-utils';
 
+import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
+import {clearSession} from '../../../../../src/utils/Session';
+
 jest.mock('@react-native-community/geolocation', () => ({
   getCurrentPosition: jest.fn(),
   watchPosition: jest.fn(() => 1),
@@ -88,9 +91,6 @@ jest.mock('expo-image', () => {
     Image: MockExpoImage,
   };
 });
-
-import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
-import {clearSession} from '../../../../../src/utils/Session';
 
 describe('HomeScreen', () => {
   it('renderiza la pantalla principal', () => {

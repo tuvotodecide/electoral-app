@@ -23,11 +23,6 @@ jest.mock(
   () => require('../../../__mocks__/String').default,
 );
 
-jest.mock(
-  '../../../../src/hooks/useNavigationLogger',
-  () => require('../../../__mocks__/hooks/useNavigationLogger'),
-);
-
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const {Ionicons} = require('../../../__mocks__/react-native-vector-icons');
   return Ionicons;

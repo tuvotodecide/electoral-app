@@ -1,3 +1,6 @@
+import {ensureDeposit} from '../../../src/utils/ensureDeposit';
+import {predictSmartAccount} from '../../../src/utils/account';
+
 jest.mock('react-native', () => ({
   Platform: {OS: 'android'},
   Dimensions: {
@@ -28,9 +31,6 @@ jest.mock('viem/account-abstraction', () => ({
   entryPoint07Address: '0xentry',
   computeAccountAddress: jest.fn(() => '0xpredicted'),
 }));
-
-import {ensureDeposit} from '../../../src/utils/ensureDeposit';
-import {predictSmartAccount} from '../../../src/utils/account';
 
 describe('utils de red', () => {
   beforeEach(() => {

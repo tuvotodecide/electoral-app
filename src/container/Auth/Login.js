@@ -16,7 +16,7 @@ import {validPassword, validateEmail} from '../../utils/Validation';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CButton from '../../components/common/CButton';
 import {socialIcon} from '../../api/constant';
-import {AuthNav, StackNav, TabNav} from '../../navigation/NavigationKey';
+import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import {setAuthToken} from '../../utils/AsyncStorage';
 
 

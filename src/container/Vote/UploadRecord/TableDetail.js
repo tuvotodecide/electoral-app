@@ -10,7 +10,6 @@ import {
   Image,
   Modal,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';

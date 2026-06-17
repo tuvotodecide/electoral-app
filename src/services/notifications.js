@@ -21,6 +21,7 @@ export async function ensureFCMSetup() {
 }
 
 let _channelId;
+// eslint-disable-next-line import/no-unused-modules
 export async function ensureNotifChannel() {
   if (_channelId) return _channelId;
   _channelId = await notifee.createChannel({
@@ -49,14 +50,11 @@ export async function showLocalNotification({title, body, data} = {}) {
   });
 }
 
-export async function getFCMToken() {
-  // Útil si luego quisieras enviar direct-to-device (no necesario para tópicos)
-  const token = await messaging().getToken();
-  return token;
-}
 function sanitizeTopicKey(s) {
   return String(s || '').replace(/[^A-Za-z0-9_-]/g, '');
 }
+
+// eslint-disable-next-line import/no-unused-modules
 export function makeLocationTopicKey(locationKey) {
   return `loc_${sanitizeTopicKey(locationKey)}`;
 }
@@ -107,6 +105,7 @@ export function registerBackgroundHandler() {
 }
 
 let _fgUnsub = null;
+// eslint-disable-next-line import/no-unused-modules
 export function registerForegroundListener(onMessage) {
   if (_fgUnsub) {
     _fgUnsub();
@@ -123,6 +122,7 @@ export function registerForegroundListener(onMessage) {
   };
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export function registerOpenHandlers(onOpened) {
   const unsubOpen = messaging().onNotificationOpenedApp(remoteMessage => {
     onOpened && onOpened(remoteMessage);
