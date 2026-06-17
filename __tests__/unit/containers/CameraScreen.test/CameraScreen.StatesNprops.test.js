@@ -26,9 +26,6 @@ jest.mock('expo-image-picker', () =>
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
 );
-jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
-  jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
 jest.mock(
   '../../../../src/i18n/String',
   () => require('../../../__mocks__/String').default,
@@ -42,7 +39,6 @@ const {
   createMockNavigation,
   flushPromises,
 } = require('./testUtils');
-const analyzer = require('../../../../src/utils/electoralActAnalyzer');
 
 const {Dimensions, AppState, StatusBar, Image, Alert, Animated} = ReactNative;
 
@@ -139,8 +135,6 @@ describe('CameraScreen - Estados y Props', () => {
     await pressFirstByText('Analizar', {getAllByText});
     await flushAsync();
 
-    expect(analyzer.analyzeElectoralAct).not.toHaveBeenCalled();
-    expect(analyzer.mapToAppFormat).not.toHaveBeenCalled();
     expect(mockNavigation.navigate).toHaveBeenCalledWith(
       StackNav.PhotoReviewScreen,
       expect.objectContaining({

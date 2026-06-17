@@ -9,8 +9,6 @@ import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
 // Mock dependencies
-jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
-jest.mock('react-native-linear-gradient', () => 'LinearGradient');
 jest.mock('../../../../../src/components/home/FaqComponents', () => {
   return function MockFaqComponent({title}) {
     const {View, Text} = require('react-native');

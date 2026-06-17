@@ -5,12 +5,6 @@ import {renderWithProviders} from '../../../../setup/test-utils';
 import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
 import {clearSession} from '../../../../../src/utils/Session';
 
-jest.mock('@react-native-community/geolocation', () => ({
-  getCurrentPosition: jest.fn(),
-  watchPosition: jest.fn(() => 1),
-  clearWatch: jest.fn(),
-}));
-
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://result.example',
 }));

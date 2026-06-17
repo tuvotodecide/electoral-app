@@ -23,9 +23,6 @@ jest.mock('@react-navigation/native');
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
 jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
 
-// Mock Geolocation
-jest.mock('@react-native-community/geolocation');
-
 // Mock custom components
 jest.mock('../../../../src/components/common/CSafeAreaView', () => 
   require('../../../__mocks__/components/common/CSafeAreaView')

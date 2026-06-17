@@ -4,11 +4,6 @@ import {AuthNav, StackNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser1 from '../../../../src/container/Auth/RegisterUser1';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 
-jest.mock('react-native-vector-icons/Ionicons', () => {
-  const React = require('react');
-  return ({testID, ...props}) => React.createElement('Ionicons', {testID, ...props});
-});
-
 describe('RegisterUser1', () => {
   beforeEach(() => {
     jest.clearAllMocks();

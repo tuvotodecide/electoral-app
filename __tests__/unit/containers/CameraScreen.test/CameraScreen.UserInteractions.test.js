@@ -26,9 +26,6 @@ jest.mock('expo-image-picker', () =>
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
 );
-jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
-  jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
 jest.mock(
   '../../../../src/i18n/String',
   () => require('../../../__mocks__/String').default,
@@ -36,14 +33,12 @@ jest.mock(
 
 const ReactNative = require('react-native');
 const {
-  cameraModule,
   netInfoModule,
   setupCameraBaseMocks,
   buildMockRoute,
   createMockNavigation,
   flushPromises,
 } = require('./testUtils');
-const analyzer = require('../../../../src/utils/electoralActAnalyzer');
 
 const {Dimensions, AppState, StatusBar, Image, Alert, Animated} = ReactNative;
 
@@ -144,10 +139,6 @@ describe('CameraScreen - Interacciones de Usuario', () => {
       isConnected: true,
       isInternetReachable: true,
     });
-    analyzer.analyzeElectoralAct.mockResolvedValueOnce({
-      success: false,
-      error: 'No se pudo analizar',
-    });
 
     const {getByText, getAllByText} = render(
       <CameraScreen navigation={mockNavigation} route={buildMockRoute()} />,
@@ -158,7 +149,6 @@ describe('CameraScreen - Interacciones de Usuario', () => {
     await pressFirstByText('Analizar', {getAllByText});
     await flushAsync();
 
-    expect(analyzer.analyzeElectoralAct).not.toHaveBeenCalled();
     expect(mockNavigation.navigate).toHaveBeenCalledWith(
       StackNav.PhotoReviewScreen,
       expect.objectContaining({

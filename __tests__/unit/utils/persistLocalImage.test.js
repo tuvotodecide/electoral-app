@@ -1,83 +1,54 @@
-import BlobUtil from 'react-native-blob-util';
-import {Paths, __fileInstances} from 'expo-file-system';
+import {File, Paths, __fileInstances} from 'expo-file-system';
 import {persistLocalImage, removePersistedImage} from '../../../src/utils/persistLocalImage';
 
 jest.mock('react-native', () => ({
   Platform: {OS: 'android'},
 }));
 
-const fileInstances = [];
-jest.mock('expo-file-system', () => {
-  const base = jest.requireActual('../../__mocks__/expo-file-system');
-
-  class TrackedFile extends base.File {
-    constructor(uri) {
-      super(uri);
-      fileInstances.push(this);
-    }
-  }
-
-  TrackedFile.downloadFileAsync = base.File.downloadFileAsync;
-
-  return {
-    ...base,
-    File: TrackedFile,
-    __fileInstances: fileInstances,
-  };
-});
-
-const mockBlobFetch = jest.fn();
-const mockBlobConfigFetch = jest.fn();
-jest.mock('react-native-blob-util', () => ({
-  fetch: (...args) => mockBlobFetch(...args),
-  config: jest.fn(() => ({
-    fetch: (...args) => mockBlobConfigFetch(...args),
-  })),
-  fs: {
-    readFile: jest.fn(() => Promise.resolve('ZGF0YQ==')),
-  },
-}));
+const mockFetch = jest.fn();
+const originalFetch = global.fetch;
 
 describe('persistLocalImage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     __fileInstances.length = 0;
     jest.spyOn(Date, 'now').mockReturnValue(123);
+    global.fetch = mockFetch;
   });
 
   afterEach(() => {
     Date.now.mockRestore();
+    global.fetch = originalFetch;
   });
 
   it('descarga y persiste si es URL http', async () => {
-    mockBlobFetch.mockResolvedValueOnce({
-      respInfo: {headers: {'Content-Type': 'image/png'}},
-    });
-    mockBlobConfigFetch.mockResolvedValueOnce({
-      path: () => '/tmp/downloaded.tmp',
+    mockFetch.mockResolvedValueOnce({
+      headers: {
+        get: jest.fn(() => 'image/png'),
+      },
     });
 
     const out = await persistLocalImage('https://example.com/image.png');
     expect(out).toBe(`${Paths.document.uri}/acta-123.png`);
-    expect(mockBlobFetch).toHaveBeenCalledWith('HEAD', 'https://example.com/image.png');
-    expect(BlobUtil.config).toHaveBeenCalled();
-    expect(__fileInstances).toHaveLength(2);
-    expect(__fileInstances[0].uri).toBe('file:///tmp/downloaded.tmp');
-    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.png`);
-    expect(__fileInstances[0].copy).toHaveBeenCalledWith(__fileInstances[1]);
-    expect(__fileInstances[0].delete).toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith('https://example.com/image.png', {method: 'HEAD'});
+    expect(File.downloadFileAsync).toHaveBeenCalledWith(
+      'https://example.com/image.png',
+      `${Paths.document.uri}/acta-123.png`,
+    );
   });
 
-  it('lanza error si la descarga HTTP no entrega path', async () => {
-    mockBlobFetch.mockResolvedValueOnce({
-      respInfo: {headers: {'Content-Type': 'image/png'}},
+  it('lanza error si la descarga HTTP no genera archivo', async () => {
+    mockFetch.mockResolvedValueOnce({
+      headers: {
+        get: jest.fn(() => 'image/png'),
+      },
     });
-    mockBlobConfigFetch.mockResolvedValueOnce({
-      path: () => null,
+    File.downloadFileAsync.mockResolvedValueOnce({
+      exists: false,
     });
 
     await expect(persistLocalImage('https://example.com/image.png')).rejects.toThrow(
-      'Descarga HTTP sin path',
+      'Descarga HTTP sin archivo generado',
     );
   });
 
@@ -93,10 +64,11 @@ describe('persistLocalImage', () => {
   it('lee contenido content:// en android', async () => {
     const out = await persistLocalImage('content://media/1');
     expect(out).toBe(`${Paths.document.uri}/acta-123.jpg`);
-    expect(BlobUtil.fs.readFile).toHaveBeenCalledWith('content://media/1', 'base64');
-    expect(__fileInstances).toHaveLength(1);
-    expect(__fileInstances[0].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
-    expect(__fileInstances[0].write).toHaveBeenCalledWith('ZGF0YQ==', {
+    expect(__fileInstances).toHaveLength(2);
+    expect(__fileInstances[0].uri).toBe('content://media/1');
+    expect(__fileInstances[1].uri).toBe(`${Paths.document.uri}/acta-123.jpg`);
+    expect(__fileInstances[0].base64).toHaveBeenCalled();
+    expect(__fileInstances[1].write).toHaveBeenCalledWith('ZGF0YQ==', {
       encoding: 'base64',
     });
   });
@@ -109,7 +81,7 @@ describe('persistLocalImage', () => {
     expect(__fileInstances[0].delete).toHaveBeenCalled();
   });
 
-  it('removePersistedImage ignora entradas invÃ¡lidas', async () => {
+  it('removePersistedImage ignora entradas invalidas', async () => {
     await removePersistedImage(null);
     await removePersistedImage(123);
   });

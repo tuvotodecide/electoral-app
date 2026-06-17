@@ -2,7 +2,7 @@ import React from 'react';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'expo-location';
 import NetInfo from '@react-native-community/netinfo';
 import axios from 'axios';
 import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
@@ -31,11 +31,6 @@ jest.mock('react-redux', () => ({
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
 jest.mock('react-native-paper', () => ({
   ActivityIndicator: 'ActivityIndicator',
-}));
-
-jest.mock('@react-native-community/geolocation', () => ({
-  requestAuthorization: jest.fn(),
-  getCurrentPosition: jest.fn(),
 }));
 
 jest.mock('@react-native-community/netinfo', () => ({
@@ -221,9 +216,9 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
       focusCallbacks.push(callback);
     });
 
-    mockedGeo.requestAuthorization.mockResolvedValue('granted');
-    mockedGeo.getCurrentPosition.mockImplementation(success => {
-      success({coords: {latitude: -17.7833, longitude: -63.1821}});
+    mockedGeo.getForegroundPermissionsAsync.mockResolvedValue({status: 'granted'});
+    mockedGeo.getCurrentPositionAsync.mockResolvedValue({
+      coords: {latitude: -17.7833, longitude: -63.1821},
     });
 
     mockedNetInfo.fetch.mockResolvedValue({
