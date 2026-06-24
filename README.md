@@ -11,8 +11,10 @@
 | Herramienta       | Versión recomendada      |
 |-------------------|--------------------------|
 | **Node.js**       | ≥ 18.x                   |
-| **npm** o `yarn`  | npm ≥ 8.x (o yarn ≥ 1.22)|
+| **pnpm**          | ≥ 9.x                    |
+| **Yarn**          | 3.6.x                    |
 | **Expo CLI**      | Última versión           |
+| **Flutter SDK**   | 3.35.x (Dart 3.10.x)     |
 | **Git**           | Última versión           |
 
 ### Para desarrollo nativo (builds locales)
@@ -26,7 +28,9 @@
 
 ```bash
 node -v
-npm -v
+pnpm -v
+yarn -v
+flutter --version
 git --version
 ```
 
@@ -40,54 +44,61 @@ git --version
 
 ## 🚀 Instalación
 
-### 1. Clonar el repositorio
+### 1. Clonar los 4 repositorios en la misma carpeta
 
 ```bash
-git clone <url-del-repositorio>
-cd electoral-app-expo
+mkdir electoral && cd electoral
+
+git clone https://github.com/tuvotodecide/electoral-app.git electoral-app
+git clone -b feat-wallet --single-branch https://github.com/Wira-Ecosystem/wira-sdk.git wira-sdk
+git clone https://github.com/Wira-Ecosystem/wira-sdk-flutter-component.git wira-sdk-flutter-component
+git clone -b local-branch --single-branch https://github.com/ArevaloJuanCarlos/polygonid-flutter-sdk.git polygonid-flutter-sdk
 ```
 
-### 2. Crear archivo .env
+Estructura esperada:
+
+```text
+electoral/
+├── electoral-app/
+├── wira-sdk/
+├── wira-sdk-flutter-component/
+└── polygonid-flutter-sdk/
+```
+
+### 2. Compilar el módulo Flutter (AAR)
 
 ```bash
+cd wira-sdk-flutter-component
+flutter pub get
+flutter build aar
+cd ..
+```
+
+### 3. Preparar wira-sdk
+
+```bash
+cd wira-sdk
+yarn
+yarn prepare
+cd ..
+```
+
+### 4. Preparar y ejecutar la app Expo
+
+Primero, configura variables de entorno de la app:
+
+```bash
+cd electoral-app
 cp .env.example .env
 ```
 
 Edita el archivo `.env` con las variables necesarias para tu entorno.
 
-### 3. Instalar dependencias
+Instala las dependencias:
 
 ```bash
-npm install
+pnpm install
 ```
-
----
-
-## 📱 Ejecución
-
-### Development Build
-
-Para funcionalidades nativas (cámara, notificaciones, etc.), necesitas un development build:
-
-```bash
-# Crear build de desarrollo para Android
-npx expo run:android
-
-```
-
-### Comandos disponibles
-
-| Comando             | Descripción                              |
-|---------------------|------------------------------------------|
-| `npm start`         | Inicia el servidor de desarrollo Expo    |
-| `npm run android`   | Ejecuta en Android (build nativo)        |
-| `npm run lint`      | Ejecuta el linter                        |
-
----
-
-## 🔧 Configuración Android
-
-### Configuración de Firebase y keystore
 
 En la raíz del proyecto, crea la carpeta native-files, y añade el keystore y el archivo JSON de Firebase
 
@@ -114,12 +125,33 @@ Añade las credenciales del keystore en el archivo credentials.json en la raíz 
 }
 ```
 
-
-### Generar folder android
+Genera el proyecto Android nativo:
 
 ```bash
-npx expo prebuild --clean --platform android
+pnpm expo prebuild --clean --platform android
 ```
+
+Ejecuta la app en Android:
+
+```bash
+pnpm run android
+```
+
+Opcionalmente, inicia Metro de forma manual en otra terminal:
+
+```bash
+pnpm start
+```
+---
+
+### Comandos disponibles
+
+| Comando             | Descripción                              |
+|---------------------|------------------------------------------|
+| `pnpm start`        | Inicia el servidor de desarrollo Expo    |
+| `pnpm run android`  | Ejecuta en Android (build nativo)        |
+| `pnpm run lint`     | Ejecuta el linter                        |
+
 
 ### Limpiar build de Android
 
@@ -130,19 +162,6 @@ cd ..
 ```
 
 ## 📦 Builds de Producción
-
-### Usando EAS Build
-
-```bash
-# Instalar EAS CLI
-npm install -g eas-cli
-
-# Iniciar sesión en Expo
-eas login
-
-# Build para Android
-eas build --platform android
-```
 
 ### Build local
 
@@ -158,10 +177,10 @@ cd android && ./gradlew bundleRelease
 
 ```bash
 # Ejecutar tests
-npm test
+pnpm test
 
 # Ejecutar tests en modo watch
-npm test -- --watch
+pnpm test -- --watch
 ```
 
 ---
@@ -169,7 +188,7 @@ npm test -- --watch
 ## 📝 Notas adicionales
 
 - La app usa **Expo SDK 54** con la nueva arquitectura habilitada.
-- Para funcionalidades nativas como cámara, biometría o notificaciones push, se requiere un **development build**.
+- La app usa funcionalidades nativas como cámara, biometría y notificaciones, se requiere un **development build**.
 - Consulta `TESTING_GUIDE.md` para más información sobre testing.
 
 ---
