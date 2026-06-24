@@ -14,8 +14,10 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import {normalizeOcrForUI} from '../../utils/issuerClient';
+import { BACKEND_IDENTITY } from '@env';
 
 import wira from 'wira-sdk';
+import { captureError } from '@/src/config/sentry';
 
 function onlyDigits(s = '') {
   return (s || '').replace(/\D/g, '');
@@ -32,24 +34,32 @@ export default function RegisterUser5({navigation, route}) {
     (async () => {
       try {
         const idCardAnalyzer = wira.idCardAnalyzer;
-        await idCardAnalyzer.ensureClient();
 
-        const res = await idCardAnalyzer.analyze(
+        const res = await idCardAnalyzer.analyzeFromRegistry(
+          BACKEND_IDENTITY,
           frontImage?.uri,
           backImage?.uri,
           selfie?.uri,
         );
 
         if (!res.success) {
-          if (res.error === 'front/back order') {
-            setErrorMessage(
-              'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
-            );
+          if(res.error === 'front/back order') {
+              setErrorMessage(String.frontBackOrderError);
+          } else if (res.error === 'face match failed') {
+              setErrorMessage(String.faceMatchFailedError);
+          } else if (res.error.includes('missing data')) {
+            setErrorMessage(String.missingDataError); 
+          } else if (res.error.includes('El análisis no está disponible temporalmente')) {
+            setErrorMessage(String.analysisUnavailableError);
           } else {
-            setErrorMessage(
-              res.error ||
-                'Error de verificación. Vuelve a intentar con fotos más nítidas.',
+            captureError(
+              new Error('ID Card analysis failed: ' + res.error), {
+                flow: 'registerUser5',
+                critical: true,
+                step: 'ID Card analysis',
+              }
             );
+            setErrorMessage(String.defaultVerificationError);
           }
           setErrorModalVisible(true);
           return;
@@ -68,7 +78,7 @@ export default function RegisterUser5({navigation, route}) {
 
         const ocrData = normalizeOcrForUI(data);
         navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
-      } catch (err) {
+      } catch (_err) {
         setErrorMessage(
           'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
         );

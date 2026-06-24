@@ -4,9 +4,9 @@ import {
   View,
   Alert,
   ActivityIndicator,
-  Linking,
   StyleSheet,
 } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
 
 import {openSettings} from 'expo-linking';
 
@@ -24,13 +24,15 @@ import {useSelector} from 'react-redux';
 import wira from 'wira-sdk';
 import { useBackupCheck } from '@/src/hooks/useBackupCheck';
 import { StackNav } from '@/src/navigation/NavigationKey';
+import { moderateScale } from '@/src/common/constants';
+import typography from '@/src/themes/typography';
 
 const recoveryService = new wira.RecoveryService();
 
 export default function RecuperationQR({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const userData = useSelector(state => state.wallet.payload);
+  const [pin, setPin] = useState(null);
   const colors = useSelector(state => state.theme.theme);
   const { checkBackupAsStored } = useBackupCheck()
 
@@ -45,8 +47,8 @@ export default function RecuperationQR({ navigation }) {
     try {
       await saveData();
       await checkBackupAsStored();
-    } catch (err) {
-      Alert.alert('Error', errorMessage, [
+    } catch (error) {
+      Alert.alert('Error', error.message, [
         {text: 'OK', style: 'default'},
         {text: 'Abrir configuración', onPress: () => openSettings()},
       ]);
@@ -55,55 +57,51 @@ export default function RecuperationQR({ navigation }) {
 
   const saveData = async () => {
     try {
-      const {savedOn, path, fileName} = await recoveryService.backupDataOnDevice({
-        dni: userData.dni,
-        salt: userData.salt,
-        privKey: userData.privKey,
-        account: userData.account,
-        guardian: userData.guardian,
-        did: userData.did,
-      });
+      await recoveryService.backupDataOnDevice(pin);
 
       setSaveSuccess(true);
-      if (savedOn === 'downloads') {
-        Alert.alert(
-          String.backed,
-          String.backedOnDownloads + fileName,
-          [
-            { text: 'OK', style: 'default' },
-            {
-              text: String.openDownloads,
-              onPress: () => {
-                Linking.openURL(
-                  'content://com.android.externalstorage.documents/root/primary:Download'
-                ).catch(() => openSettings());
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert(
-          String.backed,
-          String.backedOnAppDir + path,
-          [{ text: 'OK' }]
-        );
-      }
+      Alert.alert(
+        String.backed,
+        String.backedOnSelectedDir,
+        [{ text: 'OK' }]
+      );
     } catch (error) {
+      if (error.message.includes('Export canceled')) {
+        setSaving(false);
+        return;
+      }
       let errorMessage = String.backupSaveError;
-      if (err.message.includes('Storage permission not granted')) {
+      let openSettings = false;
+      if (error.message.includes('Storage permission not granted')) {
         errorMessage = String.permissionDeniedMessage;
-      } else if (err.message.includes('ENOENT')) {
+        openSettings = true;
+      } else if (error.message.includes('ENOENT')) {
         errorMessage = String.badDirectoryMessage;
+      } else if (error.message.includes('Invalid PIN')) {
+        errorMessage = String.incorrectPinError;
       }
 
-      Alert.alert('Error', errorMessage, [
+      const buttons = [
         {text: 'OK', style: 'default'},
-        {text: String.openSettings, onPress: () => openSettings()},
-      ]);
+      ];
+
+      if (openSettings) {
+        buttons.push({text: String.openSettings, onPress: () => openSettings()});
+      }
+
+      Alert.alert('Error', errorMessage, buttons);
     } finally {
       setSaving(false);
     }
   }
+
+  const onCodeFilled = (code) => {
+    if (code.length === 4) {
+      setPin(code);
+    } else {
+      setPin(null);
+    }
+  };
 
   return (
     <CSafeAreaView testID="recuperationFileContainer" addTabPadding={false}>
@@ -116,15 +114,42 @@ export default function RecuperationQR({ navigation }) {
             {String.backupFileDescription}
           </CText>
         </View>
+
+        <CText testID="recuperationFileDescription" type="B16" align="center" marginTop={20}>
+          {String.enterPin}
+        </CText>
+        <OTPTextInput
+          testID="textInput"
+          inputCount={4}
+          containerStyle={local.otpInputViewStyle}
+          keyboardType="number-pad"
+          handleTextChange={onCodeFilled}
+          secureTextEntry={true}
+          editable
+          keyboardAppearance={'dark'}
+          placeholderTextColor={colors.textColor}
+          autoFocus={false}
+          textInputStyle={[
+            local.underlineStyleBase,
+            {
+              backgroundColor: colors.inputBackground,
+              color: colors.textColor,
+              borderColor: colors.grayScale500,
+            },
+          ]}
+          tintColor={colors.primary}
+          offTintColor={colors.grayScale500}
+        />
+        <CAlert testID="recuperationFileWarning" message={String.enterPinInfo} />
       </KeyBoardAvoidWrapper>
 
       <View testID="recuperationFileFooter" style={styles.ph20}>
         <CAlert testID="recuperationFileWarning" status="warning" message={String.backupFileWarning} />
         <CButton
           testID="recuperationFileSaveButton"
-          title={saving ? String.downloadingBackup : saveSuccess ? String.backupFileSuccess : String.downloadBackup}
+          title={pin === null ? String.enterPin : saving ? String.downloadingBackup : saveSuccess ? String.backupFileSuccess : String.downloadBackup}
           onPress={initSaveQr}
-          disabled={saving}
+          disabled={pin === null || saving}
           variant={saveSuccess ? 'outlined' : 'default'}
           frontIcon={
             saving ? (
@@ -151,5 +176,19 @@ const local = StyleSheet.create({
     borderRadius: 10,
     marginTop: 20,
     alignItems: 'center'
-  }
+  },
+  otpInputViewStyle: {
+    ...styles.selfCenter,
+    height: '20%',
+    ...styles.mt10,
+  },
+  underlineStyleBase: {
+    width: moderateScale(50),
+    height: moderateScale(55),
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(10),
+    ...typography.fontWeights.Bold,
+    ...typography.fontSizes.f26,
+    ...styles.mh5,
+  },
 });

@@ -155,7 +155,7 @@ export default function RegisterUser4({navigation, route}) {
       index: 0,
       routes: [{
         name: AuthNav.LoginUser,
-        params: {isCIRecovery: true}
+        params: {isCIRecovery: true, dni: dni.trim()},
       }],
     });
   }

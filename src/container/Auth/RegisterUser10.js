@@ -85,17 +85,6 @@ export default function RegisterUser10({ navigation, route }) {
     return () => clearTimeout(watchdogRef.current);
   }, [stage]);
 
-  const withTimeout = useCallback(
-    (promise, ms, label) =>
-      Promise.race([
-        promise,
-        new Promise((_, rej) =>
-          setTimeout(() => rej(new Error(`${label} timeout (${ms}ms)`)), ms),
-        ),
-      ]),
-    [],
-  );
-
   useEffect(() => {
     (async () => {
       if (route.params?.fromDraft) {
@@ -157,22 +146,16 @@ export default function RegisterUser10({ navigation, route }) {
         );
 
         await yieldUI();
-        const { guardianAddress } = await withTimeout(
-          registerer.createWallet(dni),
-          90000,
-          'registerStreamAndGuardian',
-        );
-
         dispatch(
           setAddresses({
             account: registerer.walletData.address,
-            guardian: guardianAddress,
+            guardian: '',
           }),
         );
 
         setStage('save');
         await yieldUI();
-        await registerer.storeOnDevice(pin, useBiometry);
+        await registerer.storeOnDevice(dni, pin, useBiometry);
 
         const response = await registerer.storeDataOnServer();
         if (!response.ok) {

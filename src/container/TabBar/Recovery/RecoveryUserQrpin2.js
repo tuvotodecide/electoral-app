@@ -51,20 +51,6 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
     await yieldUI();
     try {
-      if(payload.legacyData) {
-        navigation.navigate(
-          AuthNav.RegisterUser10,
-          {
-            ocrData: payload.legacyData,
-            dni: payload.data.dni,
-            originalPin,
-            useBiometry: await wira.Biometric.getBioFlag(),
-            isMigration: true,
-          }
-        )
-        return;
-      }
-
       await recoveryService.saveBackupData(payload.data, otp.trim(), PROVIDER_NAME, BACKEND_IDENTITY);
       await resetAttempts();
 

@@ -81,6 +81,13 @@ export default {
   verifyingIdentityTitle: 'Estamos verificando tu identidad',
   verifyingIdentityMessage:
     'Por favor, permanece en esta pantalla mientras completamos el proceso de verificación.',
+  //Page 5
+  frontBackOrderError: 'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
+  faceMatchFailedError: 'La selfie no coincide con la foto del DNI. Por favor, vuelve a capturar tus imágenes asegurándote de que tu rostro esté claramente visible.',
+  missingDataError: 'Faltan datos en las imágenes. Por favor, vuelve a capturar asegurándote de que las fotos sean claras y completas.',
+  analysisUnavailableError: 'El análisis no está disponible temporalmente. Por favor, vuelve a intentar más tarde.',
+  defaultVerificationError: 'Error de verificación. Vuelve a intentar más tarde o intenta con fotos más nítidas.',
+
   //page 6
   titleConfirmData: 'Confirma tus datos',
   descriptionConfirmData:
@@ -207,7 +214,9 @@ export default {
     'Guarda los datos de tu identidad en un archivo. Si pierdes acceso a tu cuenta, podrás usarla para recuperarla.',
   backupFileWarning:
     'Guarda este archivo en un lugar seguro.',
+  enterPinInfo: 'NUNCA olvides tu PIN. Es necesario para recuperar tu cuenta.',
   backupFileSuccess: 'Archivo guardado exitosamente',
+  enterPin: 'Ingresa tu PIN',
   downloadBackup: ' Descargar respaldo',
   downloadingBackup: 'Descargando respaldo…',
   qrPermissionDenied: 'Permiso denegado',
@@ -223,7 +232,7 @@ export default {
   backed: 'Archivo guardado',
   backedOnDownloads: 'Archivo guardado en Descargas 📁:\n\n',
   openDownloads: 'Abrir descargas',
-  backedOnAppDir: 'Archivo guardado en el directorio de la app:\n\n',
+  backedOnSelectedDir: 'Tu respaldo fue guardado exitosamente.',
   backupSaveError: 'No se pudo guardar la imagen',
   permissionDeniedMessage: 'Sin permisos para escribir. Verifica los permisos de la app.',
   badDirectoryMessage: 'Error de directorio. Verifica los permisos de almacenamiento.',
@@ -1257,7 +1266,8 @@ export default {
   alertguardiansrequired: 'Necesitas al menos un guardián activo',
   recoverywithFile: 'Recuperación con archivo',
   recoveryFileSubtitle:
-    'Para continuar con la recuperación de su cuenta seleccione el archivo de respaldo',
+    'Para continuar con la recuperación de su cuenta, ingrese su PIN y seleccione su archivo de respaldo',
+
   selectFile: 'Seleccionar archivo',
   selectFileError: 'Error al procesar el archivo',
   processingSuccess: 'Archivo procesado correctamente',
@@ -1389,4 +1399,11 @@ export default {
   claimingCredentials: 'Reclamando credenciales...',
   claimError: 'Error al reclamar credenciales, inténtalo de nuevo o contacta al soporte si el problema persiste.',
   credentialsClaimedDesc: 'Tus credenciales han sido reclamadas exitosamente, ahora puedes ir a la votación.',
+
+  //Migration
+  migrationModalDesc: 'Se ha detectado un respaldo antiguo en tu dispositivo. Para continuar, debes migrar tu respaldo a la nueva versión de la aplicación. Esto tomará un minuto.',
+  migrateBackup: 'Migrar Respaldo',
+  migrationInProgress: 'Migración en progreso...',
+  migrationSuccess: 'Migración completada exitosamente',
+  migrationError: 'Error durante la migración, inténtalo de nuevo o contacta al soporte si el problema persiste.',
 };

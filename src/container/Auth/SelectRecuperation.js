@@ -79,42 +79,6 @@ export default function SelectRecuperation({navigation, route}) {
         }
         
         <TouchableOpacity
-          testID="selectRecuperationGuardiansOption"
-          style={[
-            localStyle.optionContainer,
-            {
-              backgroundColor: colors.backgroundColor,
-              borderColor: colors.dark
-                ? colors.grayScale700
-                : colors.grayScale200,
-
-              elevation: 5,
-            },
-          ]}
-          onPress={() => {
-            navigation.navigate(AuthNav.FindMyUser);
-          }}>
-          <View style={styles.rowCenter}>
-            <View
-              testID="selectRecuperationGuardiansIcon"
-              style={[
-                localStyle.iconBg,
-                {
-                  borderColor: colors.dark
-                    ? colors.stepBackgroundColor
-                    : colors.grayScale200,
-                },
-              ]}>
-              <Icono name="account" size={moderateScale(24)} />
-            </View>
-            <View style={styles.ml10}>
-              <View style={styles.rowCenter}>
-                <CText testID="selectRecuperationGuardiansText" type="B16">{String.recoverymethodGuardians}</CText>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
           testID="selectRecuperationFileOption"
           style={[
             localStyle.optionContainer,

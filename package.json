@@ -119,7 +119,7 @@
     "util": "^0.12.5",
     "viem": "^2.31.3",
     "vm-browserify": "^1.1.2",
-    "wira-sdk": "file:../wira-sdk"
+    "wira-sdk": "link:../wira-sdk"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

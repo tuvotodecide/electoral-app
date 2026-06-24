@@ -18,7 +18,7 @@ import CHeader from '../../components/common/CHeader';
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CText from '../../components/common/CText';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import { AuthNav, StackNav } from '../../navigation/NavigationKey';
+import { AuthNav, StackNav, TabNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import typography from '../../themes/typography';
 
@@ -121,15 +121,15 @@ const logNetworkIssue = (label, error, extra = {}) => {
 };
 
 export default function LoginUser({ navigation, route }) {
-  const { sharedSessionId, sharedSessionSalt, isCIRecovery = false } = route.params ?? {};
+  const { sharedSessionId, sharedSessionSalt, isCIRecovery = false, dni } = route.params ?? {};
 
   const colors = useSelector(state => state.theme.theme);
   const [locked, setLocked] = useState(null);
-  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState(String.loading);
   const [modal, setModal] = useState({ visible: false, msg: '', btn: String.understand, onClose: null });
+
   const hideModal = () => setModal({ visible: false, msg: '', btn: String.understand, onClose: null });
+  const dispatch = useDispatch();
 
   const otpRef = useRef(null);
 
@@ -163,7 +163,21 @@ export default function LoginUser({ navigation, route }) {
       );
     }
 
-    navigation.reset({ index: 0, routes: [{ name: StackNav.TabNavigation }] });
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {
+            screen: TabNav.HomeScreen,
+            params: {
+              screen: 'HomeMain',
+              params: {migratePin: pin},
+            },
+          },
+        },
+      ],
+    });
     await consumePendingNotificationNavigation();
   }
 
@@ -193,7 +207,7 @@ export default function LoginUser({ navigation, route }) {
       if (hasUserData) {
         let userData;
         try {
-          userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions);
+          userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions, dni);
         } catch (error) {
           if (error?.message?.includes('Invalid PIN')) {
             return { ok: false, type: 'bad_pin' };
@@ -465,7 +479,7 @@ export default function LoginUser({ navigation, route }) {
         <View style={localStyle.loadingOverlay} testID="loginUserLoading">
           <ActivityIndicator size="large" color={colors.white} />
           <CText type="B16" color={colors.white} style={styles.mt10}>
-            {loadingMessage}
+            {String.loading}
           </CText>
         </View>
       )}
