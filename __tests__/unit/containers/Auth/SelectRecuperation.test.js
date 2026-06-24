@@ -33,17 +33,24 @@ describe('SelectRecuperation', () => {
     });
   });
 
-  it('las opciones de guardianes y archivo navegan a sus pantallas correctas', () => {
+  it('la opción de archivo navega a su pantalla correcta', () => {
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const {getByTestId} = renderWithProviders(
       <SelectRecuperation navigation={localNavigation} route={{params: {}}} />,
     );
 
-    fireEvent.press(getByTestId('selectRecuperationGuardiansOption'));
     fireEvent.press(getByTestId('selectRecuperationFileOption'));
 
-    expect(localNavigation.navigate).toHaveBeenNthCalledWith(1, AuthNav.FindMyUser);
-    expect(localNavigation.navigate).toHaveBeenNthCalledWith(2, AuthNav.RecoveryQr);
+    expect(localNavigation.navigate).toHaveBeenNthCalledWith(1, AuthNav.RecoveryQr);
+  });
+
+  it('no se muestra la opción de guardianes', () => {
+    const localNavigation = {...mockNavigation, navigate: jest.fn()};
+    const {getByTestId} = renderWithProviders(
+      <SelectRecuperation navigation={localNavigation} route={{params: {}}} />,
+    );
+
+    expect(() => getByTestId('selectRecuperationGuardiansOption')).toThrow();
   });
 
   it('oculta la opción CI cuando disableCI es true', () => {

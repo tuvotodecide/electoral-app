@@ -6,7 +6,8 @@ import {renderWithProviders} from '../../../setup/test-utils';
 const mockTakePictureAsync = jest.fn(async () => ({uri: 'file://camera.jpg'}));
 
 jest.mock('expo-camera', () => ({
-  CameraView: React.forwardRef(function CameraMock(props, ref) {
+  CameraView: require('react').forwardRef(function CameraMock(props, ref) {
+    const React = require('react');
     React.useImperativeHandle(ref, () => ({
       takePictureAsync: mockTakePictureAsync,
     }));

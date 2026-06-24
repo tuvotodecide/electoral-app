@@ -86,6 +86,13 @@ jest.mock('expo-image', () => {
   };
 });
 
+jest.mock('wira-sdk', () => ({
+  MigrationService: jest.fn().mockImplementation(() => ({
+    checkMigration: jest.fn(() => Promise.resolve(false)),
+    startMigration: jest.fn(() => Promise.resolve()),
+  })),
+}));
+
 describe('HomeScreen', () => {
   it('renderiza la pantalla principal', () => {
     const {getByTestId} = renderWithProviders(<HomeScreen />, {

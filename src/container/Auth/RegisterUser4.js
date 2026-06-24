@@ -1,4 +1,4 @@
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -126,6 +126,7 @@ export default function RegisterUser4({navigation, route}) {
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
         BACKEND_IDENTITY,
+        IDENTITY_KEY,
         resizedFrontImage,
         resizedBackImage,
         resizedSelfie,
@@ -139,10 +140,21 @@ export default function RegisterUser4({navigation, route}) {
         success: true,
       });
     } catch (error) {
+      let errorMessage = String.recoveryError;
+      if(error.message.includes('front/back order')) {
+        errorMessage = String.frontBackOrderError;
+      } else if (error.message.includes('face match failed')) {
+        errorMessage = String.faceMatchFailedError;
+      } else if (error.message.includes('missing data')) {
+        errorMessage = String.missingDataError; 
+      } else if (error.message.includes('El análisis no está disponible temporalmente')) {
+        errorMessage = String.analysisUnavailableError;
+      }
+      
       setModal({
         visible: true,
         title: '',
-        message: String.recoveryError,
+        message: errorMessage,
         isLoading: false,
       });
       console.error('Recovery failed:', error);

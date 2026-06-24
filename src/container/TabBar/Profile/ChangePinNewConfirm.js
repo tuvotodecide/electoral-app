@@ -1,4 +1,4 @@
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
@@ -49,7 +49,7 @@ export default function ChangePinNewConfirm({navigation, route}) {
       });
       // Delay to allow modal to render
       await new Promise(resolve => setTimeout(resolve, 100));
-      await wira.updatePin(BACKEND_IDENTITY, oldPin, newPin);
+      await wira.updatePin(BACKEND_IDENTITY, IDENTITY_KEY, oldPin, newPin);
       setModal({
         visible: true,
         message: 'Tu PIN ha sido actualizado correctamente',

@@ -121,7 +121,10 @@ describe('RegisterUser4', () => {
       routes: [
         {
           name: AuthNav.LoginUser,
-          params: {isCIRecovery: true},
+          params: {
+            isCIRecovery: true,
+            dni: '00000000',
+          },
         },
       ],
     });

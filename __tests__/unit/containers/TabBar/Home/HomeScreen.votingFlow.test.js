@@ -175,6 +175,13 @@ jest.mock('../../../../../src/features/voting', () => {
   };
 });
 
+jest.mock('wira-sdk', () => ({
+  MigrationService: jest.fn().mockImplementation(() => ({
+    checkMigration: jest.fn(() => Promise.resolve(false)),
+    startMigration: jest.fn(() => Promise.resolve()),
+  })),
+}));
+
 const buildState = () => ({
   auth: {isAuthenticated: true},
   wallet: {

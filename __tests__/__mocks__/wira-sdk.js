@@ -86,7 +86,14 @@ const wira = {
   },
   idCardAnalyzer: {
     ensureClient: jest.fn(async () => undefined),
-    analyze: jest.fn(async () => ({success: true, data: {numeroDoc: '00000000'}})),
+    analyzeFromRegistry: jest.fn(async () => ({success: true, data: {
+      numeroDoc: '00000000',
+      fullName: 'John Doe',
+      fechaNacimiento: '1990-01-01',
+      fechaExpedicion: '2010-01-01',
+      lugarExpedicion: 'City',
+      faceMatch: true,
+    }})),
   },
   signIn: jest.fn(async () => ({
     did: 'did:mock',

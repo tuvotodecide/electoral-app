@@ -18,7 +18,7 @@ import CHeader from '../../components/common/CHeader';
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CText from '../../components/common/CText';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import { AuthNav, StackNav, TabNav } from '../../navigation/NavigationKey';
+import { AuthNav, StackNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 import typography from '../../themes/typography';
 
@@ -168,13 +168,6 @@ export default function LoginUser({ navigation, route }) {
       routes: [
         {
           name: StackNav.TabNavigation,
-          params: {
-            screen: TabNav.HomeScreen,
-            params: {
-              screen: 'HomeMain',
-              params: {migratePin: pin},
-            },
-          },
         },
       ],
     });

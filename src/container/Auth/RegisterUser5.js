@@ -14,7 +14,7 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import {normalizeOcrForUI} from '../../utils/issuerClient';
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 
 import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
@@ -37,6 +37,7 @@ export default function RegisterUser5({navigation, route}) {
 
         const res = await idCardAnalyzer.analyzeFromRegistry(
           BACKEND_IDENTITY,
+          IDENTITY_KEY,
           frontImage?.uri,
           backImage?.uri,
           selfie?.uri,

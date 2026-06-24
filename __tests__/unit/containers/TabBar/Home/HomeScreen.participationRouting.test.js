@@ -144,6 +144,13 @@ jest.mock('../../../../../src/config/sentry', () => ({
   captureMessage: jest.fn(),
 }));
 
+jest.mock('wira-sdk', () => ({
+  MigrationService: jest.fn().mockImplementation(() => ({
+    checkMigration: jest.fn(() => Promise.resolve(false)),
+    startMigration: jest.fn(() => Promise.resolve()),
+  })),
+}));
+
 const mockedUseSelector = useSelector;
 const mockedUseDispatch = useDispatch;
 const mockedUseFocusEffect = useFocusEffect;

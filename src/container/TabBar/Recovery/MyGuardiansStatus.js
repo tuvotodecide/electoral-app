@@ -1,4 +1,4 @@
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import {KeyboardAvoidingView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 
@@ -85,7 +85,7 @@ export default function MyGuardiansStatus({navigation}) {
     const initRecovery = async () => {
       const recoveryDni = await AsyncStorage.getItem(GUARDIAN_RECOVERY_DNI);
       if(recoveryDni && recoveryDni.length > 0) {
-        return (new wira.RecoveryService()).recoveryFromGuardians(BACKEND_IDENTITY, recoveryDni);
+        return (new wira.RecoveryService()).recoveryFromGuardians(BACKEND_IDENTITY, IDENTITY_KEY, recoveryDni);
       }
 
       setModal({

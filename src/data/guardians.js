@@ -1,10 +1,10 @@
 
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import wira from 'wira-sdk';
 
-export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY);
+export const guardianApi = new wira.GuardiansApi(BACKEND_IDENTITY, IDENTITY_KEY);
 
 export const useGuardiansInviteQuery = () => {
   const queryClient = useQueryClient();

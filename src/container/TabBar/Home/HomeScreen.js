@@ -2964,7 +2964,6 @@ export default function HomeScreen({ navigation, route }) {
       />
       <MigrationModal
         userDid={userData?.did}
-        pin={route.params?.migratePin}
       />
     </CSafeAreaView>
   );

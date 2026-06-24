@@ -1,4 +1,4 @@
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -106,7 +106,7 @@ export default function RegisterUser2({navigation, route}) {
       setSubmitting(true);
       setModalVisible({visible: false, message: null});
 
-      const api = new wira.RegistryApi(BACKEND_IDENTITY);
+      const api = new wira.RegistryApi(BACKEND_IDENTITY, IDENTITY_KEY);
       api
         .registryCheckByDni(trimmedId)
         .then(({exists}) => {
