@@ -174,7 +174,8 @@ const VoteReceiptScreen = () => {
     if (participationId && !isQueuedParticipation && !isFailedParticipation) {
       syncStateWithBlockchain(participationId)
     }
-  }, [isFailedParticipation, isQueuedParticipation, participationId, participations, syncStateWithBlockchain]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
 
   const renderSyncStatus = () => {
     if (isFailedParticipation) {
