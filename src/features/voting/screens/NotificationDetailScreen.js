@@ -62,6 +62,7 @@ const DEFAULT_NOTIFICATION = {
 };
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
+const VOTING_CANCELLED_TYPE = 'INSTITUTIONAL_VOTING_CANCELLED';
 
 const PUBLIC_ELECTION_WEBVIEW_TYPES = new Set([
   'INSTITUTIONAL_EVENT_PUBLISHED',
@@ -69,6 +70,11 @@ const PUBLIC_ELECTION_WEBVIEW_TYPES = new Set([
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
   'INSTITUTIONAL_VOTING_ENABLED',
+]);
+
+const PUBLIC_EVENT_DETAIL_CANCEL_CHECK_TYPES = new Set([
+  ...PUBLIC_ELECTION_WEBVIEW_TYPES,
+  'INSTITUTIONAL_RESULTS_AVAILABLE',
 ]);
 
 const colorPalette = [
@@ -331,6 +337,12 @@ const mapResultsSummaryFromDetail = detail => {
 const pickEventDateValue = (...values) =>
   values.find(value => formatEventDate(value)) || null;
 
+const isCancelledPublicEventDetail = detail => {
+  const state = String(detail?.state || '').trim().toUpperCase();
+  const availabilityStatus = String(detail?.availabilityStatus || '').trim().toUpperCase();
+  return state === 'CANCELLED' || availabilityStatus === 'CANCELLED';
+};
+
 const NotificationDetailScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -347,6 +359,11 @@ const NotificationDetailScreen = () => {
     normalizedType === 'INSTITUTIONAL_NEWS';
   const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
   const statusTone = notification?.statusTone || 'success';
+  const isExplicitVotingCancelled =
+    normalizedType === VOTING_CANCELLED_TYPE ||
+    String(rawData?.state || '').trim().toUpperCase() === 'CANCELLED' ||
+    String(rawData?.availabilityStatus || '').trim().toUpperCase() === 'CANCELLED';
+  const [resolvedVotingCancelled, setResolvedVotingCancelled] = useState(isExplicitVotingCancelled);
   const [remoteResultsSummary, setRemoteResultsSummary] = useState([]);
   const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
   const [detailMeta, setDetailMeta] = useState({
@@ -378,6 +395,9 @@ const NotificationDetailScreen = () => {
     [resultsSummary],
   );
   const hasTie = tiedLeaders.length > 1;
+  const isInstitutionalWithEventId =
+    Boolean(eventId) && normalizedType.startsWith('INSTITUTIONAL_');
+  const isVotingCancelled = isExplicitVotingCancelled || resolvedVotingCancelled;
   const supportsPublicElectionWebView = PUBLIC_ELECTION_WEBVIEW_TYPES.has(normalizedType);
   const startsAtLabel =
     notification?.votingStartLabel ||
@@ -411,7 +431,65 @@ const NotificationDetailScreen = () => {
   }, [dni, notification?.createdAt, notification?.timestamp]);
 
   useEffect(() => {
-    if (kind !== 'election_results' || !eventId) {
+    setResolvedVotingCancelled(isExplicitVotingCancelled);
+  }, [isExplicitVotingCancelled, eventId, normalizedType]);
+
+  useEffect(() => {
+    const shouldCheckCancellation =
+      !isExplicitVotingCancelled &&
+      isInstitutionalWithEventId &&
+      (PUBLIC_EVENT_DETAIL_CANCEL_CHECK_TYPES.has(normalizedType) ||
+        kind === 'election_results');
+
+    if (!shouldCheckCancellation) {
+      return;
+    }
+
+    let mounted = true;
+    const resolveCurrentEventState = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/voting/events/public/detail/${encodeURIComponent(eventId)}`,
+          {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          },
+        );
+
+        if (response.status === 404 || response.status === 410) {
+          if (mounted) {
+            setResolvedVotingCancelled(true);
+          }
+          return;
+        }
+
+        if (!response.ok) {
+          return;
+        }
+
+        const detail = await response.json();
+        if (mounted && isCancelledPublicEventDetail(detail)) {
+          setResolvedVotingCancelled(true);
+        }
+      } catch {
+        // Network errors keep the current notification behavior.
+      }
+    };
+
+    resolveCurrentEventState();
+    return () => {
+      mounted = false;
+    };
+  }, [
+    eventId,
+    isExplicitVotingCancelled,
+    isInstitutionalWithEventId,
+    kind,
+    normalizedType,
+  ]);
+
+  useEffect(() => {
+    if (kind !== 'election_results' || !eventId || isVotingCancelled) {
       setResultsLoading(false);
       return;
     }
@@ -434,6 +512,12 @@ const NotificationDetailScreen = () => {
 
         const detail = await response.json();
         if (!mounted) {
+          return;
+        }
+
+        if (isCancelledPublicEventDetail(detail)) {
+          setResolvedVotingCancelled(true);
+          setRemoteResultsSummary([]);
           return;
         }
 
@@ -461,10 +545,10 @@ const NotificationDetailScreen = () => {
     return () => {
       mounted = false;
     };
-  }, [eventId, kind]);
+  }, [eventId, isVotingCancelled, kind]);
 
   useEffect(() => {
-    if (!supportsPublicElectionWebView || !eventId || hasCompletePayloadVotingDates) {
+    if (!supportsPublicElectionWebView || !eventId || hasCompletePayloadVotingDates || isVotingCancelled) {
       setRemoteSchedule({
         votingStart: null,
         votingEnd: null,
@@ -490,6 +574,16 @@ const NotificationDetailScreen = () => {
 
         const detail = await response.json();
         if (!mounted) {
+          return;
+        }
+
+        if (isCancelledPublicEventDetail(detail)) {
+          setResolvedVotingCancelled(true);
+          setRemoteSchedule({
+            votingStart: null,
+            votingEnd: null,
+            resultsPublishAt: null,
+          });
           return;
         }
 
@@ -528,10 +622,10 @@ const NotificationDetailScreen = () => {
     return () => {
       mounted = false;
     };
-  }, [eventId, hasCompletePayloadVotingDates, supportsPublicElectionWebView]);
+  }, [eventId, hasCompletePayloadVotingDates, isVotingCancelled, supportsPublicElectionWebView]);
 
   useEffect(() => {
-    if (!supportsPublicElectionWebView || !eventId || !dni) {
+    if (!supportsPublicElectionWebView || !eventId || !dni || isVotingCancelled) {
       setEligibilityBadge(null);
       return;
     }
@@ -566,9 +660,20 @@ const NotificationDetailScreen = () => {
     return () => {
       mounted = false;
     };
-  }, [dni, eventId, supportsPublicElectionWebView]);
+  }, [dni, eventId, isVotingCancelled, supportsPublicElectionWebView]);
 
   const heroConfig = useMemo(() => {
+    if (isVotingCancelled) {
+      return {
+        backgroundColor: '#B91C1C',
+        iconName: 'close-circle-outline',
+        iconBg: 'rgba(255,255,255,0.16)',
+        title: 'Esta votación fue eliminada',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
+    }
+
     if (kind === 'election_results') {
       return {
         backgroundColor: '#1F7A36',
@@ -621,7 +726,7 @@ const NotificationDetailScreen = () => {
       subtitle: '',
       textColor: '#FFFFFF',
     };
-  }, [isNews, isScheduleUpdate, kind, rawData?.bannerTitle, statusTone]);
+  }, [isNews, isScheduleUpdate, isVotingCancelled, kind, rawData?.bannerTitle, statusTone]);
 
   const isElectionResults = kind === 'election_results';
   const resultsWebViewUrl = isElectionResults ? resolvedPublicElectionUrl : null;
@@ -632,6 +737,10 @@ const NotificationDetailScreen = () => {
     : resolvedPublicUrl;
 
   const handlePrimaryAction = () => {
+    if (isVotingCancelled) {
+      return;
+    }
+
     if (!primaryActionUrl) {
       return;
     }
@@ -650,20 +759,27 @@ const NotificationDetailScreen = () => {
   const isReferendumResults = isElectionResults && detailMeta.isReferendum;
   const isReferendumNotification = isReferendumResults || rawData?.isReferendum === true;
   const hasScheduleDates = Boolean(startsAtLabel || endsAtLabel || resultsAtLabel);
-  const showPrimaryAction = shouldOpenPrimaryActionInWebView
-    ? Boolean(primaryActionUrl)
-    : Boolean(resolvedPublicUrl);
+  const showPrimaryAction = !isVotingCancelled && (
+    shouldOpenPrimaryActionInWebView
+      ? Boolean(primaryActionUrl)
+      : Boolean(resolvedPublicUrl)
+  );
   const detailBody =
-    notification?.direccion ||
+    isVotingCancelled
+      ? 'La votación ya no está disponible porque fue eliminada por el administrador.'
+      : notification?.direccion ||
     notification?.body ||
     rawData?.body ||
     (isNews ? 'Consulta la información publicada.' : 'Revisa la información publicada para esta votación.');
   const heroSubtitle =
-    kind === 'election_results' || isNews
+    isVotingCancelled || kind === 'election_results' || isNews
       ? ''
       : String(heroConfig.subtitle || rawData?.bannerSubtitle || '')
           .trim();
   const heroTitle =
+    isVotingCancelled
+      ? 'Esta votación fue eliminada'
+      :
     isReferendumResults && detailMeta.questionTitle
       ? detailMeta.questionTitle
       : notification?.mesa || notification?.title || heroConfig.title || DEFAULT_NOTIFICATION.title;
@@ -721,7 +837,19 @@ const NotificationDetailScreen = () => {
           />
         ) : null}
 
-        {isNews ? (
+        {isVotingCancelled ? (
+          <View style={[styles.sectionCard, styles.cancelledCard]}>
+            <CText type="B16" style={[styles.sectionTitle, styles.cancelledSectionTitle]}>
+              Votación eliminada
+            </CText>
+            <CText type="R14" style={styles.emptyResultsText}>
+              {detailBody}
+            </CText>
+            <CText type="M14" style={styles.cancelledSecondaryText}>
+              No es necesario realizar ninguna acción.
+            </CText>
+          </View>
+        ) : isNews ? (
           <View style={styles.sectionCard}>
             <CText type="B16" style={styles.sectionTitle}>
               Noticia
@@ -923,6 +1051,19 @@ const styles = StyleSheet.create({
     padding: getResponsiveSize(18, 22, 26),
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  cancelledCard: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  cancelledSectionTitle: {
+    color: '#B91C1C',
+  },
+  cancelledSecondaryText: {
+    color: '#991B1B',
+    fontWeight: '700',
+    marginTop: getResponsiveSize(14, 16, 18),
+    lineHeight: getResponsiveSize(21, 23, 25),
   },
   scheduleCard: {
     marginTop: getResponsiveSize(16, 18, 20),

@@ -266,6 +266,7 @@ const INSTITUTIONAL_DETAIL_TYPES = new Set([
   'INSTITUTIONAL_SCHEDULE_UPDATED',
   'INSTITUTIONAL_VOTING_ENABLED',
   'INSTITUTIONAL_NEWS',
+  'INSTITUTIONAL_VOTING_CANCELLED',
 ]);
 
 const normalizeNotificationType = value =>
@@ -287,7 +288,7 @@ const formatShortNotificationDate = rawValue => {
   }).format(new Date(parsed));
 };
 
-const buildInstitutionalNotificationCopy = notification => {
+export const buildInstitutionalNotificationCopy = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
@@ -332,12 +333,17 @@ const buildInstitutionalNotificationCopy = notification => {
           ? `Ya puedes consultar los resultados de ${eventName}.`
           : 'Ya puedes consultar los resultados de la votación.',
       };
+    case 'INSTITUTIONAL_VOTING_CANCELLED':
+      return {
+        title: 'Votación eliminada',
+        body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+      };
     default:
       return null;
   }
 };
 
-const buildInstitutionalNotificationForDetail = notification => {
+export const buildInstitutionalNotificationForDetail = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
@@ -361,6 +367,7 @@ const buildInstitutionalNotificationForDetail = notification => {
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
   const isScheduleUpdate = type === 'INSTITUTIONAL_SCHEDULE_UPDATED';
+  const isCancelled = type === 'INSTITUTIONAL_VOTING_CANCELLED';
 
   return {
     id: notification?._id || notification?.id || `push_${Date.now()}`,
@@ -371,13 +378,15 @@ const buildInstitutionalNotificationForDetail = notification => {
       ? 'Abrir votación'
       : isPadronReview
         ? 'Ver padrón'
-        : isResults
-          ? 'Ver ganador'
-          : isNews
-            ? 'Ver noticia'
-            : isScheduleUpdate
-              ? 'Ver fechas'
-              : 'Ver fechas',
+        : isCancelled
+          ? 'Eliminada'
+          : isResults
+            ? 'Ver ganador'
+            : isNews
+              ? 'Ver noticia'
+              : isScheduleUpdate
+                ? 'Ver fechas'
+                : 'Ver fechas',
     mesa:
       title ||
       data?.bannerTitle ||
@@ -389,9 +398,9 @@ const buildInstitutionalNotificationForDetail = notification => {
     direccion: body || data?.eventName || '',
     timestamp: Date.now(),
     estado: data?.status || 'iniciado',
-    statusTone: 'success',
+    statusTone: isCancelled ? 'danger' : 'success',
     actionLabel: isVotingEnabled || isPadronReview ? 'Ver padrón' : undefined,
-    actionUrl: data?.actionUrl || data?.publicUrl || null,
+    actionUrl: isCancelled ? null : data?.actionUrl || data?.publicUrl || null,
     imageUrl: data?.imageUrl || notification?.imageUrl || null,
     screen: null,
     routeParams: null,

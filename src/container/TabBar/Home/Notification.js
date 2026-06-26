@@ -117,6 +117,7 @@ export const getNotificationKind = ({ type, title, body }) => {
     normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN' ||
     normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENABLED' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED' ||
     haystack.includes('convocatoria') ||
     haystack.includes('habilitacion') ||
     haystack.includes('habilitación') ||
@@ -145,6 +146,7 @@ const isVotingNotificationType = type => {
     'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
     'INSTITUTIONAL_NEWS',
     'INSTITUTIONAL_VOTING_ENABLED',
+    'INSTITUTIONAL_VOTING_CANCELLED',
   ].includes(normalizedType);
 };
 
@@ -349,6 +351,7 @@ export default function Notification({ navigation }) {
     const isOfficialPublication =
       normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED';
     const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
+    const isVotingCancelled = normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -388,6 +391,8 @@ export default function Notification({ navigation }) {
       const startsAt = data?.votingStart || data?.startsAt;
       if (isPadronReview) {
         tipo = 'Ver padrón';
+      } else if (isVotingCancelled) {
+        tipo = 'Eliminada';
       } else if (isOfficialPublication) {
         tipo = 'Ver fechas';
       } else if (isVotingEnabled) {
@@ -445,6 +450,8 @@ export default function Notification({ navigation }) {
       direccion:
         notificationKind === 'news'
           ? bodyFromBackend || data?.summary || data?.body || ''
+          : isVotingCancelled
+            ? bodyFromBackend || data?.body || ''
           : notificationKind === 'voting_event'
           ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
@@ -456,14 +463,14 @@ export default function Notification({ navigation }) {
       statusTone:
         notificationKind === 'election_results'
           ? 'success'
-          : notificationKind === 'voting_event' && eligibleFlag === false
+          : notificationKind === 'voting_event' && (eligibleFlag === false || isVotingCancelled)
             ? 'danger'
             : 'success',
       votingStartLabel: startsAtLabel,
       votingEndLabel: endsAtLabel,
       actionUrl,
       actionLabel:
-        isVotingEnabled || isPadronReview
+        !isVotingCancelled && (isVotingEnabled || isPadronReview)
           ? 'Ver padrón'
           : undefined,
       imageUrl: data?.imageUrl || n?.imageUrl || null,
