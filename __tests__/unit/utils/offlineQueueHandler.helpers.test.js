@@ -1,6 +1,9 @@
 // Tests para funciones helper de offlineQueueHandler
 // Estos tests cubren funciones utilitarias que no requieren mocks complejos de blockchain
 
+import axios from 'axios';
+import {authenticateWithBackend} from '../../../src/utils/offlineQueueHandler';
+
 jest.mock('../../../src/utils/pinataService', () => ({
   uploadImageToIPFS: jest.fn(),
   uploadJSONToIPFS: jest.fn(),
@@ -69,9 +72,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
 }));
-
-import axios from 'axios';
-import {authenticateWithBackend} from '../../../src/utils/offlineQueueHandler';
 
 describe('offlineQueueHandler authenticateWithBackend extended', () => {
   beforeEach(() => {

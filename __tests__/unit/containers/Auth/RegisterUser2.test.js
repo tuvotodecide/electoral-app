@@ -36,8 +36,8 @@ describe('RegisterUser2', () => {
     expect(getByTestId('continueVerificationButton').props.disabled).toBe(true);
 
     fireEvent.changeText(getByTestId('idNumberInput'), '12345678');
-    fireEvent.press(getByTestId('frontCardUpload_imageBox'));
-    fireEvent.press(getByTestId('backCardUpload_imageBox'));
+    fireEvent.press(getByTestId('frontCardUpload_photoButton'));
+    fireEvent.press(getByTestId('backCardUpload_photoButton'));
 
     await waitFor(() => {
       expect(getByTestId('continueVerificationButton').props.disabled).toBe(false);
@@ -52,8 +52,8 @@ describe('RegisterUser2', () => {
     );
 
     fireEvent.changeText(getByTestId('idNumberInput'), '12345678');
-    fireEvent.press(getByTestId('frontCardUpload_imageBox'));
-    fireEvent.press(getByTestId('backCardUpload_imageBox'));
+    fireEvent.press(getByTestId('frontCardUpload_photoButton'));
+    fireEvent.press(getByTestId('backCardUpload_photoButton'));
 
     await waitFor(() => {
       expect(getByTestId('continueVerificationButton').props.disabled).toBe(false);
@@ -104,8 +104,8 @@ describe('RegisterUser2', () => {
     );
 
     fireEvent.changeText(getByTestId('idNumberInput'), '12345678');
-    fireEvent.press(getByTestId('frontCardUpload_imageBox'));
-    fireEvent.press(getByTestId('backCardUpload_imageBox'));
+    fireEvent.press(getByTestId('frontCardUpload_photoButton'));
+    fireEvent.press(getByTestId('backCardUpload_photoButton'));
 
     await waitFor(() => {
       expect(getByTestId('continueVerificationButton').props.disabled).toBe(false);
@@ -137,8 +137,8 @@ describe('RegisterUser2', () => {
     );
 
     fireEvent.changeText(getByTestId('idNumberInput'), '12345678');
-    fireEvent.press(getByTestId('frontCardUpload_imageBox'));
-    fireEvent.press(getByTestId('backCardUpload_imageBox'));
+    fireEvent.press(getByTestId('frontCardUpload_photoButton'));
+    fireEvent.press(getByTestId('backCardUpload_photoButton'));
 
     await waitFor(() => {
       expect(getByTestId('continueVerificationButton').props.disabled).toBe(false);

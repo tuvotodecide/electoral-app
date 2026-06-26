@@ -25,12 +25,6 @@ jest.mock('expo-image-picker', () =>
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
 );
-jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
-  jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
-jest.mock('../../../../src/hooks/useNavigationLogger', () =>
-  jest.requireActual('../../../__mocks__/hooks/useNavigationLogger'),
-);
 jest.mock(
   '../../../../src/i18n/String',
   () => require('../../../__mocks__/String').default,

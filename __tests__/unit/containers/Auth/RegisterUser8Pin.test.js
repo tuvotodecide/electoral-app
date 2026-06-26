@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {fireEvent} from '@testing-library/react-native';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';

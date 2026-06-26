@@ -4,13 +4,10 @@ import {fireEvent} from '@testing-library/react-native';
 import {
   act,
   renderTableDetail,
-  defaultMesa,
-  buildRoute,
   StackNav,
   NetInfo,
   flushPromises,
   getWorksheetLocalStatus,
-  upsertWorksheetLocalStatus,
   axios,
   WorksheetStatus,
   getOfflineQueue,

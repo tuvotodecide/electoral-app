@@ -17,15 +17,14 @@ import { getDraft } from '../utils/RegisterDraft';
 import { captureError, flushSentry } from '../config/sentry';
 
 const CIRCUIT_DOWNLOAD_STATUS =
-  config?.CircuitDownloadStatus ||
-  wira?.config?.CircuitDownloadStatus || {
+  config?.CircuitDownloadStatus || {
     DOWNLOADING: 'DOWNLOADING',
     DONE: 'DONE',
     ERROR: 'ERROR',
   };
 
 const initDownloadCircuits = params => {
-  const initFn = config?.initDownloadCircuits || wira?.config?.initDownloadCircuits;
+  const initFn = config?.initDownloadCircuits;
   if (!initFn) {
     throw new Error('Circuit downloader not configured');
   }
@@ -40,7 +39,7 @@ export const useSplashInit = (navigation) => {
 
   const waitForCircuitDownloadCompletion = useCallback(() => {
     let subscription;
-    const promise = new Promise((resolve, reject) => {
+    const promise = new Promise((resolve) => {
       DeviceEventEmitter.removeAllListeners('downloadInfo');
       subscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
         const {status, info} = JSON.parse(data);

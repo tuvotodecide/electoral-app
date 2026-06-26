@@ -1,6 +1,5 @@
 export default {
   sendInvitation: ' Enviar invitación',
-  sendInvitation: ' Enviar invitación',
   finishingRecovery: 'Finalizando recuperación',
   return: 'Regresar',
   guardiansDescriptionStatus: 'Aquí verás el estado de aprobación de tu cuenta',
@@ -82,6 +81,13 @@ export default {
   verifyingIdentityTitle: 'Estamos verificando tu identidad',
   verifyingIdentityMessage:
     'Por favor, permanece en esta pantalla mientras completamos el proceso de verificación.',
+  //Page 5
+  frontBackOrderError: 'Las imágenes están desordenadas (front/back). Por favor, vuelve a capturar en el orden correcto.',
+  faceMatchFailedError: 'La selfie no coincide con la foto del DNI. Por favor, vuelve a capturar tus imágenes asegurándote de que tu rostro esté claramente visible.',
+  missingDataError: 'Faltan datos en las imágenes. Por favor, vuelve a capturar asegurándote de que las fotos sean claras y completas.',
+  analysisUnavailableError: 'El análisis no está disponible temporalmente. Por favor, vuelve a intentar más tarde.',
+  defaultVerificationError: 'Error de verificación. Vuelve a intentar más tarde o intenta con fotos más nítidas.',
+
   //page 6
   titleConfirmData: 'Confirma tus datos',
   descriptionConfirmData:
@@ -208,7 +214,9 @@ export default {
     'Guarda los datos de tu identidad en un archivo. Si pierdes acceso a tu cuenta, podrás usarla para recuperarla.',
   backupFileWarning:
     'Guarda este archivo en un lugar seguro.',
+  enterPinInfo: 'NUNCA olvides tu PIN. Es necesario para recuperar tu cuenta.',
   backupFileSuccess: 'Archivo guardado exitosamente',
+  enterPin: 'Ingresa tu PIN',
   downloadBackup: ' Descargar respaldo',
   downloadingBackup: 'Descargando respaldo…',
   qrPermissionDenied: 'Permiso denegado',
@@ -224,7 +232,7 @@ export default {
   backed: 'Archivo guardado',
   backedOnDownloads: 'Archivo guardado en Descargas 📁:\n\n',
   openDownloads: 'Abrir descargas',
-  backedOnAppDir: 'Archivo guardado en el directorio de la app:\n\n',
+  backedOnSelectedDir: 'Tu respaldo fue guardado exitosamente.',
   backupSaveError: 'No se pudo guardar la imagen',
   permissionDeniedMessage: 'Sin permisos para escribir. Verifica los permisos de la app.',
   badDirectoryMessage: 'Error de directorio. Verifica los permisos de almacenamiento.',
@@ -259,10 +267,6 @@ export default {
 
   //Inicio
   connectTitle: 'Aplicación Electoral',
-  connectBtnForgot: 'Olvidé mi cuenta',
-  connectItem1: 'Cobros y pagos con USDT',
-  connectItem2: 'Protegida con blockchain',
-  connectItem3: 'Identidad digital soberana',
   connectBtnInfo: 'Saber más',
   connectBtnRegister: 'Registrar cuenta',
   register: 'REGISTRARSE',
@@ -354,7 +358,6 @@ export default {
   amountToPay: 'Monto a pagar',
   amountToReceive: 'Monto a recibir',
   editQRinfo: 'Editar información del QR',
-  share: 'Compartir',
   downloadImage: 'Descargar Imagen',
   generateQr: 'Generar QR',
 
@@ -373,7 +376,6 @@ export default {
   userAddress: 'Dirección',
   showAvailableChains: 'Mostrar redes disponibles',
   addressCopied: 'Dirección copiada',
-  shareMessage: 'Compartir QR',
 
   //receive details
   amountTip: 'Ingresa 0 si deseas permitir cualquier monto',
@@ -427,7 +429,6 @@ export default {
   crossChainWarning:
     'Enviar a una red distinta a la nativa tendrá un costo adicional',
   checkAvailability: 'Verificando disponibilidad',
-  notAvailable: 'El token no se puede transferir a esta red',
   crossChainSendSuccess:
     'Se completó el envío, puede revisar el proceso con el hash',
   sendWarning:
@@ -462,7 +463,6 @@ export default {
     'Administra las personas que pueden ayudarte a recuperar tu cuenta.',
   guardianNotificationTitle:
     'El guardián recibirá una notificación para aceptar su rol.',
-  sendInvitation: ' Enviar invitación',
   skip: 'X',
   allInOneInvestmentPlatform: 'All in One Investment Platform',
   continueWithEmail: 'Continue with Email',
@@ -660,8 +660,6 @@ export default {
   exchange: 'exchange',
   searchAssets: 'Search Asset...',
   bitcoinBalance: 'Bitcoin balance',
-  from: 'From',
-  to: 'To',
   convert: 'Convert',
   transactionsHistory: 'Transactions History',
   sellAda: 'Sell ADA',
@@ -692,7 +690,6 @@ export default {
   consumer: 'Consumer',
   communication: 'Communication',
   materials: 'Materials',
-  information: 'Information',
   aapl: 'AAPL',
   appleInc: 'Apple, Inc.',
   amd: 'AMD',
@@ -1114,7 +1111,6 @@ export default {
 
   operationSuccessTitle: '¡Operación Exitosa!',
   operationSuccessSubtitle: 'La operación se ha completado exitosamente.',
-  backToHome: 'Ir a Inicio',
   viewDetails: 'Ver detalles',
 
   // Detalle Mesa Screen
@@ -1122,7 +1118,6 @@ export default {
   photoSentMessage:
     'Tu foto de la hoja de trabajo ha sido enviada exitosamente y está siendo procesada.',
   tableDetails: 'Detalles de la Mesa',
-  takePhoto: 'Tomar Foto',
   retakePhoto: 'Tomar otra foto',
   confirmAndSend: 'Confirmar y Enviar',
   preview: 'Vista Previa',
@@ -1231,7 +1226,6 @@ export default {
   cameraErrorMessage: 'No se pudo tomar la foto. Inténtalo de nuevo.',
   requestPermissions: 'Solicitar Permisos',
   retry: 'Reintentar',
-  next: 'Siguiente',
 
   aiWillSelectClearestPhoto: 'La IA seleccionará la foto más clara.',
   verifyTableInformation: 'Asegúrate que esta es la mesa asignada',
@@ -1243,7 +1237,6 @@ export default {
   // Detalles de la mesa
   venue: 'Recinto', // o 'Lugar'
   notSpecified: 'No especificado',
-  tableInformation: 'Información de la mesa',
   schoolInformation: 'Información del recinto', // o 'Información de la escuela'
   provinceInformation: 'Información de la provincia',
 
@@ -1253,16 +1246,7 @@ export default {
 
   // Vista previa y confirmación
   photoPreview: 'Vista previa de la foto',
-  tableInformation: 'Información de la mesa',
 
-  preview: 'Vista previa',
-
-  retakePhoto: 'Tomar foto de nuevo',
-
-  confirmAndSend: 'Confirmar y enviar',
-
-  personaNotFound: 'Persona no encontrada',
-  noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
   personaNotFound: 'Persona no encontrada',
   noGuardiansAssigned: 'Este carnet no tiene guardianes asignados',
   removed: 'Removido',
@@ -1272,40 +1256,23 @@ export default {
     'Blockchain Consultora desarrolló esta aplicación, contáctelos',
   needBlockchainApp: '¿Necesitas una aplicación en Blockchain?',
 
-  connectTitle: 'Aplicación Electoral',
   connectItem1: 'Obtén tu identidad digital soberana',
   connectItem2: 'Convierte hojas de trabajo electorales en NFTs',
   connectItem3: 'Valida con tu firma electrónica',
   // connectBtnInfo: 'Más información',
-  connectBtnRegister: 'Registrar cuenta',
-  connectBtnLogin: 'Tengo una cuenta',
 
-  guardiansTitle: 'Mis Guardianes',
-  guardiansSubtitle: 'Gestiona las personas que velan por tu seguridad',
   active: 'Aceptado',
-  pending: 'Pendiente',
-  rejected: 'Rechazado',
-  removed: 'Removido',
   whatIsGuardians: '¿Qué son los Guardianes?',
-  addGuardian: 'Añadir guardián',
   alertguardiansrequired: 'Necesitas al menos un guardián activo',
-  predictSmart:
-    'Prediciendo smart-account… Esto demorará aproximadamente 2 minutos',
   recoverywithFile: 'Recuperación con archivo',
   recoveryFileSubtitle:
-    'Para continuar con la recuperación de su cuenta seleccione el archivo de respaldo',
+    'Para continuar con la recuperación de su cuenta, ingrese su PIN y seleccione su archivo de respaldo',
+
   selectFile: 'Seleccionar archivo',
   selectFileError: 'Error al procesar el archivo',
   processingSuccess: 'Archivo procesado correctamente',
   debtHelp:
     'La creación de la billetera tiene un pequeño costo que será cobrado en su primera transacción',
-  sendInvitation: ' Enviar invitación',
-  finishingRecovery: 'Finalizando recuperación',
-  return: 'Regresar',
-  messagetorecovery:
-    'Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes 72 horas desde su cuenta.',
-  messengePrivacity:
-    'Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.',
 
   // Electoral Locations
   electoralLocations: 'Recintos Electorales',
@@ -1331,21 +1298,6 @@ export default {
   nftCertificate: 'Certificado NFT',
   obtain: 'obtenido!',
   viewMyNFT: 'Ver mi NFT',
-  gettingLocation: 'Obteniendo ubicación...',
-  loadingNearbyLocations: 'Cargando recintos cercanos...',
-  showingNearbyLocations: 'Mostrando recintos cercanos a ti',
-  noLocationsFound: 'No se encontraron recintos',
-  noLocationsFoundSubtitle: 'No hay recintos electorales cerca de tu ubicación',
-  noNearbyLocations: 'No hay recintos cercanos disponibles',
-  errorFetchingLocations: 'Error al cargar los recintos electorales',
-  locationPermissionTitle: 'Permiso de ubicación',
-  locationPermissionMessage:
-    'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-  locationPermissionDenied: 'Permiso de ubicación denegado',
-  locationError: 'Error al obtener la ubicación',
-  locationPermissionError: 'Error al solicitar permisos de ubicación',
-  askMeLater: 'Preguntar después',
-  continueButton: 'Continuar',
 
   // Profile Screen
   reputationSummary: 'Resumen de reputación',
@@ -1424,7 +1376,6 @@ export default {
   validationErrorGeneric: 'Error en la validación',
   validationTimeout: 'Tiempo de espera agotado',
   validationNoResponse: 'El servidor no respondió',
-  cancel: 'Cancelar',
   openSettings: 'Abrir configuración',
   locationRequired: 'Ubicación requerida',
   locationPermissionRequired: 'Permiso de ubicación',
@@ -1448,4 +1399,11 @@ export default {
   claimingCredentials: 'Reclamando credenciales...',
   claimError: 'Error al reclamar credenciales, inténtalo de nuevo o contacta al soporte si el problema persiste.',
   credentialsClaimedDesc: 'Tus credenciales han sido reclamadas exitosamente, ahora puedes ir a la votación.',
+
+  //Migration
+  migrationModalDesc: 'Se ha detectado un respaldo antiguo en tu dispositivo. Para continuar, debes migrar tu respaldo a la nueva versión de la aplicación. Esto tomará un minuto.',
+  migrateBackup: 'Migrar Respaldo',
+  migrationInProgress: 'Migración en progreso...',
+  migrationSuccess: 'Migración completada exitosamente',
+  migrationError: 'Error durante la migración, inténtalo de nuevo o contacta al soporte si el problema persiste.',
 };

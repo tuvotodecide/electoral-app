@@ -33,16 +33,4 @@
  * @property {(electionId: string, candidateId: string) => Promise<VoteResult>} submitVote
  */
 
-/**
- * Crear instancia del repositorio
- * Este archivo solo exporta la interfaz/tipos. La implementación está en .mock.js y .api.js
- */
 
-export const REPOSITORY_TYPES = {
-  MOCK: 'mock',
-  API: 'api',
-};
-
-export default {
-  REPOSITORY_TYPES,
-};

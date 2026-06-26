@@ -19,8 +19,7 @@ import {SecuryData} from '../../../api/constant';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Icons from 'react-native-vector-icons/Entypo';
+import { Ionicons, Entypo } from '@expo/vector-icons';
 import wira from 'wira-sdk';
 
 
@@ -72,7 +71,7 @@ export default function Security({navigation}) {
             {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
           ]}>
           <View testID="securityBiometricLabelContainer" style={styles.rowCenter}>
-            <Icons
+            <Entypo
               testID="securityBiometricIcon"
               name="fingerprint"
               size={moderateScale(20)}
@@ -122,7 +121,7 @@ export default function Security({navigation}) {
               },
             ]}>
             {item.icon ? (
-              <Icons
+              <Entypo
                 testID={`securityMenuItemIcon_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}

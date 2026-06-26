@@ -1,4 +1,4 @@
-import {Image, Modal, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Image, Modal, StyleSheet, View} from 'react-native';
 import React from 'react';
 import {useSelector} from 'react-redux';
 

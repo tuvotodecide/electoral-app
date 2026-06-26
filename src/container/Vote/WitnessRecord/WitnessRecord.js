@@ -51,60 +51,79 @@ const WitnessRecordScreen = ({navigation, route}) => {
   // Load tables when component mounts
 
   useEffect(() => {
+    const loadTablesFromApi = async () => {
+      try {
+        setIsLoading(true);
+
+        // const response = await axios.get(
+        //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
+        // );
+        const response = await axios.get(
+          `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
+        );
+      
+        if (response.data && response.data.tables) {
+
+
+          // Store location data for TableCard components
+          setLocationData({
+            name: response.data.name,
+            address: response.data.address,
+            code: response.data.code,
+          });
+
+          setMesas(response.data.tables);
+        } else if (
+          response.data &&
+          response.data.data &&
+          response.data.data.tables
+        ) {
+  
+          // Store location data for TableCard components
+          setLocationData({
+            name: response.data.data.name,
+            address: response.data.data.address,
+            code: response.data.data.code,
+          });
+
+          setMesas(response.data.data.tables);
+        } else {
+    
+          showModal('info', String.info, String.couldNotLoadTables);
+        }
+      } catch (error) {
+
+        showModal('error', String.error, String.errorLoadingTables);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const loadTables = async () => {
+      try {
+        setIsLoading(true);
+        
+        const response = await fetchMesas();
+
+        if (response.success) {
+
+          setMesas(response.data);
+        } else {
+          showModal('error', String.error, String.couldNotLoadTables);
+        }
+      } catch (_) {
+        showModal('error', String.error, String.errorLoadingTables);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (route?.params?.locationId) {
-      loadTablesFromApi(route.params.locationId);
+      loadTablesFromApi();
     } else {
       loadTables();
     }
   }, [route?.params?.locationId]);
-
-  const loadTablesFromApi = async locationId => {
-    try {
-      setIsLoading(true);
-
-      // const response = await axios.get(
-      //   `https://yo-custodio-backend.onrender.com/api/v1/geographic/electoral-locations/${locationId}/tables`,
-      // );
-      const response = await axios.get(
-        `http://192.168.1.16:3000/api/v1/geographic/electoral-locations/686e0624eb2961c4b31bdb7d/tables`,
-      );
-    
-      if (response.data && response.data.tables) {
-
-
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.name,
-          address: response.data.address,
-          code: response.data.code,
-        });
-
-        setMesas(response.data.tables);
-      } else if (
-        response.data &&
-        response.data.data &&
-        response.data.data.tables
-      ) {
- 
-        // Store location data for TableCard components
-        setLocationData({
-          name: response.data.data.name,
-          address: response.data.data.address,
-          code: response.data.data.code,
-        });
-
-        setMesas(response.data.data.tables);
-      } else {
-  
-        showModal('info', String.info, String.couldNotLoadTables);
-      }
-    } catch (error) {
-
-      showModal('error', String.error, String.errorLoadingTables);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const showModal = (type, title, message, buttonText = String.accept) => {
     setModalConfig({type, title, message, buttonText});
@@ -113,25 +132,6 @@ const WitnessRecordScreen = ({navigation, route}) => {
 
   const closeModal = () => {
     setModalVisible(false);
-  };
-
-  const loadTables = async () => {
-    try {
-      setIsLoading(true);
-      
-      const response = await fetchMesas();
-
-      if (response.success) {
-
-        setMesas(response.data);
-      } else {
-        showModal('error', String.error, String.couldNotLoadTables);
-      }
-    } catch (error) {
-      showModal('error', String.error, String.errorLoadingTables);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // Override handleTablePress for WitnessRecord specific behavior
@@ -173,7 +173,7 @@ const WitnessRecordScreen = ({navigation, route}) => {
         electionType,
       });
  
-    } catch (error) {
+    } catch (_) {
 
     }
   };

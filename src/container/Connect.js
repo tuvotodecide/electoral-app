@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 
 // custom import
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import wira from 'wira-sdk';
 import images from '../assets/images';
 import { deviceWidth, moderateScale } from '../common/constants';
@@ -74,14 +74,14 @@ export default function Connect({ navigation }) {
         </CText>
 
         <CIconText
-          icon={<Icon name="shield-lock" size={24} color={colors.white} />}
+          icon={<MaterialCommunityIcons name="shield-lock" size={24} color={colors.white} />}
           text={String.connectItem1}
           color={colors.white}
           testID="connectFeature1"
         />
 
         <CIconText
-          icon={<Icon name="swap-horizontal" size={24} color={colors.white} />}
+          icon={<MaterialCommunityIcons name="swap-horizontal" size={24} color={colors.white} />}
           text={String.connectItem2}
           color={colors.white}
           testID="connectFeature2"
@@ -89,7 +89,7 @@ export default function Connect({ navigation }) {
 
         <CIconText
           icon={
-            <Icon name="lightbulb-on-outline" size={24} color={colors.white} />
+            <MaterialCommunityIcons name="lightbulb-on-outline" size={24} color={colors.white} />
           }
           text={String.connectItem3}
           color={colors.white}
@@ -101,7 +101,7 @@ export default function Connect({ navigation }) {
             onPress={onPressInfo}
             title={String.connectBtnInfo + ' '}
             type={'B16'}
-            icon={<Icon name="arrow-right" size={25} color={colors.white} />}
+            icon={<MaterialCommunityIcons name="arrow-right" size={25} color={colors.white} />}
             containerStyle={localStyle.btnStyle}
             sinMargen
             testID="connectInfoButton"

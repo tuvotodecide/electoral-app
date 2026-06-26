@@ -9,7 +9,6 @@ import {
   hasSecondaryBlockElection,
   hasSecondaryVoteData,
 } from '../../../utils/electionContext';
-import {useEffect} from 'react';
 
 const MyWitnessesDetailScreen = () => {
   const navigation = useNavigation();

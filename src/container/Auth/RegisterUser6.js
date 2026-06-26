@@ -14,7 +14,7 @@ import Icono from '../../components/common/Icono';
 import {useSelector} from 'react-redux';
 import CEtiqueta from '../../components/common/CEtiqueta';
 import {TouchableOpacity} from 'react-native-gesture-handler';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';

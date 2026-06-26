@@ -5,7 +5,6 @@ import {
   Dimensions,
   Linking,
   Modal,
-  PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,17 +13,16 @@ import {
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useDispatch } from 'react-redux';
+import { Ionicons } from '@expo/vector-icons';
+import { useDispatch , useSelector } from 'react-redux';
 import { clearWallet } from '../../../redux/action/walletAction';
 import { clearAuth } from '../../../redux/slices/authSlice';
-
+import MigrationModal from '../../Migration/MigrationModal';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
 import images from '../../../assets/images';
 import {
   LAST_USER_TOPIC_KEY,
@@ -231,8 +229,6 @@ const deriveQueueFailTitle = failedItems => {
   }
   return 'No se pudo completar la subida';
 };
-const HOME_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-
 
 // Responsive grid calculations
 const getCardLayout = () => {
@@ -255,7 +251,7 @@ const getCardLayout = () => {
   }
 };
 
-const { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW } = getCardLayout();
+const { CARDS_PER_ROW } = getCardLayout();
 
 // Carousel Item Component
 const CarouselItem = ({ item }) => (
@@ -345,41 +341,6 @@ const MiVotoLogo = () => (
   </View>
 );
 
-// === Banner Blockchain Consultora ===
-const BlockchainConsultoraBanner = () => (
-  <View testID="homeBlockchainBanner" style={stylesx.bannerBC}>
-    <View
-      testID="homeBlockchainBannerContent"
-      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-      <View style={stylesx.bcLogoCircle}>
-        <CText style={stylesx.bcLogoText}>bc</CText>
-      </View>
-      <View testID="homeBlockchainBannerText" style={{ marginLeft: 10, flex: 1 }}>
-        <CText testID="homeBlockchainBannerTitle" style={stylesx.bannerTitle}>
-          {I18nStrings.needBlockchainApp}
-        </CText>
-        <CText
-          testID="homeBlockchainBannerSubtitle"
-          style={stylesx.bannerSubtitle}>
-          {I18nStrings.blockchainConsultBanner}
-        </CText>
-      </View>
-    </View>
-    <TouchableOpacity
-      testID="homeBlockchainBannerButton"
-      onPress={() => Linking.openURL('https://blockchainconsultora.com/es')}
-      style={stylesx.bannerButton}
-      activeOpacity={0.8}>
-      <CText
-        testID="homeBlockchainBannerButtonText"
-        style={stylesx.bannerButtonText}>
-        {I18nStrings.learnMore}
-      </CText>
-    </TouchableOpacity>
-  </View>
-);
-const CTA_HEIGHT = getResponsiveSize(44, 48, 56);
-const CTA_WIDTH = getResponsiveSize(120, 140, 160);
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
 const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
@@ -527,7 +488,7 @@ const resolveElectionWindowState = status => {
   return { known: false, enabled: true, reason: null };
 };
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, route }) {
   const dispatch = useDispatch();
   const auth = useSelector(s => s.auth);
   const userTopicRef = useRef(null);
@@ -708,16 +669,8 @@ export default function HomeScreen({ navigation }) {
   /** Solo VERIFICA el permiso, nunca muestra diálogo del sistema */
   const checkLocationPermissionOnly = useCallback(async () => {
     try {
-      if (Platform.OS === 'android') {
-        const ok = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        return ok;
-      }
-      // iOS: no hay .check() puro, pero requestAuthorization con 'whenInUse'
-      // no vuelve a mostrar el diálogo si ya se contestó
-      const status = await Geolocation.requestAuthorization('whenInUse');
-      return status === 'granted';
+      const permission = await Location.getForegroundPermissionsAsync();
+      return permission?.status === 'granted';
     } catch {
       return false;
     }
@@ -725,38 +678,17 @@ export default function HomeScreen({ navigation }) {
 
 
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Permiso de ubicación',
-          message:
-            'La aplicación necesita acceso a tu ubicación para verificar disponibilidad de envío.',
-          buttonNeutral: 'Preguntar después',
-          buttonNegative: 'Cancelar',
-          buttonPositive: 'OK',
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-
-    // iOS
-    const status = await Geolocation.requestAuthorization('whenInUse');
+    const { status } = await Location.requestForegroundPermissionsAsync();
     return status === 'granted';
   }, []);
 
-  const getCurrentPositionAsync = (useHighAccuracy = true) =>
-    new Promise((resolve, reject) => {
-      Geolocation.getCurrentPosition(
-        pos => resolve(pos),
-        err => reject(err),
-        {
-          enableHighAccuracy: useHighAccuracy,
-          timeout: useHighAccuracy ? 15000 : 30000,
-          maximumAge: useHighAccuracy ? 10000 : 60000,
-        },
-      );
+  const getCurrentPositionAsync = async (useHighAccuracy = true) => {
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: useHighAccuracy ? Location.LocationAccuracy.High : Location.LocationAccuracy.Low
     });
+
+    return location;
+  }
 
   /**
 * Obtiene la ubicación SIN mostrar modales.
@@ -3029,6 +2961,9 @@ export default function HomeScreen({ navigation }) {
             ? () => handleRemoveFailedItem(firstVotingFailedItem?.id)
             : undefined}
         tertiaryVariant="danger"
+      />
+      <MigrationModal
+        userDid={userData?.did}
       />
     </CSafeAreaView>
   );

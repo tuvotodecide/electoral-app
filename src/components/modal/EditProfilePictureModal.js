@@ -1,10 +1,9 @@
-import {StyleSheet, View, Modal} from 'react-native';
+import {StyleSheet, View, Modal,TouchableOpacity} from 'react-native';
 import React from 'react';
 
 // custom import
 import CText from '../common/CText';
 import String from '../../i18n/String';
-import {TouchableOpacity} from 'react-native';
 import {
   CameraIcon,
   CameraIcon_Dark,

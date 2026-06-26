@@ -8,7 +8,7 @@ import {
   ScrollView, // <--- 1. Importamos ScrollView
 } from 'react-native';
 import CText from './CText';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { moderateScale } from '../../common/constants';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window'); // <--- 2. Obtenemos el alto de la pantalla

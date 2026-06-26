@@ -30,10 +30,15 @@ jest.mock('react-native-paper', () => ({
   ActivityIndicator: 'ActivityIndicator',
 }));
 
-jest.mock('@react-native-community/geolocation', () => ({
-  requestAuthorization: jest.fn(() => Promise.resolve('granted')),
-  getCurrentPosition: jest.fn(success =>
-    success({coords: {latitude: -17.7833, longitude: -63.1821}}),
+jest.mock('expo-location', () => ({
+  LocationAccuracy: {
+    Low: 1,
+    High: 3,
+  },
+  getForegroundPermissionsAsync: jest.fn(() => Promise.resolve({status: 'granted'})),
+  requestForegroundPermissionsAsync: jest.fn(() => Promise.resolve({status: 'granted'})),
+  getCurrentPositionAsync: jest.fn(() =>
+    Promise.resolve({coords: {latitude: -17.7833, longitude: -63.1821}}),
   ),
 }));
 
@@ -169,6 +174,13 @@ jest.mock('../../../../../src/features/voting', () => {
     },
   };
 });
+
+jest.mock('wira-sdk', () => ({
+  MigrationService: jest.fn().mockImplementation(() => ({
+    checkMigration: jest.fn(() => Promise.resolve(false)),
+    startMigration: jest.fn(() => Promise.resolve()),
+  })),
+}));
 
 const buildState = () => ({
   auth: {isAuthenticated: true},

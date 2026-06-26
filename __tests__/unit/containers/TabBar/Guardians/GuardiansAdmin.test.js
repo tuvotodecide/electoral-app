@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {fireEvent, waitFor} from '@testing-library/react-native';
+import {fireEvent} from '@testing-library/react-native';
 import GuardiansAdmin from '../../../../../src/container/TabBar/Guardians/GuardiansAdmin';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
 

@@ -4,10 +4,8 @@
  */
 
 import React from 'react';
-import {fireEvent} from '@testing-library/react-native';
 import Profile from '../../../../../src/container/TabBar/Profile/Profile';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
-import {StackNav} from '../../../../../src/navigation/NavigationKey';
 
 // Mocks
 jest.mock('../../../../../src/utils/Cifrate', () => ({
@@ -32,62 +30,43 @@ jest.mock('../../../../../src/api/constant', () => ({
   ],
 }));
 
-jest.mock('react-native-linear-gradient', () => {
-  const React = require('react');
-  const {View} = require('react-native');
-  return ({children, testID, ...props}) =>
-    React.createElement(View, {testID, ...props}, children);
-});
-
-jest.mock('react-native-vector-icons/Ionicons', () => {
-  const React = require('react');
-  return ({testID, name, ...props}) =>
-    React.createElement('Ionicons', {testID, name, ...props});
-});
-
-jest.mock('react-native-vector-icons/Feather', () => {
-  const React = require('react');
-  return ({testID, ...props}) =>
-    React.createElement('Feather', {testID, ...props});
-});
-
-jest.mock('react-native-vector-icons/Entypo', () => {
-  const React = require('react');
-  return ({testID, name, ...props}) =>
-    React.createElement('Entypo', {testID, name, ...props});
-});
-
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
-    React.createElement(View, {testID}, children);
+  return function MockSafeAreaView({children, testID}) {
+    return React.createElement(View, {testID}, children);
+  };
 });
 
 jest.mock('../../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  return function MockCHeader({testID}) {
+    return React.createElement(View, {testID});
+  };
 });
 
 jest.mock('../../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
-    React.createElement(Text, {testID}, children);
+  return function MockCText({children, testID}) {
+    return React.createElement(Text, {testID}, children);
+  };
 });
 
 jest.mock('../../../../../src/components/common/CHash', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  return function MockCHash({testID}) {
+    return React.createElement(View, {testID});
+  };
 });
 
 jest.mock('../../../../../src/components/modal/LogOutModal', () => {
   const React = require('react');
   const {View, TouchableOpacity, Text} = require('react-native');
-  return ({testID, visible, onPressCancel, onPressLogOut}) =>
-    visible
+  return function MockLogOutModal({testID, visible, onPressCancel, onPressLogOut}) {
+    return visible
       ? React.createElement(
           View,
           {testID},
@@ -103,6 +82,7 @@ jest.mock('../../../../../src/components/modal/LogOutModal', () => {
           ),
         )
       : null;
+  }
 });
 
 describe('Profile Screen', () => {

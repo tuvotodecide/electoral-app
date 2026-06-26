@@ -1,7 +1,7 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {memo, useState} from 'react';
 import {useSelector} from 'react-redux';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
@@ -16,7 +16,7 @@ import {validPassword, validateEmail} from '../../utils/Validation';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import CButton from '../../components/common/CButton';
 import {socialIcon} from '../../api/constant';
-import {AuthNav, StackNav, TabNav} from '../../navigation/NavigationKey';
+import {AuthNav, StackNav} from '../../navigation/NavigationKey';
 import {setAuthToken} from '../../utils/AsyncStorage';
 
 

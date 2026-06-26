@@ -2,11 +2,8 @@ import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import {renderWithProviders} from '../../../../setup/test-utils';
 
-jest.mock('@react-native-community/geolocation', () => ({
-  getCurrentPosition: jest.fn(),
-  watchPosition: jest.fn(() => 1),
-  clearWatch: jest.fn(),
-}));
+import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
+import {clearSession} from '../../../../../src/utils/Session';
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://result.example',
@@ -89,8 +86,12 @@ jest.mock('expo-image', () => {
   };
 });
 
-import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
-import {clearSession} from '../../../../../src/utils/Session';
+jest.mock('wira-sdk', () => ({
+  MigrationService: jest.fn().mockImplementation(() => ({
+    checkMigration: jest.fn(() => Promise.resolve(false)),
+    startMigration: jest.fn(() => Promise.resolve()),
+  })),
+}));
 
 describe('HomeScreen', () => {
   it('renderiza la pantalla principal', () => {

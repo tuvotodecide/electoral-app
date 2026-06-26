@@ -1,6 +1,6 @@
 import {StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
-import Icons from 'react-native-vector-icons/EvilIcons';
+import { EvilIcons } from '@expo/vector-icons';
 
 // custom import
 import ActionSheet from 'react-native-actions-sheet';
@@ -47,7 +47,7 @@ export default function MarketStatics(props) {
       ]}>
       <View style={localStyle.headerContainer}>
         <CText type={'B16'}>{String.marketStatistics}</CText>
-        <Icons
+        <EvilIcons
           name={'question'}
           size={moderateScale(24)}
           color={colors.dark ? colors.grayScale500 : colors.grayScale400}

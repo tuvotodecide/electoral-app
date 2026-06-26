@@ -1,4 +1,4 @@
-import { BACKEND_IDENTITY } from '@env';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
+import { captureError } from '@/src/config/sentry';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -76,23 +77,32 @@ export default function RegisterUser4({navigation, route}) {
     return false;
   };
 
-  const onPressNext = () => {
-    if (!selfie) {
-      Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
-      return;
+  const onPressNext = async () => {
+    try {
+      if (!selfie) {
+        Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
+        return;
+      }
+
+      if (isRecovery) {
+        await triggerRecovery();
+        return;
+      }
+
+      navigation.navigate(AuthNav.RegisterUser5, {
+        dni,
+        frontImage,
+        backImage,
+        selfie,
+      });
+    } catch (error) {
+      captureError(error, {
+        flow: 'recoveryWithDni',
+        step: 'onPressNext',
+        critical: true
+      });
     }
 
-    if (isRecovery) {
-      triggerRecovery();
-      return;
-    }
-
-    navigation.navigate(AuthNav.RegisterUser5, {
-      dni,
-      frontImage,
-      backImage,
-      selfie,
-    });
   };
 
   const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
@@ -126,6 +136,7 @@ export default function RegisterUser4({navigation, route}) {
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
         BACKEND_IDENTITY,
+        IDENTITY_KEY,
         resizedFrontImage,
         resizedBackImage,
         resizedSelfie,
@@ -139,13 +150,29 @@ export default function RegisterUser4({navigation, route}) {
         success: true,
       });
     } catch (error) {
+      let errorMessage = String.recoveryError;
+      if(error.message.includes('front/back order')) {
+        errorMessage = String.frontBackOrderError;
+      } else if (error.message.includes('face match failed')) {
+        errorMessage = String.faceMatchFailedError;
+      } else if (error.message.includes('missing data')) {
+        errorMessage = String.missingDataError; 
+      } else if (error.message.includes('El análisis no está disponible temporalmente')) {
+        errorMessage = String.analysisUnavailableError;
+      } else {
+        captureError(error, {
+          flow: 'recoveryWithDni',
+          step: 'triggerRecovery',
+          critical: true
+        });
+      }
+      
       setModal({
         visible: true,
         title: '',
-        message: String.recoveryError,
+        message: errorMessage,
         isLoading: false,
       });
-      console.error('Recovery failed:', error);
       return;
     }
   };
@@ -155,7 +182,7 @@ export default function RegisterUser4({navigation, route}) {
       index: 0,
       routes: [{
         name: AuthNav.LoginUser,
-        params: {isCIRecovery: true}
+        params: {isCIRecovery: true, dni: dni.trim()},
       }],
     });
   }

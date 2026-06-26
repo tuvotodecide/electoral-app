@@ -13,7 +13,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText'; // Assuming this path is correct for your project
-import Ionicons from 'react-native-vector-icons/Ionicons'; // Import Ionicons for the bell icon
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bell icon
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import I18nStrings from '../../../i18n/String';
 import InfoModal from '../../../components/modal/InfoModal';

@@ -16,7 +16,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';

@@ -15,7 +15,6 @@ import wira from 'wira-sdk';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
 import {
   WorksheetStatus,
-  getWorksheetLocalStatus,
   upsertWorksheetLocalStatus,
 } from './worksheetLocalStatus';
 import { enqueue, updateById } from './offlineQueue';
@@ -23,9 +22,6 @@ import { sanitizeElectoralDataForVisibleOffices } from './electionContext';
 
 const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
 const ACTA_CHECKPOINT_STAGE_CHAIN_CONFIRMED = 'CHAIN_CONFIRMED';
-
-const nowMs = () => Date.now();
-
 
 const safeStr = v =>
   String(v ?? '')
@@ -105,40 +101,6 @@ const hasUserAttestedTable = async (dniValue, tableCode, electionId) => {
     return false;
   } catch {
     return false;
-  }
-};
-
-const normalizeTableNumber = value => {
-  const raw = String(value ?? '').trim();
-  if (!raw) return '';
-  const parsed = parseInt(raw, 10);
-  return Number.isNaN(parsed) ? raw : String(parsed);
-};
-
-const fetchTablesByLocationId = async locationId => {
-  const normalizedLocationId = String(locationId || '').trim();
-  if (!normalizedLocationId) return [];
-
-  const encodedLocationId = encodeURIComponent(normalizedLocationId);
-  const tablesEndpoint = `${BACKEND_RESULT}/api/v1/geographic/electoral-tables?electoralLocationId=${encodedLocationId}&limit=500`;
-
-  try {
-    const { data } = await axios.get(tablesEndpoint, { timeout: 15000 });
-    const list = data?.data || data?.tables || data?.data?.tables || [];
-    if (Array.isArray(list)) {
-      return list;
-    }
-  } catch {
-    // fallback de compatibilidad
-  }
-
-  try {
-    const legacyUrl = `${BACKEND_RESULT}/api/v1/geographic/electoral-locations/${encodedLocationId}/tables`;
-    const { data } = await axios.get(legacyUrl, { timeout: 15000 });
-    const list = data?.tables || data?.data?.tables || [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
   }
 };
 
@@ -383,137 +345,6 @@ const buildWorksheetVotesFromElectoralData = electoralData => {
   };
 };
 
-const normalizeWorksheetStatusValue = value => {
-  const status = String(value || '')
-    .trim()
-    .toUpperCase();
-  if (status === 'UPLOADED' || status === 'SUBIDA') {
-    return WorksheetStatus.UPLOADED;
-  }
-  if (status === 'PENDING' || status === 'PENDIENTE') {
-    return WorksheetStatus.PENDING;
-  }
-  if (status === 'FAILED' || status === 'FALLIDA' || status === 'ERROR') {
-    return WorksheetStatus.FAILED;
-  }
-  return '';
-};
-
-const getWorksheetReferenceForActa = async ({
-  dniValue,
-  electionId,
-  tableCode,
-  apiKey,
-}) => {
-  const normalizedDni = String(dniValue || '').trim();
-  const normalizedElectionId = String(electionId || '').trim();
-  const normalizedTableCode = String(tableCode || '').trim();
-  if (!normalizedDni || !normalizedElectionId || !normalizedTableCode) {
-    return null;
-  }
-
-  try {
-    const localStatus = await getWorksheetLocalStatus({
-      dni: normalizedDni,
-      electionId: normalizedElectionId,
-      tableCode: normalizedTableCode,
-    });
-    const localWorksheetStatus = normalizeWorksheetStatusValue(
-      localStatus?.status,
-    );
-    const localIpfsUri = String(localStatus?.ipfsUri || '').trim();
-    if (localWorksheetStatus === WorksheetStatus.UPLOADED && localIpfsUri) {
-      return {
-        ipfsUri: localIpfsUri,
-        nftLink: String(localStatus?.nftLink || '').trim() || undefined,
-        source: 'local',
-      };
-    }
-  } catch {
-    // fallback backend
-  }
-
-  try {
-    const { data } = await axios.get(
-      `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
-        normalizedDni,
-      )}/by-table/${encodeURIComponent(
-        normalizedTableCode,
-      )}?electionId=${encodeURIComponent(normalizedElectionId)}`,
-      {
-        headers: {
-          'x-api-key': apiKey,
-        },
-        timeout: 15000,
-      },
-    );
-    const backendWorksheetStatus = normalizeWorksheetStatusValue(data?.status);
-    const backendIpfsUri = String(data?.ipfsUri || '').trim();
-    if (backendWorksheetStatus === WorksheetStatus.UPLOADED && backendIpfsUri) {
-      return {
-        ipfsUri: backendIpfsUri,
-        nftLink: String(data?.nftLink || '').trim() || undefined,
-        source: 'backend',
-      };
-    }
-  } catch {
-    // worksheet missing or backend unavailable
-  }
-
-  return null;
-};
-
-const assertTableExistsInLocation = async ({
-  locationId,
-  tableCode,
-  tableNumber,
-}) => {
-  if (!locationId) {
-    throw new Error('No se pudo validar la mesa: recinto no disponible.');
-  }
-
-  try {
-    const tables = await fetchTablesByLocationId(locationId);
-
-    if (!Array.isArray(tables) || tables.length === 0) {
-      throw new Error(
-        'No se pudo validar la mesa porque el recinto no devolvio mesas.',
-      );
-    }
-
-    const normalizedCode = safeStr(tableCode);
-    const normalizedNumber = normalizeTableNumber(tableNumber);
-
-    const exists = tables.some(table => {
-      const candidateCode = safeStr(
-        table?.tableCode || table?.codigo || table?.code || '',
-      );
-      const candidateNumber = normalizeTableNumber(
-        table?.tableNumber || table?.numero || table?.number,
-      );
-
-      const codeMatch = normalizedCode && candidateCode === normalizedCode;
-      const numberMatch =
-        normalizedNumber && candidateNumber === normalizedNumber;
-
-      return codeMatch || numberMatch;
-    });
-
-    if (!exists) {
-      throw new Error(
-        `La mesa ${tableNumber || tableCode || ''} no existe en el recinto seleccionado.`,
-      );
-    }
-  } catch (error) {
-    if (error?.response?.status === 404) {
-      throw new Error(
-        'No se pudo validar la mesa porque el recinto seleccionado no existe.',
-      );
-    }
-    throw error;
-  }
-};
-
 const uploadCertificateAndNotifyBackend = async (
   certificateImageUri,
   normalizedAdditional,
@@ -575,7 +406,7 @@ const uploadCertificateAndNotifyBackend = async (
     const notificationType =
       String(options?.notificationType || '').trim() || 'acta_published';
 
-    const res = await axios.post(
+    await axios.post(
       `${BACKEND_RESULT}/api/v1/users/${dniValue}/participation-nft`,
       {
         account: userData?.account,
@@ -614,7 +445,6 @@ const uploadCertificateAndNotifyBackend = async (
 
 export const publishActaHandler = async (item, userData) => {
   let certificateData = null;
-  const totalStartedAt = nowMs();
   try {
     const taskPayload = item?.task?.payload || {};
     const {
@@ -629,7 +459,6 @@ export const publishActaHandler = async (item, userData) => {
     const isAttestMode = flowMode === 'attest';
 
     // Make zk-auth to get API key for backend for upload atestation
-    const authStartedAt = nowMs();
     const apiKey = await authenticateWithBackend(
       userData.did,
       userData.privKey,
@@ -730,18 +559,6 @@ export const publishActaHandler = async (item, userData) => {
       normalizedAdditional?.tableCode ||
       tableData?.codigo ||
       tableData?.tableCode ||
-      '';
-    const locationIdToCheck =
-      normalizedAdditional?.locationId ||
-      normalizedAdditional?.idRecinto ||
-      tableData?.idRecinto ||
-      tableData?.locationId ||
-      null;
-    const tableNumberToCheck =
-      normalizedAdditional?.tableNumber ||
-      tableData?.tableNumber ||
-      tableData?.numero ||
-      tableData?.number ||
       '';
 
     const tableCodeStrict = String(tableCodeToCheck || '').trim();
@@ -990,7 +807,6 @@ export const publishActaHandler = async (item, userData) => {
     // }
     // 0) Si este usuario YA atestiguó esta mesa → descartar (igual que online)
     if (dniValue && tableCodeStrict) {
-      const alreadyAttestedStartedAt = nowMs();
       const alreadyMine = await hasUserAttestedTable(
         dniValue,
         tableCodeStrict,
@@ -1060,7 +876,6 @@ export const publishActaHandler = async (item, userData) => {
 
     let duplicateCheck;
     try {
-      const duplicateCheckStartedAt = nowMs();
       duplicateCheck = await pinataService.checkDuplicateBallot(
         verificationData,
         electionId,
@@ -1275,7 +1090,6 @@ export const publishActaHandler = async (item, userData) => {
 
       let ipfs;
       try {
-        const ipfsStartedAt = nowMs();
         ipfs = await pinataService.uploadElectoralActComplete(
           imagePath,
           aiAnalysis || {},
@@ -1305,7 +1119,6 @@ export const publishActaHandler = async (item, userData) => {
 
       // Validación backend
       try {
-        const validateStartedAt = nowMs();
         await axios.post(
           `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`,
           {
@@ -1373,7 +1186,6 @@ export const publishActaHandler = async (item, userData) => {
         }
       }
 
-      const blockchainStartedAt = nowMs();
       const response = await executeOperation(
         privateKey,
         userData.account,
@@ -1401,7 +1213,6 @@ export const publishActaHandler = async (item, userData) => {
       // Notificar backend (from-ipfs) y registrar attestation
       let backendBallot;
       try {
-        const fromIpfsStartedAt = nowMs();
         const { data } = await axios.post(
           `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
           {
@@ -1491,11 +1302,11 @@ export const publishActaHandler = async (item, userData) => {
 
       try {
         await removePersistedImage(imageUri);
-      } catch (err) {
+      } catch (_) {
       }
       try {
         await requestPushPermissionExplicit();
-      } catch (err) {
+      } catch (_) {
       }
 
       const { explorer, nftExplorer, attestationNft } = availableNetworks[CHAIN];
@@ -1509,7 +1320,6 @@ export const publishActaHandler = async (item, userData) => {
 
       if (certificateImageUri) {
         try {
-          const certificateStartedAt = nowMs();
           certificateData = await uploadCertificateAndNotifyBackend(
             certificateImageUri,
             normalizedAdditional,
@@ -1555,7 +1365,6 @@ export const publishActaHandler = async (item, userData) => {
 
     let ipfs;
     try {
-      const ipfsStartedAt = nowMs();
       ipfs = await pinataService.uploadElectoralActComplete(
         imagePath,
         aiAnalysis || {},
@@ -1586,7 +1395,6 @@ export const publishActaHandler = async (item, userData) => {
     // Validación en backend
     const backendUrl = `${BACKEND_RESULT}/api/v1/ballots/validate-ballot-data`;
     try {
-      const validateStartedAt = nowMs();
       await axios.post(
         backendUrl,
         {
@@ -1656,7 +1464,6 @@ export const publishActaHandler = async (item, userData) => {
 
     let response;
     try {
-      const blockchainStartedAt = nowMs();
       response = await executeOperation(
         privateKey,
         userData.account,
@@ -1678,7 +1485,6 @@ export const publishActaHandler = async (item, userData) => {
         msg.indexOf('416c72656164792063726561746564') >= 0 ||
         normalizedMsg.includes('already created');
       if (isAlreadyCreatedError) {
-        const attestFallbackStartedAt = nowMs();
         response = await executeOperation(
           privateKey,
           userData.account,
@@ -1723,7 +1529,6 @@ export const publishActaHandler = async (item, userData) => {
 
     let backendBallot;
     try {
-      const fromIpfsStartedAt = nowMs();
       const { data } = await axios.post(
         `${BACKEND_RESULT}/api/v1/ballots/from-ipfs`,
         {
@@ -1813,19 +1618,18 @@ export const publishActaHandler = async (item, userData) => {
 
     try {
       await removePersistedImage(imageUri);
-    } catch (err) {
+    } catch (_) {
 
     }
 
     try {
       await requestPushPermissionExplicit();
-    } catch (err) {
+    } catch (_) {
     }
 
     // Subir certificado y obtener enlace (si hay foto de certificado)
     if (certificateImageUri) {
       try {
-        const certificateStartedAt = nowMs();
         certificateData = await uploadCertificateAndNotifyBackend(
           certificateImageUri,
           normalizedAdditional,

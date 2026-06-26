@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useSelector } from "react-redux";
 import { getHeight, moderateScale } from "../../common/constants";
 import { styles } from "../../themes";
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { Modal, Portal } from "react-native-paper";
 import { useState } from "react";
 import CListCard from "./CLIstCard";

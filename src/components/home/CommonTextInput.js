@@ -10,7 +10,7 @@ import {useSelector} from 'react-redux';
 
 // custom import
 import CText from '../common/CText';
-import Icons from 'react-native-vector-icons/EvilIcons';
+import { EvilIcons } from '@expo/vector-icons';
 import {moderateScale} from '../../common/constants';
 import {styles} from '../../themes';
 import typography from '../../themes/typography';
@@ -80,7 +80,7 @@ export default function CommonTextInput({
         ]}>
         <Image source={image} style={localStyle.imageStyle} />
         <CText type={'S12'}>{labelTitle}</CText>
-        <Icons
+        <EvilIcons
           name={'chevron-right'}
           size={moderateScale(20)}
           style={styles.ml10}

@@ -12,7 +12,7 @@ Esta guía describe cómo ejecutar los tests unitarios y los tests End-to-End (E
 Se ejecutan todos los tests unitarios definidos en el directorio `__tests__/`:
 
 ```bash
-npm test
+pnpm test
 ```
 
 #### Ejecutar tests en modo watch
@@ -20,7 +20,7 @@ npm test
 Ejecuta los tests en modo observación; se re-ejecutan automáticamente al detectar cambios:
 
 ```bash
-npm test -- --watch
+pnpm test -- --watch
 ```
 
 #### Ejecutar tests con cobertura
@@ -28,7 +28,7 @@ npm test -- --watch
 Genera un reporte de cobertura de código:
 
 ```bash
-npm test -- --coverage
+pnpm test -- --coverage
 ```
 
 #### Ejecutar tests específicos
@@ -36,13 +36,13 @@ npm test -- --coverage
 Ejecutar tests de un directorio específico (útil para aislar flujos):
 
 ```bash
-npm test -- __tests__/unit/containers/Auth
+pnpm test -- __tests__/unit/containers/Auth
 ```
 
 O ejecutar un archivo de test concreto:
 
 ```bash
-npm test -- Login.test.js
+pnpm test -- Login.test.js
 ```
 
 ### Configuración de Jest

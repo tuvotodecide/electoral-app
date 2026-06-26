@@ -1,14 +1,13 @@
-import { BACKEND_IDENTITY } from '@env';
 import React, {useState} from 'react';
 import {
   View,
   Alert,
-  Platform,
-  ToastAndroid,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import OTPTextInput from 'react-native-otp-textinput';
+
 import CSafeAreaViewAuth from '../../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
@@ -21,6 +20,8 @@ import {AuthNav} from '../../../navigation/NavigationKey';
 
 import wira from 'wira-sdk';
 import CAlert from '../../../components/common/CAlert';
+import { useSelector } from 'react-redux';
+import typography from '@/src/themes/typography';
 
 
 const recoveryService = new wira.RecoveryService();
@@ -30,6 +31,9 @@ export default function RecoveryQr({navigation}) {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [pin, setPin] = useState(null);
+
+  const colors = useSelector(state => state.theme.theme);
 
   const onUploadPress = async () => {
     setErrorMsg(null);
@@ -37,36 +41,40 @@ export default function RecoveryQr({navigation}) {
     setLoading(true);
     
     try {
-      const recoveredData = await recoveryService.recoveryFromBackup();
+      const recoveredData = await recoveryService.recoveryFromBackup(pin);
       let newPayload = {
         data: recoveredData,
       };
 
       setPayload(newPayload);
       setSelectFileLabel(String.processingSuccess);
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(String.processingSuccess, ToastAndroid.SHORT);
-      }
     } catch (err) {
       if (err.message.includes('user canceled')) {
         return;
       }
 
-      // Detailed error logging for connection / SDK errors
-      const url = err?.config?.url || err?.apiDebug?.url || err?.apiDebug?.requestUrl || err?.request?.uri || null;
-      const status = err?.response?.status ?? null;
-      console.error('[RecoveryQR] recoveryFromQr error', {
-        message: err?.message,
-        code: err?.code ?? null,
-        url,
-        status,
-        responseData: err?.response?.data ?? null,
-        apiDebug: err?.apiDebug ?? null,
-        stack: err?.stack ?? null,
-      });
+      let errorMessage = String.backupSaveError;
+      let openSettings = false;
+      if (err.message.includes('Storage permission not granted')) {
+        errorMessage = String.permissionDeniedMessage;
+        openSettings = true;
+      } else if (err.message.includes('Faltan campos')) {
+        errorMessage = String.badDirectoryMessage;
+      } else if (err.message.includes('Invalid PIN')) {
+        errorMessage = String.incorrectPinError;
+      }
+
+      const buttons = [
+        {text: 'OK', style: 'default'},
+      ];
+
+      if (openSettings) {
+        buttons.push({text: String.openSettings, onPress: () => openSettings()});
+      }
+
       setPayload(null);
       setSelectFileLabel(String.selectFile);
-      Alert.alert(String.selectFileError, err.message);
+      Alert.alert(String.selectFileError, errorMessage, buttons);
     } finally {
       setLoading(false);
     }
@@ -77,6 +85,14 @@ export default function RecoveryQr({navigation}) {
       return;
     }
     navigation.navigate(AuthNav.RecoveryUserQrpin, { payload });
+  };
+
+  const onCodeFilled = (code) => {
+    if (code.length === 4) {
+      setPin(code);
+    } else {
+      setPin(null);
+    }
   };
 
   return (
@@ -91,11 +107,37 @@ export default function RecoveryQr({navigation}) {
             {String.recoveryFileSubtitle}
           </CText>
 
+          <CText testID="recuperationFileDescription" type="B16" align="center" marginTop={20}>
+            {String.enterPin}
+          </CText>
+          <OTPTextInput
+            testID="textInput"
+            inputCount={4}
+            containerStyle={local.otpInputViewStyle}
+            keyboardType="number-pad"
+            handleTextChange={onCodeFilled}
+            secureTextEntry={true}
+            editable
+            keyboardAppearance={'dark'}
+            placeholderTextColor={colors.textColor}
+            autoFocus={false}
+            textInputStyle={[
+              local.underlineStyleBase,
+              {
+                backgroundColor: colors.inputBackground,
+                color: colors.textColor,
+                borderColor: colors.grayScale500,
+              },
+            ]}
+            tintColor={colors.primary}
+            offTintColor={colors.grayScale500}
+          />
+
           <TouchableOpacity
             testID="recoveryFileUploadCard"
-            style={[local.uploadCard, loading && local.uploadCardDisabled]}
+            style={[local.uploadCard, (!pin || loading) && local.uploadCardDisabled]}
             onPress={onUploadPress}
-            disabled={loading}
+            disabled={!pin || loading}
             activeOpacity={0.8}
           >
             <CText type="R14" align="center" style={styles.boldText}>
@@ -146,4 +188,18 @@ const local = StyleSheet.create({
     marginTop: moderateScale(8),
   },
   footer: {...styles.ph20, marginBottom: moderateScale(20)},
+  otpInputViewStyle: {
+    ...styles.selfCenter,
+    height: '20%',
+    ...styles.mt10,
+  },
+  underlineStyleBase: {
+    width: moderateScale(50),
+    height: moderateScale(55),
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(10),
+    ...typography.fontWeights.Bold,
+    ...typography.fontSizes.f26,
+    ...styles.mh5,
+  },
 });

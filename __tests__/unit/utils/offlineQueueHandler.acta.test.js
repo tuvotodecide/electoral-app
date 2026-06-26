@@ -1,3 +1,12 @@
+import axios from 'axios';
+import pinataService from '../../../src/utils/pinataService';
+import {executeOperation} from '../../../src/api/account';
+import {removePersistedImage} from '../../../src/utils/persistLocalImage';
+import {requestPushPermissionExplicit} from '../../../src/services/pushPermission';
+import {showActaDuplicateNotification} from '../../../src/notifications';
+import {publishActaHandler} from '../../../src/utils/offlineQueueHandler';
+import {oracleCalls, oracleReads} from '../../../src/api/oracle';
+
 jest.mock('../../../src/utils/pinataService', () => ({
   uploadImageToIPFS: jest.fn(),
   uploadJSONToIPFS: jest.fn(),
@@ -62,15 +71,6 @@ jest.mock('axios', () => ({
 jest.mock('wira-sdk', () => ({
   authenticateWithVerifier: jest.fn(async () => true),
 }));
-
-import axios from 'axios';
-import pinataService from '../../../src/utils/pinataService';
-import {executeOperation} from '../../../src/api/account';
-import {removePersistedImage} from '../../../src/utils/persistLocalImage';
-import {requestPushPermissionExplicit} from '../../../src/services/pushPermission';
-import {showActaDuplicateNotification} from '../../../src/notifications';
-import {publishActaHandler} from '../../../src/utils/offlineQueueHandler';
-import {oracleCalls, oracleReads} from '../../../src/api/oracle';
 
 const basePayload = {
   imageUri: 'file:///tmp/acta.jpg',

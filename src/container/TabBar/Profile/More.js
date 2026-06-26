@@ -7,8 +7,7 @@ import {
   View,
 } from 'react-native';
 import React, {useState} from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Icons from 'react-native-vector-icons/Entypo';
+import { Ionicons, Entypo } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -105,7 +104,7 @@ export default function More({navigation}) {
               },
             ]}>
             {item.icon ? (
-              <Icons
+              <Entypo
                 testID={`moreMenuItemIconSvg_${item.id || index}`}
                 name={item.icon}
                 size={moderateScale(20)}

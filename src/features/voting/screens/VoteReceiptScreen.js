@@ -19,8 +19,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
@@ -175,6 +174,7 @@ const VoteReceiptScreen = () => {
     if (participationId && !isQueuedParticipation && !isFailedParticipation) {
       syncStateWithBlockchain(participationId)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
 
   const renderSyncStatus = () => {
@@ -344,7 +344,7 @@ const VoteReceiptScreen = () => {
             <CText type="R14" style={styles.detailLabel}>
               {UI_STRINGS.syncedWithBlockchain}
             </CText>
-            <Icon
+            <MaterialCommunityIcons
               name={renderSyncStatus()}
               size={20}
               color="#374151"

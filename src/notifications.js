@@ -12,7 +12,7 @@ import {
 import {AuthNav, StackNav, TabNav} from './navigation/NavigationKey';
 import {isSessionValid} from './utils/Session';
 
-export const HIGH_PRIO_CHANNEL_ID = 'high_prio';
+const HIGH_PRIO_CHANNEL_ID = 'high_prio';
 const LOCAL_NOTIFICATIONS_STORAGE_KEY = '@local-notifications:v1';
 const MAX_LOCAL_NOTIFICATIONS = 80;
 const BACKEND_ALERTED_STORAGE_PREFIX = '@backend-notifications:alerted:v1:';
@@ -22,7 +22,7 @@ const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
   'participation_certificate',
 ]);
 const NOTIFICATION_NAV_DEDUPE_TTL_MS = 5000;
-export const PENDING_NOTIFICATION_NAV_TTL_MS = 10 * 60 * 1000;
+const PENDING_NOTIFICATION_NAV_TTL_MS = 10 * 60 * 1000;
 let backendAlertQueue = Promise.resolve(0);
 
 // In-memory cache to prevent duplicate alerts within a short time window
@@ -714,7 +714,7 @@ async function appendLocalStoredNotification({title, body, data, dni}) {
   }
 }
 
-export async function ensureNotificationChannel() {
+async function ensureNotificationChannel() {
   try {
     await notifee.createChannel({
       id: HIGH_PRIO_CHANNEL_ID,
@@ -802,15 +802,6 @@ export async function showActaPublishedNotification({
     const resolvedElectionId = String(
       electionId || tableData?.electionId || '',
     ).trim();
-    const hasCertificate = Boolean(
-      String(
-        certificateData?.jsonUrl ||
-          certificateData?.imageUrl ||
-          certificateData?.certificateUrl ||
-          nftData?.nftUrl ||
-          '',
-      ).trim(),
-    );
     const notificationType = 'acta_published';
     const notificationTitle = 'Hoja de trabajo subida exitosamente';
     const mesaLabel = tableNumber || tableCode || '';
@@ -849,27 +840,6 @@ export async function showActaDuplicateNotification({
   });
 }
 
-/** Alias de compatibilidad con llamadas existentes. */
-export const displayLocalActaPublished = showActaPublishedNotification;
-
-/**
- * (Opcional) Puente para FCM si más adelante lo reactivas.
- * Llama esto desde tu handler de onMessage/onBackgroundMessage para mostrar el push.
- */
-export async function displayRemoteMessage(remoteMessage) {
-  await ensureNotificationChannel();
-  await notifee.displayNotification({
-    title: remoteMessage?.notification?.title ?? 'Tu Voto Decide',
-    body: remoteMessage?.notification?.body ?? 'Mensaje nuevo',
-    android: {
-      channelId: HIGH_PRIO_CHANNEL_ID,
-      smallIcon: 'ic_launcher',
-      importance: AndroidImportance.HIGH,
-      pressAction: {id: 'PRESS'},
-    },
-    data: remoteMessage?.data ?? {},
-  });
-}
 
 /**
  * (Opcional) Guardar navegación pendiente cuando llega push y el usuario no está logueado.
@@ -920,7 +890,7 @@ export function buildRouteFromNotification(notification) {
   return {name, params};
 }
 
-export function buildNotificationNavigationDedupeKey(notification, route) {
+function buildNotificationNavigationDedupeKey(notification, route) {
   const data =
     notification?.data && typeof notification.data === 'object'
       ? notification.data
@@ -947,7 +917,7 @@ export function buildNotificationNavigationDedupeKey(notification, route) {
   return `notification:${notificationType}:${routeName}:${stableStringify(data)}`;
 }
 
-export function buildNotificationNavigationIntent(notification) {
+function buildNotificationNavigationIntent(notification) {
   const route = buildRouteFromNotification(notification);
   if (!route?.name) return null;
 
@@ -961,7 +931,7 @@ export function buildNotificationNavigationIntent(notification) {
   };
 }
 
-export function isPendingNotificationNavigationExpired(intent) {
+function isPendingNotificationNavigationExpired(intent) {
   if (!intent?.createdAt) return true;
   return Date.now() - Number(intent.createdAt) > PENDING_NOTIFICATION_NAV_TTL_MS;
 }
@@ -996,7 +966,7 @@ function navigateToNotificationIntent(intent) {
   return true;
 }
 
-export async function processNotificationNavigationIntent(
+async function processNotificationNavigationIntent(
   intent,
   {fromPending = false} = {},
 ) {
@@ -1039,7 +1009,7 @@ export async function handleNotificationPress(notification) {
   return processNotificationNavigationIntent(intent);
 }
 
-export function handleNotificationPressBackground(notification) {
+function handleNotificationPressBackground(notification) {
   const intent = buildNotificationNavigationIntent(notification);
   if (!intent || isPendingNotificationNavigationExpired(intent)) {
     store.dispatch(clearPendingNotificationNavigation());

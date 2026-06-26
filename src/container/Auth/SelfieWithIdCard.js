@@ -12,7 +12,7 @@ import TakePictureModal from '../../components/modal/TakePictureModal';
 import CButton from '../../components/common/CButton';
 import images from '../../assets/images';
 import {AuthNav} from '../../navigation/NavigationKey';
-import {deviceHeight, getHeight, moderateScale} from '../../common/constants';
+import {deviceHeight, moderateScale} from '../../common/constants';
 
 
 export default function SelfieWithIdCard({navigation}) {

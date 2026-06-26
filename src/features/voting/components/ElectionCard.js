@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { useSelector } from 'react-redux';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
@@ -48,8 +47,6 @@ const ElectionCard = ({
   loadMsg = null,
   allowIneligibleDetails = false,
 }) => {
-  const colors = useSelector((state) => state.theme.theme);
-
   // DEV_FLAG: Forzar estado "no habilitado"
   const effectiveIsEligible = DEV_FLAGS.FORCE_NOT_ELIGIBLE ? false : isEligible;
 

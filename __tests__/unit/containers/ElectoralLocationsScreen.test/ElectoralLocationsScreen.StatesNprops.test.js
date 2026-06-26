@@ -1,11 +1,10 @@
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { PermissionsAndroid, Platform } from 'react-native';
 import axios from 'axios';
 
 import ElectoralLocationsScreen from '../../../../src/container/Vote/ElectoralLocationsScreen';
-import { StackNav } from '../../../../src/navigation/NavigationKey';
 
 // Mock axios
 jest.mock('axios');
@@ -23,9 +22,6 @@ jest.mock('@react-navigation/native');
 // Mock vector icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'MockedMaterialIcons');
 jest.mock('react-native-vector-icons/Ionicons', () => 'MockedIonicons');
-
-// Mock Geolocation
-jest.mock('@react-native-community/geolocation');
 
 // Mock custom components
 jest.mock('../../../../src/components/common/CSafeAreaView', () => 

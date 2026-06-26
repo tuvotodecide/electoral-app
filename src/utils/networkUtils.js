@@ -3,8 +3,6 @@ import NetInfo from '@react-native-community/netinfo';
 import {Alert} from 'react-native';
 
 
-const NETWORK_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
-
 /**
  * Verifica si hay conexión a internet
  */
@@ -12,7 +10,7 @@ export const checkInternetConnection = async () => {
   try {
     const state = await NetInfo.fetch();
     return !!state?.isConnected && state?.isInternetReachable !== false;
-  } catch (error) {
+  } catch (_) {
     //console.error('Error checking internet connection:', error);
     return false;
   }

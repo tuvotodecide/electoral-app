@@ -4,6 +4,9 @@
  */
 
 // Setup window object before anything else
+// Mock Gesture Handler
+import 'react-native-gesture-handler/jestSetup';
+
 if (typeof window === 'undefined') {
   global.window = {};
 }
@@ -440,52 +443,42 @@ jest.mock('../../src/data/client/internetCredentials', () => ({
 }));
 
 // Mock Vector Icons
-jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
-jest.mock('react-native-vector-icons/FontAwesome', () => 'Icon');
-jest.mock('react-native-vector-icons/Ionicons', () => {
+jest.mock('@expo/vector-icons', () => {
   const React = require('react');
-  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
-    return React.createElement('Text', {
+  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) =>
+    React.createElement('Text', {
       testID: testID || `icon-${name}`,
+      name: name,
       style: [{ fontSize: size, color }, style],
       onPress,
-      children: name,
-    });
-  };
+    }, name);
+
   MockIcon.loadFont = jest.fn(() => Promise.resolve());
-  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
-  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
-  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
-  return MockIcon;
+
+  return {
+    __esModule: true,
+    Ionicons: MockIcon,
+    EvilIcons: MockIcon,
+    MaterialIcons: MockIcon,
+    MaterialCommunityIcons: MockIcon,
+    FontAwesome: MockIcon,
+    AntDesign: MockIcon,
+    Entypo: MockIcon,
+    Feather: MockIcon,
+  };
 });
-jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+
+jest.mock('expo-linear-gradient', () => {
   const React = require('react');
-  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
-    return React.createElement('Text', {
-      testID: testID || `icon-${name}`,
-      style: [{ fontSize: size, color }, style],
-      onPress,
-      children: name,
-    });
+  const {View} = require('react-native');
+  const MockExpoLinearGradient = ({children, testID, ...props}) =>
+    React.createElement(View, {testID, ...props}, children);
+
+  return {
+    __esModule: true,
+    LinearGradient: MockExpoLinearGradient,
+    default: MockExpoLinearGradient,
   };
-  MockIcon.loadFont = jest.fn(() => Promise.resolve());
-  MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));
-  MockIcon.getImageSource = jest.fn(() => Promise.resolve({ uri: 'mocked' }));
-  MockIcon.getRawGlyphMap = jest.fn(() => ({}));
-  return MockIcon;
-});
-jest.mock('react-native-vector-icons/Entypo', () => {
-  const React = require('react');
-  const MockIcon = ({ name, size = 24, color = '#000', style, onPress, testID }) => {
-    return React.createElement('Text', {
-      testID: testID || `icon-${name}`,
-      style: [{ fontSize: size, color }, style],
-      onPress,
-      children: name,
-    });
-  };
-  MockIcon.loadFont = jest.fn(() => Promise.resolve());
-  return MockIcon;
 });
 
 // Mock expo-localization to avoid native module usage
@@ -558,31 +551,40 @@ jest.mock('expo-image-picker', () => ({
   },
 }));
 
-jest.mock('react-native-blob-util', () => ({
-  fs: {
-    dirs: {
-      CacheDir: '/mock/cache',
-      DocumentDir: '/mock/documents',
-      TemporaryDir: '/mock/tmp',
-    },
-    exists: jest.fn(() => Promise.resolve(true)),
-    mkdir: jest.fn(() => Promise.resolve()),
-    unlink: jest.fn(() => Promise.resolve()),
-    cp: jest.fn(() => Promise.resolve()),
-  },
-  config: jest.fn(() => ({
-    fetch: jest.fn(() =>
-      Promise.resolve({
-        path: () => '/mock/cache/file.jpg',
-      }),
-    ),
-  })),
-  fetch: jest.fn(() =>
-    Promise.resolve({
-      path: () => '/mock/cache/file.jpg',
-    }),
-  ),
-}));
+jest.mock('expo-file-system', () => {
+  const base = jest.requireActual('../__mocks__/expo-file-system');
+  const fileInstances = [];
+  const nextInfoQueue = [];
+
+  class TrackedFile extends base.File {
+    constructor(uri) {
+      super(uri);
+      const defaultInfo = this.info;
+      this.base64 = jest.fn(() => Promise.resolve('ZGF0YQ=='));
+      this.info = jest.fn(() => {
+        if (nextInfoQueue.length > 0) {
+          return {
+            uri: this.uri,
+            isDirectory: false,
+            size: 0,
+            ...nextInfoQueue.shift(),
+          };
+        }
+        return defaultInfo();
+      });
+      fileInstances.push(this);
+    }
+  }
+
+  TrackedFile.downloadFileAsync = base.File.downloadFileAsync;
+
+  return {
+    ...base,
+    File: TrackedFile,
+    __fileInstances: fileInstances,
+    __setNextInfo: value => nextInfoQueue.push(value),
+  };
+});
 
 jest.mock('@notifee/react-native', () => ({
   __esModule: true,
@@ -644,10 +646,14 @@ jest.mock('@react-native-community/netinfo', () => ({
 }));
 
 // Mock Geolocation
-jest.mock('@react-native-community/geolocation', () => ({
-  getCurrentPosition: jest.fn(),
-  watchPosition: jest.fn(() => 1),
-  clearWatch: jest.fn(),
+jest.mock('expo-location', () => ({
+  LocationAccuracy: {
+    Low: 1,
+    High: 3,
+  },
+  getForegroundPermissionsAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(),
 }));
 
 // Mock Reanimated
@@ -689,7 +695,9 @@ jest.mock('react-native-image-pan-zoom', () => {
 
 jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
-  return ({children, ...props}) => React.createElement('View', props, children);
+  return function TextInput({children, ...props}) {
+    return React.createElement('View', props, children);
+  };
 });
 
 // Mock Gesture Handler components used in tests
@@ -710,10 +718,6 @@ jest.mock('react-native-gesture-handler', () => {
     ScrollView,
   };
 });
-
-import { launchImageLibraryAsync } from 'expo-image-picker';
-// Mock Gesture Handler
-import 'react-native-gesture-handler/jestSetup';
 
 // Silence console warnings during tests
 const originalConsoleError = console.error;

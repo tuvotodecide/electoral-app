@@ -5,7 +5,6 @@ import {useSelector} from 'react-redux';
 import {styles} from '../../themes';
 import {moderateScale} from '../../common/constants';
 import CText from '../common/CText';
-import CButton from '../common/CButton';
 
 export default function InfoModalWithoutClose({
   visible,

@@ -2,17 +2,17 @@ import React from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import CText from './CText';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { moderateScale } from '../../common/constants';
 
 const hexToRgba = (hex, opacity = 0.1) => {
   const cleanHex = hex.replace('#', '');
   const bigint = parseInt(cleanHex, 16);
-  // eslint-disable-next-line no-bitwise
+   
   const r = (bigint >> 16) & 255;
-  // eslint-disable-next-line no-bitwise
+   
   const g = (bigint >> 8) & 255;
-  // eslint-disable-next-line no-bitwise
+   
   const b = bigint & 255;
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
@@ -34,7 +34,7 @@ export default function CBigAlert({
       style={[styles.container, {backgroundColor: bgColor}]}
       onPress={onPress}>
       { icon &&
-        <Icon 
+        <MaterialCommunityIcons
           name={icon}
           size={moderateScale(45)}
           color={colors.primary}

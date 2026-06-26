@@ -99,11 +99,6 @@ mockPaths.forEach((path) => {
 });
 
 const {StackRoute, AuthRoute, TabRoute} = require('../../../src/navigation/NavigationRoute');
-const {
-  StackRoute: StackRouteClean,
-  AuthRoute: AuthRouteClean,
-  TabRoute: TabRouteClean,
-} = require('../../../src/navigation/NavigationRouteClean');
 
 describe('NavigationRoute', () => {
 
@@ -122,24 +117,5 @@ describe('NavigationRoute', () => {
   it('expone rutas del tab', () => {
     expect(TabRoute.HomeScreen).toBeDefined();
     expect(TabRoute.Profile).toBeDefined();
-  });
-});
-
-describe('NavigationRouteClean', () => {
-  it('expone rutas principales del stack', () => {
-    expect(StackRouteClean.Splash).toBeDefined();
-    expect(StackRouteClean.SearchTable).toBeDefined();
-    expect(StackRouteClean.RecordCertificationScreen).toBeDefined();
-  });
-
-  it('expone rutas de auth', () => {
-    expect(AuthRouteClean.Login).toBeDefined();
-    expect(AuthRouteClean.UploadPhotoId).toBeDefined();
-    expect(AuthRouteClean.RecoveryUserQrpin2).toBeDefined();
-  });
-
-  it('expone rutas del tab', () => {
-    expect(TabRouteClean.HomeScreen).toBeDefined();
-    expect(TabRouteClean.Profile).toBeDefined();
   });
 });

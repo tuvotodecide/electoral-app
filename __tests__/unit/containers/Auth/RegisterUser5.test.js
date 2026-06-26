@@ -39,7 +39,7 @@ describe('RegisterUser5', () => {
   });
 
   it('muestra modal de error y permite reintentar cuando falla el analisis', async () => {
-    wira.idCardAnalyzer.analyze.mockResolvedValueOnce({
+    wira.idCardAnalyzer.analyzeFromRegistry.mockResolvedValueOnce({
       success: false,
       error: 'front/back order',
     });

@@ -1,3 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  WorksheetStatus,
+  clearWorksheetLocalStatus,
+  getWorksheetLocalStatus,
+  listWorksheetLocalStatuses,
+  upsertWorksheetLocalStatus,
+} from '../../../src/utils/worksheetLocalStatus';
+
 const store = {};
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(key => Promise.resolve(store[key] ?? null)),
@@ -14,15 +23,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     return Promise.resolve();
   }),
 }));
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  WorksheetStatus,
-  clearWorksheetLocalStatus,
-  getWorksheetLocalStatus,
-  listWorksheetLocalStatuses,
-  upsertWorksheetLocalStatus,
-} from '../../../src/utils/worksheetLocalStatus';
 
 describe('worksheetLocalStatus', () => {
   beforeEach(async () => {

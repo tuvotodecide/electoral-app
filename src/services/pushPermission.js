@@ -61,7 +61,7 @@ export async function requestPushPermissionExplicit() {
     });
 
     return true;
-  } catch (e) {
+  } catch (_) {
     return false;
   }
 }

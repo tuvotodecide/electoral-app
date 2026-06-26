@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
-import { Platform } from 'react-native';
 import axios from 'axios';
 
 import UnifiedTableScreen from '../../../../src/container/Vote/UnifiedTableScreen';

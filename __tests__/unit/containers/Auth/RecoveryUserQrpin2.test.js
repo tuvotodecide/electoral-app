@@ -54,7 +54,7 @@ describe('RecoveryUserQrpin2', () => {
     expect(localNavigation.reset).not.toHaveBeenCalled();
   });
 
-  it('si hay datos legacy navega a RegisterUser10 en modo migracion', async () => {
+  it('si hay datos legacy NO navega a RegisterUser10 en modo migracion', async () => {
     const localNavigation = {...mockNavigation, reset: jest.fn(), navigate: jest.fn()};
     const route = {
       params: {
@@ -74,7 +74,7 @@ describe('RecoveryUserQrpin2', () => {
     fireEvent.press(getByTestId('changePinNewContinueButton'));
 
     await waitFor(() => {
-      expect(localNavigation.navigate).toHaveBeenCalledWith(
+      expect(localNavigation.navigate).not.toHaveBeenCalledWith(
         AuthNav.RegisterUser10,
         expect.objectContaining({
           ocrData: route.params.payload.legacyData,

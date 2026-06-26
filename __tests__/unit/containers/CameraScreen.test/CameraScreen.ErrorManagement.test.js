@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, act, waitFor, fireEvent} from '@testing-library/react-native';
+import {render, act} from '@testing-library/react-native';
 import CameraScreen from '../../../../src/container/Vote/UploadRecord/CameraScreen';
 
 jest.mock(
@@ -25,12 +25,6 @@ jest.mock('expo-image-picker', () =>
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
 );
-jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
-  jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
-jest.mock('../../../../src/hooks/useNavigationLogger', () =>
-  jest.requireActual('../../../__mocks__/hooks/useNavigationLogger'),
-);
 jest.mock(
   '../../../../src/i18n/String',
   () => require('../../../__mocks__/String').default,
@@ -41,32 +35,9 @@ const {
   setupCameraBaseMocks,
   buildMockRoute,
   createMockNavigation,
-  cameraModule,
-  flushPromises,
 } = require('./testUtils');
 
-const Strings = require('../../../../src/i18n/String');
-
 const {Dimensions, AppState, StatusBar, Image, Alert} = ReactNative;
-
-const flushAsync = async () => {
-  await act(async () => {
-    await flushPromises();
-  });
-};
-
-const advanceCameraReady = async () => {
-  await act(async () => {
-    jest.advanceTimersByTime(4000);
-  });
-};
-
-const pressCaptureButton = async queries => {
-  const captureLabel = queries.getByText(Strings.takePhoto);
-  await act(async () => {
-    fireEvent.press(captureLabel.parent ?? captureLabel);
-  });
-};
 
 describe('CameraScreen - Manejo de Errores', () => {
   let mockNavigation;

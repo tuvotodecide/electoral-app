@@ -4,13 +4,12 @@
  */
 
 import React from 'react';
-import {render, fireEvent} from '@testing-library/react-native';
+import {render} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
 // Mock dependencies
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
-jest.mock('react-native-linear-gradient', () => 'LinearGradient');
 jest.mock('../../../../../src/assets/svg', () => ({
   HeadSetIcon: () => null,
 }));

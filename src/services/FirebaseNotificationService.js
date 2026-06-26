@@ -1,11 +1,11 @@
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
 import functions from '@react-native-firebase/functions';
-import {Platform, PermissionsAndroid} from 'react-native';
 import { geoLocationService } from './GeoLocationService';
 import { localNotificationStorageService } from './LocalNotificationStorageService';
 
 // Configuración Firebase para notificaciones
+// eslint-disable-next-line import/no-unused-modules
 export class FirebaseNotificationService {
   constructor(locationService, storageService) {
     this.locationService = locationService;
@@ -38,7 +38,7 @@ export class FirebaseNotificationService {
     try {
       const token = await messaging().getToken();
       return token;
-    } catch (error) {
+    } catch (_) {
       return null;
     }
   }
@@ -131,27 +131,6 @@ export class FirebaseNotificationService {
   // Calcular distancia entre dos puntos (Delegado para compatibilidad)
   calculateDistance(lat1, lng1, lat2, lng2) {
     return this.locationService.calculateDistance(lat1, lng1, lat2, lng2);
-  }
-
-  async updateUserLocation(userId) {
-    try {
-      // Solicitar permisos de ubicación
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          throw new Error('Permiso de ubicación denegado');
-        }
-      }
-
-      return new Promise((resolve, reject) => {
-        // Geolocation.getCurrentPosition(...)
-        // Este bloque en la versión original estaba comentado.
-      });
-    } catch (error) {
-      throw error;
-    }
   }
 
   // Anunciar conteo a usuarios cercanos

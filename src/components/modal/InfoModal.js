@@ -6,7 +6,7 @@ import {styles} from '../../themes';
 import {moderateScale} from '../../common/constants';
 import CText from '../common/CText';
 import CButton from '../common/CButton';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function InfoModal({
   visible,

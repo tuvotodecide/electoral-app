@@ -1,6 +1,5 @@
 import { StyleSheet, Switch, TouchableOpacity, View } from "react-native";
-import Icons from 'react-native-vector-icons/Entypo';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons, Entypo } from '@expo/vector-icons';
 import CText from "./CText";
 import { moderateScale } from "../../common/constants";
 import { styles } from "../../themes";
@@ -18,7 +17,7 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
           {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
         ]}>
         <View testID="optionLabelContainer" style={styles.rowCenter}>
-          <Icons
+          <Entypo
             testID="optionIcon"
             name={item.icon}
             size={moderateScale(25)}
@@ -72,7 +71,7 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
             },
           ]}>
           {item.icon ? (
-            <Icons
+            <Entypo
               testID={`optionMenuItemIcon_${item.id || index}`}
               name={item.icon}
               size={moderateScale(20)}

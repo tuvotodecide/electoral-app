@@ -1,7 +1,7 @@
 import {StyleSheet, View, TouchableOpacity} from 'react-native';
 import React, {useState} from 'react';
 import {useSelector} from 'react-redux';
-import Icons from 'react-native-vector-icons/EvilIcons';
+import { EvilIcons } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
@@ -67,7 +67,7 @@ export default function SelectCountry({navigation}) {
                     {country?.countryName}
                   </CText>
                 </View>
-                <Icons
+                <EvilIcons
                   testID="countrySelectChevron"
                   name="chevron-right"
                   size={moderateScale(32)}
@@ -91,7 +91,7 @@ export default function SelectCountry({navigation}) {
                     {String.selectCountry}
                   </CText>
                 </View>
-                <Icons
+                <EvilIcons
                   testID="placeholderChevron"
                   color={colors.grayScale500}
                   name="chevron-right"

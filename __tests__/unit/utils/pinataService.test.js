@@ -1,3 +1,7 @@
+import axios from 'axios';
+import {File, Paths, __fileInstances, __setNextInfo} from 'expo-file-system';
+import pinataService from '../../../src/utils/pinataService';
+
 jest.mock('@env', () => ({
   PINATA_API: 'https://pinata.example',
   PINATA_API_KEY: 'k',
@@ -53,10 +57,6 @@ jest.mock('expo-file-system', () => {
     __setNextInfo: value => nextInfoQueue.push(value),
   };
 });
-
-import axios from 'axios';
-import {File, Paths, __fileInstances, __setNextInfo} from 'expo-file-system';
-import pinataService from '../../../src/utils/pinataService';
 
 describe('pinataService', () => {
   beforeEach(() => {

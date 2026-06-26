@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import ImageZoom from 'react-native-image-pan-zoom';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import {
   normalizeUri as normalizeIpfsUri,
   buildIpfsCandidates,

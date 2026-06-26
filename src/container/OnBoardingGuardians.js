@@ -21,7 +21,7 @@ import CSafeAreaView from '../components/common/CSafeAreaView';
 import CButton from '../components/common/CButton';
 import String from '../i18n/String';
 import {setOnBoarding} from '../utils/AsyncStorage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 
 export default function OnBoardingGuardians({navigation}) {
@@ -87,7 +87,7 @@ export default function OnBoardingGuardians({navigation}) {
             {backgroundColor: colors.grayScale400},
           ]}
           onPress={onPressSkip}>
-          <Icon testID="onboardingGuardiansSkipIcon" name="close" size={20} color={colors.white} />
+          <MaterialCommunityIcons testID="onboardingGuardiansSkipIcon" name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
       <FlashList

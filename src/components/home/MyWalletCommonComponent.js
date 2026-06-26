@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import React, {useState} from 'react';
-import Icons from 'react-native-vector-icons/EvilIcons';
+import { EvilIcons } from '@expo/vector-icons';
 
 // custom import
 import CSafeAreaView from '../common/CSafeAreaView';
@@ -45,7 +45,7 @@ export default function MyWalletCommonComponent(props) {
   const RightIcon = () => {
     return (
       <TouchableOpacity>
-        <Icons
+        <EvilIcons
           name={'question'}
           size={moderateScale(28)}
           color={colors.dark ? colors.grayScale500 : colors.grayScale400}

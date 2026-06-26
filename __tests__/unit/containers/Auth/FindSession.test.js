@@ -4,8 +4,8 @@ import FindSession from '../../../../src/container/TabBar/SignIn/FindSession';
 import {renderWithProviders} from '../../../setup/test-utils';
 import String from '../../../../src/i18n/String';
 
-var mockCheckRegisteredOnThisDevice;
-var mockOpenFirstAppFound;
+let mockCheckRegisteredOnThisDevice;
+let mockOpenFirstAppFound;
 
 jest.mock('@env', () => ({
   BACKEND_IDENTITY: 'https://mock.identity',

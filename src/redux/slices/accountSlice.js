@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-export const accountSlice = createSlice({
+const accountSlice = createSlice({
 	name: 'account',
 	initialState: {
 		balance: '0',

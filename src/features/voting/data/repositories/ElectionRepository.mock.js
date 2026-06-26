@@ -5,7 +5,6 @@
  * Cuando exista backend real, se reemplazará por ElectionRepository.api.js
  */
 
-import { getCredentialForVote } from '@/src/data/credentials';
 import { MOCK_ELECTION, MOCK_CANDIDATES } from '../mockData';
 
 /**
@@ -65,10 +64,10 @@ const ElectionRepositoryMock = {
    * Envía voto (simulado)
    * @param {string} electionId
    * @param {string} candidateId
-   * @param {string} candidateName - Para votacion on-chain
+   * @param {string} _candidateName - Para votacion on-chain
    * @returns {Promise<import('./ElectionRepository').VoteResult>}
    */
-  async submitVote(electionId, candidateId, candidateName) {
+  async submitVote(electionId, candidateId, _candidateName) {
     await delay(800);
 
     // Validaciones

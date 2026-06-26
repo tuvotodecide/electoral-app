@@ -4,14 +4,12 @@ import {
   PinchGestureHandler,
   PanGestureHandler,
   TapGestureHandler,
-  State,
 } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedGestureHandler,
   withSpring,
-  runOnJS,
   clamp,
 } from 'react-native-reanimated';
 import {moderateScale} from '../../common/constants';

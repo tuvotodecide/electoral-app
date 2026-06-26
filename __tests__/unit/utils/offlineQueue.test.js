@@ -1,3 +1,15 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  enqueue,
+  getAll,
+  removeById,
+  updateById,
+  processQueue,
+  saveVotePlace,
+  getVotePlace,
+  clearVotePlace,
+} from '../../../src/utils/offlineQueue';
+
 const store = {};
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(key => Promise.resolve(store[key] ?? null)),
@@ -14,18 +26,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     return Promise.resolve();
   }),
 }));
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  enqueue,
-  getAll,
-  removeById,
-  updateById,
-  processQueue,
-  saveVotePlace,
-  getVotePlace,
-  clearVotePlace,
-} from '../../../src/utils/offlineQueue';
 
 describe('offlineQueue', () => {
   let nowSpy;

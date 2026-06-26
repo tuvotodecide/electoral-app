@@ -1,3 +1,7 @@
+import axios from 'axios';
+import wira from 'wira-sdk';
+import {authenticateWithBackend} from '../../../src/utils/offlineQueueHandler';
+
 jest.mock('../../../src/utils/pinataService', () => ({}));
 jest.mock('../../../src/api/oracle', () => ({oracleCalls: {}, oracleReads: {}}));
 jest.mock('../../../src/api/params', () => ({availableNetworks: {}}));
@@ -38,10 +42,6 @@ jest.mock('axios', () => ({
 jest.mock('wira-sdk', () => ({
   authenticateWithVerifier: jest.fn(),
 }));
-
-import axios from 'axios';
-import wira from 'wira-sdk';
-import {authenticateWithBackend} from '../../../src/utils/offlineQueueHandler';
 
 describe('offlineQueueHandler authenticateWithBackend', () => {
   beforeEach(() => {

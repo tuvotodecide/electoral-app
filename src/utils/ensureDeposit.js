@@ -1,7 +1,7 @@
 import {createPublicClient, encodeFunctionData, http, parseEther} from 'viem';
 import {entryPoint07Address} from 'viem/account-abstraction';
 import {privateKeyToAccount} from 'viem/accounts';
-import {availableNetworks, gasParams} from '../api/params';
+import {availableNetworks} from '../api/params';
 
 
 const MIN_DEPOSIT = parseEther('0.0005'); 

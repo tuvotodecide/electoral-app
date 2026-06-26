@@ -1,3 +1,10 @@
+import axios from 'axios';
+import pinataService from '../../../src/utils/pinataService';
+import {removePersistedImage} from '../../../src/utils/persistLocalImage';
+import {showLocalNotification} from '../../../src/notifications';
+import {upsertWorksheetLocalStatus} from '../../../src/utils/worksheetLocalStatus';
+import {publishWorksheetHandler} from '../../../src/utils/offlineQueueHandler';
+
 jest.mock('../../../src/utils/pinataService', () => ({
   uploadElectoralActComplete: jest.fn(),
 }));
@@ -39,13 +46,6 @@ jest.mock('axios', () => ({
 jest.mock('wira-sdk', () => ({
   authenticateWithVerifier: jest.fn(async () => true),
 }));
-
-import axios from 'axios';
-import pinataService from '../../../src/utils/pinataService';
-import {removePersistedImage} from '../../../src/utils/persistLocalImage';
-import {showLocalNotification} from '../../../src/notifications';
-import {upsertWorksheetLocalStatus} from '../../../src/utils/worksheetLocalStatus';
-import {publishWorksheetHandler} from '../../../src/utils/offlineQueueHandler';
 
 const basePayload = {
   imageUri: 'file:///tmp/worksheet.jpg',

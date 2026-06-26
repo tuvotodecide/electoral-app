@@ -4,7 +4,6 @@ import {
   View,
   TouchableOpacity,
   ActivityIndicator,
-  PermissionsAndroid,
   Platform,
   Dimensions,
   Linking,
@@ -14,9 +13,9 @@ import {
   AppState,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';
 import axios from 'axios';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
@@ -28,7 +27,7 @@ import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LAST_TOPIC_KEY } from '../../../common/constants';
 import { saveVotePlace } from '../../../utils/offlineQueue';
-import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
+import { getCache, setCache } from '../../../utils/lookupCache';
 import { backendProbe } from '../../../utils/networkUtils';
 import {
   subscribeToLocationTopic,
@@ -52,12 +51,6 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const LOOKUP_CACHE_TTL = {
-  nearbyLocationsMs: 10 * 60 * 1000,
-  electionStatusMs: 10 * 60 * 1000,
-  tablesByLocationMs: 6 * 60 * 60 * 1000,
-};
-
 const getNearbyLocationCacheKey = (latitude, longitude) => {
   const lat = Number(latitude || 0).toFixed(3);
   const lng = Number(longitude || 0).toFixed(3);
@@ -66,8 +59,6 @@ const getNearbyLocationCacheKey = (latitude, longitude) => {
 
 const getTablesByLocationCacheKey = locationId =>
   `tables-by-location:${String(locationId || '').trim()}`;
-
-const LOOKUP_TRACE_ENABLED = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 const warmTablesCacheByLocationId = async ({
   locationId,
@@ -78,8 +69,6 @@ const warmTablesCacheByLocationId = async ({
   if (!normalizedLocationId) return;
 
   const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
-  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.tablesByLocationMs);
-
 
   if (Array.isArray(seedTables) && seedTables.length > 0) {
     await setCache(cacheKey, seedTables, { version: 'tables-v1' });
@@ -97,7 +86,7 @@ const warmTablesCacheByLocationId = async ({
 
       return;
     }
-  } catch (error) {
+  } catch (_) {
 
   }
 
@@ -109,13 +98,12 @@ const warmTablesCacheByLocationId = async ({
       await setCache(cacheKey, list, { version: 'tables-v1' });
 
     }
-  } catch (error) {
+  } catch (_) {
 
   }
 };
 
 const ElectoralLocationsSave = ({ navigation, route }) => {
-  const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const [locations, setLocations] = useState([]);
@@ -132,7 +120,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     onCloseAction: null,
   });
   const dni = route?.params?.dni;
-  const [electionStatus, setElectionStatus] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -234,9 +221,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
 
       }
 
-      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.nearbyLocationsMs);
-
-
       const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
 
@@ -279,28 +263,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     }
   }, []);
 
-  const formatIsoNoT = iso => {
-    if (!iso) return '';
-    return `${iso}`.replace('T', ' ').replace(/\.\d+Z?$/, ''); // "2025-08-10 18:36:00"
-  };
-
-  const formatDate = isoDate => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}/${month}/${day}`;
-  };
-
-  const formatTime = isoDate => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
   const openLocationSettings = () => {
     setModalVisible(false);
     pendingPermissionFromSettings.current = true;
@@ -331,23 +293,88 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         if (retryCount > 0) {
         }
 
-        // Pedir permisos en Android
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title:
-                i18nString.locationPermissionTitle || 'Permiso de ubicación',
-              message:
-                i18nString.locationPermissionMessage ||
-                'La aplicación necesita acceso a tu ubicación para mostrar recintos cercanos',
-              buttonNeutral: i18nString.askMeLater || 'Preguntar después',
-              buttonNegative: i18nString.cancel || 'Cancelar',
-              buttonPositive: i18nString.ok || 'OK',
-            },
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          showModal(
+            'settings',
+            i18nString.locationPermissionRequired,
+            i18nString.locationPermissionDeniedMessage,
+            i18nString.openSettings,
+            openLocationSettings,
+            i18nString.cancel,
+            closeModal,
+          );
+          setLoadingLocation(false);
+          return;
+        }
+
+        // Obtener ubicación
+        try {
+          const position = await Location.getCurrentPositionAsync({
+            accuracy: useHighAccuracy ? Location.LocationAccuracy.High : Location.LocationAccuracy.Low
+          });
+          const { latitude, longitude } = position.coords;
+
+          setUserLocation({ latitude, longitude });
+          fetchNearbyLocations(latitude, longitude);
+        } catch (error) {
+          console.error('Error getting location:', error);
+          if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
+            getCurrentLocation(retryCount + 1, false);
+            return;
+          }
+
+          // Manejo de errores final
+          let errorMessage = i18nString.locationError;
+          let modalTitle = i18nString.error;
+          let action = null;
+
+          if (error.code === 1) {
+            // PERMISSION_DENIED
+            errorMessage = i18nString.locationPermissionDeniedMessage;
+            modalTitle = i18nString.locationPermissionRequired;
+            action = openLocationSettings;
+          } else if (error.code === 2 || error.code === 3) {
+            // POSITION_UNAVAILABLE o TIMEOUT
+            errorMessage = i18nString.locationDisabledMessage;
+            modalTitle = i18nString.locationRequired;
+            action = openLocationSettings;
+          }
+
+          showModal(
+            'settings',
+            modalTitle,
+            errorMessage,
+            i18nString.openSettings,
+            action,
+            i18nString.cancel,
+            closeModal,
           );
 
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setLoadingLocation(false);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error requesting location permission:', error);
+        showModal(
+          'error',
+          i18nString.error,
+          i18nString.locationPermissionError,
+        );
+        setLoadingLocation(false);
+        setLoading(false);
+      }
+    },
+    [closeModal, fetchNearbyLocations],
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (state === 'active' && pendingPermissionFromSettings.current) {
+        pendingPermissionFromSettings.current = false;
+        try {
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') {
             showModal(
               'settings',
               i18nString.locationPermissionRequired,
@@ -360,135 +387,13 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
             setLoadingLocation(false);
             return;
           }
-        } else {
-          // iOS
-          const status = await Geolocation.requestAuthorization('whenInUse');
-          if (status !== 'granted') {
-            showModal(
-              'settings',
-              i18nString.locationPermissionRequired,
-              i18nString.locationPermissionDeniedMessage,
-              i18nString.openSettings,
-              () => {
-                pendingPermissionFromSettings.current = true;
-                openLocationSettings();
-              },
-              i18nString.cancel,
-              closeModal,
-            );
-            setLoadingLocation(false);
-            return;
-          }
+        } catch (error) {
+          console.error('Error requesting location permission after config:', error);
         }
-
-        // Obtener ubicación
-        Geolocation.getCurrentPosition(
-          position => {
-            const { latitude, longitude } = position.coords;
-
-            setUserLocation({ latitude, longitude });
-            fetchNearbyLocations(latitude, longitude);
-          },
-          error => {
-            if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
-              getCurrentLocation(retryCount + 1, false);
-              return;
-            }
-
-            // Manejo de errores final
-            let errorMessage = i18nString.locationError;
-            let modalTitle = i18nString.error;
-            let action = null;
-
-            if (error.code === 1) {
-              // PERMISSION_DENIED
-              errorMessage = i18nString.locationPermissionDeniedMessage;
-              modalTitle = i18nString.locationPermissionRequired;
-              action = openLocationSettings;
-            } else if (error.code === 2 || error.code === 3) {
-              // POSITION_UNAVAILABLE o TIMEOUT
-              errorMessage = i18nString.locationDisabledMessage;
-              modalTitle = i18nString.locationRequired;
-              action = openLocationSettings;
-            }
-
-            showModal(
-              'settings',
-              modalTitle,
-              errorMessage,
-              i18nString.openSettings,
-              action,
-              i18nString.cancel,
-              closeModal,
-            );
-
-            setLoadingLocation(false);
-            setLoading(false);
-          },
-          {
-            enableHighAccuracy: useHighAccuracy,
-            timeout: useHighAccuracy ? 15000 : 30000, // menos estricto en fallback
-            maximumAge: useHighAccuracy ? 10000 : 60000, // permite cache más viejo
-          },
-        );
-      } catch (error) {
-        showModal(
-          'error',
-          i18nString.error,
-          i18nString.locationPermissionError,
-        );
-        setLoadingLocation(false);
-        setLoading(false);
-      }
-    },
-    [fetchNearbyLocations],
-  );
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', async state => {
-      if (state === 'active' && pendingPermissionFromSettings.current) {
-        pendingPermissionFromSettings.current = false;
-        try {
-          if (Platform.OS === 'android') {
-            const ok = await PermissionsAndroid.check(
-              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            );
-            if (ok) {
-              setModalVisible(false);
-              getCurrentLocation(0, true);
-            } else {
-              showModal(
-                'settings',
-                i18nString.locationPermissionRequired,
-                i18nString.locationPermissionDeniedMessage,
-                i18nString.openSettings,
-                openLocationSettings,
-                i18nString.cancel,
-                closeModal,
-              );
-            }
-          } else {
-            const status = await Geolocation.requestAuthorization('whenInUse');
-            if (status === 'granted') {
-              setModalVisible(false);
-              getCurrentLocation(0, true);
-            } else {
-              showModal(
-                'settings',
-                i18nString.locationPermissionRequired,
-                i18nString.locationPermissionDeniedMessage,
-                i18nString.openSettings,
-                openLocationSettings,
-                i18nString.cancel,
-                closeModal,
-              );
-            }
-          }
-        } catch (e) { }
       }
     });
     return () => sub.remove();
-  }, [getCurrentLocation]);
+  }, [closeModal, getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
     const cacheKey = 'electoral-locations:config-status';
@@ -499,13 +404,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     try {
       setConfigLoading(true);
       setConfigError(false);
-      if (cachedData) {
-
-        setElectionStatus(cachedData);
-      }
-
-      const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTL.electionStatusMs);
-
 
       const probe = await backendProbe({ timeoutMs: 2000 });
       if (!probe?.ok) {
@@ -521,8 +419,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         { timeout: 12000 }, // 12 segundos timeout
       );
       if (response.data) {
-
-        setElectionStatus(response.data);
         await setCache(cacheKey, response.data, { version: 'election-config-v1' });
       } else {
 
@@ -591,12 +487,12 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     setModalVisible(true);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     if (modalConfig.onCloseAction) {
       modalConfig.onCloseAction();
     }
     setModalVisible(false);
-  };
+  }, [modalConfig]);
 
   const handleRetryLocation = () => {
     setLocationRetries(0);
@@ -761,7 +657,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     } else {
       rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
     }
-  }, [configLoading]);
+  }, [configLoading, rotateAnim]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', e => {

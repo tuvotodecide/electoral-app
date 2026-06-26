@@ -129,5 +129,3 @@ export const useCountdown = (election) => {
 
   return state;
 };
-
-export default useCountdown;

@@ -10,13 +10,11 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import axios from 'axios';
-// import Geolocation from '@react-native-community/geolocation';
 import CSafeAreaView from '../../components/common/CSafeAreaView';
 import UniversalHeader from '../../components/common/UniversalHeader';
 import CText from '../../components/common/CText';
 import CustomModal from '../../components/common/CustomModal';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import { FlashList } from '@shopify/flash-list';

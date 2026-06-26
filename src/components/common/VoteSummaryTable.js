@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, StyleSheet, TextInput, Dimensions} from 'react-native';
 import CText from './CText';
-import {moderateScale} from '../../common/constants';
 
 const {width: screenWidth} = Dimensions.get('window');
 

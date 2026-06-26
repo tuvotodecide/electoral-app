@@ -1,8 +1,6 @@
 import React from 'react';
 import {View, TouchableOpacity, TextInput, Dimensions} from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import CText from './CText';
 import UniversalHeader from './UniversalHeader';
 import {moderateScale} from '../../common/constants';

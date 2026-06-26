@@ -30,14 +30,6 @@ jest.mock('../../../../src/components/common/BaseSearchTableScreen', () =>
   require('../../../__mocks__/components/common/BaseSearchTableScreen').default
 );
 
-// Mock hooks
-jest.mock('../../../../src/hooks/useNavigationLogger', () => ({
-  useNavigationLogger: jest.fn(() => ({
-    logAction: jest.fn(),
-    logNavigation: jest.fn(),
-  })),
-}));
-
 // Create a simple mock store using Redux Toolkit
 const createMockStore = (customTheme = null) => {
   const { configureStore } = require('@reduxjs/toolkit');
@@ -561,14 +553,6 @@ describe('SearchTable - Tests de Estados y Props', () => {
         const emptyRoute = {};
         
         expect(() => renderComponent(emptyRoute)).not.toThrow();
-      });
-
-      test('ya no depende del hook useNavigationLogger en el flujo actual', () => {
-        const {useNavigationLogger} = require('../../../../src/hooks/useNavigationLogger');
-
-        renderComponent();
-
-        expect(useNavigationLogger).not.toHaveBeenCalled();
       });
     });
 

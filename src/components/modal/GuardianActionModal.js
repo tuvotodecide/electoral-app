@@ -2,7 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {Modal, View, TouchableOpacity, StyleSheet} from 'react-native';
 import {useSelector} from 'react-redux';
 
-import CText from '../common/CText';
 import CButton from '../common/CButton';
 import {moderateScale} from '../../common/constants';
 import CInput from '../common/CInput';

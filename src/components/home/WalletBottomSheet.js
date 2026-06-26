@@ -1,7 +1,7 @@
 import CText from "../common/CText";
 import String from "../../i18n/String";
-import { Modal, Portal, Surface } from "react-native-paper";
-import Ionicon from 'react-native-vector-icons/Ionicons';
+import { Modal, Portal } from "react-native-paper";
+import { Ionicons } from '@expo/vector-icons';
 import { moderateScale } from "../../common/constants";
 import { useSelector } from "react-redux";
 import { styles } from "../../themes";
@@ -43,7 +43,7 @@ export default function WalletBottomSheet({
 						style={{backgroundColor: colors.transparent,...localStyles.option}}
 						onPress={goToReceive}
 					>
-						<Ionicon
+						<Ionicons
 							name="qr-code-outline"
 							size={moderateScale(70)}
 							color={colors.primary}
@@ -58,7 +58,7 @@ export default function WalletBottomSheet({
 						style={{backgroundColor: colors.transparent,...localStyles.option}}
 						onPress={goToSend}
 					>
-						<Ionicon
+						<Ionicons
 							name="scan-circle-outline"
 							size={moderateScale(70)}
 							color={colors.primary}

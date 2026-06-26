@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import CStandardHeader from '../../../components/common/CStandardHeader';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';

@@ -1,5 +1,4 @@
 
-import {API_ENDPOINTS} from './api-endpoints';
 import { Http } from './http';
 
 export function crudFactory(endpoint) {

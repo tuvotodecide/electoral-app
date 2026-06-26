@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Image,
@@ -9,10 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Feather from 'react-native-vector-icons/Feather';
-import Entypo from 'react-native-vector-icons/Entypo';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, Entypo } from '@expo/vector-icons';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import { THEME, getHeight, moderateScale } from '../../../common/constants';
@@ -56,30 +54,6 @@ export default function Profile({ navigation }) {
   )
     .toString()
     .trim();
-
-
-  // Datos de reputación y NFTs
-  const reputation = {
-    coincidencias: 17,
-    confianza: 94,
-  };
-
-  const nfts = [
-    {
-      title: String.uploadActaNFT,
-      desc: String.uploadActaNFTDesc,
-      icon: <Entypo name="archive" size={30} color="#EA7C4B" />,
-      bg: '#FDEAE5',
-      border: '#F5C9BE',
-    },
-    {
-      title: String.witnessNFT,
-      desc: String.witnessNFTDesc,
-      icon: <Feather name="award" size={30} color="#4075BA" />,
-      bg: '#EEF6FE',
-      border: '#B3D1F5',
-    },
-  ];
 
   // Sección adicional (ProfileDataV2)
   const onPressItem = item => {
@@ -139,7 +113,7 @@ export default function Profile({ navigation }) {
         });
       }, 500);
       return true;
-    } catch (exception) {
+    } catch (_err) {
       return false;
     }
   };

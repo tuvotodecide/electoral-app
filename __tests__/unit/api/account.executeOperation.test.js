@@ -1,3 +1,5 @@
+import {executeOperation} from '../../../src/api/account';
+
 jest.mock('viem', () => ({
   createPublicClient: jest.fn(),
   getContract: jest.fn(),
@@ -35,9 +37,6 @@ jest.mock('../../../src/api/params', () => ({
   FACTORY_ADDRESS: '0xfactory',
   sponsorshipPolicyId: 'policy-id',
 }));
-
-import { toCoinbaseSmartAccount } from 'viem/account-abstraction';
-import {executeOperation} from '../../../src/api/account';
 
 describe('api/account executeOperation', () => {
   let publicClient;

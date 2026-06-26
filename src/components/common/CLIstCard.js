@@ -3,7 +3,7 @@ import { styles } from "../../themes";
 import { moderateScale } from "../../common/constants";
 import CText from "./CText";
 import { useSelector } from "react-redux";
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CListCard({item, index, onPress, size = 'normal'}) {
   const colors = useSelector(state => state.theme.theme);

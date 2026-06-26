@@ -1,7 +1,6 @@
 import React from 'react';
 import {render, act, fireEvent} from '@testing-library/react-native';
 import CameraScreen from '../../../../src/container/Vote/UploadRecord/CameraScreen';
-import {StackNav} from '../../../../src/navigation/NavigationKey';
 
 jest.mock(
   'react-native/Libraries/Animated/NativeAnimatedHelper',
@@ -26,12 +25,6 @@ jest.mock('expo-image-picker', () =>
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('../../../__mocks__/@react-native-community/netinfo'),
 );
-jest.mock('../../../../src/utils/electoralActAnalyzer', () =>
-  jest.requireActual('../../../__mocks__/utils/electoralActAnalyzer'),
-);
-jest.mock('../../../../src/hooks/useNavigationLogger', () =>
-  jest.requireActual('../../../__mocks__/hooks/useNavigationLogger'),
-);
 jest.mock(
   '../../../../src/i18n/String',
   () => require('../../../__mocks__/String').default,
@@ -46,7 +39,6 @@ const {
   createMockNavigation,
   flushPromises,
 } = require('./testUtils');
-const analyzer = require('../../../../src/utils/electoralActAnalyzer');
 const imagePicker = require('expo-image-picker');
 
 const {Dimensions, AppState, StatusBar, Image, Alert, Animated} = ReactNative;
@@ -191,14 +183,6 @@ describe('CameraScreen - Extended Coverage', () => {
 
   describe('AI analysis scenarios', () => {
     it('renderiza cuando análisis AI está disponible', async () => {
-      analyzer.analyzeElectoralAct.mockResolvedValueOnce({
-        success: true,
-        data: {
-          if_electoral_act: true,
-          image_not_clear: false,
-        },
-      });
-
       const route = buildMockRoute();
       render(<CameraScreen navigation={mockNavigation} route={route} />);
 

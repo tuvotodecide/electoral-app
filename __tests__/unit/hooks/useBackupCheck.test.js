@@ -4,7 +4,6 @@
  */
 
 import {renderHook, act, waitFor} from '@testing-library/react-native';
-import React from 'react';
 
 // Mocks
 const mockGetItem = jest.fn(() => Promise.resolve(null));

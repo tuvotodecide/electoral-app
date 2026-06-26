@@ -10,7 +10,6 @@ import {
   getAsyncStorageData,
 } from '../../../src/utils/AsyncStorage';
 import {getBioFlag, setBioFlag} from '../../../src/utils/BioFlag';
-import {cancelTokenSourceWithTimeout} from '../../../src/utils/cancelToken';
 import {
   normalizeDni,
   discoverableHashFromDni,
@@ -27,7 +26,6 @@ import {
   clearAttestationAvailabilityCache,
 } from '../../../src/utils/attestationAvailabilityCache';
 import {
-  getAttempts,
   incAttempts,
   resetAttempts,
   isLocked,
@@ -55,8 +53,6 @@ import {
 import {validateBallotLocally} from '../../../src/utils/ballotValidation';
 import {normalizeUri, buildIpfsCandidates} from '../../../src/utils/normalizedUri';
 import {
-  THEME,
-  ON_BOARDING,
   KEY,
   LOCK_KEY,
   JWT_KEY,
@@ -118,16 +114,6 @@ describe('utils básicos', () => {
     expect(await getBioFlag()).toBe(true);
     await setBioFlag(false);
     expect(AsyncStorage.setItem).toHaveBeenCalled();
-  });
-
-  it('cancelTokenSourceWithTimeout cancela después del timeout', () => {
-    jest.useFakeTimers();
-    const axios = require('axios');
-    const source = cancelTokenSourceWithTimeout(1000);
-    expect(source.cancel).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(1000);
-    expect(source.cancel).toHaveBeenCalledWith('timeout_1000');
-    jest.useRealTimers();
   });
 
   it('lookupCache y attestation cache operan sobre AsyncStorage', async () => {
