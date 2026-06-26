@@ -501,6 +501,113 @@ describe('NotificationDetailScreen', () => {
     expect(Linking.openURL).not.toHaveBeenCalled();
   });
 
+  it('muestra vista roja de votacion eliminada sin CTA para INSTITUTIONAL_VOTING_CANCELLED', () => {
+    const screen = renderScreen({
+      title: 'Votación eliminada',
+      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+      kind: 'voting_event',
+      statusTone: 'danger',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_CANCELLED',
+        eventId: 'event-cancelled',
+        state: 'CANCELLED',
+        status: 'cancelled',
+        severity: 'error',
+        bannerTitle: 'Esta votación fue eliminada',
+        bannerSubtitle: 'No es necesario realizar ninguna acción.',
+      },
+    });
+
+    expect(screen.getByText('Esta votación fue eliminada')).toBeTruthy();
+    expect(screen.getByText('La votación ya no está disponible porque fue eliminada por el administrador.')).toBeTruthy();
+    expect(screen.getByText('No es necesario realizar ninguna acción.')).toBeTruthy();
+    expect(screen.queryByTestId('goToResultsButton')).toBeNull();
+    expect(screen.queryByText('Ver votación')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('muestra votacion eliminada al abrir una notificacion antigua si public detail responde CANCELLED', async () => {
+    global.fetch = jest.fn(url => {
+      if (String(url).includes('/public/detail/')) {
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            id: 'event-old-cancelled',
+            state: 'CANCELLED',
+            availabilityStatus: 'CANCELLED',
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({status: 'ELIGIBLE'}),
+      });
+    });
+
+    const screen = renderScreen({
+      title: 'Revisión de padrón',
+      body: 'Consulta tu habilitación.',
+      kind: 'voting_event',
+      direccion: 'Consulta tu habilitación.',
+      data: {
+        type: 'INSTITUTIONAL_PADRON_REVIEW_OPEN',
+        eventId: 'event-old-cancelled',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-old-cancelled/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Esta votación fue eliminada')).toBeTruthy();
+    });
+    expect(screen.getByText('La votación ya no está disponible porque fue eliminada por el administrador.')).toBeTruthy();
+    expect(screen.getByText('No es necesario realizar ninguna acción.')).toBeTruthy();
+    expect(screen.queryByTestId('goToResultsButton')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('mapea 404/410 institucional con eventId a votacion eliminada sin convertir notificaciones sin eventId', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: jest.fn().mockResolvedValue({}),
+    });
+
+    const cancelledScreen = renderScreen({
+      title: 'Publicación oficial',
+      body: 'La votación fue publicada oficialmente.',
+      kind: 'voting_event',
+      direccion: 'La votación fue publicada oficialmente.',
+      data: {
+        type: 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+        eventId: 'event-gone',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-gone/publica',
+      },
+    });
+
+    await waitFor(() => {
+      expect(cancelledScreen.getByText('Esta votación fue eliminada')).toBeTruthy();
+    });
+    expect(cancelledScreen.queryByTestId('goToResultsButton')).toBeNull();
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: jest.fn().mockResolvedValue({}),
+    });
+    const genericScreen = renderScreen({
+      title: 'Publicación oficial',
+      body: 'La votación fue publicada oficialmente.',
+      kind: 'voting_event',
+      direccion: 'La votación fue publicada oficialmente.',
+      data: {
+        type: 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
+      },
+    });
+
+    expect(genericScreen.queryByText('Esta votación fue eliminada')).toBeNull();
+  });
+
   it('el botón Ver detalles de resultados navega a WebView interno y no abre navegador externo', () => {
     const screen = renderScreen({
       title: 'Resultados disponibles',

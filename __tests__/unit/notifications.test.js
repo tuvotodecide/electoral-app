@@ -1,5 +1,7 @@
 import {
   alertNewBackendNotifications,
+  buildInstitutionalNotificationCopy,
+  buildInstitutionalNotificationForDetail,
   buildNotificationSemanticKey,
   buildNotificationTextFallback,
   buildRouteFromNotification,
@@ -203,6 +205,39 @@ describe('notifications', () => {
     });
   });
 
+  it('normaliza copy y detalle institucional para votacion eliminada', () => {
+    const notification = {
+      data: {
+        type: 'INSTITUTIONAL_VOTING_CANCELLED',
+        eventId: 'event-cancelled',
+        eventName: 'Elección cancelada',
+        state: 'CANCELLED',
+        status: 'cancelled',
+        severity: 'error',
+      },
+    };
+
+    expect(buildInstitutionalNotificationCopy(notification)).toEqual({
+      title: 'Votación eliminada',
+      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+    });
+    expect(buildNotificationTextFallback(notification)).toMatchObject({
+      title: 'Votación eliminada',
+      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+    });
+    expect(buildInstitutionalNotificationForDetail(notification)).toMatchObject({
+      kind: 'voting_event',
+      tipo: 'Eliminada',
+      statusTone: 'danger',
+      actionUrl: null,
+      actionLabel: undefined,
+      data: expect.objectContaining({
+        type: 'INSTITUTIONAL_VOTING_CANCELLED',
+        eventId: 'event-cancelled',
+      }),
+    });
+  });
+
   it('alerta solo una vez por notificacion backend deduplicada y persiste la marca', async () => {
     const notification = {
       _id: 'remote-1',
@@ -323,6 +358,7 @@ describe('notifications', () => {
       'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
       'INSTITUTIONAL_RESULTS_AVAILABLE',
       'INSTITUTIONAL_SCHEDULE_UPDATED',
+      'INSTITUTIONAL_VOTING_CANCELLED',
     ];
 
     institutionalTypes.forEach(type => {

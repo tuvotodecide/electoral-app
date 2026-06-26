@@ -117,6 +117,14 @@ describe('Notification routing helpers', () => {
     ).toBe('news');
 
     expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_VOTING_CANCELLED',
+        title: 'Votación eliminada',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
       buildNotificationNavigationTarget({
         data: {type: 'INSTITUTIONAL_VOTING_ENABLED'},
       }, {enableVotingFlow: true}),
@@ -125,6 +133,25 @@ describe('Notification routing helpers', () => {
       params: {
         notification: {
           data: {type: 'INSTITUTIONAL_VOTING_ENABLED'},
+        },
+      },
+    });
+
+    expect(
+      buildNotificationNavigationTarget({
+        data: {
+          type: 'INSTITUTIONAL_VOTING_CANCELLED',
+          eventId: 'event-cancelled',
+        },
+      }, {enableVotingFlow: true}),
+    ).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          data: {
+            type: 'INSTITUTIONAL_VOTING_CANCELLED',
+            eventId: 'event-cancelled',
+          },
         },
       },
     });
