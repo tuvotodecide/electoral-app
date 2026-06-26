@@ -219,15 +219,16 @@ describe('notifications', () => {
 
     expect(buildInstitutionalNotificationCopy(notification)).toEqual({
       title: 'Votación eliminada',
-      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+      body: 'Elección cancelada fue eliminada por el administrador.',
     });
     expect(buildNotificationTextFallback(notification)).toMatchObject({
       title: 'Votación eliminada',
-      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+      body: 'Elección cancelada fue eliminada por el administrador.',
     });
     expect(buildInstitutionalNotificationForDetail(notification)).toMatchObject({
       kind: 'voting_event',
       tipo: 'Eliminada',
+      direccion: 'Elección cancelada fue eliminada por el administrador.',
       statusTone: 'danger',
       actionUrl: null,
       actionLabel: undefined,
@@ -236,6 +237,84 @@ describe('notifications', () => {
         eventId: 'event-cancelled',
       }),
     });
+  });
+
+  it('normaliza copy institucional para recordatorios de inicio y cierre de votacion', () => {
+    expect(
+      buildNotificationTextFallback({
+        body: 'Elección recordatorio comienza a las 10:00.',
+        data: {
+          type: 'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+          eventName: 'Elección recordatorio',
+          votingStart: '2026-07-10T14:00:00.000Z',
+        },
+      }),
+    ).toMatchObject({
+      title: 'La votación inicia en 1 hora',
+      body: 'Elección recordatorio comienza a las 10:00.',
+    });
+
+    const closingReminder = {
+      body: 'Elección activa cierra a las 14:00.',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+        eventId: 'event-reminder',
+        eventName: 'Elección activa',
+        votingEnd: '2026-07-10T18:00:00.000Z',
+        publicUrl: 'https://results.example/votacion/elecciones/event-reminder/publica',
+      },
+    };
+
+    expect(buildNotificationTextFallback(closingReminder)).toMatchObject({
+      title: 'La votación termina en 15 minutos',
+      body: 'Elección activa cierra a las 14:00.',
+    });
+    expect(buildInstitutionalNotificationForDetail(closingReminder)).toMatchObject({
+      kind: 'voting_event',
+      tipo: 'Ver votación',
+      statusTone: 'success',
+      actionLabel: 'Ver votación',
+      actionUrl: 'https://results.example/votacion/elecciones/event-reminder/publica',
+      reminderDetailBody: expect.stringMatching(/^Cierra a las \d{2}:\d{2}\.$/),
+      data: expect.objectContaining({
+        type: 'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+        eventId: 'event-reminder',
+      }),
+    });
+  });
+
+  it.each([
+    ['INSTITUTIONAL_VOTING_STARTS_IN_1H', 'La votación inicia en 1 hora', 'START', '60'],
+    ['INSTITUTIONAL_VOTING_STARTS_IN_15M', 'La votación inicia en 15 minutos', 'START', '15'],
+    ['INSTITUTIONAL_VOTING_ENDS_IN_1H', 'La votación termina en 1 hora', 'END', '60'],
+    ['INSTITUTIONAL_VOTING_ENDS_IN_15M', 'La votación termina en 15 minutos', 'END', '15'],
+  ])('prepara CTA Ver votación para %s', (type, title, phase, offsetMinutes) => {
+    const notification = buildInstitutionalNotificationForDetail({
+      data: {
+        type,
+        eventId: 'event-reminder',
+        eventName: 'Elección recordatorio',
+        phase,
+        offsetMinutes,
+        votingStart: '2026-07-10T14:00:00.000Z',
+        votingEnd: '2026-07-10T18:00:00.000Z',
+        scheduledFor: phase === 'START'
+          ? '2026-07-10T14:00:00.000Z'
+          : '2026-07-10T18:00:00.000Z',
+        publicUrl: 'https://results.example/votacion/elecciones/event-reminder/publica',
+      },
+    });
+
+    expect(notification).toMatchObject({
+      kind: 'voting_event',
+      tipo: 'Ver votación',
+      title,
+      actionLabel: 'Ver votación',
+      actionUrl: 'https://results.example/votacion/elecciones/event-reminder/publica',
+    });
+    expect(notification.reminderDetailBody).toMatch(
+      phase === 'START' ? /^Comienza a las \d{2}:\d{2}\.$/ : /^Cierra a las \d{2}:\d{2}\.$/,
+    );
   });
 
   it('alerta solo una vez por notificacion backend deduplicada y persiste la marca', async () => {

@@ -501,26 +501,71 @@ describe('NotificationDetailScreen', () => {
     expect(Linking.openURL).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+      'La votación inicia en 1 hora',
+      'Comienza a las 10:00.',
+    ],
+    [
+      'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+      'La votación termina en 15 minutos',
+      'Cierra a las 14:00.',
+    ],
+  ])('muestra nombre, hora y CTA Ver votación para %s', (type, title, reminderDetailBody) => {
+    const screen = renderScreen({
+      title,
+      body: type.includes('_STARTS_')
+        ? 'Elección recordatorio comienza a las 10:00.'
+        : 'Elección recordatorio cierra a las 14:00.',
+      kind: 'voting_event',
+      direccion: reminderDetailBody,
+      reminderDetailBody,
+      actionLabel: 'Ver votación',
+      actionUrl: 'https://frontend-results.example/votacion/elecciones/event-reminder/publica',
+      data: {
+        type,
+        eventId: 'event-reminder',
+        eventName: 'Elección recordatorio',
+        publicUrl: 'https://frontend-results.example/votacion/elecciones/event-reminder/publica',
+        votingStart: '2026-07-10T14:00:00.000Z',
+        votingEnd: '2026-07-10T18:00:00.000Z',
+      },
+    });
+
+    expect(screen.getByText(title)).toBeTruthy();
+    expect(screen.getByText('Elección recordatorio')).toBeTruthy();
+    expect(screen.getByText(reminderDetailBody)).toBeTruthy();
+    expect(screen.getByText('Ver votación')).toBeTruthy();
+    expect(screen.queryByText('Votación eliminada')).toBeNull();
+  });
+
   it('muestra vista roja de votacion eliminada sin CTA para INSTITUTIONAL_VOTING_CANCELLED', () => {
     const screen = renderScreen({
       title: 'Votación eliminada',
-      body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+      body: 'Referéndum institucional 2026 fue eliminada por el administrador.',
       kind: 'voting_event',
       statusTone: 'danger',
       data: {
         type: 'INSTITUTIONAL_VOTING_CANCELLED',
         eventId: 'event-cancelled',
+        eventName: 'Referéndum institucional 2026',
         state: 'CANCELLED',
         status: 'cancelled',
         severity: 'error',
-        bannerTitle: 'Esta votación fue eliminada',
-        bannerSubtitle: 'No es necesario realizar ninguna acción.',
+        bannerTitle: 'Referéndum institucional 2026',
+        bannerSubtitle: 'Ya no está disponible.',
+        reasonText: 'Fue eliminada por el administrador.',
       },
     });
 
-    expect(screen.getByText('Esta votación fue eliminada')).toBeTruthy();
-    expect(screen.getByText('La votación ya no está disponible porque fue eliminada por el administrador.')).toBeTruthy();
+    expect(screen.getByText('Votación eliminada')).toBeTruthy();
+    expect(screen.getByText('Referéndum institucional 2026')).toBeTruthy();
+    expect(screen.getByText('Ya no está disponible.')).toBeTruthy();
+    expect(screen.getByText('Fue eliminada por el administrador.')).toBeTruthy();
     expect(screen.getByText('No es necesario realizar ninguna acción.')).toBeTruthy();
+    expect(screen.queryByText('Esta votación fue eliminada')).toBeNull();
+    expect(screen.queryByText('La votación ya no está disponible porque fue eliminada por el administrador.')).toBeNull();
     expect(screen.queryByTestId('goToResultsButton')).toBeNull();
     expect(screen.queryByText('Ver votación')).toBeNull();
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -533,6 +578,7 @@ describe('NotificationDetailScreen', () => {
           ok: true,
           json: jest.fn().mockResolvedValue({
             id: 'event-old-cancelled',
+            name: 'Asamblea institucional 2026',
             state: 'CANCELLED',
             availabilityStatus: 'CANCELLED',
           }),
@@ -558,9 +604,11 @@ describe('NotificationDetailScreen', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Esta votación fue eliminada')).toBeTruthy();
+      expect(screen.getByText('Votación eliminada')).toBeTruthy();
     });
-    expect(screen.getByText('La votación ya no está disponible porque fue eliminada por el administrador.')).toBeTruthy();
+    expect(screen.getByText('Asamblea institucional 2026')).toBeTruthy();
+    expect(screen.getByText('Ya no está disponible.')).toBeTruthy();
+    expect(screen.getByText('Fue eliminada por el administrador.')).toBeTruthy();
     expect(screen.getByText('No es necesario realizar ninguna acción.')).toBeTruthy();
     expect(screen.queryByTestId('goToResultsButton')).toBeNull();
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -586,8 +634,10 @@ describe('NotificationDetailScreen', () => {
     });
 
     await waitFor(() => {
-      expect(cancelledScreen.getByText('Esta votación fue eliminada')).toBeTruthy();
+      expect(cancelledScreen.getByText('Votación eliminada')).toBeTruthy();
     });
+    expect(cancelledScreen.getByText('Proceso electoral')).toBeTruthy();
+    expect(cancelledScreen.getByText('Ya no está disponible.')).toBeTruthy();
     expect(cancelledScreen.queryByTestId('goToResultsButton')).toBeNull();
 
     global.fetch = jest.fn().mockResolvedValue({
@@ -605,7 +655,7 @@ describe('NotificationDetailScreen', () => {
       },
     });
 
-    expect(genericScreen.queryByText('Esta votación fue eliminada')).toBeNull();
+    expect(genericScreen.queryByText('Votación eliminada')).toBeNull();
   });
 
   it('el botón Ver detalles de resultados navega a WebView interno y no abre navegador externo', () => {

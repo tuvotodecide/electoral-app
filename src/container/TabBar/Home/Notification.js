@@ -118,6 +118,10 @@ export const getNotificationKind = ({ type, title, body }) => {
     normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENABLED' ||
     normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_STARTS_IN_15M' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_1H' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_15M' ||
     haystack.includes('convocatoria') ||
     haystack.includes('habilitacion') ||
     haystack.includes('habilitación') ||
@@ -147,6 +151,10 @@ const isVotingNotificationType = type => {
     'INSTITUTIONAL_NEWS',
     'INSTITUTIONAL_VOTING_ENABLED',
     'INSTITUTIONAL_VOTING_CANCELLED',
+    'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+    'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+    'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+    'INSTITUTIONAL_VOTING_ENDS_IN_15M',
   ].includes(normalizedType);
 };
 

@@ -267,6 +267,10 @@ const INSTITUTIONAL_DETAIL_TYPES = new Set([
   'INSTITUTIONAL_VOTING_ENABLED',
   'INSTITUTIONAL_NEWS',
   'INSTITUTIONAL_VOTING_CANCELLED',
+  'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+  'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+  'INSTITUTIONAL_VOTING_ENDS_IN_15M',
 ]);
 
 const normalizeNotificationType = value =>
@@ -288,6 +292,65 @@ const formatShortNotificationDate = rawValue => {
   }).format(new Date(parsed));
 };
 
+const formatNotificationTime = rawValue => {
+  const parsed = Date.parse(String(rawValue || ''));
+  if (!Number.isFinite(parsed)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-BO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(parsed));
+};
+
+const VOTING_REMINDER_TYPES = new Set([
+  'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+  'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+  'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+]);
+
+const buildVotingReminderBody = ({type, eventName, votingStart, votingEnd, body}) => {
+  const isStartReminder =
+    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
+    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
+  const eventLabel = eventName || 'La votación';
+
+  if (isStartReminder) {
+    if (timeLabel) {
+      return `${eventLabel} comienza a las ${timeLabel}.`;
+    }
+
+    return String(body || '').trim() || `${eventLabel} está próxima a iniciar.`;
+  }
+
+  if (timeLabel) {
+    return `${eventLabel} cierra a las ${timeLabel}.`;
+  }
+
+  return String(body || '').trim() || `${eventLabel} está próxima a cerrar.`;
+};
+
+const buildVotingReminderDetailBody = ({type, votingStart, votingEnd, body}) => {
+  const isStartReminder =
+    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
+    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
+
+  if (isStartReminder) {
+    return timeLabel
+      ? `Comienza a las ${timeLabel}.`
+      : 'Está próxima a iniciar.';
+  }
+
+  return timeLabel
+    ? `Cierra a las ${timeLabel}.`
+    : String(body || '').trim() || 'Está próxima a cerrar.';
+};
+
 export const buildInstitutionalNotificationCopy = notification => {
   const data =
     notification?.data && typeof notification.data === 'object'
@@ -296,6 +359,7 @@ export const buildInstitutionalNotificationCopy = notification => {
   const type = normalizeNotificationType(data?.type);
   const eventName = String(data?.eventName || data?.title || '').trim();
   const startLabel = formatShortNotificationDate(data?.votingStart || data?.startsAt);
+  const notificationBody = notification?.body || data?.body || '';
 
   switch (type) {
     case 'INSTITUTIONAL_PADRON_REVIEW_OPEN':
@@ -336,7 +400,53 @@ export const buildInstitutionalNotificationCopy = notification => {
     case 'INSTITUTIONAL_VOTING_CANCELLED':
       return {
         title: 'Votación eliminada',
-        body: 'La votación ya no está disponible porque fue eliminada por el administrador.',
+        body: eventName
+          ? `${eventName} fue eliminada por el administrador.`
+          : 'Fue eliminada por el administrador.',
+      };
+    case 'INSTITUTIONAL_VOTING_STARTS_IN_1H':
+      return {
+        title: 'La votación inicia en 1 hora',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart || data?.scheduledFor,
+          votingEnd: data?.votingEnd,
+          body: notificationBody,
+        }),
+      };
+    case 'INSTITUTIONAL_VOTING_STARTS_IN_15M':
+      return {
+        title: 'La votación inicia en 15 minutos',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart || data?.scheduledFor,
+          votingEnd: data?.votingEnd,
+          body: notificationBody,
+        }),
+      };
+    case 'INSTITUTIONAL_VOTING_ENDS_IN_1H':
+      return {
+        title: 'La votación termina en 1 hora',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart,
+          votingEnd: data?.votingEnd || data?.scheduledFor,
+          body: notificationBody,
+        }),
+      };
+    case 'INSTITUTIONAL_VOTING_ENDS_IN_15M':
+      return {
+        title: 'La votación termina en 15 minutos',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart,
+          votingEnd: data?.votingEnd || data?.scheduledFor,
+          body: notificationBody,
+        }),
       };
     default:
       return null;
@@ -368,6 +478,15 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
   const isScheduleUpdate = type === 'INSTITUTIONAL_SCHEDULE_UPDATED';
   const isCancelled = type === 'INSTITUTIONAL_VOTING_CANCELLED';
+  const isVotingReminder = VOTING_REMINDER_TYPES.has(type);
+  const reminderDetailBody = isVotingReminder
+    ? buildVotingReminderDetailBody({
+        type,
+        votingStart: data?.votingStart || (type.includes('_STARTS_') ? data?.scheduledFor : ''),
+        votingEnd: data?.votingEnd || (type.includes('_ENDS_') ? data?.scheduledFor : ''),
+        body,
+      })
+    : '';
 
   return {
     id: notification?._id || notification?.id || `push_${Date.now()}`,
@@ -386,7 +505,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
               ? 'Ver noticia'
               : isScheduleUpdate
                 ? 'Ver fechas'
-                : 'Ver fechas',
+                : isVotingReminder
+                  ? 'Ver votación'
+                  : 'Ver fechas',
     mesa:
       title ||
       data?.bannerTitle ||
@@ -395,17 +516,22 @@ export const buildInstitutionalNotificationForDetail = notification => {
         : isNews
           ? 'Noticia'
           : 'Actualización institucional'),
-    direccion: body || data?.eventName || '',
+    direccion: reminderDetailBody || body || data?.eventName || '',
     timestamp: Date.now(),
     estado: data?.status || 'iniciado',
     statusTone: isCancelled ? 'danger' : 'success',
-    actionLabel: isVotingEnabled || isPadronReview ? 'Ver padrón' : undefined,
+    actionLabel: isVotingReminder
+      ? 'Ver votación'
+      : isVotingEnabled || isPadronReview
+        ? 'Ver padrón'
+        : undefined,
     actionUrl: isCancelled ? null : data?.actionUrl || data?.publicUrl || null,
     imageUrl: data?.imageUrl || notification?.imageUrl || null,
     screen: null,
     routeParams: null,
     title,
     body,
+    reminderDetailBody,
     isScheduleUpdate,
   };
 };

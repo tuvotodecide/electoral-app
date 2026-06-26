@@ -125,6 +125,22 @@ describe('Notification routing helpers', () => {
     ).toBe('voting_event');
 
     expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+        title: 'La votación inicia en 1 hora',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
+      getNotificationKind({
+        type: 'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+        title: 'La votación termina en 15 minutos',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
       buildNotificationNavigationTarget({
         data: {type: 'INSTITUTIONAL_VOTING_ENABLED'},
       }, {enableVotingFlow: true}),
@@ -154,6 +170,53 @@ describe('Notification routing helpers', () => {
           },
         },
       },
+    });
+  });
+
+  it('mantiene INSTITUTIONAL_VOTING_CANCELLED en detalle institucional y no WebView', () => {
+    const notification = {
+      kind: 'voting_event',
+      statusTone: 'danger',
+      actionUrl: null,
+      data: {
+        type: 'INSTITUTIONAL_VOTING_CANCELLED',
+        eventId: 'event-cancelled',
+        eventName: 'Referéndum institucional 2026',
+        severity: 'error',
+      },
+    };
+
+    const target = buildNotificationNavigationTarget(notification, {
+      enableVotingFlow: true,
+    });
+
+    expect(target).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {notification},
+    });
+    expect(target.name).not.toBe('PublicElectionWebViewScreen');
+    expect(target.params.notification.actionUrl).toBeNull();
+    expect(target.params.notification.statusTone).toBe('danger');
+  });
+
+  it.each([
+    'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+    'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+    'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+    'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+  ])('navega recordatorio institucional %s al detalle de votacion', type => {
+    const notification = {
+      kind: 'voting_event',
+      data: {
+        type,
+        eventId: 'event-reminder',
+        eventName: 'Elección activa',
+      },
+    };
+
+    expect(buildNotificationNavigationTarget(notification, {enableVotingFlow: true})).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {notification},
     });
   });
 

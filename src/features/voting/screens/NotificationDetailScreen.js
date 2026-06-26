@@ -70,6 +70,17 @@ const PUBLIC_ELECTION_WEBVIEW_TYPES = new Set([
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
   'INSTITUTIONAL_VOTING_ENABLED',
+  'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+  'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+  'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+]);
+
+const VOTING_REMINDER_TYPES = new Set([
+  'INSTITUTIONAL_VOTING_STARTS_IN_1H',
+  'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_ENDS_IN_1H',
+  'INSTITUTIONAL_VOTING_ENDS_IN_15M',
 ]);
 
 const PUBLIC_EVENT_DETAIL_CANCEL_CHECK_TYPES = new Set([
@@ -343,6 +354,29 @@ const isCancelledPublicEventDetail = detail => {
   return state === 'CANCELLED' || availabilityStatus === 'CANCELLED';
 };
 
+const resolveCancelledEventName = (...sources) => {
+  for (const source of sources) {
+    const rawData = source?.data && typeof source.data === 'object' ? source.data : source;
+    const candidate = String(
+      rawData?.eventName ||
+        rawData?.name ||
+        rawData?.bannerTitle ||
+        rawData?.title ||
+        rawData?.eventTitle ||
+        '',
+    ).trim();
+    if (
+      candidate &&
+      candidate !== 'Votación eliminada' &&
+      candidate !== 'Esta votación fue eliminada'
+    ) {
+      return candidate;
+    }
+  }
+
+  return 'Proceso electoral';
+};
+
 const NotificationDetailScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -370,6 +404,7 @@ const NotificationDetailScreen = () => {
     isReferendum: false,
     questionTitle: '',
   });
+  const [remoteCancelledEventName, setRemoteCancelledEventName] = useState('');
   const [eligibilityBadge, setEligibilityBadge] = useState(null);
   const [remoteSchedule, setRemoteSchedule] = useState({
     votingStart: null,
@@ -398,6 +433,7 @@ const NotificationDetailScreen = () => {
   const isInstitutionalWithEventId =
     Boolean(eventId) && normalizedType.startsWith('INSTITUTIONAL_');
   const isVotingCancelled = isExplicitVotingCancelled || resolvedVotingCancelled;
+  const isVotingReminder = VOTING_REMINDER_TYPES.has(normalizedType);
   const supportsPublicElectionWebView = PUBLIC_ELECTION_WEBVIEW_TYPES.has(normalizedType);
   const startsAtLabel =
     notification?.votingStartLabel ||
@@ -432,6 +468,7 @@ const NotificationDetailScreen = () => {
 
   useEffect(() => {
     setResolvedVotingCancelled(isExplicitVotingCancelled);
+    setRemoteCancelledEventName('');
   }, [isExplicitVotingCancelled, eventId, normalizedType]);
 
   useEffect(() => {
@@ -469,6 +506,7 @@ const NotificationDetailScreen = () => {
 
         const detail = await response.json();
         if (mounted && isCancelledPublicEventDetail(detail)) {
+          setRemoteCancelledEventName(resolveCancelledEventName(detail));
           setResolvedVotingCancelled(true);
         }
       } catch {
@@ -516,6 +554,7 @@ const NotificationDetailScreen = () => {
         }
 
         if (isCancelledPublicEventDetail(detail)) {
+          setRemoteCancelledEventName(resolveCancelledEventName(detail));
           setResolvedVotingCancelled(true);
           setRemoteResultsSummary([]);
           return;
@@ -578,6 +617,7 @@ const NotificationDetailScreen = () => {
         }
 
         if (isCancelledPublicEventDetail(detail)) {
+          setRemoteCancelledEventName(resolveCancelledEventName(detail));
           setResolvedVotingCancelled(true);
           setRemoteSchedule({
             votingStart: null,
@@ -668,7 +708,7 @@ const NotificationDetailScreen = () => {
         backgroundColor: '#B91C1C',
         iconName: 'close-circle-outline',
         iconBg: 'rgba(255,255,255,0.16)',
-        title: 'Esta votación fue eliminada',
+        title: 'Votación eliminada',
         subtitle: '',
         textColor: '#FFFFFF',
       };
@@ -766,7 +806,9 @@ const NotificationDetailScreen = () => {
   );
   const detailBody =
     isVotingCancelled
-      ? 'La votación ya no está disponible porque fue eliminada por el administrador.'
+      ? 'Ya no está disponible.'
+      : isVotingReminder && notification?.reminderDetailBody
+        ? notification.reminderDetailBody
       : notification?.direccion ||
     notification?.body ||
     rawData?.body ||
@@ -778,11 +820,22 @@ const NotificationDetailScreen = () => {
           .trim();
   const heroTitle =
     isVotingCancelled
-      ? 'Esta votación fue eliminada'
+      ? 'Votación eliminada'
       :
     isReferendumResults && detailMeta.questionTitle
       ? detailMeta.questionTitle
       : notification?.mesa || notification?.title || heroConfig.title || DEFAULT_NOTIFICATION.title;
+  const cancelledEventName = resolveCancelledEventName(
+    { eventName: remoteCancelledEventName },
+    rawData,
+    notification,
+  );
+  const reminderEventName = String(
+    rawData?.eventName ||
+      notification?.eventName ||
+      rawData?.bannerTitle ||
+      'Proceso electoral',
+  ).trim();
 
   return (
     <CSafeAreaView style={styles.container}>
@@ -840,10 +893,13 @@ const NotificationDetailScreen = () => {
         {isVotingCancelled ? (
           <View style={[styles.sectionCard, styles.cancelledCard]}>
             <CText type="B16" style={[styles.sectionTitle, styles.cancelledSectionTitle]}>
-              Votación eliminada
+              {cancelledEventName}
             </CText>
             <CText type="R14" style={styles.emptyResultsText}>
               {detailBody}
+            </CText>
+            <CText type="R14" style={styles.emptyResultsText}>
+              {rawData?.reasonText || 'Fue eliminada por el administrador.'}
             </CText>
             <CText type="M14" style={styles.cancelledSecondaryText}>
               No es necesario realizar ninguna acción.
@@ -921,7 +977,11 @@ const NotificationDetailScreen = () => {
           <>
             <View style={styles.sectionCard}>
               <CText type="B16" style={styles.sectionTitle}>
-                {isReferendumNotification ? 'Referéndum' : 'Votación'}
+                {isVotingReminder
+                  ? reminderEventName
+                  : isReferendumNotification
+                    ? 'Referéndum'
+                    : 'Votación'}
               </CText>
               <CText type="R14" style={styles.emptyResultsText}>
                 {detailBody}
