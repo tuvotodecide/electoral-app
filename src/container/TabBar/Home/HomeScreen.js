@@ -117,6 +117,34 @@ const QUEUE_WRITE_TASK_TYPES = new Set([
 ]);
 
 const HOME_VOTING_DETAIL_NOTIFICATION_TYPE = 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+const buildPublicVotingPath = eventId => {
+  const normalizedEventId = String(eventId || '').trim();
+  return normalizedEventId ? `/votacion/elecciones/${normalizedEventId}/publica` : '';
+};
+
+const buildVotingResultsRouteParams = election => {
+  const eventId = String(election?.id || '').trim();
+  const resultsAt = Number(election?.resultsAt || 0);
+  const publicPath = buildPublicVotingPath(eventId);
+  const normalizedStatus = String(election?.status || '').trim().toUpperCase();
+  const normalizedPhase = String(election?.phase || '').trim().toUpperCase();
+  const normalizedState = String(election?.state || '').trim().toUpperCase();
+
+  return {
+    eventId,
+    eventName: election?.title || '',
+    phase: normalizedPhase,
+    state: normalizedState,
+    status: normalizedStatus,
+    resultsAvailable:
+      election?.resultsAvailable === true ||
+      normalizedPhase === 'RESULTS' ||
+      normalizedState === 'RESULTS_PUBLISHED',
+    resultsAt: resultsAt > 0 ? resultsAt : null,
+    publicPath,
+  };
+};
+
 const canOpenDisabledVotingDetail = election => {
   const eligibilityStatus = String(election?.eligibilityStatus || '')
     .trim()
@@ -2305,6 +2333,7 @@ export default function HomeScreen({ navigation, route }) {
   };
   const handleVotingDetailsPress = targetElection => {
     const selectedElection = targetElection || votingElection;
+    const resultsRouteParams = buildVotingResultsRouteParams(selectedElection);
     const isUpcomingElection =
       Number(selectedElection?.startsAt || 0) > Date.now() &&
       !selectedElection?.alreadyVoted;
@@ -2329,9 +2358,7 @@ export default function HomeScreen({ navigation, route }) {
 
     if (shouldOpenElectionDetail) {
       const eventId = String(selectedElection?.id || '').trim();
-      const publicPath = eventId
-        ? `/votacion/elecciones/${eventId}/publica`
-        : '';
+      const publicPath = buildPublicVotingPath(eventId);
       const votingStartLabel = formatVotingDate(selectedElection?.startsAt);
       const votingEndLabel = formatVotingDate(selectedElection?.closesAt);
 
@@ -2370,6 +2397,7 @@ export default function HomeScreen({ navigation, route }) {
         participationId: participation.id,
         electionId: selectedElection?.id,
         allowBack: true,
+        ...resultsRouteParams,
       });
       return;
     }
@@ -2382,6 +2410,7 @@ export default function HomeScreen({ navigation, route }) {
         participationId: currentParticipationId,
         electionId: selectedElection?.id,
         allowBack: true,
+        ...resultsRouteParams,
       });
       return;
     }

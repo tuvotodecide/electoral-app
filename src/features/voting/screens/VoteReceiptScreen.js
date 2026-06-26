@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import {FRONTEND_RESULTS} from '@env';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -40,6 +41,83 @@ const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;
   return medium;
+};
+
+const isPublicElectionPath = value => {
+  const path = String(value || '').trim();
+  return (
+    /^\/votacion\/elecciones\/[^/]+\/publica\/?$/i.test(path) ||
+    /^\/elections\/[^/]+\/public\/?$/i.test(path)
+  );
+};
+
+const resolvePublicElectionUrl = ({eventId, publicUrl, publicPath}) => {
+  const directUrl = String(publicUrl || '').trim();
+  if (directUrl) {
+    try {
+      const parsed = new URL(directUrl);
+      if (
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        isPublicElectionPath(parsed.pathname)
+      ) {
+        return parsed.toString();
+      }
+    } catch {}
+  }
+
+  const frontendBase = String(FRONTEND_RESULTS || '').trim();
+  const relativePath = String(
+    publicPath || (eventId ? `/votacion/elecciones/${encodeURIComponent(eventId)}/publica` : ''),
+  ).trim();
+  if (!frontendBase || !isPublicElectionPath(relativePath)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(frontendBase);
+    url.pathname = relativePath;
+    url.search = '';
+    url.hash = '';
+    return isPublicElectionPath(url.pathname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+const hasResultsAvailable = params => {
+  const normalizedState = String(params?.state || '').trim().toUpperCase();
+  const normalizedPhase = String(params?.phase || '').trim().toUpperCase();
+  const normalizedStatus = String(params?.status || '').trim().toUpperCase();
+  if (normalizedState === 'CANCELLED' || normalizedStatus === 'CANCELLED') {
+    return false;
+  }
+
+  if (
+    params?.resultsAvailable === true ||
+    normalizedPhase === 'RESULTS' ||
+    normalizedState === 'RESULTS_PUBLISHED'
+  ) {
+    return true;
+  }
+
+  const resultsAt = Number(params?.resultsAt || 0);
+  return Number.isFinite(resultsAt) && resultsAt > 0 && resultsAt <= Date.now();
+};
+
+const hasPendingResults = params => {
+  const normalizedState = String(params?.state || '').trim().toUpperCase();
+  const normalizedStatus = String(params?.status || '').trim().toUpperCase();
+  if (normalizedState === 'CANCELLED' || normalizedStatus === 'CANCELLED') {
+    return false;
+  }
+
+  const resultsAt = Number(params?.resultsAt || 0);
+  const votingEnded =
+    normalizedStatus === 'FINALIZADA' ||
+    normalizedState === 'CLOSED' ||
+    params?.votingClosed === true;
+
+  return votingEnded && (!resultsAt || resultsAt > Date.now());
 };
 
 const buildSelectionEntries = candidateSelected => {
@@ -92,10 +170,12 @@ const VoteReceiptScreen = () => {
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const allowExitRef = useRef(false);
   const allowBackNavigation = route?.params?.allowBack === true;
-  const {participations = [], lastReceipt, syncStateWithBlockchain, syncedWithBlockchain} = useVotingState(route?.params?.electionId ?? '');
+  const routeParams = route?.params || {};
+  const routeElectionId = routeParams?.electionId || routeParams?.eventId || '';
+  const {participations = [], lastReceipt, syncStateWithBlockchain, syncedWithBlockchain} = useVotingState(routeElectionId);
 
-  const participationId = route?.params?.participationId;
-  const routeParticipation = route?.params?.participation || null;
+  const participationId = routeParams?.participationId;
+  const routeParticipation = routeParams?.participation || null;
   const participation =
     routeParticipation ||
     participations.find(p => p.id === participationId) ||
@@ -115,6 +195,21 @@ const VoteReceiptScreen = () => {
     participation?.isReferendum || participation?.candidateSelected?.isReferendum,
   );
   const selectionEntries = buildSelectionEntries(participation?.candidateSelected);
+  const resultsUrl = resolvePublicElectionUrl({
+    eventId: routeElectionId,
+    publicUrl: routeParams?.publicUrl,
+    publicPath: routeParams?.publicPath,
+  });
+  const canShowResultsCta =
+    !isFailedParticipation &&
+    !isQueuedParticipation &&
+    Boolean(resultsUrl) &&
+    hasResultsAvailable(routeParams);
+  const showPendingResultsMessage =
+    !isFailedParticipation &&
+    !isQueuedParticipation &&
+    !canShowResultsCta &&
+    hasPendingResults(routeParams);
 
   const toggleDetail = () => {
     setIsDetailExpanded(!isDetailExpanded);
@@ -132,6 +227,17 @@ const VoteReceiptScreen = () => {
       ],
     });
   }, [navigation]);
+
+  const navigateToResults = useCallback(() => {
+    if (!resultsUrl) {
+      return;
+    }
+
+    navigation.navigate(StackNav.PublicElectionWebViewScreen, {
+      url: resultsUrl,
+      title: 'Resultados',
+    });
+  }, [navigation, resultsUrl]);
 
   useFocusEffect(
     useCallback(() => {
@@ -356,13 +462,36 @@ const VoteReceiptScreen = () => {
           title={isFailedParticipation ? 'Volver a votar' : 'Ir al inicio'}
           onPress={async () => {
             if (isFailedParticipation) {
-              await releaseVoteForElection(route?.params?.electionId ?? '');
+              await releaseVoteForElection(routeElectionId);
             }
             navigateHome();
           }}
           containerStyle={styles.homeButton}
           sinMargen
         />
+
+        {canShowResultsCta ? (
+          <CButton
+            title="Ver resultados"
+            onPress={navigateToResults}
+            containerStyle={styles.resultsButton}
+            sinMargen
+            testID="viewResultsButton"
+          />
+        ) : null}
+
+        {showPendingResultsMessage ? (
+          <View style={styles.pendingResultsCard}>
+            <Ionicons
+              name="time-outline"
+              size={moderateScale(20)}
+              color="#92400E"
+            />
+            <CText type="M14" style={styles.pendingResultsText}>
+              La votación finalizó. Los resultados aún no están disponibles.
+            </CText>
+          </View>
+        ) : null}
       </ScrollView>
 
     </CSafeAreaView>
@@ -424,6 +553,26 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     marginTop: getResponsiveSize(24, 28, 32),
+  },
+  resultsButton: {
+    marginTop: getResponsiveSize(12, 14, 16),
+    backgroundColor: '#2563EB',
+  },
+  pendingResultsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderWidth: 1,
+    borderRadius: moderateScale(12),
+    padding: getResponsiveSize(12, 14, 16),
+    marginTop: getResponsiveSize(14, 16, 18),
+  },
+  pendingResultsText: {
+    color: '#92400E',
+    flex: 1,
+    marginLeft: getResponsiveSize(8, 10, 12),
+    lineHeight: getResponsiveSize(18, 20, 22),
   },
   electionTitle: {
     color: '#1F2937',

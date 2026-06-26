@@ -146,7 +146,14 @@ jest.mock('../../../../../src/features/voting', () => {
   const {Text, TouchableOpacity} = require('react-native');
 
   return {
-    ElectionCard: ({allowIneligibleDetails, election, onDetailsPress, onVotePress}) =>
+    ElectionCard: ({
+      allowIneligibleDetails,
+      election,
+      hasVoted,
+      onDetailsPress,
+      onVotePress,
+      voteSynced,
+    }) =>
       ReactLib.createElement(
         ReactLib.Fragment,
         null,
@@ -155,7 +162,7 @@ jest.mock('../../../../../src/features/voting', () => {
           {testID: `votingCard_${election.id}`, onPress: onVotePress},
           ReactLib.createElement(Text, null, election.title),
         ),
-        allowIneligibleDetails
+        allowIneligibleDetails || (hasVoted && voteSynced)
           ? ReactLib.createElement(
               TouchableOpacity,
               {testID: `votingDetails_${election.id}`, onPress: onDetailsPress},
@@ -378,5 +385,67 @@ describe('HomeScreen voting flow routing', () => {
     });
 
     expect(view.queryByTestId('votingDetails_event-disabled-active')).toBeNull();
+  });
+
+  it('navega al comprobante con datos de resultados para eleccion finalizada con voto emitido', async () => {
+    const resultsAt = Date.now() - 60 * 1000;
+    const election = {
+      id: 'event-results',
+      title: 'Eleccion finalizada',
+      instituteName: 'Instituto Test',
+      isEligible: true,
+      canVote: false,
+      alreadyVoted: true,
+      status: 'FINALIZADA',
+      phase: 'RESULTS',
+      resultsAvailable: true,
+      resultsAt,
+      startsAt: Date.now() - 3 * 60 * 60 * 1000,
+      closesAt: Date.now() - 60 * 60 * 1000,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+    mockUseVotingState.mockReturnValue({
+      hasVoted: true,
+      voteSynced: true,
+      participationId: 'participation-results',
+      participations: [
+        {
+          id: 'participation-results',
+          electionId: 'event-results',
+          synced: true,
+        },
+      ],
+      lastReceipt: null,
+      isLoading: false,
+      refreshState: jest.fn(),
+    });
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('votingDetails_event-results')).toBeTruthy();
+    });
+    fireEvent.press(view.getByTestId('votingDetails_event-results'));
+
+    await waitFor(() => {
+      expect(navigation.navigate).toHaveBeenCalledWith(
+        StackNav.VotingReceiptScreen,
+        expect.objectContaining({
+          participationId: 'participation-results',
+          electionId: 'event-results',
+          allowBack: true,
+          eventId: 'event-results',
+          eventName: 'Eleccion finalizada',
+          phase: 'RESULTS',
+          status: 'FINALIZADA',
+          resultsAvailable: true,
+          resultsAt,
+          publicPath: '/votacion/elecciones/event-results/publica',
+        }),
+      );
+    });
   });
 });

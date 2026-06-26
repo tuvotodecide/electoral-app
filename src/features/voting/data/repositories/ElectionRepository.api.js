@@ -166,12 +166,15 @@ const buildElectionModel = ({
     '';
   const isReferendum = event?.isReferendum === true;
   const questionTitle = resolveReferendumQuestion(event);
+  const resultsPublishAt = event?.resultsPublishAt || event?.resultsAt || null;
 
   return {
     id: String(event?.id || ''),
     title: event?.name || 'Votación institucional',
     questionTitle,
     objective: questionTitle,
+    phase: event?.phase || '',
+    state: event?.state || '',
     status: phaseToCardStatus(event?.phase),
     closesInLabel:
       event?.phase === 'UPCOMING' ? 'Inicia pronto' : 'Cierra pronto',
@@ -179,9 +182,10 @@ const buildElectionModel = ({
     organization: organizationName,
     startsAt: event?.votingStart ? new Date(event.votingStart).getTime() : null,
     closesAt: event?.votingEnd ? new Date(event.votingEnd).getTime() : null,
-    resultsAt: event?.resultsPublishAt
-      ? new Date(event.resultsPublishAt).getTime()
+    resultsAt: resultsPublishAt
+      ? new Date(resultsPublishAt).getTime()
       : null,
+    resultsAvailable: event?.resultsAvailable === true,
     isEligible: eligibility?.eligible === true,
     eligibilityStatus,
     canVote: participationStatus?.canVote === true,

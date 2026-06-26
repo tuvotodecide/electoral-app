@@ -3,6 +3,10 @@ import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import VoteReceiptScreen from '../../../../src/features/voting/screens/VoteReceiptScreen';
 import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
 
+jest.mock('@env', () => ({
+  FRONTEND_RESULTS: 'https://frontend-results.example',
+}));
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
   useRoute: jest.fn(),
@@ -38,8 +42,8 @@ jest.mock('../../../../src/components/common/CText', () => {
 jest.mock('../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {Text, TouchableOpacity} = require('react-native');
-  return ({title, onPress}) => (
-    <TouchableOpacity onPress={onPress}>
+  return ({title, onPress, testID}) => (
+    <TouchableOpacity onPress={onPress} testID={testID}>
       <Text>{title}</Text>
     </TouchableOpacity>
   );
@@ -54,12 +58,14 @@ const {releaseVoteForElection} = require('../../../../src/features/voting/offlin
 
 describe('VoteReceiptScreen', () => {
   const navigation = {
+    navigate: jest.fn(),
     reset: jest.fn(),
     addListener: jest.fn(() => jest.fn()),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-07-10T20:00:00.000Z').getTime());
     useNavigation.mockReturnValue(navigation);
     useRoute.mockReturnValue({
       params: {
@@ -67,6 +73,10 @@ describe('VoteReceiptScreen', () => {
         electionId: 'election-1',
       },
     });
+  });
+
+  afterEach(() => {
+    Date.now.mockRestore();
   });
 
   it('renderiza el comprobante exitoso y sincroniza con blockchain cuando corresponde', async () => {
@@ -105,6 +115,171 @@ describe('VoteReceiptScreen', () => {
     await waitFor(() => {
       expect(syncStateWithBlockchain).toHaveBeenCalledWith('participation-1');
     });
+  });
+
+  it('muestra Ver resultados si recibe resultsAvailable true y abre la WebView pública', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'participation-1',
+        electionId: 'event-results',
+        resultsAvailable: true,
+        publicPath: '/votacion/elecciones/event-results/publica',
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'event-results',
+          electionTitle: 'Centro de estudiantes',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          candidateSelected: null,
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('Voto registrado exitosamente')).toBeTruthy();
+    expect(screen.getByText('Ver resultados')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Ver resultados'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
+      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
+      title: 'Resultados',
+    });
+  });
+
+  it('muestra Ver resultados si phase es RESULTS', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'participation-1',
+        electionId: 'event-phase-results',
+        phase: 'RESULTS',
+        publicPath: '/votacion/elecciones/event-phase-results/publica',
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'event-phase-results',
+          electionTitle: 'Centro de estudiantes',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          candidateSelected: null,
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('Ver resultados')).toBeTruthy();
+  });
+
+  it('muestra Ver resultados si resultsAt ya pasó', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'participation-1',
+        electionId: 'event-results-at',
+        resultsAt: new Date('2026-07-10T19:00:00.000Z').getTime(),
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'event-results-at',
+          electionTitle: 'Centro de estudiantes',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          candidateSelected: null,
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('Ver resultados')).toBeTruthy();
+  });
+
+  it('muestra mensaje pendiente si la votación finalizó pero resultsAt está en el futuro', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'participation-1',
+        electionId: 'event-pending-results',
+        status: 'FINALIZADA',
+        resultsAt: new Date('2026-07-10T21:00:00.000Z').getTime(),
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'event-pending-results',
+          electionTitle: 'Centro de estudiantes',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          candidateSelected: null,
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.queryByText('Ver resultados')).toBeNull();
+    expect(screen.getByText('La votación finalizó. Los resultados aún no están disponibles.')).toBeTruthy();
+  });
+
+  it('no muestra Ver resultados para CANCELLED', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'participation-1',
+        electionId: 'event-cancelled',
+        state: 'CANCELLED',
+        resultsAvailable: true,
+        publicPath: '/votacion/elecciones/event-cancelled/publica',
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [
+        {
+          id: 'participation-1',
+          electionId: 'event-cancelled',
+          electionTitle: 'Centro de estudiantes',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Facultad',
+          synced: true,
+          candidateSelected: null,
+        },
+      ],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: 'synced',
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.queryByText('Ver resultados')).toBeNull();
+    expect(screen.queryByText('La votación finalizó. Los resultados aún no están disponibles.')).toBeNull();
   });
 
   it('muestra estado en cola sin forzar sincronizacion inmediata', () => {
