@@ -1,4 +1,4 @@
-import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, BACKEND_RESULT, BUNDLER, BUNDLER_MAIN, GATEWAY_BASE, PROVIDER_NAME } from '@env';
+import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, IDENTITY_KEY, BACKEND_RESULT, BUNDLER, BUNDLER_MAIN, GATEWAY_BASE, PROVIDER_NAME } from '@env';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -42,6 +42,7 @@ import {consumePendingNotificationNavigation} from '../../notifications';
 
 const sharedSession = new wira.SharedSession(
   BACKEND_IDENTITY,
+  IDENTITY_KEY,
   PROVIDER_NAME
 );
 
@@ -192,6 +193,7 @@ export default function LoginUser({ navigation, route }) {
       if (isCIRecovery) {
         signInOptions = {
           registryUrl: BACKEND_IDENTITY,
+          registryApiKey: IDENTITY_KEY,
           sharedSessionSchema: PROVIDER_NAME,
         };
       }

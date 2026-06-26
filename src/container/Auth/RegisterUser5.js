@@ -80,6 +80,11 @@ export default function RegisterUser5({navigation, route}) {
         const ocrData = normalizeOcrForUI(data);
         navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
       } catch (_err) {
+        captureError(_err, {
+          flow: 'registerUser5',
+          critical: true,
+          step: 'ID Card analysis',
+        });
         setErrorMessage(
           'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
         );

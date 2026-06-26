@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
+import { captureError } from '@/src/config/sentry';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -76,23 +77,32 @@ export default function RegisterUser4({navigation, route}) {
     return false;
   };
 
-  const onPressNext = () => {
-    if (!selfie) {
-      Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
-      return;
+  const onPressNext = async () => {
+    try {
+      if (!selfie) {
+        Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
+        return;
+      }
+
+      if (isRecovery) {
+        await triggerRecovery();
+        return;
+      }
+
+      navigation.navigate(AuthNav.RegisterUser5, {
+        dni,
+        frontImage,
+        backImage,
+        selfie,
+      });
+    } catch (error) {
+      captureError(error, {
+        flow: 'recoveryWithDni',
+        step: 'onPressNext',
+        critical: true
+      });
     }
 
-    if (isRecovery) {
-      triggerRecovery();
-      return;
-    }
-
-    navigation.navigate(AuthNav.RegisterUser5, {
-      dni,
-      frontImage,
-      backImage,
-      selfie,
-    });
   };
 
   const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
@@ -149,6 +159,12 @@ export default function RegisterUser4({navigation, route}) {
         errorMessage = String.missingDataError; 
       } else if (error.message.includes('El análisis no está disponible temporalmente')) {
         errorMessage = String.analysisUnavailableError;
+      } else {
+        captureError(error, {
+          flow: 'recoveryWithDni',
+          step: 'triggerRecovery',
+          critical: true
+        });
       }
       
       setModal({
@@ -157,7 +173,6 @@ export default function RegisterUser4({navigation, route}) {
         message: errorMessage,
         isLoading: false,
       });
-      console.error('Recovery failed:', error);
       return;
     }
   };
