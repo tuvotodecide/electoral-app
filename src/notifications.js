@@ -358,6 +358,12 @@ export const buildInstitutionalNotificationCopy = notification => {
       : {};
   const type = normalizeNotificationType(data?.type);
   const eventName = String(data?.eventName || data?.title || '').trim();
+  const resultsProcessTitle = String(
+    data?.eventTitle ||
+      data?.processTitle ||
+      data?.eventName ||
+      '',
+  ).trim();
   const startLabel = formatShortNotificationDate(data?.votingStart || data?.startsAt);
   const notificationBody = notification?.body || data?.body || '';
 
@@ -391,11 +397,17 @@ export const buildInstitutionalNotificationCopy = notification => {
           : 'Se actualizaron las fechas de la votación. Revisa el nuevo cronograma.',
       };
     case 'INSTITUTIONAL_RESULTS_AVAILABLE':
+      if (/^resultados\s+de\s+/i.test(notificationBody.trim())) {
+        return {
+          title: 'Resultados disponibles',
+          body: notificationBody.trim(),
+        };
+      }
       return {
         title: 'Resultados disponibles',
-        body: eventName
-          ? `Ya puedes consultar los resultados de ${eventName}.`
-          : 'Ya puedes consultar los resultados de la votación.',
+        body: resultsProcessTitle
+          ? `Resultados de ${resultsProcessTitle}`
+          : 'Resultados disponibles para consultar.',
       };
     case 'INSTITUTIONAL_VOTING_CANCELLED':
       return {
@@ -500,7 +512,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
         : isCancelled
           ? 'Eliminada'
           : isResults
-            ? 'Ver ganador'
+            ? 'Ver resultados'
             : isNews
               ? 'Ver noticia'
               : isScheduleUpdate

@@ -31,6 +31,7 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {boolean} props.hasVoted - Si el usuario ya votó
  * @param {boolean} props.voteSynced - Si el voto ya fue sincronizado
  * @param {boolean} [props.isEligible=true] - Si el usuario está habilitado para votar
+ * @param {boolean} [props.resultsAvailable=false] - Si los resultados publicados pueden abrirse
  * @param {() => void} props.onVotePress - Handler para botón "Votar ahora"
  * @param {() => void} props.onDetailsPress - Handler para botón "Ver detalles"
  * @param {Object} [props.election] - Datos de la elección (opcional, usa mock si no se provee)
@@ -46,6 +47,7 @@ const ElectionCard = ({
   election = MOCK_ELECTION,
   loadMsg = null,
   allowIneligibleDetails = false,
+  resultsAvailable = false,
 }) => {
   // DEV_FLAG: Forzar estado "no habilitado"
   const effectiveIsEligible = DEV_FLAGS.FORCE_NOT_ELIGIBLE ? false : isEligible;
@@ -86,6 +88,14 @@ const ElectionCard = ({
         title: loadMsg,
         disabled: true,
         onPress: () => {},
+      };
+    }
+
+    if (!hasVoted && resultsAvailable) {
+      return {
+        title: 'Ver resultados',
+        disabled: false,
+        onPress: onDetailsPress,
       };
     }
 

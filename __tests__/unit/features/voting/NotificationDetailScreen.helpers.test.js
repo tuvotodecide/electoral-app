@@ -76,6 +76,17 @@ describe('NotificationDetailScreen helpers', () => {
     ).toBe('Abrir enlace');
   });
 
+  it('resuelve CTA de resultados institucionales como Ver resultados', () => {
+    expect(
+      resolveNotificationActionLabel({
+        notification: {},
+        kind: 'election_results',
+        isNews: false,
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+      }),
+    ).toBe('Ver resultados');
+  });
+
   it('respeta el CTA Ver votación aunque la notificacion corresponde a un referendum', () => {
     expect(
       resolveNotificationActionLabel({

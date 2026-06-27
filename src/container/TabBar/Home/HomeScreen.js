@@ -1,4 +1,4 @@
-import { BACKEND_RESULT } from '@env';
+import { BACKEND_RESULT, FRONTEND_RESULTS } from '@env';
 import { Image } from 'expo-image';
 import {
   AppState,
@@ -122,6 +122,25 @@ const buildPublicVotingPath = eventId => {
   return normalizedEventId ? `/votacion/elecciones/${normalizedEventId}/publica` : '';
 };
 
+const buildPublicVotingUrl = eventId => {
+  const publicPath = buildPublicVotingPath(eventId);
+  const frontendBase = String(FRONTEND_RESULTS || '').trim();
+
+  if (!publicPath || !frontendBase) {
+    return '';
+  }
+
+  try {
+    const url = new URL(frontendBase);
+    url.pathname = publicPath;
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+};
+
 const buildVotingResultsRouteParams = election => {
   const eventId = String(election?.id || '').trim();
   const resultsAt = Number(election?.resultsAt || 0);
@@ -143,6 +162,26 @@ const buildVotingResultsRouteParams = election => {
     resultsAt: resultsAt > 0 ? resultsAt : null,
     publicPath,
   };
+};
+
+const isVotingCancelled = election => {
+  const normalizedState = String(election?.state || '').trim().toUpperCase();
+  const normalizedStatus = String(election?.status || '').trim().toUpperCase();
+  return normalizedState === 'CANCELLED' || normalizedStatus === 'CANCELLED';
+};
+
+const hasVotingResultsAvailable = election => {
+  if (isVotingCancelled(election)) {
+    return false;
+  }
+
+  const resultsRouteParams = buildVotingResultsRouteParams(election);
+  if (resultsRouteParams.resultsAvailable) {
+    return true;
+  }
+
+  const resultsAt = Number(resultsRouteParams.resultsAt || 0);
+  return Number.isFinite(resultsAt) && resultsAt > 0 && resultsAt <= Date.now();
 };
 
 const canOpenDisabledVotingDetail = election => {
@@ -2415,6 +2454,17 @@ export default function HomeScreen({ navigation, route }) {
       return;
     }
 
+    if (hasVotingResultsAvailable(selectedElection)) {
+      const resultsUrl = buildPublicVotingUrl(selectedElection?.id);
+      if (resultsUrl) {
+        navigation.navigate(StackNav.PublicElectionWebViewScreen, {
+          url: resultsUrl,
+          title: 'Resultados',
+        });
+        return;
+      }
+    }
+
     navigation.navigate(StackNav.VotingParticipationsScreen);
   };
   const renderVotingElectionCarousel = () => {
@@ -2446,6 +2496,7 @@ export default function HomeScreen({ navigation, route }) {
         Boolean(participation) || Boolean(item?.alreadyVoted);
       const isSyncedForElection =
         Boolean(participation?.synced) || Boolean(item?.alreadyVoted);
+      const resultsAvailableForElection = hasVotingResultsAvailable(item);
 
       return (
         <ElectionCard
@@ -2453,6 +2504,7 @@ export default function HomeScreen({ navigation, route }) {
           voteSynced={isSyncedForElection}
           isEligible={Boolean(item?.isEligible)}
           allowIneligibleDetails={canOpenDisabledVotingDetail(item)}
+          resultsAvailable={resultsAvailableForElection}
           election={item}
           onVotePress={() => handleVotingPress(item)}
           onDetailsPress={() => handleVotingDetailsPress(item)}

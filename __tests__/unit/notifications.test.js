@@ -317,6 +317,64 @@ describe('notifications', () => {
     );
   });
 
+  it('identifica el proceso en resultados disponibles usando eventTitle y mantiene fallback eventName', () => {
+    const resultsNotification = {
+      data: {
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+        eventId: 'event-results-2026',
+        eventName: 'Asoblockchain',
+        eventTitle: 'Elección Directorio Asoblockchain 2026',
+        eventDescription: 'Elección para conformar el directorio de la gestión 2026.',
+        publicUrl: 'https://results.example/votacion/elecciones/event-results-2026/publica',
+      },
+    };
+
+    expect(buildInstitutionalNotificationCopy(resultsNotification)).toEqual({
+      title: 'Resultados disponibles',
+      body: 'Resultados de Elección Directorio Asoblockchain 2026',
+    });
+    expect(buildNotificationTextFallback(resultsNotification)).toMatchObject({
+      title: 'Resultados disponibles',
+      body: 'Resultados de Elección Directorio Asoblockchain 2026',
+    });
+    expect(buildInstitutionalNotificationForDetail(resultsNotification)).toMatchObject({
+      kind: 'election_results',
+      tipo: 'Ver resultados',
+      mesa: 'Resultados disponibles',
+      direccion: 'Resultados de Elección Directorio Asoblockchain 2026',
+      actionUrl: 'https://results.example/votacion/elecciones/event-results-2026/publica',
+      data: expect.objectContaining({
+        eventName: 'Asoblockchain',
+        eventTitle: 'Elección Directorio Asoblockchain 2026',
+        eventDescription: 'Elección para conformar el directorio de la gestión 2026.',
+      }),
+    });
+
+    expect(buildNotificationTextFallback({
+      data: {
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+        eventName: 'Elección antigua',
+      },
+    })).toMatchObject({
+      title: 'Resultados disponibles',
+      body: 'Resultados de Elección antigua',
+    });
+  });
+
+  it('no duplica prefijo Resultados de si el backend ya envia el body armado', () => {
+    expect(buildNotificationTextFallback({
+      body: 'Resultados de Elección Directorio Asoblockchain 2026',
+      data: {
+        type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
+        eventName: 'Asoblockchain',
+        eventTitle: 'Elección Directorio Asoblockchain 2026',
+      },
+    })).toMatchObject({
+      title: 'Resultados disponibles',
+      body: 'Resultados de Elección Directorio Asoblockchain 2026',
+    });
+  });
+
   it('alerta solo una vez por notificacion backend deduplicada y persiste la marca', async () => {
     const notification = {
       _id: 'remote-1',

@@ -231,5 +231,32 @@ describe('ElectionCard', () => {
 
       expect(getByText('Votación cerrada')).toBeTruthy();
     });
+
+    test('muestra "Ver resultados" cuando terminó, no votó y los resultados están disponibles', () => {
+      useCountdown.mockReturnValue({
+        countdownLabel: 'Cerrada',
+        countdownTime: '',
+        isStarting: false,
+        isEnded: true,
+        remainingMs: 0,
+      });
+
+      const { getByText, getByTestId, queryByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          resultsAvailable={true}
+          election={mockElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('Ver resultados')).toBeTruthy();
+      expect(queryByText('Votación cerrada')).toBeNull();
+
+      fireEvent.press(getByTestId('electionCardButton'));
+      expect(mockOnDetailsPress).toHaveBeenCalledTimes(1);
+      expect(mockOnVotePress).not.toHaveBeenCalled();
+    });
   });
 });

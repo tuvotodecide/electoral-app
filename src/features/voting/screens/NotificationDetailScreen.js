@@ -274,6 +274,10 @@ export const resolveNotificationActionLabel = ({
     return 'Ver padrón';
   }
 
+  if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_RESULTS_AVAILABLE') {
+    return 'Ver resultados';
+  }
+
   if (isNews) {
     return 'Abrir enlace';
   }
@@ -402,6 +406,8 @@ const NotificationDetailScreen = () => {
   const [resultsLoading, setResultsLoading] = useState(kind === 'election_results');
   const [detailMeta, setDetailMeta] = useState({
     isReferendum: false,
+    name: '',
+    objective: '',
     questionTitle: '',
   });
   const [remoteCancelledEventName, setRemoteCancelledEventName] = useState('');
@@ -562,6 +568,8 @@ const NotificationDetailScreen = () => {
 
         setDetailMeta({
           isReferendum: detail?.isReferendum === true,
+          name: String(detail?.name || '').trim(),
+          objective: String(detail?.objective || detail?.description || '').trim(),
           questionTitle: String(detail?.objective || detail?.description || '').trim(),
         });
         setRemoteResultsSummary(mapResultsSummaryFromDetail(detail));
@@ -569,6 +577,8 @@ const NotificationDetailScreen = () => {
         if (mounted) {
           setDetailMeta({
             isReferendum: false,
+            name: '',
+            objective: '',
             questionTitle: '',
           });
           setRemoteResultsSummary([]);
@@ -798,6 +808,21 @@ const NotificationDetailScreen = () => {
 
   const isReferendumResults = isElectionResults && detailMeta.isReferendum;
   const isReferendumNotification = isReferendumResults || rawData?.isReferendum === true;
+  const resultsProcessTitle = String(
+    rawData?.eventTitle ||
+      rawData?.processTitle ||
+      rawData?.eventName ||
+      detailMeta.name ||
+      '',
+  ).trim();
+  const resultsProcessDescription = String(
+    rawData?.eventDescription ||
+      rawData?.objective ||
+      rawData?.processDescription ||
+      detailMeta.objective ||
+      detailMeta.questionTitle ||
+      '',
+  ).trim();
   const hasScheduleDates = Boolean(startsAtLabel || endsAtLabel || resultsAtLabel);
   const showPrimaryAction = !isVotingCancelled && (
     shouldOpenPrimaryActionInWebView
@@ -916,6 +941,26 @@ const NotificationDetailScreen = () => {
           </View>
         ) : kind === 'election_results' ? (
           <View style={styles.sectionCard}>
+            {resultsProcessTitle ? (
+              <View style={styles.resultsProcessBlock}>
+                <CText type="B14" style={styles.resultsProcessLabel}>
+                  Proceso
+                </CText>
+                <CText type="B16" style={styles.resultsProcessTitle}>
+                  {resultsProcessTitle}
+                </CText>
+              </View>
+            ) : null}
+            {resultsProcessDescription ? (
+              <View style={styles.resultsProcessBlock}>
+                <CText type="B14" style={styles.resultsProcessLabel}>
+                  Descripción
+                </CText>
+                <CText type="R14" style={styles.resultsProcessDescription}>
+                  {resultsProcessDescription}
+                </CText>
+              </View>
+            ) : null}
             <CText type="B16" style={styles.sectionTitle}>
               {isReferendumResults ? 'Resultados del referéndum' : 'Resultados'}
             </CText>
@@ -1140,6 +1185,26 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(16, 18, 20),
     fontWeight: '700',
     marginBottom: getResponsiveSize(14, 16, 18),
+  },
+  resultsProcessBlock: {
+    marginBottom: getResponsiveSize(14, 16, 18),
+  },
+  resultsProcessLabel: {
+    color: '#64748B',
+    fontSize: getResponsiveSize(13, 14, 15),
+    fontWeight: '700',
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  resultsProcessTitle: {
+    color: '#0F172A',
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: '700',
+    lineHeight: getResponsiveSize(22, 24, 26),
+  },
+  resultsProcessDescription: {
+    color: '#334155',
+    fontSize: getResponsiveSize(14, 15, 16),
+    lineHeight: getResponsiveSize(21, 23, 25),
   },
   scheduleRow: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ const mockUseVotingState = jest.fn();
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://test-backend.com',
+  FRONTEND_RESULTS: 'https://frontend-results.example',
 }));
 
 jest.mock('@react-navigation/native', () => {
@@ -152,6 +153,7 @@ jest.mock('../../../../../src/features/voting', () => {
       hasVoted,
       onDetailsPress,
       onVotePress,
+      resultsAvailable,
       voteSynced,
     }) =>
       ReactLib.createElement(
@@ -162,11 +164,15 @@ jest.mock('../../../../../src/features/voting', () => {
           {testID: `votingCard_${election.id}`, onPress: onVotePress},
           ReactLib.createElement(Text, null, election.title),
         ),
-        allowIneligibleDetails || (hasVoted && voteSynced)
+        allowIneligibleDetails || (hasVoted && voteSynced) || resultsAvailable
           ? ReactLib.createElement(
               TouchableOpacity,
               {testID: `votingDetails_${election.id}`, onPress: onDetailsPress},
-              ReactLib.createElement(Text, null, 'Ver detalles'),
+              ReactLib.createElement(
+                Text,
+                null,
+                resultsAvailable && !hasVoted ? 'Ver resultados' : 'Ver detalles',
+              ),
             )
           : null,
       ),
@@ -445,6 +451,116 @@ describe('HomeScreen voting flow routing', () => {
     });
 
     expect(view.queryByTestId('votingDetails_event-disabled-active')).toBeNull();
+  });
+
+  it.each([
+    ['phase RESULTS', {phase: 'RESULTS'}],
+    ['resultsAvailable true', {resultsAvailable: true}],
+    ['resultsAt pasado', {resultsAt: Date.now() - 60 * 1000}],
+  ])(
+    'permite ver resultados a usuario habilitado sin voto cuando %s',
+    async (_label, resultFields) => {
+      const election = {
+        id: `event-results-no-vote-${String(_label).replace(/\s+/g, '-')}`,
+        title: 'Eleccion con resultados',
+        instituteName: 'Instituto Test',
+        isEligible: true,
+        canVote: false,
+        alreadyVoted: false,
+        status: 'FINALIZADA',
+        startsAt: Date.now() - 3 * 60 * 60 * 1000,
+        closesAt: Date.now() - 60 * 60 * 1000,
+        ...resultFields,
+      };
+      mockGetElections.mockResolvedValueOnce([election]);
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId(`votingDetails_${election.id}`)).toBeTruthy();
+      });
+      expect(view.getByText('Ver resultados')).toBeTruthy();
+
+      fireEvent.press(view.getByTestId(`votingDetails_${election.id}`));
+
+      await waitFor(() => {
+        expect(navigation.navigate).toHaveBeenCalledWith(
+          StackNav.PublicElectionWebViewScreen,
+          {
+            url: `https://frontend-results.example/votacion/elecciones/${election.id}/publica`,
+            title: 'Resultados',
+          },
+        );
+      });
+      expect(navigation.navigate).not.toHaveBeenCalledWith(
+        StackNav.VotingReceiptScreen,
+        expect.any(Object),
+      );
+    },
+  );
+
+  it('mantiene cerrada sin CTA de resultados cuando el usuario no voto y no hay resultados', async () => {
+    const election = {
+      id: 'event-closed-no-results',
+      title: 'Eleccion cerrada sin resultados',
+      instituteName: 'Instituto Test',
+      isEligible: true,
+      canVote: false,
+      alreadyVoted: false,
+      status: 'FINALIZADA',
+      phase: 'CLOSED',
+      resultsAvailable: false,
+      resultsAt: Date.now() + 60 * 60 * 1000,
+      startsAt: Date.now() - 3 * 60 * 60 * 1000,
+      closesAt: Date.now() - 60 * 60 * 1000,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('votingCard_event-closed-no-results')).toBeTruthy();
+    });
+
+    expect(view.queryByText('Ver resultados')).toBeNull();
+    expect(view.queryByTestId('votingDetails_event-closed-no-results')).toBeNull();
+  });
+
+  it('no muestra CTA de resultados para votacion CANCELLED aunque vengan campos de resultados', async () => {
+    const election = {
+      id: 'event-cancelled-results',
+      title: 'Eleccion cancelada',
+      instituteName: 'Instituto Test',
+      isEligible: true,
+      canVote: false,
+      alreadyVoted: false,
+      status: 'CANCELLED',
+      state: 'CANCELLED',
+      phase: 'RESULTS',
+      resultsAvailable: true,
+      resultsAt: Date.now() - 60 * 1000,
+      startsAt: Date.now() - 3 * 60 * 60 * 1000,
+      closesAt: Date.now() - 60 * 60 * 1000,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('votingCard_event-cancelled-results')).toBeTruthy();
+    });
+
+    expect(view.queryByText('Ver resultados')).toBeNull();
+    expect(view.queryByTestId('votingDetails_event-cancelled-results')).toBeNull();
   });
 
   it('navega al comprobante con datos de resultados para eleccion finalizada con voto emitido', async () => {

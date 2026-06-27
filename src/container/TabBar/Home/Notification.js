@@ -413,7 +413,9 @@ export default function Notification({ navigation }) {
           : 'Ver convocatoria';
       }
     } else if (notificationKind === 'election_results') {
-      tipo = 'Ver ganador';
+      tipo = normalizedType === 'INSTITUTIONAL_RESULTS_AVAILABLE'
+        ? 'Ver resultados'
+        : 'Ver ganador';
     } else if (notificationKind === 'news') {
       tipo = 'Ver noticia';
     } else if (data?.type === 'announce_count') {
