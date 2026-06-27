@@ -250,6 +250,66 @@ describe('HomeScreen voting flow routing', () => {
     });
   };
 
+  it('muestra loader inline visual mientras carga votaciones sin textos nuevos', async () => {
+    mockGetElections.mockReturnValueOnce(new Promise(() => {}));
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    await waitFor(() => {
+      expect(view.getByTestId('voting-election-inline-loader')).toBeTruthy();
+    });
+
+    expect(view.queryByText('Buscando votaciones disponibles...')).toBeNull();
+    expect(view.queryByText('Cargando procesos electorales...')).toBeNull();
+    expect(view.queryByText('Estamos revisando si tienes procesos activos.')).toBeNull();
+    expect(view.queryByTestId('votingCard_event-loading')).toBeNull();
+  });
+
+  it('oculta loader inline y muestra tarjetas cuando termina la carga con elecciones', async () => {
+    const election = {
+      id: 'event-loaded',
+      title: 'Eleccion cargada',
+      isEligible: true,
+      canVote: true,
+      alreadyVoted: false,
+      presentialKioskEnabled: false,
+    };
+    mockGetElections.mockResolvedValueOnce([election]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    expect(view.getByTestId('voting-election-inline-loader')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(view.queryByTestId('voting-election-inline-loader')).toBeNull();
+      expect(view.getByTestId('votingCard_event-loaded')).toBeTruthy();
+    });
+  });
+
+  it('oculta loader inline y mantiene ausencia de estado vacío cuando no hay votaciones', async () => {
+    mockGetElections.mockResolvedValueOnce([]);
+
+    const view = render(<HomeScreen navigation={navigation} />);
+    act(() => {
+      runFocusEffects();
+    });
+
+    expect(view.getByTestId('voting-election-inline-loader')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(view.queryByTestId('voting-election-inline-loader')).toBeNull();
+    });
+
+    expect(view.queryByText('No hay elecciones disponibles')).toBeNull();
+    expect(view.queryByText('No hay votaciones disponibles')).toBeNull();
+  });
+
   it('navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled', async () => {
     const election = {
       id: 'event-qr',

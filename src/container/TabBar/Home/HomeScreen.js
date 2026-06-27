@@ -2418,12 +2418,21 @@ export default function HomeScreen({ navigation, route }) {
     navigation.navigate(StackNav.VotingParticipationsScreen);
   };
   const renderVotingElectionCarousel = () => {
-    if (
-      !FEATURE_FLAGS.ENABLE_VOTING_FLOW ||
-      votingState.isLoading ||
-      loadingVotingElection ||
-      votingElections.length === 0
-    ) {
+    if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
+      return null;
+    }
+
+    if (votingState.isLoading || loadingVotingElection) {
+      return (
+        <View
+          testID="voting-election-inline-loader"
+          style={stylesx.votingElectionInlineLoader}>
+          <ActivityIndicator size="small" color="#41A44D" />
+        </View>
+      );
+    }
+
+    if (votingElections.length === 0) {
       return null;
     }
 
@@ -3464,6 +3473,12 @@ const stylesx = StyleSheet.create({
     gap: getResponsiveSize(6, 8, 10),
   },
   votingCarouselContainer: {
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  votingElectionInlineLoader: {
+    minHeight: getResponsiveSize(84, 96, 108),
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: getResponsiveSize(4, 6, 8),
   },
   singleVotingCardContainer: {
