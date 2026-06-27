@@ -17,6 +17,10 @@ import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 import COptionItem from '../../../components/common/COptionItem';
 import { registryApi } from '../../../data/client/kyc';
 import CAlert from '../../../components/common/CAlert';
+import InfoModal from '../../../components/modal/InfoModal';
+
+const PUBLIC_NAME_CONFIRM_MESSAGE =
+  'Autorizas a que tu nombre será visible para otros usuarios';
 
 export default function PersonalDetails() {
   const colors = useSelector(state => state.theme.theme);
@@ -26,6 +30,8 @@ export default function PersonalDetails() {
     loading: true,
     errorMsg: null,
   });
+  const [showPublicNameConfirmModal, setShowPublicNameConfirmModal] =
+    useState(false);
 
   useEffect(() => {
     async function fetchDisplayName() {
@@ -73,7 +79,7 @@ export default function PersonalDetails() {
     hash: addr ? `${addr.slice(0, 10)}…` : '(sin hash)',
   };
 
-  const onSwitchShowName = async (_, value) => {
+  const updatePublicNameVisibility = async value => {
     setShowName({
       value: showName.value,
       loading: true,
@@ -93,6 +99,24 @@ export default function PersonalDetails() {
       value,
       loading: false,
     });
+  };
+
+  const onSwitchShowName = async (_, value) => {
+    if (value && !showName.value) {
+      setShowPublicNameConfirmModal(true);
+      return;
+    }
+
+    await updatePublicNameVisibility(value);
+  };
+
+  const onCancelPublicNameVisibility = () => {
+    setShowPublicNameConfirmModal(false);
+  };
+
+  const onConfirmPublicNameVisibility = async () => {
+    setShowPublicNameConfirmModal(false);
+    await updatePublicNameVisibility(true);
   };
 
   return (
@@ -158,6 +182,18 @@ export default function PersonalDetails() {
         />
         {showName.errorMsg && <CAlert status="error" message={showName.errorMsg} testID="personalDetailsErrorAlert" />}
       </KeyBoardAvoidWrapper>
+      <InfoModal
+        testID="publicNameVisibilityConfirmModal"
+        visible={showPublicNameConfirmModal}
+        title={String.showName}
+        message={PUBLIC_NAME_CONFIRM_MESSAGE}
+        buttonText={String.accept}
+        secondaryButtonText={String.cancel}
+        onClose={onConfirmPublicNameVisibility}
+        onSecondaryPress={onCancelPublicNameVisibility}
+        secondaryButtonStyle={{backgroundColor: colors.primary4 || '#D83031'}}
+        secondaryButtonTextStyle={{color: '#FFFFFF'}}
+      />
     </CSafeAreaView>
   );
 }

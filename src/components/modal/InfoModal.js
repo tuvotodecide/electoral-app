@@ -19,6 +19,8 @@ export default function InfoModal({
   onSecondaryPress,
   testID = 'infoModal',
   onCloseCorner,
+  secondaryButtonStyle,
+  secondaryButtonTextStyle,
 }) {
   const colors = useSelector(state => state.theme.theme);
   const handleCornerClose = onCloseCorner || onClose;
@@ -79,9 +81,9 @@ export default function InfoModal({
             <View style={base.buttonRow}>
               <TouchableOpacity
                 testID={`${testID}SecondaryButton`}
-                style={base.secondaryButton}
+                style={[base.secondaryButton, secondaryButtonStyle]}
                 onPress={onSecondaryPress || onClose}>
-                <CText type="M16" style={base.secondaryButtonText}>
+                <CText type="M16" style={[base.secondaryButtonText, secondaryButtonTextStyle]}>
                   {secondaryButtonText}
                 </CText>
               </TouchableOpacity>
