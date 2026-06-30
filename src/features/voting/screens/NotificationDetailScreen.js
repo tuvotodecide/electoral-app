@@ -275,7 +275,7 @@ export const resolveNotificationActionLabel = ({
   }
 
   if (String(type || '').trim().toUpperCase() === 'INSTITUTIONAL_RESULTS_AVAILABLE') {
-    return 'Ver resultados';
+    return 'Ver detalles';
   }
 
   if (isNews) {

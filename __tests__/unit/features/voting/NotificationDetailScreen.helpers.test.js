@@ -76,7 +76,7 @@ describe('NotificationDetailScreen helpers', () => {
     ).toBe('Abrir enlace');
   });
 
-  it('resuelve CTA de resultados institucionales como Ver resultados', () => {
+  it('resuelve CTA de resultados institucionales como Ver detalles', () => {
     expect(
       resolveNotificationActionLabel({
         notification: {},
@@ -84,7 +84,7 @@ describe('NotificationDetailScreen helpers', () => {
         isNews: false,
         type: 'INSTITUTIONAL_RESULTS_AVAILABLE',
       }),
-    ).toBe('Ver resultados');
+    ).toBe('Ver detalles');
   });
 
   it('respeta el CTA Ver votación aunque la notificacion corresponde a un referendum', () => {

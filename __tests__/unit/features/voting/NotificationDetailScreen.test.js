@@ -480,7 +480,8 @@ describe('NotificationDetailScreen', () => {
     expect(screen.getByText('Elección Directorio Asoblockchain 2026')).toBeTruthy();
     expect(screen.getByText('Descripción')).toBeTruthy();
     expect(screen.getByText('Elección para conformar el directorio de la gestión 2026.')).toBeTruthy();
-    expect(screen.getByText('Ver resultados')).toBeTruthy();
+    expect(screen.getByText('Ver detalles')).toBeTruthy();
+    expect(screen.queryByText('Ver resultados')).toBeNull();
   });
 
   it('mantiene fallback eventName y no muestra descripcion vacia en resultados antiguos', () => {
@@ -503,7 +504,8 @@ describe('NotificationDetailScreen', () => {
     expect(screen.getByText('Proceso')).toBeTruthy();
     expect(screen.getByText('Elección antigua')).toBeTruthy();
     expect(screen.queryByText('Descripción')).toBeNull();
-    expect(screen.getByText('Ver resultados')).toBeTruthy();
+    expect(screen.getByText('Ver detalles')).toBeTruthy();
+    expect(screen.queryByText('Ver resultados')).toBeNull();
   });
 
   it('oculta el botón Ver votación si no hay URL pública válida', () => {
@@ -708,7 +710,7 @@ describe('NotificationDetailScreen', () => {
     expect(genericScreen.queryByText('Votación eliminada')).toBeNull();
   });
 
-  it('el botón Ver resultados navega a WebView interno y no abre navegador externo', () => {
+  it('el botón Ver detalles de resultados navega a WebView interno y no abre navegador externo', () => {
     const screen = renderScreen({
       title: 'Resultados disponibles',
       body: 'Consulta los resultados.',
@@ -724,7 +726,8 @@ describe('NotificationDetailScreen', () => {
       ],
     });
 
-    expect(screen.getByText('Ver resultados')).toBeTruthy();
+    expect(screen.getByText('Ver detalles')).toBeTruthy();
+    expect(screen.queryByText('Ver resultados')).toBeNull();
 
     fireEvent.press(screen.getByTestId('goToResultsButton'));
 
