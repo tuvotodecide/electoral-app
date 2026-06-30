@@ -31,6 +31,7 @@ import { useVotingState } from '../state/useVotingState';
 import { releaseVoteForElection } from '../offline/queueAdapter';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { blankVote } from '../data/params';
+import { commonColor } from '../../../themes/colors';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -458,18 +459,6 @@ const VoteReceiptScreen = () => {
           </View>
         </View>
 
-        <CButton
-          title={isFailedParticipation ? 'Volver a votar' : 'Ir al inicio'}
-          onPress={async () => {
-            if (isFailedParticipation) {
-              await releaseVoteForElection(routeElectionId);
-            }
-            navigateHome();
-          }}
-          containerStyle={styles.homeButton}
-          sinMargen
-        />
-
         {canShowResultsCta ? (
           <CButton
             title="Ver resultados"
@@ -479,6 +468,24 @@ const VoteReceiptScreen = () => {
             testID="viewResultsButton"
           />
         ) : null}
+
+        <CButton
+          title={isFailedParticipation ? 'Volver a votar' : 'Ir al inicio'}
+          onPress={async () => {
+            if (isFailedParticipation) {
+              await releaseVoteForElection(routeElectionId);
+            }
+            navigateHome();
+          }}
+          containerStyle={[
+            styles.homeButton,
+            canShowResultsCta && styles.secondaryHomeButton,
+          ]}
+          bgColor={canShowResultsCta ? commonColor.grayScale200 : null}
+          color={canShowResultsCta ? commonColor.grayScale600 : null}
+          sinMargen
+          testID="goHomeButton"
+        />
 
         {showPendingResultsMessage ? (
           <View style={styles.pendingResultsCard}>
@@ -554,9 +561,11 @@ const styles = StyleSheet.create({
   homeButton: {
     marginTop: getResponsiveSize(24, 28, 32),
   },
-  resultsButton: {
+  secondaryHomeButton: {
     marginTop: getResponsiveSize(12, 14, 16),
-    backgroundColor: '#2563EB',
+  },
+  resultsButton: {
+    marginTop: getResponsiveSize(24, 28, 32),
   },
   pendingResultsCard: {
     flexDirection: 'row',

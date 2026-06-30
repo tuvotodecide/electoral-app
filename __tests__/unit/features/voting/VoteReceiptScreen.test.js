@@ -1,7 +1,9 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
+import {StyleSheet, Text} from 'react-native';
 import VoteReceiptScreen from '../../../../src/features/voting/screens/VoteReceiptScreen';
 import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
+import {commonColor} from '../../../../src/themes/colors';
 
 jest.mock('@env', () => ({
   FRONTEND_RESULTS: 'https://frontend-results.example',
@@ -42,9 +44,13 @@ jest.mock('../../../../src/components/common/CText', () => {
 jest.mock('../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {Text, TouchableOpacity} = require('react-native');
-  return ({title, onPress, testID}) => (
-    <TouchableOpacity onPress={onPress} testID={testID}>
-      <Text>{title}</Text>
+  return ({title, onPress, testID, containerStyle, bgColor, color}) => (
+    <TouchableOpacity
+      onPress={onPress}
+      testID={testID}
+      style={[containerStyle, {backgroundColor: bgColor || 'primary'}]}
+    >
+      <Text style={color ? {color} : null}>{title}</Text>
     </TouchableOpacity>
   );
 });
@@ -147,12 +153,39 @@ describe('VoteReceiptScreen', () => {
 
     expect(screen.getByText('Voto registrado exitosamente')).toBeTruthy();
     expect(screen.getByText('Ver resultados')).toBeTruthy();
+    expect(screen.getByText('Ir al inicio')).toBeTruthy();
+
+    const renderedTexts = screen.UNSAFE_root.findAllByType(Text)
+      .map(node => node.props.children)
+      .filter(value => typeof value === 'string');
+    expect(renderedTexts.indexOf('Ver resultados')).toBeLessThan(
+      renderedTexts.indexOf('Ir al inicio'),
+    );
+
+    const resultsButtonStyle = StyleSheet.flatten(screen.getByTestId('viewResultsButton').props.style);
+    const homeButtonStyle = StyleSheet.flatten(screen.getByTestId('goHomeButton').props.style);
+    const homeButtonTextStyle = StyleSheet.flatten(screen.getByText('Ir al inicio').props.style);
+    expect(resultsButtonStyle.backgroundColor).toBe('primary');
+    expect(homeButtonStyle.backgroundColor).toBe(commonColor.grayScale200);
+    expect(homeButtonTextStyle.color).toBe(commonColor.grayScale600);
 
     fireEvent.press(screen.getByText('Ver resultados'));
 
     expect(navigation.navigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
       url: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
       title: 'Resultados',
+    });
+
+    fireEvent.press(screen.getByText('Ir al inicio'));
+
+    expect(navigation.reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
     });
   });
 
