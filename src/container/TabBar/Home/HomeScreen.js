@@ -2430,12 +2430,20 @@ export default function HomeScreen({ navigation, route }) {
       return;
     }
 
-    const participation = getVotingParticipationForElection(selectedElection?.id);
-    if (participation?.id) {
+    const participation = getVotingParticipationForElection(selectedElection?.id)?.id ?? selectedElection.participationId;
+    if (participation) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
-        participationId: participation.id,
+        participationId: participation,
         electionId: selectedElection?.id,
         allowBack: true,
+        participation: {
+          electionTitle: selectedElection?.title || '',
+          fullDate: selectedElection?.participatedAt || '',
+          organization: selectedElection?.organization || '',
+          candidateSelected: null,
+          transactionId: null,
+          blockchainHash: null,
+        },
         ...resultsRouteParams,
       });
       return;

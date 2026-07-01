@@ -88,7 +88,6 @@ export default function RegisterUser2({navigation, route}) {
 
   const handleCheckAndNext = useCallback(
     debounce(() => {
-
       const trimmedId = idNumber.trim();
       if (trimmedId === REVIEW_DNI) {
         dispatch(setSecrets(DEMO_SECRETS));

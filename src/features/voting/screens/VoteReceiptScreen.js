@@ -9,7 +9,7 @@
  * - Información de transacción/blockchain cuando exista
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
   View,
@@ -32,6 +32,8 @@ import { releaseVoteForElection } from '../offline/queueAdapter';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { blankVote } from '../data/params';
 import { commonColor } from '../../../themes/colors';
+import CAlert from '@/src/components/common/CAlert';
+import { captureError } from '@/src/config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -177,18 +179,28 @@ const VoteReceiptScreen = () => {
 
   const participationId = routeParams?.participationId;
   const routeParticipation = routeParams?.participation || null;
-  const participation =
-    routeParticipation ||
-    participations.find(p => p.id === participationId) ||
-    (lastReceipt?.id === participationId ? lastReceipt : null) ||
-    lastReceipt || {
-      electionTitle: 'Votación institucional',
-      fullDate: '',
-      organization: '',
-      candidateSelected: null,
-      transactionId: null,
-      blockchainHash: null,
-    };
+  const participation = useMemo(() => {
+    const data = routeParticipation ||
+      participations.find(p => p.id === participationId) ||
+      (lastReceipt?.id === participationId ? lastReceipt : null) ||
+      lastReceipt || {
+        electionTitle: 'Votación institucional',
+        fullDate: '',
+        organization: '',
+        candidateSelected: null,
+        transactionId: null,
+        blockchainHash: null,
+      };
+
+    if (!data.candidateSelected && syncedWithBlockchain?.data?.option) {
+      data.candidateSelected = {
+        partyName: syncedWithBlockchain.data.option,
+      }
+    }
+    
+    return data;
+  }, [participationId, participations, lastReceipt, routeParticipation, syncedWithBlockchain]);
+    
   const isFailedParticipation = participation?.status === 'ERROR';
   const isQueuedParticipation =
     participation?.synced === false && !isFailedParticipation;
@@ -278,9 +290,18 @@ const VoteReceiptScreen = () => {
   );
 
   useEffect(() => {
-    if (participationId && !isQueuedParticipation && !isFailedParticipation) {
-      syncStateWithBlockchain(participationId)
+    try {
+      if (participationId && !isQueuedParticipation && !isFailedParticipation) {
+        syncStateWithBlockchain(participationId)
+      }
+    } catch (error) {
+      captureError(error, {
+        critical: false,
+        flow: 'getVoteData',
+        step: 'syncStateWithBlockchain',
+      })
     }
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
 
@@ -291,7 +312,7 @@ const VoteReceiptScreen = () => {
     if (isQueuedParticipation) {
       return 'clock-outline';
     }
-    switch (syncedWithBlockchain) {
+    switch (syncedWithBlockchain.status) {
       case 'loading':
         return 'progress-download';
       case 'synced':
@@ -353,6 +374,14 @@ const VoteReceiptScreen = () => {
               ? 'No se pudo completar el voto'
               : UI_STRINGS.voteRegisteredSuccess}
         </CText>
+
+        {syncedWithBlockchain.status === 'failed' && (
+          <CAlert
+            testID={'VoteReceiptAlert'}
+            status='warning'
+            message={syncedWithBlockchain.error.includes('Credential not found') ? UI_STRINGS.credentialNotFound : UI_STRINGS.unknownError}
+          />
+        )}
 
         {isFailedParticipation && participation?.errorMessage ? (
           <CText type="R14" style={styles.failureMessage}>

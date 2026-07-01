@@ -11,8 +11,28 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
+      "buildNumber": "44",
+      "icon": "./assets/images/ic_launcher.png",
+      "googleServicesFile": "./native-files/GoogleService-Info.plist",
+      "usesAppleSignIn": false,
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": true
+      },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": true
+        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
+        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galer�a de fotos",
+        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n en segundo plano",
+        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticaci�n",
+        "UIBackgroundModes": [
+          "remote-notification",
+          "fetch"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -86,6 +106,15 @@
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "useLegacyPackaging": false
+          },
+          "ios": {
+            "deploymentTarget": "16.0",
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBDatabase"
+            ]
           }
         }
       ],
@@ -128,8 +157,11 @@
           "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación."
         }
       ],
+      "./plugins/withIOSCodeSigning",
       "@react-native-firebase/app",
       "./plugins/withNativeModules",
+      "./plugins/withIOSNativeModules",
+      "./plugins/withIOSOrientation",
       "expo-secure-store",
       "expo-localization"
     ],

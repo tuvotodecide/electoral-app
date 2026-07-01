@@ -194,6 +194,8 @@ const buildElectionModel = ({
     presentialKioskEnabled: event?.presentialKioskEnabled === true,
     isReferendum,
     statusMessage,
+    participationId: participationStatus?.participationId,
+    participatedAt: participationStatus?.participatedAt,
   };
 };
 
@@ -319,6 +321,7 @@ const requestParticipationStatus = async electionId => {
     canVote: Boolean(data?.canVote),
     alreadyVoted: Boolean(data?.alreadyVoted),
     participatedAt: data?.participatedAt || null,
+    participationId: data?.participationId || null,
   };
 };
 

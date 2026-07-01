@@ -133,7 +133,10 @@ export const useVotingState = (electionId = '') => {
   const [participationId, setParticipationId] = useState(null);
   const [lastReceipt, setLastReceipt] = useState(null);
   const [participations, setParticipations] = useState([]);
-  const [syncedWithBlockchain, setSyncedWithBlockchain] = useState('loading');
+  const [syncedWithBlockchain, setSyncedWithBlockchain] = useState({
+    status: 'loading',
+
+  });
   const userData = useSelector(state => state.wallet.payload);
 
   // Cargar estado inicial desde AsyncStorage
@@ -198,15 +201,12 @@ export const useVotingState = (electionId = '') => {
 
   const syncStateWithBlockchain = async (participationId) => {
     const localParticipation = participations.find(p => p.id === participationId);
-    if (!localParticipation) {
-      return;
-    }
 
     try {
-      setSyncedWithBlockchain('loading');
+      setSyncedWithBlockchain({status: 'loading'});
       const credential = await getCredentialForVote(electionId, userData.did, userData.privKey);
-      if(!credential.info?.credentialSubject?.nullifier) {
-        setSyncedWithBlockchain('failed');
+      if(!credential?.info?.credentialSubject?.nullifier) {
+        setSyncedWithBlockchain({status: 'failed'});
         throw new Error(`Credential not found for electionId ${electionId}`);
       }
 
@@ -214,15 +214,20 @@ export const useVotingState = (electionId = '') => {
       const voteInfo = await getOwnVoteInfo(electionId, nullifier);
       if (Array.isArray(voteInfo) && voteInfo.length === 2) {
         const [hasVoted, option] = voteInfo;
-        if (hasVoted && option === localParticipation?.candidateSelected?.partyName) {
-          setSyncedWithBlockchain('synced');
-        } else {
-          setSyncedWithBlockchain('not_synced');
+        if (hasVoted) {
+          if (localParticipation) {
+            if (hasVoted && option === localParticipation?.candidateSelected?.partyName) {
+              setSyncedWithBlockchain({status: 'synced', data: {hasVoted, option}});
+            } else {
+              setSyncedWithBlockchain({status: 'not_synced'});
+            }
+          } else {
+            setSyncedWithBlockchain({status: 'synced', data: {hasVoted, option}});
+          }
         }
       }
     } catch (error) {
-      console.log('Error syncing with blockchain:', error);
-      setSyncedWithBlockchain('failed');
+      setSyncedWithBlockchain({status: 'failed', error: error.message || 'Unknown error'});
     }
   }
 

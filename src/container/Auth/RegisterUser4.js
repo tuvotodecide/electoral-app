@@ -1,15 +1,13 @@
 import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
   StyleSheet,
   View,
 } from 'react-native';
-import { openSettings } from 'expo-linking';
 import { useSelector } from 'react-redux';
 // Custom imports
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { moderateScale } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import CButton from '../../components/common/CButton';
@@ -20,12 +18,13 @@ import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
-import * as ImagePicker from 'expo-image-picker';
-
+import { resizeImage } from '@/src/services/ImageManipulatorService';
 
 import wira from 'wira-sdk';
 import LoadingModal from '../../components/modal/LoadingModal';
 import { captureError } from '@/src/config/sentry';
+import { useCameraPermissions } from 'expo-camera';
+import CameraModal from '@/src/components/modal/CameraModal';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -36,45 +35,38 @@ export default function RegisterUser4({navigation, route}) {
     message: '',
     isLoading: false,
   });
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef(null);
 
   useEffect(() => {
     const openCamera = async () => {
-      try {
-        const granted = await requestCameraPermission();
-        if (!granted) {
-          Alert.alert('Permiso denegado', 'No se puede acceder a la cámara.');
+      if (!permission?.granted) {
+        const result = await requestPermission();
+        if (!result.granted) {
           return;
         }
-
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ['livePhotos'],
-          quality: 0.8,
-          cameraType: ImagePicker.CameraType.front,
-        });
-
-        if (!result.canceled && result.assets) {
-          setSelfie(result.assets[0]);
-        }
-      } catch (error) {
-        console.log('Error launching camera:', error);
       }
+      console.log('[RegisterUser4] Camera permission granted:', permission?.granted);
+      setIsCameraReady(false);
+      setCameraOpen(true);
     };
 
-    openCamera();
-  }, []);
-
-  const requestCameraPermission = async () => {
-    const response = await ImagePicker.requestCameraPermissionsAsync();
-    if (response.granted) return true;
-
-    if (!response.canAskAgain) {
-      Alert.alert(
-        'Cámara deshabilitada',
-        'Habilita la cámara en Ajustes del sistema',
-        [{text: 'Abrir ajustes', onPress: () => openSettings()}, {text: 'OK'}],
-      );
+    if(permission) {
+      openCamera();
     }
-    return false;
+  }, [permission, requestPermission]);
+
+  const takePhoto = async () => {
+    if (!cameraRef.current) {
+      return;
+    }
+    const result = await cameraRef.current.takePictureAsync({
+      quality: 0.8,
+    });
+    setSelfie({ uri: result.uri });
+    setCameraOpen(false);
   };
 
   const onPressNext = async () => {
@@ -107,19 +99,6 @@ export default function RegisterUser4({navigation, route}) {
 
   const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
 
-  const resizeImage = async (uri) => {
-    const imageContext = ImageManipulator.manipulate(uri);
-    const renderedImage = await imageContext.resize({
-      height: 250,
-    }).renderAsync()
-
-    const result = await renderedImage.saveAsync({
-      format: SaveFormat.JPEG,
-    });
-
-    return result;
-  }
-
   const triggerRecovery = async () => {
     setModal({
       visible: true,
@@ -129,17 +108,17 @@ export default function RegisterUser4({navigation, route}) {
     await yieldUI();
 
     try {
-      const resizedFrontImage = await resizeImage(frontImage.uri);
-      const resizedBackImage = await resizeImage(backImage.uri);
-      const resizedSelfie = await resizeImage(selfie.uri);
+      const resizedFrontBase64 = await resizeImage(frontImage.uri);
+      const resizedBackBase64 = await resizeImage(backImage.uri);
+      const resizedSelfieBase64 = await resizeImage(selfie.uri);
 
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
         BACKEND_IDENTITY,
         IDENTITY_KEY,
-        resizedFrontImage,
-        resizedBackImage,
-        resizedSelfie,
+        resizedFrontBase64,
+        resizedBackBase64,
+        resizedSelfieBase64,
         dni,
       );
 
@@ -236,6 +215,15 @@ export default function RegisterUser4({navigation, route}) {
           containerStyle={localStyle.btnStyle}
         />
       </View>
+      <CameraModal
+        testID='selfieCameraModal'
+        cameraOpen={cameraOpen}
+        setCameraOpen={setCameraOpen}
+        cameraRef={cameraRef}
+        isCameraReady={isCameraReady}
+        setIsCameraReady={setIsCameraReady}
+        onTakePhoto={takePhoto}
+      />
       <LoadingModal
         {...modal}
         buttonText={modal.success ? String.continue : String.retryRecovery}

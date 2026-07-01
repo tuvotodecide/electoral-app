@@ -18,6 +18,7 @@ import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 
 import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
+import { resizeImage } from '@/src/services/ImageManipulatorService';
 
 function onlyDigits(s = '') {
   return (s || '').replace(/\D/g, '');
@@ -34,13 +35,16 @@ export default function RegisterUser5({navigation, route}) {
     (async () => {
       try {
         const idCardAnalyzer = wira.idCardAnalyzer;
+        const frontImageB64 = await resizeImage(frontImage.uri);
+        const backImageB64 = await resizeImage(backImage.uri);
+        const selfieImageB64 = await resizeImage(selfie.uri);
 
         const res = await idCardAnalyzer.analyzeFromRegistry(
           BACKEND_IDENTITY,
           IDENTITY_KEY,
-          frontImage?.uri,
-          backImage?.uri,
-          selfie?.uri,
+          frontImageB64,
+          backImageB64,
+          selfieImageB64
         );
 
         if (!res.success) {

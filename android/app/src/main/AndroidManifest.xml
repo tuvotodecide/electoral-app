@@ -44,7 +44,6 @@
         <action android:name="android.intent.action.VIEW"/>
         <data android:scheme="com.appelectoral" android:host="shared.request"/>
         <data android:scheme="com.appelectoral" android:host="shared.response"/>
-        <data android:scheme="exp+electoral-app-expo"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>

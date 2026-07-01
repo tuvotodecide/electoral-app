@@ -139,4 +139,7 @@ export const UI_STRINGS = {
   // Special votes
   blancoVote: 'Voto en Blanco',
   nuloVote: 'Voto Nulo',
+
+  // Error messages
+  credentialNotFound: 'No se encontró la credencial de esta votación',
 };
