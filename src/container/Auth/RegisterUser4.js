@@ -48,7 +48,6 @@ export default function RegisterUser4({navigation, route}) {
           return;
         }
       }
-      console.log('[RegisterUser4] Camera permission granted:', permission?.granted);
       setIsCameraReady(false);
       setCameraOpen(true);
     };
@@ -223,6 +222,7 @@ export default function RegisterUser4({navigation, route}) {
         isCameraReady={isCameraReady}
         setIsCameraReady={setIsCameraReady}
         onTakePhoto={takePhoto}
+        facing='front'
       />
       <LoadingModal
         {...modal}

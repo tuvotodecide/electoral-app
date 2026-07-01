@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert} from 'react-native';
 import {fireEvent, waitFor} from '@testing-library/react-native';
-import * as ImagePicker from 'expo-image-picker';
+import * as ExpoCamera from 'expo-camera';
 import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser4 from '../../../../src/container/Auth/RegisterUser4';
@@ -13,10 +13,21 @@ describe('RegisterUser4', () => {
     configurarMocksRegistro();
   });
 
+  const takeSelfieFromCameraModal = async getByTestId => {
+    fireEvent(getByTestId('mockCamera'), 'onCameraReady');
+    fireEvent.press(getByTestId('selfieCameraModal_captureButton'));
+
+    await waitFor(() => {
+      expect(getByTestId('registerUser4SelfieImage')).toBeTruthy();
+    });
+  };
+
   it('navega a RegisterUser5 despues de capturar selfie', async () => {
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
-      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
-    );
+    ExpoCamera.__takePictureAsyncMock.mockResolvedValueOnce({
+      uri: 'file://selfie.jpg',
+      width: 1200,
+      height: 900,
+    });
 
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const route = {
@@ -31,7 +42,7 @@ describe('RegisterUser4', () => {
       <RegisterUser4 navigation={localNavigation} route={route} />,
     );
 
-    await waitFor(() => expect(getByTestId('registerUser4SelfieImage')).toBeTruthy());
+    await takeSelfieFromCameraModal(getByTestId);
 
     fireEvent.press(getByTestId('registerUser4NextButton'));
 
@@ -48,7 +59,6 @@ describe('RegisterUser4', () => {
 
   it('muestra alerta si se intenta continuar sin selfie', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) => Promise.resolve({}));
 
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const route = {
@@ -79,9 +89,11 @@ describe('RegisterUser4', () => {
   });
 
   it('en modo recovery exitoso guarda datos y redirige a LoginUser CI', async () => {
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
-      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
-    );
+    ExpoCamera.__takePictureAsyncMock.mockResolvedValueOnce({
+      uri: 'file://selfie.jpg',
+      width: 1200,
+      height: 900,
+    });
     new wira.RecoveryService().recoveryAndSave.mockResolvedValueOnce(undefined);
 
     const localNavigation = {
@@ -102,9 +114,7 @@ describe('RegisterUser4', () => {
       <RegisterUser4 navigation={localNavigation} route={route} />,
     );
 
-    await waitFor(() => {
-      expect(getByTestId('registerUser4SelfieImage')).toBeTruthy();
-    });
+    await takeSelfieFromCameraModal(getByTestId);
     fireEvent.press(getByTestId('registerUser4NextButton'));
 
     await waitFor(() => {
@@ -131,9 +141,11 @@ describe('RegisterUser4', () => {
   });
 
   it('si falla recovery permite volver a RegisterUser1 con "Revisar datos"', async () => {
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
-      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
-    );
+    ExpoCamera.__takePictureAsyncMock.mockResolvedValueOnce({
+      uri: 'file://selfie.jpg',
+      width: 1200,
+      height: 900,
+    });
     new wira.RecoveryService().recoveryAndSave.mockRejectedValueOnce(
       new Error('Recovery failed'),
     );
@@ -157,9 +169,7 @@ describe('RegisterUser4', () => {
       <RegisterUser4 navigation={localNavigation} route={route} />,
     );
 
-    await waitFor(() => {
-      expect(getByTestId('registerUser4SelfieImage')).toBeTruthy();
-    });
+    await takeSelfieFromCameraModal(getByTestId);
     fireEvent.press(getByTestId('registerUser4NextButton'));
 
     await waitFor(() => {
@@ -175,10 +185,11 @@ describe('RegisterUser4', () => {
   });
 
   it('si falla recovery y se presiona reintentar vuelve a ejecutar la recuperación', async () => {
-    ImagePicker.requestCameraPermissionsAsync.mockResolvedValueOnce({granted: true});
-    ImagePicker.launchCameraAsync.mockImplementationOnce((_options) =>
-      Promise.resolve({assets: [{uri: 'file://selfie.jpg'}]}),
-    );
+    ExpoCamera.__takePictureAsyncMock.mockResolvedValue({
+      uri: 'file://selfie.jpg',
+      width: 1200,
+      height: 900,
+    });
     new wira.RecoveryService().recoveryAndSave
       .mockRejectedValueOnce(new Error('Recovery failed'))
       .mockResolvedValueOnce(undefined);
@@ -202,9 +213,7 @@ describe('RegisterUser4', () => {
       <RegisterUser4 navigation={localNavigation} route={route} />,
     );
 
-    await waitFor(() => {
-      expect(getByTestId('registerUser4SelfieImage')).toBeTruthy();
-    });
+    await takeSelfieFromCameraModal(getByTestId);
     fireEvent.press(getByTestId('registerUser4NextButton'));
 
     await waitFor(() => {

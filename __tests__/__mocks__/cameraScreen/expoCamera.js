@@ -9,7 +9,7 @@ const takePictureAsyncMock = jest.fn(() =>
   }),
 );
 
-const CameraView = React.forwardRef((props, ref) => {
+const CameraView = React.forwardRef(function CameraView(props, ref) {
   React.useImperativeHandle(ref, () => ({
     takePictureAsync: takePictureAsyncMock,
   }));

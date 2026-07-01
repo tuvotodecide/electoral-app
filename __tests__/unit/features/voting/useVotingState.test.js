@@ -195,7 +195,8 @@ describe('useVotingState', () => {
 
     expect(getCredentialForVote).toHaveBeenCalledWith('election-1', 'did:example:123', undefined );
     expect(getOwnVoteInfo).toHaveBeenCalledWith('election-1', 'nullifier-1');
-    expect(result.current.syncedWithBlockchain).toBe('synced');
+    expect(result.current.syncedWithBlockchain).not.toBeNull();
+    expect(result.current.syncedWithBlockchain.status).toBe('synced');
   });
 
   it('marca fallo cuando no encuentra nullifier para consultar blockchain', async () => {
@@ -223,7 +224,10 @@ describe('useVotingState', () => {
     });
 
     expect(getOwnVoteInfo).not.toHaveBeenCalled();
-    expect(result.current.syncedWithBlockchain).toBe('failed');
+    expect(result.current.syncedWithBlockchain).not.toBeNull();
+    expect(result.current.syncedWithBlockchain.status).toBe('failed');
+    expect(result.current.syncedWithBlockchain.error).toBe(`Credential not found for electionId election-1`);
+
   });
 
   it('marca not_synced cuando blockchain devuelve una opcion distinta', async () => {
@@ -257,6 +261,8 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('participation-1');
     });
 
-    expect(result.current.syncedWithBlockchain).toBe('not_synced');
+    console.log('syncedWithBlockchain:', result.current.syncedWithBlockchain);
+
+    expect(result.current.syncedWithBlockchain.status).toBe("not_synced");
   });
 });

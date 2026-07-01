@@ -165,7 +165,7 @@ describe('VoteReceiptScreen', () => {
     const resultsButtonStyle = StyleSheet.flatten(screen.getByTestId('viewResultsButton').props.style);
     const homeButtonStyle = StyleSheet.flatten(screen.getByTestId('goHomeButton').props.style);
     const homeButtonTextStyle = StyleSheet.flatten(screen.getByText('Ir al inicio').props.style);
-    expect(resultsButtonStyle.backgroundColor).toBe('primary');
+    expect(resultsButtonStyle.backgroundColor).toBe(commonColor.primary);
     expect(homeButtonStyle.backgroundColor).toBe(commonColor.grayScale200);
     expect(homeButtonTextStyle.color).toBe(commonColor.grayScale600);
 
