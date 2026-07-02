@@ -6,9 +6,7 @@ async function migrateIfLegacy() {
   const legacy = await AsyncStorage.getItem(JWT_KEY);
   if (!legacy) return;
 
-  await InternetCredentials.saveInternetCredentials(JWT_KEY_EXPO, 'user', legacy, {
-    accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-  });
+  await InternetCredentials.saveInternetCredentials(JWT_KEY_EXPO, 'user', legacy);
   await AsyncStorage.removeItem(JWT_KEY);
 }
 

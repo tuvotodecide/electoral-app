@@ -67,6 +67,21 @@ export const PhotoContainer = ({
     );
   }
 
+  return (
+    <StaticPhotoContainer
+      testID={testID}
+      photoUri={photoUri}
+      useAspectRatio={useAspectRatio}
+    />
+  );
+};
+
+const StaticPhotoContainer = ({
+  testID = 'photoContainer',
+  photoUri,
+  useAspectRatio = false,
+}) => {
+
   const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
   const candidates = useMemo(
     () => buildIpfsCandidates(baseUri).filter(Boolean),
@@ -160,7 +175,7 @@ const ZoomablePhotoContainer = ({
     const { width, height } = e.nativeEvent.layout;
     const next = { w: Math.round(width), h: Math.round(height) };
     setBox(next);
-  }, [testID]);
+  }, []);
 
   const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
   const candidates = useMemo(

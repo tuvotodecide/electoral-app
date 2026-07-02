@@ -45,25 +45,28 @@ jest.mock('../../../../src/config/sentry', () => ({
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children}) => <View>{children}</View>;
+  const MockCSafeAreaView = ({children}) => <View>{children}</View>;
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({title}) => <Text>{title}</Text>;
+  const MockCHeader = ({title}) => <Text>{title}</Text>;
+  return MockCHeader;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children}) => <Text>{children}</Text>;
+  const MockCText = ({children}) => <Text>{children}</Text>;
+  return MockCText;
 });
 
 jest.mock('../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {Text, TouchableOpacity} = require('react-native');
-  return ({title, onPress, disabled, testID}) => (
+  const MockCButton = ({title, onPress, disabled, testID}) => (
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityState={{disabled: !!disabled}}
@@ -73,12 +76,13 @@ jest.mock('../../../../src/components/common/CButton', () => {
       <Text>{title}</Text>
     </TouchableOpacity>
   );
+  return MockCButton;
 });
 
 jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {Text, TouchableOpacity, View} = require('react-native');
-  return ({
+  const MockCustomModal = ({
     visible,
     title,
     message,
@@ -101,23 +105,25 @@ jest.mock('../../../../src/components/common/CustomModal', () => {
         ) : null}
       </View>
     ) : null;
+  return MockCustomModal;
 });
 
 jest.mock('../../../../src/features/voting/components/CandidateCard', () => {
   const React = require('react');
   const {Text, TouchableOpacity} = require('react-native');
-  return ({candidate, isSelected, onSelect}) => (
+  const MockCandidateCard = ({candidate, isSelected, onSelect}) => (
     <TouchableOpacity onPress={onSelect} testID={`candidateCard_${candidate.id}`}>
       <Text>{candidate.partyName}</Text>
       {isSelected ? <Text>selected:{candidate.id}</Text> : null}
     </TouchableOpacity>
   );
+  return MockCandidateCard;
 });
 
 jest.mock('../../../../src/features/voting/components/ConfirmVoteModal', () => {
   const React = require('react');
   const {Text, TouchableOpacity, View} = require('react-native');
-  return ({visible, presidentName, onConfirm, onCancel, isLoading}) =>
+  const MockConfirmVoteModal = ({visible, presidentName, onConfirm, onCancel, isLoading}) =>
     visible ? (
       <View>
         <Text>{presidentName}</Text>
@@ -135,12 +141,13 @@ jest.mock('../../../../src/features/voting/components/ConfirmVoteModal', () => {
         )}
       </View>
     ) : null;
+  return MockConfirmVoteModal;
 });
 
 jest.mock('../../../../src/features/voting/components/OfflineQueuedModal', () => {
   const React = require('react');
   const {Text, TouchableOpacity, View} = require('react-native');
-  return ({visible, title, message, onDismiss}) =>
+  const MockOfflineQueuedModal = ({visible, title, message, onDismiss}) =>
     visible ? (
       <View>
         <Text>{title}</Text>
@@ -150,12 +157,13 @@ jest.mock('../../../../src/features/voting/components/OfflineQueuedModal', () =>
         </TouchableOpacity>
       </View>
     ) : null;
+  return MockOfflineQueuedModal;
 });
 
 jest.mock('../../../../src/features/voting/components/CameraScannerModal', () => {
   const React = require('react');
   const {Text, TouchableOpacity, View} = require('react-native');
-  return ({visible, onBarcodeScanned}) =>
+  const MockCameraScannerModal = ({visible, onBarcodeScanned}) =>
     visible ? (
       <View>
         <Text>Escanear QR</Text>
@@ -166,6 +174,7 @@ jest.mock('../../../../src/features/voting/components/CameraScannerModal', () =>
         </TouchableOpacity>
       </View>
     ) : null;
+  return MockCameraScannerModal;
 });
 
 const {useNavigation} = require('@react-navigation/native');

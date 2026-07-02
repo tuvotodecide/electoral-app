@@ -37,46 +37,51 @@ jest.mock('../../../../src/data/mockMesas', () => ({
 
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({testID, name, ...props}) =>
+  const MockIonicons = ({testID, name, ...props}) =>
     React.createElement('Ionicons', {testID, name, ...props});
+  return MockIonicons;
 });
 
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, title}) =>
+  const MockCHeader = ({testID, title}) =>
     React.createElement(View, {testID}, React.createElement(Text, null, title));
+  return MockCHeader;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
+  const MockCText = ({children, testID}) =>
     React.createElement(Text, {testID}, children);
+  return MockCText;
 });
 
 jest.mock('../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {TouchableOpacity, Text} = require('react-native');
-  return ({testID, title, onPress}) =>
+  const MockCButton = ({testID, title, onPress}) =>
     React.createElement(
       TouchableOpacity,
       {testID, onPress},
       React.createElement(Text, null, title),
     );
+  return MockCButton;
 });
 
 jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, visible, title, message, onConfirm}) =>
+  const MockCustomModal = ({testID, visible, title, message, onConfirm}) =>
     visible
       ? React.createElement(
           View,
@@ -90,6 +95,7 @@ jest.mock('../../../../src/components/common/CustomModal', () => {
           ),
         )
       : null;
+  return MockCustomModal;
 });
 
 describe('WhichIsCorrectScreen', () => {

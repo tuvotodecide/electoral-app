@@ -279,10 +279,6 @@ const localStyle = StyleSheet.create({
     height: moderateScale(300),
     width: moderateScale(300),
   },
-  bottomTextContainer: {
-    ...styles.ph20,
-    gap: 5,
-  },
   fieldLabel: {
     marginTop: moderateScale(20),
     fontWeight: 'bold',

@@ -16,38 +16,43 @@ jest.mock('../../../../src/api/constant', () => ({
 jest.mock('../../../../src/components/common/CSafeAreaViewAuth', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaViewAuth = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaViewAuth;
 });
 
 jest.mock('../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  const MockCHeader = ({testID}) => React.createElement(View, {testID});
+  return MockCHeader;
 });
 
 jest.mock('../../../../src/components/authComponents/StepIndicator', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  const MockStepIndicator = ({testID}) => React.createElement(View, {testID});
+  return MockStepIndicator;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
+  const MockCText = ({children, testID}) =>
     React.createElement(Text, {testID}, children);
+  return MockCText;
 });
 
 jest.mock('../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {TouchableOpacity, Text} = require('react-native');
-  return ({testID, title, onPress}) =>
+  const MockCButton = ({testID, title, onPress}) =>
     React.createElement(
       TouchableOpacity,
       {testID, onPress},
       React.createElement(Text, null, title),
     );
+  return MockCButton;
 });
 
 describe('UploadDocument', () => {

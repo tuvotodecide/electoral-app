@@ -80,7 +80,6 @@ const baseStrings = {
   invalidActaData: 'Datos de acta inválidos',
   alreadyAttested: 'El acta ya fue atestiguada',
   alreadyCreated: 'El acta ya fue creada',
-  goBack: 'Volver',
   validationError400: 'Solicitud inválida.',
   validationError401: 'No autorizado.',
   validationError403: 'Acceso prohibido.',

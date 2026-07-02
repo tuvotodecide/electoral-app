@@ -33,8 +33,9 @@ describe('CHeader component', () => {
         theme: (state = {theme: mockTheme}) => state,
       },
     });
-    return ({children}) =>
+    const MockWrapper = ({children}) =>
       React.createElement(Provider, {store}, children);
+    return MockWrapper;
   };
 
   const renderWithProvider = (component) => {

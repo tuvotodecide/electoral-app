@@ -127,8 +127,7 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
       testID: testID || `icon-${name}`,
       style: [{ fontSize: size, color }, style],
       onPress,
-      children: name,
-    });
+    }, name);
   };
   MockIcon.loadFont = jest.fn(() => Promise.resolve());
   MockIcon.hasIcon = jest.fn(() => Promise.resolve(true));

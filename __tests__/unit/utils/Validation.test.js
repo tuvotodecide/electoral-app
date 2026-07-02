@@ -22,7 +22,6 @@ const mockStrings = {
   confirmPassValidString: 'Las contraseñas no coinciden',
   validCvv: 'Ingresa un CVV válido',
   validCardNumber: 'Ingresa un número de tarjeta válido',
-  thisFieldIsMandatory: 'Este campo es obligatorio',
 };
 
 // Mock global de strings

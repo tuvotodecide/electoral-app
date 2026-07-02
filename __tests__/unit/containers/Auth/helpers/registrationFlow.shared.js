@@ -5,12 +5,14 @@ jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
 
-  return ({testID, handleTextChange, inputCount}) =>
+  const MockTextInput = ({testID, handleTextChange, inputCount}) =>
     React.createElement(TextInput, {
       testID: testID || 'otpInput',
       onChangeText: handleTextChange,
       maxLength: inputCount,
     });
+
+  return MockTextInput;
 });
 
 jest.mock('react-native-gesture-handler', () => {

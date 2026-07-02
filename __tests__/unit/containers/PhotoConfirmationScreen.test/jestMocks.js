@@ -18,26 +18,28 @@ jest.mock(
   () => require('../../../__mocks__/components/common/UniversalHeader'),
 );
 
+const MockInfoModal = ({visible, title, message, onClose, testID = 'infoModal'}) => {
+  if (!visible) {
+    return null;
+  }
+  const React = require('react');
+  const {View, Text, TouchableOpacity} = require('react-native');
+  return React.createElement(
+    View,
+    {testID},
+    React.createElement(Text, {testID: `${testID}Title`}, title),
+    React.createElement(Text, {testID: `${testID}Message`}, message),
+    React.createElement(
+      TouchableOpacity,
+      {testID: `${testID}CloseButton`, onPress: onClose},
+      React.createElement(Text, null, 'close'),
+    ),
+  );
+};
+
 jest.mock(
   '../../../../src/components/modal/InfoModal',
-  () => ({visible, title, message, onClose, testID = 'infoModal'}) => {
-    if (!visible) {
-      return null;
-    }
-    const React = require('react');
-    const {View, Text, TouchableOpacity} = require('react-native');
-    return React.createElement(
-      View,
-      {testID},
-      React.createElement(Text, {testID: `${testID}Title`}, title),
-      React.createElement(Text, {testID: `${testID}Message`}, message),
-      React.createElement(
-        TouchableOpacity,
-        {testID: `${testID}CloseButton`, onPress: onClose},
-        React.createElement(Text, null, 'close'),
-      ),
-    );
-  },
+  () => MockInfoModal,
 );
 
 jest.mock(

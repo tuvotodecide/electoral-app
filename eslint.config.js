@@ -24,6 +24,19 @@ module.exports = defineConfig([
     },
   },
   {
+    files: ['babel.config.js', 'metro.config.js', 'jest.config.js', 'react-native.config.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        process: 'readonly',
+      },
+    },
+  },
+  {
     plugins: {
       "unused-imports": require("eslint-plugin-unused-imports"),
     },

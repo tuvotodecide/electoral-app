@@ -39,8 +39,7 @@ const BaseSearchTableScreen = (props) => {
       React.createElement('ActivityIndicator', { testID: 'unifiedTableScreenLoadingIndicator' }),
       React.createElement('Text', { 
         testID: 'unifiedTableScreenLoadingText',
-        children: 'Cargando mesas...'
-      })
+      }, 'Cargando mesas...')
     );
   }
 
@@ -79,8 +78,7 @@ const BaseSearchTableScreen = (props) => {
       }),
       React.createElement('Text', {
         testID: 'baseSearchTableScreenTitle',
-        children: title || locationData?.name || 'Escuela Test',
-      }),
+      }, title || locationData?.name || 'Escuela Test'),
       React.createElement('TouchableOpacity', {
         testID: 'baseSearchTableScreenNotificationButton',
         onPress: onNotificationPress,
@@ -89,8 +87,7 @@ const BaseSearchTableScreen = (props) => {
     // Choose table text
     React.createElement('Text', {
       testID: 'baseSearchTableScreenChooseText',
-      children: chooseTableText || 'Por favor, elige una mesa',
-    }),
+    }, chooseTableText || 'Por favor, elige una mesa'),
     // Search input
     React.createElement('TextInput', {
       testID: 'baseSearchTableScreenSearchInput',
@@ -104,16 +101,13 @@ const BaseSearchTableScreen = (props) => {
       { testID: 'baseSearchTableScreenLocationInfo' },
       React.createElement('Text', {
         testID: 'baseSearchTableScreenLocationText',
-        children: locationText || 'Lista basada en ubicación',
-      }),
+      }, locationText || 'Lista basada en ubicación'),
       React.createElement('Text', {
         testID: 'baseSearchTableScreenLocationName',
-        children: locationData?.name || 'Escuela Test',
-      }),
+      }, locationData?.name || 'Escuela Test'),
       React.createElement('Text', {
         testID: 'baseSearchTableScreenLocationAddress',
-        children: locationData?.address || 'Dirección Test 123',
-      })
+      }, locationData?.address || 'Dirección Test 123')
     ),
     // Tables list - En lugar de usar FlashList que no renderiza items en tests, 
     // crear los elementos directamente
@@ -142,12 +136,10 @@ const BaseSearchTableScreen = (props) => {
           },
           React.createElement('Text', {
             testID: `baseSearchTableScreenTableItemNumber_${index}`,
-            children: item?.numero || item?.tableNumber || item?.number || 'N/A',
-          }),
+          }, item?.numero || item?.tableNumber || item?.number || 'N/A'),
           React.createElement('Text', {
             testID: `baseSearchTableScreenTableItemCode_${index}`,
-            children: item?.codigo || item?.tableCode || item?.code || 'N/A',
-          })
+          }, item?.codigo || item?.tableCode || item?.code || 'N/A')
         );
       })
     ),

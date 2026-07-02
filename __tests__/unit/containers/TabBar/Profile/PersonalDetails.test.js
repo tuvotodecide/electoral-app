@@ -39,52 +39,58 @@ jest.mock('../../../../../src/utils/ThemeUtils', () => ({
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, title}) =>
+  const MockCHeader = ({testID, title}) =>
     React.createElement(View, {testID}, React.createElement(Text, null, title));
+  return MockCHeader;
 });
 
 jest.mock('../../../../../src/components/common/KeyBoardAvoidWrapper', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockKeyBoardAvoidWrapper = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockKeyBoardAvoidWrapper;
 });
 
 jest.mock('../../../../../src/components/common/Icono', () => {
   const React = require('react');
-  return ({testID, name}) =>
+  const MockIcono = ({testID, name}) =>
     React.createElement('Icono', {testID, name});
+  return MockIcono;
 });
 
 jest.mock('../../../../../src/components/common/CEtiqueta', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, title, text}) =>
+  const MockCEtiqueta = ({testID, title, text}) =>
     React.createElement(
       View,
       {testID},
       React.createElement(Text, null, title),
       React.createElement(Text, null, text),
     );
+  return MockCEtiqueta;
 });
 
 jest.mock('../../../../../src/components/common/CHash', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  const MockCHash = ({testID}) => React.createElement(View, {testID});
+  return MockCHash;
 });
 
 jest.mock('../../../../../src/components/common/COptionItem', () => {
   const React = require('react');
   const {View, Switch} = require('react-native');
-  return ({item, switchValue, onSwitchValueChange, loading}) =>
+  const MockCOptionItem = ({item, switchValue, onSwitchValueChange, loading}) =>
     React.createElement(
       View,
       {testID: `optionItem_${item.id}`},
@@ -95,19 +101,21 @@ jest.mock('../../../../../src/components/common/COptionItem', () => {
         disabled: loading,
       }),
     );
+  return MockCOptionItem;
 });
 
 jest.mock('../../../../../src/components/common/CAlert', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, message}) =>
+  const MockCAlert = ({testID, message}) =>
     React.createElement(View, {testID}, React.createElement(Text, null, message));
+  return MockCAlert;
 });
 
 jest.mock('../../../../../src/components/modal/InfoModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({
+  const MockInfoModal = ({
     testID,
     visible,
     title,
@@ -145,6 +153,7 @@ jest.mock('../../../../../src/components/modal/InfoModal', () => {
       ),
     );
   };
+  return MockInfoModal;
 });
 
 describe('PersonalDetails Screen', () => {

@@ -50,13 +50,14 @@ jest.mock('../../../../../src/utils/Address', () => ({
 jest.mock('react-native-actions-sheet', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return React.forwardRef(({children}, ref) => {
+  const MockActionSheet = ({children}, ref) => {
     React.useImperativeHandle(ref, () => ({
       show: jest.fn(),
       hide: jest.fn(),
     }));
     return React.createElement(View, {testID: 'actionSheet'}, children);
-  });
+  }
+  return React.forwardRef(MockActionSheet);
 });
 
 jest.mock('react-native-paper', () => ({
@@ -70,83 +71,92 @@ jest.mock('react-native-paper', () => ({
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, title, rightIcon}) =>
+  const MockCHeader = ({testID, title, rightIcon}) =>
     React.createElement(
       View,
       {testID},
       React.createElement(Text, null, title),
       rightIcon,
     );
+  return MockCHeader;
 });
 
 jest.mock('../../../../../src/components/common/KeyBoardAvoidWrapper', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockKeyBoardAvoidWrapper = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockKeyBoardAvoidWrapper;
 });
 
 jest.mock('../../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
+  const MockCText = ({children, testID}) =>
     React.createElement(Text, {testID}, children);
+  return MockCText;
 });
 
 jest.mock('../../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {TouchableOpacity, Text} = require('react-native');
-  return ({testID, title, onPress, frontIcon}) =>
+  const MockCButton = ({testID, title, onPress, frontIcon}) =>
     React.createElement(
       TouchableOpacity,
       {testID, onPress},
       frontIcon,
       React.createElement(Text, null, title),
     );
+  return MockCButton;
 });
 
 jest.mock('../../../../../src/components/common/Icono', () => {
   const React = require('react');
-  return ({testID, name}) =>
+  const MockIcono = ({testID, name}) =>
     React.createElement('Icono', {testID, name});
+  return MockIcono;
 });
 
 jest.mock('../../../../../src/components/common/CAlert', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, message}) =>
+  const MockCAlert = ({testID, message}) =>
     React.createElement(View, {testID}, React.createElement(Text, null, message));
+  return MockCAlert;
 });
 
 jest.mock('../../../../../src/components/common/CInput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
-  return ({testID, _value, toGetTextFieldValue}) =>
+  const MockCInput = ({testID, _value, toGetTextFieldValue}) =>
     React.createElement(TextInput, {
       testID,
       value: _value,
       onChangeText: toGetTextFieldValue,
     });
+  return MockCInput;
 });
 
 jest.mock('../../../../../src/components/common/CIconButton', () => {
   const React = require('react');
   const {TouchableOpacity} = require('react-native');
-  return ({testID, onPress}) =>
+  const MockCIconButton = ({testID, onPress}) =>
     React.createElement(TouchableOpacity, {testID: 'saveThresholdBtn', onPress});
+  return MockCIconButton;
 });
 
 jest.mock('../../../../../src/components/modal/GuardianActionModal', () => {
   const React = require('react');
   const {View, TouchableOpacity, Text} = require('react-native');
-  return ({testID, visible, guardian, onClose, onSave, onDelete}) =>
+  const MockGuardianActionModal = ({testID, visible, guardian, onClose, onSave, onDelete}) =>
     visible
       ? React.createElement(
           View,
@@ -169,6 +179,7 @@ jest.mock('../../../../../src/components/modal/GuardianActionModal', () => {
           ),
         )
       : null;
+  return MockGuardianActionModal;
 });
 
 describe('Guardians Screen', () => {

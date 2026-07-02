@@ -152,7 +152,7 @@ export default function CollectionFilter(props) {
         </CText>
         <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
           {FilterStatusData.map((item, index) => {
-            return <RenderData item={item} />;
+            return <RenderData key={item.id} item={item} />;
           })}
         </View>
         <CText type={'B16'} style={localStyle.headerText} numberOfLines={1}>
@@ -160,7 +160,7 @@ export default function CollectionFilter(props) {
         </CText>
         <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
           {FilterTypeData.map((item, index) => {
-            return <RenderData item={item} />;
+            return <RenderData key={item.id} item={item} />;
           })}
         </View>
         <CText type={'B14'}>{String.priceRange}</CText>

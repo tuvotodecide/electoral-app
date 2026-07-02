@@ -1,3 +1,5 @@
+import strings from '../i18n/String';
+
 // email regEx
 const emailRegEx = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
 
@@ -61,7 +63,7 @@ const validPassword = (pass, isConfrimPass, password) => {
     };
   } else {
     if (passWordRegEx.test(pass)) {
-      if (isConfrimPass && password != pass) {
+      if (isConfrimPass && password !== pass) {
         return {
           status: false,
           msg: strings.confirmPassValidString,
@@ -90,7 +92,7 @@ const validateConfirmPassword = (pass, password) => {
     };
   } else {
     if (passWordRegEx.test(pass)) {
-      if (password != pass) {
+      if (password !== pass) {
         return {
           status: false,
           msg: strings.confirmPassValidString,

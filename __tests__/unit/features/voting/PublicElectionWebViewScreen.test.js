@@ -25,19 +25,22 @@ jest.mock('react-native-webview', () => {
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children}) => <View>{children}</View>;
+  const MockCSafeAreaView = ({children}) => <View>{children}</View>;
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, ...props}) => <Text {...props}>{children}</Text>;
+  const MockCText = ({children, ...props}) => <Text {...props}>{children}</Text>;
+  return MockCText;
 });
 
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({name}) => <Text>{name}</Text>;
+  const MockIonicons = ({name}) => <Text>{name}</Text>;
+  return MockIonicons;
 });
 
 describe('PublicElectionWebViewScreen', () => {

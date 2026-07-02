@@ -17,13 +17,14 @@ jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
 
-  return ({testID, handleTextChange, inputCount, secureTextEntry}) =>
+  const MockOtpInput = ({testID, handleTextChange, inputCount, secureTextEntry}) =>
     React.createElement(TextInput, {
       testID: testID || 'otpInput',
       onChangeText: handleTextChange,
       maxLength: inputCount,
       secureTextEntry,
     });
+  return MockOtpInput;
 });
 
 export const limpiarMocksSignup = () => {

@@ -30,42 +30,48 @@ jest.mock('../../../../../src/api/constant', () => ({
 
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({testID, name, ...props}) =>
+  const MockIonicons = ({testID, name, ...props}) =>
     React.createElement('Ionicons', {testID, name, ...props});
+  return MockIonicons;
 });
 
 jest.mock('react-native-vector-icons/Entypo', () => {
   const React = require('react');
-  return ({testID, name, ...props}) =>
+  const MockEntypo = ({testID, name, ...props}) =>
     React.createElement('Entypo', {testID, name, ...props});
+  return MockEntypo;
 });
 
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View, Text} = require('react-native');
-  return ({testID, title}) =>
+  const MockCHeader = ({testID, title}) =>
     React.createElement(View, {testID}, React.createElement(Text, null, title));
+  return MockCHeader;
 });
 
 jest.mock('../../../../../src/components/common/KeyBoardAvoidWrapper', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockKeyBoardAvoidWrapper = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockKeyBoardAvoidWrapper;
 });
 
 jest.mock('../../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
+  const MockCText = ({children, testID}) =>
     React.createElement(Text, {testID}, children);
+  return MockCText;
 });
 
 describe('Security Screen', () => {

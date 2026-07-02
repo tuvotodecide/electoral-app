@@ -57,15 +57,11 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
   const React = require('react');
   const {View, TouchableOpacity, Text} = require('react-native');
-  return ({
+  const MockBaseRecordReviewScreen = ({
     testID,
     headerTitle,
     instructionsText,
-    photoUri,
-    partyResults,
-    voteSummaryResults,
     actionButtons,
-    onBack,
   }) =>
     React.createElement(
       View,
@@ -80,6 +76,7 @@ jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
         ),
       ),
     );
+  return MockBaseRecordReviewScreen;
 });
 
 describe('MyWitnessesDetailScreen', () => {

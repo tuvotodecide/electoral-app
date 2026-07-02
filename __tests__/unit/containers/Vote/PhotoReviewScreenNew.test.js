@@ -101,7 +101,7 @@ jest.mock('../../../../src/utils/worksheetLocalStatus', () => ({
 jest.mock('../../../../src/components/modal/InfoModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({
+  const MockInfoModal = ({
     visible,
     title,
     message,
@@ -135,21 +135,24 @@ jest.mock('../../../../src/components/modal/InfoModal', () => {
       ),
     );
   };
+  return MockInfoModal;
 });
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, ...props}) => React.createElement(Text, props, children);
+  const MockCText = ({children, ...props}) => React.createElement(Text, props, children);
+  return MockCText;
 });
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({name}) => React.createElement('Text', {testID: `icon-${name}`}, name);
+  const MockIonicons = ({name}) => React.createElement('Text', {testID: `icon-${name}`}, name);
+  return MockIonicons;
 });
 
 jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({
+  const MockBaseRecordReviewScreen = ({
     headerTitle,
     instructionsText,
     actionButtons = [],
@@ -185,6 +188,7 @@ jest.mock('../../../../src/components/common/BaseRecordReviewScreen', () => {
           )
         : null,
     );
+  return MockBaseRecordReviewScreen;
 });
 
 describe('PhotoReviewScreen_new', () => {

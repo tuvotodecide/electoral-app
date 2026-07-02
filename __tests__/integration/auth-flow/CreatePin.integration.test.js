@@ -8,12 +8,14 @@ jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
 
-  return ({testID, handleTextChange, inputCount}) =>
+  const MockOtpTextInput = ({testID, handleTextChange, inputCount}) =>
     React.createElement(TextInput, {
       testID: testID || 'pinCreationInput',
       onChangeText: handleTextChange,
       maxLength: inputCount,
     });
+
+  return MockOtpTextInput;
 });
 
 describe('Flujo de integración de CreatePin', () => {

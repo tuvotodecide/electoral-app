@@ -1,7 +1,8 @@
 jest.mock('../../../../../src/components/modal/SelectCountryModal', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID: testID || 'countrySelectionModal'});
+  const MockSelectCountryModal = ({testID}) => React.createElement(View, {testID: testID || 'countrySelectionModal'});
+  return MockSelectCountryModal;
 });
 
 jest.mock('../../../../../src/assets/svg', () => {
@@ -34,7 +35,8 @@ jest.mock('react-native-vector-icons/Ionicons', () => {
 jest.mock('../../../../../src/components/modal/TakePictureModal', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID: testID || 'selfieWithIdCardModal'});
+  const MockTakePictureModal = ({testID}) => React.createElement(View, {testID: testID || 'selfieWithIdCardModal'});
+  return MockTakePictureModal;
 });
 
 export const limpiarMocksFlujoBiometria = () => {

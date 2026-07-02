@@ -15,8 +15,7 @@ jest.mock('react-native-vector-icons/Ionicons', () => {
     return React.createElement('Text', {
       testID: testID || `icon-${name}`,
       style: [{fontSize: size, color}, style],
-      children: name,
-    });
+    }, name);
   };
   return MockIcon;
 });
@@ -56,8 +55,9 @@ describe('CDropdown component', () => {
         theme: (state = {theme: mockTheme}) => state,
       },
     });
-    return ({children}) =>
+    const MockWrapper = ({children}) =>
       React.createElement(Provider, {store}, children);
+    return MockWrapper;
   };
 
   const renderWithProvider = (component) => {

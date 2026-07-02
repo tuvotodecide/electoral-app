@@ -22,13 +22,15 @@ jest.mock('@react-navigation/native');
 // Mock vector icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => {
   const React = require('react');
-  return ({name, testID, ...props}) =>
+  const MockMaterialIcons = ({name, testID, ...props}) =>
     React.createElement('Text', {testID: testID || `icon-${name}`, ...props}, name);
+  return MockMaterialIcons;
 });
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({name, testID, ...props}) =>
+  const MockIonicons = ({name, testID, ...props}) =>
     React.createElement('Text', {testID: testID || `icon-${name}`, ...props}, name);
+  return MockIonicons;
 });
 
 // Mock custom components

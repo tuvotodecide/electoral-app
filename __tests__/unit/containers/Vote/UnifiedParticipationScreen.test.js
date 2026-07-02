@@ -28,7 +28,7 @@ jest.mock(
 jest.mock('../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({title, onBack}) =>
+  const MockCHeader = ({title, onBack}) =>
     React.createElement(
       View,
       {testID: 'unifiedParticipationHeader'},
@@ -39,6 +39,7 @@ jest.mock('../../../../src/components/common/CHeader', () => {
         React.createElement(Text, null, 'back'),
       ),
     );
+  return MockCHeader;
 });
 
 describe('UnifiedParticipationScreen', () => {

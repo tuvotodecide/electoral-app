@@ -1,1 +1,70 @@
-#pnpm test
+#!/usr/bin/env bash
+
+set -u
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT_DIR" || exit 1
+
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+LINT_LOG="$TMP_DIR/lint.log"
+TEST_LOG="$TMP_DIR/test.log"
+
+printf "\n[pre-commit] Running lint check...\n"
+pnpm lint:check 2>&1 | tee "$LINT_LOG"
+LINT_STATUS=${PIPESTATUS[0]}
+
+if [[ $LINT_STATUS -ne 0 ]]; then
+	printf "\n[pre-commit] STATUS: FAILED\n"
+	printf "[pre-commit] Failed command: lint check\n"
+	exit 1
+fi
+
+printf "\n[pre-commit] Running tests with coverage...\n"
+pnpm test 2>&1 | tee "$TEST_LOG"
+TEST_STATUS=${PIPESTATUS[0]}
+
+if [[ $TEST_STATUS -ne 0 ]]; then
+	printf "\n[pre-commit] STATUS: FAILED\n"
+	printf "[pre-commit] Failed command: test execution\n"
+	exit 1
+fi
+
+printf "\n[pre-commit] Building Android release...\n"
+cd android && ./gradlew assembleRelease
+ANDROID_STATUS=$?
+cd "$ROOT_DIR" || exit 1
+
+if [[ $ANDROID_STATUS -ne 0 ]]; then
+	printf "\n[pre-commit] STATUS: FAILED\n"
+	printf "[pre-commit] Failed command: build Android release\n"
+	exit 1
+fi
+
+LINT_WARNINGS="$(node -e "const fs=require('fs');const p=process.argv[1];const text=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const summary=text.match(/problems?\s*\(\s*\d+\s+errors?,\s*(\d+)\s+warnings?\s*\)/i);if(summary){console.log(summary[1]);process.exit(0);}const fallbacks=[...text.matchAll(/^\s*\d+:\d+\s+warning\b/gim)];console.log(fallbacks.length);" "$LINT_LOG")"
+
+TOTAL_TESTS="$(node -e "const fs=require('fs');const p='jest-results.json';if(fs.existsSync(p)){try{const json=JSON.parse(fs.readFileSync(p,'utf8'));if(typeof json.numTotalTests==='number'){console.log(json.numTotalTests);process.exit(0);}}catch(_e){}}console.log('N/A');")"
+
+COVERAGE_ROWS="$(node -e "const fs=require('fs');const p='coverage/coverage-summary.json';if(!fs.existsSync(p)){process.exit(0);}const data=JSON.parse(fs.readFileSync(p,'utf8'));const total=data.total||{};const keys=['lines','statements','functions','branches'];for(const key of keys){const row=total[key]||{};const pct=typeof row.pct==='number'?row.pct.toFixed(2):'N/A';const covered=typeof row.covered==='number'?row.covered:'N/A';const all=typeof row.total==='number'?row.total:'N/A';console.log(key+'|'+pct+'|'+covered+'|'+all);}")"
+
+printf "\n==================== PRE-COMMIT SUMMARY ====================\n"
+printf "| %-30s | %-12s |\n" "Metric" "Value"
+printf "| %-30s | %-12s |\n" "Lint warning count" "$LINT_WARNINGS"
+printf "| %-30s | %-12s |\n" "Total tests" "$TOTAL_TESTS"
+
+if [[ -n "$COVERAGE_ROWS" ]]; then
+	printf "\nCoverage Table\n"
+	printf "| %-12s | %-10s | %-16s |\n" "Metric" "Percent" "Covered/Total"
+	while IFS='|' read -r METRIC PCT COVERED TOTAL; do
+		[[ -z "$METRIC" ]] && continue
+		printf "| %-12s | %-10s | %-16s |\n" "$METRIC" "$PCT" "$COVERED/$TOTAL"
+	done <<< "$COVERAGE_ROWS"
+else
+	printf "\nCoverage Table\n"
+	printf "No coverage summary found.\n"
+fi
+
+printf "============================================================\n"
+
+exit 0

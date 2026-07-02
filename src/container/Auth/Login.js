@@ -84,7 +84,7 @@ export default function Login({navigation}) {
     });
   };
 
-  const RenderSocialBtn = memo(({item}) => {
+  const RenderSocialBtn = memo(function SocialButton({item}) {
     return (
       <TouchableOpacity
         testID={`loginSocialButton_${item.name.toLowerCase()}`}

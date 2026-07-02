@@ -60,7 +60,7 @@ jest.mock('react-native-paper', () => ({
 jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => {
   const React = require('react');
   const {View, TouchableOpacity, Text, TextInput} = require('react-native');
-  return ({
+  const MockBaseSearchTableScreen = ({
     testID,
     isLoading,
     searchValue,
@@ -90,12 +90,13 @@ jest.mock('../../../../src/components/common/BaseSearchTableScreen', () => {
             ),
           ),
     );
+  return MockBaseSearchTableScreen;
 });
 
 jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({
+  const MockCustomModal = ({
     testID,
     visible,
     title,
@@ -125,6 +126,7 @@ jest.mock('../../../../src/components/common/CustomModal', () => {
             : null,
         )
       : null;
+  return MockCustomModal;
 });
 
 describe('SearchCountTable Screen', () => {

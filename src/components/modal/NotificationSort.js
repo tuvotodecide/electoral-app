@@ -102,7 +102,7 @@ export default function NotificationSort(props) {
       />
       <View style={localStyle.readTypeContainer}>
         {NotificationSortData.map((item, index) => {
-          return <NotificationReadCategory item={item} />;
+          return <NotificationReadCategory key={item.title} item={item} />;
         })}
         <CButton title={String.done} type={'B16'} onPress={onPressDone} />
       </View>

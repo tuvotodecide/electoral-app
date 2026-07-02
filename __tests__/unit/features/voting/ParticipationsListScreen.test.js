@@ -23,19 +23,22 @@ jest.mock('../../../../src/utils/normalizedUri', () => ({
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const ReactLib = require('react');
   const {View} = require('react-native');
-  return ({children}) => <View>{children}</View>;
+  const MockCSafeAreaView = ({children}) => <View>{children}</View>;
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../src/components/common/CHeader', () => {
   const ReactLib = require('react');
   const {Text} = require('react-native');
-  return ({title}) => <Text>{title}</Text>;
+  const MockCHeader = ({title}) => <Text>{title}</Text>;
+  return MockCHeader;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const ReactLib = require('react');
   const {Text} = require('react-native');
-  return ({children}) => <Text>{children}</Text>;
+  const MockCText = ({children}) => <Text>{children}</Text>;
+  return MockCText;
 });
 
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');

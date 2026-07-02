@@ -6,9 +6,8 @@ const MockIonicons = ({ name, size, color, style, onPress, ...props }) => {
     testID: `ionicon-${name}`,
     style: [{ fontSize: size, color }, style],
     onPress,
-    children: `Ionicons-${name}`,
     ...props,
-  });
+  }, `Ionicons-${name}`);
 };
 
 export default MockIonicons;

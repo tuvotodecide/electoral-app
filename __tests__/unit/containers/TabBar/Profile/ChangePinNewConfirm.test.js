@@ -19,7 +19,7 @@ jest.mock('../../../../../src/utils/ThemeUtils', () => ({
 jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
-  return React.forwardRef(({testID, handleTextChange, inputCount}, ref) => {
+  const MockOTPTextInput = ({testID, handleTextChange, inputCount}, ref) => {
     React.useImperativeHandle(ref, () => ({
       clear: jest.fn(),
     }));
@@ -28,51 +28,57 @@ jest.mock('react-native-otp-textinput', () => {
       onChangeText: handleTextChange,
       maxLength: inputCount,
     });
-  });
+  }
+  return React.forwardRef(MockOTPTextInput);
 });
 
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({testID}) => React.createElement(View, {testID});
+  const MockCHeader = ({testID}) => React.createElement(View, {testID});
+  return MockCHeader;
 });
 
 jest.mock('../../../../../src/components/common/KeyBoardAvoidWrapper', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockKeyBoardAvoidWrapper = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockKeyBoardAvoidWrapper;
 });
 
 jest.mock('../../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID}) =>
+  const MockCText = ({children, testID}) =>
     React.createElement(Text, {testID}, children);
+  return MockCText;
 });
 
 jest.mock('../../../../../src/components/common/CButton', () => {
   const React = require('react');
   const {TouchableOpacity, Text} = require('react-native');
-  return ({testID, title, onPress, disabled}) =>
+  const MockCButton = ({testID, title, onPress, disabled}) =>
     React.createElement(
       TouchableOpacity,
       {testID, onPress, disabled},
       React.createElement(Text, null, title),
     );
+  return MockCButton;
 });
 
 jest.mock('../../../../../src/components/modal/LoadingModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, visible, message, isLoading, success, onClose}) =>
+  const MockLoadingModal = ({testID, visible, message, isLoading, success, onClose}) =>
     visible
       ? React.createElement(
           View,
@@ -86,6 +92,7 @@ jest.mock('../../../../../src/components/modal/LoadingModal', () => {
             ),
         )
       : null;
+  return MockLoadingModal;
 });
 
 describe('ChangePinNewConfirm Screen', () => {

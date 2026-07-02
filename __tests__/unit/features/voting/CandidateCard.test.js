@@ -5,19 +5,22 @@ import CandidateCard from '../../../../src/features/voting/components/CandidateC
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, ...props}) => <Text {...props}>{children}</Text>;
+  const MockCText = ({children, ...props}) => <Text {...props}>{children}</Text>;
+  return MockCText;
 });
 
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({name}) => <Text>{name}</Text>;
+  const MockIonicons = ({name}) => <Text>{name}</Text>;
+  return MockIonicons;
 });
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({name}) => <Text>{name}</Text>;
+  const MockMaterialCommunityIcons = ({name}) => <Text>{name}</Text>;
+  return MockMaterialCommunityIcons;
 });
 
 describe('CandidateCard', () => {

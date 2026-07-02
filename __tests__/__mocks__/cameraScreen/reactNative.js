@@ -24,7 +24,8 @@ const createReactNativeMock = () => {
     }),
   }));
 
-  const MockImage = React.forwardRef((props, ref) => React.createElement(View, {...props, ref}));
+  const MockImageComponent = (props, ref) => React.createElement(View, {...props, ref});
+  const MockImage = React.forwardRef(MockImageComponent);
   MockImage.getSize = jest.fn((uri, success) => success?.(1200, 800));
   MockImage.getSizeWithHeaders = jest.fn((uri, headers, success) => success?.(1200, 800));
   MockImage.prefetch = jest.fn();
@@ -40,11 +41,12 @@ const createReactNativeMock = () => {
         )
       : null;
 
+  const MockedAnimated = (props, ref) => React.createElement(View, {...props, ref});
   const mockedAnimated = {
     Value: jest.fn(() => buildAnimatedValue()),
     timing: timingMock,
     parallel: parallelMock,
-    View: React.forwardRef((props, ref) => React.createElement(View, {...props, ref})),
+    View: React.forwardRef(MockedAnimated),
   };
 
   const mockedDimensions = {

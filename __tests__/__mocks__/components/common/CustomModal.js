@@ -20,20 +20,18 @@ const CustomModal = ({ visible, onClose, type, title, message, buttonText, testI
         React.createElement('Text', {
           key: 'title',
           testID: `${testID || 'customModal'}Title`,
-          children: title
-        }),
+        }, title),
         React.createElement('Text', {
           key: 'message',
           testID: `${testID || 'customModal'}Message`,
-          children: message
-        }),
+        }, message),
         React.createElement('View', { key: 'buttons' }, [
           React.createElement('TouchableOpacity', {
             testID: `${testID || 'customModal'}CloseButton`,
             onPress: onClose,
             key: 'primaryButton'
           }, [
-            React.createElement('Text', { key: 'buttonText', children: buttonText })
+            React.createElement('Text', { key: 'buttonText' }, buttonText)
           ])
         ])
       ])

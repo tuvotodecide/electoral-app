@@ -84,7 +84,7 @@ export default function SignUp({navigation}) {
   const onPressSignIn = () => {
     navigation.navigate(AuthNav.Login);
   };
-  const RenderSocialBtn = memo(({item}) => {
+  const RenderSocialBtn = memo(function SocialButton({item}) {
     return (
       <TouchableOpacity
         testID={`signUpSocialButton_${item.name.toLowerCase()}`}

@@ -84,7 +84,8 @@ jest.mock('react-native-paper', () => ({
 }));
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({name}) => React.createElement('Text', {testID: `icon-${name}`}, name);
+  const MockIonicons = ({name}) => React.createElement('Text', {testID: `icon-${name}`}, name);
+  return MockIonicons;
 });
 
 describe('SuccessScreen', () => {

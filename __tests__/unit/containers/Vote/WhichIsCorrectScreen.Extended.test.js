@@ -16,34 +16,38 @@ jest.mock('../../../../src/data/mockMesas', () => ({
 
 jest.mock('react-native-vector-icons/MaterialIcons', () => {
   const React = require('react');
-  return ({testID, name, ...props}) =>
+  const MockMaterialIcons = ({testID, name, ...props}) =>
     React.createElement('MaterialIcons', {testID, name, ...props});
+  return MockMaterialIcons;
 });
 
 jest.mock('react-native-vector-icons/Ionicons', () => {
   const React = require('react');
-  return ({testID, name, ...props}) =>
+  const MockIonicons = ({testID, name, ...props}) =>
     React.createElement('Ionicons', {testID, name, ...props});
+  return MockIonicons;
 });
 
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, testID}) =>
+  const MockCSafeAreaView = ({children, testID}) =>
     React.createElement(View, {testID}, children);
+  return MockCSafeAreaView;
 });
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({children, testID, ...props}) =>
+  const MockCText = ({children, testID, ...props}) =>
     React.createElement(Text, {testID, ...props}, children);
+  return MockCText;
 });
 
 jest.mock('../../../../src/components/common/UniversalHeader', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, onBack, title}) =>
+  const MockUniversalHeader = ({testID, onBack, title}) =>
     React.createElement(
       View,
       {testID},
@@ -54,12 +58,13 @@ jest.mock('../../../../src/components/common/UniversalHeader', () => {
         React.createElement(Text, null, 'Back'),
       ),
     );
+  return MockUniversalHeader;
 });
 
 jest.mock('../../../../src/components/common/CustomModal', () => {
   const React = require('react');
   const {View, Text, TouchableOpacity} = require('react-native');
-  return ({testID, visible, title, message, onConfirm, onClose}) =>
+  const MockCustomModal = ({testID, visible, title, message, onConfirm, onClose}) =>
     visible
       ? React.createElement(
           View,
@@ -73,6 +78,7 @@ jest.mock('../../../../src/components/common/CustomModal', () => {
           ),
         )
       : null;
+  return MockCustomModal;
 });
 
 jest.mock('../../../../src/utils/normalizedUri', () => ({

@@ -15,8 +15,7 @@ jest.mock('react-native-vector-icons/Ionicons', () => {
     return React.createElement('Text', {
       testID: testID || `icon-${name}`,
       style: [{fontSize: size, color}, style],
-      children: name,
-    });
+    }, name);
   };
   return MockIcon;
 });
