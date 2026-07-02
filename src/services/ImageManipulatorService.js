@@ -4,7 +4,7 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 export async function resizeImage(uri) {
   const imageContext = ImageManipulator.manipulate(uri);
   const renderedImage = await imageContext.resize({
-    height: 250,
+    height: 720,
   }).renderAsync();
 
   const result = await renderedImage.saveAsync({
