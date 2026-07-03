@@ -1,0 +1,35 @@
+{
+  "lastRunningTimeSecs": 25,
+  "integrations": {
+    "integrationsCount": 1,
+    "countedFrom": "2026-06-27T00:00:00.000Z",
+    "countedTo": "2026-07-04T00:00:00.000Z"
+  },
+  "preCommitSummary": {
+    "lintWarningCount": 609,
+    "totalTests": 1597,
+    "status": "SUCCESS"
+  },
+  "coverageTable": {
+    "lines": {
+      "percent": 68.56,
+      "covered": 5855,
+      "total": 8539
+    },
+    "statements": {
+      "percent": 67.34,
+      "covered": 6134,
+      "total": 9108
+    },
+    "functions": {
+      "percent": 67.88,
+      "covered": 1243,
+      "total": 1831
+    },
+    "branches": {
+      "percent": 52.96,
+      "covered": 4625,
+      "total": 8732
+    }
+  }
+}
