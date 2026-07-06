@@ -19,6 +19,7 @@ import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 
+import { captureError } from '../../../config/sentry';
 const {width: screenWidth} = Dimensions.get('window');
 
 // Responsive helper functions
@@ -137,6 +138,11 @@ const WhichIsCorrectScreen = () => {
         ]);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'WhichIsCorrectScreen_backup',
+        step: 'loadActasByMesa',
+        critical: false,
+      });
       showModal('error', String.error, String.errorLoadingActas);
       // Fallback con imagen por defecto
       setActaImages([

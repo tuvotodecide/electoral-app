@@ -9,7 +9,7 @@ import { useSearchTableLogic } from '../../hooks/useSearchTableLogic';
 import { createSearchTableStyles } from '../../styles/searchTableStyles';
 import { StackNav } from '../../navigation/NavigationKey';
 import Strings from '../../i18n/String';
-
+import { captureError } from '../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -80,7 +80,7 @@ const UnifiedTableScreen = ({ navigation, route }) => {
       setIsLoading(true);
       const list = await fetchTablesByLocationId(locationId);
       setMesas(list);
-    } catch (e) {
+    } catch (_e) {
       // si estás offline o falla, simplemente deja la lista como está (vacía)
     } finally {
       setIsLoading(false);
@@ -188,6 +188,11 @@ const UnifiedTableScreen = ({ navigation, route }) => {
         });
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'UnifiedTableScreen',
+        step: 'handleTablePress',
+        critical: true,
+      });
       // Default to upload flow if there's an error checking actas
       navigation.navigate(StackNav.TableDetail, {
         tableData: processedMesa,
@@ -227,6 +232,11 @@ const UnifiedTableScreen = ({ navigation, route }) => {
         return false;
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'UnifiedTableScreen',
+        step: 'checkTableHasActas',
+        critical: true,
+      });
       // If there's an error, assume no actas (default to upload flow)
       return false;
     }

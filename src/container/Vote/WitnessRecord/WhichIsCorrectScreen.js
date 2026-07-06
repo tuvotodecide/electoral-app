@@ -21,6 +21,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import { fetchActasByMesa } from '../../../data/mockMesas';
 import { normalizeUri } from '../../../utils/normalizedUri';
 import { useFocusEffect } from '@react-navigation/native';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -357,6 +358,11 @@ const WhichIsCorrectScreen = ({ navigation, route }) => {
         showModal('error', Strings.error, Strings.couldNotLoadActas);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'WhichIsCorrectScreen',
+        step: 'unknown',
+        critical: true,
+      });
       if (normalizedInitialActas.length === 0) {
         showModal('error', Strings.error, Strings.errorLoadingActas);
       }

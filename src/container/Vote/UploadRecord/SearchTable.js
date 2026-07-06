@@ -5,7 +5,7 @@ import {StyleSheet} from 'react-native';
 
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
-
+import { captureError } from '../../../config/sentry';
 
 export default function SearchTable({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -59,6 +59,11 @@ export default function SearchTable({navigation, route}) {
         setMesas([]);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'SearchTable',
+        step: 'loadMesasFromApi',
+        critical: true,
+      });
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);

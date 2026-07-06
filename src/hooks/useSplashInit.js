@@ -45,8 +45,6 @@ export const useSplashInit = (navigation) => {
         const {status, info} = JSON.parse(data);
         const safeInfo = String(info ?? '');
 
-        console.log(Date.now(), 'Circuit Download Status:', status, 'Info:', safeInfo);
-
         switch (status) {
           case CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING:
             if (safeInfo.startsWith('-')) {

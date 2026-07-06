@@ -13,6 +13,7 @@ import BaseRecordReviewScreen from '../../../components/common/BaseRecordReviewS
 import { MaterialIcons } from '@expo/vector-icons';
 import String from '../../../i18n/String';
 import {buildIpfsCandidates, normalizeUri} from '../../../utils/normalizedUri';
+import { captureError } from '../../../config/sentry';
 import {
   getContextOfficeLabels,
   hasSecondaryBlockElection,
@@ -68,6 +69,11 @@ const ActaDetailScreen = () => {
         };
       });
     } catch (error) {
+      captureError(error, {
+        flow: 'ActaDetailScreen',
+        step: 'ActaDetailScreen',
+        critical: false,
+      });
       return [];
     }
   }, [rawPartyResults]);
@@ -97,6 +103,11 @@ const ActaDetailScreen = () => {
         },
       ];
     } catch (error) {
+      captureError(error, {
+        flow: 'ActaDetailScreen',
+        step: 'ActaDetailScreen',
+        critical: false,
+      });
       return [];
     }
   }, [rawVoteSummaryResults]);

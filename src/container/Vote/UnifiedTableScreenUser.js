@@ -17,6 +17,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {LAST_TOPIC_KEY} from '../../common/constants';
 import {saveVotePlace} from '../../utils/offlineQueue';
+import { captureError } from '../../config/sentry';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -90,6 +91,11 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         showModal('error', Strings.error, Strings.couldNotLoadTables);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'UnifiedTableScreenUser',
+        step: 'loadTables',
+        critical: true,
+      });
       showModal('error', Strings.error, Strings.errorLoadingTables);
     } finally {
       setIsLoading(false);
@@ -156,7 +162,13 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         }
         await subscribeToLocationTopic(locationData.locationId);
         await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
-      } catch (e) {}
+      } catch (e) {
+        captureError(e, {
+          flow: 'UnifiedTableScreenUser',
+          step: 'saveSelectedMesa',
+          critical: true,
+        });
+      }
       const fullLocation = route?.params?.locationData || {
         _id: locationData.locationId,
         name: locationData.name,
@@ -195,6 +207,11 @@ const UnifiedTableScreenUser = ({navigation, route}) => {
         },
       );
     } catch (error) {
+      captureError(error, {
+        flow: 'UnifiedTableScreenUser',
+        step: 'saveSelectedMesa',
+        critical: true,
+      });
       const msg =
         (error?.response?.data?.message &&
           (Array.isArray(error.response.data.message)

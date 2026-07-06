@@ -27,6 +27,7 @@ import { StackNav } from '@/src/navigation/NavigationKey';
 import { moderateScale } from '@/src/common/constants';
 import typography from '@/src/themes/typography';
 
+import { captureError } from '../../../config/sentry';
 const recoveryService = new wira.RecoveryService();
 
 export default function RecuperationQR({ navigation }) {
@@ -48,6 +49,11 @@ export default function RecuperationQR({ navigation }) {
       await saveData();
       await checkBackupAsStored();
     } catch (error) {
+      captureError(error, {
+        flow: 'RecuperationQR',
+        step: 'initSaveQr',
+        critical: true,
+      });
       Alert.alert('Error', error.message, [
         {text: 'OK', style: 'default'},
         {text: 'Abrir configuración', onPress: () => openSettings()},
@@ -79,6 +85,12 @@ export default function RecuperationQR({ navigation }) {
         errorMessage = String.badDirectoryMessage;
       } else if (error.message.includes('Invalid PIN')) {
         errorMessage = String.incorrectPinError;
+      } else {
+        captureError(error, {
+          flow: 'RecuperationQR',
+          step: 'saveData',
+          critical: true,
+        });
       }
 
       const buttons = [

@@ -8,9 +8,8 @@ import CText from './CText';
 import Icono from './Icono';
 
 export default function CHash({
-  title,
   text,
-  icon = null,
+  copyContent,
   containerStyle,
   textStyle,
   textColor,
@@ -41,7 +40,7 @@ export default function CHash({
   };
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(text);
+    await Clipboard.setStringAsync(copyContent || text);
     showToast();
   };
 

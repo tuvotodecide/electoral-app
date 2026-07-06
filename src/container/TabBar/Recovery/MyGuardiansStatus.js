@@ -28,8 +28,7 @@ import LoadingModal from '../../../components/modal/LoadingModal';
 
 import { truncateDid } from '../../../utils/Address';
 import { FlashList } from '@shopify/flash-list';
-
-
+import { captureError } from '../../../config/sentry';
 
 const statusColorKey = {
   APPROVED: 'activeColor',
@@ -113,7 +112,11 @@ export default function MyGuardiansStatus({navigation}) {
         })
         navigation.replace(AuthNav.RecoveryUser1Pin, {recData});
       }).catch(e => {
-        console.error('Recovery init error:', e);
+        captureError(e, {
+          flow: 'MyGuardiansStatus',
+          step: 'initRecovery',
+          critical: true,
+        });
       });
     } else if (safeDetail.status === 'REJECTED') {
       remove();

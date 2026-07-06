@@ -23,6 +23,7 @@ import {executeOperation} from '../../../api/account';
 import {oracleCalls, oracleReads} from '../../../api/oracle';
 import InfoModal from '../../../components/modal/InfoModal';
 import axios from 'axios';
+import { captureError } from '../../../config/sentry';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -84,7 +85,7 @@ const RecordCertificationScreen = () => {
         ],
       };
 
-      const response = await axios.post(url, payload, {
+      await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
        'x-api-key': BACKEND_SECRET 
@@ -94,8 +95,11 @@ const RecordCertificationScreen = () => {
 
       return true;
     } catch (error) {
-
-
+      captureError(error, {
+        flow: 'RecordCertificationScreen',
+        step: 'uploadAttestation',
+        critical: false,
+      });
       return false;
     }
   };
@@ -162,6 +166,11 @@ const RecordCertificationScreen = () => {
       // Show NFT modal directly instead of navigating to SuccessScreen
       setShowNFTCertificate(true);
     } catch (error) {
+      captureError(error, {
+        flow: 'RecordCertificationScreen',
+        step: 'confirmCertification',
+        critical: false,
+      });
       setShowConfirmModal(false);
       let message = error.message;
       if (error.message.indexOf('616c7265616479206174746573746564') >= 0) {
@@ -673,7 +682,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
-export const modalStyles = StyleSheet.create({
+const modalStyles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',

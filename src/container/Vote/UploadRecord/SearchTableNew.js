@@ -6,6 +6,7 @@ import {StyleSheet} from 'react-native';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import String from '../../../i18n/String';
 
+import { captureError } from '../../../config/sentry';
 import {
   fetchMesas,
 } from '../../../data/mockMesas';
@@ -65,6 +66,11 @@ export default function SearchTable({navigation, route}) {
         setMesas([]);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'SearchTableNew',
+        step: 'loadMesasFromApi',
+        critical: false,
+      });
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);
@@ -85,6 +91,11 @@ export default function SearchTable({navigation, route}) {
         setMesas([]);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'SearchTableNew',
+        step: 'loadMesas',
+        critical: false,
+      });
       setMesas([]);
     } finally {
       setIsLoadingMesas(false);

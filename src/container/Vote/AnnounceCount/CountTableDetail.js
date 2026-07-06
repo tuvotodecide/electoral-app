@@ -15,7 +15,7 @@ import CText from '../../../components/common/CText';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import String from '../../../i18n/String';
 import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
-
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -109,6 +109,11 @@ export default function CountTableDetail({ navigation, route }) {
       }, 1500);
 
     } catch (error) {
+      captureError(error, {
+        flow: 'CountTableDetail',
+        step: 'handleConfirmCount',
+        critical: true,
+      });
       setLoading(false);
       setSuccess(false);
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 
 // custom import
@@ -22,6 +22,9 @@ export default function Connect({ navigation }) {
 
   useEffect(() => {
     const checkUserData = async () => {
+      if (Platform.OS === 'ios') {
+        await wira.Storage.checkFirstLaunch();
+      }
       const response = await wira.Storage.checkUserData();
       if (response) {
         navigation.replace(AuthNav.LoginUser);

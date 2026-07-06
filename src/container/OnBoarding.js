@@ -1,4 +1,5 @@
 import {
+  FlatList,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -6,7 +7,6 @@ import {
 } from 'react-native';
 import React, {useCallback, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
-import { FlashList } from '@shopify/flash-list';
 
 // custom import
 import {deviceWidth, getHeight, moderateScale} from '../common/constants';
@@ -24,6 +24,7 @@ export default function OnBoarding({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideRef = useRef(null);
+  const lastSlideIndex = OnBoardingData.length - 1;
 
 
   const _onViewableItemsChanged = useCallback(({viewableItems}) => {
@@ -33,7 +34,7 @@ export default function OnBoarding({navigation}) {
   const _onViewabilityConfig = {itemVisiblePercentThreshold: 50};
 
   const onPressGetStarted = async () => {
-    if (currentIndex === 4) {
+    if (currentIndex >= lastSlideIndex) {
       await setOnBoarding(true);
       navigation.reset({
         index: 0,
@@ -45,8 +46,10 @@ export default function OnBoarding({navigation}) {
         ],
       });
     } else {
-      slideRef.current._listRef._scrollRef.scrollTo({
-        x: deviceWidth * (currentIndex + 1),
+      const nextIndex = currentIndex + 1;
+      slideRef.current?.scrollToOffset({
+        offset: nextIndex * deviceWidth,
+        animated: true,
       });
     }
   };
@@ -101,7 +104,7 @@ export default function OnBoarding({navigation}) {
           <MaterialCommunityIcons name="close" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
-      <FlashList
+      <FlatList
         data={OnBoardingData}
         renderItem={({item, index}) => (
           <RenderItemData item={item} index={index} />
@@ -113,6 +116,11 @@ export default function OnBoarding({navigation}) {
         bounces={false}
         onViewableItemsChanged={_onViewableItemsChanged}
         viewabilityConfig={_onViewabilityConfig}
+        getItemLayout={(_, index) => ({
+          length: deviceWidth,
+          offset: deviceWidth * index,
+          index,
+        })}
         pagingEnabled
         testID="onboardingFlatList"
       />

@@ -337,8 +337,10 @@ export default {
   security2Subtitle: 'Usa tu rostro para login',
   security3Title: 'Correo electrónico',
   security3Subtitle: 'Crear tu correo',
-  security4Title: 'Huella dactilar',
-  security4Subtitle: 'Activar huella',
+  security4TitleAndroid: 'Huella dactilar',
+  security4TitleIos: 'Face ID / Touch ID',
+  security4SubtitleAndroid: 'Activar huella',
+  security4SubtitleIos: 'Activar Face ID / Touch ID',
   showName: 'Nombre público',
   showNameValue: 'Tu nombre será visible para otros usuarios',
 

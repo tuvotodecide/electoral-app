@@ -24,6 +24,7 @@ import { styles } from '../../themes';
 import SimpleModal from '../../components/modal/SimpleModal';
 import CInput from '@/src/components/common/CInput';
 import CIconButton from '@/src/components/common/CIconButton';
+import { captureError } from '@/src/config/sentry';
 
 export default function RegisterUser2({navigation, route}) {
   const isRecovery = !!route?.params?.isRecovery;
@@ -151,6 +152,11 @@ export default function RegisterUser2({navigation, route}) {
           if (msg.includes('Network Error')) {
             Alert.alert(String.error, String.networkError);
           } else {
+            captureError(err, {
+              flow: 'RegisterUser2',
+              step: 'handleCheckAndNext',
+              critical: true,
+            });
             Alert.alert(String.error, msg);
           }
         });

@@ -24,6 +24,7 @@ import axios from 'axios';
 import {getAll as getOfflineQueue} from '../../../utils/offlineQueue';
 import {getAttestationAvailabilityCache} from '../../../utils/attestationAvailabilityCache';
 import {normalizeElectionTypeParam} from '../../../utils/electionContext';
+import { captureError } from '../../../config/sentry';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -97,6 +98,11 @@ const MyWitnessesListScreen = () => {
       const pending = (list || []).some(i => isQueueWriteTask(i?.task?.type));
       setHasPendingActa(pending);
     } catch (error) {
+      captureError(error, {
+        flow: 'MyWitnessesListScreen',
+        step: 'pending',
+        critical: true,
+      });
       setHasPendingActa(false);
     }
   }, []);
@@ -198,7 +204,13 @@ const MyWitnessesListScreen = () => {
             );
             return ballotResponse.data;
           } catch (error) {
-            return null;
+            
+            captureError(error, {
+              flow: 'MyWitnessesListScreen',
+              step: 'loadWitnessRecords',
+              critical: true,
+            });
+return null;
           }
         }),
       );
@@ -332,7 +344,13 @@ const MyWitnessesListScreen = () => {
       setWitnessRecords(transformedData);
       setHasNoAttestations(false);
     } catch (error) {
-      if (error.response?.status === 404) {
+      
+      captureError(error, {
+        flow: 'MyWitnessesListScreen',
+        step: 'diputado',
+        critical: true,
+      });
+if (error.response?.status === 404) {
         setHasNoAttestations(true);
         setWitnessRecords([]);
       } else if (isOfflineRequestError(error)) {

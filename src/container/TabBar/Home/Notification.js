@@ -28,6 +28,7 @@ import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { FlashList } from '@shopify/flash-list';
 
+import { captureError } from '../../../config/sentry';
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
     .trim()
@@ -504,6 +505,11 @@ export default function Notification({ navigation }) {
         );
         if (mounted) setApiKey(key);
       } catch (e) {
+        captureError(e, {
+          flow: 'Notification',
+          step: 'Authenticate with backend',
+          critical: true,
+        });
         if (mounted) setApiKey(null);
       } finally {
         if (mounted) setAuthResolved(true);
@@ -585,7 +591,7 @@ export default function Notification({ navigation }) {
           .sort((a, b) => b.timestamp - a.timestamp);
         setItems(mapped);
         await markNotificationsAsSeen(mapped);
-      } catch (error) {
+      } catch (_e) {
         const cachedEntry = await getCache(notificationsCacheKey(dni));
         const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
         const localList = await getLocalStoredNotifications(dni);

@@ -23,6 +23,7 @@ import String from '../../../i18n/String';
 import * as ImagePicker from 'expo-image-picker';
 import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQuality';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { captureError } from '../../../config/sentry';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const isTablet = windowWidth >= 768;
@@ -108,7 +109,7 @@ export default function CameraScreen({ navigation, route }) {
   let NetInfoSafe = null;
   try {
     NetInfoSafe = require('@react-native-community/netinfo').default;
-  } catch (e) {
+  } catch (_e) {
     NetInfoSafe = null;
   }
 
@@ -195,6 +196,11 @@ export default function CameraScreen({ navigation, route }) {
         setIsActive(false);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'CameraScreen',
+        step: 'openGallery',
+        critical: true,
+      });
       Alert.alert('Error', 'Hubo un error al abrir la galería');
     }
   };
@@ -563,7 +569,6 @@ export default function CameraScreen({ navigation, route }) {
 
       setIsActive(false);
     } catch (err) {
-      console.error('[CAMERA-SCREEN] ❌ Error al capturar foto:', err.message);
       // Specific handling for "camera already in use" error
       if (
         err.code === 'E_CAMERA_IS_BEING_USED' ||
@@ -579,6 +584,11 @@ export default function CameraScreen({ navigation, route }) {
           }
         }, 2000);
       }
+      captureError(err, {
+        flow: 'CameraScreen',
+        step: 'takePhoto',
+        critical: true,
+      });
 
       Alert.alert(String.cameraErrorTitle, String.cameraErrorMessage, [
         {

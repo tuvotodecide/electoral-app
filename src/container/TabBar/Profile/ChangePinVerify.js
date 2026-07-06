@@ -19,6 +19,7 @@ import typography from '../../../themes/typography';
 import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
+import { captureError } from '../../../config/sentry';
 export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [verifying, setVerifying] = useState(false);
@@ -42,6 +43,11 @@ export default function ChangePinVerify({navigation}) {
         });
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'ChangePinVerify',
+        step: 'verify',
+        critical: true,
+      });
       otpRef.current?.clear();
       setModal({
         visible: true,

@@ -25,6 +25,7 @@ import { StackNav } from '../../../navigation/NavigationKey';
 
 import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { enqueue, getAll as getOfflineQueue } from '../../../utils/offlineQueue';
+import { captureError } from '../../../config/sentry';
 import {
   getWorksheetLocalStatus,
   upsertWorksheetLocalStatus,
@@ -198,6 +199,11 @@ const firstFulfilled = async promises => {
       Promise.resolve(task)
         .then(resolve)
         .catch(error => {
+          captureError(error, {
+            flow: 'TableDetail',
+            step: 'firstFulfilled',
+            critical: true,
+          });
           errors[index] = error;
           rejected += 1;
           if (rejected === tasks.length) {
@@ -273,6 +279,11 @@ const withTimeout = (promise, timeoutMs = 12000) =>
         resolve(value);
       })
       .catch(error => {
+        captureError(error, {
+          flow: 'TableDetail',
+          step: 'withTimeout',
+          critical: true,
+        });
         clearTimeout(timeoutId);
         reject(error);
       });
@@ -862,6 +873,11 @@ export default function TableDetail({ navigation, route }) {
         try {
           records = await fetchExistingRecordsByTable(matchedMesa.codigo);
         } catch (error) {
+          captureError(error, {
+            flow: 'TableDetail',
+            step: 'handleMesaSearch',
+            critical: false,
+          });
           // Si no encuentra registros, continuar sin error
           if (error?.response?.status !== 404) {
             records = [];
@@ -1240,6 +1256,11 @@ export default function TableDetail({ navigation, route }) {
       );
     } catch (error) {
       if (isMountedRef.current) {
+        captureError(error, {
+          flow: 'TableDetail',
+          step: 'alreadyQueued',
+          critical: true,
+        });
         setWorksheetFeedback(
           error?.response?.data?.message ||
           error?.message ||
@@ -1305,7 +1326,14 @@ export default function TableDetail({ navigation, route }) {
           },
         );
         data = summaryResponse?.data;
-        if (!data) throw detailError;
+        if (!data) {
+          captureError(detailError, {
+            flow: 'TableDetail',
+            step: 'loadFromBackend',
+            critical: true,
+          });
+          throw detailError;
+        };
       }
 
       const backendStatus = String(data?.status || '').toUpperCase();
@@ -1372,6 +1400,11 @@ export default function TableDetail({ navigation, route }) {
       });
     } catch (error) {
       if (isMountedRef.current) {
+        captureError(error, {
+          flow: 'TableDetail',
+          step: 'loadFromBackend',
+          critical: true,
+        });
         setWorksheetFeedback(
           error?.message ||
           'No se pudo cargar el acta subida. Intenta nuevamente.',

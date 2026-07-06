@@ -23,6 +23,7 @@ import { Ionicons, Entypo } from '@expo/vector-icons';
 import wira from 'wira-sdk';
 
 
+import { captureError } from '../../../config/sentry';
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
@@ -50,6 +51,11 @@ export default function Security({navigation}) {
       } else if (err.message === 'User cancelled biometric change'){
         setBioEnabled(false);
       } else {
+        captureError(err, {
+          flow: 'Security',
+          step: 'toggleBio',
+          critical: true,
+        });
         Alert.alert('Error', err?.message || 'No se pudo cambiar la biometría');
       }
     }
@@ -90,6 +96,7 @@ export default function Security({navigation}) {
               true: color.primary,
             }}
             thumbColor={color.white}
+            style={localStyle.switch}
           />
         </View>
       );
@@ -190,4 +197,7 @@ const localStyle = StyleSheet.create({
     ...styles.ph10,
     borderWidth: moderateScale(1),
   },
+  switch: {
+    alignSelf: 'center'
+  }
 });

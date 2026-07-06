@@ -20,7 +20,7 @@ import CInput from '../../../components/common/CInput';
 import InfoModal from '../../../components/modal/InfoModal';
 import { useGuardiansInviteQuery } from '../../../data/guardians';
 import { useKycFindPublicQuery } from '../../../data/kyc';
-
+import { captureError } from '../../../config/sentry';
 
 export default function AddGuardians() {
   const colors = useSelector(state => state.theme.theme);
@@ -88,6 +88,11 @@ export default function AddGuardians() {
       setCandidate(null);
       setNick('');
     } catch (err) {
+      captureError(err, {
+        flow: 'AddGuardians',
+        step: 'onPressInvitation',
+        critical: true,
+      });
       const message =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message

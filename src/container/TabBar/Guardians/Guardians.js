@@ -29,6 +29,7 @@ import CInput from '../../../components/common/CInput';
 import CIconButton from '../../../components/common/CIconButton';
 import { FlashList } from '@shopify/flash-list';
 
+import { captureError } from '../../../config/sentry';
 const statusColorKey = {
   ACCEPTED: 'activeColor',
   PENDING: 'pendingColor',
@@ -100,6 +101,11 @@ export default function Guardians({navigation}) {
         throw new Error('Error updating guardian threshold');
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'Guardians',
+        step: 'onSaveGuardianThreshold',
+        critical: true,
+      });
       setThresholdError(error.message);
       throw error;
     }
@@ -127,6 +133,11 @@ export default function Guardians({navigation}) {
         closeModal();
       }});
     } catch (e) {
+      captureError(e, {
+        flow: 'Guardians',
+        step: 'deleteGuardian',
+        critical: true,
+      });
     }
   };
   const saveGuardian = newNick => {
@@ -277,7 +288,7 @@ export default function Guardians({navigation}) {
         <CText type={'B16'} align={'center'} marginTop={15} testID="guardiansSubtitle">
           {String.guardiansSubtitle}
         </CText>
-        {guardians.length == 0 && <InfoCard />}
+        {guardians.length === 0 && <InfoCard />}
         <FlashList
           data={visibleGuardians}
           keyExtractor={item => item.id}

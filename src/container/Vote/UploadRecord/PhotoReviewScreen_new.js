@@ -27,6 +27,7 @@ import {authenticateWithBackend} from '../../../utils/offlineQueueHandler';
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 import {enqueue, getAll as getOfflineQueue} from '../../../utils/offlineQueue';
 import {persistLocalImage} from '../../../utils/persistLocalImage';
+import { captureError } from '../../../config/sentry';
 import {
   WorksheetStatus,
   upsertWorksheetLocalStatus,
@@ -829,6 +830,11 @@ const PhotoReviewScreen = () => {
         buttonText: 'Ir al Inicio',
       });
     } catch (error) {
+      captureError(error, {
+        flow: 'PhotoReviewScreen_new',
+        step: 'alreadyQueued',
+        critical: true,
+      });
       setShowWorksheetConfirmModal(false);
       setInfoModalData({
         visible: true,

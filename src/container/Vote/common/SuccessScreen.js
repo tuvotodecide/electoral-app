@@ -23,6 +23,7 @@ import InfoModal from '../../../components/modal/InfoModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
 import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { normalizeUri } from '../../../utils/normalizedUri';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isTablet = screenWidth >= 768;
@@ -198,7 +199,11 @@ const SuccessScreen = () => {
       } else if (result.action === Share.dismissedAction) {
       }
     } catch (error) {
-      console.error('[SUCCESS] share nft error', error);
+      captureError(error, {
+        flow: 'SuccessScreen',
+        step: 'handleShareNft',
+        critical: true,
+      });
       setInfoModalData({
         visible: true,
         title: 'Error',
@@ -228,7 +233,11 @@ const SuccessScreen = () => {
         subject: 'Acta en IPFS',
       });
     } catch (error) {
-      console.error('[SUCCESS] share acta error', error);
+      captureError(error, {
+        flow: 'SuccessScreen',
+        step: 'handleShareActa',
+        critical: true,
+      });
       setInfoModalData({
         visible: true,
         title: 'Error',

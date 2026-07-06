@@ -13,12 +13,10 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CText from '../../../components/common/CText';
 import {StyleSheet, View} from 'react-native';
 import {styles} from '../../../themes';
-
 import wira from 'wira-sdk';
 
-
-
 import { resetAttempts } from '../../../utils/PinAttempts';
+import { captureError } from '../../../config/sentry';
 export default function RecoveryFinalize({route, navigation}) {
   const dispatch = useDispatch();
   const {originalPin, recData} = route.params;
@@ -35,7 +33,11 @@ export default function RecoveryFinalize({route, navigation}) {
         await startSession(null);
         navigation.navigate(AuthNav.LoginUser);
       } catch (error) {
-        console.error('Recovery finalization error:', error);
+        captureError(error, {
+          flow: 'RecoveryFinalize',
+          step: 'RecoveryFinalize',
+          critical: true,
+        });
         navigation.replace(AuthNav.SelectRecuperation);
       }
     })();

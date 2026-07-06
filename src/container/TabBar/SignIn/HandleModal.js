@@ -5,6 +5,7 @@ import InfoModal from "../../../components/modal/InfoModal";
 import wira from 'wira-sdk';
 import String from "../../../i18n/String";
 import { AuthNav } from "../../../navigation/NavigationKey";
+import { captureError } from '../../../config/sentry';
 
 const defaultModalState = {
   visible: false,
@@ -53,6 +54,11 @@ export function HandleModal({navigation}) {
     try {
       await sharedSession.onShareSession(sharedUrl, accept);
     } catch (error) {
+      captureError(error, {
+        flow: 'HandleModal',
+        step: 'handleCloseModal',
+        critical: true,
+      });
       setModal({
         visible: true,
         title: String.error,

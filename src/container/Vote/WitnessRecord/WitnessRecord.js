@@ -9,6 +9,7 @@ import {createSearchTableStyles} from '../../../styles/searchTableStyles';
 import {fetchMesas} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import { captureError } from '../../../config/sentry';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -92,7 +93,11 @@ const WitnessRecordScreen = ({navigation, route}) => {
           showModal('info', String.info, String.couldNotLoadTables);
         }
       } catch (error) {
-
+        captureError(error, {
+          flow: 'WitnessRecord',
+          step: 'loadTablesFromApi',
+          critical: true,
+        });
         showModal('error', String.error, String.errorLoadingTables);
       } finally {
         setIsLoading(false);
@@ -111,7 +116,12 @@ const WitnessRecordScreen = ({navigation, route}) => {
         } else {
           showModal('error', String.error, String.couldNotLoadTables);
         }
-      } catch (_) {
+      } catch (error) {
+        captureError(error, {
+          flow: 'WitnessRecord',
+          step: 'loadTables',
+          critical: true,
+        });
         showModal('error', String.error, String.errorLoadingTables);
       } finally {
         setIsLoading(false);
@@ -173,8 +183,12 @@ const WitnessRecordScreen = ({navigation, route}) => {
         electionType,
       });
  
-    } catch (_) {
-
+    } catch (error) {
+      captureError(error, {
+        flow: 'WitnessRecord',
+        step: 'handleTablePress',
+        critical: true,
+      });
     }
   };
 

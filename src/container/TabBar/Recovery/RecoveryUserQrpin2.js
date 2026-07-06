@@ -20,11 +20,10 @@ import { styles } from '../../../themes';
 import typography from '../../../themes/typography';
 import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
-
-
 import wira from 'wira-sdk';
 import LoadingModal from '../../../components/modal/LoadingModal';
 import { resetAttempts } from '../../../utils/PinAttempts';
+import { captureError } from '../../../config/sentry';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -62,6 +61,11 @@ export default function RecoveryUserQrPin2({navigation, route}) {
 
       navigation.reset({index: 0, routes: [{name: AuthNav.LoginUser}]});
     } catch (err) {
+      captureError(err, {
+        flow: 'RecoveryUserQrpin2',
+        step: 'finish',
+        critical: true,
+      });
       setModal({
         visible: true,
         message: 'Error: ' + err.message,

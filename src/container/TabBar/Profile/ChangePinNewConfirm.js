@@ -21,6 +21,7 @@ import typography from '../../../themes/typography';
 import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
+import { captureError } from '../../../config/sentry';
 export default function ChangePinNewConfirm({navigation, route}) {
   const {oldPin, newPin} = route.params;
   const colors = useSelector(state => state.theme.theme);
@@ -57,6 +58,11 @@ export default function ChangePinNewConfirm({navigation, route}) {
         isLoading: false,
       });
     } catch (err) {
+      captureError(err, {
+        flow: 'ChangePinNewConfirm',
+        step: 'finish',
+        critical: true,
+      });
       setModal({visible: true, message: err.message, isLoading: false, success: false});
     }
   };

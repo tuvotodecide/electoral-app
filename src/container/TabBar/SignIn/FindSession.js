@@ -13,6 +13,7 @@ import CInput from "../../../components/common/CInput";
 import CAlert from "../../../components/common/CAlert";
 import CText from "../../../components/common/CText";
 import CButton from "../../../components/common/CButton";
+import { captureError } from '../../../config/sentry';
 
 const sharedSession = new wira.SharedSession(
   BACKEND_IDENTITY,
@@ -37,6 +38,11 @@ export default function FindSession() {
       ) {
         setErrorMsg(String.deviceNotFound);
       } else {
+        captureError(error, {
+          flow: 'FindSession',
+          step: 'findApps',
+          critical: true,
+        });
         setErrorMsg(error.message || String.deviceGetError);
       }
     } finally {

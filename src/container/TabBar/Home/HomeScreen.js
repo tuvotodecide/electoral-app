@@ -2470,6 +2470,13 @@ export default function HomeScreen({ navigation, route }) {
           title: 'Resultados',
         });
         return;
+      } else {
+        captureError(new Error('Missing results URL for election'), {
+          flow: 'voting_flow',
+          step: 'results_url_missing',
+          critical: true,
+        });
+        return;
       }
     }
 
@@ -2542,9 +2549,9 @@ export default function HomeScreen({ navigation, route }) {
           data={votingElections}
           keyExtractor={(item, index) => String(item?.id || index)}
           horizontal
-          pagingEnabled
           showsHorizontalScrollIndicator={false}
           decelerationRate="fast"
+          snapToInterval={cardWidth}
           snapToAlignment="center"
           onMomentumScrollEnd={event => {
             const index = Math.round(

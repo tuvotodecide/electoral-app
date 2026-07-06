@@ -207,6 +207,11 @@ export default function LoginUser({ navigation, route }) {
           if (error?.message?.includes('Invalid PIN')) {
             return { ok: false, type: 'bad_pin' };
           } else {
+            captureError(error, {
+              flow: 'LoginUser',
+              step: 'verifyPin.wiraSignIn',
+              critical: true,
+            });
             logNetworkIssue('wira.signIn', error, {
               stage: 'verifyPin',
             });
@@ -221,6 +226,11 @@ export default function LoginUser({ navigation, route }) {
             userDid: userData.did,
           });
         } catch (apiError) {
+          captureError(apiError, {
+            flow: 'LoginUser',
+            step: 'verifyPin.deviceToken',
+            critical: true,
+          });
           logNetworkIssue('guardianApi.deviceToken', apiError, {
             stage: 'verifyPin',
             context: 'deviceToken',
@@ -231,6 +241,11 @@ export default function LoginUser({ navigation, route }) {
         return { ok: false, type: 'no_local_secrets' };
       }
     } catch (err) {
+      captureError(err, {
+        flow: 'LoginUser',
+        step: 'verifyPin',
+        critical: true,
+      });
       logNetworkIssue('verifyPin', err, {
         stage: 'verifyPin',
         attemptCode: code,

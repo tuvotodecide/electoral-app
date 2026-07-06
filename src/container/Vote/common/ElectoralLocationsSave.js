@@ -34,6 +34,7 @@ import {
   unsubscribeFromLocationTopic,
 } from '../../../services/notifications';
 import { FlashList } from '@shopify/flash-list';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -86,8 +87,12 @@ const warmTablesCacheByLocationId = async ({
 
       return;
     }
-  } catch (_) {
-
+  } catch (error) {
+    captureError(error, {
+      flow: 'ElectoralLocationsSave',
+      step: 'warmTablesCacheByLocationId',
+      critical: true,
+    });
   }
 
   try {
@@ -98,8 +103,12 @@ const warmTablesCacheByLocationId = async ({
       await setCache(cacheKey, list, { version: 'tables-v1' });
 
     }
-  } catch (_) {
-
+  } catch (error) {
+    captureError(error, {
+      flow: 'ElectoralLocationsSave',
+      step: 'warmTablesCacheByLocationId',
+      critical: true,
+    });
   }
 };
 
@@ -245,11 +254,14 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
-
+      captureError(error, {
+        flow: 'ElectoralLocationsSave',
+        step: 'fetchNearbyLocations',
+        critical: false,
+      });
       if (cachedLocations.length > 0) {
         return;
       }
-      console.error('Error fetching locations:', error);
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
         errorMessage = i18nString.connectionTimeout;
@@ -318,7 +330,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
           setUserLocation({ latitude, longitude });
           fetchNearbyLocations(latitude, longitude);
         } catch (error) {
-          console.error('Error getting location:', error);
           if (useHighAccuracy && (error.code === 2 || error.code === 3)) {
             getCurrentLocation(retryCount + 1, false);
             return;
@@ -339,6 +350,12 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
             errorMessage = i18nString.locationDisabledMessage;
             modalTitle = i18nString.locationRequired;
             action = openLocationSettings;
+          } else {
+            captureError(error, {
+              flow: 'ElectoralLocationsSave',
+              step: 'openLocationSettings',
+              critical: true,
+            });
           }
 
           showModal(
@@ -355,7 +372,11 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error requesting location permission:', error);
+        captureError(error, {
+          flow: 'ElectoralLocationsSave',
+          step: 'openLocationSettings',
+          critical: true,
+        });
         showModal(
           'error',
           i18nString.error,
@@ -388,7 +409,11 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
             return;
           }
         } catch (error) {
-          console.error('Error requesting location permission after config:', error);
+          captureError(error, {
+            flow: 'ElectoralLocationsSave',
+            step: 'unknown',
+            critical: true,
+          });
         }
       }
     });
@@ -432,7 +457,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         );
       }
     } catch (error) {
-
       if (cachedData) {
         return;
       }
@@ -443,6 +467,11 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
       } else if (error.response) {
         errorMessage = `${i18nString.serverError} (${error.response.status})`;
       }
+      captureError(error, {
+        flow: 'ElectoralLocationsSave',
+        step: 'fetchElectionStatus',
+        critical: false,
+      });
       showModal(
         'error',
         i18nString.error,
@@ -571,6 +600,11 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         },
       );
     } catch (error) {
+      captureError(error, {
+        flow: 'ElectoralLocationsSave',
+        step: 'handleLocationPress',
+        critical: true,
+      });
       const message =
         (error?.response?.data?.message &&
           (Array.isArray(error.response.data.message)

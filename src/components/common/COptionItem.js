@@ -16,7 +16,7 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
           localStyle.renderItemContainer,
           {borderColor: color.dark ? color.grayScale700 : color.grayScale200},
         ]}>
-        <View testID="optionLabelContainer" style={styles.rowCenter}>
+        <View testID="optionLabelContainer" style={localStyle.optionLabelContainer}>
           <Entypo
             testID="optionIcon"
             name={item.icon}
@@ -24,14 +24,15 @@ export default function COptionItem({item, index, switchValue, disabled, onSwitc
             color={color.primary}
           />
           <View testID={`optionTextContainer_${item.id || index}`} style={styles.ml10}>
-            <CText testID={`optionTitle_${item.id || index}`} type={'B15'}>{item.title}</CText>
-            <CText testID={`optionValue_${item.id || index}`} type={'R12'} color={color.grayScale500}>
+            <CText testID={`optionTitle_${item.id || index}`} type={'B15'} style={localStyle.text}>{item.title}</CText>
+            <CText testID={`optionValue_${item.id || index}`} type={'R12'} style={localStyle.text} color={color.grayScale500}>
               {item.value}
             </CText>
           </View>
         </View>
         <Switch
           testID={`optionSwitch_${item.id || index}`}
+          style={localStyle.switch}
           value={switchValue}
           onValueChange={(value) => onSwitchValueChange(item, value)}
           trackColor={{
@@ -109,4 +110,13 @@ const localStyle = StyleSheet.create({
     ...styles.ph10,
     borderWidth: moderateScale(1),
   },
+  optionLabelContainer: {
+    ...styles.rowCenter,
+  },
+  switch: {
+    alignSelf: 'center'
+  },
+  text: {
+    maxWidth: moderateScale(200),
+  }
 });

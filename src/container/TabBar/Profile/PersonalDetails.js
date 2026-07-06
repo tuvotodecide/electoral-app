@@ -140,7 +140,7 @@ export default function PersonalDetails() {
           <CHash
             testID="personalDetailsHash"
             text={data.hash}
-            title={userData?.account}
+            copyContent={userData?.account}
           />
         </View>
 

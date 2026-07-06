@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import {fetchActasByMesa} from '../../../data/mockMesas';
 import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
+import { captureError } from '../../../config/sentry';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -101,7 +102,12 @@ const WhichIsCorrectScreen = () => {
             {id: 'nulos', label: 'Nulos', value1: '4', value2: '7'},
           ]);
         }
-      } catch (_) {
+      } catch (error) {
+        captureError(error, {
+          flow: 'WhichIsCorrectScreen_new',
+          step: 'loadActasByMesa',
+          critical: false,
+        });
         showModal('error', String.error, String.errorLoadingActas);
         // Fallback data
         setActaImages([

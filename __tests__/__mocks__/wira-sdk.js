@@ -75,6 +75,7 @@ const wira = {
   GuardiansApi,
   Storage: {
     checkUserData: jest.fn(async () => false),
+    checkFirstLaunch: jest.fn(async () => false),
   },
   DeviceId: {
     getDeviceId: jest.fn(async () => 'mock-device-id'),

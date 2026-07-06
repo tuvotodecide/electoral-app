@@ -27,6 +27,7 @@ import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQu
 
 import { getVotePlace } from '../../../utils/offlineQueue';
 import { FlashList } from '@shopify/flash-list';
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -166,6 +167,11 @@ const ElectoralLocations = ({ navigation, route }) => {
         showModal('info', i18nString.info, i18nString.noNearbyLocations);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'ElectoralLocations',
+        step: 'fetchNearbyLocations',
+        critical: true,
+      });
       let errorMessage = i18nString.errorFetchingLocations;
       if (error.code === 'ECONNABORTED') {
         errorMessage = i18nString.connectionTimeout;
@@ -277,6 +283,12 @@ const ElectoralLocations = ({ navigation, route }) => {
             errorMessage = i18nString.locationDisabledMessage;
             modalTitle = i18nString.locationRequired;
             action = openLocationSettings;
+          } else {
+            captureError(error, {
+              flow: 'ElectoralLocations',
+              step: 'highlightText',
+              critical: true,
+            });
           }
 
           showModal(
@@ -292,7 +304,12 @@ const ElectoralLocations = ({ navigation, route }) => {
           setLoadingLocation(false);
           setLoading(false);
         }
-      } catch (_) {
+      } catch (error) {
+        captureError(error, {
+          flow: 'ElectoralLocations',
+          step: 'openLocationSettings',
+          critical: true,
+        });
         showModal(
           'error',
           i18nString.error,
@@ -384,7 +401,11 @@ const ElectoralLocations = ({ navigation, route }) => {
             return;
           }
         } catch (error) {
-          console.error('Error requesting location permission after config:', error);
+          captureError(error, {
+            flow: 'ElectoralLocations',
+            step: 'init',
+            critical: true,
+          });
         }
       }
     });
@@ -432,6 +453,11 @@ const ElectoralLocations = ({ navigation, route }) => {
       else if (error.response) errorMessage = `${i18nString.serverError} (${error.response.status})`;
 
       if (online) {
+        captureError(error, {
+          flow: 'ElectoralLocations',
+          step: 'init',
+          critical: true,
+        });
         showModal(
           'error',
           i18nString.error,

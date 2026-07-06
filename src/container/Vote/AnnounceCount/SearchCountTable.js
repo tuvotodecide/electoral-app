@@ -9,7 +9,7 @@ import { createSearchTableStyles } from '../../../styles/searchTableStyles';
 import { StackNav } from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import axios from 'axios';
-
+import { captureError } from '../../../config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -173,6 +173,11 @@ const SearchCountTable = ({ navigation, route }) => {
       });
       setModalVisible(true);
     } catch (e) {
+      captureError(e, {
+        flow: 'SearchCountTable',
+        step: 'sendAnnounceCount',
+        critical: true,
+      });
       setConfirmVisible(false);
       setModalConfig({
         type: 'error',

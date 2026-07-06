@@ -3,7 +3,7 @@ import {View, Text, TouchableOpacity, Alert, StyleSheet} from 'react-native';
 import {Camera, useCameraPermissions} from 'expo-camera';
 import String from '../../../i18n/String';
 import {StackNav} from '../../../navigation/NavigationKey';
-
+import { captureError } from '../../../config/sentry';
 
 export default function CameraPermissionTest({navigation}) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -23,7 +23,11 @@ export default function CameraPermissionTest({navigation}) {
       const available = await Camera.isAvailableAsync();
       setIsCameraAvailable(Boolean(available));
     } catch (error) {
-
+      captureError(error, {
+        flow: 'CameraPermissionTest',
+        step: 'checkPermissions',
+        critical: true,
+      });
       setPermissionStatus('error');
       setIsCameraAvailable(false);
     }
@@ -42,6 +46,11 @@ export default function CameraPermissionTest({navigation}) {
         Alert.alert('Error', 'Permisos de cámara denegados');
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'CameraPermissionTest',
+        step: 'handleRequestPermission',
+        critical: true,
+      });
       Alert.alert('Error', 'Error al solicitar permisos: ' + error.message);
     }
   };

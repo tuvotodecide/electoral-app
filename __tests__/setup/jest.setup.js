@@ -40,6 +40,44 @@ jest.mock('react-native', () => ({
     MockImage.resolveAssetSource = jest.fn(() => ({uri: 'mock://asset'}));
     const Pressable = ({children, ...props}) =>
       React.createElement('View', props, children);
+    const FlatList = ({
+      data = [],
+      renderItem,
+      keyExtractor,
+      ListHeaderComponent,
+      ListFooterComponent,
+      ...props
+    }) => {
+      const children = [];
+
+      if (ListHeaderComponent) {
+        const header =
+          typeof ListHeaderComponent === 'function'
+            ? React.createElement(ListHeaderComponent)
+            : ListHeaderComponent;
+        children.push(
+          React.createElement(React.Fragment, {key: 'flatlist-header'}, header),
+        );
+      }
+
+      (data || []).forEach((item, index) => {
+        const key = keyExtractor ? keyExtractor(item, index) : String(index);
+        const element = renderItem ? renderItem({item, index}) : null;
+        children.push(React.createElement(React.Fragment, {key}, element));
+      });
+
+      if (ListFooterComponent) {
+        const footer =
+          typeof ListFooterComponent === 'function'
+            ? React.createElement(ListFooterComponent)
+            : ListFooterComponent;
+        children.push(
+          React.createElement(React.Fragment, {key: 'flatlist-footer'}, footer),
+        );
+      }
+
+      return React.createElement('View', props, children);
+    };
     const SectionList = ({
       sections = [],
       renderItem,
@@ -69,7 +107,7 @@ jest.mock('react-native', () => ({
       });
       return React.createElement('View', props, children);
     };
-    return {MockImage, Pressable, SectionList};
+    return {MockImage, Pressable, FlatList, SectionList};
   })(),
   Platform: {
     OS: 'ios',

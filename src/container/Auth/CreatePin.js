@@ -11,6 +11,7 @@ import CHeader from '../../components/common/CHeader';
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CText from '../../components/common/CText';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import { captureError } from '../../config/sentry';
 import String from '../../i18n/String';
 import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
@@ -29,6 +30,11 @@ export default function CreatePin({navigation}) {
     try {
       navigation.navigate(AuthNav.UploadDocument);
     } catch (error) {
+      captureError(error, {
+        flow: 'CreatePin',
+        step: 'onPressContinue',
+        critical: true,
+      });
       console.warn('[CreatePin] Navigation failed', error);
     }
   };

@@ -22,7 +22,7 @@ import wira from 'wira-sdk';
 import CAlert from '../../../components/common/CAlert';
 import { useSelector } from 'react-redux';
 import typography from '@/src/themes/typography';
-
+import { captureError } from '../../../config/sentry';
 
 const recoveryService = new wira.RecoveryService();
 
@@ -62,6 +62,12 @@ export default function RecoveryQr({navigation}) {
         errorMessage = String.badDirectoryMessage;
       } else if (err.message.includes('Invalid PIN')) {
         errorMessage = String.incorrectPinError;
+      } else {
+        captureError(err, {
+          flow: 'RecoveryQR',
+          step: 'onUploadPress',
+          critical: true,
+        });
       }
 
       const buttons = [

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import images from '../assets/images';
 import {
   AppleIcon,
@@ -376,8 +377,8 @@ export const SecuryData = [
         id: 10,
         darkIcon: <IdentityVerification_Dark />,
         lightIcon: <IdentityVerification_Light />,
-        title: String.security4Title,
-        value: String.security4Subtitle,
+        title: Platform.OS === 'ios' ? String.security4TitleIos : String.security4TitleAndroid,
+        value: Platform.OS === 'ios' ? String.security4SubtitleIos : String.security4SubtitleAndroid,
         rightIcon: 'switch',
       },
     ],

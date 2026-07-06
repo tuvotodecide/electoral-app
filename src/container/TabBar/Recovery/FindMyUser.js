@@ -34,6 +34,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import wira from 'wira-sdk';
 
 
+import { captureError } from '../../../config/sentry';
 export default function FindMyUser({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [carnet, setCarnet] = useState('');
@@ -122,9 +123,12 @@ export default function FindMyUser({navigation}) {
               params: {dni: carnet.trim()},
             });
           } catch (error) {
-            console.error('Error storing data', error);
+            captureError(error, {
+              flow: 'FindMyUser',
+              step: 'onPressInvitation',
+              critical: true,
+            });
           }
-          
         },
       },
     );

@@ -18,6 +18,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import {StackNav} from '../../navigation/NavigationKey';
 import String from '../../i18n/String';
 import { FlashList } from '@shopify/flash-list';
+import { captureError } from '../../config/sentry';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -78,6 +79,11 @@ const ElectoralLocationsScreen = () => {
         getCurrentLocation();
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'ElectoralLocationsScreen',
+        step: 'requestLocationPermission',
+        critical: true,
+      });
       showModal('error', String.error, String.locationPermissionError);
       loadAllLocations();
     }
@@ -111,6 +117,11 @@ const ElectoralLocationsScreen = () => {
         await loadAllLocations();
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'ElectoralLocationsScreen',
+        step: 'loadNearbyLocations',
+        critical: true,
+      });
       showModal('error', String.error, String.errorFetchingLocations);
       await loadAllLocations();
     } finally {
@@ -132,6 +143,11 @@ const ElectoralLocationsScreen = () => {
         showModal('error', String.error, String.errorFetchingLocations);
       }
     } catch (error) {
+      captureError(error, {
+        flow: 'ElectoralLocationsScreen',
+        step: 'loadAllLocations',
+        critical: true,
+      });
       showModal('error', String.error, String.errorFetchingLocations);
     } finally {
       setIsLoading(false);

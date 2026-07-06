@@ -30,6 +30,7 @@ import String from '../../../i18n/String';
 
 import { getCredentialSubjectFromPayload } from '../../../utils/Cifrate';
 
+import { captureError } from '../../../config/sentry';
 export default function Profile({ navigation }) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
@@ -114,6 +115,11 @@ export default function Profile({ navigation }) {
       }, 500);
       return true;
     } catch (_err) {
+      captureError(_err, {
+        flow: 'Profile',
+        step: 'onPressLOut',
+        critical: true,
+      });
       return false;
     }
   };
@@ -231,7 +237,7 @@ export default function Profile({ navigation }) {
             <CHash
               testID="profileUserHashComponent"
               text={data.hash}
-              title={`${data.account}`}
+              copyContent={userData?.account}
               textColor={'#fff'}
             />
           </View>
