@@ -230,6 +230,111 @@ describe('useVotingState', () => {
 
   });
 
+  it('sincroniza una participacion recuperada desde backend aunque no exista localmente', async () => {
+    const storage = createStorage({
+      'voting.participations': JSON.stringify([]),
+    });
+    getCredentialForVote.mockResolvedValue({
+      info: {
+        credentialSubject: {
+          nullifier: 'nullifier-backend',
+        },
+      },
+    });
+    getOwnVoteInfo.mockResolvedValue([true, 'Lista Contrato']);
+
+    const {result} = renderHook(() => useVotingState('event-backend'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.syncStateWithBlockchain('backend-participation');
+    });
+
+    expect(getCredentialForVote).toHaveBeenCalledWith('event-backend', 'did:example:123', undefined);
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-backend', 'nullifier-backend');
+    expect(result.current.syncedWithBlockchain).toEqual({
+      status: 'synced',
+      data: {
+        hasVoted: true,
+        option: 'Lista Contrato',
+      },
+    });
+    expect(AsyncStorage.setItem).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('nullifier-backend'),
+    );
+    expect(AsyncStorage.setItem).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('Lista Contrato'),
+    );
+    expect(storage.get('voting.participations')).toBe('[]');
+  });
+
+  it('marca not_synced cuando contrato responde hasVoted false', async () => {
+    createStorage({
+      'voting.participations': JSON.stringify([]),
+    });
+    getCredentialForVote.mockResolvedValue({
+      info: {
+        credentialSubject: {
+          nullifier: 'nullifier-not-voted',
+        },
+      },
+    });
+    getOwnVoteInfo.mockResolvedValue([false, '']);
+
+    const {result} = renderHook(() => useVotingState('event-not-voted'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.syncStateWithBlockchain('backend-not-voted');
+    });
+
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-not-voted', 'nullifier-not-voted');
+    expect(result.current.syncedWithBlockchain).toEqual({
+      status: 'not_synced',
+      data: {
+        hasVoted: false,
+        option: '',
+      },
+    });
+  });
+
+  it('marca fallo controlado cuando falla contrato', async () => {
+    createStorage({
+      'voting.participations': JSON.stringify([]),
+    });
+    getCredentialForVote.mockResolvedValue({
+      info: {
+        credentialSubject: {
+          nullifier: 'nullifier-error',
+        },
+      },
+    });
+    getOwnVoteInfo.mockRejectedValue(new Error('RPC failed'));
+
+    const {result} = renderHook(() => useVotingState('event-error'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.syncStateWithBlockchain('backend-error');
+    });
+
+    expect(result.current.syncedWithBlockchain).toEqual({
+      status: 'failed',
+      error: 'RPC failed',
+    });
+  });
+
   it('marca not_synced cuando blockchain devuelve una opcion distinta', async () => {
     createStorage({
       'voting.participations': JSON.stringify([
@@ -260,8 +365,6 @@ describe('useVotingState', () => {
     await act(async () => {
       await result.current.syncStateWithBlockchain('participation-1');
     });
-
-    console.log('syncedWithBlockchain:', result.current.syncedWithBlockchain);
 
     expect(result.current.syncedWithBlockchain.status).toBe("not_synced");
   });

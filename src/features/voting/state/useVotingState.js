@@ -224,6 +224,8 @@ export const useVotingState = (electionId = '') => {
           } else {
             setSyncedWithBlockchain({status: 'synced', data: {hasVoted, option}});
           }
+        } else {
+          setSyncedWithBlockchain({status: 'not_synced', data: {hasVoted, option}});
         }
       }
     } catch (error) {

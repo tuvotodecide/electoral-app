@@ -130,6 +130,216 @@ describe('VoteReceiptScreen', () => {
     });
   });
 
+  it('MP-APP-DETAIL-001/002 abre recibo con participacion backend sin AsyncStorage local', async () => {
+    const syncStateWithBlockchain = jest.fn();
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-participation-1',
+        electionId: 'event-backend-1',
+        participation: {
+          id: 'backend-participation-1',
+          electionId: 'event-backend-1',
+          voteId: 'event-backend-1',
+          electionTitle: 'Elección recuperada desde backend',
+          status: 'VOTO_REGISTRADO',
+          statusLabel: 'VOTO REGISTRADO',
+          fullDate: '01 ene 2026, 10:00',
+          organization: 'Institución recuperada',
+          candidateSelected: null,
+          selectedCandidateId: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain,
+      syncedWithBlockchain: {status: 'idle'},
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('Voto registrado exitosamente')).toBeTruthy();
+    expect(screen.getByText('Elección recuperada desde backend')).toBeTruthy();
+    expect(screen.getByText('01 ene 2026, 10:00')).toBeTruthy();
+    expect(screen.getByText('Institución recuperada')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(syncStateWithBlockchain).toHaveBeenCalledWith('backend-participation-1');
+    });
+  });
+
+  it('MP-APP-DETAIL-003 tolera candidateSelected null sin mostrar seleccion falsa', async () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-null-selection',
+        electionId: 'event-null-selection',
+        participation: {
+          id: 'backend-null-selection',
+          electionId: 'event-null-selection',
+          electionTitle: 'Elección sin selección local',
+          fullDate: '02 ene 2026, 11:00',
+          organization: 'Institución',
+          candidateSelected: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: {status: 'idle'},
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    fireEvent.press(screen.getByText('Detalle de mi selección'));
+
+    expect(screen.getByText('Elección sin selección local')).toBeTruthy();
+    expect(screen.queryByText('Partido')).toBeNull();
+    expect(screen.queryByText('Lista Azul')).toBeNull();
+  });
+
+  it('MP-APP-DETAIL-005 muestra el voto devuelto por contrato usando la UI actual', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-contract',
+        electionId: 'event-contract',
+        participation: {
+          id: 'backend-contract',
+          electionId: 'event-contract',
+          electionTitle: 'Elección con contrato',
+          fullDate: '03 ene 2026, 12:00',
+          organization: 'Institución',
+          candidateSelected: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: {
+        status: 'synced',
+        data: {
+          hasVoted: true,
+          option: 'Lista Contrato',
+        },
+      },
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    fireEvent.press(screen.getByText('Detalle de mi selección'));
+
+    expect(screen.getByText('Lista Contrato')).toBeTruthy();
+  });
+
+  it('MP-APP-DETAIL-006 muestra alerta controlada si falta VC/nullifier', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-no-credential',
+        electionId: 'event-no-credential',
+        participation: {
+          id: 'backend-no-credential',
+          electionId: 'event-no-credential',
+          electionTitle: 'Elección sin credencial',
+          fullDate: '04 ene 2026, 13:00',
+          organization: 'Institución',
+          candidateSelected: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: {
+        status: 'failed',
+        error: 'Credential not found for electionId event-no-credential',
+      },
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('No se encontró la credencial de esta votación')).toBeTruthy();
+  });
+
+  it('MP-APP-DETAIL-007 contrato no sincronizado no muestra seleccion ni consulta backend', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-not-voted',
+        electionId: 'event-not-voted',
+        participation: {
+          id: 'backend-not-voted',
+          electionId: 'event-not-voted',
+          electionTitle: 'Elección no sincronizada',
+          fullDate: '05 ene 2026, 14:00',
+          organization: 'Institución',
+          candidateSelected: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: {
+        status: 'not_synced',
+        data: {hasVoted: false, option: ''},
+      },
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    fireEvent.press(screen.getByText('Detalle de mi selección'));
+
+    expect(screen.getByText('Elección no sincronizada')).toBeTruthy();
+    expect(screen.queryByText('Partido')).toBeNull();
+  });
+
+  it('MP-APP-DETAIL-008 muestra error controlado si falla contrato', () => {
+    useRoute.mockReturnValue({
+      params: {
+        participationId: 'backend-contract-error',
+        electionId: 'event-contract-error',
+        participation: {
+          id: 'backend-contract-error',
+          electionId: 'event-contract-error',
+          electionTitle: 'Elección con error de contrato',
+          fullDate: '06 ene 2026, 15:00',
+          organization: 'Institución',
+          candidateSelected: null,
+          synced: true,
+        },
+        allowBack: true,
+      },
+    });
+    useVotingState.mockReturnValue({
+      participations: [],
+      lastReceipt: null,
+      syncStateWithBlockchain: jest.fn(),
+      syncedWithBlockchain: {
+        status: 'failed',
+        error: 'RPC failed',
+      },
+    });
+
+    const screen = render(<VoteReceiptScreen />);
+
+    expect(screen.getByText('No se pudo verificar el voto')).toBeTruthy();
+  });
+
   it('muestra Ver resultados si recibe resultsAvailable true y abre la WebView pública', () => {
     useRoute.mockReturnValue({
       params: {

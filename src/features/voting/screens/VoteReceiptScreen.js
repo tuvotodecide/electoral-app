@@ -379,7 +379,11 @@ const VoteReceiptScreen = () => {
           <CAlert
             testID={'VoteReceiptAlert'}
             status='warning'
-            message={syncedWithBlockchain.error.includes('Credential not found') ? UI_STRINGS.credentialNotFound : UI_STRINGS.unknownError}
+            message={
+              syncedWithBlockchain.error.includes('Credential not found')
+                ? UI_STRINGS.credentialNotFound
+                : UI_STRINGS.unknownError || 'No se pudo verificar el voto'
+            }
           />
         )}
 

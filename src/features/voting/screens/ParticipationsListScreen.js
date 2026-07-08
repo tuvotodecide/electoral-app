@@ -37,12 +37,139 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const ENABLE_LOCAL_PARTICIPATIONS_FALLBACK = false;
+
+const formatParticipationDateParts = rawDate => {
+  const parsedDate = new Date(rawDate || Date.now());
+  const validDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
+  return {
+    participatedAt: validDate.toISOString(),
+    date: validDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+    }),
+    time: validDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    fullDate: validDate.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  };
+};
+
+const normalizeVoteParticipation = participation => {
+  const dateParts = formatParticipationDateParts(
+    participation?.participatedAt ||
+      participation?.createdAt ||
+      participation?.timestamp,
+  );
+  const eventId = String(
+    participation?.electionId ||
+      participation?.eventId ||
+      participation?.voteId ||
+      '',
+  );
+  const id = String(
+    participation?.id ||
+      participation?.participationId ||
+      `${eventId || 'participation'}:${dateParts.participatedAt}`,
+  );
+  const status = participation?.status || 'VOTO_REGISTRADO';
+
+  return {
+    id,
+    electionId: eventId,
+    voteId: String(participation?.voteId || eventId),
+    electionTitle: String(
+      participation?.electionTitle ||
+        participation?.title ||
+        participation?.eventTitle ||
+        participation?.eventName ||
+        'Votación institucional',
+    ).trim(),
+    status,
+    statusLabel: participation?.statusLabel || 'VOTO REGISTRADO',
+    date: participation?.date || dateParts.date,
+    time: participation?.time || dateParts.time,
+    fullDate: participation?.fullDate || dateParts.fullDate,
+    organization: String(
+      participation?.organization ||
+        participation?.institutionName ||
+        participation?.organizationName ||
+        '',
+    ).trim(),
+    transactionId: null,
+    blockchainHash: null,
+    candidateSelected: null,
+    errorMessage: participation?.errorMessage || null,
+    nftId: participation?.nftId || null,
+    nftImageUrl: participation?.nftImageUrl || null,
+    participatedAt: dateParts.participatedAt,
+    selectedCandidateId: null,
+    synced: status === 'VOTO_REGISTRADO',
+  };
+};
+
+const isLocalFallbackParticipation = participation =>
+  participation?.status === 'ERROR' || participation?.synced === false;
+
+const getParticipationKey = participation =>
+  String(
+    participation?.electionId ||
+      participation?.eventId ||
+      participation?.voteId ||
+      participation?.id ||
+      '',
+  );
+
+const mergeVoteParticipations = ({
+  backendParticipations,
+  localParticipations,
+  backendSucceeded,
+}) => {
+  const normalizedBackend = Array.isArray(backendParticipations)
+    ? backendParticipations.map(normalizeVoteParticipation)
+    : [];
+  const localVotes = Array.isArray(localParticipations) ? localParticipations : [];
+
+  if (!ENABLE_LOCAL_PARTICIPATIONS_FALLBACK) {
+    return backendSucceeded ? normalizedBackend : [];
+  }
+
+  if (!backendSucceeded) {
+    return localVotes;
+  }
+
+  if (normalizedBackend.length === 0) {
+    return localVotes;
+  }
+
+  const backendKeys = new Set(normalizedBackend.map(getParticipationKey));
+  const localFallback = localVotes.filter(
+    item => isLocalFallbackParticipation(item) && !backendKeys.has(getParticipationKey(item)),
+  );
+
+  return [...normalizedBackend, ...localFallback];
+};
+
 const mergeHistoryItems = ({
+  backendParticipations,
   localParticipations,
   witnessRecords,
+  backendSucceeded,
 }) =>
   [
-    ...(Array.isArray(localParticipations) ? localParticipations : []),
+    ...mergeVoteParticipations({
+      backendParticipations,
+      localParticipations,
+      backendSucceeded,
+    }),
     ...(Array.isArray(witnessRecords) ? witnessRecords : []),
   ].sort(
     (left, right) =>
@@ -130,18 +257,27 @@ const ParticipationsListScreen = () => {
 
   const loadParticipations = useCallback(async () => {
     setIsLoading(true);
-    const [witnessRecordsResult] = await Promise.allSettled([
+    const [backendParticipationsResult, witnessRecordsResult] = await Promise.allSettled([
+      typeof repository.getParticipations === 'function'
+        ? repository.getParticipations()
+        : Promise.resolve([]),
       typeof repository.getWitnessRecords === 'function'
         ? repository.getWitnessRecords()
         : Promise.resolve([]),
     ]);
+    const backendParticipations =
+      backendParticipationsResult.status === 'fulfilled'
+        ? backendParticipationsResult.value
+        : [];
     const witnessRecords =
       witnessRecordsResult.status === 'fulfilled' ? witnessRecordsResult.value : [];
 
     setParticipations(
       mergeHistoryItems({
+        backendParticipations,
         localParticipations,
         witnessRecords,
+        backendSucceeded: backendParticipationsResult.status === 'fulfilled',
       }),
     );
     setIsLoading(false);

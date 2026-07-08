@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, act, fireEvent} from '@testing-library/react-native';
+import {render, act, fireEvent, waitFor} from '@testing-library/react-native';
 import CameraScreen from '../../../../src/container/Vote/UploadRecord/CameraScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
@@ -122,6 +122,7 @@ describe('CameraScreen - Interacciones de Usuario', () => {
 
     await capturePhoto({getByText, getAllByText});
 
+    await waitFor(() => expect(getAllByText('Continuar')[0]).toBeTruthy());
     await pressFirstByText('Continuar', {getAllByText});
     await flushAsync();
 

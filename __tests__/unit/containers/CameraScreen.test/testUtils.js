@@ -62,14 +62,7 @@ const setupCameraBaseMocks = ({navigation = createMockNavigation(), routeOverrid
   return {navigation};
 };
 
-const flushPromises = () =>
-  new Promise(resolve => {
-    if (typeof process !== 'undefined' && typeof process.nextTick === 'function') {
-      process.nextTick(resolve);
-    } else {
-      Promise.resolve().then(resolve);
-    }
-  });
+const flushPromises = () => Promise.resolve();
 
 module.exports = {
   cameraModule,
