@@ -14,10 +14,13 @@ describe('NavigationKey', () => {
     expect(StackNav.Splash).toBe('Splash');
     expect(StackNav.AuthNavigation).toBe('AuthNavigation');
     expect(StackNav.TabNavigation).toBe('TabNavigation');
+    expect(StackNav.RewardsScreen).toBe('RewardsScreen');
+    expect(StackNav.RewardDetailScreen).toBe('RewardDetailScreen');
   });
 
   it('expone rutas del tab', () => {
     expect(TabNav.HomeScreen).toBe('HomeScreen');
+    expect(TabNav.Participations).toBe('Participations');
     expect(TabNav.Profile).toBe('Profile');
   });
 

@@ -65,6 +65,10 @@ import {
   ClaimCredScreen,
 } from '../features/voting';
 import PublicElectionWebViewScreen from '../features/voting/screens/PublicElectionWebViewScreen';
+import {
+  RewardDetailScreen,
+  RewardsScreen,
+} from '../features/rewards';
 
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
@@ -154,6 +158,8 @@ export const StackRoute = {
   VotingNotificationDetailScreen,
   PublicElectionWebViewScreen,
   ClaimCredScreen,
+  RewardsScreen,
+  RewardDetailScreen,
 
   // Profile y configuración
   PersonalDetails,
@@ -224,5 +230,6 @@ export const AuthRoute = {
 
 export const TabRoute = {
   HomeScreen: HomeStackNavigation,
+  Participations: VotingParticipationsScreen,
   Profile,
 };

@@ -92,6 +92,7 @@ import {
   useElectionRepository,
   UI_STRINGS as VotingStrings,
 } from '../../../features/voting';
+import { getMockRewardsSummary } from '../../../features/rewards';
 import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
 import { FlashList } from '@shopify/flash-list';
 
@@ -117,6 +118,7 @@ const QUEUE_WRITE_TASK_TYPES = new Set([
 ]);
 
 const HOME_VOTING_DETAIL_NOTIFICATION_TYPE = 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+const SHOW_HOME_PARTICIPATIONS_CARD = false;
 const buildPublicVotingPath = eventId => {
   const normalizedEventId = String(eventId || '').trim();
   return normalizedEventId ? `/votacion/elecciones/${normalizedEventId}/publica` : '';
@@ -329,7 +331,7 @@ const CarouselItem = ({ item }) => (
           testID={`homeCarouselImage_${item.id}`}
           source={item.image}
           style={stylesx.bcLogoImage}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </View>
 
@@ -375,7 +377,7 @@ const MiVotoLogo = () => (
       testID="MiVotoLogoImage"
       source={images.logoImg}
       style={stylesx.logoImage}
-      resizeMode="contain"
+      contentFit="contain"
     />
     {/* <View style={stylesx.flagBox}>
       <View
@@ -406,6 +408,26 @@ const MiVotoLogo = () => (
       </CText>
     </View>
   </View>
+);
+
+const TokenRewardsCard = ({total, currency, onPress}) => (
+  <TouchableOpacity
+    testID="homeRewardsTokenCard"
+    accessibilityRole="button"
+    accessibilityLabel="Ver mis recompensas"
+    activeOpacity={0.84}
+    onPress={onPress}
+    style={stylesx.tokenCard}>
+    <View style={stylesx.tokenIconBox}>
+      <Ionicons name="star-outline" size={getResponsiveSize(18, 20, 22)} color="#459151" />
+    </View>
+    <CText testID="homeRewardsTokenAmount" style={stylesx.tokenAmount}>
+      {total}
+    </CText>
+    <CText testID="homeRewardsTokenCurrency" style={stylesx.tokenCurrency}>
+      {currency}
+    </CText>
+  </TouchableOpacity>
 );
 
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
@@ -2278,8 +2300,10 @@ export default function HomeScreen({ navigation, route }) {
     hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
   };
   const userFullName = data.name || '(sin nolombre)';
+  const rewardsSummary = getMockRewardsSummary();
 
   const onPressLogout = () => setLogoutModalVisible(true);
+  const handleRewardsPress = () => navigation.navigate(StackNav.RewardsScreen);
 
   const menuItems = [
     {
@@ -2717,6 +2741,11 @@ export default function HomeScreen({ navigation, route }) {
                   <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
+                <TokenRewardsCard
+                  total={rewardsSummary.totalTVD}
+                  currency={rewardsSummary.currency}
+                  onPress={handleRewardsPress}
+                />
               </View>
             </View>
 
@@ -2796,6 +2825,7 @@ export default function HomeScreen({ navigation, route }) {
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
+              {SHOW_HOME_PARTICIPATIONS_CARD && (
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 {/* <TouchableOpacity
@@ -2848,6 +2878,7 @@ export default function HomeScreen({ navigation, route }) {
                   </CText>
                 </TouchableOpacity>
               </View>
+              )}
             </View>
           </View>
         </View>
@@ -2892,6 +2923,11 @@ export default function HomeScreen({ navigation, route }) {
                 <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
+              <TokenRewardsCard
+                total={rewardsSummary.totalTVD}
+                currency={rewardsSummary.currency}
+                onPress={handleRewardsPress}
+              />
             </View>
           </View>
           <ScrollView>
@@ -2976,6 +3012,7 @@ export default function HomeScreen({ navigation, route }) {
               <View style={stylesx.gridDiv1}>
                 {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
               </View>
+              {SHOW_HOME_PARTICIPATIONS_CARD && (
               <View style={stylesx.gridRow2}>
                 {/* Anunciar conteo */}
                 {/* <TouchableOpacity
@@ -3026,6 +3063,7 @@ export default function HomeScreen({ navigation, route }) {
                   </CText>
                 </TouchableOpacity>
               </View>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -3146,8 +3184,8 @@ const stylesx = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: getResponsiveSize(16, 20, 24),
-    paddingTop: getResponsiveSize(12, 16, 20),
-    paddingBottom: getResponsiveSize(2, 4, 6),
+    paddingTop: getResponsiveSize(8, 10, 14),
+    paddingBottom: getResponsiveSize(0, 2, 4),
   },
   logoRow: {
     flexDirection: 'row',
@@ -3183,22 +3221,22 @@ const stylesx = StyleSheet.create({
     borderBottomLeftRadius: getResponsiveSize(7, 8, 9),
   },
   logoTitle: {
-    fontSize: getResponsiveSize(21, 26, 30),
-    fontWeight: 'bold',
+    fontSize: getResponsiveSize(16, 18, 21),
+    fontWeight: '800',
     color: '#222',
-    letterSpacing: -1,
+    letterSpacing: 0,
   },
   logoSubtitle: {
-    fontSize: getResponsiveSize(12, 14, 16),
+    fontSize: getResponsiveSize(10, 11, 13),
     color: '#8B9399',
     fontWeight: '400',
-    marginTop: -2,
-    marginLeft: 2,
+    marginTop: 0,
+    marginLeft: 1,
   },
   welcomeContainer: {
-    marginTop: getResponsiveSize(10, 13, 16),
+    marginTop: getResponsiveSize(28, 34, 40),
     marginLeft: getResponsiveSize(18, 21, 24),
-    marginBottom: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(12, 14, 18),
     ...(isTablet &&
       isLandscape && {
       marginTop: getResponsiveSize(40, 50, 60),
@@ -3206,22 +3244,22 @@ const stylesx = StyleSheet.create({
     }),
   },
   bienvenido: {
-    fontSize: getResponsiveSize(18, 22, 26),
+    fontSize: getResponsiveSize(16, 18, 22),
     color: '#41A44D',
     fontWeight: '700',
     marginBottom: -2,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     ...(isTablet &&
       isLandscape && {
       fontSize: getResponsiveSize(24, 28, 32),
     }),
   },
   nombre: {
-    fontSize: getResponsiveSize(18, 22, 26),
+    fontSize: getResponsiveSize(21, 24, 30),
     color: '#232323',
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 0,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     ...(isTablet &&
       isLandscape && {
       fontSize: getResponsiveSize(24, 28, 32),
@@ -3396,13 +3434,49 @@ const stylesx = StyleSheet.create({
   welcomeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     width: '100%',
     paddingRight: getResponsiveSize(16, 20, 24),
   },
   welcomeTextContainer: {
     flex: 1,
-    marginRight: getResponsiveSize(20, 24, 28),
+    marginRight: getResponsiveSize(12, 16, 20),
+    minWidth: 0,
+  },
+  tokenCard: {
+    minWidth: getResponsiveSize(102, 118, 136),
+    height: getResponsiveSize(52, 58, 66),
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveSize(12, 14, 16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveSize(10, 12, 14),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  tokenIconBox: {
+    width: getResponsiveSize(24, 26, 30),
+    height: getResponsiveSize(24, 26, 30),
+    borderRadius: getResponsiveSize(12, 13, 15),
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: getResponsiveSize(5, 6, 7),
+  },
+  tokenAmount: {
+    color: '#232323',
+    fontSize: getResponsiveSize(20, 22, 26),
+    fontWeight: '800',
+    marginRight: getResponsiveSize(3, 4, 5),
+  },
+  tokenCurrency: {
+    color: '#232323',
+    fontSize: getResponsiveSize(11, 12, 14),
+    fontWeight: '800',
   },
   // Header Styles
   headerIcons: {
@@ -3570,8 +3644,8 @@ const stylesx = StyleSheet.create({
     width: getResponsiveSize(16, 20, 24),
   },
   logoImage: {
-    width: getResponsiveSize(32, 38, 44),
-    height: getResponsiveSize(32, 38, 44),
+    width: getResponsiveSize(25, 29, 34),
+    height: getResponsiveSize(25, 29, 34),
   },
   disabledItem: {
     opacity: 0.6,

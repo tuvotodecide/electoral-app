@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
@@ -141,6 +142,11 @@ const ElectionCard = ({
   };
 
   const buttonConfig = getButtonConfig();
+  const electionTitle = election?.title || UI_STRINGS.electionTitle;
+  const electionStatus = election?.status || UI_STRINGS.statusActive;
+  const instituteName = election?.instituteName || election?.organization || '';
+  const timerValue = timerDisplay.time || timerDisplay.label || election?.closesInLabel || '';
+  const timerLabel = isStarting ? 'INICIA EN' : 'CIERRA EN';
 
   // Renderizar contenido según estado
   const renderStatusContent = () => {
@@ -169,55 +175,48 @@ const ElectionCard = ({
       );
     }
 
-    // Estado: Inicia en (con countdown HH:MM:SS)
-    if (isStarting && timerDisplay.time) {
+    // Estado: Inicia en / Cierra en
+    if (timerValue) {
       return (
-        <View style={styles.startsInContainer}>
-          <View style={styles.redDot} />
-          <CText type="S14" style={styles.startsInLabel}>
-            {timerDisplay.label}
+        <View style={styles.timerContainer}>
+          <CText type="S12" style={styles.timerLabel}>
+            {timerLabel}
           </CText>
-          <CText type="B16" style={styles.startsInTime}>
-            {timerDisplay.time}
-          </CText>
+          <View style={styles.timerValueRow}>
+            <View style={styles.redDot} />
+            <CText type="B14" style={styles.timerValue}>
+              {timerValue}
+            </CText>
+          </View>
         </View>
       );
     }
 
-    // Estado: Cierra en (normal)
-    return (
-      <View style={styles.closesContainer}>
-        <View style={styles.redDot} />
-        <CText type="S14" style={styles.closesText}>
-          {timerDisplay.label}
-        </CText>
-      </View>
-    );
+    return null;
   };
 
   return (
     <View style={styles.container}>
-      {/* Header: Título + Badge */}
-      <View style={styles.header}>
-        <CText type="B18" style={styles.title}>
-          {election.title}
+      <View style={styles.topRow}>
+        <CText type="B12" style={styles.statusText}>
+          {electionStatus}
         </CText>
-        <View style={styles.badge}>
-          <CText type="B12" style={styles.badgeText}>
-            {election.status}
-          </CText>
+        <View style={styles.electionIconBox}>
+          <Ionicons name="business-outline" size={getResponsiveSize(16, 18, 20)} color="#459151" />
         </View>
       </View>
 
-      {/* Status content (votó, inhabilitado, countdown) */}
-      {renderStatusContent()}
+      <CText type="B18" style={styles.title}>
+        {electionTitle}
+      </CText>
 
-      {/* Nombre del instituto - solo si no votó y está habilitado y no está en "inicia en" */}
-      {!hasVoted && effectiveIsEligible && !isStarting && !isEnded && (
-        <CText type="R14" style={styles.instituteName}>
-          {election.instituteName}
+      {!!instituteName && (
+        <CText type="R14" style={styles.instituteName} numberOfLines={1}>
+          {instituteName}
         </CText>
       )}
+
+      {renderStatusContent()}
 
       {/* Botón de acción */}
       {buttonConfig && (
@@ -230,6 +229,17 @@ const ElectionCard = ({
             styles.button,
             hasVoted && voteSynced && styles.buttonVoted,
           ]}
+          bgColor="#459151"
+          icon={
+            buttonConfig.title === UI_STRINGS.voteNow ? (
+              <Ionicons
+                name="arrow-forward"
+                size={getResponsiveSize(16, 18, 20)}
+                color="#FFFFFF"
+                style={styles.buttonIcon}
+              />
+            ) : null
+          }
           sinMargen
           testID="electionCardButton"
         />
@@ -242,53 +252,57 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     borderRadius: moderateScale(16),
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    padding: getResponsiveSize(16, 20, 24),
+    padding: getResponsiveSize(16, 18, 22),
     marginHorizontal: getResponsiveSize(16, 20, 24),
-    marginBottom: getResponsiveSize(12, 16, 20),
+    marginBottom: getResponsiveSize(14, 18, 22),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: getResponsiveSize(10, 12, 14),
   },
-  title: {
-    color: '#232323',
-    fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '700',
-    flex: 1,
-  },
-  badge: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: moderateScale(4),
-    paddingHorizontal: moderateScale(10),
-    paddingVertical: moderateScale(4),
-    borderWidth: 1,
-    borderColor: '#41A44D',
-  },
-  badgeText: {
-    color: '#41A44D',
+  statusText: {
+    color: '#459151',
     fontSize: getResponsiveSize(10, 11, 12),
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
-  // Estado: Cierra en
-  closesContainer: {
-    flexDirection: 'row',
+  electionIconBox: {
+    width: getResponsiveSize(28, 30, 34),
+    height: getResponsiveSize(28, 30, 34),
+    borderRadius: moderateScale(8),
+    backgroundColor: '#E8F5E9',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFEBEE',
-    borderRadius: moderateScale(20),
-    paddingVertical: getResponsiveSize(6, 8, 10),
-    paddingHorizontal: getResponsiveSize(12, 14, 16),
-    marginBottom: getResponsiveSize(6, 8, 10),
-    alignSelf: 'center',
+  },
+  title: {
+    color: '#232323',
+    fontSize: getResponsiveSize(17, 18, 21),
+    fontWeight: '800',
+    marginBottom: getResponsiveSize(4, 5, 6),
+  },
+  timerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: getResponsiveSize(10, 12, 14),
+    marginBottom: getResponsiveSize(18, 20, 22),
+  },
+  timerLabel: {
+    color: '#B8BEC4',
+    fontSize: getResponsiveSize(9, 10, 11),
+    fontWeight: '700',
+    marginBottom: getResponsiveSize(2, 3, 4),
+  },
+  timerValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   redDot: {
     width: 8,
@@ -297,28 +311,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E72F2F',
     marginRight: 6,
   },
-  closesText: {
+  timerValue: {
     color: '#E72F2F',
     fontSize: getResponsiveSize(13, 14, 15),
-    fontWeight: '600',
-  },
-  // Estado: Inicia en (con HH:MM:SS)
-  startsInContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: getResponsiveSize(12, 14, 16),
-  },
-  startsInLabel: {
-    color: '#374151',
-    fontSize: getResponsiveSize(13, 14, 15),
-    fontWeight: '500',
-    marginRight: 6,
-  },
-  startsInTime: {
-    color: '#374151',
-    fontSize: getResponsiveSize(15, 16, 18),
-    fontWeight: '700',
+    fontWeight: '800',
   },
   // Estado: No habilitado
   notEligibleContainer: {
@@ -363,18 +359,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   instituteName: {
-    color: '#9CA3AF',
+    color: '#B8BEC4',
     fontSize: getResponsiveSize(13, 14, 15),
-    textAlign: 'center',
-    marginBottom: getResponsiveSize(14, 16, 18),
+    textAlign: 'left',
   },
   button: {
-    marginTop: getResponsiveSize(4, 6, 8),
-    height: getHeight(48),
-    borderRadius: moderateScale(10),
+    marginTop: getResponsiveSize(0, 2, 4),
+    height: getHeight(46),
+    borderRadius: moderateScale(9),
   },
   buttonVoted: {
     opacity: 0.9,
+  },
+  buttonIcon: {
+    marginLeft: getResponsiveSize(6, 8, 10),
   },
 });
 

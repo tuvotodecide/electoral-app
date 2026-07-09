@@ -51,6 +51,8 @@ export const StackNav = {
   VotingNotificationDetailScreen: 'VotingNotificationDetailScreen',
   PublicElectionWebViewScreen: 'PublicElectionWebViewScreen',
   ClaimCredScreen: 'ClaimCredScreen',
+  RewardsScreen: 'RewardsScreen',
+  RewardDetailScreen: 'RewardDetailScreen',
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
@@ -75,6 +77,7 @@ export const StackNav = {
 
 export const TabNav = {
   HomeScreen: 'HomeScreen',
+  Participations: 'Participations',
   Profile: 'Profile',
 };
 

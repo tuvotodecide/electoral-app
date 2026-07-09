@@ -22,6 +22,8 @@ const {width: screenWidth} = Dimensions.get('window');
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
+const ACTIVE_TAB_COLOR = '#459151';
+const INACTIVE_TAB_COLOR = '#6B7280';
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -115,13 +117,13 @@ function CustomTabBar({state, descriptors, navigation}) {
           paddingBottom: insets.bottom,
         },
       ]}>
-      {state.routes.map((route) => {
+      {state.routes.map((route, index) => {
         const {options} = descriptors[route.key];
         const label =
           options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
         const iconName = options.tabBarIconName;
-        // NO color primario ni destacado
-        // const isFocused = state.index === index;
+        const isFocused = state.index === index;
+        const tintColor = isFocused ? ACTIVE_TAB_COLOR : INACTIVE_TAB_COLOR;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -140,16 +142,27 @@ function CustomTabBar({state, descriptors, navigation}) {
             testID={`tabButton_${route.name}`}
             accessibilityRole="button"
             accessibilityLabel={options.tabBarAccessibilityLabel}
+            accessibilityState={isFocused ? {selected: true} : {}}
             onPress={onPress}
             style={stylesx.tabButton}>
             <Icono
               testID={`tabIcon_${route.name}`}
               name={iconName}
-              color="#222" // SIEMPRE NEGRO, NO cambia por selección
-              size={getResponsiveSize(28, 33, 38)}
+              color={tintColor}
+              size={
+                isFocused
+                  ? getResponsiveSize(29, 34, 39)
+                  : getResponsiveSize(27, 32, 37)
+              }
               style={{marginBottom: getResponsiveSize(0, 1, 2)}}
             />
-            <CText testID={`tabLabel_${route.name}`} style={stylesx.tabLabel} numberOfLines={1}>
+            <CText
+              testID={`tabLabel_${route.name}`}
+              style={[
+                stylesx.tabLabel,
+                isFocused ? stylesx.tabLabelActive : stylesx.tabLabelInactive,
+              ]}
+              numberOfLines={1}>
               {label}
             </CText>
           </TouchableOpacity>
@@ -176,6 +189,15 @@ export default function TabNavigation() {
         options={{
           tabBarLabel: String.home,
           tabBarIconName: 'home-outline',
+        }}
+      />
+      <Tab.Screen
+        name={TabNav.Participations}
+        component={TabRoute.Participations}
+        options={{
+          tabBarLabel: 'Participaciones',
+          tabBarIconName: 'clipboard-list-outline',
+          tabBarAccessibilityLabel: 'Participaciones',
         }}
       />
       <Tab.Screen
@@ -215,9 +237,15 @@ const stylesx = StyleSheet.create({
   },
   tabLabel: {
     fontSize: getResponsiveSize(14, 16, 18),
-    color: '#222',
-    fontWeight: '400',
     marginTop: getResponsiveSize(1, 2, 3),
-    letterSpacing: 0.1,
+    letterSpacing: 0,
+  },
+  tabLabelActive: {
+    color: ACTIVE_TAB_COLOR,
+    fontWeight: '700',
+  },
+  tabLabelInactive: {
+    color: INACTIVE_TAB_COLOR,
+    fontWeight: '500',
   },
 });

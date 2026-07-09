@@ -4,13 +4,13 @@
 
 export const MOCK_ELECTION = {
   id: 'election_voting_1',
-  title: 'Votación General',
+  title: 'Elecciones Universitarias',
   status: 'ACTIVA',
-  closesInLabel: 'Cierra en 2h',
-  instituteName: 'Recinto Principal',
+  closesInLabel: '2h 11m 33s',
+  instituteName: 'Carrera de Informática',
   organization: 'Tu Voto Decide',
-  // Timestamp de cierre para countdown (2 horas desde ahora para demo)
-  closesAt: Date.now() + 2 * 60 * 60 * 1000,
+  // El mock usa label estatico; datos reales pueden usar closesAt para countdown.
+  closesAt: null,
   // Timestamp de inicio (para "Inicia en X") - null = ya empezó
   startsAt: null,
 };
