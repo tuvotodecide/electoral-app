@@ -1,0 +1,49 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Stub local wira-sdk link
+        # package.json depends on "wira-sdk": "link:../wira-sdk", a sibling
+        # repo not published/checked out in CI. Tests mock this module via
+        # jest.config.js moduleNameMapper, so a placeholder is enough to let
+        # pnpm resolve the link without cloning the real wira-sdk repo.
+        run: |
+          mkdir -p ../wira-sdk
+          cat > ../wira-sdk/package.json <<'EOF'
+          {
+            "name": "wira-sdk",
+            "version": "0.0.0",
+            "main": "index.js"
+          }
+          EOF
+          echo "module.exports = {};" > ../wira-sdk/index.js
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
