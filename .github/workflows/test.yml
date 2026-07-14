@@ -46,76 +46,76 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests - Reusable components
-        run: pnpm test --testPathPattern=__tests__/unit/components
+        run: pnpm test -- --testPathPattern=__tests__/unit/components
 
       - name: Run tests - General configuration
-        run: pnpm test --testPathPattern="__tests__/unit/(api|config)"
+        run: pnpm test -- --testPathPattern="__tests__/unit/(api|config)"
 
       - name: Run tests - Hooks
-        run: pnpm test --testPathPattern=__tests__/unit/hooks
+        run: pnpm test -- --testPathPattern=__tests__/unit/hooks
 
       - name: Run tests - Navigation
-        run: pnpm test --testPathPattern=__tests__/unit/navigation
+        run: pnpm test -- --testPathPattern=__tests__/unit/navigation
 
       - name: Run tests - Redux slices
-        run: pnpm test --testPathPattern=__tests__/unit/redux
+        run: pnpm test -- --testPathPattern=__tests__/unit/redux
 
       - name: Run tests - Services and utils
-        run: pnpm test --testPathPattern="__tests__/unit/(services|utils)"
+        run: pnpm test -- --testPathPattern="__tests__/unit/(services|utils)"
 
       - name: Run Module tests - Login
-        run: pnpm test --testPathPattern="__tests__/unit/containers/Auth/(Login|LoginUser|AccountLock|OTPCode).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(Login|LoginUser|AccountLock|OTPCode).test.js"
 
       - name: Run Module tests - Register
-        run: pnpm test --testPathPattern="__tests__/unit/containers/Auth/(ConditionsRegister|RegisterUser[^\/]*).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(ConditionsRegister|RegisterUser[^\/]*).test.js"
 
       - name: Run Module tests - Logout
-        run: pnpm test --testPathPattern="__tests__/unit/containers/TabBar/Home/HomeScreen.Basic.test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/HomeScreen.Basic.test.js"
 
       - name: Run Module tests - Recovery File
-        run: pnpm test --testPathPattern="__tests__/unit/containers/Auth/(SelectRecuperation|RecoveryQR|RecoveryFinalize|RecoveryUser[^\/]*).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(SelectRecuperation|RecoveryQR|RecoveryFinalize|RecoveryUser[^\/]*).test.js"
 
       - name: Run Module tests - Recovery Guardians (unused module)
-        run: pnpm test --testPathPattern="__tests__/unit/containers/Auth/(FindMyUser|.*Guardian.*|).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(FindMyUser|.*Guardian.*|).test.js"
 
       - name: Run Module tests - Guardians (unused module)
-        run: pnpm test --testPathPattern="__tests__/unit/containers/TabBar/Guardians"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Guardians"
 
       - name: Run Module tests - Recovery CI/Selfie
-        run: pnpm test --testPathPattern="__tests__/unit/containers/Auth/RegisterUser(2|4).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/RegisterUser(2|4).test.js"
 
       - name: Run Module tests - Device token/push
-        run: pnpm test --testPathPattern="__tests__/unit/notifications.test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/notifications.test.js"
 
       - name: Run Module tests - Home
-        run: pnpm test --testPathPattern="__tests__/unit/containers/TabBar/Home/(HomeScreen[^\/]*).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/(HomeScreen[^\/]*).test.js"
 
       - name: Run Module tests - Notifications
-        run: pnpm test --testPathPattern="__tests__/unit/containers/TabBar/Home/(Notification[^\/]*).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/(Notification[^\/]*).test.js"
 
       - name: Run Module tests - Details/WebView
-        run: pnpm test --testPathPattern="__tests__/unit/containers/(TableDetailScreen|UnifiedTableScreen).test"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/(TableDetailScreen|UnifiedTableScreen).test"
 
       - name: Run Module tests - Electoral Locations
-        run: pnpm test --testPathPattern="__tests__/unit/containers/ElectoralLocationsScreen.test"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/ElectoralLocationsScreen.test"
 
       - name: Run Module tests - Records/Worksheet
-        run: pnpm test --testPathPattern="__tests__/unit/containers/RecordReviewScreen.test"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/RecordReviewScreen.test"
 
       - name: Run Module tests - Witness
-        run: pnpm test --testPathPattern="__tests__/unit/containers/(SearchTable|(Camera|PhotoConfirmation|PhotoReview|WitnessRecord)Screen).test"
+        run: pnpm test -- --testPathPattern="__tests__/unit/containers/(SearchTable|(Camera|PhotoConfirmation|PhotoReview|WitnessRecord)Screen).test"
 
       - name: Run Module tests - Offline Queue
-        run: pnpm test --testPathPattern="__tests__/unit/utils/.*offlineQueue.*.test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/utils/.*offlineQueue.*.test.js"
 
       - name: Run Module tests - Institutional voting
-        run: pnpm test --testPathPattern="__tests__/unit/features/voting/(CandidateCard|ElectionCard|ElectionRepository|quequeAdapter).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/(CandidateCard|ElectionCard|ElectionRepository|quequeAdapter).test.js"
 
       - name: Run Module tests - Participations/Receipts
-        run: pnpm test --testPathPattern="__tests__/unit/features/voting/(ParticipationListScreen|PublicElectionWebViewScreen|Notification.*|VoteReceiptScreen).test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/(ParticipationListScreen|PublicElectionWebViewScreen|Notification.*|VoteReceiptScreen).test.js"
 
       - name: Run Module tests - Institutional voting with QR
-        run: pnpm test --testPathPattern="__tests__/unit/features/voting/CandidateScreen.test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/CandidateScreen.test.js"
 
       - name: Run Module tests - Health
-        run: pnpm test --testPathPattern="__tests__/unit/AppRoot.test.js"
+        run: pnpm test -- --testPathPattern="__tests__/unit/AppRoot.test.js"
