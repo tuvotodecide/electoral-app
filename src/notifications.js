@@ -285,6 +285,7 @@ const formatShortNotificationDate = rawValue => {
   }
 
   return new Intl.DateTimeFormat('es-BO', {
+    timeZone: 'America/La_Paz',
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -299,6 +300,7 @@ const formatNotificationTime = rawValue => {
   }
 
   return new Intl.DateTimeFormat('es-BO', {
+    timeZone: 'America/La_Paz',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
