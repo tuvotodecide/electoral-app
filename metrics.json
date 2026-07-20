@@ -1,9 +1,9 @@
 {
-  "lastRunningTimeSecs": 2244,
+  "lastRunningTimeSecs": 26,
   "integrations": {
-    "integrationsCount": 2,
-    "countedFrom": "2026-07-04T00:00:00.000Z",
-    "countedTo": "2026-07-11T00:00:00.000Z"
+    "integrationsCount": 4,
+    "countedFrom": "2026-07-11T00:00:00.000Z",
+    "countedTo": "2026-07-18T00:00:00.000Z"
   },
   "preCommitSummary": {
     "lintWarningCount": 545,
