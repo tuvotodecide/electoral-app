@@ -30,10 +30,14 @@ jest.mock('@/src/api/account', () => ({
 
 jest.mock('@/src/api/vote', () => ({
   castVote: jest.fn(),
+  getVoteInfo: jest.fn(() => Promise.resolve({registeredVoters: []}))
 }));
 
 jest.mock('@/src/data/credentials', () => ({
-  getCredentialForVote: jest.fn(() => Promise.resolve({id: 'credential-1'})),
+  getCredentialForVote: jest.fn(() => Promise.resolve({
+    id: 'credential-1',
+    info: {credentialSubject: {nullifier: '0x123'}}
+  })),
   getNullifierForVote: jest.fn(),
 }));
 
@@ -56,6 +60,14 @@ jest.mock('../../../../src/features/voting/offline/voteJournal', () => ({
 jest.mock('wira-sdk', () => ({
   authenticateWithVerifier: jest.fn(() => Promise.resolve()),
 }));
+
+const mockProof = {
+  proof: {
+    pi_a: ['0', '1'],
+    pi_b: [['1', '2'], ['2', '3']],
+    pi_c: ['3', '4']
+  }
+};
 
 describe('ElectionRepository.api', () => {
   beforeEach(() => {
@@ -234,13 +246,17 @@ describe('ElectionRepository.api', () => {
   });
 
   it('incluye presentialSessionId en el payload final de participacion cuando corresponde', async () => {
-    axios.get.mockResolvedValueOnce({
-      data: {
-        status: 'CAN_VOTE',
-        canVote: true,
-        alreadyVoted: false,
-      },
-    });
+    axios.get
+      .mockResolvedValueOnce({
+        data: {
+          status: 'CAN_VOTE',
+          canVote: true,
+          alreadyVoted: false,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {data: {pathElements: [], pathIndices: []}},
+      });
     axios.post.mockResolvedValueOnce({
       data: {
         id: 'participation-1',
@@ -249,7 +265,8 @@ describe('ElectionRepository.api', () => {
     });
 
     const result = await ElectionRepositoryApi.submitVote(
-      'event-1',
+      () => mockProof,
+      '123abc',
       'option-1',
       'session-1',
     );
@@ -259,18 +276,18 @@ describe('ElectionRepository.api', () => {
       participationId: 'participation-1',
     });
     const verifierRequest = JSON.parse(wira.authenticateWithVerifier.mock.calls[0][0]);
-    expect(verifierRequest.body.callbackUrl).toBe(
+    expect(verifierRequest.body.callbackUrl).toContain(
       'https://callback.example/vote?optionId=option-1',
     );
     expect(axios.post).toHaveBeenCalledWith(
-      'https://test-backend.com/api/v1/voting/events/event-1/participations',
+      'https://test-backend.com/api/v1/voting/events/123abc/participations',
       {
         carnet: '12345678',
         presentialSessionId: 'session-1',
       },
       expect.objectContaining({
         headers: expect.objectContaining({
-          'idempotency-key': 'vote:event-1:12345678:option-1',
+          'idempotency-key': 'vote:123abc:12345678:option-1',
         }),
       }),
     );
@@ -300,13 +317,17 @@ describe('ElectionRepository.api', () => {
   });
 
   it('si backend falla despues del voto on-chain, devuelve sync pendiente conservando presentialSessionId', async () => {
-    axios.get.mockResolvedValueOnce({
-      data: {
-        status: 'CAN_VOTE',
-        canVote: true,
-        alreadyVoted: false,
-      },
-    });
+    axios.get
+      .mockResolvedValueOnce({
+        data: {
+          status: 'CAN_VOTE',
+          canVote: true,
+          alreadyVoted: false,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {data: {pathElements: [], pathIndices: []}},
+      });
     axios.post.mockRejectedValueOnce({
       response: {
         status: 503,
@@ -318,7 +339,8 @@ describe('ElectionRepository.api', () => {
     });
 
     const result = await ElectionRepositoryApi.submitVote(
-      'event-1',
+      () => mockProof,
+      'adc123',
       'option-1',
       'session-pending-1',
     );

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {renderHook, act, waitFor} from '@testing-library/react-native';
 import {useVotingState} from '../../../../src/features/voting/state/useVotingState';
+import { hashVoteNullifier } from '../../../../src/features/voting/utils/dataHasher';
 
 jest.mock('../../../../src/config/featureFlags', () => ({
   FEATURE_FLAGS: {
@@ -177,13 +178,13 @@ describe('useVotingState', () => {
     getCredentialForVote.mockResolvedValue({
       info: {
         credentialSubject: {
-          nullifier: 'nullifier-1',
+          nullifier: '0x123',
         },
       },
     });
     getOwnVoteInfo.mockResolvedValue([true, 'Lista Azul']);
 
-    const {result} = renderHook(() => useVotingState('election-1'));
+    const {result} = renderHook(() => useVotingState('123abc'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -193,8 +194,8 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('participation-1');
     });
 
-    expect(getCredentialForVote).toHaveBeenCalledWith('election-1', 'did:example:123', undefined );
-    expect(getOwnVoteInfo).toHaveBeenCalledWith('election-1', 'nullifier-1');
+    expect(getCredentialForVote).toHaveBeenCalledWith('123abc', 'did:example:123', undefined );
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(result.current.syncedWithBlockchain).not.toBeNull();
     expect(result.current.syncedWithBlockchain.status).toBe('synced');
   });
@@ -237,13 +238,13 @@ describe('useVotingState', () => {
     getCredentialForVote.mockResolvedValue({
       info: {
         credentialSubject: {
-          nullifier: 'nullifier-backend',
+          nullifier: '0x123',
         },
       },
     });
     getOwnVoteInfo.mockResolvedValue([true, 'Lista Contrato']);
 
-    const {result} = renderHook(() => useVotingState('event-backend'));
+    const {result} = renderHook(() => useVotingState('123abc'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -253,8 +254,8 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('backend-participation');
     });
 
-    expect(getCredentialForVote).toHaveBeenCalledWith('event-backend', 'did:example:123', undefined);
-    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-backend', 'nullifier-backend');
+    expect(getCredentialForVote).toHaveBeenCalledWith('123abc', 'did:example:123', undefined);
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(result.current.syncedWithBlockchain).toEqual({
       status: 'synced',
       data: {
@@ -280,13 +281,13 @@ describe('useVotingState', () => {
     getCredentialForVote.mockResolvedValue({
       info: {
         credentialSubject: {
-          nullifier: 'nullifier-not-voted',
+          nullifier: '0x123',
         },
       },
     });
     getOwnVoteInfo.mockResolvedValue([false, '']);
 
-    const {result} = renderHook(() => useVotingState('event-not-voted'));
+    const {result} = renderHook(() => useVotingState('123abc'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -296,7 +297,7 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('backend-not-voted');
     });
 
-    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-not-voted', 'nullifier-not-voted');
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(result.current.syncedWithBlockchain).toEqual({
       status: 'not_synced',
       data: {
@@ -313,13 +314,13 @@ describe('useVotingState', () => {
     getCredentialForVote.mockResolvedValue({
       info: {
         credentialSubject: {
-          nullifier: 'nullifier-error',
+          nullifier: '0x123',
         },
       },
     });
     getOwnVoteInfo.mockRejectedValue(new Error('RPC failed'));
 
-    const {result} = renderHook(() => useVotingState('event-error'));
+    const {result} = renderHook(() => useVotingState('123abc'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -350,13 +351,13 @@ describe('useVotingState', () => {
     getCredentialForVote.mockResolvedValue({
       info: {
         credentialSubject: {
-          nullifier: 'nullifier-1',
+          nullifier: '0x123abc',
         },
       },
     });
     getOwnVoteInfo.mockResolvedValue([true, 'Lista Verde']);
 
-    const {result} = renderHook(() => useVotingState('election-1'));
+    const {result} = renderHook(() => useVotingState('123abc'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);

@@ -10,6 +10,7 @@ import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
 import { getCredentialForVote } from '@/src/data/credentials';
 import { useSelector } from 'react-redux';
+import { hashVoteNullifier } from '../utils/dataHasher';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -210,8 +211,8 @@ export const useVotingState = (electionId = '') => {
         throw new Error(`Credential not found for electionId ${electionId}`);
       }
 
-      const nullifier = credential.info.credentialSubject.nullifier;
-      const voteInfo = await getOwnVoteInfo(electionId, nullifier);
+      const voteNullifier = hashVoteNullifier(electionId, credential.info.credentialSubject.nullifier);
+      const voteInfo = await getOwnVoteInfo(electionId, voteNullifier);
       if (Array.isArray(voteInfo) && voteInfo.length === 2) {
         const [hasVoted, option] = voteInfo;
         if (hasVoted) {

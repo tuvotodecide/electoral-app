@@ -1,11 +1,10 @@
-import { SPONSORSHIP_POLICY, FACTORY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM } from '@env';
+import { SPONSORSHIP_POLICY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM } from '@env';
 import { arbitrum, arbitrumSepolia, base, baseSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
 
 
 export const sponsorshipPolicyId = SPONSORSHIP_POLICY;
-export const FACTORY_ADDRESS = FACTORY;
 
 export const availableNetworks = {
 	'arbitrum-sepolia': {
@@ -56,7 +55,7 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0x5D4f9dBD942C8D37dA57F6Ffd64cC9bF45939b0e',
     participationNft: '',
-    voteContract: '0xB8a6401df3fD1615A0BCdEF5F4D76244c8b6CBa5',
+    voteContract: '0x7B57eE9103fc46eD6794329C36D2919293F0Fabb',
   },
   'base': {
     chain: base,

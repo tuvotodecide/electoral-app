@@ -738,6 +738,25 @@ jest.mock('react-native-otp-textinput', () => {
   };
 });
 
+// Mock ZkExecutor (pulls in react-native-webview, which ships an ESM build Jest can't parse)
+jest.mock('../../src/components/zkExecutor/zkExecutor', () => {
+  const React = require('react');
+  const MockZkExecutor = React.forwardRef((props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      generateProof: jest.fn(() =>
+        Promise.resolve({proof: {}, publicSignals: []}),
+      ),
+    }));
+    return null;
+  });
+  MockZkExecutor.displayName = 'ZkExecutor';
+
+  return {
+    __esModule: true,
+    default: MockZkExecutor,
+  };
+});
+
 // Mock Gesture Handler components used in tests
 jest.mock('react-native-gesture-handler', () => {
   const { View, TouchableOpacity, ScrollView } = require('react-native');

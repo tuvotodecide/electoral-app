@@ -31,7 +31,12 @@ config.transformer = {
 
 config.resolver = {
   ...resolver,
-  assetExts: resolver.assetExts.filter((ext) => ext !== "svg"),
+  assetExts: [
+    ...resolver.assetExts.filter((ext) => ext !== "svg"),
+    "wasm",
+    "zkey",
+    "txt",
+  ],
   sourceExts: [...resolver.sourceExts, "svg", "cjs", "ts", "tsx", "mjs"],
   extraNodeModules,
   resolveRequest: (context, moduleName, platform) => {
