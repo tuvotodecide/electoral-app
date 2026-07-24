@@ -7,6 +7,8 @@ import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../u
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
+import { getVoteInfo } from '@/src/api/vote';
+import { poseidon1, poseidon2 } from 'poseidon-lite'
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
@@ -324,6 +326,19 @@ const requestParticipationStatus = async electionId => {
     participationId: data?.participationId || null,
   };
 };
+
+const getUserPathElements = async (electionId, voteHash) => {
+  const {data: response} = await axios.get(
+    `${API_BASE}/merkletree/proof`,
+    {
+      params: {electionId, type: 'vote', leaf: voteHash},
+      headers: {Accept: 'application/json'},
+      timeout: 30000,
+    },
+  );
+
+  return response.data;
+}
 
 const requestCandidates = async electionId => {
   const detail = await requestPublicEventDetail(electionId);
@@ -843,7 +858,7 @@ const ElectionRepositoryApi = {
     return fetchWitnessRecordsByDni(dni);
   },
 
-  async submitVote(electionId, candidateId, presentialSessionId) {
+  async submitVote(generateProofFn, electionId, candidateId, presentialSessionId) {
     if (!String(electionId || '').trim()) {
       return {
         success: false,
@@ -875,6 +890,8 @@ const ElectionRepositoryApi = {
     }
 
     try {
+      const { registeredVoters } = await getVoteInfo(electionId);
+
       const did = getCurrentDid();
       const privKey = getCurrentPrivKey();
 
@@ -890,6 +907,47 @@ const ElectionRepositoryApi = {
         throw new Error('No se pudo validar tu acceso para emitir el voto');
       }
 
+      const nullifier = BigInt(credential.info.credentialSubject.nullifier);
+      const hex = Array.from(new TextEncoder().encode(dni)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const voteHash = '0x' + poseidon2([nullifier, BigInt(`0x${hex}`)]).toString(16);
+      const voteIdHex = BigInt('0x' + electionId);
+      const voteClaimIdHex = BigInt('0x' + electionId + '2D526577617264'); // + 'reward' in hex
+      const claimNullifier = poseidon2([voteClaimIdHex, nullifier]);
+      const voteNullifier = poseidon2([voteIdHex, nullifier]);
+      const claimNullifierHash = poseidon1([claimNullifier]);
+
+      const { pathElements, pathIndices } = await getUserPathElements(
+        electionId,
+        voteHash,
+      );
+
+      const circuitProof = await generateProofFn(
+        nullifier.toString(),
+        BigInt(voteHash).toString(),
+        claimNullifier.toString(),
+        pathElements,
+        pathIndices,
+        voteIdHex.toString(),
+        registeredVoters.toString(),
+        voteNullifier.toString(),
+        claimNullifierHash.toString()
+      );
+      
+      const pia = circuitProof.proof.pi_a.slice(0, 2);
+      const piba = circuitProof.proof.pi_b[0].slice(0, 2);
+      const pibb = circuitProof.proof.pi_b[1].slice(0, 2);
+      const pic = circuitProof.proof.pi_c.slice(0, 2);
+
+      const proofQuery = [
+        `voteNullfier=${encodeURIComponent(voteNullifier.toString())}`,
+        `rewardHash=${encodeURIComponent(claimNullifierHash.toString())}`,
+        `pia=${encodeURIComponent(pia.join(','))}`,
+        `piba=${encodeURIComponent(piba.join(','))}`,
+        `pibb=${encodeURIComponent(pibb.join(','))}`,
+        `pic=${encodeURIComponent(pic.join(','))}`,
+      ].join('&');
+
+      voteRequest.body.callbackUrl = `${voteRequest.body.callbackUrl}&${proofQuery}`;
       await wira.authenticateWithVerifier(
         JSON.stringify(voteRequest),
         did,

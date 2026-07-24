@@ -383,6 +383,7 @@ describe('CandidateScreen', () => {
     });
 
     expect(repository.submitVote).toHaveBeenCalledWith(
+      expect.any(Function),
       'election-1',
       'cand-1',
       undefined,
@@ -425,6 +426,7 @@ describe('CandidateScreen', () => {
 
     await waitFor(() => {
       expect(repository.submitVote).toHaveBeenCalledWith(
+        expect.any(Function),
         'election-1',
         'cand-1',
         undefined,
@@ -459,6 +461,7 @@ describe('CandidateScreen', () => {
     await waitFor(() => {
       expect(repository.verifyVoteQrCode).toHaveBeenCalledWith('qr-token-1');
       expect(repository.submitVote).toHaveBeenCalledWith(
+        expect.any(Function),
         'election-1',
         'cand-1',
         'presential-session-1',

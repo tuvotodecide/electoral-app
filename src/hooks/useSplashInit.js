@@ -191,7 +191,19 @@ export const useSplashInit = (navigation) => {
   useEffect(() => {
     const initAppWithSdk = async () => {
       try {
-        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY });
+        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
+          pushUrl: 'https://push-staging.polygonid.com/api/v1',
+          ipfsGatewayUrl: 'https://ipfs.io',
+          chainConfigs: {
+            "80002": {
+              blockchain: 'polygon',
+              network: 'amoy',
+              rpcUrl: 'https://polygon-amoy-bor-rpc.publicnode.com/',
+              stateContractAddr: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
+            }
+          },
+          didMethods: []
+        });
       } catch (error) {
         if (!error.message.includes('Type FilterMapper is already registered')) {
           Alert.alert('Error', Strings.sdkInitError, [

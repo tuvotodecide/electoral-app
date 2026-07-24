@@ -1,4 +1,4 @@
-import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
+import { createPublicClient, getContract, http } from "viem";
 import voteAbi from '../abi/VoteAbi.json';
 import { availableNetworks } from "./params";
 import { CHAIN } from "@env";
@@ -20,26 +20,27 @@ function getVoteReadContract() {
   return vote;
 }
 
-export async function getZKPRequest(requestId) {
-  const vote = getVoteReadContract();
-  const request = await vote.read.getZKPRequest([requestId]);
-  return request;
+function voteIdToHex(voteId) {
+  return BigInt(`0x${voteId}`);
 }
 
 export async function getOwnVoteInfo(voteId, nullifier) {
   const vote = getVoteReadContract();
-  const ownVote = await vote.read.getOwnVoteInfo([voteId, nullifier]);
+  const ownVote = await vote.read.getOwnVoteInfo([voteIdToHex(voteId), nullifier]);
   return ownVote;
 }
 
-export function castVote(voteId, optionId, nullifier) {
+export async function getVoteInfo(voteId) {
+  const vote = getVoteReadContract();
+  const voteInfo = await vote.read.getVoteInfo([voteIdToHex(voteId)]);
   return {
-    to: availableNetworks[CHAIN].voteContract,
-    value: BigInt(0),
-    data: encodeFunctionData({
-      abi: voteAbi,
-      functionName: 'castVote',
-      args: [voteId, optionId, nullifier]
-    })
+    name: voteInfo[0],
+    startDate: voteInfo[1],
+    endDate: voteInfo[2],
+    resultsDate: voteInfo[3],
+    totalVoters: voteInfo[4],
+    totalVotersMkRoot: voteInfo[5],
+    registeredVoters: voteInfo[6],
+    options: voteInfo[7],
   };
 }
