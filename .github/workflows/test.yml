@@ -93,6 +93,14 @@ jobs:
       - name: Run Module tests - Notifications
         run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/(Notification[^\/]*).test.js"
 
+      - name: Official publication mobile focused tests
+        run: >
+          pnpm test --
+          --runInBand
+          __tests__/unit/features/officialPublication/OfficialPublicationNotificationCard.test.js
+          __tests__/unit/container/TabBar/Home/Notification.officialPublication.test.js
+          __tests__/unit/features/officialPublication/OfficialPublicationRequestScreen.test.js
+
       - name: Run Module tests - Details/WebView
         run: pnpm test -- --testPathPattern="__tests__/unit/containers/(TableDetailScreen|UnifiedTableScreen).test"
 

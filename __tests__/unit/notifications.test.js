@@ -40,7 +40,7 @@ jest.mock('@notifee/react-native', () => {
     __esModule: true,
     default: localMock,
     AndroidImportance: {HIGH: 4},
-    EventType: {PRESS: 'PRESS'},
+    EventType: {PRESS: 'PRESS', ACTION_PRESS: 'ACTION_PRESS'},
   };
 });
 
@@ -487,6 +487,61 @@ describe('notifications', () => {
       name: 'TabNavigation',
       params: {screen: 'HomeScreen'},
     });
+  });
+
+  it('reconoce VOTE_REWARD_AVAILABLE y navega a recompensas', () => {
+    expect(
+      buildNotificationTextFallback({
+        data: {
+          type: 'VOTE_REWARD_AVAILABLE',
+          action: 'OPEN_VOTE_REWARD',
+        },
+      }),
+    ).toMatchObject({
+      title: 'Recompensa disponible',
+      body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+    });
+
+    expect(
+      buildRouteFromNotification({
+        data: {
+          type: 'VOTE_REWARD_AVAILABLE',
+          action: 'OPEN_VOTE_REWARD',
+          eventId: 'event-1',
+        },
+      }),
+    ).toEqual({
+      name: 'RewardsScreen',
+      params: {
+        voteRewardAvailable: true,
+        rewardAction: 'OPEN_VOTE_REWARD',
+      },
+    });
+  });
+
+  it('muestra acción Reclamar para notificación local de recompensa por voto', async () => {
+    await showLocalNotification({
+      title: 'Recompensa disponible',
+      body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+      data: {
+        type: 'VOTE_REWARD_AVAILABLE',
+        action: 'OPEN_VOTE_REWARD',
+        eventId: 'event-1',
+      },
+    });
+
+    expect(notifee.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        android: expect.objectContaining({
+          actions: [
+            {
+              title: 'Reclamar',
+              pressAction: {id: 'OPEN_VOTE_REWARD'},
+            },
+          ],
+        }),
+      }),
+    );
   });
 
   it('abre el detalle institucional desde push para tipos de votacion sin caer a Splash', () => {

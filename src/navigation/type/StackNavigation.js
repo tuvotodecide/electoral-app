@@ -247,6 +247,11 @@ export default function StackNavigation() {
         component={StackRoute.RewardDetailScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.OfficialPublicationRequest}
+        component={StackRoute.OfficialPublicationRequestScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

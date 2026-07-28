@@ -191,7 +191,7 @@ export const useSplashInit = (navigation) => {
   useEffect(() => {
     const initAppWithSdk = async () => {
       try {
-        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
+await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
           pushUrl: 'https://push-staging.polygonid.com/api/v1',
           ipfsGatewayUrl: 'https://ipfs.io',
           chainConfigs: {

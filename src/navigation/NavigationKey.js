@@ -53,6 +53,7 @@ export const StackNav = {
   ClaimCredScreen: 'ClaimCredScreen',
   RewardsScreen: 'RewardsScreen',
   RewardDetailScreen: 'RewardDetailScreen',
+  OfficialPublicationRequest: 'OfficialPublicationRequest',
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',

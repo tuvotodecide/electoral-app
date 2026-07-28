@@ -69,6 +69,7 @@ import {
   RewardDetailScreen,
   RewardsScreen,
 } from '../features/rewards';
+import {OfficialPublicationRequestScreen} from '../features/officialPublication';
 
 // Componentes TabBar necesarios
 import Profile from '../container/TabBar/Profile/Profile';
@@ -160,6 +161,7 @@ export const StackRoute = {
   ClaimCredScreen,
   RewardsScreen,
   RewardDetailScreen,
+  OfficialPublicationRequestScreen,
 
   // Profile y configuración
   PersonalDetails,

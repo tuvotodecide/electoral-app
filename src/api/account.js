@@ -3,7 +3,7 @@ import { CHAIN } from '@env';
 import { createSmartAccountClient } from 'permissionless';
 import { createPimlicoClient } from 'permissionless/clients/pimlico';
 import { createPublicClient, getContract, http } from 'viem';
-import { entryPoint07Address, toCoinbaseSmartAccount } from 'viem/account-abstraction';
+import { entryPoint06Address, toCoinbaseSmartAccount } from 'viem/account-abstraction';
 import { privateKeyToAccount } from 'viem/accounts';
 import walletAbi from './contracts/SimpleAccount.json';
 import {
@@ -51,6 +51,56 @@ const waitForReceiptWithFallback = async (publicClient, txHash) => {
       throw timeoutError;
     }
   }
+};
+
+const getSmartAccountEntryPoint = account =>
+  account?.entryPoint || {
+    address: entryPoint06Address,
+    version: '0.6',
+  };
+
+const createOfficialSmartAccountClient = async (
+  privateKey,
+  address,
+  chainId,
+  ephemeral = false,
+) => {
+  const {account, publicClient} = ephemeral
+  ? await getRandomAccount(chainId)
+  : await getAccount(
+    privateKey,
+    address,
+    chainId,
+  );
+  const {chain, bundler} = availableNetworks[chainId];
+
+  const pimlicoClient = createPimlicoClient({
+    chain,
+    transport: http(bundler),
+    entryPoint: getSmartAccountEntryPoint(account),
+  });
+
+  const customParams = availableNetworks[chainId].getCustomPaymasterParams
+    ? availableNetworks[chainId].getCustomPaymasterParams(
+        pimlicoClient,
+        sponsorshipPolicyId,
+      )
+    : {};
+
+  const smartAccountClient = createSmartAccountClient({
+    account,
+    chain,
+    bundlerTransport: http(bundler),
+    paymaster: pimlicoClient,
+    ...customParams,
+  });
+
+  return {
+    account,
+    publicClient,
+    smartAccountClient,
+    entryPoint: getSmartAccountEntryPoint(account),
+  };
 };
 
 export function getReadAccountContract(chain, address) {
@@ -109,34 +159,13 @@ export async function executeOperation(
   eventName,
   ephemeral = false,
 ) {
-  const {account, publicClient} = ephemeral
-  ? await getRandomAccount(chainId)
-  : await getAccount(
-    privateKey,
-    address,
-    chainId,
-  );
-  const {chain, bundler} = availableNetworks[chainId];
-
-  const pimlicoClient = createPimlicoClient({
-    chain,
-    transport: http(bundler),
-    entryPoint: {
-      address: entryPoint07Address,
-      version: '0.7',
-    },
-  });
-
-  const customParams = availableNetworks[chainId].getCustomPaymasterParams ? 
-    availableNetworks[chainId].getCustomPaymasterParams(pimlicoClient, sponsorshipPolicyId) : {};
-
-  const smartAccountClient = createSmartAccountClient({
-    account,
-    chain,
-    bundlerTransport: http(bundler),
-    paymaster: pimlicoClient,
-    ...customParams,
-  });
+  const {publicClient, smartAccountClient} =
+    await createOfficialSmartAccountClient(
+      privateKey,
+      address,
+      chainId,
+      ephemeral,
+    );
 
   const txHash = await smartAccountClient.sendTransaction(callData);
   const receipt = await waitForReceiptWithFallback(publicClient, txHash);
@@ -149,6 +178,34 @@ export async function executeOperation(
   const block = await publicClient.getBlock({blockNumber: receipt.blockNumber});
   const date = new Date(Number(block.timestamp) * 1000);
   return {returnData, receipt, date: date.toLocaleString()};
+}
+
+export async function sendOperationWithUserOpHash(
+  privateKey,
+  address,
+  chainId,
+  callData,
+) {
+  const {smartAccountClient, entryPoint, account} =
+    await createOfficialSmartAccountClient(privateKey, address, chainId, false);
+
+  const preparedCalls = Array.isArray(callData)
+    ? callData
+    : [callData];
+  const userOpHash = await smartAccountClient.sendUserOperation({
+    calls: preparedCalls.map(call => ({
+      to: call.to,
+      value: BigInt(call.value || 0),
+      data: call.data || '0x',
+    })),
+  });
+
+  return {
+    userOpHash,
+    smartAccountAddress: account.address,
+    entryPointAddress: entryPoint.address,
+    entryPointVersion: entryPoint.version,
+  };
 }
 
 export async function isWallet(address) {

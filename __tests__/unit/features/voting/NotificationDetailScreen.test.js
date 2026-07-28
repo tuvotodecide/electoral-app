@@ -70,6 +70,23 @@ jest.mock('react-native-vector-icons/Ionicons', () => {
   return MockIonicons;
 });
 
+jest.mock('../../../../src/features/officialPublication/api/officialPublicationApi', () => ({
+  getOfficialPublicationRequest: jest.fn(),
+}));
+
+jest.mock('../../../../src/features/institutionalAuthorization', () => {
+  const React = require('react');
+  const {Text} = require('react-native');
+  return {
+    InstitutionalAuthorizationNotificationCard: () => (
+      <Text>Tarjeta autorización institucional</Text>
+    ),
+    InstitutionalInvitationNotificationCard: () => (
+      <Text>Tarjeta invitación institucional</Text>
+    ),
+  };
+});
+
 describe('NotificationDetailScreen', () => {
   const walletState = {
     wallet: {
@@ -101,6 +118,15 @@ describe('NotificationDetailScreen', () => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
     Linking.openURL = jest.fn(() => Promise.resolve());
+    const officialApi = require('../../../../src/features/officialPublication/api/officialPublicationApi');
+    officialApi.getOfficialPublicationRequest.mockResolvedValue({
+      requestId: 'request-1',
+      eventName: 'Eleccion oficial',
+      institutionName: 'Institucion Uno',
+      status: 'PENDING_APPROVAL',
+      publicationDeadline: '2099-01-01T06:00:00.000Z',
+      canPublish: true,
+    });
   });
 
   it('marca localmente la notificacion como vista al abrir el detalle', async () => {
@@ -805,5 +831,73 @@ describe('NotificationDetailScreen', () => {
     );
     expect(resolveValidImageUrl('ftp://cdn.example.com/news-image.png')).toBeNull();
     expect(resolveValidImageUrl('https://cdn.example.com/page.html')).toBeNull();
+  });
+
+  it('muestra detalle de publicacion oficial y navega a revisar solicitud con requestId', async () => {
+    const screen = renderScreen({
+      title: 'Confirmacion de publicacion',
+      body: 'Tienes que confirmar la publicacion oficial de "Eleccion oficial".',
+      kind: 'voting_event',
+      data: {
+        type: 'OFFICIAL_PUBLICATION_REQUEST',
+        requestId: 'request-1',
+        eventName: 'Eleccion oficial',
+        publicationDeadline: '2099-01-01T06:00:00.000Z',
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Eleccion oficial')).toBeTruthy();
+      expect(screen.getByText('Institucion')).toBeTruthy();
+      expect(screen.getByText('Revisar solicitud')).toBeTruthy();
+    });
+
+    expect(screen.queryByText('callData')).toBeNull();
+    expect(screen.queryByText('nullifiers')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('goToResultsButton'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(StackNav.OfficialPublicationRequest, {
+      requestId: 'request-1',
+    });
+  });
+
+  it('D-SIGN-001: abre autorización institucional desde data.event', () => {
+    const notification = {
+      title: 'Autorización institucional pendiente',
+      body: 'Autoriza el acceso desde tu teléfono.',
+      kind: 'generic',
+      data: {
+        event: 'MOBILE_AUTHORIZATION_REQUESTED',
+        applicationId: 'app-1',
+        institutionName: 'Colegio Médico',
+      },
+    };
+    const screen = renderScreen(notification);
+
+    expect(screen.getByText('Tarjeta autorización institucional')).toBeTruthy();
+    expect(screen.queryByText('Revisar autorización')).toBeNull();
+    expect(screen.queryByTestId('goToResultsButton')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('D-INV-006/D-INV-007: abre invitación institucional desde la notificación', () => {
+    const notification = {
+      title: 'Invitación institucional',
+      body: 'Tienes una invitación pendiente.',
+      kind: 'generic',
+      data: {
+        event: 'INVITATION_CREATED',
+        invitationId: 'inv-1',
+        token: 'token-1',
+        institutionName: 'Colegio Médico',
+      },
+    };
+    const screen = renderScreen(notification);
+
+    expect(screen.getByText('Tarjeta invitación institucional')).toBeTruthy();
+    expect(screen.queryByText('Revisar invitación')).toBeNull();
+    expect(screen.queryByTestId('goToResultsButton')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

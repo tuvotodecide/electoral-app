@@ -256,6 +256,15 @@ describe('ElectionRepository.api', () => {
       })
       .mockResolvedValueOnce({
         data: {data: {pathElements: [], pathIndices: []}},
+      })
+      .mockResolvedValueOnce({
+        data: {
+          status: 'ALREADY_VOTED',
+          canVote: false,
+          alreadyVoted: true,
+          participationId: 'participation-1',
+          participatedAt: '2026-01-01T10:00:00.000Z',
+        },
       });
     axios.post.mockResolvedValueOnce({
       data: {
@@ -294,6 +303,15 @@ describe('ElectionRepository.api', () => {
   });
 
   it('no manda presentialSessionId cuando la participacion no viene de QR', async () => {
+    axios.get.mockResolvedValueOnce({
+      data: {
+        status: 'ALREADY_VOTED',
+        canVote: false,
+        alreadyVoted: true,
+        participationId: 'participation-remote-1',
+        participatedAt: '2026-01-01T10:00:00.000Z',
+      },
+    });
     axios.post.mockResolvedValueOnce({
       data: {
         id: 'participation-remote-1',
@@ -313,6 +331,38 @@ describe('ElectionRepository.api', () => {
         carnet: '12345678',
       },
       expect.any(Object),
+    );
+  });
+
+  it('no registra participación cuando /vote falla', async () => {
+    axios.get
+      .mockResolvedValueOnce({
+        data: {
+          status: 'CAN_VOTE',
+          canVote: true,
+          alreadyVoted: false,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {data: {pathElements: [], pathIndices: []}},
+      });
+    wira.authenticateWithVerifier.mockRejectedValueOnce(new Error('vote failed'));
+
+    const result = await ElectionRepositoryApi.submitVote(
+      () => mockProof,
+      'abc123',
+      'option-1',
+      null,
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      error: 'No se pudo registrar el voto. Intenta nuevamente.',
+    });
+    expect(axios.post).not.toHaveBeenCalledWith(
+      expect.stringContaining('/participations'),
+      expect.anything(),
+      expect.anything(),
     );
   });
 

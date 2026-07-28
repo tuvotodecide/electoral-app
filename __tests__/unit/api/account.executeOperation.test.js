@@ -1,4 +1,7 @@
-import {executeOperation} from '../../../src/api/account';
+import {
+  executeOperation,
+  sendOperationWithUserOpHash,
+} from '../../../src/api/account';
 
 jest.mock('viem', () => ({
   createPublicClient: jest.fn(),
@@ -11,16 +14,9 @@ jest.mock('viem/accounts', () => ({
 }));
 
 jest.mock('viem/account-abstraction', () => ({
-  entryPoint07Address: '0xentry',
-}));
-
-jest.mock('permissionless/accounts', () => ({
-  toSimpleSmartAccount: jest.fn(),
-}));
-
-jest.mock('viem/account-abstraction', () => ({
+  entryPoint06Address: '0xentry06',
   toCoinbaseSmartAccount: jest.fn(),
-}))
+}));
 
 jest.mock('permissionless/clients/pimlico', () => ({
   createPimlicoClient: jest.fn(),
@@ -45,7 +41,7 @@ describe('api/account executeOperation', () => {
     jest.clearAllMocks();
 
     const {createPublicClient} = require('viem');
-    const {toSimpleSmartAccount} = require('permissionless/accounts');
+    const {toCoinbaseSmartAccount} = require('viem/account-abstraction');
     const {createPimlicoClient} = require('permissionless/clients/pimlico');
     const {createSmartAccountClient} = require('permissionless');
 
@@ -56,7 +52,10 @@ describe('api/account executeOperation', () => {
     };
 
     createPublicClient.mockReturnValue(publicClient);
-    toSimpleSmartAccount.mockResolvedValue({address: '0xsmart'});
+    toCoinbaseSmartAccount.mockResolvedValue({
+      address: '0xsmart',
+      entryPoint: {address: '0xentry06', version: '0.6'},
+    });
     createPimlicoClient.mockReturnValue({
       getUserOperationGasPrice: jest.fn(async () => ({
         standard: {maxFeePerGas: 1n, maxPriorityFeePerGas: 1n},
@@ -64,6 +63,7 @@ describe('api/account executeOperation', () => {
     });
     createSmartAccountClient.mockReturnValue({
       sendTransaction: jest.fn(async () => '0xtx'),
+      sendUserOperation: jest.fn(async () => '0xuserop'),
     });
   });
 
@@ -108,6 +108,59 @@ describe('api/account executeOperation', () => {
       name: 'WaitForTransactionReceiptTimeoutError',
       errorType: 'NETWORK_TIMEOUT',
       txHash: '0xtx',
+    });
+  });
+
+  it('devuelve userOpHash sin esperar receipt para publicacion oficial', async () => {
+    const {createSmartAccountClient} = require('permissionless');
+    const smartClient = {
+      sendTransaction: jest.fn(async () => '0xtx'),
+      sendUserOperation: jest.fn(async () => '0xuserop'),
+    };
+    createSmartAccountClient.mockReturnValueOnce(smartClient);
+
+    const result = await sendOperationWithUserOpHash(
+      '0xpriv',
+      '0xsmart',
+      'testnet',
+      {to: '0xabc', value: '0', data: '0x123'},
+    );
+
+    expect(smartClient.sendUserOperation).toHaveBeenCalledWith({
+      calls: [{to: '0xabc', value: 0n, data: '0x123'}],
+    });
+    expect(publicClient.waitForTransactionReceipt).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      userOpHash: '0xuserop',
+      smartAccountAddress: '0xsmart',
+      entryPointAddress: '0xentry06',
+      entryPointVersion: '0.6',
+    });
+  });
+
+  it('envia batch de publicacion oficial conservando orden de llamadas', async () => {
+    const {createSmartAccountClient} = require('permissionless');
+    const smartClient = {
+      sendTransaction: jest.fn(async () => '0xtx'),
+      sendUserOperation: jest.fn(async () => '0xuserop'),
+    };
+    createSmartAccountClient.mockReturnValueOnce(smartClient);
+
+    await sendOperationWithUserOpHash(
+      '0xpriv',
+      '0xsmart',
+      'testnet',
+      [
+        {to: '0xtoken', value: '0', data: '0xapprove'},
+        {to: '0xvote', value: '0', data: '0xcreatevote'},
+      ],
+    );
+
+    expect(smartClient.sendUserOperation).toHaveBeenCalledWith({
+      calls: [
+        {to: '0xtoken', value: 0n, data: '0xapprove'},
+        {to: '0xvote', value: 0n, data: '0xcreatevote'},
+      ],
     });
   });
 });

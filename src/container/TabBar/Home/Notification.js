@@ -2,10 +2,12 @@ import { BACKEND_RESULT } from '@env';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   StyleSheet,
   TouchableOpacity,
   View,
   Text,
+  ScrollView,
   RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,6 +31,9 @@ import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { FlashList } from '@shopify/flash-list';
 
 import { captureError } from '../../../config/sentry';
+import OfficialPublicationNotificationCard, {
+  getOfficialPublicationSummaryStatus,
+} from '../../../features/officialPublication/components/OfficialPublicationNotificationCard';
 const buildNotificationSeenKey = dniValue => {
   const normalized = String(dniValue || '')
     .trim()
@@ -114,6 +119,7 @@ export const getNotificationKind = ({ type, title, body }) => {
 
   if (
     normalizedType === 'INSTITUTIONAL_EVENT_PUBLISHED' ||
+    normalizedType === 'OFFICIAL_PUBLICATION_REQUEST' ||
     normalizedType === 'INSTITUTIONAL_SCHEDULE_UPDATED' ||
     normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN' ||
     normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED' ||
@@ -145,6 +151,7 @@ const isVotingNotificationType = type => {
   return [
     'ELECTION_RESULTS',
     'INSTITUTIONAL_RESULTS_AVAILABLE',
+    'OFFICIAL_PUBLICATION_REQUEST',
     'INSTITUTIONAL_EVENT_PUBLISHED',
     'INSTITUTIONAL_SCHEDULE_UPDATED',
     'INSTITUTIONAL_PADRON_REVIEW_OPEN',
@@ -205,6 +212,9 @@ export const buildNotificationNavigationTarget = (
   { enableVotingFlow = FEATURE_FLAGS.ENABLE_VOTING_FLOW } = {},
 ) => {
   const rawData = item?.data || {};
+  if (String(rawData?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
+    return null;
+  }
 
   if (enableVotingFlow) {
     if (
@@ -322,6 +332,7 @@ export default function Notification({ navigation }) {
   const [apiKey, setApiKey] = useState(null);
   const [authResolved, setAuthResolved] = useState(false);
   const [notificationNow, setNotificationNow] = useState(Date.now());
+  const [selectedOfficialPublication, setSelectedOfficialPublication] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -359,6 +370,8 @@ export default function Notification({ navigation }) {
     const isPadronReview = normalizedType === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
     const isOfficialPublication =
       normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED';
+    const isOfficialPublicationRequest =
+      normalizedType === 'OFFICIAL_PUBLICATION_REQUEST';
     const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
     const isVotingCancelled = normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED';
     const notificationKind = getNotificationKind({
@@ -370,6 +383,8 @@ export default function Notification({ navigation }) {
     let mesaLabel = '';
     if (notificationKind === 'news') {
       mesaLabel = titleFromBackend || data?.title || 'Noticia';
+    } else if (isOfficialPublicationRequest) {
+      mesaLabel = 'Publicación oficial pendiente';
     } else if (notificationKind === 'voting_event') {
       mesaLabel =
         titleFromBackend ||
@@ -400,6 +415,8 @@ export default function Notification({ navigation }) {
       const startsAt = data?.votingStart || data?.startsAt;
       if (isPadronReview) {
         tipo = 'Ver padrón';
+      } else if (isOfficialPublicationRequest) {
+        tipo = 'Pendiente de confirmación';
       } else if (isVotingCancelled) {
         tipo = 'Eliminada';
       } else if (isOfficialPublication) {
@@ -463,6 +480,8 @@ export default function Notification({ navigation }) {
           ? bodyFromBackend || data?.summary || data?.body || ''
           : isVotingCancelled
             ? bodyFromBackend || data?.body || ''
+          : isOfficialPublicationRequest
+          ? `La votación “${data?.eventName || data?.title || 'institucional'}” requiere tu autorización desde este dispositivo.`
           : notificationKind === 'voting_event'
           ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
@@ -472,6 +491,9 @@ export default function Notification({ navigation }) {
       timestamp: new Date(created).getTime(),
       estado: data?.status || 'iniciado',
       statusTone:
+        isOfficialPublicationRequest
+          ? 'success'
+          :
         notificationKind === 'election_results'
           ? 'success'
           : notificationKind === 'voting_event' && (eligibleFlag === false || isVotingCancelled)
@@ -483,6 +505,8 @@ export default function Notification({ navigation }) {
       actionLabel:
         !isVotingCancelled && (isVotingEnabled || isPadronReview)
           ? 'Ver padrón'
+          : isOfficialPublicationRequest
+            ? undefined
           : undefined,
       imageUrl: data?.imageUrl || n?.imageUrl || null,
       resultsSummary: mapResultsSummary(data),
@@ -703,6 +727,10 @@ export default function Notification({ navigation }) {
 
   const handleNotificationPress = useCallback(
     item => {
+      if (String(item?.data?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
+        setSelectedOfficialPublication(item);
+        return;
+      }
       const target = buildNotificationNavigationTarget(item);
       if (!target?.name) {
         return;
@@ -711,13 +739,66 @@ export default function Notification({ navigation }) {
     },
     [navigation],
   );
+
+  const updateOfficialPublicationStatus = useCallback((requestId, status) => {
+    if (!requestId || !status) return;
+    setItems(currentItems =>
+      currentItems.map(item => {
+        const isTarget =
+          String(item?.data?.type || '').trim().toUpperCase() ===
+            'OFFICIAL_PUBLICATION_REQUEST' &&
+          String(item?.data?.requestId || '') === String(requestId);
+        if (!isTarget) return item;
+        return {
+          ...item,
+          tipo: getOfficialPublicationSummaryStatus(status),
+          data: {
+            ...item.data,
+            status,
+          },
+        };
+      }),
+    );
+    setSelectedOfficialPublication(current => {
+      if (String(current?.data?.requestId || '') !== String(requestId)) {
+        return current;
+      }
+      return {
+        ...current,
+        tipo: getOfficialPublicationSummaryStatus(status),
+        data: {
+          ...current.data,
+          status,
+        },
+      };
+    });
+  }, []);
+
   const renderNotificationItem = useCallback(
-    ({ item, index }) => (
-      <TouchableOpacity
+    ({ item, index }) => {
+      const isOfficialPublicationRequest =
+        String(item?.data?.type || '').trim().toUpperCase() ===
+        'OFFICIAL_PUBLICATION_REQUEST';
+      const CardContainer = TouchableOpacity;
+      const pressProps = {
+        onPress: () => handleNotificationPress(item),
+        activeOpacity: 0.7,
+      };
+      const title = isOfficialPublicationRequest
+        ? item.mesa || 'Publicación oficial pendiente'
+        : item.mesa;
+      const detail = isOfficialPublicationRequest
+        ? item.data?.institutionName || item.direccion
+        : item.direccion;
+      const summary = isOfficialPublicationRequest
+        ? getOfficialPublicationSummaryStatus(item.data?.status || item.estado)
+        : item.tipo;
+
+      return (
+      <CardContainer
         testID={`notificationItem_${index}`}
         style={localStyle.notificationCard}
-        onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}>
+        {...pressProps}>
         <View
           testID={`notificationCardContent_${index}`}
           style={localStyle.cardContent}>
@@ -750,7 +831,7 @@ export default function Notification({ navigation }) {
               <Text
                 testID={`notificationTitle_${index}`}
                 style={localStyle.title}>
-                {item.mesa}
+                {title}
               </Text>
               <View
                 testID={`notificationRightInfo_${index}`}
@@ -772,12 +853,12 @@ export default function Notification({ navigation }) {
             <Text
               testID={`notificationSubtitle_${index}`}
               style={localStyle.subtitle}>
-              {item.tipo}
+              {summary}
             </Text>
             <Text
               testID={`notificationAddress_${index}`}
               style={localStyle.detailText}>
-              {item.direccion}
+              {detail}
             </Text>
             {Array.isArray(item.resultsSummary) && item.resultsSummary.length > 0 ? (
               <View style={localStyle.resultsPreview}>
@@ -793,10 +874,20 @@ export default function Notification({ navigation }) {
                 ))}
               </View>
             ) : null}
+            {isOfficialPublicationRequest ? (
+              <Ionicons
+                testID={`notificationOpenIndicator_${index}`}
+                name="chevron-forward-outline"
+                size={20}
+                color="#64748B"
+                style={localStyle.openIndicator}
+              />
+            ) : null}
           </View>
         </View>
-      </TouchableOpacity>
-    ),
+      </CardContainer>
+      );
+    },
     [getIconName, handleNotificationPress],
   );
 
@@ -839,6 +930,40 @@ export default function Notification({ navigation }) {
           }
         />
       )}
+      <Modal
+        visible={Boolean(selectedOfficialPublication)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedOfficialPublication(null)}>
+        <View style={localStyle.detailOverlay}>
+          <View style={localStyle.detailSheet}>
+            <View style={localStyle.detailHeader}>
+              <Text style={localStyle.detailTitle}>Publicación oficial</Text>
+              <TouchableOpacity
+                testID="officialPublicationDetailCloseButton"
+                onPress={() => setSelectedOfficialPublication(null)}
+                style={localStyle.closeButton}>
+                <Ionicons name="close-outline" size={24} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+            {selectedOfficialPublication ? (
+              <ScrollView
+                testID="officialPublicationDetailScroll"
+                showsVerticalScrollIndicator={false}>
+                <OfficialPublicationNotificationCard
+                  notification={selectedOfficialPublication}
+                  onStatusChange={status =>
+                    updateOfficialPublicationStatus(
+                      selectedOfficialPublication?.data?.requestId,
+                      status,
+                    )
+                  }
+                />
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </CSafeAreaView>
   );
 }
@@ -919,6 +1044,43 @@ const localStyle = StyleSheet.create({
     color: '#475569',
     marginTop: 6,
     fontWeight: '500',
+  },
+  openIndicator: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+  },
+  detailOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  },
+  detailSheet: {
+    maxHeight: '88%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 24,
+  },
+  detailHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 10,
+  },
+  detailTitle: {
+    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  closeButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   notificationImage: {
     width: '100%',
