@@ -93,6 +93,9 @@ export const buildOfficialPublicationCallsHash = ({
 
 const assertBatchPolicy = (execution, calls) => {
   if (calls.length === 1) {
+    if (BigInt(execution.walletDebitRequired || 0) > 0n) {
+      throwPackageMismatch();
+    }
     const [createVoteCall] = calls;
     if (createVoteCall.purpose !== 'CREATE_VOTE') {
       throwPackageMismatch();

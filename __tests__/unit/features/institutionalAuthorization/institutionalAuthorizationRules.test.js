@@ -107,6 +107,33 @@ describe('institutionalAuthorizationRules', () => {
     ).toEqual(removeClaim.execution.calls);
   });
 
+  it('D-TRF-005/D-TRF-006: valida paquete de transferencia con changeInstitutionAdmin', () => {
+    const transferRequest = {
+      ...request,
+      action: 'CHANGE_INSTITUTION_ADMIN',
+    };
+    const transferClaim = {
+      request: {applicationId},
+      execution: {
+        ...claim.execution,
+        action: 'CHANGE_INSTITUTION_ADMIN',
+        calls: [{
+          ...claim.execution.calls[0],
+          callData: '0x9abc',
+          purpose: 'CHANGE_INSTITUTION_ADMIN',
+        }],
+      },
+    };
+
+    expect(
+      assertInstitutionalAuthorizationExecutionMatches({
+        request: transferRequest,
+        claim: transferClaim,
+        expectedSmartAccount: signerWallet,
+      }).calls,
+    ).toEqual(transferClaim.execution.calls);
+  });
+
   it('bloquea acción contractual alterada antes de firmar', () => {
     let thrown;
     try {

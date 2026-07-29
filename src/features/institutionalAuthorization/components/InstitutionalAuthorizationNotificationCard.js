@@ -97,6 +97,13 @@ const actionLabels = {
     pending: 'Eliminación procesándose. El acceso se conserva hasta la confirmación de la red.',
     approved: 'Acceso eliminado.',
   },
+  CHANGE_INSTITUTION_ADMIN: {
+    row: 'Transferir rol principal',
+    target: 'Billetera del nuevo principal',
+    modalTitle: '¿Transferir rol principal?',
+    pending: 'Procesando transferencia. Los roles se conservan hasta la confirmación de la red.',
+    approved: 'Transferencia confirmada.',
+  },
 };
 
 const formatDateTime = value => {

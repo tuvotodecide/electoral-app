@@ -49,7 +49,7 @@ export const assertInstitutionalAuthorizationExecutionMatches = ({
     throwPackageMismatch();
   }
   const expectedAction = String(request?.action || 'ADD_AUTHORIZED_ADDRESS');
-  if (!['ADD_AUTHORIZED_ADDRESS', 'REMOVE_AUTHORIZED_ADDRESS'].includes(expectedAction)) {
+  if (!['ADD_AUTHORIZED_ADDRESS', 'REMOVE_AUTHORIZED_ADDRESS', 'CHANGE_INSTITUTION_ADMIN'].includes(expectedAction)) {
     throwPackageMismatch('La acción solicitada no corresponde a una autorización institucional.');
   }
   if (execution.action !== expectedAction) {

@@ -66,6 +66,8 @@ const errorMessages = {
     'La operación ya fue enviada y está siendo verificada.',
   OFFICIAL_PUBLICATION_ALREADY_COMPLETED:
     'La votación fue publicada oficialmente.',
+  OFFICIAL_PUBLICATION_NOT_READY:
+    'Esta solicitud ya no está lista para firmarse. Solicita una nueva preparación.',
 };
 
 const formatDate = value => {
@@ -119,6 +121,18 @@ const getSmartAccountAddress = payload =>
 
 const getBlockingCopy = request => {
   if (!request) return null;
+  if (
+    request.publicationReadiness &&
+    request.publicationReadiness !== 'PUBLICATION_READY'
+  ) {
+    if (request.publicationReadiness === 'PUBLICATION_CONTRACT_ROLE_MISSING') {
+      return 'Configuración contractual pendiente. Solicita una nueva preparación cuando infraestructura quede lista.';
+    }
+    if (request.publicationReadiness === 'PUBLICATION_BALANCE_INSUFFICIENT') {
+      return 'La wallet institucional no tiene TVD suficientes para esta publicación.';
+    }
+    return 'Esta solicitud ya no está lista para firmarse. Solicita una nueva preparación.';
+  }
   if (request.blockingReason === 'PUBLICATION_WINDOW_CLOSED') {
     return 'El tiempo para confirmar esta publicación terminó.';
   }
@@ -142,6 +156,10 @@ const getBlockingCopy = request => {
   }
   return null;
 };
+
+const isPublicationReadyForSignature = request =>
+  !request?.publicationReadiness ||
+  request.publicationReadiness === 'PUBLICATION_READY';
 
 const OfficialPublicationRequestScreen = ({route}) => {
   const requestId = route?.params?.requestId;
@@ -205,6 +223,7 @@ const OfficialPublicationRequestScreen = ({route}) => {
   const canConfirm =
     request?.status === 'PENDING_APPROVAL' &&
     request?.canPublish !== false &&
+    isPublicationReadyForSignature(request) &&
     !busy &&
     !TERMINAL_STATUSES.includes(request?.status);
   const canReject =
@@ -230,6 +249,11 @@ const OfficialPublicationRequestScreen = ({route}) => {
       if (freshRequest?.canPublish === false) {
         const error = new Error('Ventana cerrada');
         error.code = 'PUBLICATION_WINDOW_CLOSED';
+        throw error;
+      }
+      if (!isPublicationReadyForSignature(freshRequest)) {
+        const error = new Error('Solicitud no lista para firma');
+        error.code = 'OFFICIAL_PUBLICATION_NOT_READY';
         throw error;
       }
 

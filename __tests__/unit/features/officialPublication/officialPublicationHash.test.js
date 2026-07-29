@@ -181,6 +181,36 @@ describe('officialPublicationHash', () => {
     expect(result.calls).toEqual(calls);
   });
 
+  it('bloquea createVote sin approve cuando hay TVD requerido', () => {
+    const hash = buildOfficialPublicationCallDataHash({
+      targetAddress,
+      value: '0',
+      callData,
+    });
+
+    expect(() =>
+      assertOfficialPublicationExecutionMatches({
+        request: {
+          requestId: 'req-1',
+          chainId: 84532,
+          smartAccountAddress,
+        },
+        claim: {
+          requestId: 'req-1',
+          execution: {
+            chainId: 84532,
+            targetAddress,
+            value: '0',
+            callData,
+            callDataHash: hash,
+            walletDebitRequired: '1000000000000000000',
+          },
+        },
+        expectedSmartAccount: smartAccountAddress,
+      }),
+    ).toThrow(/paquete preparado/i);
+  });
+
   it('bloquea batch si el approve no usa TVDCredits o el monto congelado', () => {
     const calls = [
       {

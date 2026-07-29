@@ -274,4 +274,24 @@ describe('OfficialPublicationRequestScreen', () => {
     ));
     expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
   });
+
+  it('no firma si backend marca solicitud no ready por configuracion contractual', async () => {
+    api.getOfficialPublicationRequest.mockResolvedValueOnce({
+      ...request,
+      publicationReadiness: 'PUBLICATION_CONTRACT_ROLE_MISSING',
+    });
+    const screen = renderScreen();
+    await screen.findByText('Elección oficial');
+
+    expect(
+      screen.getByText(
+        'Configuración contractual pendiente. Solicita una nueva preparación cuando infraestructura quede lista.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByTestId('officialPublicationConfirmButton').props.disabled).toBe(true);
+
+    fireEvent.press(screen.getByTestId('officialPublicationConfirmButton'));
+    expect(api.claimOfficialPublication).not.toHaveBeenCalled();
+    expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
+  });
 });

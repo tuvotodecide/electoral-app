@@ -252,6 +252,62 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
     );
   });
 
+  it('D-TRF-005/D-TRF-006: firma transferencia principal desde el detalle sin pantalla intermedia', async () => {
+    const transferRequest = {
+      ...request,
+      action: 'CHANGE_INSTITUTION_ADMIN',
+      status: 'PENDING_MOBILE_AUTHORIZATION',
+    };
+    api.getInstitutionalAuthorizationRequest
+      .mockResolvedValueOnce(transferRequest)
+      .mockResolvedValueOnce(transferRequest);
+    api.claimInstitutionalAuthorization.mockResolvedValueOnce({
+      request: transferRequest,
+      execution: {
+        chainId: 84532,
+        stableInstitutionId: 'tenant-1',
+        action: 'CHANGE_INSTITUTION_ADMIN',
+        signerWallet: '0x1111111111111111111111111111111111111111',
+        targetWallet: '0x2222222222222222222222222222222222222222',
+        calls: [{
+          target: '0x7B57eE9103fc46eD6794329C36D2919293F0Fabb',
+          value: '0',
+          callData: '0x9abc',
+          purpose: 'CHANGE_INSTITUTION_ADMIN',
+        }],
+      },
+    });
+
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+    expect(await screen.findByText('Transferir rol principal')).toBeTruthy();
+    expect(screen.queryByText('Revisar autorización')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('institutionalAuthorizationAcceptButton'));
+    await waitFor(() =>
+      expect(api.claimInstitutionalAuthorization).toHaveBeenCalledWith(
+        'app-1',
+        'device-1',
+      ),
+    );
+    expect(screen.getByText('¿Transferir rol principal?')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('institutionalAuthorizationSubmitSignatureButton'));
+
+    await waitFor(() =>
+      expect(account.sendOperationWithUserOpHash).toHaveBeenCalledWith(
+        '0xpriv',
+        '0x1111111111111111111111111111111111111111',
+        'base-sepolia',
+        [{
+          to: '0x7B57eE9103fc46eD6794329C36D2919293F0Fabb',
+          value: '0',
+          data: '0x9abc',
+        }],
+      ),
+    );
+  });
+
   it('D-SIGN-002/D-SIGN-014/D-RETRY-004: autorización vencida queda sin acciones', async () => {
     api.getInstitutionalAuthorizationRequest.mockResolvedValueOnce({
       ...request,
