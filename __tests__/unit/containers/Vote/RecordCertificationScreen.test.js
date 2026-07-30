@@ -4,9 +4,10 @@
  */
 
 import React from 'react';
-import {render, fireEvent} from '@testing-library/react-native';
+import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
+import axios from 'axios';
 
 // Mock Ionicons as proper component
 jest.mock('react-native-vector-icons/Ionicons', () => {
@@ -39,6 +40,10 @@ jest.mock('../../../../src/api/oracle', () => ({
 }));
 
 jest.mock('axios');
+
+jest.mock('../../../../src/config/sentry', () => ({
+  captureError: jest.fn(),
+}));
 
 const mockGoBack = jest.fn();
 const mockPopToTop = jest.fn();
@@ -182,6 +187,61 @@ describe('RecordCertificationScreen', () => {
       const {getByTestId} = renderWithProvider(<RecordCertificationScreen />);
 
       expect(getByTestId('certificationText')).toBeTruthy();
+    });
+  });
+
+  describe('uploadAttestation', () => {
+    const confirmCertification = async getByTestId => {
+      fireEvent.press(getByTestId('certifyButton'));
+      fireEvent.press(getByTestId('confirmCertificationButton'));
+      await waitFor(() => expect(getByTestId('nftCertificate')).toBeTruthy());
+    };
+
+    it('exhibe el certificado NFT cuando subir atestiguamiento es exitoso', async () => {
+      axios.post.mockResolvedValueOnce({data: {}});
+
+      const RecordCertificationScreen = require('../../../../src/container/Vote/WitnessRecord/RecordCertificationScreen').default;
+      const {getByTestId, queryByTestId} = renderWithProvider(<RecordCertificationScreen />);
+
+      await confirmCertification(getByTestId);
+
+      expect(axios.post).toHaveBeenCalledWith(
+        'https://test-backend.com/api/v1/attestations',
+        expect.objectContaining({
+          attestations: [
+            expect.objectContaining({
+              ballotId: 'mesa_id_123',
+              support: true,
+              dni: '12345678',
+            }),
+          ],
+        }),
+        expect.objectContaining({
+          headers: expect.objectContaining({'x-api-key': 'test-secret'}),
+        }),
+      );
+      expect(queryByTestId('recordCertificationInfoModalTitle')).toBeNull();
+    });
+
+    it('muestra advertencia cuando subir atestiguamiento falla', async () => {
+      axios.post.mockRejectedValueOnce(new Error('network error'));
+      const {captureError} = require('../../../../src/config/sentry');
+
+      const RecordCertificationScreen = require('../../../../src/container/Vote/WitnessRecord/RecordCertificationScreen').default;
+      const {getByTestId} = renderWithProvider(<RecordCertificationScreen />);
+
+      await confirmCertification(getByTestId);
+
+      expect(captureError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          flow: 'RecordCertificationScreen',
+          step: 'uploadAttestation',
+        }),
+      );
+      expect(getByTestId('recordCertificationInfoModalTitle').props.children).toBe(
+        'Advertencia',
+      );
     });
   });
 });

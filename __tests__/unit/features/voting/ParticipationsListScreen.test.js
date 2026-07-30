@@ -72,6 +72,33 @@ describe('ParticipationsListScreen', () => {
     repository.getWitnessRecords.mockResolvedValue([]);
   });
 
+  it('muestra loading inicial y no muestra empty state mientras carga', () => {
+    const screen = render(<ParticipationsListScreen />);
+
+    expect(screen.getByTestId('participationsLoadingState')).toBeTruthy();
+    expect(screen.getByText('Cargando participaciones...')).toBeTruthy();
+    expect(screen.queryByTestId('participationsEmptyState')).toBeNull();
+    expect(screen.queryByText('Aún no tienes participaciones')).toBeNull();
+    expect(screen.queryByText('No hay participaciones')).toBeNull();
+  });
+
+  it('cuando termina loading sin datos muestra empty state dentro de Mis participaciones', async () => {
+    repository.getParticipations.mockResolvedValue([]);
+    repository.getWitnessRecords.mockResolvedValue([]);
+
+    const screen = render(<ParticipationsListScreen />);
+    focusEffectCallback?.();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('participationsLoadingState')).toBeNull();
+    });
+
+    expect(screen.getByText('Mis participaciones')).toBeTruthy();
+    expect(screen.getByTestId('participationsEmptyState')).toBeTruthy();
+    expect(screen.getByText('Aún no tienes participaciones')).toBeTruthy();
+    expect(screen.getByText('Cuando participes en una votación, aparecerá aquí tu historial.')).toBeTruthy();
+  });
+
   it('MP-APP-LIST-001 carga participaciones de voto desde backend', async () => {
     repository.getParticipations.mockResolvedValue([
       {
@@ -92,6 +119,7 @@ describe('ParticipationsListScreen', () => {
 
     expect(screen.getByText('Elección backend')).toBeTruthy();
     expect(screen.getByText('VOTO REGISTRADO')).toBeTruthy();
+    expect(screen.queryByTestId('participationsEmptyState')).toBeNull();
   });
 
   it('MP-APP-LIST-002 respeta la card actual para una participacion backend equivalente', async () => {
@@ -214,6 +242,7 @@ describe('ParticipationsListScreen', () => {
     expect(screen.queryByText('Eleccion local pendiente')).toBeNull();
     expect(screen.queryByText('Participacion sincronizada local')).toBeNull();
     expect(screen.getByText('Mesa 12')).toBeTruthy();
+    expect(screen.queryByTestId('participationsEmptyState')).toBeNull();
     expect(screen.queryByText('Remota duplicada')).toBeNull();
     expect(screen.queryByText('Attestation')).toBeNull();
 
@@ -523,7 +552,7 @@ describe('ParticipationsListScreen', () => {
     expect(screen.queryByText('Duplicada local')).toBeNull();
   });
 
-  it('MP-APP-LIST-012 mantiene empty state actual si no hay datos', async () => {
+  it('MP-APP-LIST-012 mantiene empty state si no hay datos y ya termino loading', async () => {
     repository.getParticipations.mockResolvedValue([]);
     repository.getWitnessRecords.mockResolvedValue([]);
     useVotingState.mockReturnValue({participations: []});
@@ -536,7 +565,9 @@ describe('ParticipationsListScreen', () => {
       expect(repository.getWitnessRecords).toHaveBeenCalledTimes(1);
     });
 
-    const emptyList = screen.UNSAFE_getByType('FlashList');
-    expect(emptyList.props.ListEmptyComponent).toBeTruthy();
+    expect(screen.queryByTestId('participationsLoadingState')).toBeNull();
+    expect(screen.getByTestId('participationsEmptyState')).toBeTruthy();
+    expect(screen.getByText('Aún no tienes participaciones')).toBeTruthy();
+    expect(screen.getByText('Cuando participes en una votación, aparecerá aquí tu historial.')).toBeTruthy();
   });
 });

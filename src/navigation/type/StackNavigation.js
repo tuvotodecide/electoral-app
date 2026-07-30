@@ -237,6 +237,21 @@ export default function StackNavigation() {
         component={StackRoute.ClaimCredScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.RewardsScreen}
+        component={StackRoute.RewardsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.RewardDetailScreen}
+        component={StackRoute.RewardDetailScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.OfficialPublicationRequest}
+        component={StackRoute.OfficialPublicationRequestScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 }

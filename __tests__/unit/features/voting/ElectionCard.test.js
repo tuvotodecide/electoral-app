@@ -127,6 +127,58 @@ describe('ElectionCard', () => {
       const button = getByTestId('electionCardButton');
       expect(button).toBeTruthy();
     });
+
+    test('ejecuta onVotePress al tocar "Votar ahora"', () => {
+      const { getByTestId } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          election={mockElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      fireEvent.press(getByTestId('electionCardButton'));
+      expect(mockOnVotePress).toHaveBeenCalledTimes(1);
+      expect(mockOnDetailsPress).not.toHaveBeenCalled();
+    });
+
+    test('renderiza la eleccion mockeada del home con subtitulo y contador', () => {
+      useCountdown.mockReturnValue({
+        countdownLabel: '2h 11m 33s',
+        countdownTime: '',
+        isStarting: false,
+        isEnded: false,
+        remainingMs: 7200000,
+      });
+
+      const { getByText } = renderWithProvider(
+        <ElectionCard
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('ACTIVA')).toBeTruthy();
+      expect(getByText('Elecciones Universitarias')).toBeTruthy();
+      expect(getByText('Carrera de Informática')).toBeTruthy();
+      expect(getByText('CIERRA EN')).toBeTruthy();
+      expect(getByText('2h 11m 33s')).toBeTruthy();
+      expect(getByText('Votar ahora')).toBeTruthy();
+    });
+
+    test('no se rompe si recibe datos reales con campos opcionales faltantes', () => {
+      const { getByText } = renderWithProvider(
+        <ElectionCard
+          election={{id: 'real-election', title: 'Proceso real', status: 'ACTIVA'}}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('Proceso real')).toBeTruthy();
+      expect(getByText('ACTIVA')).toBeTruthy();
+    });
   });
 
   describe('Estado: Ya votó', () => {

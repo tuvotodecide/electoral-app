@@ -98,6 +98,11 @@ mockPaths.forEach((path) => {
   jest.doMock(path, () => mockComponent);
 });
 
+jest.doMock('../../../src/features/rewards', () => ({
+  RewardsScreen: mockComponent,
+  RewardDetailScreen: mockComponent,
+}));
+
 const {StackRoute, AuthRoute, TabRoute} = require('../../../src/navigation/NavigationRoute');
 
 describe('NavigationRoute', () => {
@@ -106,6 +111,8 @@ describe('NavigationRoute', () => {
     expect(StackRoute.Splash).toBeDefined();
     expect(StackRoute.SearchTable).toBeDefined();
     expect(StackRoute.RecordReviewScreen).toBeDefined();
+    expect(StackRoute.RewardsScreen).toBeDefined();
+    expect(StackRoute.RewardDetailScreen).toBeDefined();
   });
 
   it('expone rutas de auth', () => {
@@ -116,6 +123,7 @@ describe('NavigationRoute', () => {
 
   it('expone rutas del tab', () => {
     expect(TabRoute.HomeScreen).toBeDefined();
+    expect(TabRoute.Participations).toBeDefined();
     expect(TabRoute.Profile).toBeDefined();
   });
 });

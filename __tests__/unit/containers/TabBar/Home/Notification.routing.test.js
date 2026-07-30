@@ -110,6 +110,14 @@ describe('Notification routing helpers', () => {
 
     expect(
       getNotificationKind({
+        type: 'OFFICIAL_PUBLICATION_REQUEST',
+        title: 'Confirmacion de publicacion',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
+      getNotificationKind({
         type: 'INSTITUTIONAL_NEWS',
         title: 'Noticia',
         body: '',
@@ -197,6 +205,22 @@ describe('Notification routing helpers', () => {
     expect(target.name).not.toBe('PublicElectionWebViewScreen');
     expect(target.params.notification.actionUrl).toBeNull();
     expect(target.params.notification.statusTone).toBe('danger');
+  });
+
+  it('navega solicitud de publicacion oficial al detalle sin exponer calldata', () => {
+    const notification = {
+      kind: 'voting_event',
+      data: {
+        type: 'OFFICIAL_PUBLICATION_REQUEST',
+        requestId: 'request-1',
+        route: 'OfficialPublicationRequest',
+      },
+    };
+
+    expect(buildNotificationNavigationTarget(notification, {enableVotingFlow: true})).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {notification},
+    });
   });
 
   it.each([

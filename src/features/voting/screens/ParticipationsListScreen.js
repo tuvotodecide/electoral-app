@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -326,18 +327,36 @@ const ParticipationsListScreen = () => {
   );
 
   const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
+    <View testID="participationsEmptyState" style={styles.emptyContainer}>
+      <View style={styles.emptyCard}>
+        <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
       <CText type="M16" style={styles.emptyText}>
         Aún no tienes participaciones
       </CText>
+        <CText type="R12" style={styles.emptyHint}>
+          Cuando participes en una votación, aparecerá aquí tu historial.
+        </CText>
+      </View>
     </View>
   );
+
+  const renderLoading = () => (
+    <View testID="participationsLoadingState" style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#41A44D" />
+      <CText type="M16" style={styles.loadingText}>
+        Cargando participaciones...
+      </CText>
+    </View>
+  );
+  const hasParticipations = participations.length > 0;
 
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader title={UI_STRINGS.participationsHeader} />
 
+      {isLoading ? (
+        renderLoading()
+      ) : hasParticipations ? (
       <FlashList
         data={participations}
         renderItem={renderItem}
@@ -349,6 +368,9 @@ const ParticipationsListScreen = () => {
         refreshing={isLoading}
         onRefresh={loadParticipations}
       />
+      ) : (
+        renderEmpty()
+      )}
     </CSafeAreaView>
   );
 };
@@ -440,10 +462,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: getResponsiveSize(80, 100, 120),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    paddingTop: getResponsiveSize(50, 70, 90),
+  },
+  emptyCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(12),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(18, 22, 26),
+    paddingVertical: getResponsiveSize(24, 28, 32),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 1,
   },
   emptyText: {
-    color: '#9CA3AF',
+    color: '#1F2937',
+    fontSize: getResponsiveSize(15, 16, 18),
+    fontWeight: '700',
+    marginTop: getResponsiveSize(12, 14, 16),
+    textAlign: 'center',
+  },
+  emptyHint: {
+    color: '#6B7280',
+    fontSize: getResponsiveSize(13, 14, 15),
+    marginTop: getResponsiveSize(6, 8, 10),
+    textAlign: 'center',
+    lineHeight: getResponsiveSize(18, 20, 22),
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+  },
+  loadingText: {
+    color: '#6B7280',
     fontSize: getResponsiveSize(14, 15, 16),
     marginTop: getResponsiveSize(12, 14, 16),
   },

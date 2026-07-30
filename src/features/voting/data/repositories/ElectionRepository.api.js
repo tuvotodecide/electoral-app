@@ -684,11 +684,29 @@ const postParticipation = async (electionId, candidateId, dni, presentialSession
       },
     );
 
+    const participationStatus = await requestParticipationStatus(electionId);
+    if (
+      participationStatus?.status !== 'ALREADY_VOTED' ||
+      participationStatus?.alreadyVoted !== true
+    ) {
+      return {
+        success: false,
+        error: 'No se pudo confirmar el registro de tu participación',
+        participationId: String(data?.id || ''),
+        participatedAt: data?.participatedAt || null,
+      };
+    }
+
     return {
       success: true,
-      participationId: String(data?.id || ''),
-      participatedAt: data?.participatedAt || new Date().toISOString(),
+      participationId: String(data?.id || participationStatus?.participationId || ''),
+      participatedAt:
+        data?.participatedAt ||
+        participationStatus?.participatedAt ||
+        new Date().toISOString(),
       transactionId: null,
+      alreadyVoted: true,
+      status: participationStatus.status,
     };
   } catch (error) {
     const backendError =

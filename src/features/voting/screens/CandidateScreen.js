@@ -597,7 +597,6 @@ const CandidateScreen = ({ route }) => {
       },
     });
 
-
     // Online: Submit vote directly
     const result = await repository.submitVote(electionId, selectedCandidate.id, presentialSessionId);
 
@@ -697,6 +696,7 @@ const CandidateScreen = ({ route }) => {
           title={getButtonText()}
           type="B16"
           onPress={handleVotePress}
+          disabled={candidates.length === 0}
           containerStyle={styles.voteButton}
           style={styles.voteButtonText}
           textProps={{

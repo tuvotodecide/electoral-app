@@ -253,6 +253,17 @@ const NotificationTypeStrategies = {
       params: {screen: TabNav.HomeScreen},
     }),
   },
+  vote_reward_available: {
+    getTitle: () => 'Recompensa disponible',
+    getBody: () => 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+    getRoute: () => ({
+      name: StackNav.RewardsScreen,
+      params: {
+        voteRewardAvailable: true,
+        rewardAction: 'OPEN_VOTE_REWARD',
+      },
+    }),
+  },
   default: {
     getTitle: () => 'Tu Voto Decide',
     getBody: () => 'Tienes una notificación nueva.',
@@ -260,6 +271,7 @@ const NotificationTypeStrategies = {
 };
 
 const INSTITUTIONAL_DETAIL_TYPES = new Set([
+  'OFFICIAL_PUBLICATION_REQUEST',
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
   'INSTITUTIONAL_RESULTS_AVAILABLE',
@@ -377,6 +389,13 @@ export const buildInstitutionalNotificationCopy = notification => {
           ? `El creador de la elección te invita a revisar ${eventName} para verificar si estás habilitado para participar.`
           : 'El creador de la elección te invita a revisar la elección para verificar si estás habilitado para participar.',
       };
+    case 'OFFICIAL_PUBLICATION_REQUEST':
+      return {
+        title: 'Confirmación de publicación',
+        body: eventName
+          ? `Tienes que confirmar la publicación oficial de "${eventName}".`
+          : 'Tienes que confirmar una publicación oficial.',
+      };
     case 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED':
       return {
         title: 'La votación fue publicada oficialmente',
@@ -487,6 +506,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
     data?.summary ||
     '';
   const isNews = type === 'INSTITUTIONAL_NEWS';
+  const isOfficialPublicationRequest = type === 'OFFICIAL_PUBLICATION_REQUEST';
   const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
@@ -507,7 +527,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
     raw: notification,
     data,
     kind: isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
-    tipo: isVotingEnabled
+    tipo: isOfficialPublicationRequest
+      ? 'Revisar solicitud'
+      : isVotingEnabled
       ? 'Abrir votación'
       : isPadronReview
         ? 'Ver padrón'
@@ -519,9 +541,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
               ? 'Ver noticia'
               : isScheduleUpdate
                 ? 'Ver fechas'
-                : isVotingReminder
-                  ? 'Ver votación'
-                  : 'Ver fechas',
+              : isVotingReminder
+                ? 'Ver votación'
+                : 'Ver fechas',
     mesa:
       title ||
       data?.bannerTitle ||
@@ -534,7 +556,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
     timestamp: Date.now(),
     estado: data?.status || 'iniciado',
     statusTone: isCancelled ? 'danger' : 'success',
-    actionLabel: isVotingReminder
+    actionLabel: isOfficialPublicationRequest
+      ? 'Revisar solicitud'
+      : isVotingReminder
       ? 'Ver votación'
       : isVotingEnabled || isPadronReview
         ? 'Ver padrón'
@@ -885,14 +909,14 @@ export async function registerNotifications({
 
     // Tap con app en foreground
     notifee.onForegroundEvent(({type, detail}) => {
-      if (type === EventType.PRESS)
+      if (type === EventType.PRESS || type === EventType.ACTION_PRESS)
         handleNotificationPress(detail.notification);
     });
   } catch {}
 }
 
 notifee.onBackgroundEvent(async ({type, detail}) => {
-  if (type === EventType.PRESS) {
+  if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
     handleNotificationPressBackground(detail.notification);
   }
 });
@@ -909,6 +933,16 @@ export async function showLocalNotification({
   dni = null,
 } = {}) {
   await ensureNotificationChannel();
+  const action = normalizeNotificationField(data?.action);
+  const androidActions =
+    action === 'open_vote_reward'
+      ? [
+          {
+            title: 'Reclamar',
+            pressAction: {id: 'OPEN_VOTE_REWARD'},
+          },
+        ]
+      : [];
   await notifee.displayNotification({
     title: title ?? 'Tu Voto Decide',
     body: body ?? 'Mensaje nuevo',
@@ -917,6 +951,7 @@ export async function showLocalNotification({
       smallIcon: 'ic_launcher',
       importance: AndroidImportance.HIGH,
       pressAction: {id: 'PRESS'},
+      ...(androidActions.length ? {actions: androidActions} : {}),
       ...android,
     },
     data: data ?? {},
@@ -1006,8 +1041,9 @@ export function maybeStorePendingNavFromRemote(remoteMessage) {
 export function buildRouteFromNotification(notification) {
   const data = notification?.data ?? {};
   const notificationType = data?.type;
+  const normalizedNotificationType = normalizeNotificationType(notificationType);
 
-  if (INSTITUTIONAL_DETAIL_TYPES.has(normalizeNotificationType(notificationType))) {
+  if (INSTITUTIONAL_DETAIL_TYPES.has(normalizedNotificationType)) {
     return {
       name: StackNav.VotingNotificationDetailScreen,
       params: {
@@ -1017,7 +1053,11 @@ export function buildRouteFromNotification(notification) {
   }
   
   // OCP: Utilizamos el mismo diccionario de estrategias previamente definido (Reutilización y OCP)
-  const strategy = NotificationTypeStrategies[notificationType];
+  const action = normalizeNotificationField(data?.action);
+  const strategy =
+    action === 'open_vote_reward'
+      ? NotificationTypeStrategies.vote_reward_available
+      : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
   if (strategy && strategy.getRoute && typeof strategy.getRoute === 'function') {
     return strategy.getRoute();
   }
