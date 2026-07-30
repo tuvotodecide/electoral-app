@@ -1,20 +1,28 @@
-import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import React, {useState} from 'react';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {FlashList} from '@shopify/flash-list';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
+import LoadingModal from '../../../components/modal/LoadingModal';
 import {StackNav} from '../../../navigation/NavigationKey';
 import RewardListItem from '../components/RewardListItem';
 import RewardSummaryCard from '../components/RewardSummaryCard';
-import {
-  getMockRewards,
-  getMockRewardsSummary,
-} from '../data/mockRewards';
+import {useClaimVoteRewardMutation, useRewardsQuery} from '../data/rewardsApi';
+import {colors} from '../../../themes/colors';
 
 const RewardsScreen = ({navigation, route}) => {
-  const summary = getMockRewardsSummary();
   const voteRewardAvailable = route?.params?.voteRewardAvailable === true;
-  const rewards = getMockRewards().map(reward =>
+
+  const {rewards: fetchedRewards, isLoading, error} = useRewardsQuery();
+  const {claimReward} = useClaimVoteRewardMutation();
+  const [claimModal, setClaimModal] = useState({
+    visible: false,
+    isLoading: false,
+    success: false,
+    message: '',
+    reward: null,
+  });
+  const rewards = fetchedRewards.map(reward =>
     voteRewardAvailable && reward.id === 'reward-vote'
       ? {
           ...reward,
@@ -25,9 +33,40 @@ const RewardsScreen = ({navigation, route}) => {
       : reward,
   );
 
+  const runClaim = reward => {
+    setClaimModal({
+      visible: true,
+      isLoading: true,
+      success: false,
+      message: 'Reclamando tu recompensa...',
+      reward,
+    });
+    claimReward(reward.id, {
+      onSuccess: () => {
+        setClaimModal({
+          visible: true,
+          isLoading: false,
+          success: true,
+          message: 'Reclamaste tu recompensa correctamente.',
+          reward,
+        });
+      },
+      onError: () => {
+        setClaimModal({
+          visible: true,
+          isLoading: false,
+          success: false,
+          message: 'No se pudo reclamar la recompensa. Inténtalo de nuevo.',
+          reward,
+        });
+      },
+    });
+  };
+
   const handleRewardPress = reward => {
     if (voteRewardAvailable && reward?.id === 'reward-vote') {
-      // TODO: implementar reclamación de recompensa por voto
+      runClaim(reward);
+      return;
     }
     navigation.navigate(StackNav.RewardDetailScreen, {
       rewardId: reward.id,
@@ -35,13 +74,27 @@ const RewardsScreen = ({navigation, route}) => {
     });
   };
 
+  const handleClaimModalPrimaryPress = () => {
+    if (claimModal.success) {
+      const reward = claimModal.reward;
+      setClaimModal({visible: false, isLoading: false, success: false, message: '', reward: null});
+      navigation.navigate(StackNav.RewardDetailScreen, {
+        rewardId: reward.id,
+        reward,
+      });
+      return;
+    }
+    runClaim(claimModal.reward);
+  };
+
+  const handleClaimModalDismiss = () => {
+    setClaimModal({visible: false, isLoading: false, success: false, message: '', reward: null});
+  };
+
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader title="Mis recompensas" testID="rewardsHeader" />
-      <RewardSummaryCard
-        total={summary.totalTVD}
-        currency={summary.currency}
-      />
+      <RewardSummaryCard />
       {voteRewardAvailable && (
         <View style={styles.rewardNotice} testID="voteRewardAvailableNotice">
           <Text style={styles.rewardNoticeTitle}>Recompensa por voto disponible</Text>
@@ -50,15 +103,37 @@ const RewardsScreen = ({navigation, route}) => {
           </Text>
         </View>
       )}
-      <FlashList
-        testID="rewardsList"
-        data={rewards}
-        keyExtractor={item => item.id}
-        renderItem={({item}) => (
-          <RewardListItem reward={item} onPress={handleRewardPress} />
-        )}
-        ListFooterComponent={<View style={styles.footerSpace} />}
-        showsVerticalScrollIndicator={false}
+      {isLoading ? (
+        <View style={styles.stateContainer} testID="rewardsLoading">
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={styles.stateContainer} testID="rewardsError">
+          <Text style={styles.rewardNoticeBody}>
+            No se pudieron cargar las recompensas.
+          </Text>
+        </View>
+      ) : (
+        <FlashList
+          testID="rewardsList"
+          data={rewards}
+          keyExtractor={item => item.id}
+          renderItem={({item}) => (
+            <RewardListItem reward={item} onPress={handleRewardPress} />
+          )}
+          ListFooterComponent={<View style={styles.footerSpace} />}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+      <LoadingModal
+        visible={claimModal.visible}
+        isLoading={claimModal.isLoading}
+        success={claimModal.success}
+        message={claimModal.message}
+        buttonText={claimModal.success ? 'Continuar' : 'Reintentar'}
+        onClose={handleClaimModalPrimaryPress}
+        secondBtn={claimModal.success ? undefined : 'Cerrar'}
+        onSecondPress={handleClaimModalDismiss}
       />
     </CSafeAreaView>
   );
@@ -71,6 +146,11 @@ const styles = StyleSheet.create({
   },
   footerSpace: {
     height: 24,
+  },
+  stateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rewardNotice: {
     marginHorizontal: 16,

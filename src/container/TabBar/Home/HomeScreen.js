@@ -34,6 +34,7 @@ import RegisterAlertCard from '../../../components/home/RegisterAlertCard';
 import I18nStrings from '../../../i18n/String';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { clearSession } from '../../../utils/Session';
+import { TokenRewardsCard } from '@/src/components/home/TokenRewardsCard';
 
 import NetInfo from '@react-native-community/netinfo';
 import { useFocusEffect } from '@react-navigation/native';
@@ -408,26 +409,6 @@ const MiVotoLogo = () => (
       </CText>
     </View>
   </View>
-);
-
-const TokenRewardsCard = ({total, currency, onPress}) => (
-  <TouchableOpacity
-    testID="homeRewardsTokenCard"
-    accessibilityRole="button"
-    accessibilityLabel="Ver mis recompensas"
-    activeOpacity={0.84}
-    onPress={onPress}
-    style={stylesx.tokenCard}>
-    <View style={stylesx.tokenIconBox}>
-      <Ionicons name="star-outline" size={getResponsiveSize(18, 20, 22)} color="#459151" />
-    </View>
-    <CText testID="homeRewardsTokenAmount" style={stylesx.tokenAmount}>
-      {total}
-    </CText>
-    <CText testID="homeRewardsTokenCurrency" style={stylesx.tokenCurrency}>
-      {currency}
-    </CText>
-  </TouchableOpacity>
 );
 
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
@@ -1494,7 +1475,6 @@ export default function HomeScreen({ navigation, route }) {
   const handleSentryTest = () => {
     const error = new Error('Error de prueba');
     const userDni = userData?.dni ?? null;
-    const effectiveDni = userDni ?? dni ?? null;
     const dniSource = userDni ? 'userData' : (dni ? 'vc' : 'unknown');
 
     captureMessage('Mensaje de prueba Sentry', 'info', {
@@ -1508,7 +1488,6 @@ export default function HomeScreen({ navigation, route }) {
       step: 'home_button',
       critical: false,
       allowPii: true,
-      dni: effectiveDni,
       dni_source: dniSource,
     });
 
@@ -2742,7 +2721,6 @@ export default function HomeScreen({ navigation, route }) {
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
                 <TokenRewardsCard
-                  total={rewardsSummary.totalTVD}
                   currency={rewardsSummary.currency}
                   onPress={handleRewardsPress}
                 />
@@ -2924,7 +2902,6 @@ export default function HomeScreen({ navigation, route }) {
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
               <TokenRewardsCard
-                total={rewardsSummary.totalTVD}
                 currency={rewardsSummary.currency}
                 onPress={handleRewardsPress}
               />
@@ -3442,41 +3419,6 @@ const stylesx = StyleSheet.create({
     flex: 1,
     marginRight: getResponsiveSize(12, 16, 20),
     minWidth: 0,
-  },
-  tokenCard: {
-    minWidth: getResponsiveSize(102, 118, 136),
-    height: getResponsiveSize(52, 58, 66),
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveSize(12, 14, 16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: getResponsiveSize(10, 12, 14),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 5},
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  tokenIconBox: {
-    width: getResponsiveSize(24, 26, 30),
-    height: getResponsiveSize(24, 26, 30),
-    borderRadius: getResponsiveSize(12, 13, 15),
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: getResponsiveSize(5, 6, 7),
-  },
-  tokenAmount: {
-    color: '#232323',
-    fontSize: getResponsiveSize(20, 22, 26),
-    fontWeight: '800',
-    marginRight: getResponsiveSize(3, 4, 5),
-  },
-  tokenCurrency: {
-    color: '#232323',
-    fontSize: getResponsiveSize(11, 12, 14),
-    fontWeight: '800',
   },
   // Header Styles
   headerIcons: {

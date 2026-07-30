@@ -212,9 +212,6 @@ export const buildNotificationNavigationTarget = (
   { enableVotingFlow = FEATURE_FLAGS.ENABLE_VOTING_FLOW } = {},
 ) => {
   const rawData = item?.data || {};
-  if (String(rawData?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
-    return null;
-  }
 
   if (enableVotingFlow) {
     if (

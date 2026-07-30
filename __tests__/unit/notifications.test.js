@@ -98,6 +98,7 @@ jest.mock('../../src/navigation/NavigationKey', () => ({
     SuccessScreen: 'SuccessScreen',
     ClaimCredScreen: 'ClaimCredScreen',
     VotingNotificationDetailScreen: 'VotingNotificationDetailScreen',
+    RewardsScreen: 'RewardsScreen',
   },
   TabNav: {HomeScreen: 'HomeScreen'},
 }));

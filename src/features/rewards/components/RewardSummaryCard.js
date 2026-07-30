@@ -1,15 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {StyleSheet, View} from 'react-native';
 import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
+import { TvdTokenCalls } from '@/src/api/tvdToken';
+import { formatEther } from 'viem';
+import { useSelector } from 'react-redux';
 
-const RewardSummaryCard = ({total = 0, currency = 'TVD'}) => (
-  <View testID="rewardsSummaryCard" style={styles.container}>
-    <CText style={styles.label}>Tus recompensas por participar</CText>
-    <CText style={styles.amount}>{total}</CText>
-    <CText style={styles.currency}>{currency} disponibles</CText>
-  </View>
-);
+const getBalances = async (address) => {
+  const walletBalance = await TvdTokenCalls.balanceOf(address);
+  return formatEther(walletBalance.rawBalance);
+}
+
+const RewardSummaryCard = ({currency = 'TVD'}) => {
+  const userData = useSelector(state => state.wallet.payload);
+  const [balance, setBalance] = useState('-');
+
+  useEffect(() => {
+    if (userData?.account) {
+      getBalances(userData.account)
+        .then(bal => setBalance(bal))
+        .catch(() => {
+          setBalance('-');
+        });
+    }
+  }, [userData]);
+
+  return (
+    <View testID="rewardsSummaryCard" style={styles.container}>
+      <CText style={styles.label}>Tus recompensas por participar</CText>
+      <CText style={styles.amount}>{balance}</CText>
+      <CText style={styles.currency}>{currency} disponibles</CText>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {

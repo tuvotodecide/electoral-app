@@ -4,9 +4,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
-  Platform,
   StyleSheet,
-  
   View,
 } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
@@ -28,7 +26,6 @@ import { SHA256 } from 'crypto-js';
 import wira from 'wira-sdk';
 import CButton from '../../components/common/CButton';
 import InfoModal from '../../components/modal/InfoModal';
-import { guardianApi } from '../../data/guardians';
 import String from '../../i18n/String';
 import { clearWallet, setSecrets } from '../../redux/action/walletAction';
 import { setAddresses } from '../../redux/slices/addressSlice';
@@ -217,24 +214,6 @@ export default function LoginUser({ navigation, route }) {
             });
             return { ok: false, type: 'unexpected', error };
           }
-        }
-
-        try {
-          await guardianApi.deviceToken({
-            token: await wira.DeviceId.getDeviceId(),
-            platform: Platform.OS.toUpperCase(),
-            userDid: userData.did,
-          });
-        } catch (apiError) {
-          captureError(apiError, {
-            flow: 'LoginUser',
-            step: 'verifyPin.deviceToken',
-            critical: true,
-          });
-          logNetworkIssue('guardianApi.deviceToken', apiError, {
-            stage: 'verifyPin',
-            context: 'deviceToken',
-          });
         }
         return { ok: true, payload: userData, jwt: null };
       } else {

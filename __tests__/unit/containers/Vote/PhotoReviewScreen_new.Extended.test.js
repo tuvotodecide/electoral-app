@@ -369,7 +369,7 @@ describe('PhotoReviewScreen_new Extended', () => {
   });
 
   describe('Compare result statuses', () => {
-    it('maneja SKIPPED_OFFLINE', () => {
+    it('maneja SKIPPED_OFFLINE en la comparativa de actas', () => {
       const params = {
         ...baseRouteParams,
         compareResult: {status: 'SKIPPED_OFFLINE'},
@@ -383,7 +383,7 @@ describe('PhotoReviewScreen_new Extended', () => {
       expect(getByTestId('baseRecordReview')).toBeTruthy();
     });
 
-    it('maneja ERROR', () => {
+    it('maneja ERROR en la comparativa de actas', () => {
       const params = {
         ...baseRouteParams,
         compareResult: {status: 'ERROR', message: 'Comparison failed'},

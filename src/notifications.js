@@ -1057,7 +1057,7 @@ export function buildRouteFromNotification(notification) {
   const strategy =
     action === 'open_vote_reward'
       ? NotificationTypeStrategies.vote_reward_available
-      : NotificationTypeStrategies[normalizedNotificationType];
+      : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
   if (strategy && strategy.getRoute && typeof strategy.getRoute === 'function') {
     return strategy.getRoute();
   }

@@ -83,7 +83,6 @@ export async function claimForVote(voteId, dni, did, privKey) {
         step: 'claim-credential',
         tableCode: '',
         allowPii: false,
-        dni: ''
       }
     );
     return false;

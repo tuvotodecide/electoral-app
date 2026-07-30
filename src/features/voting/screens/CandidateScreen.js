@@ -46,7 +46,6 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
 import { blankVote } from '../data/params';
 import { useCameraPermissions } from 'expo-camera';
-import ZkExecutor from '@/src/components/zkExecutor/zkExecutor';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -213,7 +212,6 @@ const CandidateScreen = ({ route }) => {
     message: '',
   });
   const isSubmittingVoteRef = useRef(false);
-  const zkRef = useRef(null);
   const isInPlaceVote =
     route?.params?.isInPlaceVote ??
     route?.params?.isInVotePlace ??
@@ -582,28 +580,6 @@ const CandidateScreen = ({ route }) => {
     }
   }, [selectedCandidate, isInPlaceVote, electionId, electionCopySource, recordVote, electionInfo, isReferendumElection, submitVote]);
 
-  const generateProof = useCallback(async (secret, voteHash, claimNullifier, pathElements, pathIndices, voteIdHex, merkleRoot, voteNullifier, claimNullifierHash) => {
-    try {
-      return await zkRef.current.generateProof({
-        wasm: require('../../../../assets/zkExecutor/circuits/vote/circuit.wasm'),
-        zkey: require('../../../../assets/zkExecutor/circuits/vote/circuit_final.zkey'),
-        input: {
-          secret,
-          voteHash,
-          claimNullifier,
-          pathElements,
-          pathIndices,
-          voteIdHex,
-          merkleRoot,
-          voteNullifier,
-          claimNullifierHash
-        },
-      });
-    } catch (error) {
-      console.error('error: ' + error.message);
-    }
-  }, []);
-
   const submitVote = useCallback(async (presentialSessionId) => {
     await startVoteJournal({
       electionId,
@@ -622,7 +598,7 @@ const CandidateScreen = ({ route }) => {
     });
 
     // Online: Submit vote directly
-    const result = await repository.submitVote(generateProof, electionId, selectedCandidate.id, presentialSessionId);
+    const result = await repository.submitVote(electionId, selectedCandidate.id, presentialSessionId);
 
     if (result.success) {
       const receipt = await recordVote(selectedCandidate.id, true, {
@@ -720,6 +696,7 @@ const CandidateScreen = ({ route }) => {
           title={getButtonText()}
           type="B16"
           onPress={handleVotePress}
+          disabled={candidates.length === 0}
           containerStyle={styles.voteButton}
           style={styles.voteButtonText}
           textProps={{
@@ -782,7 +759,6 @@ const CandidateScreen = ({ route }) => {
         secondaryButtonText="Cerrar"
         onSecondaryPress={() => setErrorModal(modal => ({...modal, visible: false}))}
       />
-      <ZkExecutor ref={zkRef} />
     </CSafeAreaView>
   );
 };

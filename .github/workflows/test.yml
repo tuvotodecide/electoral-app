@@ -45,85 +45,154 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests - Reusable components
-        run: pnpm test -- --testPathPattern=__tests__/unit/components
+      - name: "Pruebas: Registro, identidad y wallet"
+        run: |
+          pnpm test --testNamePattern="al omitir navega al flujo de autenticación en Connect|en la última diapositiva guarda onboarding y resetea a Connect|navega a registro y onboarding desde sus botones|AsyncStorage helpers: set/get y parse|muestra botón de retry cuando falla descarga|renderiza el contenedor de splash, renderiza el logo, renderiza contenedor de imagen|renderiza y mantiene deshabilitado continuar antes de aceptar términos|habilita continuar después de marcar términos|abre la pantalla de términos desde el enlace|navega a RegisterUser2 cuando el usuario acepta términos|conserva parámetros de recuperación al navegar a RegisterUser2|renderiza la pantalla base y el boton de continuar|habilita continuar solo cuando hay DNI y ambas imagenes cargadas|navega a RegisterUser3 cuando el formulario es valido|si ingresa el DNI de revision redirige a TabNavigation|si el DNI ya existe en registro muestra modal y redirige a SelectRecuperation|si es recovery y no existe DNI muestra modal y redirige a RegisterUser1|si registryCheckByDni falla con Network Error muestra alerta de red|renderiza sin errores|renderiza el header con título|carga la URL de términos y condiciones|renderiza las secciones legales principales|redirige automáticamente a Login cuando existe usuario|envía a SelectRecuperation al presionar ingresar sin datos locales|si existe draft previo reinicia el flujo con fromDraft|al volver de background reintenta con el draft guardado|normaliza DNI y calcula hash|muestra modal de error y permite reintentar cuando falla el analisis|mantiene deshabilitado confirmar hasta marcar el checkbox|confirma datos y navega a RegisterUser7 con parametros|usa el boton volver para reiniciar en RegisterUser2|debe validar nombres con espacios múltiples|debe rechazar nombres muy cortos \(menos de 2 caracteres\)|debe rechazar nombres muy largos \(más de 40 caracteres\)|debe rechazar nombres con caracteres especiales|permite seleccionar desde cámara y galería|navega a RegisterUser5 despues de capturar selfie|muestra alerta si se intenta continuar sin selfie|inicia con continuar deshabilitado y lo habilita con 4 dígitos|guarda el PIN temporal y navega a RegisterUser10 cuando coincide|muestra error cuando el PIN de confirmacion no coincide|si falla por PIN no disponible redirige a RegisterUser8 para recrearlo|navega a RegisterUser8 tanto al habilitar biometria como al omitirla|muestra modal informativo cuando el dispositivo no tiene biometria|si no hay credenciales biométricas muestra aviso y no navega|BioFlag guarda y recupera|completa el proceso y reemplaza hacia RegisterUser11|si falla el registro muestra modal y reintenta en RegisterUser10|si createWallet falla por timeout muestra modal de error y permite reintento|Session crea, valida y limpia|RegisterDraft guarda, lee y limpia|usa atras del header para volver a RegisterUser4|valida que los endpoints criticos configurados por env usen https|rechaza valores vacios o malformados|rechaza explicitamente http y lanza error descriptivo|acepta https valido y retorna la url normalizada"
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - A. Disponibilidad y autorización de atestiguamiento"
+        run: |
+          pnpm test --testNamePattern="carga información remota cuando se proporciona locationId en la ruta|presenta modal informativo cuando la respuesta remota no incluye tablas|debe manejar permisos denegados permanentemente|debe manejar error en la solicitud de permisos|muestra modal de error cuando fetchMesas lanza una excepción|gestiona errores en la carga remota mostrando modal de tipo error|debe renderizar la lista de ubicaciones correctamente|debe mostrar el estado vacío cuando locations está vacío|obtiene worksheet desde backend cuando está online|maneja error al obtener worksheet desde backend"
 
-      - name: Run tests - General configuration
-        run: pnpm test -- --testPathPattern="__tests__/unit/(api|config)"
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - B. Selección territorial, recinto o mesa"
+        run: |
+          pnpm test --testNamePattern="normalizeMesaNumber maneja valores con guiones|normalizeMesaNumber maneja valores vacíos|al buscar una mesa, actualiza el estado con los datos de la mesa|debe navegar con mesa simple correctamente|renderiza las actas existentes y navega a PhotoReview al seleccionarlas|muestra los controles base de mesa y acción de captura|obtiene worksheet desde backend cuando está online|maneja error al obtener worksheet desde backend"
 
-      - name: Run tests - Hooks
-        run: pnpm test -- --testPathPattern=__tests__/unit/hooks
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - C. Registro y validación del acta"
+        run: |
+          pnpm test --testNamePattern="debe permitir actualizar resultados de partidos|debe navegar a la pantalla de confirmación al presionar Siguiente|muestra el modal de validacion cuando la validacion local falla al confirmar|muestra error cuando faltan datos obligatorios en modo worksheet|detecta observación normalizada|ignora \"corre y vale\" como observación|muestra InfoModal cuando hay observacion marcada sin texto|muestra error si hasObservation pero sin texto|construye payload con aliases de votos válidos|maneja SKIPPED_OFFLINE en la comparativa de actas|maneja ERROR en la comparativa de actas|muestra advertencia de discrepancia entre hoja y acta|no muestra advertencia si shownCompareWarning es true"
 
-      - name: Run tests - Navigation
-        run: pnpm test -- --testPathPattern=__tests__/unit/navigation
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - D. Captura y carga de evidencias"
+        run: |
+          pnpm test --testNamePattern="lanza error si la descarga HTTP no genera archivo|uploadImageToIPFS falla si el archivo no existe|solicita permiso de cámara cuando no está concedido|captura foto y muestra controles de análisis|maneja cancelación de galería|maneja error de galería|maneja selección de imagen de galería|permite seleccionar desde cámara y galería|uploadElectoralActComplete arma metadata y sube json|uploadJSONToIPFS retorna error si falla|uploadImageToIPFS sube y limpia cache cuando es url|crea acta nueva cuando no existe en backend|procesa acta con otra existente en la mesa|lanza error cuando falta tableCode"
 
-      - name: Run tests - Redux slices
-        run: pnpm test -- --testPathPattern=__tests__/unit/redux
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - E. Envío, persistencia y confirmación"
+        run: |
+          pnpm test --testNamePattern="lanza error terminal cuando falta ipfsUri|crea acta nueva cuando no existe en backend|sincroniza acta y atestación|reintenta cuando backend responde 409|procesa acta con otra existente en la mesa|renderiza las actas existentes y navega a PhotoReview al seleccionarlas|procesa acta duplicada y sube certificado|exhibe el certificado NFT cuando subir atestiguamiento es exitoso|muestra advertencia cuando subir atestiguamiento falla|comparte el acta usando image ipfs cuando llega en tableData|al regresar desde flujo normal resetea a Home"
 
-      - name: Run tests - Services and utils
-        run: pnpm test -- --testPathPattern="__tests__/unit/(services|utils)"
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - G. Duplicidad, concurrencia y recuperación"
+        run: |
+          pnpm test --testNamePattern="inserta y obtiene el estado local|lista y limpia estados locales|sube hoja de trabajo y actualiza estado|sincroniza acta y atestación|marca como subida si backend responde 409 ya fue subida|marca como pendiente si backend responde 409 pendiente|reintenta cuando backend responde 409|procesa acta duplicada y sube certificado|maneja worksheet ya en cola|en modo worksheet deduplica cola y evita encolar duplicado|checkDuplicateBallot detecta duplicado|checkDuplicateBallot retorna false en 404|muestra modal de duplicado cuando checkDuplicateBallot retorna exists=true|cierra modal de duplicado al presionar botón de volver|crea acta nueva cuando no existe en backend"
 
-      - name: Run Module tests - Login
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(Login|LoginUser|AccountLock|OTPCode).test.js"
+      - name: "Pruebas: Atestiguamiento, actas, evidencias - I. Experiencia móvil y accesibilidad"
+        run: |
+          pnpm test --testNamePattern="muestra los controles base de mesa y acción de captura|encola el acta al confirmar y muestra paso final"
 
-      - name: Run Module tests - Register
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(ConditionsRegister|RegisterUser[^\/]*).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - B. Publicación y consulta de noticias y notificaciones"
+        run: |
+          pnpm test --testNamePattern="deduplica notificaciones semanticas y prioriza la remota frente a la local|muestra estado vacío cuando no hay notificaciones|consulta backend y renderiza lista base|maneja errores de red correctamente|prioriza publicUrl absoluto enviado por backend para notificaciones institucionales|resuelve CTA de habilitacion como Ver padron y no como Votar|muestra vista roja de votacion eliminada sin CTA para INSTITUTIONAL_VOTING_CANCELLED|el botón Ver votación navega a WebView interno y no abre navegador externo"
 
-      - name: Run Module tests - Logout
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/HomeScreen.Basic.test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - C. Permisos de notificaciones en App móvil"
+        run: |
+          pnpm test --testNamePattern="retorna true si ya tiene permisos autorizados|solicita permisos y crea canal en Android 13\+|acepta permisos PROVISIONAL en iOS|inicializa notificaciones completas|registra listener de foreground|retorna false si la app no está en foreground|muestra alerta si Android 13\+ deniega permisos|retorna false y captura errores"
 
-      - name: Run Module tests - Recovery File
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(SelectRecuperation|RecoveryQR|RecoveryFinalize|RecoveryUser[^\/]*).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - D. Registro y ciclo de vida de device tokens de Firebase"
+        run: |
+          pnpm test --testNamePattern="sanitiza caracteres especiales|genera key de tópico con prefijo loc_|re-suscribe los topicos guardados cuando firebase refresca el token|suscribe al tópico de ubicación"
 
-      - name: Run Module tests - Recovery Guardians (unused module)
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/(FindMyUser|.*Guardian.*|).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - E. Generación y destinatarios de notificaciones"
+        run: |
+          pnpm test --testNamePattern="soporta tipos institucionales reales de revision, publicacion, noticias y habilitacion|normaliza copy y detalle institucional para votacion eliminada|reconoce VOTE_REWARD_AVAILABLE y navega a recompensas|muestra acción Reclamar para notificación local de recompensa por voto|resuelve rutas especiales para worksheet_uploaded y announce_count|suscribe al tópico de ubicación"
 
-      - name: Run Module tests - Guardians (unused module)
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Guardians"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - F. Envío mediante Firebase"
+        run: |
+          pnpm test --testNamePattern="muestra notificacion local cuando llega un mensaje institucional data-only|no duplica banner local cuando firebase ya trae notification\.title/body"
 
-      - name: Run Module tests - Recovery CI/Selfie
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/Auth/RegisterUser(2|4).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - G. Recepción en App móvil"
+        run: |
+          pnpm test --testNamePattern="construye textos fallback distintos para publicar votacion, acta y certificado|alerta solo una vez por notificacion backend deduplicada y persiste la marca|registra listener de foreground|muestra notificación local|registra el background message handler en firebase messaging|propaga notificacion abierta y notificacion inicial|guarda navegacion pendiente y manda al login cuando no hay auth|consume pending de notificacion cuando la sesion ya es valida"
 
-      - name: Run Module tests - Device token/push
-        run: pnpm test -- --testPathPattern="__tests__/unit/notifications.test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - H. Navegación desde notificaciones"
+        run: |
+          pnpm test --testNamePattern="redirige worksheet_uploaded al home sin navegar a pantallas erradas|reconoce VOTE_REWARD_AVAILABLE y navega a recompensas|abre el detalle institucional desde push para tipos de votacion sin caer a Splash|navega directamente cuando el usuario esta autenticado y la sesion local esta vigente|mantiene INSTITUTIONAL_VOTING_CANCELLED en detalle institucional y no WebView|evita navegacion cuando el payload trae una pantalla invalida o routeParams malformado|rechaza URLs no http/https o externas que no apuntan a elección pública|no guarda navegacion pendiente si el payload remoto no trae screen valido"
 
-      - name: Run Module tests - Home
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/(HomeScreen[^\/]*).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - I. Duplicidad, reintentos y múltiples dispositivos"
+        run: |
+          pnpm test --testNamePattern="deduplica notificaciones semanticas y prioriza la remota frente a la local|permite marcar una notificacion como ya alertada para evitar duplicados entre foreground y fetch backend|persiste una notificacion local de acta publicada con routeParams serializados|maneja errores de red correctamente|permite hacer pull to refresh"
 
-      - name: Run Module tests - Notifications
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/TabBar/Home/(Notification[^\/]*).test.js"
+      - name: "Pruebas: Noticias, notificaciones y device tokens - J. Privacidad, seguridad y experiencia"
+        run: |
+          pnpm test --testNamePattern="maneja correctamente cuando no hay DNI|muestra detalle seguro sin callData ni datos internos|navega solicitud de publicacion oficial al detalle sin exponer calldata"
 
-      - name: Official publication mobile focused tests
-        run: >
-          pnpm test --
-          --runInBand
-          __tests__/unit/features/officialPublication/OfficialPublicationNotificationCard.test.js
-          __tests__/unit/container/TabBar/Home/Notification.officialPublication.test.js
-          __tests__/unit/features/officialPublication/OfficialPublicationRequestScreen.test.js
+      - name: "Pruebas: Recuperación móvil - A. Acceso al flujo de recuperación"
+        run: |
+          pnpm test --testNamePattern="renderiza y navega a SelectRecuperation desde \"olvidé mi PIN\"|navega a SelectRecuperation con disableCI\(carnet\) habilitado|oculta la opción CI cuando disableCI es true|redirige a AccountLock cuando el usuario esta bloqueado|regresa a Connect al usar el botón atrás del header"
 
-      - name: Run Module tests - Details/WebView
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/(TableDetailScreen|UnifiedTableScreen).test"
+      - name: "Pruebas: Recuperación móvil - B. Cambio o recuperación de PIN"
+        run: |
+          pnpm test --testNamePattern="el botón se habilita cuando el PIN tiene 4 dígitos|muestra error cuando los PINs no coinciden|navega a ChangePinNew cuando el PIN es correcto|actualiza el PIN exitosamente cuando coinciden|muestra error cuando updatePin falla|PinAttempts incrementa, bloquea y libera|al llegar al limite de intentos muestra modal y redirige a recuperacion|mantiene deshabilitado confirmar mientras el PIN no tenga 4 digitos|muestra error y no navega cuando el PIN no coincide|navega a RecoveryFinalize cuando el PIN coincide|si falla la finalizacion redirige a SelectRecuperation"
 
-      - name: Run Module tests - Electoral Locations
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/ElectoralLocationsScreen.test"
+      - name: "Pruebas: Recuperación móvil - C. Respaldo y restauración por archivo"
+        run: |
+          pnpm test --testNamePattern="guarda backup y establece hasBackup en true|inicia guardado al presionar botón|no navega si se presiona continuar sin haber cargado archivo|carga respaldo y navega a RecoveryUserQrpin|hace reset a LoginUser cuando el PIN de confirmacion coincide"
 
-      - name: Run Module tests - Records/Worksheet
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/RecordReviewScreen.test"
+      - name: "Pruebas: Recuperación móvil - D. Ejecución y reconciliación de recuperación"
+        run: |
+          pnpm test --testNamePattern="la opción CI navega a RegisterUser1 con modo recuperación|en modo recovery exitoso guarda datos y redirige a LoginUser CI|si falla recovery permite volver a RegisterUser1 con \"Revisar datos\"|si falla recovery y se presiona reintentar vuelve a ejecutar la recuperación"
 
-      - name: Run Module tests - Witness
-        run: pnpm test -- --testPathPattern="__tests__/unit/containers/(SearchTable|(Camera|PhotoConfirmation|PhotoReview|WitnessRecord)Screen).test"
+      - name: "Pruebas: Recuperación móvil - E. Privacidad, seguridad y experiencia"
+        run: |
+          pnpm test --testNamePattern="renderiza el input de OTP|muestra mensaje de PIN incorrecto en el modal de error|si falla la finalizacion redirige a SelectRecuperation|muestra error cuando updatePin falla"
 
-      - name: Run Module tests - Offline Queue
-        run: pnpm test -- --testPathPattern="__tests__/unit/utils/.*offlineQueue.*.test.js"
+      - name: "Pruebas: Emisión del voto móvil - A. Acceso y disponibilidad"
+        run: |
+          pnpm test --testNamePattern="renderiza el badge de estado ACTIVA|renderiza el botón \"Votar ahora\" cuando no ha votado|ejecuta onVotePress al tocar \"Votar ahora\"|renderiza la pantalla principal y carga candidaturas reales del repositorio|muestra mensaje de no habilitado cuando isEligible=false|no muestra botón cuando no está habilitado|muestra \"Votación cerrada\" cuando isEnded=true y no votó|muestra No habilitado cuando eligibility responde DISABLED"
 
-      - name: Run Module tests - Institutional voting
-        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/(CandidateCard|ElectionCard|ElectionRepository|quequeAdapter).test.js"
+      - name: "Pruebas: Emisión del voto móvil - B. Carga de papeleta"
+        run: |
+          pnpm test --testNamePattern="mapea candidatos desde opciones publicas activas con colores y roles|renderiza la pantalla principal y carga candidaturas reales del repositorio|preserva isReferendum y objective como questionTitle para la papeleta de consulta|usa la descripcion de la consulta y copy de opciones cuando es referendum|muestra un referendum como opcion numerada sin apariencia de candidatura|deja la lista vacia y deshabilita el boton de votar cuando falla la carga de candidaturas|deshabilita el boton de votar cuando falla la carga de candidaturas"
 
-      - name: Run Module tests - Participations/Receipts
-        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/(ParticipationListScreen|PublicElectionWebViewScreen|Notification.*|VoteReceiptScreen).test.js"
+      - name: "Pruebas: Emisión del voto móvil - C. Selección"
+        run: |
+          pnpm test --testNamePattern="permite seleccionar una opcion valida y cambiar la seleccion antes de votar|mantiene el boton en voto blanco cuando no existe seleccion"
 
-      - name: Run Module tests - Institutional voting with QR
-        run: pnpm test -- --testPathPattern="__tests__/unit/features/voting/CandidateScreen.test.js"
+      - name: "Pruebas: Emisión del voto móvil - D. Revisión y confirmación"
+        run: |
+          pnpm test --testNamePattern="envia el voto online, construye el metadata real y navega al comprobante en exito|previene doble envio mientras el primer confirm sigue en curso"
 
-      - name: Run Module tests - Health
-        run: pnpm test -- --testPathPattern="__tests__/unit/AppRoot.test.js"
+      - name: "Pruebas: Emisión del voto móvil - E. Preparación del voto"
+        run: |
+          pnpm test --testNamePattern="devuelve error \"No se encontró una elección válida\" cuando no hay electionId|devuelve error \"No se encontró el carnet del usuario actual\" cuando no hay dni en la wallet|MP-APP-DETAIL-006 muestra alerta controlada si falta VC/nullifier|registra \"No se pudo validar tu acceso para emitir el voto\" cuando no hay credencial|realiza la generación de la prueba ZK con did, privKey y credentialId, y arma el callbackUrl con el optionId provisto"
+
+      - name: "Pruebas: Emisión del voto móvil - F. Envío y confirmación blockchain"
+        run: |
+          pnpm test --testNamePattern="envia el voto online, construye el metadata real y navega al comprobante en exito|previene doble envio mientras el primer confirm sigue en curso|marca un voto pendiente como sincronizado y actualiza el recibo actual|renderiza el comprobante exitoso y sincroniza con blockchain cuando corresponde|captura y muestra error del backend cuando el voto no puede registrarse|marca fallo controlado cuando falla contrato|MP-APP-DETAIL-008 muestra error controlado si falla contrato|sincroniza contra blockchain usando nullifier y coincidencia de opcion|marca fallo cuando no encuentra nullifier para consultar blockchain|MP-APP-DETAIL-007 contrato no sincronizado no muestra seleccion ni consulta backend"
+
+      - name: "Pruebas: Emisión del voto móvil - G. Duplicidad, errores y reconciliación"
+        run: |
+          pnpm test --testNamePattern="previene doble envio mientras el primer confirm sigue en curso|construye el payload de voto offline y evita duplicados para la misma eleccion|si el voto QR queda emitido en cadena pero falla backend, encola sincronizacion con presentialSessionId|sincroniza una participacion recuperada desde backend aunque no exista localmente|procesa sincronizacion backendOnly para una participacion ya emitida en cadena|encola el voto directamente cuando no hay internet|usa fallback offline cuando hay red local pero el backend no responde|encola el voto cuando falla por red y navega al comprobante offline al cerrar el modal"
+
+      - name: "Pruebas: Emisión del voto móvil - H. Privacidad y seguridad"
+        run: |
+          pnpm test --testNamePattern="MP-APP-LIST-008 no renderiza campos sensibles enviados por error desde backend|MP-APP-DETAIL-008 muestra error controlado si falla contrato"
+
+      - name: "Pruebas: Emisión del voto móvil - I. Experiencia móvil y accesibilidad"
+        run: |
+          pnpm test --testNamePattern="envia el voto online, construye el metadata real y navega al comprobante en exito"
+
+      - name: "Pruebas: Kiosco presencial QR - A. Habilitación del modo presencial"
+        run: |
+          pnpm test --testNamePattern="si el voto QR queda emitido en cadena pero falla backend, encola sincronizacion con presentialSessionId"
+
+      - name: "Pruebas: Kiosco presencial QR - C. Escaneo desde la app móvil"
+        run: |
+          pnpm test --testNamePattern="mapea presentialKioskEnabled desde el evento publico de backend|navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled|pide QR cuando presentialKioskEnabled esta encendido y envia presentialSessionId al submit final|no pide QR cuando presentialKioskEnabled esta apagado|muestra modal de sin conexion cuando es voto presencial y no hay internet|solicita permiso de camara y abre el escaner cuando el usuario lo concede|mantiene la vista de permiso sin abrir el escaner cuando el usuario deniega el permiso de camara|cierra el modal de la camara al presionar el boton de cerrar|si el scan QR falla muestra error y no envia el voto|verifica QR presencial enviando token y carnet y devuelve presentialSessionId"
+
+      - name: "Pruebas: Kiosco presencial QR - D. Validación de la sesión presencial"
+        run: |
+          pnpm test --testNamePattern="si el scan QR falla muestra error y no envia el voto"
+
+      - name: "Pruebas: Kiosco presencial QR - E. Autorización para continuar"
+        run: |
+          pnpm test --testNamePattern="incluye presentialSessionId en el payload final de participacion cuando corresponde|pide QR cuando presentialKioskEnabled esta encendido y envia presentialSessionId al submit final|si el scan QR falla muestra error y no envia el voto"
+
+      - name: "Pruebas: Kiosco presencial QR - F. Consumo o cierre de sesión"
+        run: |
+          pnpm test --testNamePattern="conserva presentialSessionId en la cola y lo reenvia al sincronizar participacion backendOnly|procesa sincronizacion backendOnly para una participacion ya emitida en cadena|marca el voto como error recuperable y conserva el recibo para reintento|si el voto QR queda emitido en cadena pero falla backend, encola sincronizacion con presentialSessionId"
+
+      - name: "Pruebas: Kiosco presencial QR - G. Duplicidad, expiración y recuperación"
+        run: |
+          pnpm test --testNamePattern="marca el voto como error recuperable y conserva el recibo para reintento"
+
+      - name: "Pruebas: Kiosco presencial QR - H. Privacidad y seguridad"
+        run: |
+          pnpm test --testNamePattern="verifica QR presencial enviando token y carnet y devuelve presentialSessionId"
+

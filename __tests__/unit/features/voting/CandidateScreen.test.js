@@ -163,18 +163,68 @@ jest.mock('../../../../src/features/voting/components/OfflineQueuedModal', () =>
 jest.mock('../../../../src/features/voting/components/CameraScannerModal', () => {
   const React = require('react');
   const {Text, TouchableOpacity, View} = require('react-native');
-  const MockCameraScannerModal = ({visible, onBarcodeScanned}) =>
+  const MockCameraScannerModal = ({
+    visible,
+    onClose,
+    onBarcodeScanned,
+    hasPermission,
+    onRequestPermission,
+  }) =>
     visible ? (
       <View>
-        <Text>Escanear QR</Text>
-        <TouchableOpacity
-          onPress={() => onBarcodeScanned({data: 'qr-token-1'})}
-          testID="scanQrButton">
-          <Text>Simular scan</Text>
+        <TouchableOpacity onPress={onClose} testID="cameraModalCloseButton">
+          <Text>Cerrar</Text>
         </TouchableOpacity>
+        {hasPermission ? (
+          <View>
+            <Text>Escanear QR</Text>
+            <TouchableOpacity
+              onPress={() => onBarcodeScanned({data: 'qr-token-1'})}
+              testID="scanQrButton">
+              <Text>Simular scan</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View>
+            <Text>Se requiere permiso de cámara</Text>
+            <TouchableOpacity
+              onPress={onRequestPermission}
+              testID="cameraModalPermissionButton">
+              <Text>Conceder permiso</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     ) : null;
   return MockCameraScannerModal;
+});
+
+jest.mock('expo-camera', () => {
+  const React = require('react');
+  let initialPermission = {granted: true, status: 'granted'};
+  const requestPermissionMock = jest.fn(async () => ({
+    granted: true,
+    status: 'granted',
+  }));
+
+  const useCameraPermissions = () => {
+    const [permission, setPermission] = React.useState(initialPermission);
+    const requestPermission = React.useCallback(async () => {
+      const result = await requestPermissionMock();
+      setPermission(result);
+      return result;
+    }, []);
+    return [permission, requestPermission];
+  };
+
+  return {
+    __esModule: true,
+    useCameraPermissions,
+    __requestPermissionMock: requestPermissionMock,
+    __setInitialCameraPermission: value => {
+      initialPermission = value;
+    },
+  };
 });
 
 const {useNavigation} = require('@react-navigation/native');
@@ -193,6 +243,10 @@ const {
   checkInternetConnection,
 } = require('../../../../src/utils/networkUtils');
 const {captureError} = require('../../../../src/config/sentry');
+const {
+  __requestPermissionMock: requestPermissionMock,
+  __setInitialCameraPermission: setInitialCameraPermission,
+} = require('expo-camera');
 
 const createStore = () =>
   configureStore({
@@ -244,6 +298,7 @@ describe('CandidateScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    setInitialCameraPermission({granted: true, status: 'granted'});
     useNavigation.mockReturnValue(navigation);
     useElectionRepository.mockReturnValue(repository);
     useVotingState.mockReturnValue({
@@ -281,7 +336,7 @@ describe('CandidateScreen', () => {
     expect(screen.getByText('Lista Verde')).toBeTruthy();
   });
 
-  it('mantiene el boton en voto blanco cuando no existe seleccion', async () => {
+  it('deshabilita el boton de votar cuando falla la carga de candidaturas', async () => {
     repository.getCandidates.mockResolvedValueOnce([]);
 
     const screen = renderScreen({params: {election}});
@@ -292,7 +347,24 @@ describe('CandidateScreen', () => {
 
     const voteButton = screen.getByTestId('voteButton');
     expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
-    expect(voteButton.props.accessibilityState.disabled).toBe(false);
+    expect(voteButton.props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('deja la lista vacia y deshabilita el boton de votar cuando falla la carga de candidaturas', async () => {
+    repository.getCandidates.mockRejectedValueOnce(new Error('network error'));
+
+    const screen = renderScreen({params: {election}});
+
+    await waitFor(() => {
+      expect(repository.getCandidates).toHaveBeenCalledWith('election-1');
+    });
+
+    expect(screen.queryByText('Lista Azul')).toBeNull();
+    expect(screen.queryByText('Lista Verde')).toBeNull();
+
+    const voteButton = screen.getByTestId('voteButton');
+    expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
+    expect(voteButton.props.accessibilityState.disabled).toBe(true);
   });
 
   it('permite seleccionar una opcion valida y cambiar la seleccion antes de votar', async () => {
@@ -383,7 +455,6 @@ describe('CandidateScreen', () => {
     });
 
     expect(repository.submitVote).toHaveBeenCalledWith(
-      expect.any(Function),
       'election-1',
       'cand-1',
       undefined,
@@ -426,7 +497,6 @@ describe('CandidateScreen', () => {
 
     await waitFor(() => {
       expect(repository.submitVote).toHaveBeenCalledWith(
-        expect.any(Function),
         'election-1',
         'cand-1',
         undefined,
@@ -461,12 +531,96 @@ describe('CandidateScreen', () => {
     await waitFor(() => {
       expect(repository.verifyVoteQrCode).toHaveBeenCalledWith('qr-token-1');
       expect(repository.submitVote).toHaveBeenCalledWith(
-        expect.any(Function),
         'election-1',
         'cand-1',
         'presential-session-1',
       );
     });
+  });
+
+  it('solicita permiso de camara y abre el escaner cuando el usuario lo concede', async () => {
+    setInitialCameraPermission({granted: false, status: 'undetermined'});
+    requestPermissionMock.mockResolvedValueOnce({granted: true, status: 'granted'});
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await screen.findByTestId('cameraModalPermissionButton');
+    expect(screen.queryByTestId('scanQrButton')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('cameraModalPermissionButton'));
+
+    await waitFor(() => {
+      expect(requestPermissionMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('scanQrButton')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('cameraModalPermissionButton')).toBeNull();
+  });
+
+  it('mantiene la vista de permiso sin abrir el escaner cuando el usuario deniega el permiso de camara', async () => {
+    setInitialCameraPermission({granted: false, status: 'undetermined'});
+    requestPermissionMock.mockResolvedValueOnce({granted: false, status: 'denied'});
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    const permissionButton = await screen.findByTestId('cameraModalPermissionButton');
+    fireEvent.press(permissionButton);
+
+    await waitFor(() => {
+      expect(requestPermissionMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.queryByTestId('scanQrButton')).toBeNull();
+    expect(screen.getByTestId('cameraModalPermissionButton')).toBeTruthy();
+    expect(repository.verifyVoteQrCode).not.toHaveBeenCalled();
+    expect(repository.submitVote).not.toHaveBeenCalled();
+  });
+
+  it('cierra el modal de la camara al presionar el boton de cerrar', async () => {
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await screen.findByTestId('scanQrButton');
+
+    fireEvent.press(screen.getByTestId('cameraModalCloseButton'));
+
+    expect(screen.queryByTestId('scanQrButton')).toBeNull();
+    expect(screen.queryByTestId('cameraModalCloseButton')).toBeNull();
+    expect(repository.submitVote).not.toHaveBeenCalled();
   });
 
   it('si el scan QR falla muestra error y no envia el voto', async () => {
@@ -494,6 +648,38 @@ describe('CandidateScreen', () => {
       expect(repository.submitVote).not.toHaveBeenCalled();
       expect(screen.getByText('Código QR no reconocido')).toBeTruthy();
     });
+  });
+
+  it('muestra modal de sin conexion cuando es voto presencial y no hay internet', async () => {
+    checkInternetConnection.mockResolvedValueOnce(false);
+
+    const screen = renderScreen({
+      params: {
+        election: {
+          ...election,
+          presentialKioskEnabled: true,
+        },
+      },
+    });
+
+    await screen.findByText('Lista Azul');
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    fireEvent.press(screen.getByTestId('voteButton'));
+    fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Sin conexión')).toBeTruthy();
+      expect(
+        screen.getByText(
+          'No se puede votar presencialmente sin conexión, revise su internet',
+        ),
+      ).toBeTruthy();
+    });
+
+    expect(repository.verifyVoteQrCode).not.toHaveBeenCalled();
+    expect(repository.submitVote).not.toHaveBeenCalled();
+    expect(enqueueVote).not.toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
   });
 
   it('si el voto QR queda emitido en cadena pero falla backend, encola sincronizacion con presentialSessionId', async () => {
