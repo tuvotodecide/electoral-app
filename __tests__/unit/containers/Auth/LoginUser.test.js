@@ -21,7 +21,7 @@ describe('LoginUser', () => {
     AsyncStorage.getItem = jest.fn(() => Promise.resolve(null));
   });
 
-  it('renderiza y navega a SelectRecuperation desde "olvidé mi PIN"', async () => {
+  it('renderiza y navega a SelectRecuperation desde olvide mi PIN', async () => {
     const localNavigation = {
       ...mockNavigation,
       navigate: jest.fn(),

@@ -86,7 +86,7 @@ describe('pushPermission service', () => {
       expect(result).toBe(false);
     });
 
-    it('solicita permisos y crea canal en Android 13+', async () => {
+    it('solicita permisos y crea canal en Android 13', async () => {
       const notifee = require('@notifee/react-native');
       notifee.getNotificationSettings.mockResolvedValueOnce({
         authorizationStatus: notifee.AuthorizationStatus.NOT_DETERMINED,
@@ -109,7 +109,7 @@ describe('pushPermission service', () => {
       expect(result).toBe(true);
     });
 
-    it('muestra alerta si Android 13+ deniega permisos', async () => {
+    it('muestra alerta si Android 13 deniega permisos', async () => {
       const notifee = require('@notifee/react-native');
       notifee.getNotificationSettings.mockResolvedValueOnce({
         authorizationStatus: notifee.AuthorizationStatus.NOT_DETERMINED,

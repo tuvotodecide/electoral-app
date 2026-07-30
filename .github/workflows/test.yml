@@ -66,11 +66,11 @@ jobs:
 
       - name: "Pruebas: Atestiguamiento, actas, evidencias - E. Envío, persistencia y confirmación"
         run: |
-          pnpm run test -- --testNamePattern="lanza error terminal cuando falta ipfsUri|crea acta nueva cuando no existe en backend|sincroniza acta y atestación|reintenta cuando backend responde 409|procesa acta con otra existente en la mesa|renderiza las actas existentes y navega a PhotoReview al seleccionarlas|procesa acta duplicada y sube certificado|exhibe el certificado NFT cuando subir atestiguamiento es exitoso|muestra advertencia cuando subir atestiguamiento falla|comparte el acta usando image ipfs cuando llega en tableData|al regresar desde flujo normal resetea a Home"
+          pnpm run test -- --testNamePattern="lanza error terminal cuando falta ipfsUri|crea acta nueva cuando no existe en backend|sincroniza acta y atestacion|reintenta cuando backend responde 409|procesa acta con otra existente en la mesa|renderiza las actas existentes y navega a PhotoReview al seleccionarlas|procesa acta duplicada y sube certificado|exhibe el certificado NFT cuando subir atestiguamiento es exitoso|muestra advertencia cuando subir atestiguamiento falla|comparte el acta usando image ipfs cuando llega en tableData|al regresar desde flujo normal resetea a Home"
 
       - name: "Pruebas: Atestiguamiento, actas, evidencias - G. Duplicidad, concurrencia y recuperación"
         run: |
-          pnpm run test -- --testNamePattern="inserta y obtiene el estado local|lista y limpia estados locales|sube hoja de trabajo y actualiza estado|sincroniza acta y atestación|marca como subida si backend responde 409 ya fue subida|marca como pendiente si backend responde 409 pendiente|reintenta cuando backend responde 409|procesa acta duplicada y sube certificado|maneja worksheet ya en cola|en modo worksheet deduplica cola y evita encolar duplicado|checkDuplicateBallot detecta duplicado|checkDuplicateBallot retorna false en 404|muestra modal de duplicado cuando checkDuplicateBallot retorna exists=true|cierra modal de duplicado al presionar botón de volver|crea acta nueva cuando no existe en backend"
+          pnpm run test -- --testNamePattern="inserta y obtiene el estado local|lista y limpia estados locales|sube hoja de trabajo y actualiza estado|sincroniza acta y atestacion|marca como subida si backend responde 409 ya fue subida|marca como pendiente si backend responde 409 pendiente|reintenta cuando backend responde 409|procesa acta duplicada y sube certificado|maneja worksheet ya en cola|en modo worksheet deduplica cola y evita encolar duplicado|checkDuplicateBallot detecta duplicado|checkDuplicateBallot retorna false en 404|muestra modal de duplicado cuando checkDuplicateBallot retorna exists=true|cierra modal de duplicado al presionar botón de volver|crea acta nueva cuando no existe en backend"
 
       - name: "Pruebas: Atestiguamiento, actas, evidencias - I. Experiencia móvil y accesibilidad"
         run: |
@@ -82,7 +82,7 @@ jobs:
 
       - name: "Pruebas: Noticias, notificaciones y device tokens - C. Permisos de notificaciones en App móvil"
         run: |
-          pnpm run test -- --testNamePattern="retorna true si ya tiene permisos autorizados|solicita permisos y crea canal en Android 13\+|acepta permisos PROVISIONAL en iOS|inicializa notificaciones completas|registra listener de foreground|retorna false si la app no está en foreground|muestra alerta si Android 13\+ deniega permisos|retorna false y captura errores"
+          pnpm run test -- --testNamePattern="retorna true si ya tiene permisos autorizados|solicita permisos y crea canal en Android 13+|acepta permisos PROVISIONAL en iOS|inicializa notificaciones completas|registra listener de foreground|retorna false si la app no está en foreground|muestra alerta si Android 13+ deniega permisos|retorna false y captura errores"
 
       - name: "Pruebas: Noticias, notificaciones y device tokens - D. Registro y ciclo de vida de device tokens de Firebase"
         run: |
@@ -94,7 +94,7 @@ jobs:
 
       - name: "Pruebas: Noticias, notificaciones y device tokens - F. Envío mediante Firebase"
         run: |
-          pnpm run test -- --testNamePattern="muestra notificacion local cuando llega un mensaje institucional data-only|no duplica banner local cuando firebase ya trae notification\.title/body"
+          pnpm run test -- --testNamePattern="muestra notificacion local cuando llega un mensaje institucional data-only|no duplica banner local cuando firebase ya trae notification title body"
 
       - name: "Pruebas: Noticias, notificaciones y device tokens - G. Recepción en App móvil"
         run: |
@@ -114,7 +114,7 @@ jobs:
 
       - name: "Pruebas: Recuperación móvil - A. Acceso al flujo de recuperación"
         run: |
-          pnpm run test -- --testNamePattern="renderiza y navega a SelectRecuperation desde \"olvidé mi PIN\"|navega a SelectRecuperation con disableCI\(carnet\) habilitado|oculta la opción CI cuando disableCI es true|redirige a AccountLock cuando el usuario esta bloqueado|regresa a Connect al usar el botón atrás del header"
+          pnpm run test -- --testNamePattern="renderiza y navega a SelectRecuperation desde olvide mi PIN|navega a SelectRecuperation con disableCI habilitado|oculta la opción CI cuando disableCI es true|redirige a AccountLock cuando el usuario esta bloqueado|regresa a Connect al usar el botón atrás del header"
 
       - name: "Pruebas: Recuperación móvil - B. Cambio o recuperación de PIN"
         run: |
@@ -142,7 +142,7 @@ jobs:
 
       - name: "Pruebas: Emisión del voto móvil - C. Selección"
         run: |
-          pnpm run test -- --testNamePattern="permite seleccionar una opcion valida y cambiar la seleccion antes de votar|mantiene el boton en voto blanco cuando no existe seleccion"
+          pnpm run test -- --testNamePattern="permite seleccionar una opcion valida y cambiar la seleccion antes de votar|mantiene el boton en voto blanco habilitado cuando no existe seleccion"
 
       - name: "Pruebas: Emisión del voto móvil - D. Revisión y confirmación"
         run: |

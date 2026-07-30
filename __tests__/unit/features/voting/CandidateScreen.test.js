@@ -382,6 +382,16 @@ describe('CandidateScreen', () => {
     expect(screen.getByText('VOTAR POR BRUNO DIAZ')).toBeTruthy();
   });
 
+  it('mantiene el boton en voto blanco habilitado cuando no existe seleccion', async () => {
+    const screen = renderScreen({params: {election}});
+
+    await screen.findByText('Lista Azul');
+
+    const voteButton = screen.getByTestId('voteButton');
+    expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
+    expect(voteButton.props.accessibilityState.disabled).toBe(false);
+  });
+
   it('usa la descripcion de la consulta y copy de opciones cuando es referendum', async () => {
     repository.getElection.mockResolvedValue({
       id: 'election-ref-1',

@@ -60,7 +60,7 @@ describe('offlineQueueHandler syncActaBackendHandler', () => {
     });
   });
 
-  it('sincroniza acta y atestaciÃ³n', async () => {
+  it('sincroniza acta y atestacion', async () => {
     axios.get.mockResolvedValueOnce({
       data: {apiKey: 'k1', request: {nonce: 'n1'}},
     });

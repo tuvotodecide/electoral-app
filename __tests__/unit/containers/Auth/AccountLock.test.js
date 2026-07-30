@@ -18,7 +18,7 @@ describe('AccountLock', () => {
     expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.Connect);
   });
 
-  it('navega a SelectRecuperation con disableCI(carnet) habilitado', () => {
+  it('navega a SelectRecuperation con disableCI habilitado', () => {
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const {getByTestId} = renderWithProviders(<AccountLock navigation={localNavigation} />);
 

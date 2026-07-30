@@ -217,7 +217,7 @@ describe('notifications service', () => {
       expect(notifee.displayNotification).toHaveBeenCalled();
     });
 
-    it('no duplica banner local cuando firebase ya trae notification.title/body', async () => {
+    it('no duplica banner local cuando firebase ya trae notification title body', async () => {
       const notifee = require('@notifee/react-native');
       const {registerBackgroundHandler} = require('../../../src/services/notifications');
 
