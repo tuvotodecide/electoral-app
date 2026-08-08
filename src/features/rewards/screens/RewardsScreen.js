@@ -1,94 +1,22 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 import {FlashList} from '@shopify/flash-list';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
-import LoadingModal from '../../../components/modal/LoadingModal';
 import {StackNav} from '../../../navigation/NavigationKey';
 import RewardListItem from '../components/RewardListItem';
 import RewardSummaryCard from '../components/RewardSummaryCard';
-import {useClaimVoteRewardMutation, useRewardsQuery} from '../data/rewardsApi';
+import {useRewardsQuery} from '../data/rewardsApi';
 import {colors} from '../../../themes/colors';
 
-const RewardsScreen = ({navigation, route}) => {
-  const voteRewardAvailable = route?.params?.voteRewardAvailable === true;
-
-  const {rewards: fetchedRewards, isLoading, error} = useRewardsQuery();
-  const {claimReward} = useClaimVoteRewardMutation();
-  const [claimModal, setClaimModal] = useState({
-    visible: false,
-    isLoading: false,
-    success: false,
-    message: '',
-    reward: null,
-  });
-  const rewards = fetchedRewards.map(reward =>
-    voteRewardAvailable && reward.id === 'reward-vote'
-      ? {
-          ...reward,
-          status: 'available',
-          statusLabel: 'Disponible',
-          message: 'Tienes una recompensa por voto disponible para reclamar.',
-        }
-      : reward,
-  );
-
-  const runClaim = reward => {
-    setClaimModal({
-      visible: true,
-      isLoading: true,
-      success: false,
-      message: 'Reclamando tu recompensa...',
-      reward,
-    });
-    claimReward(reward.id, {
-      onSuccess: () => {
-        setClaimModal({
-          visible: true,
-          isLoading: false,
-          success: true,
-          message: 'Reclamaste tu recompensa correctamente.',
-          reward,
-        });
-      },
-      onError: () => {
-        setClaimModal({
-          visible: true,
-          isLoading: false,
-          success: false,
-          message: 'No se pudo reclamar la recompensa. Inténtalo de nuevo.',
-          reward,
-        });
-      },
-    });
-  };
+const RewardsScreen = ({navigation}) => {
+  const {rewards: { data: rewards, rewardsAvailable: voteRewardAvailable }, isLoading, error} = useRewardsQuery();
 
   const handleRewardPress = reward => {
-    if (voteRewardAvailable && reward?.id === 'reward-vote') {
-      runClaim(reward);
-      return;
-    }
     navigation.navigate(StackNav.RewardDetailScreen, {
       rewardId: reward.id,
       reward,
     });
-  };
-
-  const handleClaimModalPrimaryPress = () => {
-    if (claimModal.success) {
-      const reward = claimModal.reward;
-      setClaimModal({visible: false, isLoading: false, success: false, message: '', reward: null});
-      navigation.navigate(StackNav.RewardDetailScreen, {
-        rewardId: reward.id,
-        reward,
-      });
-      return;
-    }
-    runClaim(claimModal.reward);
-  };
-
-  const handleClaimModalDismiss = () => {
-    setClaimModal({visible: false, isLoading: false, success: false, message: '', reward: null});
   };
 
   return (
@@ -125,16 +53,6 @@ const RewardsScreen = ({navigation, route}) => {
           showsVerticalScrollIndicator={false}
         />
       )}
-      <LoadingModal
-        visible={claimModal.visible}
-        isLoading={claimModal.isLoading}
-        success={claimModal.success}
-        message={claimModal.message}
-        buttonText={claimModal.success ? 'Continuar' : 'Reintentar'}
-        onClose={handleClaimModalPrimaryPress}
-        secondBtn={claimModal.success ? undefined : 'Cerrar'}
-        onSecondPress={handleClaimModalDismiss}
-      />
     </CSafeAreaView>
   );
 };

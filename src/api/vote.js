@@ -57,6 +57,6 @@ export async function getVoteReward() {
 
 export async function hasReceivedReward(voteId, rewardHash) {
   const vote = getVoteReadContract();
-  const [hasReceived] = await vote.read.hasReceivedReward([voteIdToHex(voteId), rewardHash]);
+  const hasReceived = await vote.read.hasReceivedReward([voteIdToHex(voteId), rewardHash]);
   return hasReceived;
 }

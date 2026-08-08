@@ -95,6 +95,14 @@ jest.mock('../../../../../src/utils/Session', () => ({
   clearSession: jest.fn(() => Promise.resolve()),
 }));
 
+jest.mock('../../../../../src/api/tvdToken', () => ({
+  TvdTokenCalls: {
+    balanceOf: jest.fn(() =>
+      Promise.resolve({rawBalance: 100n * 10n ** 18n, formatted: '100'}),
+    ),
+  },
+}));
+
 jest.mock('../../../../../src/notifications', () => ({
   alertNewBackendNotifications: jest.fn(() => Promise.resolve()),
   getLocalStoredNotifications: jest.fn(() => Promise.resolve([])),
@@ -167,7 +175,9 @@ describe('HomeScreen', () => {
     expect(screen.getByText(/.+!/)).toBeTruthy();
     expect(screen.getByTestId('homeRewardsTokenCard')).toBeTruthy();
     expect(screen.getByLabelText('Ver mis recompensas')).toBeTruthy();
-    expect(screen.getByTestId('homeRewardsTokenAmount')).toHaveTextContent('100');
+    await waitFor(() => {
+      expect(screen.getByTestId('homeRewardsTokenAmount')).toHaveTextContent('100');
+    });
     expect(screen.getByTestId('homeRewardsTokenCurrency')).toHaveTextContent('TVD');
 
     fireEvent.press(screen.getByTestId('homeRewardsTokenCard'));

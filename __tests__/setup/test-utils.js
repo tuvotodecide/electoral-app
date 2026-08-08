@@ -8,6 +8,19 @@ import { render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { configureStore } from '@reduxjs/toolkit';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+/**
+ * Creates a QueryClient configured for tests (no retries, no caching noise)
+ */
+export function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
 
 // Import your actual reducers here
 // import authSlice from '../../src/redux/slices/authSlice';
@@ -62,15 +75,18 @@ export function renderWithProviders(
   {
     initialState = {},
     store = createMockStore(initialState),
+    queryClient = createTestQueryClient(),
     ...renderOptions
   } = {}
 ) {
   function Wrapper({ children }) {
     return (
       <Provider store={store}>
-        <NavigationContainer>
-          {children}
-        </NavigationContainer>
+        <QueryClientProvider client={queryClient}>
+          <NavigationContainer>
+            {children}
+          </NavigationContainer>
+        </QueryClientProvider>
       </Provider>
     );
   }

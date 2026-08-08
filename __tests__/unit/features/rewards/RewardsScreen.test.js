@@ -1,5 +1,5 @@
 import React from 'react';
-import {fireEvent} from '@testing-library/react-native';
+import {fireEvent, waitFor} from '@testing-library/react-native';
 import RewardsScreen from '../../../../src/features/rewards/screens/RewardsScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 import {renderWithProviders} from '../../../setup/test-utils';
@@ -16,6 +16,25 @@ jest.mock('axios', () => ({
   post: jest.fn(),
 }));
 
+jest.mock('../../../../src/features/rewards/data/rewardsApi', () => ({
+  useRewardsQuery: jest.fn(() => ({
+    rewards: {
+      data: require('../../../../src/features/rewards/data/mockRewards').getMockRewards(),
+      rewardsAvailable: false,
+    },
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock('../../../../src/api/tvdToken', () => ({
+  TvdTokenCalls: {
+    balanceOf: jest.fn(() =>
+      Promise.resolve({rawBalance: 100n * 10n ** 18n, formatted: '100'}),
+    ),
+  },
+}));
+
 const axios = require('axios');
 
 describe('RewardsScreen', () => {
@@ -23,17 +42,25 @@ describe('RewardsScreen', () => {
     navigate: jest.fn(),
   };
 
+  const initialState = {
+    wallet: {payload: {account: '0xabc'}},
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renderiza resumen y las 3 recompensas mockeadas', () => {
-    const screen = renderWithProviders(<RewardsScreen navigation={navigation} />);
+  it('RR-P0-04-001 renderiza resumen y las 3 recompensas mockeadas', async () => {
+    const screen = renderWithProviders(<RewardsScreen navigation={navigation} />, {
+      initialState,
+    });
 
     expect(screen.getByText('Mis recompensas')).toBeTruthy();
     expect(screen.getByTestId('rewardsSummaryCard')).toBeTruthy();
     expect(screen.getByText('Tus recompensas por participar')).toBeTruthy();
-    expect(screen.getByText('100')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('100')).toBeTruthy();
+    });
     expect(screen.getByText('TVD disponibles')).toBeTruthy();
 
     expect(screen.getByText('Recompensa por votar')).toBeTruthy();
@@ -50,7 +77,7 @@ describe('RewardsScreen', () => {
     expect(screen.getAllByTestId(/rewardItem_/)).toHaveLength(3);
   });
 
-  it('navega al detalle con el id correcto al tocar cada recompensa', () => {
+  it('RR-P0-04-002 navega al detalle con el id correcto al tocar cada recompensa', () => {
     const screen = renderWithProviders(<RewardsScreen navigation={navigation} />);
 
     fireEvent.press(screen.getByTestId('rewardItem_reward-vote'));

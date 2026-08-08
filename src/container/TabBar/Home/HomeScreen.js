@@ -40,6 +40,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator } from 'react-native-paper';
 import CustomModal from '../../../components/common/CustomModal';
+import VotingPinModal from './VotingPinModal';
 import {
   alertNewBackendNotifications,
   getLocalStoredNotifications,
@@ -2328,10 +2329,24 @@ export default function HomeScreen({ navigation, route }) {
 
 
   const [loadVoteMsg, setLoadVoteMsg] = useState(null);
+  const [votingPinModal, setVotingPinModal] = useState({
+    visible: false,
+    election: null,
+    loading: false,
+    error: '',
+  });
   const getVotingParticipationForElection = electionId =>
     (votingState.participations || []).find(
       item => String(item?.electionId || '') === String(electionId || ''),
     ) || null;
+
+  const goToVotingCandidate = selectedElection => {
+    navigation.navigate(StackNav.VotingCandidateScreen, {
+      electionId: selectedElection.id,
+      election: selectedElection,
+      isInPlaceVote: selectedElection.presentialKioskEnabled
+    });
+  };
 
   const handleVotingPress = async targetElection => {
     setLoadVoteMsg('Verificando credenciales...');
@@ -2343,11 +2358,10 @@ export default function HomeScreen({ navigation, route }) {
 
     try {
       const hasCredential = await checkClaimedCredForVote(selectedElection.id, userData.did, userData.privKey);
+      setLoadVoteMsg(null);
       if (!hasCredential) {
-        const claimed = await claimForVote(selectedElection.id, userData.dni, userData.did, userData.privKey);
-        if (!claimed) {
-          throw new Error('Credential not claimed');
-        }
+        setVotingPinModal({visible: true, election: selectedElection, loading: false, error: ''});
+        return;
       }
     } catch (error) {
       captureError(error, {
@@ -2366,12 +2380,30 @@ export default function HomeScreen({ navigation, route }) {
       return;
     }
 
-    setLoadVoteMsg(null);
-    navigation.navigate(StackNav.VotingCandidateScreen, {
-      electionId: selectedElection.id,
-      election: selectedElection,
-      isInPlaceVote: selectedElection.presentialKioskEnabled
-    });
+    goToVotingCandidate(selectedElection);
+  };
+
+  const handleVotingPinCancel = () => {
+    setVotingPinModal({visible: false, election: null, loading: false, error: ''});
+  };
+
+  const handleVotingPinSubmit = async pin => {
+    const selectedElection = votingPinModal.election;
+    if (!selectedElection?.id) {
+      return;
+    }
+    setVotingPinModal(m => ({...m, loading: true, error: ''}));
+    const { claimed, invalidPin } = await claimForVote(selectedElection.id, userData.dni, userData.did, userData.privKey, pin);
+    if (claimed) {
+      setVotingPinModal({visible: false, election: null, loading: false, error: ''});
+      goToVotingCandidate(selectedElection);
+    } else {
+      setVotingPinModal(m => ({
+        ...m,
+        loading: false,
+        error: invalidPin ? I18nStrings.incorrectPinVoteError : I18nStrings.claimVoteError
+      }));
+    }
   };
   const handleVotingDetailsPress = targetElection => {
     const selectedElection = targetElection || votingElection;
@@ -3084,6 +3116,13 @@ export default function HomeScreen({ navigation, route }) {
       />
       <MigrationModal
         userDid={userData?.did}
+      />
+      <VotingPinModal
+        visible={votingPinModal.visible}
+        loading={votingPinModal.loading}
+        error={votingPinModal.error}
+        onCancel={handleVotingPinCancel}
+        onSubmit={handleVotingPinSubmit}
       />
     </CSafeAreaView>
   );

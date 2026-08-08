@@ -5,10 +5,15 @@ import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser10 from '../../../../src/container/Auth/RegisterUser10';
 import wira from 'wira-sdk';
 import {saveDraft, clearDraft, getDraft} from '../../../../src/utils/RegisterDraft';
+import {claimRegisterRewardIfAvailable} from '../../../../src/utils/account';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 
 jest.mock('../../../../src/config/sentry', () => ({
   captureError: jest.fn(),
+}));
+
+jest.mock('../../../../src/utils/account', () => ({
+  claimRegisterRewardIfAvailable: jest.fn(async () => ({ok: true})),
 }));
 
 const baseRouteParams = {
@@ -18,13 +23,25 @@ const baseRouteParams = {
   useBiometry: false,
 };
 
+const mockUserData = {did: 'did:mock', privKey: 'mock-priv-key'};
+
 describe('RegisterUser10', () => {
   let originalRegisterer;
 
   beforeEach(() => {
     jest.useRealTimers();
     configurarMocksRegistro();
+    claimRegisterRewardIfAvailable.mockClear();
+    claimRegisterRewardIfAvailable.mockResolvedValue({ok: true});
     originalRegisterer = wira.Registerer;
+
+    class RegistererWithUserData extends originalRegisterer {
+      constructor(...args) {
+        super(...args);
+        this.userData = mockUserData;
+      }
+    }
+    wira.Registerer = RegistererWithUserData;
   });
 
   afterEach(() => {
@@ -45,11 +62,59 @@ describe('RegisterUser10', () => {
 
     await waitFor(() => {
       expect(saveDraft).toHaveBeenCalled();
+      expect(claimRegisterRewardIfAvailable).toHaveBeenCalledWith(
+        '0xmock',
+        mockUserData.did,
+        mockUserData.privKey,
+      );
       expect(clearDraft).toHaveBeenCalled();
       expect(localNavigation.replace).toHaveBeenCalledWith(
         AuthNav.RegisterUser11,
         expect.objectContaining({account: '0xmock'}),
       );
+    });
+  });
+
+  it('si falla el reclamo de recompensa muestra modal y permite reintento', async () => {
+    claimRegisterRewardIfAvailable.mockRejectedValueOnce(
+      new Error('Error al reclamar recompensa'),
+    );
+    const localNavigation = {...mockNavigation, replace: jest.fn()};
+
+    const {getByTestId, getByText} = renderWithProviders(
+      <RegisterUser10
+        navigation={localNavigation}
+        route={{
+          params: baseRouteParams,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('infoModalButton')).toBeTruthy();
+    });
+    await waitFor(() => {
+      expect(getByText('Error al reclamar recompensa')).toBeTruthy();
+    });
+
+    expect(claimRegisterRewardIfAvailable).toHaveBeenCalledWith(
+      '0xmock',
+      mockUserData.did,
+      mockUserData.privKey,
+    );
+    expect(clearDraft).not.toHaveBeenCalled();
+    expect(localNavigation.replace).not.toHaveBeenCalledWith(
+      AuthNav.RegisterUser11,
+      expect.anything(),
+    );
+
+    fireEvent.press(getByTestId('infoModalButton'));
+
+    expect(localNavigation.replace).toHaveBeenCalledWith(AuthNav.RegisterUser10, {
+      ocrData: baseRouteParams.ocrData,
+      dni: baseRouteParams.dni,
+      originalPin: baseRouteParams.originalPin,
+      useBiometry: baseRouteParams.useBiometry,
     });
   });
 
@@ -192,6 +257,7 @@ describe('RegisterUser10', () => {
     class TimeoutRegisterer {
       constructor() {
         this.walletData = {address: '0xmock'};
+        this.userData = mockUserData;
         this.createVC = jest.fn(async () => undefined);
         this.createWallet = jest.fn(async () => {
           throw new Error('registerStreamAndGuardian timeout (90000ms)');

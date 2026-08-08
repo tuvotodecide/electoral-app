@@ -1,7 +1,7 @@
 import axios from "axios";
 import wira from "wira-sdk";
 import { authenticateWithBackend } from "../utils/offlineQueueHandler";
-import { BACKEND_RESULT } from "@env";
+import { BACKEND_RESULT, BACKEND_IDENTITY, IDENTITY_KEY } from "@env";
 import { captureError } from "../config/sentry";
 
 const wiraClient = wira?.default && typeof wira.default === 'object'
@@ -42,11 +42,16 @@ export async function checkClaimedCredForVote(voteId, did, privKey) {
   }
 };
 
-export async function claimForVote(voteId, dni, did, privKey) {
+export async function claimForVote(voteId, dni, did, privKey, pin) {
   try {
     const claimNewCredential = getWiraMethod('claimNewCredential');
     if (!claimNewCredential) {
       throw new Error('claimNewCredential is not available in wira-sdk');
+    }
+
+    const isPinValid = await wira.checkPin(pin);
+    if (!isPinValid) {
+      return { claimed: false, invalidPin: true };
     }
 
     const resolvedApiKey = await authenticateWithBackend(
@@ -69,12 +74,16 @@ export async function claimForVote(voteId, dni, did, privKey) {
       throw new Error('No credential data found in response when trying to claim credential for vote.');
     }
 
-    await claimNewCredential(response.data.vc, did, privKey);
+    await claimNewCredential(response.data.vc, did, privKey, {
+      pin,
+      registryUrl: BACKEND_IDENTITY,
+      registryApiKey: IDENTITY_KEY,
+    });
 
-    return true;
+    return { claimed: true, invalidPin: false };
   } catch (error) {
-    console.log(error);
-    const err = new Error(`Error fetching notifications for vote claim:`, { cause: error });
+    console.error(error);
+    const err = new Error(`Error fetching notifications for vote claim:` + error);
     captureError(
       err,
       {
@@ -85,7 +94,7 @@ export async function claimForVote(voteId, dni, did, privKey) {
         allowPii: false,
       }
     );
-    return false;
+    return { claimed: false, invalidPin: false };
   }
 }
 

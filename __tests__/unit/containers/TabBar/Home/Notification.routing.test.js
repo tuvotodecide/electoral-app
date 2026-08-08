@@ -207,7 +207,7 @@ describe('Notification routing helpers', () => {
     expect(target.params.notification.statusTone).toBe('danger');
   });
 
-  it('navega solicitud de publicacion oficial al detalle sin exponer calldata', () => {
+  it('mantiene la solicitud de publicacion oficial en notificaciones sin navegar', () => {
     const notification = {
       kind: 'voting_event',
       data: {
@@ -217,10 +217,9 @@ describe('Notification routing helpers', () => {
       },
     };
 
-    expect(buildNotificationNavigationTarget(notification, {enableVotingFlow: true})).toEqual({
-      name: 'VotingNotificationDetailScreen',
-      params: {notification},
-    });
+    expect(
+      buildNotificationNavigationTarget(notification, {enableVotingFlow: true}),
+    ).toBeNull();
   });
 
   it.each([

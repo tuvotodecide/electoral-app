@@ -1,5 +1,11 @@
 import React from 'react';
-import {fireEvent, render, waitFor} from '@testing-library/react-native';
+import {fireEvent, render} from '@testing-library/react-native';
+
+import {
+  buildNotificationNavigationTarget,
+  getNotificationKind,
+} from '../../../../../src/container/TabBar/Home/Notification';
+import Notification from '../../../../../src/container/TabBar/Home/Notification';
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://results.example',
@@ -125,20 +131,20 @@ jest.mock('../../../../../src/config/sentry', () => ({
 jest.mock('../../../../../src/components/common/CStandardHeader', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({title}) => React.createElement(Text, null, title);
+  function CStandardHeader({title}) {
+    return React.createElement(Text, null, title);
+  }
+  return CStandardHeader;
 });
 
 jest.mock('../../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children}) => React.createElement(View, null, children);
+  function CSafeAreaView({children}) {
+    return React.createElement(View, null, children);
+  }
+  return CSafeAreaView;
 });
-
-import {
-  buildNotificationNavigationTarget,
-  getNotificationKind,
-} from '../../../../../src/container/TabBar/Home/Notification';
-import Notification from '../../../../../src/container/TabBar/Home/Notification';
 
 const axios = require('axios');
 

@@ -32,6 +32,10 @@ jest.mock('viem/account-abstraction', () => ({
   computeAccountAddress: jest.fn(() => '0xpredicted'),
 }));
 
+jest.mock('../../../src/utils/offlineQueueHandler', () => ({
+  authenticateWithBackend: jest.fn(),
+}));
+
 describe('utils de red', () => {
   beforeEach(() => {
     jest.clearAllMocks();

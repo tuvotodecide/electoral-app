@@ -33,7 +33,6 @@ import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { blankVote } from '../data/params';
 import { commonColor } from '../../../themes/colors';
 import CAlert from '@/src/components/common/CAlert';
-import { captureError } from '@/src/config/sentry';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -290,18 +289,9 @@ const VoteReceiptScreen = () => {
   );
 
   useEffect(() => {
-    try {
-      if (participationId && !isQueuedParticipation && !isFailedParticipation) {
-        syncStateWithBlockchain(participationId)
-      }
-    } catch (error) {
-      captureError(error, {
-        critical: false,
-        flow: 'getVoteData',
-        step: 'syncStateWithBlockchain',
-      })
+    if (participationId && !isQueuedParticipation && !isFailedParticipation) {
+      syncStateWithBlockchain(participationId)
     }
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFailedParticipation, isQueuedParticipation, participationId, participations]);
 

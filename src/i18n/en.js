@@ -77,6 +77,7 @@ export default {
   photoRequiredMessage: 'Debes tomar una foto para continuar.',
   takePhotoTitle: 'Toma una foto de tu rostro',
   loadingCamera: 'Cargando cámara...',
+  tapToSelectPhoto: 'Toca para seleccionar una foto',
   nextButton: 'Siguiente',
   verifyingIdentityTitle: 'Estamos verificando tu identidad',
   verifyingIdentityMessage:
@@ -217,6 +218,9 @@ export default {
   enterPinInfo: 'NUNCA olvides tu PIN. Es necesario para recuperar tu cuenta.',
   backupFileSuccess: 'Archivo guardado exitosamente',
   enterPin: 'Ingresa tu PIN',
+  enterPinVoteDescription: 'Ingresa tu PIN de acceso para verificar tu identidad y continuar con el voto.',
+  incorrectPinVoteError: 'PIN incorrecto. Intenta nuevamente.',
+  claimVoteError: 'No se pudo obtener la credencial. Intenta nuevamente.',
   downloadBackup: ' Descargar respaldo',
   downloadingBackup: 'Descargando respaldo…',
   qrPermissionDenied: 'Permiso denegado',

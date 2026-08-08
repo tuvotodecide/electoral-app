@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -25,6 +26,7 @@ import LoadingModal from '../../components/modal/LoadingModal';
 import { captureError } from '@/src/config/sentry';
 import { useCameraPermissions } from 'expo-camera';
 import CameraModal from '@/src/components/modal/CameraModal';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function RegisterUser4({navigation, route}) {
   const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
@@ -40,7 +42,28 @@ export default function RegisterUser4({navigation, route}) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
 
+  const pickFromGallery = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets) {
+      setSelfie(result.assets[0]);
+    }
+  };
+
   useEffect(() => {
+    if (__DEV__) {
+      pickFromGallery();
+      return;
+    }
+
     const openCamera = async () => {
       if (!permission?.granted) {
         const result = await requestPermission();
@@ -180,8 +203,11 @@ export default function RegisterUser4({navigation, route}) {
           <CText testID="registerUser4Title" type={'B16'}>
             {String.takePhoto}
           </CText>
-          <View
+          <TouchableOpacity
             testID="registerUser4ImageBox"
+            activeOpacity={__DEV__ ? 0.7 : 1}
+            disabled={!__DEV__}
+            onPress={pickFromGallery}
             style={[
               localStyle.imageBox,
               {backgroundColor: colors.inputBackground},
@@ -197,10 +223,10 @@ export default function RegisterUser4({navigation, route}) {
                 testID="registerUser4LoadingText"
                 type="R14"
                 color={colors.primary}>
-                {String.loadingCamera}
+                {__DEV__ ? String.tapToSelectPhoto : String.loadingCamera}
               </CText>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
       </KeyBoardAvoidWrapper>
       <View

@@ -11,13 +11,19 @@ jest.mock('@env', () => ({
 jest.mock('../../../../src/components/common/CHeader', () => {
   const React = require('react');
   const {Text} = require('react-native');
-  return ({title, testID}) => React.createElement(Text, {testID}, title);
+  function CHeader({title, testID}) {
+    return React.createElement(Text, {testID}, title);
+  }
+  return CHeader;
 });
 
 jest.mock('../../../../src/components/common/CSafeAreaView', () => {
   const React = require('react');
   const {View} = require('react-native');
-  return ({children, style}) => React.createElement(View, {style}, children);
+  function CSafeAreaView ({children, style}) {
+    return React.createElement(View, {style}, children);
+  }
+  return CSafeAreaView;
 });
 
 jest.mock('react-redux', () => {

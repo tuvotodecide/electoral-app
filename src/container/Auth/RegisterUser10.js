@@ -30,6 +30,7 @@ import wira from 'wira-sdk';
 
 import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
 import { captureError } from '../../config/sentry';
+import { claimRegisterRewardIfAvailable } from '@/src/utils/account';
 
 
 export default function RegisterUser10({ navigation, route }) {
@@ -165,6 +166,11 @@ export default function RegisterUser10({ navigation, route }) {
           );
         }
 
+        await claimRegisterRewardIfAvailable(
+          registerer.walletData.address,
+          registerer.userData.did,
+          registerer.userData.privKey
+        );
         await clearDraft();
         setStage('done');
         setLoading(false);

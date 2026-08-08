@@ -4,9 +4,24 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
 import {StackNav} from '../../../../../src/navigation/NavigationKey';
+import {checkClaimedCredForVote, claimForVote} from '@/src/data/credentials';
+import I18nStrings from '../../../../../src/i18n/String';
 
 const mockGetElections = jest.fn();
 const mockUseVotingState = jest.fn();
+
+jest.mock('react-native-otp-textinput', () => {
+  const ReactLib = require('react');
+  const {TextInput} = require('react-native');
+
+  return ({testID, handleTextChange, inputCount, secureTextEntry}) =>
+    ReactLib.createElement(TextInput, {
+      testID: testID || 'votingPinModalInput',
+      onChangeText: handleTextChange,
+      maxLength: inputCount,
+      secureTextEntry,
+    });
+});
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://test-backend.com',
@@ -621,6 +636,138 @@ describe('HomeScreen voting flow routing', () => {
           resultsAt,
           publicPath: '/votacion/elecciones/event-results/publica',
         }),
+      );
+    });
+  });
+
+  describe('PIN de reclamo de credencial', () => {
+    const pinElection = {
+      id: 'event-pin',
+      title: 'Eleccion con PIN',
+      isEligible: true,
+      canVote: true,
+      alreadyVoted: false,
+      presentialKioskEnabled: false,
+    };
+
+    const openPinModal = async view => {
+      await waitFor(() => {
+        expect(view.getByTestId('votingCard_event-pin')).toBeTruthy();
+      });
+      fireEvent.press(view.getByTestId('votingCard_event-pin'));
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingPinModal').props.visible).toBe(true);
+      });
+    };
+
+    it('RA-P0-01-001 muestra el modal de PIN cuando el usuario no tiene credencial reclamada para votar', async () => {
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockResolvedValueOnce(false);
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await openPinModal(view);
+
+      expect(checkClaimedCredForVote).toHaveBeenCalledWith(
+        'event-pin',
+        'did:test:123',
+        'priv-key-test',
+      );
+      expect(navigation.navigate).not.toHaveBeenCalledWith(
+        StackNav.VotingCandidateScreen,
+        expect.any(Object),
+      );
+    });
+
+    it('RA-P0-02-001 muestra un mensaje de error cuando el PIN ingresado es invalido', async () => {
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockResolvedValueOnce(false);
+      claimForVote.mockResolvedValueOnce({claimed: false, invalidPin: true});
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await openPinModal(view);
+
+      fireEvent.changeText(view.getByTestId('votingPinModalInput'), '1234');
+      fireEvent.press(view.getByTestId('votingPinModalContinueButton'));
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingPinModalError')).toHaveTextContent(
+          I18nStrings.incorrectPinVoteError,
+        );
+      });
+      expect(view.getByTestId('votingPinModal').props.visible).toBe(true);
+    });
+
+    it('RDV-P0-03-001 llama a claimForVote con los datos del usuario y de la eleccion para reclamar la vc y respaldar', async () => {
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockResolvedValueOnce(false);
+      claimForVote.mockResolvedValueOnce({claimed: true, invalidPin: false});
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await openPinModal(view);
+
+      fireEvent.changeText(view.getByTestId('votingPinModalInput'), '4321');
+      fireEvent.press(view.getByTestId('votingPinModalContinueButton'));
+
+      await waitFor(() => {
+        expect(claimForVote).toHaveBeenCalledWith(
+          'event-pin',
+          '12345678',
+          'did:test:123',
+          'priv-key-test',
+          '4321',
+        );
+      });
+
+      await waitFor(() => {
+        expect(navigation.navigate).toHaveBeenCalledWith(
+          StackNav.VotingCandidateScreen,
+          {
+            electionId: 'event-pin',
+            election: pinElection,
+            isInPlaceVote: false,
+          },
+        );
+      });
+      expect(view.getByTestId('votingPinModal').props.visible).toBe(false);
+    });
+
+    it('RDV-P0-04-001 muestra un mensaje de error cuando claimForVote falla', async () => {
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockResolvedValueOnce(false);
+      claimForVote.mockResolvedValueOnce({claimed: false, invalidPin: false});
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await openPinModal(view);
+
+      fireEvent.changeText(view.getByTestId('votingPinModalInput'), '1234');
+      fireEvent.press(view.getByTestId('votingPinModalContinueButton'));
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingPinModalError')).toHaveTextContent(
+          I18nStrings.claimVoteError,
+        );
+      });
+      expect(view.getByTestId('votingPinModal').props.visible).toBe(true);
+      expect(navigation.navigate).not.toHaveBeenCalledWith(
+        StackNav.VotingCandidateScreen,
+        expect.any(Object),
       );
     });
   });

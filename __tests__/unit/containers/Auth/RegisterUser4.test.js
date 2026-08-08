@@ -10,6 +10,16 @@ import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 import wira from 'wira-sdk';
 
 describe('RegisterUser4', () => {
+  const originalDev = global.__DEV__;
+
+  beforeAll(() => {
+    global.__DEV__ = false;
+  });
+
+  afterAll(() => {
+    global.__DEV__ = originalDev;
+  });
+
   beforeEach(() => {
     configurarMocksRegistro();
   });

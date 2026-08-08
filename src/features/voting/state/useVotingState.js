@@ -230,6 +230,7 @@ export const useVotingState = (electionId = '') => {
         }
       }
     } catch (error) {
+      console.log(error);
       setSyncedWithBlockchain({status: 'failed', error: error.message || 'Unknown error'});
     }
   }

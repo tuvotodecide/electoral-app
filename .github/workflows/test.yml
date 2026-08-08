@@ -196,3 +196,15 @@ jobs:
         run: |
           pnpm run test -- --testNamePattern="verifica QR presencial enviando token y carnet y devuelve presentialSessionId"
 
+      - name: "Pruebas: Registro después de votación"
+        run: |
+          pnpm run test -- --testNamePattern="RDV-P0"
+
+      - name: "Pruebas: Respado automático de VC"
+        run: |
+          pnpm run test -- --testNamePattern="RA-P0"
+      
+      - name: "Pruebas: Recompensas"
+        run: |
+          pnpm run test -- --testNamePattern="RR-P0"
+

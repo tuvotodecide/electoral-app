@@ -213,6 +213,10 @@ export const buildNotificationNavigationTarget = (
 ) => {
   const rawData = item?.data || {};
 
+  if (String(rawData?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
+    return null;
+  }
+
   if (enableVotingFlow) {
     if (
       item?.kind === 'election_results' ||

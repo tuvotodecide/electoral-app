@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -6,6 +6,9 @@ import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
 import {getMockRewardById} from '../data/mockRewards';
+import { useClaimVoteRewardMutation } from '../data/rewardsApi';
+import LoadingModal from '@/src/components/modal/LoadingModal';
+import CButton from '@/src/components/common/CButton';
 
 const InfoRow = ({label, value}) => (
   <View style={styles.infoRow}>
@@ -20,6 +23,53 @@ const RewardDetailScreen = ({route}) => {
   const paramReward = route?.params?.reward || null;
   const rewardId = route?.params?.rewardId || paramReward?.id;
   const reward = paramReward || getMockRewardById(rewardId);
+  const {claimReward} = useClaimVoteRewardMutation();
+  const [claimModal, setClaimModal] = useState({
+    visible: false,
+    isLoading: false,
+    success: false,
+    message: '',
+  });
+
+  const runClaim = () => {
+    setClaimModal({
+      visible: true,
+      isLoading: true,
+      success: false,
+      message: 'Reclamando tu recompensa...',
+    });
+    claimReward(reward.id, {
+      onSuccess: () => {
+        setClaimModal({
+          visible: true,
+          isLoading: false,
+          success: true,
+          message: 'Reclamaste tu recompensa correctamente.',
+        });
+      },
+      onError: (error) => {
+        console.log(error);
+        setClaimModal({
+          visible: true,
+          isLoading: false,
+          success: false,
+          message: 'No se pudo reclamar la recompensa. Inténtalo de nuevo.',
+        });
+      },
+    });
+  };
+
+  const handleClaimModalPrimaryPress = () => {
+    if (claimModal.success) {
+      setClaimModal({visible: false, isLoading: false, success: false, message: ''});
+      return;
+    }
+    runClaim();
+  };
+
+  const handleClaimModalDismiss = () => {
+    setClaimModal({visible: false, isLoading: false, success: false, message: ''});
+  };
 
   if (!reward) {
     return (
@@ -46,7 +96,7 @@ const RewardDetailScreen = ({route}) => {
           <View style={styles.heroIcon}>
             <Ionicons name="gift-outline" size={moderateScale(26)} color="#459151" />
           </View>
-          <CText style={styles.heroLabel}>Monto recibido</CText>
+          <CText style={styles.heroLabel}>Monto</CText>
           <View style={styles.amountRow}>
             <CText style={styles.heroAmount}>+{reward.amount}</CText>
           </View>
@@ -59,14 +109,27 @@ const RewardDetailScreen = ({route}) => {
         <View style={styles.infoCard}>
           <InfoRow label="Tipo de recompensa" value={reward.type} />
           <InfoRow label="Proceso relacionado" value={reward.processName} />
-          <InfoRow label="Fecha" value={reward.createdAtLabel} />
+          <InfoRow label="Fecha de finalización" value={reward.endAtLabel} />
           <InfoRow label="Estado" value={reward.statusLabel} />
         </View>
 
         <View style={styles.messageBox}>
           <CText style={styles.messageText}>{reward.message}</CText>
         </View>
+        { reward.status === 'available' &&
+          <CButton title='Reclamar' onPress={runClaim} />
+        }
       </ScrollView>
+      <LoadingModal
+        visible={claimModal.visible}
+        isLoading={claimModal.isLoading}
+        success={claimModal.success}
+        message={claimModal.message}
+        buttonText={claimModal.success ? 'Continuar' : 'Reintentar'}
+        onClose={handleClaimModalPrimaryPress}
+        secondBtn={claimModal.success ? undefined : 'Cerrar'}
+        onSecondPress={handleClaimModalDismiss}
+      />
     </CSafeAreaView>
   );
 };
