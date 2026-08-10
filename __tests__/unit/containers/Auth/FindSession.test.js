@@ -12,6 +12,10 @@ jest.mock('@env', () => ({
   PROVIDER_NAME: 'mock-provider',
 }), {virtual: true});
 
+jest.mock('../../../../src/config/sentry', () => ({
+  captureError: jest.fn(),
+}));
+
 jest.mock('wira-sdk', () => {
   mockCheckRegisteredOnThisDevice = jest.fn();
   mockOpenFirstAppFound = jest.fn();

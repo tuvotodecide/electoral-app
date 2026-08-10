@@ -9,8 +9,39 @@ import RewardSummaryCard from '../components/RewardSummaryCard';
 import {useRewardsQuery} from '../data/rewardsApi';
 import {colors} from '../../../themes/colors';
 
-const RewardsScreen = ({navigation}) => {
-  const {rewards: { data: rewards, rewardsAvailable: voteRewardAvailable }, isLoading, error} = useRewardsQuery();
+const RewardsScreen = ({navigation, route}) => {
+  const {
+    rewards: {data: rewards, rewardsAvailable},
+    isLoading,
+    error,
+  } = useRewardsQuery();
+  const hasVoteRewardNotice = route?.params?.voteRewardAvailable === true;
+  const voteRewardAvailable = rewardsAvailable || hasVoteRewardNotice;
+  const voteReward = {
+    id: 'reward-vote',
+    title: 'Recompensa por votar',
+    amount: 0,
+    currency: 'TVD',
+    status: 'available',
+    statusLabel: 'Disponible',
+    processLabel: 'Recompensa por tu participación',
+    type: 'Recompensa por votar',
+    message: 'Tienes una recompensa por voto disponible para reclamar.',
+  };
+  const displayedRewards = hasVoteRewardNotice
+    ? (rewards || []).map(reward =>
+        reward.id === 'reward-vote'
+          ? {
+              ...reward,
+              ...voteReward,
+            }
+          : reward,
+      )
+    : rewards;
+  const rewardsToDisplay =
+    hasVoteRewardNotice && !displayedRewards.some(reward => reward.id === 'reward-vote')
+      ? [voteReward, ...displayedRewards]
+      : displayedRewards;
 
   const handleRewardPress = reward => {
     navigation.navigate(StackNav.RewardDetailScreen, {
@@ -31,11 +62,11 @@ const RewardsScreen = ({navigation}) => {
           </Text>
         </View>
       )}
-      {isLoading ? (
+      {isLoading && !hasVoteRewardNotice ? (
         <View style={styles.stateContainer} testID="rewardsLoading">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : error ? (
+      ) : error && !hasVoteRewardNotice ? (
         <View style={styles.stateContainer} testID="rewardsError">
           <Text style={styles.rewardNoticeBody}>
             No se pudieron cargar las recompensas.
@@ -44,7 +75,7 @@ const RewardsScreen = ({navigation}) => {
       ) : (
         <FlashList
           testID="rewardsList"
-          data={rewards}
+          data={rewardsToDisplay}
           keyExtractor={item => item.id}
           renderItem={({item}) => (
             <RewardListItem reward={item} onPress={handleRewardPress} />

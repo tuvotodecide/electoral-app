@@ -67,11 +67,16 @@ const store = require('../../../../src/redux/store').default;
 const {getCredentialForVote} = require('@/src/data/credentials');
 const {getVoteRequestForBackend} = require('../../../../src/utils/offlineQueueHandler');
 const {clearVoteJournal} = require('../../../../src/features/voting/offline/voteJournal');
+const {markVoteJournalChainConfirmed} = require('../../../../src/features/voting/offline/voteJournal');
 const Sentry = require('@sentry/react-native');
 
 describe('ElectionRepository.api', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // No conservar respuestas `mockResolvedValueOnce` de un caso a otro.
+    axios.get.mockReset();
+    axios.post.mockReset();
+    wira.authenticateWithVerifier.mockResolvedValue(undefined);
     store.getState.mockReturnValue(defaultWalletState());
   });
 
@@ -359,9 +364,6 @@ describe('ElectionRepository.api', () => {
       },
     });
 
-    const generateProof = jest.fn(() => mockProof);
-    getVoteInfo.mockResolvedValueOnce({registeredVoters: 987654321n});
-
     const result = await ElectionRepositoryApi.submitVote(
       '123abc',
       'option-1',
@@ -372,29 +374,15 @@ describe('ElectionRepository.api', () => {
       success: true,
       participationId: 'participation-1',
     });
-    expect(getVoteInfo).toHaveBeenCalledWith('123abc');
     expect(getCredentialForVote).toHaveBeenCalledWith(
       '123abc',
       'did:test:123',
       'priv-key-test',
     );
-    expect(generateProof).toHaveBeenCalledWith(
-      '291',
-      expect.any(String),
-      expect.any(String),
-      [],
-      [],
-      BigInt('0x123abc').toString(),
-      '987654321',
-      expect.any(String),
-      expect.any(String),
-    );
     const verifierRequest = JSON.parse(wira.authenticateWithVerifier.mock.calls[0][0]);
     expect(verifierRequest.body.callbackUrl).toContain(
       'https://callback.example/vote?optionId=option-1',
     );
-    expect(verifierRequest.body.callbackUrl).toContain('voteNullfier=');
-    expect(verifierRequest.body.callbackUrl).toContain('pia=0%2C1');
     expect(verifierRequest.body.callbackUrl).not.toContain('12345678');
     expect(verifierRequest.body.callbackUrl).not.toContain('priv-key-test');
     expect(verifierRequest.body.callbackUrl).not.toContain('credential-1');

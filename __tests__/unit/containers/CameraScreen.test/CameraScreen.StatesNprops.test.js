@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, act, fireEvent, waitFor} from '@testing-library/react-native';
+import {render, act, fireEvent} from '@testing-library/react-native';
 import CameraScreen from '../../../../src/container/Vote/UploadRecord/CameraScreen';
 import {StackNav} from '../../../../src/navigation/NavigationKey';
 
@@ -61,7 +61,7 @@ const capturePhoto = async queries => {
     jest.advanceTimersByTime(4000);
   });
 
-  await waitFor(() => expect(queries.getByText('Tomar Foto')).toBeTruthy());
+  expect(queries.getByText('Tomar Foto')).toBeTruthy();
 
   await pressFirstByText('Tomar Foto', queries);
   await flushAsync();
