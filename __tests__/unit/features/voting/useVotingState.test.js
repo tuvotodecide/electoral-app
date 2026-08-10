@@ -79,7 +79,7 @@ describe('useVotingState', () => {
     expect(result.current.participationId).toBe('participation-1');
   });
 
-  it('registra un voto con payload util para recibo y lo persiste en storage', async () => {
+  it('VOT-SEC-P0-001 / VOT-SEC-P0-002 | registra voto sin persistir carnet, proof, nullifier ni secretos junto a la opcion', async () => {
     const storage = createStorage({
       'voting.participations': JSON.stringify([]),
     });
@@ -101,6 +101,11 @@ describe('useVotingState', () => {
           presidentName: 'Ana Perez',
           viceName: 'Luis Rojas',
         },
+        carnet: '12345678',
+        proof: 'proof-completo-no-debe-persistir',
+        nullifier: 'nullifier-completo-no-debe-persistir',
+        credential: {id: 'credential-privada'},
+        privateKey: 'private-key-no-debe-persistir',
       });
     });
 
@@ -119,6 +124,56 @@ describe('useVotingState', () => {
       synced: true,
     });
     expect(storage.get('voting.voteSynced')).toBe('true');
+    const persistedSnapshot = JSON.stringify([...storage.entries()]);
+    expect(persistedSnapshot).not.toContain('12345678');
+    expect(persistedSnapshot).not.toContain('proof-completo-no-debe-persistir');
+    expect(persistedSnapshot).not.toContain('nullifier-completo-no-debe-persistir');
+    expect(persistedSnapshot).not.toContain('credential-privada');
+    expect(persistedSnapshot).not.toContain('private-key-no-debe-persistir');
+  });
+
+  it('PAR-SYN-P1-004 / PAR-SEC-P0-002 restaura participación local pendiente sin persistir carnet asociado a opción ni secretos', async () => {
+    const storage = createStorage({
+      'voting.participations': JSON.stringify([
+        {
+          id: 'participation-pending',
+          electionId: 'election-1',
+          selectedCandidateId: 'candidate-1',
+          synced: false,
+          status: 'EN_COLA',
+          statusLabel: 'EN COLA',
+        },
+      ]),
+      'voting.lastReceipt': JSON.stringify({
+        id: 'participation-pending',
+        electionId: 'election-1',
+        selectedCandidateId: 'candidate-1',
+        synced: false,
+        status: 'EN_COLA',
+        statusLabel: 'EN COLA',
+      }),
+      'voting.participationId': 'participation-pending',
+    });
+
+    const {result} = renderHook(() => useVotingState('election-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.hasVoted).toBe(true);
+    expect(result.current.voteSynced).toBe(false);
+    expect(result.current.participations).toHaveLength(1);
+    expect(result.current.participations[0]).toMatchObject({
+      id: 'participation-pending',
+      status: 'EN_COLA',
+      synced: false,
+    });
+
+    const persistedSnapshot = JSON.stringify([...storage.entries()]);
+    expect(persistedSnapshot).not.toMatch(
+      /carnet|proof|nullifier|credential|privateKey|seed|authToken|deviceToken/i,
+    );
   });
 
   it('marca un voto pendiente como sincronizado y actualiza el recibo actual', async () => {
@@ -163,7 +218,7 @@ describe('useVotingState', () => {
     });
   });
 
-  it('sincroniza contra blockchain usando nullifier y coincidencia de opcion', async () => {
+  it('VOT-CHN-P1-004 | sincroniza contra blockchain usando nullifier y coincidencia de opcion', async () => {
     createStorage({
       'voting.participations': JSON.stringify([
         {
@@ -200,7 +255,7 @@ describe('useVotingState', () => {
     expect(result.current.syncedWithBlockchain.status).toBe('synced');
   });
 
-  it('marca fallo cuando no encuentra nullifier para consultar blockchain', async () => {
+  it('VOT-ACC-P0-003 | maneja lectura contractual sin credencial como error recuperable', async () => {
     createStorage({
       'voting.participations': JSON.stringify([
         {
@@ -231,7 +286,7 @@ describe('useVotingState', () => {
 
   });
 
-  it('sincroniza una participacion recuperada desde backend aunque no exista localmente', async () => {
+  it('VOT-CHN-P1-004 / VOT-SEC-P0-002 | sincroniza participacion remota sin persistir opcion contractual ni nullifier', async () => {
     const storage = createStorage({
       'voting.participations': JSON.stringify([]),
     });
@@ -274,7 +329,7 @@ describe('useVotingState', () => {
     expect(storage.get('voting.participations')).toBe('[]');
   });
 
-  it('marca not_synced cuando contrato responde hasVoted false', async () => {
+  it('VOT-CHN-P1-004 | marca not_synced cuando contrato responde hasVoted false', async () => {
     createStorage({
       'voting.participations': JSON.stringify([]),
     });
@@ -307,7 +362,7 @@ describe('useVotingState', () => {
     });
   });
 
-  it('marca fallo controlado cuando falla contrato', async () => {
+  it('VOT-ACC-P0-003 / VOT-CHN-P1-004 | marca fallo controlado cuando falla contrato', async () => {
     createStorage({
       'voting.participations': JSON.stringify([]),
     });
@@ -336,7 +391,7 @@ describe('useVotingState', () => {
     });
   });
 
-  it('marca not_synced cuando blockchain devuelve una opcion distinta', async () => {
+  it('VOT-CHN-P1-004 | marca not_synced cuando blockchain devuelve una opcion distinta', async () => {
     createStorage({
       'voting.participations': JSON.stringify([
         {

@@ -804,6 +804,16 @@ const NotificationDetailScreen = () => {
   }, [dni, eventId, isVotingCancelled, supportsPublicElectionWebView]);
 
   const heroConfig = useMemo(() => {
+    if (isInstitutionalAuthorizationRequest) {
+      return {
+        backgroundColor: '#1F7A36',
+        iconName: 'shield-checkmark-outline',
+        iconBg: 'rgba(255,255,255,0.16)',
+        title: 'Autorización pendiente',
+        subtitle: 'Revisa esta solicitud',
+        textColor: '#FFFFFF',
+      };
+    }
     if (isOfficialPublicationRequest) {
       return {
         backgroundColor: '#1F7A36',
@@ -878,7 +888,7 @@ const NotificationDetailScreen = () => {
       subtitle: '',
       textColor: '#FFFFFF',
     };
-  }, [isNews, isOfficialPublicationRequest, isScheduleUpdate, isVotingCancelled, kind, rawData?.bannerTitle, statusTone]);
+  }, [isInstitutionalAuthorizationRequest, isNews, isOfficialPublicationRequest, isScheduleUpdate, isVotingCancelled, kind, rawData?.bannerTitle, statusTone]);
 
   const isElectionResults = kind === 'election_results';
   const resultsWebViewUrl = isElectionResults ? resolvedPublicElectionUrl : null;

@@ -260,7 +260,7 @@ describe('queueAdapter voting flow', () => {
     });
   });
 
-  it('conserva presentialSessionId en la cola y lo reenvia al sincronizar participacion backendOnly', async () => {
+  it('KIO-CNS-P1-003 KIO-CON-P0-002 KIO-SEC-P0-003 | conserva presentialSessionId en la cola y lo reenvia al sincronizar participacion backendOnly', async () => {
     getAll.mockResolvedValueOnce([]);
     enqueue.mockResolvedValueOnce('queue-presential-1');
 

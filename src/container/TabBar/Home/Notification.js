@@ -213,6 +213,13 @@ export const buildNotificationNavigationTarget = (
 ) => {
   const rawData = item?.data || {};
 
+  if (String(rawData?.type || '').trim().toUpperCase() === 'MOBILE_AUTHORIZATION_REQUESTED') {
+    return {
+      name: StackNav.VotingNotificationDetailScreen,
+      params: { notification: item },
+    };
+  }
+
   if (String(rawData?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
     return null;
   }

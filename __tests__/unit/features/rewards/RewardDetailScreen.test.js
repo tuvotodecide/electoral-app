@@ -236,4 +236,27 @@ describe('RewardDetailScreen', () => {
       ).toBeTruthy();
     });
   });
+
+  it('PAR-NTF-P1-003 muestra recompensa disponible como placeholder sin reclamo real', () => {
+    const screen = renderDetail({
+      reward: {
+        id: 'reward-vote',
+        title: 'Recompensa por votar',
+        amount: 5,
+        currency: 'TVD',
+        status: 'available',
+        statusLabel: 'Disponible',
+        createdAtLabel: 'Pendiente',
+        processName: 'Elección institucional',
+        type: 'Participación',
+        message: 'Tienes una recompensa por voto disponible para reclamar.',
+      },
+    });
+
+    expect(screen.getAllByText('Disponible').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Tienes una recompensa por voto disponible para reclamar.')).toBeTruthy();
+    expect(screen.queryByText(/transfer/i)).toBeNull();
+    expect(screen.queryByText(/saldo actualizado/i)).toBeNull();
+    expect(screen.queryByText(/reclamada/i)).toBeNull();
+  });
 });

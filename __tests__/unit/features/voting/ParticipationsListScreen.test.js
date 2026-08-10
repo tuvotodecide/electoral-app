@@ -99,7 +99,7 @@ describe('ParticipationsListScreen', () => {
     expect(screen.getByText('Cuando participes en una votación, aparecerá aquí tu historial.')).toBeTruthy();
   });
 
-  it('MP-APP-LIST-001 carga participaciones de voto desde backend', async () => {
+  it('PAR-YAV-P1-002 carga participaciones de voto desde backend', async () => {
     repository.getParticipations.mockResolvedValue([
       {
         id: 'backend-vote-1',
@@ -122,7 +122,7 @@ describe('ParticipationsListScreen', () => {
     expect(screen.queryByTestId('participationsEmptyState')).toBeNull();
   });
 
-  it('MP-APP-LIST-002 respeta la card actual para una participacion backend equivalente', async () => {
+  it('PAR-CMP-P0-001 respeta la card actual para una participacion backend equivalente', async () => {
     repository.getParticipations.mockResolvedValue([
       {
         id: 'backend-vote-card',
@@ -150,7 +150,7 @@ describe('ParticipationsListScreen', () => {
     expect(screen.getByText('02 ene · 10:00')).toBeTruthy();
   });
 
-  it('MP-APP-BACKEND-ONLY-001 muestra votos backend con AsyncStorage vacío', async () => {
+  it('PAR-SYN-P1-004 muestra votos backend con AsyncStorage vacío tras restaurar estado', async () => {
     useVotingState.mockReturnValue({participations: []});
     repository.getParticipations.mockResolvedValue([
       {
@@ -407,7 +407,7 @@ describe('ParticipationsListScreen', () => {
     });
   });
 
-  it('MP-APP-LIST-008 no renderiza campos sensibles enviados por error desde backend', async () => {
+  it('PAR-REG-P0-004 / PAR-SEC-P0-001 / PAR-SEC-P0-002 no renderiza campos sensibles enviados por error desde backend', async () => {
     repository.getParticipations.mockResolvedValue([
       {
         id: 'backend-sensitive',
@@ -421,6 +421,11 @@ describe('ParticipationsListScreen', () => {
         nullifier: 'nullifier-secret',
         proof: 'proof-secret',
         zkProof: 'zk-proof-secret',
+        credential: 'credential-secret',
+        privateKey: 'private-key-secret',
+        seed: 'seed-secret',
+        authToken: 'auth-token-secret',
+        deviceToken: 'device-token-secret',
         vote: 'voto-secreto',
       },
     ]);
@@ -437,10 +442,15 @@ describe('ParticipationsListScreen', () => {
     expect(screen.queryByText('Lista secreta')).toBeNull();
     expect(screen.queryByText('nullifier-secret')).toBeNull();
     expect(screen.queryByText('proof-secret')).toBeNull();
+    expect(screen.queryByText('credential-secret')).toBeNull();
+    expect(screen.queryByText('private-key-secret')).toBeNull();
+    expect(screen.queryByText('seed-secret')).toBeNull();
+    expect(screen.queryByText('auth-token-secret')).toBeNull();
+    expect(screen.queryByText('device-token-secret')).toBeNull();
     expect(screen.queryByText('voto-secreto')).toBeNull();
   });
 
-  it('MP-APP-LIST-009 tap en voto backend navega al recibo con params compatibles', async () => {
+  it('PAR-YAV-P1-002 tap en voto backend navega al recibo con params compatibles sin seleccion votada', async () => {
     repository.getParticipations.mockResolvedValue([
       {
         id: 'backend-tap',

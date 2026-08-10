@@ -507,6 +507,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
     '';
   const isNews = type === 'INSTITUTIONAL_NEWS';
   const isOfficialPublicationRequest = type === 'OFFICIAL_PUBLICATION_REQUEST';
+  const isInstitutionalAuthorizationRequest = type === 'MOBILE_AUTHORIZATION_REQUESTED';
   const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
@@ -526,8 +527,10 @@ export const buildInstitutionalNotificationForDetail = notification => {
     id: notification?._id || notification?.id || `push_${Date.now()}`,
     raw: notification,
     data,
-    kind: isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
-    tipo: isOfficialPublicationRequest
+    kind: isInstitutionalAuthorizationRequest ? 'institutional_authorization' : isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
+    tipo: isInstitutionalAuthorizationRequest
+      ? 'Autorización pendiente'
+      : isOfficialPublicationRequest
       ? 'Revisar solicitud'
       : isVotingEnabled
       ? 'Abrir votación'
@@ -556,7 +559,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
     timestamp: Date.now(),
     estado: data?.status || 'iniciado',
     statusTone: isCancelled ? 'danger' : 'success',
-    actionLabel: isOfficialPublicationRequest
+    actionLabel: isInstitutionalAuthorizationRequest || isOfficialPublicationRequest
       ? 'Revisar solicitud'
       : isVotingReminder
       ? 'Ver votación'

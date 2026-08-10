@@ -105,4 +105,34 @@ describe('RewardsScreen', () => {
     expect(axios.get).not.toHaveBeenCalled();
     expect(axios.post).not.toHaveBeenCalled();
   });
+
+  it('PAR-NTF-P1-002 / PAR-NTF-P1-003 muestra recompensa por voto disponible sin declarar transferencia ni saldo actualizado', () => {
+    const screen = renderWithProviders(
+      <RewardsScreen
+        navigation={navigation}
+        route={{params: {voteRewardAvailable: true, rewardAction: 'OPEN_VOTE_REWARD'}}}
+      />,
+    );
+
+    expect(screen.getByTestId('voteRewardAvailableNotice')).toBeTruthy();
+    expect(screen.getByText('Recompensa por voto disponible')).toBeTruthy();
+    expect(screen.getByText('Pulsa Reclamar cuando la reclamación esté habilitada.')).toBeTruthy();
+    expect(screen.getByText('Disponible')).toBeTruthy();
+    expect(screen.queryByText(/transfer/i)).toBeNull();
+    expect(screen.queryByText(/saldo actualizado/i)).toBeNull();
+
+    fireEvent.press(screen.getByTestId('rewardItem_reward-vote'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      StackNav.RewardDetailScreen,
+      expect.objectContaining({
+        rewardId: 'reward-vote',
+        reward: expect.objectContaining({
+          status: 'available',
+          statusLabel: 'Disponible',
+        }),
+      }),
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
 });

@@ -331,7 +331,7 @@ describe('HomeScreen voting flow routing', () => {
     expect(view.queryByText('No hay votaciones disponibles')).toBeNull();
   });
 
-  it('navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled', async () => {
+  it('KIO-SCN-P1-001 KIO-HAB-P0-001 | navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled', async () => {
     const election = {
       id: 'event-qr',
       title: 'Eleccion presencial',
@@ -364,7 +364,7 @@ describe('HomeScreen voting flow routing', () => {
     });
   });
 
-  it('navega a CandidateScreen con isInPlaceVote false cuando el QR presencial esta apagado', async () => {
+  it('KIO-HAB-P0-001 | navega a CandidateScreen con isInPlaceVote false cuando el QR presencial esta apagado', async () => {
     const election = {
       id: 'event-remote',
       title: 'Eleccion remota',

@@ -24,7 +24,7 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 });
 
 describe('CandidateCard', () => {
-  it('muestra un referendum como opcion numerada sin apariencia de candidatura', () => {
+  it('VOT-BAL-P0-002 | muestra un referendum como opcion numerada sin apariencia de candidatura', () => {
     const screen = render(
       <CandidateCard
         candidate={{
@@ -47,7 +47,7 @@ describe('CandidateCard', () => {
     expect(screen.queryByText('person')).toBeNull();
   });
 
-  it('mantiene la presentacion normal para una candidatura tradicional', () => {
+  it('VOT-BAL-P0-002 | mantiene candidatura tradicional con integrante principal y suplente', () => {
     const screen = render(
       <CandidateCard
         candidate={{

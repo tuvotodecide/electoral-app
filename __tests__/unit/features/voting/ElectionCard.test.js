@@ -128,7 +128,7 @@ describe('ElectionCard', () => {
       expect(button).toBeTruthy();
     });
 
-    test('ejecuta onVotePress al tocar "Votar ahora"', () => {
+    test('VOT-ACC-P0-001 | ACTIVE permite continuar al flujo de papeleta', () => {
       const { getByTestId } = renderWithProvider(
         <ElectionCard
           hasVoted={false}
@@ -165,6 +165,31 @@ describe('ElectionCard', () => {
       expect(getByText('CIERRA EN')).toBeTruthy();
       expect(getByText('2h 11m 33s')).toBeTruthy();
       expect(getByText('Votar ahora')).toBeTruthy();
+    });
+
+    test('VOT-ACC-P0-002 | UPCOMING bloquea emision y abre detalle seguro', () => {
+      useCountdown.mockReturnValue({
+        countdownLabel: '1d 02h',
+        countdownTime: '',
+        isStarting: true,
+        isEnded: false,
+        remainingMs: 90_000_000,
+      });
+
+      const { getByText, getByTestId } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          election={{...mockElection, status: 'PROXIMA'}}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('INICIA EN')).toBeTruthy();
+      expect(getByText('Cierra en 2h')).toBeTruthy();
+      fireEvent.press(getByTestId('electionCardButton'));
+      expect(mockOnDetailsPress).toHaveBeenCalledTimes(1);
+      expect(mockOnVotePress).not.toHaveBeenCalled();
     });
 
     test('no se rompe si recibe datos reales con campos opcionales faltantes', () => {
@@ -212,7 +237,7 @@ describe('ElectionCard', () => {
   });
 
   describe('Estado: No habilitado', () => {
-    test('muestra mensaje de no habilitado cuando isEligible=false', () => {
+    test('VOT-ACC-P0-002 | estado no disponible bloquea la emision sin administrar padron', () => {
       const { getByText } = renderWithProvider(
         <ElectionCard
           hasVoted={false}
@@ -226,7 +251,7 @@ describe('ElectionCard', () => {
       expect(getByText(/no está habilitado/i)).toBeTruthy();
     });
 
-    test('no muestra botón cuando no está habilitado', () => {
+    test('VOT-ACC-P0-002 | no muestra botón cuando no está habilitado', () => {
       const { queryByTestId } = renderWithProvider(
         <ElectionCard
           hasVoted={false}
@@ -263,7 +288,7 @@ describe('ElectionCard', () => {
 
  
   describe('Estado: Elección terminada', () => {
-    test('muestra "Votación cerrada" cuando isEnded=true y no votó', () => {
+    test('VOT-ACC-P0-002 | RESULTS bloquea emision y muestra votacion cerrada', () => {
       useCountdown.mockReturnValue({
         countdownLabel: 'Cerrada',
         countdownTime: '',
@@ -284,7 +309,7 @@ describe('ElectionCard', () => {
       expect(getByText('Votación cerrada')).toBeTruthy();
     });
 
-    test('muestra "Ver resultados" cuando terminó, no votó y los resultados están disponibles', () => {
+    test('VOT-ACC-P0-002 | RESULTS permite ver resultados sin reabrir emision', () => {
       useCountdown.mockReturnValue({
         countdownLabel: 'Cerrada',
         countdownTime: '',

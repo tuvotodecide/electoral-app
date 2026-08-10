@@ -130,7 +130,7 @@ describe('VoteReceiptScreen', () => {
     });
   });
 
-  it('MP-APP-DETAIL-001/002 abre recibo con participacion backend sin AsyncStorage local', async () => {
+  it('PAR-CMP-P0-001 / PAR-CMP-P1-003 abre recibo con participacion backend sin AsyncStorage local', async () => {
     const syncStateWithBlockchain = jest.fn();
     useRoute.mockReturnValue({
       params: {
@@ -171,7 +171,7 @@ describe('VoteReceiptScreen', () => {
     });
   });
 
-  it('MP-APP-DETAIL-003 tolera candidateSelected null sin mostrar seleccion falsa', async () => {
+  it('PAR-REG-P0-004 / PAR-SEC-P0-001 tolera candidateSelected null sin mostrar seleccion falsa', async () => {
     useRoute.mockReturnValue({
       params: {
         participationId: 'backend-null-selection',
@@ -532,7 +532,7 @@ describe('VoteReceiptScreen', () => {
     expect(screen.queryByText('La votación finalizó. Los resultados aún no están disponibles.')).toBeNull();
   });
 
-  it('muestra estado en cola sin forzar sincronizacion inmediata', () => {
+  it('PAR-CMP-P1-002 / PAR-SYN-P1-003 muestra estado en cola sin forzar sincronizacion inmediata', () => {
     const syncStateWithBlockchain = jest.fn();
     useVotingState.mockReturnValue({
       participations: [
@@ -591,7 +591,7 @@ describe('VoteReceiptScreen', () => {
     expect(screen.queryByText('Partido')).toBeNull();
   });
 
-  it('permite liberar un voto fallido y volver al inicio', async () => {
+  it('PAR-ERR-P1-002 permite liberar un voto fallido y volver al inicio', async () => {
     useVotingState.mockReturnValue({
       participations: [
         {

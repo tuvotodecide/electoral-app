@@ -91,6 +91,21 @@ describe('Notification routing helpers', () => {
     });
   });
 
+  it('abre el detalle institucional para una autorización móvil', () => {
+    const notification = {
+      kind: 'institutional_authorization',
+      data: {
+        type: 'MOBILE_AUTHORIZATION_REQUESTED',
+        applicationId: 'authorization-1',
+      },
+    };
+
+    expect(buildNotificationNavigationTarget(notification)).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {notification},
+    });
+  });
+
   it('soporta tipos institucionales reales de revision, publicacion, noticias y habilitacion', () => {
     expect(
       getNotificationKind({

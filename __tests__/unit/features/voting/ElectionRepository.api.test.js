@@ -75,7 +75,7 @@ describe('ElectionRepository.api', () => {
     store.getState.mockReturnValue(defaultWalletState());
   });
 
-  it('mapea presentialKioskEnabled desde el evento publico de backend', async () => {
+  it('VOT-ACC-P0-001 / VOT-ACC-P0-002 | mapea disponibilidad ACTIVE y bloquea estados no disponibles sin administrar padron', async () => {
     axios.get.mockImplementation(url => {
       if (String(url).includes('/voting/events/public/landing')) {
         return Promise.resolve({
@@ -86,6 +86,22 @@ describe('ElectionRepository.api', () => {
                 name: 'Eleccion presencial',
                 phase: 'ACTIVE',
                 presentialKioskEnabled: true,
+                publicEligibilityEnabled: true,
+              },
+            ],
+            upcoming: [
+              {
+                id: 'event-2',
+                name: 'Eleccion futura',
+                phase: 'UPCOMING',
+                publicEligibilityEnabled: true,
+              },
+            ],
+            results: [
+              {
+                id: 'event-3',
+                name: 'Eleccion cerrada',
+                phase: 'RESULTS',
                 publicEligibilityEnabled: true,
               },
             ],
@@ -103,6 +119,24 @@ describe('ElectionRepository.api', () => {
       }
 
       if (String(url).includes('/participations/status')) {
+        if (String(url).includes('event-2')) {
+          return Promise.resolve({
+            data: {
+              status: 'OUTSIDE_VOTING_WINDOW',
+              canVote: false,
+              alreadyVoted: false,
+            },
+          });
+        }
+        if (String(url).includes('event-3')) {
+          return Promise.resolve({
+            data: {
+              status: 'ALREADY_VOTED',
+              canVote: false,
+              alreadyVoted: true,
+            },
+          });
+        }
         return Promise.resolve({
           data: {
             status: 'CAN_VOTE',
@@ -121,15 +155,33 @@ describe('ElectionRepository.api', () => {
 
     const elections = await ElectionRepositoryApi.getElections();
 
-    expect(elections).toHaveLength(1);
+    expect(elections).toHaveLength(3);
     expect(elections[0]).toMatchObject({
       id: 'event-1',
       title: 'Eleccion presencial',
+      phase: 'ACTIVE',
+      status: 'ACTIVA',
+      canVote: true,
       presentialKioskEnabled: true,
     });
+    expect(elections[1]).toMatchObject({
+      id: 'event-2',
+      phase: 'UPCOMING',
+      status: 'PROXIMA',
+      canVote: false,
+      statusMessage: 'Fuera del horario de votación',
+    });
+    expect(elections[2]).toMatchObject({
+      id: 'event-3',
+      phase: 'RESULTS',
+      status: 'FINALIZADA',
+      canVote: false,
+      alreadyVoted: true,
+    });
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it('mapea candidatos desde opciones publicas activas con colores y roles', async () => {
+  it('VOT-BAL-P0-001 / VOT-BAL-P0-002 | mapea candidatos, imagenes y solo opciones publicas activas', async () => {
     axios.get.mockResolvedValueOnce({
       data: {
         options: [
@@ -190,7 +242,7 @@ describe('ElectionRepository.api', () => {
     ]);
   });
 
-  it('preserva isReferendum y objective como questionTitle para la papeleta de consulta', async () => {
+  it('VOT-BAL-P0-002 | preserva isReferendum y objective como questionTitle para la papeleta de consulta', async () => {
     axios.get.mockResolvedValueOnce({
       data: {
         isReferendum: true,
@@ -226,7 +278,18 @@ describe('ElectionRepository.api', () => {
     ]);
   });
 
-  it('verifica QR presencial enviando token y carnet y devuelve presentialSessionId', async () => {
+  it('VOT-BAL-P1-003 | propaga error de red sin exponer informacion privada del padron', async () => {
+    axios.get.mockRejectedValueOnce(new Error('network unavailable'));
+
+    await expect(ElectionRepositoryApi.getCandidates('event-error')).rejects.toThrow(
+      'network unavailable',
+    );
+    expect(JSON.stringify(axios.get.mock.calls)).not.toContain('registeredVoters');
+    expect(JSON.stringify(axios.get.mock.calls)).not.toContain('padron');
+    expect(JSON.stringify(axios.get.mock.calls)).not.toContain('12345678');
+  });
+
+  it('KIO-SCN-P0-005 KIO-VAL-P0-004 KIO-AUT-P0-001 KIO-SEC-P0-001 | verifica QR presencial enviando token y carnet y devuelve presentialSessionId', async () => {
     axios.post.mockResolvedValueOnce({
       data: {
         presentialSessionId: 'session-1',
@@ -246,7 +309,32 @@ describe('ElectionRepository.api', () => {
     );
   });
 
-  it('incluye presentialSessionId en el payload final de participacion cuando corresponde', async () => {
+  it('KIO-SCN-P0-004 KIO-VAL-P0-001 KIO-VAL-P0-002 KIO-VAL-P0-003 KIO-VAL-P0-005 KIO-SEC-P0-003 | mapea errores de scan sin filtrar detalles internos del QR', async () => {
+    axios.post.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          error: 'QR_EXPIRED',
+          token: 'pqs.full-internal-token',
+          presentialSessionId: 'internal-session',
+        },
+      },
+    });
+
+    await expect(ElectionRepositoryApi.verifyVoteQrCode('pqs.full-internal-token')).rejects.toThrow(
+      'No se pudo validar el código QR.',
+    );
+
+    expect(axios.post).toHaveBeenCalledWith(
+      'https://test-backend.com/api/v1/voting/presential-sessions/scan',
+      {
+        token: 'pqs.full-internal-token',
+        carnet: '12345678',
+      },
+    );
+  });
+
+  it('VOT-PRE-P0-001 / VOT-PRE-P0-002 / VOT-PRE-P0-003 / VOT-PRE-P0-004 | prepara proof controlado, callback y opcion confirmada antes de participacion', async () => {
     axios.get
       .mockResolvedValueOnce({
         data: {
@@ -271,6 +359,9 @@ describe('ElectionRepository.api', () => {
       },
     });
 
+    const generateProof = jest.fn(() => mockProof);
+    getVoteInfo.mockResolvedValueOnce({registeredVoters: 987654321n});
+
     const result = await ElectionRepositoryApi.submitVote(
       '123abc',
       'option-1',
@@ -281,10 +372,39 @@ describe('ElectionRepository.api', () => {
       success: true,
       participationId: 'participation-1',
     });
+    expect(getVoteInfo).toHaveBeenCalledWith('123abc');
+    expect(getCredentialForVote).toHaveBeenCalledWith(
+      '123abc',
+      'did:test:123',
+      'priv-key-test',
+    );
+    expect(generateProof).toHaveBeenCalledWith(
+      '291',
+      expect.any(String),
+      expect.any(String),
+      [],
+      [],
+      BigInt('0x123abc').toString(),
+      '987654321',
+      expect.any(String),
+      expect.any(String),
+    );
     const verifierRequest = JSON.parse(wira.authenticateWithVerifier.mock.calls[0][0]);
     expect(verifierRequest.body.callbackUrl).toContain(
       'https://callback.example/vote?optionId=option-1',
     );
+    expect(verifierRequest.body.callbackUrl).toContain('voteNullfier=');
+    expect(verifierRequest.body.callbackUrl).toContain('pia=0%2C1');
+    expect(verifierRequest.body.callbackUrl).not.toContain('12345678');
+    expect(verifierRequest.body.callbackUrl).not.toContain('priv-key-test');
+    expect(verifierRequest.body.callbackUrl).not.toContain('credential-1');
+    expect(wira.authenticateWithVerifier).toHaveBeenCalledWith(
+      expect.any(String),
+      'did:test:123',
+      'priv-key-test',
+      ['credential-1'],
+    );
+    expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('123abc');
     expect(axios.post).toHaveBeenCalledWith(
       'https://test-backend.com/api/v1/voting/events/123abc/participations',
       {
@@ -376,6 +496,7 @@ describe('ElectionRepository.api', () => {
     );
 
     expect(result.success).toBe(true);
+    expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
     expect(axios.post).toHaveBeenCalledWith(
       'https://test-backend.com/api/v1/voting/events/event-remote/participations',
       {
@@ -442,6 +563,7 @@ describe('ElectionRepository.api', () => {
       shouldQueueBackendSync: true,
       presentialSessionId: 'session-pending-1',
     });
+    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(1);
   });
 
   describe('submitVote - validaciones y errores', () => {

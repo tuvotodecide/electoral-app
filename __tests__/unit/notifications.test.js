@@ -490,7 +490,7 @@ describe('notifications', () => {
     });
   });
 
-  it('reconoce VOTE_REWARD_AVAILABLE y navega a recompensas', () => {
+  it('PAR-NTF-P0-001 / PAR-NTF-P1-002 reconoce VOTE_REWARD_AVAILABLE y navega a recompensas sin opcion votada', () => {
     expect(
       buildNotificationTextFallback({
         data: {
@@ -518,9 +518,20 @@ describe('notifications', () => {
         rewardAction: 'OPEN_VOTE_REWARD',
       },
     });
+    expect(
+      JSON.stringify(
+        buildRouteFromNotification({
+          data: {
+            type: 'VOTE_REWARD_AVAILABLE',
+            action: 'OPEN_VOTE_REWARD',
+            eventId: 'event-1',
+          },
+        }),
+      ),
+    ).not.toMatch(/candidate|option|proof|nullifier|privateKey|deviceToken/i);
   });
 
-  it('muestra acción Reclamar para notificación local de recompensa por voto', async () => {
+  it('PAR-NTF-P1-002 / PAR-SEC-P0-002 muestra acción Reclamar para notificación local de recompensa por voto sin secretos', async () => {
     await showLocalNotification({
       title: 'Recompensa disponible',
       body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
@@ -542,6 +553,9 @@ describe('notifications', () => {
           ],
         }),
       }),
+    );
+    expect(JSON.stringify(notifee.displayNotification.mock.calls)).not.toMatch(
+      /candidate|option|proof|nullifier|credential|privateKey|seed|authToken|deviceToken/i,
     );
   });
 
