@@ -213,7 +213,11 @@ export const buildNotificationNavigationTarget = (
 ) => {
   const rawData = item?.data || {};
 
-  if (String(rawData?.type || '').trim().toUpperCase() === 'MOBILE_AUTHORIZATION_REQUESTED') {
+  if (
+    ['MOBILE_AUTHORIZATION_REQUESTED', 'INSTITUTIONAL_ADMIN_INVITATION'].includes(
+      String(rawData?.type || '').trim().toUpperCase(),
+    )
+  ) {
     return {
       name: StackNav.VotingNotificationDetailScreen,
       params: { notification: item },

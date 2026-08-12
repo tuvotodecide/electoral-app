@@ -1,7 +1,7 @@
 {
-  "lastRunningTimeSecs": 2,
+  "lastRunningTimeSecs": 1,
   "integrations": {
-    "integrationsCount": 3,
+    "integrationsCount": 4,
     "countedFrom": "2026-08-08T00:00:00.000Z",
     "countedTo": "2026-08-15T00:00:00.000Z"
   },

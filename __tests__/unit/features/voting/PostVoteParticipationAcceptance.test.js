@@ -173,6 +173,4 @@ describe('MX-08 post-vote participation acceptance', () => {
     expect(screen.queryByText(/transfer/i)).toBeNull();
     expect(screen.queryByText(/saldo actualizado/i)).toBeNull();
   });
-
-  it.todo('PAR-UX-P2-002 | VALIDACION_MANUAL_DISPOSITIVO_REAL_Y_PUSH_REAL');
 });

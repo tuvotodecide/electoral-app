@@ -561,6 +561,7 @@ describe('notifications', () => {
 
   it('abre el detalle institucional desde push para tipos de votacion sin caer a Splash', () => {
     const institutionalTypes = [
+      'INSTITUTIONAL_ADMIN_INVITATION',
       'INSTITUTIONAL_PADRON_REVIEW_OPEN',
       'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
       'INSTITUTIONAL_RESULTS_AVAILABLE',

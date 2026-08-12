@@ -106,6 +106,21 @@ describe('Notification routing helpers', () => {
     });
   });
 
+  it('abre el detalle institucional para una invitación administrativa real', () => {
+    const notification = {
+      kind: 'generic',
+      data: {
+        type: 'INSTITUTIONAL_ADMIN_INVITATION',
+        invitationId: 'invitation-1',
+      },
+    };
+
+    expect(buildNotificationNavigationTarget(notification)).toEqual({
+      name: 'VotingNotificationDetailScreen',
+      params: {notification},
+    });
+  });
+
   it('soporta tipos institucionales reales de revision, publicacion, noticias y habilitacion', () => {
     expect(
       getNotificationKind({

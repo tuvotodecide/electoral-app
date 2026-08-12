@@ -1,6 +1,8 @@
 import React from 'react';
 import {fireEvent, render, waitFor} from '@testing-library/react-native';
+import {Linking} from 'react-native';
 import InstitutionalInvitationNotificationCard from '../../../../src/features/institutionalAuthorization/components/InstitutionalInvitationNotificationCard';
+jest.mock('@env', () => ({FRONTEND_RESULTS: 'https://frontend.example'}));
 jest.mock('../../../../src/features/institutionalAuthorization/api/institutionalAuthorizationApi', () => ({
   acceptInstitutionalInvitation: jest.fn(),
   extractInstitutionalAuthorizationErrorCode: jest.fn(error => error?.code || null),
@@ -70,6 +72,63 @@ describe('InstitutionalInvitationNotificationCard', () => {
 
     expect(await screen.findByText('La invitación no contiene un identificador válido.')).toBeTruthy();
     expect(api.acceptInstitutionalInvitation).not.toHaveBeenCalled();
+  });
+
+  it('D3 muestra el registro administrativo sin aceptar la invitación prematuramente', async () => {
+    api.getInstitutionalInvitationRequest.mockResolvedValueOnce({
+      invitationId: 'inv-1',
+      institutionName: 'Colegio Médico',
+      dni: '12345678',
+      status: 'PENDING',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      hasAdminAccount: false,
+    });
+    api.acceptInstitutionalInvitation.mockResolvedValueOnce({
+      status: 'REQUIRES_ADMIN_ACCOUNT',
+      invitationId: 'inv-1',
+      tenant: {id: 'tenant-1', name: 'Colegio Médico'},
+    });
+    const screen = render(
+      <InstitutionalInvitationNotificationCard notification={notification} />,
+    );
+
+    fireEvent.press(await screen.findByTestId('institutionalInvitationAcceptButton'));
+
+    expect(
+      await screen.findByText('Para aceptar la invitación debes crear tu cuenta administrativa.'),
+    ).toBeTruthy();
+    expect(screen.getByTestId('institutionalInvitationCreateAccountButton')).toBeTruthy();
+    expect(screen.queryByText('Pendiente de aprobación')).toBeNull();
+  });
+
+  it('D3 abre el registro web solo con el identificador opaco de la invitación', async () => {
+    const openUrl = jest.spyOn(Linking, 'openURL').mockResolvedValueOnce(undefined);
+    api.getInstitutionalInvitationRequest.mockResolvedValueOnce({
+      invitationId: 'inv-1',
+      institutionName: 'Colegio Médico',
+      dni: '12345678',
+      status: 'PENDING',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      hasAdminAccount: false,
+    });
+    api.acceptInstitutionalInvitation.mockResolvedValueOnce({
+      status: 'REQUIRES_ADMIN_ACCOUNT',
+      invitationId: 'inv-1',
+    });
+    const screen = render(
+      <InstitutionalInvitationNotificationCard notification={notification} />,
+    );
+
+    fireEvent.press(await screen.findByTestId('institutionalInvitationAcceptButton'));
+    fireEvent.press(await screen.findByTestId('institutionalInvitationCreateAccountButton'));
+
+    await waitFor(() =>
+      expect(openUrl).toHaveBeenCalledWith(
+        'https://frontend.example/votacion/registrarse?invitationId=inv-1',
+      ),
+    );
+    expect(openUrl.mock.calls[0][0]).not.toMatch(/dni|wallet|password|email/i);
+    openUrl.mockRestore();
   });
 
   it('no habilita acciones si la validación segura falla', async () => {

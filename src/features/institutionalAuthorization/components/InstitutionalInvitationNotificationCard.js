@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Linking, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {FRONTEND_RESULTS} from '@env';
 import {
   acceptInstitutionalInvitation,
   extractInstitutionalAuthorizationErrorCode,
@@ -70,6 +71,7 @@ export default function InstitutionalInvitationNotificationCard({
   const [validated, setValidated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [requiresAdminAccount, setRequiresAdminAccount] = useState(false);
   const inFlightRef = useRef(false);
   const status = invitation.status;
   const actionable = status === 'PENDING' && validated && !busy && !loading;
@@ -114,6 +116,11 @@ export default function InstitutionalInvitationNotificationCard({
     setMessage('');
     try {
       const accepted = await acceptInstitutionalInvitation(invitation.invitationId);
+      if (accepted?.status === 'REQUIRES_ADMIN_ACCOUNT') {
+        setRequiresAdminAccount(true);
+        setMessage('Para aceptar la invitación debes crear tu cuenta administrativa.');
+        return;
+      }
       const next = {
         ...invitation,
         status: accepted?.applicationStatus || accepted?.status || 'PENDING_APPROVAL',
@@ -126,6 +133,22 @@ export default function InstitutionalInvitationNotificationCard({
     } finally {
       inFlightRef.current = false;
       setBusy(false);
+    }
+  };
+
+  const openAdministrativeRegistration = async () => {
+    const base = String(FRONTEND_RESULTS || '').replace(/\/+$/, '');
+    if (!base || !invitation.invitationId) {
+      setMessage('No se pudo abrir el registro administrativo.');
+      return;
+    }
+    const url = `${base}/votacion/registrarse?invitationId=${encodeURIComponent(
+      invitation.invitationId,
+    )}`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setMessage('No se pudo abrir el registro administrativo.');
     }
   };
 
@@ -165,7 +188,7 @@ export default function InstitutionalInvitationNotificationCard({
         <Text style={styles.info}>Se reutilizará tu cuenta actual.</Text>
       ) : (
         <Text style={styles.info}>
-          Esta invitación requiere una cuenta registrada en Tu Voto Decide.
+          Crearás tus propias credenciales administrativas para esta institución.
         </Text>
       )}
       {message ? (
@@ -190,6 +213,14 @@ export default function InstitutionalInvitationNotificationCard({
             <Text style={styles.primaryButtonText}>Aceptar</Text>
           </TouchableOpacity>
         </View>
+      ) : null}
+      {requiresAdminAccount ? (
+        <TouchableOpacity
+          testID="institutionalInvitationCreateAccountButton"
+          style={styles.primaryButton}
+          onPress={openAdministrativeRegistration}>
+          <Text style={styles.primaryButtonText}>Crear cuenta administrativa</Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
