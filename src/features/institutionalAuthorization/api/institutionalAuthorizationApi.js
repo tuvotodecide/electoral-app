@@ -6,6 +6,7 @@ import {StorageService} from '../../../services/StorageService';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const AUTH_STORAGE_PREFIX = 'institutionalAuthorization.mobileAuth';
+const INVITATION_AUTH_STORAGE_PREFIX = 'institutionalInvitation.mobileAuth';
 const AUTH_SKEW_MS = 30 * 1000;
 const DEFAULT_AUTH_TTL_MS = 10 * 60 * 1000;
 const BOOTSTRAP_WAIT_MS = 3000;
@@ -46,6 +47,9 @@ export const waitForInstitutionalAuthorizationWalletBootstrap = async (
 
 const authStorageKey = applicationId =>
   `${AUTH_STORAGE_PREFIX}:${String(applicationId || '').trim()}`;
+
+const invitationAuthStorageKey = invitationId =>
+  `${INVITATION_AUTH_STORAGE_PREFIX}:${String(invitationId || '').trim()}`;
 
 const safeParse = value => {
   try {
@@ -248,29 +252,101 @@ export const submitInstitutionalAuthorization = async (
 
 export const acceptInstitutionalInvitation = async (
   invitationId,
-  token,
-  email,
 ) => {
-  const body = {token};
-  if (email) body.email = email;
-  const response = await axios.post(
-    `${API_BASE}/institutional-admin-applications/invitations/${encodeURIComponent(invitationId)}/accept`,
-    body,
-    {headers: jsonHeaders},
+  const response = await institutionalInvitationRequest(
+    invitationId,
+    headers => axios.post(
+      `${API_BASE}/institutional-admin-applications/mobile/invitations/${encodeURIComponent(invitationId)}/accept`,
+      {},
+      {headers},
+    ),
   );
   return response.data;
 };
 
 export const rejectInstitutionalInvitation = async (
   invitationId,
-  token,
 ) => {
-  const response = await axios.post(
-    `${API_BASE}/institutional-admin-applications/invitations/${encodeURIComponent(invitationId)}/reject`,
-    {token, reason: 'Rechazada desde el teléfono'},
-    {headers: jsonHeaders},
+  const response = await institutionalInvitationRequest(
+    invitationId,
+    headers => axios.post(
+      `${API_BASE}/institutional-admin-applications/mobile/invitations/${encodeURIComponent(invitationId)}/reject`,
+      {},
+      {headers},
+    ),
   );
   return response.data;
+};
+
+export const clearInstitutionalInvitationApiKey = async invitationId => {
+  await StorageService.removeItem(invitationAuthStorageKey(invitationId));
+};
+
+export const getOrCreateInstitutionalInvitationApiKey = async (
+  invitationId,
+  {forceRefresh = false} = {},
+) => {
+  await waitForInstitutionalAuthorizationWalletBootstrap();
+  const did = getCurrentDid();
+  const privKey = getCurrentPrivKey();
+  if (!did || !privKey) {
+    throw new Error('No se pudo validar tu identidad para esta invitación');
+  }
+  const key = invitationAuthStorageKey(invitationId);
+  if (!forceRefresh) {
+    const stored = safeParse(await StorageService.getItem(key));
+    if (isStoredApiKeyValid(stored)) return stored.apiKey;
+  }
+  const response = await axios.get(
+    `${API_BASE}/mobile/institutional-authorizations/auth/invitations/${encodeURIComponent(invitationId)}/request`,
+    {headers: jsonHeaders},
+  );
+  const authData = response.data || {};
+  if (!authData.apiKey || !authData.request) {
+    throw new Error('No se pudo validar la identidad para esta invitación.');
+  }
+  await wira.authenticateWithVerifier(JSON.stringify(authData.request), did, privKey);
+  await StorageService.setItem(
+    key,
+    JSON.stringify({
+      apiKey: authData.apiKey,
+      invitationId,
+      expiresAt: authData.expiresAt || new Date(Date.now() + DEFAULT_AUTH_TTL_MS).toISOString(),
+    }),
+  );
+  return authData.apiKey;
+};
+
+const getInstitutionalInvitationAuthHeaders = async (invitationId, options) => ({
+  Accept: 'application/json',
+  'Content-Type': 'application/json',
+  'x-api-key': await getOrCreateInstitutionalInvitationApiKey(invitationId, options),
+});
+
+const institutionalInvitationRequest = async (
+  invitationId,
+  requestFactory,
+  {retryOnUnauthorized = true} = {},
+) => {
+  const headers = await getInstitutionalInvitationAuthHeaders(invitationId);
+  try {
+    return await requestFactory(headers);
+  } catch (error) {
+    if (!retryOnUnauthorized || !isUnauthorized(error)) throw error;
+    await clearInstitutionalInvitationApiKey(invitationId);
+    return requestFactory(await getInstitutionalInvitationAuthHeaders(invitationId, {forceRefresh: true}));
+  }
+};
+
+export const getInstitutionalInvitationRequest = async invitationId => {
+  const response = await institutionalInvitationRequest(
+    invitationId,
+    headers => axios.get(
+      `${API_BASE}/institutional-admin-applications/mobile/invitations/${encodeURIComponent(invitationId)}`,
+      {headers},
+    ),
+  );
+  return unwrapRequest(response);
 };
 
 export const extractInstitutionalAuthorizationErrorCode = error => {

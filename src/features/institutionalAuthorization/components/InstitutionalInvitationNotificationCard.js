@@ -1,14 +1,11 @@
-import React, {useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {useSelector} from 'react-redux';
 import {
   acceptInstitutionalInvitation,
   extractInstitutionalAuthorizationErrorCode,
+  getInstitutionalInvitationRequest,
   rejectInstitutionalInvitation,
 } from '../api/institutionalAuthorizationApi';
-import {StorageService} from '../../../services/StorageService';
-
-const INVITATION_RESUME_KEY = 'institutionalInvitation.resume';
 
 const statusLabels = {
   PENDING: 'Pendiente',
@@ -30,10 +27,8 @@ const errorMessages = {
 
 const normalizeInvitation = data => ({
   invitationId: data?.invitationId || data?.id,
-  token: data?.token || data?.invitationToken,
   institutionName: data?.institutionName || data?.tenantName,
   dni: data?.dni || data?.requesterDni,
-  email: data?.email,
   status: data?.status || 'PENDING',
   expiresAt: data?.expiresAt,
   hasAdminAccount: data?.hasAdminAccount,
@@ -62,27 +57,6 @@ const resolveErrorMessage = (error, fallback) => {
   return fallback;
 };
 
-const getCurrentEmail = payload =>
-  String(
-    payload?.email ||
-      payload?.payloadQr?.email ||
-      payload?.vc?.credentialSubject?.email ||
-      '',
-  ).trim();
-
-export const saveInstitutionalInvitationResume = async invitation => {
-  await StorageService.setItem(INVITATION_RESUME_KEY, JSON.stringify(invitation));
-};
-
-export const getInstitutionalInvitationResume = async () => {
-  try {
-    const value = await StorageService.getItem(INVITATION_RESUME_KEY);
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
-};
-
 export default function InstitutionalInvitationNotificationCard({
   notification,
   onStatusChange,
@@ -91,16 +65,47 @@ export default function InstitutionalInvitationNotificationCard({
     () => normalizeInvitation(notification?.data || {}),
     [notification],
   );
-  const walletPayload = useSelector(state => state.wallet?.payload);
-  const currentEmail = useMemo(() => getCurrentEmail(walletPayload), [walletPayload]);
   const [invitation, setInvitation] = useState(initial);
+  const [loading, setLoading] = useState(Boolean(initial.invitationId));
+  const [validated, setValidated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const inFlightRef = useRef(false);
   const status = invitation.status;
-  const actionable = status === 'PENDING' && !busy;
-  const hasExistingAccount =
-    invitation.hasAdminAccount === true || Boolean(currentEmail || invitation.email);
+  const actionable = status === 'PENDING' && validated && !busy && !loading;
+  const hasExistingAccount = invitation.hasAdminAccount === true;
+
+  useEffect(() => {
+    let active = true;
+    const loadInvitation = async () => {
+      if (!initial.invitationId) {
+        if (active) {
+          setLoading(false);
+          setValidated(false);
+          setMessage('La invitación no contiene un identificador válido.');
+        }
+        return;
+      }
+      try {
+        const detail = await getInstitutionalInvitationRequest(initial.invitationId);
+        if (active && detail) {
+          setInvitation(current => ({...current, ...detail}));
+          setValidated(true);
+        }
+      } catch (error) {
+        if (active) {
+          setValidated(false);
+          setMessage(resolveErrorMessage(error, 'No se pudo validar la invitación.'));
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void loadInvitation();
+    return () => {
+      active = false;
+    };
+  }, [initial.invitationId]);
 
   const handleAccept = async () => {
     if (!actionable || inFlightRef.current) return;
@@ -108,16 +113,7 @@ export default function InstitutionalInvitationNotificationCard({
     setBusy(true);
     setMessage('');
     try {
-      if (!hasExistingAccount) {
-        await saveInstitutionalInvitationResume(invitation);
-        setMessage('Completa tu registro y luego vuelve a esta invitación.');
-        return;
-      }
-      const accepted = await acceptInstitutionalInvitation(
-        invitation.invitationId,
-        invitation.token,
-        currentEmail || invitation.email,
-      );
+      const accepted = await acceptInstitutionalInvitation(invitation.invitationId);
       const next = {
         ...invitation,
         status: accepted?.applicationStatus || accepted?.status || 'PENDING_APPROVAL',
@@ -139,7 +135,7 @@ export default function InstitutionalInvitationNotificationCard({
     setBusy(true);
     setMessage('');
     try {
-      await rejectInstitutionalInvitation(invitation.invitationId, invitation.token);
+      await rejectInstitutionalInvitation(invitation.invitationId);
       const next = {...invitation, status: 'REJECTED'};
       setInvitation(next);
       onStatusChange?.('REJECTED');
@@ -159,15 +155,17 @@ export default function InstitutionalInvitationNotificationCard({
         {invitation.institutionName || 'Institución'}
       </Text>
       <Text testID="institutionalInvitationStatus" style={styles.status}>
-        {statusLabels[status] || status}
+        {loading ? 'Validando' : statusLabels[status] || status}
       </Text>
       <Text style={styles.info}>CI o DNI: {invitation.dni || 'No disponible'}</Text>
       <Text style={styles.info}>Vence: {formatDateTime(invitation.expiresAt)}</Text>
-      {hasExistingAccount ? (
+      {loading ? (
+        <Text style={styles.info}>Validando invitación segura...</Text>
+      ) : hasExistingAccount ? (
         <Text style={styles.info}>Se reutilizará tu cuenta actual.</Text>
       ) : (
         <Text style={styles.info}>
-          Para aceptar debes completar tu registro en Tu Voto Decide.
+          Esta invitación requiere una cuenta registrada en Tu Voto Decide.
         </Text>
       )}
       {message ? (
