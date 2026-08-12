@@ -87,6 +87,7 @@ describe('InstitutionalInvitationNotificationCard', () => {
       status: 'REQUIRES_ADMIN_ACCOUNT',
       invitationId: 'inv-1',
       tenant: {id: 'tenant-1', name: 'Colegio Médico'},
+      continuationCode: 'a'.repeat(64),
     });
     const screen = render(
       <InstitutionalInvitationNotificationCard notification={notification} />,
@@ -101,7 +102,7 @@ describe('InstitutionalInvitationNotificationCard', () => {
     expect(screen.queryByText('Pendiente de aprobación')).toBeNull();
   });
 
-  it('D3 abre el registro web solo con el identificador opaco de la invitación', async () => {
+  it('D3 abre el registro web con una continuación opaca, sin secretos móviles', async () => {
     const openUrl = jest.spyOn(Linking, 'openURL').mockResolvedValueOnce(undefined);
     api.getInstitutionalInvitationRequest.mockResolvedValueOnce({
       invitationId: 'inv-1',
@@ -114,6 +115,7 @@ describe('InstitutionalInvitationNotificationCard', () => {
     api.acceptInstitutionalInvitation.mockResolvedValueOnce({
       status: 'REQUIRES_ADMIN_ACCOUNT',
       invitationId: 'inv-1',
+      continuationCode: 'a'.repeat(64),
     });
     const screen = render(
       <InstitutionalInvitationNotificationCard notification={notification} />,
@@ -124,7 +126,7 @@ describe('InstitutionalInvitationNotificationCard', () => {
 
     await waitFor(() =>
       expect(openUrl).toHaveBeenCalledWith(
-        'https://frontend.example/votacion/registrarse?invitationId=inv-1',
+        `https://frontend.example/votacion/registrarse?invitationId=inv-1&continuationCode=${'a'.repeat(64)}`,
       ),
     );
     expect(openUrl.mock.calls[0][0]).not.toMatch(/dni|wallet|password|email/i);

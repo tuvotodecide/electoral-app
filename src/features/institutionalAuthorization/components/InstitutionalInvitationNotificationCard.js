@@ -72,6 +72,7 @@ export default function InstitutionalInvitationNotificationCard({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [requiresAdminAccount, setRequiresAdminAccount] = useState(false);
+  const [registrationContinuationCode, setRegistrationContinuationCode] = useState('');
   const inFlightRef = useRef(false);
   const status = invitation.status;
   const actionable = status === 'PENDING' && validated && !busy && !loading;
@@ -117,7 +118,11 @@ export default function InstitutionalInvitationNotificationCard({
     try {
       const accepted = await acceptInstitutionalInvitation(invitation.invitationId);
       if (accepted?.status === 'REQUIRES_ADMIN_ACCOUNT') {
+        if (!accepted?.continuationCode) {
+          throw new Error('No se pudo preparar el registro administrativo seguro.');
+        }
         setRequiresAdminAccount(true);
+        setRegistrationContinuationCode(String(accepted.continuationCode));
         setMessage('Para aceptar la invitación debes crear tu cuenta administrativa.');
         return;
       }
@@ -138,13 +143,13 @@ export default function InstitutionalInvitationNotificationCard({
 
   const openAdministrativeRegistration = async () => {
     const base = String(FRONTEND_RESULTS || '').replace(/\/+$/, '');
-    if (!base || !invitation.invitationId) {
+    if (!base || !invitation.invitationId || !registrationContinuationCode) {
       setMessage('No se pudo abrir el registro administrativo.');
       return;
     }
     const url = `${base}/votacion/registrarse?invitationId=${encodeURIComponent(
       invitation.invitationId,
-    )}`;
+    )}&continuationCode=${encodeURIComponent(registrationContinuationCode)}`;
     try {
       await Linking.openURL(url);
     } catch {
