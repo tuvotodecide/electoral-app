@@ -1,5 +1,5 @@
 import React from 'react';
-import {fireEvent, render, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import InstitutionalAuthorizationNotificationCard from '../../../../src/features/institutionalAuthorization/components/InstitutionalAuthorizationNotificationCard';
 
 jest.mock('@env', () => ({
@@ -340,6 +340,51 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
     expect(screen.queryByText('Aceptar y firmar')).toBeNull();
     expect(screen.queryByText('Rechazar')).toBeNull();
     expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
+  });
+
+  it('UI-02: no habilita firma si una notificación antigua no trae canSign', async () => {
+    api.getInstitutionalAuthorizationRequest.mockResolvedValueOnce({
+      ...request,
+      canSign: undefined,
+    });
+
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+
+    await screen.findByText('Pendiente de autorización');
+    expect(screen.queryByText('Aceptar y firmar')).toBeNull();
+    expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
+  });
+
+  it('UI-04/UI-05: el polling mantiene procesamiento y luego refleja aprobación sin reabrir la firma', async () => {
+    jest.useFakeTimers();
+    api.getInstitutionalAuthorizationRequest
+      .mockResolvedValueOnce({
+        ...request,
+        status: 'PENDING_CHAIN_CONFIRMATION',
+        canSign: false,
+        userOpHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      })
+      .mockResolvedValueOnce({
+        ...request,
+        status: 'APPROVED',
+        canSign: false,
+        userOpHash: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      });
+
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+
+    await screen.findByText('Procesando autorización');
+    expect(screen.queryByText('Aceptar y firmar')).toBeNull();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5000);
+    });
+    expect(await screen.findByText('Acceso habilitado')).toBeTruthy();
+    expect(screen.queryByText('Aceptar y firmar')).toBeNull();
+    jest.useRealTimers();
   });
 
   it('D-SIGN-010/D-RETRY-001/D-RETRY-002/D-RETRY-003: muestra error recuperable y conserva operación local', async () => {

@@ -211,7 +211,7 @@ export default function InstitutionalAuthorizationNotificationCard({
   const actionCopy = actionLabels[currentRequest?.action] || actionLabels.ADD_AUTHORIZED_ADDRESS;
   const isActionable =
     status === 'PENDING_MOBILE_AUTHORIZATION' &&
-    currentRequest?.canSign !== false &&
+    currentRequest?.canSign === true &&
     !busy &&
     !loading &&
     !expired;
