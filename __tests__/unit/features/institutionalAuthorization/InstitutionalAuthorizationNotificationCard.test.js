@@ -194,6 +194,22 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
     expect(screen.getByText('Procesando autorización. El acceso todavía no está habilitado.')).toBeTruthy();
   });
 
+  it('D-REV-014: si ya existe userOpHash pero falla el registro, conserva procesamiento y no reabre la firma', async () => {
+    const submissionFailure = new Error('temporary backend failure');
+    api.submitInstitutionalAuthorization.mockRejectedValueOnce(submissionFailure);
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+
+    fireEvent.press(await screen.findByTestId('institutionalAuthorizationAcceptButton'));
+    fireEvent.press(await screen.findByTestId('institutionalAuthorizationSubmitSignatureButton'));
+
+    expect(await screen.findByText('Procesando autorización')).toBeTruthy();
+    expect(screen.queryByTestId('institutionalAuthorizationAcceptButton')).toBeNull();
+    expect(screen.queryByTestId('institutionalAuthorizationRejectButton')).toBeNull();
+    expect(account.sendOperationWithUserOpHash).toHaveBeenCalledTimes(1);
+  });
+
   it('MOB-CLAIM-01/MOB-CLAIM-03/MOB-CLAIM-04/MOB-CLAIM-05: usa la respuesta fresca de claim terminal y corta antes de firmar', async () => {
     const approved = {
       ...request,

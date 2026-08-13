@@ -58,13 +58,23 @@ export const sendInstitutionalAuthorizationSubmission = async ({
     syncStatus: 'PENDING',
   });
 
-  const submitted = await submitFn(
-    applicationId,
-    deviceId,
-    walletAddress,
-    userOpHash,
-    result?.txHash,
-  );
+  let submitted;
+  try {
+    submitted = await submitFn(
+      applicationId,
+      deviceId,
+      walletAddress,
+      userOpHash,
+      result?.txHash,
+    );
+  } catch (error) {
+    // The operation was accepted by the bundler and is durably queued in the
+    // outbox.  Preserve that fact for the UI so a transport failure while
+    // recording it cannot reopen the same authorization for another signature.
+    error.userOpHash = userOpHash;
+    error.txHash = result?.txHash;
+    throw error;
+  }
   requireUserOpHash(submitted?.userOpHash);
   await markInstitutionalAuthorizationOutboxSynced(applicationId, userOpHash);
 

@@ -357,6 +357,18 @@ export default function InstitutionalAuthorizationNotificationCard({
         return normalized;
       });
     } catch (error) {
+      if (error?.userOpHash) {
+        const pending = normalizePayload({
+          ...preparedClaim.request,
+          status: 'PENDING_CHAIN_CONFIRMATION',
+          canSign: false,
+          userOpHash: error.userOpHash,
+          txHash: error.txHash,
+        });
+        setRequest(pending);
+        onStatusChange?.(pending.status);
+        return;
+      }
       setErrorMessage(resolveErrorMessage(error, 'No se pudo enviar la autorización.'));
     } finally {
       submitInFlightRef.current = false;
