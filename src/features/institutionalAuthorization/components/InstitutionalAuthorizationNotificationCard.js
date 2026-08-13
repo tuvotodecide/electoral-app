@@ -79,8 +79,15 @@ const normalizePayload = data => ({
   userOpHash: data?.userOpHash,
   txHash: data?.txHash,
   safeMessage: data?.safeMessage,
+  functionalStatus: data?.functionalStatus,
+  functionalStatusLabel: data?.functionalStatusLabel,
   canSign: data?.canSign,
 });
+
+const isClaimStillSignable = request =>
+  request?.status === 'PENDING_MOBILE_AUTHORIZATION' &&
+  request?.functionalStatus !== 'ACCESS_ENABLED' &&
+  request?.canSign === true;
 
 const actionLabels = {
   ADD_AUTHORIZED_ADDRESS: {
@@ -286,15 +293,38 @@ export default function InstitutionalAuthorizationNotificationCard({
         applicationId,
         deviceId,
       );
-      await startInstitutionalAuthorizationSigning(
+      const claimRequest = normalizePayload({
+        ...normalizedFresh,
+        ...(claim?.request || claim),
+      });
+      setRequest(claimRequest);
+      onStatusChange?.(claimRequest.status);
+      // The claim response is authoritative. Do not use the stale state that
+      // was captured before await claimInstitutionalAuthorization().
+      if (!isClaimStillSignable(claimRequest)) {
+        return;
+      }
+      const signingRequest = await startInstitutionalAuthorizationSigning(
         applicationId,
         deviceId,
       );
-      setRequest({...normalizedFresh, status: 'SIGNING'});
-      onStatusChange?.('SIGNING');
-      setPreparedClaim({request: fresh, claim});
+      const normalizedSigning = normalizePayload({
+        ...claimRequest,
+        ...signingRequest,
+        // La acción se fija al reclamar; una respuesta parcial de esta
+        // transición no puede reemplazarla por un valor desactualizado.
+        action: claimRequest.action,
+      });
+      setRequest(normalizedSigning);
+      onStatusChange?.(normalizedSigning.status);
+      setPreparedClaim({request: claimRequest, claim});
       setConfirmVisible(true);
     } catch (error) {
+      const code = extractInstitutionalAuthorizationErrorCode(error);
+      if (code === 'INSTITUTIONAL_AUTHORIZATION_NOT_SIGNABLE') {
+        await loadRequest('signing-conflict');
+        return;
+      }
       setErrorMessage(resolveErrorMessage(error, 'No se pudo preparar la firma.'));
     } finally {
       prepareInFlightRef.current = false;

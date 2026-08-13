@@ -194,6 +194,57 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
     expect(screen.getByText('Procesando autorización. El acceso todavía no está habilitado.')).toBeTruthy();
   });
 
+  it('MOB-CLAIM-01/MOB-CLAIM-03/MOB-CLAIM-04/MOB-CLAIM-05: usa la respuesta fresca de claim terminal y corta antes de firmar', async () => {
+    const approved = {
+      ...request,
+      status: 'APPROVED',
+      functionalStatus: 'ACCESS_ENABLED',
+      functionalStatusLabel: 'Acceso habilitado',
+      canSign: false,
+      userOpHash: null,
+      txHash: null,
+    };
+    api.claimInstitutionalAuthorization.mockResolvedValueOnce({request: approved});
+
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+    fireEvent.press(await screen.findByTestId('institutionalAuthorizationAcceptButton'));
+
+    expect(await screen.findByText('Acceso habilitado')).toBeTruthy();
+    expect(screen.queryByText('Aceptar y firmar')).toBeNull();
+    expect(api.startInstitutionalAuthorizationSigning).not.toHaveBeenCalled();
+    expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
+    expect(api.submitInstitutionalAuthorization).not.toHaveBeenCalled();
+  });
+
+  it('MOB-CLAIM-06: un 409 de signing refresca el detalle y no reintenta ni envía operación', async () => {
+    const approved = {
+      ...request,
+      status: 'APPROVED',
+      functionalStatus: 'ACCESS_ENABLED',
+      canSign: false,
+    };
+    const notSignable = new Error('not signable');
+    notSignable.code = 'INSTITUTIONAL_AUTHORIZATION_NOT_SIGNABLE';
+    api.startInstitutionalAuthorizationSigning.mockRejectedValueOnce(notSignable);
+    api.getInstitutionalAuthorizationRequest
+      .mockResolvedValueOnce(request)
+      .mockResolvedValueOnce(request)
+      .mockResolvedValueOnce(approved);
+
+    const screen = render(
+      <InstitutionalAuthorizationNotificationCard notification={notification} />,
+    );
+    fireEvent.press(await screen.findByTestId('institutionalAuthorizationAcceptButton'));
+
+    expect(await screen.findByText('Acceso habilitado')).toBeTruthy();
+    expect(api.startInstitutionalAuthorizationSigning).toHaveBeenCalledTimes(1);
+    expect(api.getInstitutionalAuthorizationRequest).toHaveBeenCalledTimes(3);
+    expect(account.sendOperationWithUserOpHash).not.toHaveBeenCalled();
+    expect(api.submitInstitutionalAuthorization).not.toHaveBeenCalled();
+  });
+
   it('D-REV-003/D-REV-004: firma eliminación con removeAuthorizedAddress desde el detalle', async () => {
     const removeRequest = {
       ...request,
