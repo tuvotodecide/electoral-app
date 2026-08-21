@@ -186,6 +186,71 @@ describe('ElectionRepository.api', () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
+  it('EA2-08-005 mapea CREDITS_EMPTY del backend al código y mensaje que consume la tarjeta', async () => {
+    axios.get.mockImplementation(url => {
+      if (String(url).includes('/voting/events/public/landing')) {
+        return Promise.resolve({
+          data: {
+            active: [
+              {
+                id: 'event-open-1',
+                name: 'Eleccion abierta con creditos',
+                phase: 'ACTIVE',
+                publicEligibilityEnabled: true,
+              },
+              {
+                id: 'event-open-2',
+                name: 'Eleccion abierta sin creditos',
+                phase: 'ACTIVE',
+                publicEligibilityEnabled: true,
+              },
+            ],
+          },
+        });
+      }
+
+      if (String(url).includes('/eligibility/public')) {
+        return Promise.resolve({data: {status: 'ELIGIBLE', referenceVersion: 'v1'}});
+      }
+
+      if (String(url).includes('/participations/status')) {
+        if (String(url).includes('event-open-2')) {
+          return Promise.resolve({
+            data: {status: 'CREDITS_EMPTY', canVote: false, alreadyVoted: false},
+          });
+        }
+        return Promise.resolve({
+          data: {status: 'CAN_VOTE', canVote: true, alreadyVoted: false},
+        });
+      }
+
+      if (String(url).includes('/public/detail')) {
+        return Promise.resolve({data: {options: []}});
+      }
+
+      return Promise.reject(new Error(`Unexpected GET ${url}`));
+    });
+
+    const elections = await ElectionRepositoryApi.getElections();
+
+    // Ambas votaciones se siguen mostrando: la que quedó sin tokens solo
+    // cambia de estado, no desaparece del home.
+    expect(elections).toHaveLength(2);
+    expect(elections[0]).toMatchObject({
+      id: 'event-open-1',
+      participationCode: 'CAN_VOTE',
+      canVote: true,
+      statusMessage: '',
+    });
+    expect(elections[1]).toMatchObject({
+      id: 'event-open-2',
+      participationCode: 'CREDITS_EMPTY',
+      canVote: false,
+      alreadyVoted: false,
+      statusMessage: 'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+    });
+  });
+
   it('VOT-BAL-P0-001 / VOT-BAL-P0-002 | mapea candidatos, imagenes y solo opciones publicas activas', async () => {
     axios.get.mockResolvedValueOnce({
       data: {
@@ -637,6 +702,28 @@ describe('ElectionRepository.api', () => {
       );
       expect(clearVoteJournal).toHaveBeenCalledWith('event-1');
       expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+    });
+
+    it('EA2-09-001 devuelve el mensaje de tokens agotados cuando el contrato responde 409', async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {status: 'CAN_VOTE', canVote: true, alreadyVoted: false},
+      });
+      wira.authenticateWithVerifier.mockRejectedValueOnce(
+        new Error(
+          'Error calling the verifier: the response has a status code of 409 instead of 200',
+        ),
+      );
+
+      const result = await ElectionRepositoryApi.submitVote('event-1', 'option-1', null);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+      });
+      // El 409 es un rechazo de negocio esperado: no se reporta como incidente
+      // ni se registra participación en backend.
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
     });
 
     it('devuelve "No se pudo registrar el voto. Intenta nuevamente." cuando falla la firma on-chain', async () => {

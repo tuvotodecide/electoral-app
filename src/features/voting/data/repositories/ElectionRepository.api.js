@@ -5,6 +5,7 @@ import store from '../../../../redux/store';
 import { getCredentialForVote } from '@/src/data/credentials';
 import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
+import { CREDITS_EMPTY_ERROR_MESSAGE } from '../voteErrors';
 import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
 
@@ -154,6 +155,8 @@ const buildElectionModel = ({
     statusMessage = 'Fuera del horario de votación';
   } else if (participationCode === 'ALREADY_VOTED') {
     statusMessage = 'Ya registraste tu participación';
+  } else if (participationCode === 'CREDITS_EMPTY') {
+    statusMessage = 'Lo sentimos, los tokens de respaldo para esta votación se agotaron';
   }
 
   const organizationName =
@@ -188,6 +191,7 @@ const buildElectionModel = ({
     resultsAvailable: event?.resultsAvailable === true,
     isEligible: eligibility?.eligible === true,
     eligibilityStatus,
+    participationCode,
     canVote: participationStatus?.canVote === true,
     alreadyVoted: participationStatus?.alreadyVoted === true,
     publicEligibilityEnabled: event?.publicEligibilityEnabled !== false,
@@ -917,6 +921,12 @@ const ElectionRepositoryApi = {
 
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
+      if (error.message?.includes('the response has a status code of 409')) {
+        return {
+          success: false,
+          error: CREDITS_EMPTY_ERROR_MESSAGE,
+        }
+      }
       captureError(
         error,{ 
           flow: 'submitVote',

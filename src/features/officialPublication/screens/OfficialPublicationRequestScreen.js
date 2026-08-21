@@ -346,7 +346,14 @@ const OfficialPublicationRequestScreen = ({route}) => {
           </View>
 
           <View style={styles.section}>
-            <InfoRow label="Empadronados" value={request?.votersCount} />
+            <InfoRow
+              label="Tipo de votación"
+              value={request?.isOpenVoting ? "Votación abierta" : "Votación cerrada"}
+            />
+            <InfoRow
+              label={request?.isOpenVoting ? "Número de votos disponibles" : "Empadronados"}
+              value={request?.votersCount}
+            />
             <InfoRow label="Créditos requeridos" value={request?.requiredCredits} />
             <InfoRow label="TVD requerido" value={formatTvdAmount(request?.requiredTvd)} />
             <InfoRow

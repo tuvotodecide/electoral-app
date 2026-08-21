@@ -31,6 +31,7 @@ import OfflineQueuedModal from '../components/OfflineQueuedModal';
 // Feature logic
 import { useVotingState } from '../state/useVotingState';
 import { useElectionRepository } from '../data/useElectionRepository';
+import { CREDITS_EMPTY_ERROR_MESSAGE } from '../data/voteErrors';
 import {
   enqueueBackendParticipationSync,
   enqueueVote,
@@ -42,7 +43,7 @@ import { DEV_FLAGS } from '../../../config/featureFlags';
 // Utils
 import { backendProbe, checkInternetConnection } from '../../../utils/networkUtils';
 import { moderateScale, getHeight } from '../../../common/constants';
-import { StackNav } from '../../../navigation/NavigationKey';
+import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
 import { blankVote } from '../data/params';
 import { useCameraPermissions } from 'expo-camera';
@@ -84,6 +85,9 @@ const isLikelyNetworkVoteError = error => {
     message.includes('request failed')
   );
 };
+
+const isCreditsEmptyError = error =>
+  String(error?.message || error || '').trim() === CREDITS_EMPTY_ERROR_MESSAGE;
 
 const buildVoteErrorMessage = error => {
   const raw = String(error?.message || error || '').trim();
@@ -210,6 +214,9 @@ const CandidateScreen = ({ route }) => {
     visible: false,
     title: 'No se pudo registrar el voto',
     message: '',
+    // Sin tokens de respaldo el voto no es reintentable: el modal solo ofrece
+    // volver al inicio.
+    creditsEmpty: false,
   });
   const isSubmittingVoteRef = useRef(false);
   const isInPlaceVote =
@@ -396,10 +403,16 @@ const CandidateScreen = ({ route }) => {
       }
 
       if (!voteResult.success) {
+        const creditsEmpty = isCreditsEmptyError(voteResult.error);
         setErrorModal({
           visible: true,
-          title: UI_STRINGS.qrVoteErrorTitle,
-          message: UI_STRINGS.qrVoteErrorDesc,
+          title: creditsEmpty
+            ? 'No se pudo registrar el voto'
+            : UI_STRINGS.qrVoteErrorTitle,
+          message: creditsEmpty
+            ? CREDITS_EMPTY_ERROR_MESSAGE
+            : UI_STRINGS.qrVoteErrorDesc,
+          creditsEmpty,
         });
         throw new Error(voteResult.error || 'Vote submission failed');
       }
@@ -573,6 +586,7 @@ const CandidateScreen = ({ route }) => {
         visible: true,
         title: 'No se pudo registrar el voto',
         message: buildVoteErrorMessage(error),
+        creditsEmpty: isCreditsEmptyError(error),
       });
     } finally {
       isSubmittingVoteRef.current = false;
@@ -648,6 +662,19 @@ const CandidateScreen = ({ route }) => {
     setErrorModal(modal => ({...modal, visible: false}));
     handleConfirmVote();
   }, [handleConfirmVote]);
+
+  const handleErrorModalGoHome = useCallback(() => {
+    setErrorModal(modal => ({...modal, visible: false}));
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: StackNav.TabNavigation,
+          params: {screen: TabNav.HomeScreen},
+        },
+      ],
+    });
+  }, [navigation]);
 
   // Get button text
   const getButtonText = () => {
@@ -750,13 +777,19 @@ const CandidateScreen = ({ route }) => {
 
       <CustomModal
         visible={errorModal.visible}
-        onClose={() => setErrorModal(modal => ({...modal, visible: false}))}
+        onClose={
+          errorModal.creditsEmpty
+            ? handleErrorModalGoHome
+            : () => setErrorModal(modal => ({...modal, visible: false}))
+        }
         type="error"
         title={errorModal.title}
         message={errorModal.message}
-        buttonText="Reintentar"
-        onButtonPress={handleRetryVote}
-        secondaryButtonText="Cerrar"
+        buttonText={errorModal.creditsEmpty ? 'Volver al inicio' : 'Reintentar'}
+        onButtonPress={
+          errorModal.creditsEmpty ? handleErrorModalGoHome : handleRetryVote
+        }
+        secondaryButtonText={errorModal.creditsEmpty ? undefined : 'Cerrar'}
         onSecondaryPress={() => setErrorModal(modal => ({...modal, visible: false}))}
       />
     </CSafeAreaView>

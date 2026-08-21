@@ -331,6 +331,106 @@ describe('HomeScreen voting flow routing', () => {
     expect(view.queryByText('No hay votaciones disponibles')).toBeNull();
   });
 
+  describe('EA2-09 cola de votos sin tokens de respaldo', () => {
+    const {processQueue} = require('../../../../../src/utils/offlineQueue');
+    const {
+      markVoteFailed,
+      releaseVoteForElection,
+    } = require('../../../../../src/features/voting');
+
+    const buildFailedRun = failedItem => ({
+      remaining: 0,
+      processed: 0,
+      failed: 1,
+      failedItems: [failedItem],
+    });
+
+    let refreshState;
+
+    beforeEach(() => {
+      // La cola offline solo se drena con una wallet completa (incluye account).
+      const state = buildState();
+      useSelector.mockImplementation(selector =>
+        selector({
+          ...state,
+          wallet: {
+            payload: {
+              ...state.wallet.payload,
+              account: '0x1111111111111111111111111111111111111111',
+            },
+          },
+        }),
+      );
+
+      refreshState = jest.fn();
+      mockUseVotingState.mockReturnValue({
+        hasVoted: false,
+        voteSynced: false,
+        participationId: null,
+        participations: [],
+        lastReceipt: null,
+        isLoading: false,
+        refreshState,
+      });
+    });
+
+    it('EA2-09-008 limpia el estado local de votación cuando la cola descarta un voto terminal', async () => {
+      mockGetElections.mockResolvedValue([]);
+      processQueue.mockResolvedValueOnce(
+        buildFailedRun({
+          id: 'queue-1',
+          type: 'votingFlowVote',
+          electionId: 'election-1',
+          error: 'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+          errorType: 'BUSINESS_TERMINAL',
+          removedFromQueue: true,
+        }),
+      );
+
+      render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(releaseVoteForElection).toHaveBeenCalledWith('election-1');
+      });
+      // El voto no llegó a registrarse: no debe quedar como participación con
+      // error, y la tarjeta se refresca con el estado local ya liberado.
+      expect(markVoteFailed).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(refreshState).toHaveBeenCalled();
+      });
+    });
+
+    it('EA2-09-009 conserva el voto como error reintentable cuando el fallo de la cola no es terminal', async () => {
+      mockGetElections.mockResolvedValue([]);
+      processQueue.mockResolvedValueOnce(
+        buildFailedRun({
+          id: 'queue-2',
+          type: 'votingFlowVote',
+          electionId: 'election-2',
+          error: 'Backend unavailable',
+          errorType: 'UNKNOWN',
+          removedFromQueue: true,
+        }),
+      );
+
+      render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(markVoteFailed).toHaveBeenCalledWith({
+          electionId: 'election-2',
+          reason: 'Backend unavailable',
+        });
+      });
+      expect(releaseVoteForElection).not.toHaveBeenCalled();
+    });
+  });
+
   it('KIO-SCN-P1-001 KIO-HAB-P0-001 | navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled', async () => {
     const election = {
       id: 'event-qr',

@@ -34,7 +34,6 @@ export async function claimRegisterRewardIfAvailable(address, did, privKey) {
     {
       params: { recipient: address },
       headers: {
-        'Content-Type': 'application/json',
         'x-api-key': apikey
       },
     },

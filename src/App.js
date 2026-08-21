@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react-native';
 import { captureError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { BROADCAST_TOPIC } from '@env';
 import { LAST_TOPIC_KEY, LAST_USER_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
 import { navigate } from './navigation/RootNavigation';
@@ -162,19 +163,23 @@ const App = () => {
   }, [notificationDni]);
   useEffect(() => {
     const resubscribeStoredTopics = async () => {
+      try {
+        await subscribeToPushTopic(BROADCAST_TOPIC);
+      } catch (_e) { }
+
       const lastLocationTopic = await AsyncStorage.getItem(LAST_TOPIC_KEY);
       if (lastLocationTopic) {
         const rawId = lastLocationTopic.replace('loc_', '');
         try {
           await subscribeToLocationTopic(rawId);
-        } catch (e) { }
+        } catch (_e) { }
       }
 
       const lastUserTopic = await AsyncStorage.getItem(LAST_USER_TOPIC_KEY);
       if (lastUserTopic) {
         try {
           await subscribeToPushTopic(lastUserTopic);
-        } catch (e) { }
+        } catch (_e) { }
       }
     };
 

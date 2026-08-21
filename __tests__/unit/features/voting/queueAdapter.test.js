@@ -163,6 +163,67 @@ describe('queueAdapter voting flow', () => {
     expect(clearVoteJournal).toHaveBeenCalledWith('election-1');
   });
 
+  it('EA2-09-006 saca el voto de la cola sin reintentar cuando los tokens de respaldo se agotaron', async () => {
+    createStorage({});
+    const submitVote = jest.fn().mockResolvedValue({
+      success: false,
+      error: 'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+    });
+    getElectionRepository.mockReturnValue({
+      submitVote,
+      registerParticipation: jest.fn(),
+    });
+
+    const task = {
+      task: {
+        type: 'votingFlowVote',
+        payload: {
+          mode: 'full',
+          electionId: 'election-1',
+          candidateId: 'candidate-1',
+          candidateName: 'Lista Azul',
+        },
+      },
+    };
+
+    await expect(handleVotingQueueVote(task)).rejects.toMatchObject({
+      message: 'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+      // La cola trata este fallo como terminal: lo descarta en vez de
+      // reintentarlo con backoff.
+      removeFromQueue: true,
+      errorType: 'BUSINESS_TERMINAL',
+    });
+    expect(submitVote).toHaveBeenCalledTimes(1);
+  });
+
+  it('EA2-09-007 conserva el reintento en la cola cuando el voto falla por una causa distinta', async () => {
+    createStorage({});
+    const submitVote = jest.fn().mockResolvedValue({
+      success: false,
+      error: 'Network Error',
+    });
+    getElectionRepository.mockReturnValue({
+      submitVote,
+      registerParticipation: jest.fn(),
+    });
+
+    const error = await handleVotingQueueVote({
+      task: {
+        type: 'votingFlowVote',
+        payload: {
+          mode: 'full',
+          electionId: 'election-1',
+          candidateId: 'candidate-1',
+          candidateName: 'Lista Azul',
+        },
+      },
+    }).catch(caught => caught);
+
+    expect(error.message).toBe('Network Error');
+    expect(error.removeFromQueue).toBeUndefined();
+    expect(error.errorType).toBeUndefined();
+  });
+
   it('marca el voto como error recuperable y conserva el recibo para reintento', async () => {
     const storage = createStorage({
       'voting.lastReceipt': JSON.stringify({

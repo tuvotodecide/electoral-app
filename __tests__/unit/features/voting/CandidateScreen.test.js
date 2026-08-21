@@ -3,7 +3,7 @@ import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 import CandidateScreen from '../../../../src/features/voting/screens/CandidateScreen';
-import {StackNav} from '../../../../src/navigation/NavigationKey';
+import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
@@ -264,7 +264,7 @@ const renderScreen = route =>
   );
 
 describe('CandidateScreen', () => {
-  const navigation = {replace: jest.fn()};
+  const navigation = {replace: jest.fn(), reset: jest.fn()};
   const repository = {
     getElection: jest.fn(),
     getCandidates: jest.fn(),
@@ -995,6 +995,122 @@ describe('CandidateScreen', () => {
     expect(captureError).toHaveBeenCalled();
     expect(screen.getByText('Esta votación ya figura como registrada para tu usuario.')).toBeTruthy();
     expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  describe('EA2-09 tokens de respaldo agotados', () => {
+    const creditsEmptyMessage =
+      'Lo sentimos, los tokens de respaldo para esta votación se agotaron';
+
+    const submitVoteUntilCreditsEmpty = async screen => {
+      await screen.findByText('Lista Azul');
+      fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+      fireEvent.press(screen.getByTestId('voteButton'));
+      fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+      await waitFor(() => {
+        expect(screen.getByText(creditsEmptyMessage)).toBeTruthy();
+      });
+    };
+
+    it('EA2-09-002 muestra el mensaje de tokens agotados cuando el backend responde 409', async () => {
+      repository.submitVote.mockResolvedValueOnce({
+        success: false,
+        error: creditsEmptyMessage,
+      });
+
+      const screen = renderScreen({params: {election}});
+      await submitVoteUntilCreditsEmpty(screen);
+
+      expect(screen.getByText('No se pudo registrar el voto')).toBeTruthy();
+      expect(navigation.replace).not.toHaveBeenCalled();
+      expect(enqueueVote).not.toHaveBeenCalled();
+    });
+
+    it('EA2-09-003 solo ofrece volver al inicio y no permite reintentar el voto sin tokens', async () => {
+      repository.submitVote.mockResolvedValueOnce({
+        success: false,
+        error: creditsEmptyMessage,
+      });
+
+      const screen = renderScreen({params: {election}});
+      await submitVoteUntilCreditsEmpty(screen);
+
+      expect(screen.queryByTestId('customModalSecondaryButton')).toBeNull();
+      expect(screen.queryByText('Reintentar')).toBeNull();
+      expect(screen.getByText('Volver al inicio')).toBeTruthy();
+
+      fireEvent.press(screen.getByTestId('customModalPrimaryButton'));
+
+      await waitFor(() => {
+        expect(navigation.reset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [
+            {
+              name: StackNav.TabNavigation,
+              params: {screen: TabNav.HomeScreen},
+            },
+          ],
+        });
+      });
+      expect(repository.submitVote).toHaveBeenCalledTimes(1);
+    });
+
+    it('EA2-09-004 muestra el mensaje de tokens agotados en el voto presencial por QR', async () => {
+      repository.submitVote.mockResolvedValueOnce({
+        success: false,
+        error: creditsEmptyMessage,
+      });
+
+      const screen = renderScreen({
+        params: {election: {...election, presentialKioskEnabled: true}},
+      });
+
+      await screen.findByText('Lista Azul');
+      fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+      fireEvent.press(screen.getByTestId('voteButton'));
+      fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+      await waitFor(() => expect(screen.getByTestId('scanQrButton')).toBeTruthy());
+      fireEvent.press(screen.getByTestId('scanQrButton'));
+
+      await waitFor(() => {
+        expect(screen.getByText(creditsEmptyMessage)).toBeTruthy();
+      });
+      // No cae en el copy genérico de error de QR: el motivo real es el límite
+      // de tokens de la votación.
+      expect(screen.queryByText('Error al procesar el voto')).toBeNull();
+      expect(
+        screen.queryByText(
+          'Ocurrió un error al procesar tu voto. Puedes intentar escaneando el código QR nuevamente.',
+        ),
+      ).toBeNull();
+      expect(screen.queryByTestId('customModalSecondaryButton')).toBeNull();
+      expect(enqueueBackendParticipationSync).not.toHaveBeenCalled();
+    });
+
+    it('EA2-09-005 mantiene reintentar y cerrar para errores de voto distintos a tokens agotados', async () => {
+      repository.submitVote.mockResolvedValueOnce({
+        success: false,
+        error: 'already_voted',
+      });
+
+      const screen = renderScreen({params: {election}});
+
+      await screen.findByText('Lista Azul');
+      fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+      fireEvent.press(screen.getByTestId('voteButton'));
+      fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Esta votación ya figura como registrada para tu usuario.'),
+        ).toBeTruthy();
+      });
+
+      expect(screen.getByText('Reintentar')).toBeTruthy();
+      expect(screen.getByTestId('customModalSecondaryButton')).toBeTruthy();
+      expect(navigation.reset).not.toHaveBeenCalled();
+    });
   });
 
   it('VOT-ERR-P0-001 / VOT-REV-P0-002 | previene doble envio mientras el primer confirm sigue en curso', async () => {

@@ -208,3 +208,7 @@ jobs:
         run: |
           pnpm run test -- --testNamePattern="RR-P0"
 
+      - name: "Pruebas: Votaciones abiertas"
+        run: |
+          pnpm run test -- --testNamePattern="EA2-"
+

@@ -286,7 +286,81 @@ describe('ElectionCard', () => {
     });
   });
 
- 
+  describe('Estado: Tokens de respaldo agotados', () => {
+    const creditsEmptyElection = {
+      ...mockElection,
+      participationCode: 'CREDITS_EMPTY',
+      statusMessage:
+        'Lo sentimos, los tokens de respaldo para esta votación se agotaron',
+    };
+
+    test('EA2-08-001 muestra la votación con el botón de votar mientras no se alcanzó el límite de votantes', () => {
+      const { getByText, getByTestId, queryByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          election={{...mockElection, participationCode: 'CAN_VOTE', statusMessage: ''}}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('Votación General')).toBeTruthy();
+      expect(getByText('Votar ahora')).toBeTruthy();
+      expect(queryByText(/tokens de respaldo/i)).toBeNull();
+
+      fireEvent.press(getByTestId('electionCardButton'));
+      expect(mockOnVotePress).toHaveBeenCalledTimes(1);
+    });
+
+    test('EA2-08-002 sigue mostrando la votación con el mensaje de tokens agotados al alcanzar el límite', () => {
+      const { getByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          election={creditsEmptyElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('Votación General')).toBeTruthy();
+      expect(getByText('ACTIVA')).toBeTruthy();
+      expect(
+        getByText('Lo sentimos, los tokens de respaldo para esta votación se agotaron'),
+      ).toBeTruthy();
+    });
+
+    test('EA2-08-003 oculta el botón de votar cuando los tokens de respaldo se agotaron', () => {
+      const { queryByTestId, queryByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={false}
+          election={creditsEmptyElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(queryByTestId('electionCardButton')).toBeNull();
+      expect(queryByText('Votar ahora')).toBeNull();
+      expect(mockOnVotePress).not.toHaveBeenCalled();
+    });
+
+    test('EA2-08-004 conserva el comprobante del votante que ya votó aunque la elección quede sin tokens', () => {
+      const { getByText, queryByText } = renderWithProvider(
+        <ElectionCard
+          hasVoted={true}
+          voteSynced={true}
+          election={creditsEmptyElection}
+          onVotePress={mockOnVotePress}
+          onDetailsPress={mockOnDetailsPress}
+        />
+      );
+
+      expect(getByText('Ya participaste en esta votación')).toBeTruthy();
+      expect(getByText('Ver detalles')).toBeTruthy();
+      expect(queryByText(/tokens de respaldo/i)).toBeNull();
+    });
+  });
+
   describe('Estado: Elección terminada', () => {
     test('VOT-ACC-P0-002 | RESULTS bloquea emision y muestra votacion cerrada', () => {
       useCountdown.mockReturnValue({

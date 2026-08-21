@@ -230,6 +230,11 @@ const BLOCKCHAIN_ERROR_HINTS = [
   'missing or invalid parameters',
 ];
 
+const isBusinessTerminalFailure = failedItem =>
+  String(failedItem?.errorType || '')
+    .trim()
+    .toUpperCase() === 'BUSINESS_TERMINAL';
+
 const shouldShowQueueFailModal = failedItem => {
   const errorType = String(failedItem?.errorType || '')
     .trim()
@@ -1211,15 +1216,28 @@ export default function HomeScreen({ navigation, route }) {
             item => item?.type === 'votingFlowVote' && item?.removedFromQueue === true,
           );
           if (failedVotingItems.length > 0) {
+            // Un fallo terminal no se reintenta: se limpia el estado local de
+            // votación para que el usuario vea el estado real del backend.
+            const terminalVotingItems = failedVotingItems.filter(
+              isBusinessTerminalFailure,
+            );
+
             await Promise.all(
               failedVotingItems.map(item =>
-                markVoteFailed({
-                  electionId: item?.electionId,
-                  reason: item?.error || 'No se pudo completar el registro del voto.',
-                }),
+                isBusinessTerminalFailure(item)
+                  ? releaseVoteForElection(item?.electionId)
+                  : markVoteFailed({
+                      electionId: item?.electionId,
+                      reason:
+                        item?.error || 'No se pudo completar el registro del voto.',
+                    }),
               ),
             );
             await refreshVotingStateRef.current?.();
+
+            if (terminalVotingItems.length > 0) {
+              await loadVotingElectionRef.current?.();
+            }
           }
           const modalItems = failedItems.filter(shouldShowQueueFailModal);
           if (modalItems.length > 0) {

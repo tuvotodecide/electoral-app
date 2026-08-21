@@ -14,6 +14,7 @@ jest.mock('@sentry/react-native', () => ({
 
 jest.mock('@env', () => ({
   BACKEND_IDENTITY: 'https://mock.identity',
+  BROADCAST_TOPIC: 'broadcast_topic',
 }), {virtual: true});
 
 jest.mock('../src/navigation', () => {
@@ -85,10 +86,12 @@ describe('src/App', () => {
 
     await waitFor(() => expect(mockSubscribeToLocationTopic).toHaveBeenCalledWith('abc123'));
     await waitFor(() => expect(mockSubscribeToPushTopic).toHaveBeenCalledWith('user_topic_1'));
+    // El topic de broadcast se re-suscribe junto con los topics guardados.
+    expect(mockSubscribeToPushTopic).toHaveBeenCalledWith('broadcast_topic');
 
     await mockOnTokenRefresh.callback();
 
     await waitFor(() => expect(mockSubscribeToLocationTopic).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(mockSubscribeToPushTopic).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockSubscribeToPushTopic).toHaveBeenCalledTimes(4));
   });
 });

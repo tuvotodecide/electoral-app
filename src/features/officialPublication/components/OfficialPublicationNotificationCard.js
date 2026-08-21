@@ -98,6 +98,7 @@ const normalizePayload = data => ({
   requestId: data?.requestId,
   eventName: data?.eventName || data?.title,
   institutionName: data?.institutionName,
+  isOpenVoting: data?.isOpenVoting,
   status: data?.status || 'PENDING_APPROVAL',
   votingStart: data?.votingStart || data?.votingStartAt || data?.startsAt,
   votingEnd: data?.votingEnd || data?.votingEndAt || data?.endsAt,
@@ -231,6 +232,10 @@ export default function OfficialPublicationNotificationCard({notification, onSta
   const prepareInFlightRef = useRef(false);
   const submitInFlightRef = useRef(false);
   const rejectInFlightRef = useRef(false);
+  const initialSummaryRef = useRef(initialSummary);
+  initialSummaryRef.current = initialSummary;
+  const onStatusChangeRef = useRef(onStatusChange);
+  onStatusChangeRef.current = onStatusChange;
 
   const privateKey = useMemo(() => getPrivateKey(walletPayload), [walletPayload]);
   const smartAccountAddress = useMemo(
@@ -260,9 +265,9 @@ export default function OfficialPublicationNotificationCard({notification, onSta
     try {
       const next = await getOfficialPublicationRequest(requestId);
       if (mountedRef.current) {
-        const normalized = normalizePayload({...initialSummary, ...next});
+        const normalized = normalizePayload({...initialSummaryRef.current, ...next});
         setRequest(normalized);
-        onStatusChange?.(normalized.status);
+        onStatusChangeRef.current?.(normalized.status);
       }
       return next;
     } catch (error) {
@@ -275,7 +280,7 @@ export default function OfficialPublicationNotificationCard({notification, onSta
         setLoading(false);
       }
     }
-  }, [initialSummary, requestId]);
+  }, [requestId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -442,7 +447,11 @@ export default function OfficialPublicationNotificationCard({notification, onSta
           value={formatDateTime(currentRequest?.resultsPublishAt)}
         />
         <InfoRow
-          label="Empadronados"
+          label="Tipo de votación"
+          value={currentRequest?.isOpenVoting ? "Votación abierta" : "Votación cerrada"}
+        />
+        <InfoRow
+          label={currentRequest?.isOpenVoting ? "Número de votos disponibles" : "Empadronados"}
           value={formatPlainValue(currentRequest?.votersCount)}
         />
         <InfoRow

@@ -760,7 +760,7 @@ export default function Notification({ navigation }) {
           String(item?.data?.type || '').trim().toUpperCase() ===
             'OFFICIAL_PUBLICATION_REQUEST' &&
           String(item?.data?.requestId || '') === String(requestId);
-        if (!isTarget) return item;
+        if (!isTarget || item?.data?.status === status) return item;
         return {
           ...item,
           tipo: getOfficialPublicationSummaryStatus(status),
@@ -772,7 +772,10 @@ export default function Notification({ navigation }) {
       }),
     );
     setSelectedOfficialPublication(current => {
-      if (String(current?.data?.requestId || '') !== String(requestId)) {
+      if (
+        String(current?.data?.requestId || '') !== String(requestId) ||
+        current?.data?.status === status
+      ) {
         return current;
       }
       return {
