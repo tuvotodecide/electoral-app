@@ -105,6 +105,9 @@ const DEFAULT_NOTIFICATION = {
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const VOTING_CANCELLED_TYPE = 'INSTITUTIONAL_VOTING_CANCELLED';
 const OFFICIAL_PUBLICATION_REQUEST_TYPE = 'OFFICIAL_PUBLICATION_REQUEST';
+const OFFICIAL_PUBLICATION_REMINDER_TYPE = 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER';
+const OFFICIAL_PUBLICATION_REMINDER_DANGER_MESSAGE =
+  'SI NO SE PUBLICA HASTA LA HORA ESTABLECIDA, LA VOTACIÓN CADUCARÁ Y YA NO SE PODRÁ PUBLICAR';
 const INSTITUTIONAL_AUTHORIZATION_REQUEST_TYPE = 'MOBILE_AUTHORIZATION_REQUESTED';
 const INSTITUTIONAL_INVITATION_TYPES = new Set([
   'INVITATION_CREATED',
@@ -248,12 +251,12 @@ export const resolvePublicElectionUrl = notification => {
 
   const directUrl = [...publicUrlCandidates, ...actionUrlCandidates].find(isPublicElectionUrl);
   if (directUrl) {
-    return directUrl;
+    return directUrl + '?hideLogin=true';
   }
 
   const link = String(rawData?.link || '').trim();
   if (isPublicElectionUrl(link)) {
-    return link;
+    return link + '?hideLogin=true';
   }
 
   const frontendBase = String(FRONTEND_RESULTS || '').trim();
@@ -267,7 +270,7 @@ export const resolvePublicElectionUrl = notification => {
       url.search = '';
       url.hash = '';
       const resolvedUrl = url.toString();
-      return isPublicElectionUrl(resolvedUrl) ? resolvedUrl : null;
+      return isPublicElectionUrl(resolvedUrl) ? resolvedUrl + '?hideLogin=true' : null;
     } catch {}
   }
 
@@ -278,11 +281,98 @@ export const resolvePublicElectionUrl = notification => {
       url.search = '';
       url.hash = '';
       const resolvedUrl = url.toString();
-      return isPublicElectionUrl(resolvedUrl) ? resolvedUrl : null;
+      return isPublicElectionUrl(resolvedUrl) ? resolvedUrl + '?hideLogin=true' : null;
     } catch {}
   }
 
   return null;
+};
+
+const normalizeEventStatus = event =>
+  String(event?.status || event?.state || '').trim().toUpperCase();
+
+const hasDraftAlreadyStarted = (event, nowMs) => {
+  if (!event || nowMs === null || nowMs === undefined) {
+    return false;
+  }
+
+  const votingStart = Date.parse(String(event?.votingStart || event?.startsAt || ''));
+  return (
+    normalizeEventStatus(event) === 'DRAFT' &&
+    Number.isFinite(votingStart) &&
+    votingStart <= Number(nowMs)
+  );
+};
+
+const resolveElectionEventPath = event => {
+  const eventId = String(event?.id || event?.eventId || '').trim();
+  if (!eventId) {
+    return null;
+  }
+
+  const encodedId = encodeURIComponent(eventId);
+  const status = normalizeEventStatus(event);
+
+  if (status === 'DRAFT') {
+    return `/votacion/elecciones/${encodedId}/config/cargos`;
+  }
+
+  if (
+    status === 'OFFICIALLY_PUBLISHED' ||
+    status === 'ACTIVE' ||
+    status === 'CLOSED' ||
+    status === 'RESULTS_PUBLISHED' ||
+    status === 'PUBLICATION_EXPIRED'
+  ) {
+    return `/votacion/elecciones/${encodedId}/status`;
+  }
+
+  // READY_FOR_REVIEW, PUBLISHED y cualquier otro estado caen en la revisión.
+  return `/votacion/elecciones/${encodedId}/config/review`;
+};
+
+const resolveElectionEventUrl = (event, nowMs = Date.now()) => {
+  if (
+    normalizeEventStatus(event) === 'PUBLICATION_EXPIRED' ||
+    hasDraftAlreadyStarted(event, nowMs)
+  ) {
+    return null;
+  }
+
+  const path = resolveElectionEventPath(event);
+  const frontendBase = String(FRONTEND_RESULTS || '').trim();
+  if (!path || !frontendBase) {
+    return null;
+  }
+
+  try {
+    const url = new URL(frontendBase);
+    url.pathname = path;
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
+const resolveElectionEventActionLabel = event => {
+  const status = normalizeEventStatus(event);
+
+  if (status === 'DRAFT') {
+    return 'Continuar configuración';
+  }
+
+  if (
+    status === 'OFFICIALLY_PUBLISHED' ||
+    status === 'ACTIVE' ||
+    status === 'CLOSED' ||
+    status === 'RESULTS_PUBLISHED'
+  ) {
+    return 'Ver estado de la votación';
+  }
+
+  return 'Revisar y publicar';
 };
 
 const mapEligibilityBadge = status => {
@@ -440,6 +530,8 @@ const NotificationDetailScreen = () => {
   const normalizedType = String(rawData?.type || rawData?.event || '').trim().toUpperCase();
   const isOfficialPublicationRequest =
     normalizedType === OFFICIAL_PUBLICATION_REQUEST_TYPE;
+  const isOfficialPublicationReminder =
+    normalizedType === OFFICIAL_PUBLICATION_REMINDER_TYPE;
   const isInstitutionalAuthorizationRequest =
     normalizedType === INSTITUTIONAL_AUTHORIZATION_REQUEST_TYPE;
   const isInstitutionalInvitation = INSTITUTIONAL_INVITATION_TYPES.has(normalizedType);
@@ -825,6 +917,17 @@ const NotificationDetailScreen = () => {
       };
     }
 
+    if (isOfficialPublicationReminder) {
+      return {
+        backgroundColor: '#B45309',
+        iconName: 'alert-circle-outline',
+        iconBg: 'rgba(255,255,255,0.18)',
+        title: 'Confirma la publicación oficial',
+        subtitle: '',
+        textColor: '#FFFFFF',
+      };
+    }
+
     if (isVotingCancelled) {
       return {
         backgroundColor: '#B91C1C',
@@ -888,7 +991,7 @@ const NotificationDetailScreen = () => {
       subtitle: '',
       textColor: '#FFFFFF',
     };
-  }, [isInstitutionalAuthorizationRequest, isNews, isOfficialPublicationRequest, isScheduleUpdate, isVotingCancelled, kind, rawData?.bannerTitle, statusTone]);
+  }, [isInstitutionalAuthorizationRequest, isNews, isOfficialPublicationReminder, isOfficialPublicationRequest, isScheduleUpdate, isVotingCancelled, kind, rawData?.bannerTitle, statusTone]);
 
   const isElectionResults = kind === 'election_results';
   const resultsWebViewUrl = isElectionResults ? resolvedPublicElectionUrl : null;
@@ -904,8 +1007,23 @@ const NotificationDetailScreen = () => {
   const primaryActionUrl = shouldOpenPrimaryActionInWebView
     ? (supportsPublicElectionWebView ? resolvedPublicElectionUrl : resultsWebViewUrl)
     : resolvedPublicUrl;
+  const reminderEvent = isOfficialPublicationReminder
+    ? {
+        id: eventId || rawData?.electionId,
+        status: rawData?.status || rawData?.state,
+        votingStart: rawData?.votingStart || rawData?.startsAt,
+      }
+    : null;
+  const reminderActionUrl = reminderEvent ? resolveElectionEventUrl(reminderEvent) : null;
 
   const handlePrimaryAction = () => {
+    if (isOfficialPublicationReminder) {
+      if (reminderActionUrl) {
+        Linking.openURL(reminderActionUrl).catch(() => {});
+      }
+      return;
+    }
+
     if (isOfficialPublicationRequest && officialPublicationRequestId) {
       navigation.navigate(StackNav.OfficialPublicationRequest, {
         requestId: officialPublicationRequestId,
@@ -952,6 +1070,8 @@ const NotificationDetailScreen = () => {
   const hasScheduleDates = Boolean(startsAtLabel || endsAtLabel || resultsAtLabel);
   const showPrimaryAction = isInstitutionalAuthorizationRequest || isInstitutionalInvitation
     ? false
+    : isOfficialPublicationReminder
+    ? Boolean(reminderActionUrl)
     : isOfficialPublicationRequest
     ? canReviewOfficialPublication
     : !isVotingCancelled && (
@@ -1087,6 +1207,20 @@ const NotificationDetailScreen = () => {
                 El tiempo para confirmar esta publicacion ya termino.
               </CText>
             ) : null}
+          </View>
+        ) : isOfficialPublicationReminder ? (
+          <View style={styles.sectionCard}>
+            <CText type="B16" style={styles.sectionTitle}>
+              {rawData?.bannerTitle || 'Confirma la publicación oficial'}
+            </CText>
+            <CText type="R14" style={styles.emptyResultsText}>
+              {rawData?.bannerSubtitle || detailBody}
+            </CText>
+            <View style={styles.reminderDangerBox}>
+              <CText type="B14" style={styles.reminderDangerText}>
+                {OFFICIAL_PUBLICATION_REMINDER_DANGER_MESSAGE}
+              </CText>
+            </View>
           </View>
         ) : isVotingCancelled ? (
           <View style={[styles.sectionCard, styles.cancelledCard]}>
@@ -1255,7 +1389,9 @@ const NotificationDetailScreen = () => {
         >
           <CButton
             title={
-              isOfficialPublicationRequest
+              isOfficialPublicationReminder
+                ? resolveElectionEventActionLabel(reminderEvent)
+                : isOfficialPublicationRequest
                 ? 'Revisar solicitud'
                 : supportsPublicElectionWebView
                 ? 'Ver votación'
@@ -1271,7 +1407,9 @@ const NotificationDetailScreen = () => {
             onPress={handlePrimaryAction}
             containerStyle={styles.actionButton}
             disabled={
-              isOfficialPublicationRequest
+              isOfficialPublicationReminder
+                ? !reminderActionUrl
+                : isOfficialPublicationRequest
                 ? !canReviewOfficialPublication
                 : shouldOpenPrimaryActionInWebView
                 ? !primaryActionUrl
@@ -1337,6 +1475,18 @@ const styles = StyleSheet.create({
   cancelledCard: {
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
+  },
+  reminderDangerBox: {
+    marginTop: getResponsiveSize(14, 16, 18),
+    borderRadius: moderateScale(14),
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+    padding: getResponsiveSize(14, 16, 18),
+  },
+  reminderDangerText: {
+    color: '#B91C1C',
+    lineHeight: getResponsiveSize(20, 22, 24),
   },
   cancelledSectionTitle: {
     color: '#B91C1C',

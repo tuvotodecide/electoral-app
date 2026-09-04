@@ -36,6 +36,8 @@ const getResponsiveSize = (small, medium, large) => {
  * @param {() => void} props.onVotePress - Handler para botón "Votar ahora"
  * @param {() => void} props.onDetailsPress - Handler para botón "Ver detalles"
  * @param {Object} [props.election] - Datos de la elección (opcional, usa mock si no se provee)
+ * @param {string} [props.election.statusMessage] - Mensaje de estado a mostrar (ej. créditos agotados)
+ * @param {string} [props.election.participationCode] - Código de participación (ej. "CREDITS_EMPTY")
  * @param {string|null} [props.loadMsg] - Mensaje de carga para mostrar en el botón (opcional)
  * @param {boolean} [props.allowIneligibleDetails=false] - Permite abrir detalle informativo aun sin habilitación
  */
@@ -80,6 +82,11 @@ const ElectionCard = ({
           onPress: onDetailsPress,
         };
       }
+      return null;
+    }
+
+    // Sin créditos de respaldo disponibles para votar
+    if (!hasVoted && election?.participationCode === 'CREDITS_EMPTY') {
       return null;
     }
 
@@ -170,6 +177,17 @@ const ElectionCard = ({
           <CText type="M14" style={styles.notEligibleText}>
             {election.statusMessage ||
               'Usted no está habilitado\npara participar en esta\nvotación'}
+          </CText>
+        </View>
+      );
+    }
+
+    // Estado: Habilitado pero con mensaje de estado (ej. créditos agotados)
+    if (!hasVoted && election?.participationCode === 'CREDITS_EMPTY') {
+      return (
+        <View style={styles.notEligibleContainer}>
+          <CText type="M14" style={styles.notEligibleText}>
+            {election.statusMessage}
           </CText>
         </View>
       );
@@ -325,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(16, 18, 20),
-    marginBottom: getResponsiveSize(6, 8, 10),
+    marginVertical: getResponsiveSize(6, 8, 10),
   },
   notEligibleText: {
     color: '#E72F2F',

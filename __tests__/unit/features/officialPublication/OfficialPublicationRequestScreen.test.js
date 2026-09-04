@@ -174,6 +174,34 @@ describe('OfficialPublicationRequestScreen', () => {
     expect(screen.queryByText(callDataHash)).toBeNull();
   });
 
+  it('EA2-05-001 muestra en la solicitud de firma que la votación es abierta y el máximo de votantes', async () => {
+    api.getOfficialPublicationRequest.mockResolvedValueOnce({
+      ...request,
+      isOpenVoting: true,
+      votersCount: '500',
+    });
+
+    const screen = renderScreen();
+    await screen.findByText('Elección oficial');
+
+    expect(screen.getByText('Tipo de votación')).toBeTruthy();
+    expect(screen.getByText('Votación abierta')).toBeTruthy();
+    expect(screen.getByText('Número de votos disponibles')).toBeTruthy();
+    expect(screen.getByText('500')).toBeTruthy();
+    expect(screen.queryByText('Empadronados')).toBeNull();
+  });
+
+  it('EA2-05-002 muestra empadronados y votación cerrada cuando la solicitud no es de votación abierta', async () => {
+    const screen = renderScreen();
+    await screen.findByText('Elección oficial');
+
+    expect(screen.getByText('Tipo de votación')).toBeTruthy();
+    expect(screen.getByText('Votación cerrada')).toBeTruthy();
+    expect(screen.getByText('Empadronados')).toBeTruthy();
+    expect(screen.queryByText('Número de votos disponibles')).toBeNull();
+    expect(screen.queryByText('Votación abierta')).toBeNull();
+  });
+
   it('abre modal y cancelar no ejecuta requests de firma', async () => {
     const screen = renderScreen();
     await screen.findByText('Elección oficial');

@@ -144,6 +144,39 @@ describe('OfficialPublicationNotificationCard', () => {
     expect(await screen.findByText('Pendiente de confirmación')).toBeTruthy();
   });
 
+  it('EA2-05-003 muestra votación abierta y el número de votos disponibles en la tarjeta de la solicitud', async () => {
+    api.getOfficialPublicationRequest.mockResolvedValue({
+      ...authoritativeRequest,
+      isOpenVoting: true,
+      votersCount: '500',
+    });
+
+    const screen = render(
+      <OfficialPublicationNotificationCard
+        notification={{
+          ...notification,
+          data: {...notification.data, isOpenVoting: true, votersCount: '500'},
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('Pendiente de confirmación')).toBeTruthy();
+    expect(screen.getByText('Tipo de votación')).toBeTruthy();
+    expect(screen.getByText('Votación abierta')).toBeTruthy();
+    expect(screen.getByText('Número de votos disponibles')).toBeTruthy();
+    expect(screen.getByText('500')).toBeTruthy();
+    expect(screen.queryByText('Empadronados')).toBeNull();
+  });
+
+  it('EA2-05-004 mantiene empadronados y votación cerrada en la tarjeta de una votación con padrón', async () => {
+    const screen = render(<OfficialPublicationNotificationCard notification={notification} />);
+
+    expect(await screen.findByText('Pendiente de confirmación')).toBeTruthy();
+    expect(screen.getByText('Votación cerrada')).toBeTruthy();
+    expect(screen.getByText('Empadronados')).toBeTruthy();
+    expect(screen.queryByText('Número de votos disponibles')).toBeNull();
+  });
+
   it('solicitud vigente muestra Confirmar publicación y Rechazar', async () => {
     const screen = render(<OfficialPublicationNotificationCard notification={notification} />);
 

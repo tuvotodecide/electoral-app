@@ -4,6 +4,7 @@
 
 import { enqueue, getAll, processQueue } from '../../../utils/offlineQueue';
 import { getElectionRepository } from '../data/useElectionRepository';
+import { CREDITS_EMPTY_ERROR_MESSAGE } from '../data/voteErrors';
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { captureError } from '../../../config/sentry';
@@ -364,7 +365,12 @@ export const handleVotingQueueVote = async (item) => {
           );
 
     if (!result.success) {
-      throw new Error(result.error || 'Vote submission failed');
+      const error = new Error(result.error || 'Vote submission failed');
+      if (result.error === CREDITS_EMPTY_ERROR_MESSAGE) {
+        error.removeFromQueue = true;
+        error.errorType = 'BUSINESS_TERMINAL';
+      }
+      throw error;
     }
 
     const [lastReceiptRaw, participationsRaw] = await Promise.all([

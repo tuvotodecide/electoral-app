@@ -9,6 +9,7 @@
     "test:matrix:07": "node scripts/run-jest.js --coverage=false --testPathPattern=\"__tests__/unit/features/voting/(CandidateCard|CandidateScreen|ElectionCard|ElectionRepository.api|useVotingState|VotingFlowAcceptance).test.js\" --testNamePattern=\"VOT-\"",
     "test:matrix:08": "node scripts/run-jest.js --coverage=false --runInBand --testPathPattern=\"__tests__/unit/(features/voting/(ElectionRepository.api|useVotingState|VoteReceiptScreen|ParticipationsListScreen|PostVoteParticipationAcceptance).test.js|features/rewards/(RewardsScreen|RewardDetailScreen).test.js|notifications.test.js)\" --testNamePattern=\"PAR-\"",
     "test:matrix:09": "node scripts/run-jest.js --coverage=false --runInBand --testPathPattern=\"__tests__/unit/(containers/TabBar/Home/HomeScreen.votingFlow.test.js|features/voting/(CandidateScreen|ElectionRepository.api|queueAdapter|CameraScannerModal).test.js)\" --testNamePattern=\"KIO-\"",
+    "test:matrix:ea2": "node scripts/run-jest.js --coverage=false --runInBand --testPathPattern=\"__tests__/unit/(containers/TabBar/Home/HomeScreen.votingFlow.test.js|features/voting/(CandidateScreen|ElectionCard|ElectionRepository.api|queueAdapter).test.js|features/officialPublication/OfficialPublication(NotificationCard|RequestScreen).test.js)\" --testNamePattern=\"EA2-\"",
     "test:coverage:json": "node scripts/run-jest.js --coverage --json --outputFile=jest-results.json",
     "reset-project": "node ./scripts/reset-project.js",
     "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx",

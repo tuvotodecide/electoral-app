@@ -129,6 +129,7 @@ export const getNotificationKind = ({ type, title, body }) => {
     normalizedType === 'INSTITUTIONAL_VOTING_STARTS_IN_15M' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_1H' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_15M' ||
+    normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER' ||
     haystack.includes('convocatoria') ||
     haystack.includes('habilitacion') ||
     haystack.includes('habilitación') ||
@@ -163,6 +164,7 @@ const isVotingNotificationType = type => {
     'INSTITUTIONAL_VOTING_STARTS_IN_15M',
     'INSTITUTIONAL_VOTING_ENDS_IN_1H',
     'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+    'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER',
   ].includes(normalizedType);
 };
 
@@ -386,6 +388,8 @@ export default function Notification({ navigation }) {
       normalizedType === 'OFFICIAL_PUBLICATION_REQUEST';
     const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
     const isVotingCancelled = normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED';
+    const isOfficialPublicationReminder =
+      normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -397,6 +401,8 @@ export default function Notification({ navigation }) {
       mesaLabel = titleFromBackend || data?.title || 'Noticia';
     } else if (isOfficialPublicationRequest) {
       mesaLabel = 'Publicación oficial pendiente';
+    } else if (isOfficialPublicationReminder) {
+      mesaLabel = data?.eventName || titleFromBackend || 'Confirmación de publicación';
     } else if (notificationKind === 'voting_event') {
       mesaLabel =
         titleFromBackend ||
@@ -429,6 +435,8 @@ export default function Notification({ navigation }) {
         tipo = 'Ver padrón';
       } else if (isOfficialPublicationRequest) {
         tipo = 'Pendiente de confirmación';
+      } else if (isOfficialPublicationReminder) {
+        tipo = 'Confirmar publicación';
       } else if (isVotingCancelled) {
         tipo = 'Eliminada';
       } else if (isOfficialPublication) {
@@ -494,6 +502,8 @@ export default function Notification({ navigation }) {
             ? bodyFromBackend || data?.body || ''
           : isOfficialPublicationRequest
           ? `La votación “${data?.eventName || data?.title || 'institucional'}” requiere tu autorización desde este dispositivo.`
+          : isOfficialPublicationReminder
+          ? data?.bannerSubtitle || bodyFromBackend || data?.body || ''
           : notificationKind === 'voting_event'
           ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
@@ -503,7 +513,9 @@ export default function Notification({ navigation }) {
       timestamp: new Date(created).getTime(),
       estado: data?.status || 'iniciado',
       statusTone:
-        isOfficialPublicationRequest
+        isOfficialPublicationReminder
+          ? 'danger'
+          : isOfficialPublicationRequest
           ? 'success'
           :
         notificationKind === 'election_results'
@@ -730,6 +742,8 @@ export default function Notification({ navigation }) {
         return 'person-circle-outline';
       case 'Publicación oficial':
         return 'checkmark-done-circle-outline';
+      case 'Confirmar publicación':
+        return 'alert-circle-outline';
       case 'Votar':
         return 'checkbox-outline';
       default:
@@ -760,7 +774,7 @@ export default function Notification({ navigation }) {
           String(item?.data?.type || '').trim().toUpperCase() ===
             'OFFICIAL_PUBLICATION_REQUEST' &&
           String(item?.data?.requestId || '') === String(requestId);
-        if (!isTarget) return item;
+        if (!isTarget || item?.data?.status === status) return item;
         return {
           ...item,
           tipo: getOfficialPublicationSummaryStatus(status),
@@ -772,7 +786,10 @@ export default function Notification({ navigation }) {
       }),
     );
     setSelectedOfficialPublication(current => {
-      if (String(current?.data?.requestId || '') !== String(requestId)) {
+      if (
+        String(current?.data?.requestId || '') !== String(requestId) ||
+        current?.data?.status === status
+      ) {
         return current;
       }
       return {

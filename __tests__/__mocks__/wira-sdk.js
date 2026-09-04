@@ -44,6 +44,7 @@ class Registerer {
   createWallet = jest.fn(async () => ({guardianAddress: '0xguardian'}));
   storeOnDevice = jest.fn(async () => undefined);
   storeDataOnServer = jest.fn(async () => ({ok: true}));
+  clear = jest.fn(async () => undefined);
 }
 
 class GuardiansApi {

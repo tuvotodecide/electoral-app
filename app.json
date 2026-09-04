@@ -16,24 +16,18 @@
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
       "requireFullScreen": false,
-      "config": {
-        "usesNonExemptEncryption": true
-      },
       "infoPlist": {
-        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
-        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galer�a de fotos",
-        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n en segundo plano",
-        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticaci�n",
-        "UIBackgroundModes": [
-          "remote-notification",
-          "fetch"
-        ],
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu c\ufffdmara",
+        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galer\ufffda de fotos",
+        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci\ufffdn",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci\ufffdn en segundo plano",
+        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticaci\ufffdn",
+        "UIBackgroundModes": ["remote-notification", "fetch"]
       },
       "entitlements": {
         "aps-environment": "production"
-      }
+      },
+      "appleTeamId": "U63JS7RZD3"
     },
     "android": {
       "versionCode": 42,
@@ -85,10 +79,7 @@
               "host": "shared.response"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
       "edgeToEdgeEnabled": true,
@@ -105,16 +96,13 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "useLegacyPackaging": false
+            "useLegacyPackaging": false,
+            "enableMinifyInReleaseBuilds": true
           },
           "ios": {
             "deploymentTarget": "16.0",
             "useFrameworks": "static",
-            "forceStaticLinking": [
-              "RNFBApp",
-              "RNFBAuth",
-              "RNFBDatabase"
-            ]
+            "forceStaticLinking": ["RNFBApp", "RNFBAuth", "RNFBDatabase"]
           }
         }
       ],
@@ -133,7 +121,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
           "microphonePermission": false
         }
       ],
@@ -146,7 +134,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu cámara",
+          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }
@@ -154,7 +142,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) acceder a tu ubicación."
+          "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n."
         }
       ],
       "./plugins/withIOSCodeSigning",
