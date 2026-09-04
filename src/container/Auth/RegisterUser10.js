@@ -1,46 +1,56 @@
-import { BACKEND_IDENTITY, CHAIN, CRED_TYPE, CRED_EXP_DAYS, PROVIDER_NAME, IDENTITY_KEY } from '@env';
+import {
+  BACKEND_IDENTITY,
+  CHAIN,
+  CRED_TYPE,
+  CRED_EXP_DAYS,
+  PROVIDER_NAME,
+  IDENTITY_KEY,
+} from "@env";
 import {
   ActivityIndicator,
   AppState,
   Image,
   StyleSheet,
   View,
-} from 'react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+} from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // custom import
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import { getHeight, moderateScale } from '../../common/constants';
-import CText from '../../components/common/CText';
-import { styles } from '../../themes';
-import { useDispatch, useSelector } from 'react-redux';
-import images from '../../assets/images';
-import { AuthNav } from '../../navigation/NavigationKey';
-import StepIndicator from '../../components/authComponents/StepIndicator';
-import { getSecondaryTextColor } from '../../utils/ThemeUtils';
-import String from '../../i18n/String';
-import InfoModal from '../../components/modal/InfoModal';
+import CSafeAreaViewAuth from "../../components/common/CSafeAreaViewAuth";
+import { getHeight, moderateScale } from "../../common/constants";
+import CText from "../../components/common/CText";
+import { styles } from "../../themes";
+import { useDispatch, useSelector } from "react-redux";
+import images from "../../assets/images";
+import { AuthNav } from "../../navigation/NavigationKey";
+import StepIndicator from "../../components/authComponents/StepIndicator";
+import { getSecondaryTextColor } from "../../utils/ThemeUtils";
+import String from "../../i18n/String";
+import InfoModal from "../../components/modal/InfoModal";
 
-import { saveDraft, clearDraft, getDraft } from '../../utils/RegisterDraft';
-import { setAddresses } from '../../redux/slices/addressSlice';
-import {
-  normalizeOcrForUI,
-} from '../../utils/issuerClient';
-import wira from 'wira-sdk';
+import { saveDraft, clearDraft, getDraft } from "../../utils/RegisterDraft";
+import { setAddresses } from "../../redux/slices/addressSlice";
+import { normalizeOcrForUI } from "../../utils/issuerClient";
+import wira from "wira-sdk";
 
-import { availableNetworks, sponsorshipPolicyId } from '../../api/params';
-import { captureError } from '../../config/sentry';
-import { claimRegisterRewardIfAvailable } from '@/src/utils/account';
-
+import { availableNetworks, sponsorshipPolicyId } from "../../api/params";
+import { captureError } from "../../config/sentry";
+import { claimRegisterRewardIfAvailable } from "@/src/utils/account";
 
 export default function RegisterUser10({ navigation, route }) {
-  const { ocrData, dni, originalPin: pin, useBiometry, isMigration } = route.params;
+  const {
+    ocrData,
+    dni,
+    originalPin: pin,
+    useBiometry,
+    isMigration,
+  } = route.params;
 
-  const colors = useSelector(state => state.theme.theme);
+  const colors = useSelector((state) => state.theme.theme);
   const [loading, setLoading] = useState(true);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [stage, setStage] = useState('init');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [stage, setStage] = useState("init");
   const watchdogRef = useRef(null);
   const dispatch = useDispatch();
 
@@ -62,13 +72,13 @@ export default function RegisterUser10({ navigation, route }) {
         fromDraft: true,
       });
     }
-  }
+  };
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', nextState => {
-      if (nextState === 'background' || nextState === 'inactive') {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "background" || nextState === "inactive") {
         wentToBackgroundRef.current = true;
-      } else if (nextState === 'active') {
+      } else if (nextState === "active") {
         if (wentToBackgroundRef.current) {
           restartRegister();
         }
@@ -79,9 +89,9 @@ export default function RegisterUser10({ navigation, route }) {
 
   useEffect(() => {
     clearTimeout(watchdogRef.current);
-    if (stage === 'done') return;
+    if (stage === "done") return;
     watchdogRef.current = setTimeout(() => {
-      setStage(s => (s !== 'done' ? 'stillWorking' : s));
+      setStage((s) => (s !== "done" ? "stillWorking" : s));
     }, 30000);
     return () => clearTimeout(watchdogRef.current);
   }, [stage]);
@@ -113,19 +123,19 @@ export default function RegisterUser10({ navigation, route }) {
     startedRef.current = true;
 
     (async () => {
-      await new Promise(r => requestAnimationFrame(() => r()));
-      await new Promise(r => requestAnimationFrame(() => r()));
+      await new Promise((r) => requestAnimationFrame(() => r()));
+      await new Promise((r) => requestAnimationFrame(() => r()));
       try {
-        const yieldUI = () => new Promise(r => setTimeout(r, 50));
+        const yieldUI = () => new Promise((r) => setTimeout(r, 50));
         if (isMigration) {
-          setStage('migrate');
+          setStage("migrate");
         } else {
-          setStage('issueVC');
+          setStage("issueVC");
         }
         await yieldUI();
 
         await saveDraft({
-          step: isMigration ? 'migrate' : 'issueVC',
+          step: isMigration ? "migrate" : "issueVC",
           dni,
           useBiometry,
           originalPin: pin,
@@ -137,42 +147,37 @@ export default function RegisterUser10({ navigation, route }) {
           IDENTITY_KEY,
           PROVIDER_NAME,
           availableNetworks[CHAIN].bundler,
-          sponsorshipPolicyId
+          sponsorshipPolicyId,
         );
 
-        await registerer.createVC(
-          CHAIN,
-          ocrData,
-          CRED_TYPE,
-          CRED_EXP_DAYS
-        );
+        await registerer.createVC(CHAIN, ocrData, CRED_TYPE, CRED_EXP_DAYS);
 
         await yieldUI();
         dispatch(
           setAddresses({
             account: registerer.walletData.address,
-            guardian: '',
+            guardian: "",
           }),
         );
 
-        setStage('save');
+        setStage("save");
         await yieldUI();
         await registerer.storeOnDevice(dni, pin, useBiometry);
 
         const response = await registerer.storeDataOnServer();
         if (!response.ok) {
-          throw new Error(
-            `Error al registrar tu cuenta.`,
-          );
+          throw new Error(`Error al registrar tu cuenta.`);
         }
 
         await claimRegisterRewardIfAvailable(
           registerer.walletData.address,
           registerer.userData.did,
-          registerer.userData.privKey
+          registerer.userData.privKey,
         );
+
+        await registerer.clear();
         await clearDraft();
-        setStage('done');
+        setStage("done");
         setLoading(false);
         navigation.replace(AuthNav.RegisterUser11, {
           account: registerer.walletData.address,
@@ -183,13 +188,14 @@ export default function RegisterUser10({ navigation, route }) {
         }
 
         captureError(err, {
-          flow: 'registration',
+          flow: "registration",
           step: stageRef.current,
           critical: true,
         });
 
-        let errMessage = err?.message || 'Ocurrió un error al registrar tu cuenta.';
-        if (errMessage.includes('User cancelled biometric change')) {
+        let errMessage =
+          err?.message || "Ocurrió un error al registrar tu cuenta.";
+        if (errMessage.includes("User cancelled biometric change")) {
           errMessage = String.biometricRejected;
         }
 
@@ -198,7 +204,7 @@ export default function RegisterUser10({ navigation, route }) {
         setErrorModalVisible(true);
       }
     })();
-    return () => { };
+    return () => {};
   }, [pin, dni, useBiometry, navigation]);
 
   const stageMessage = {
@@ -206,7 +212,7 @@ export default function RegisterUser10({ navigation, route }) {
     migrate: String.migrating,
     save: String.saveData,
     done: String.doneRegister,
-    stillWorking: 'Aún trabajando… Esto puede tardar en tu dispositivo.',
+    stillWorking: "Aún trabajando\u2026 Esto puede tardar en tu dispositivo.",
   }[stage];
 
   return (
@@ -222,13 +228,14 @@ export default function RegisterUser10({ navigation, route }) {
             }
             style={localStyle.imageContainer}
           />
-          <CText type={'B20'} style={styles.boldText} align={'center'}>
+          <CText type={"B20"} style={styles.boldText} align={"center"}>
             {stageMessage}
           </CText>
           <CText
-            type={'B16'}
+            type={"B16"}
             color={getSecondaryTextColor(colors)}
-            align={'center'}>
+            align={"center"}
+          >
             {String.verifyingIdentityMessage}
           </CText>
           {loading && (
@@ -248,8 +255,8 @@ export default function RegisterUser10({ navigation, route }) {
         onClose={() => {
           setErrorModalVisible(false);
           if (
-            errorMessage?.includes('PIN no disponible') ||
-            errorMessage?.includes('No hay PIN disponible')
+            errorMessage?.includes("PIN no disponible") ||
+            errorMessage?.includes("No hay PIN disponible")
           ) {
             navigation.replace(AuthNav.RegisterUser8, {
               ocrData,
@@ -276,14 +283,14 @@ const localStyle = StyleSheet.create({
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   mainContainer: {
     ...styles.ph20,
     gap: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: moderateScale(20),
   },
   btnStyle: {
@@ -295,12 +302,12 @@ const localStyle = StyleSheet.create({
   },
   orContainer: {
     height: getHeight(1),
-    width: '20%',
+    width: "20%",
   },
   socialBtn: {
     ...styles.center,
     height: getHeight(45),
-    width: '46%',
+    width: "46%",
     borderRadius: moderateScale(16),
     borderWidth: moderateScale(1),
     ...styles.mh10,
@@ -317,11 +324,11 @@ const localStyle = StyleSheet.create({
     marginTop: moderateScale(20),
   },
   rowWithGap: {
-    flexDirection: 'row',
+    flexDirection: "row",
     columnGap: 10,
   },
   item: {
-    width: '95%',
+    width: "95%",
   },
   imageContainer: {
     ...styles.selfCenter,
@@ -329,6 +336,6 @@ const localStyle = StyleSheet.create({
     width: moderateScale(180),
   },
   margin: {
-    marginBottom: '20px',
+    marginBottom: "20px",
   },
 });

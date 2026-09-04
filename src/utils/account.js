@@ -30,7 +30,7 @@ export async function claimRegisterRewardIfAvailable(address, did, privKey) {
 
   const response = await axios.post(
     `${BACKEND_RESULT}/api/v1/users/reward-new-user`,
-    null,
+    {},
     {
       params: { recipient: address },
       headers: {

@@ -578,7 +578,7 @@ describe('NotificationDetailScreen', () => {
     fireEvent.press(screen.getByTestId('goToResultsButton'));
 
     expect(mockNavigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
-      url: 'https://frontend-results.example/votacion/elecciones/event-6/publica',
+      url: 'https://frontend-results.example/votacion/elecciones/event-6/publica?hideLogin=true',
       title: 'Elección',
     });
     expect(Linking.openURL).not.toHaveBeenCalled();
@@ -763,7 +763,7 @@ describe('NotificationDetailScreen', () => {
     fireEvent.press(screen.getByTestId('goToResultsButton'));
 
     expect(mockNavigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
-      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
+      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica?hideLogin=true',
       title: 'Resultados',
     });
     expect(Linking.openURL).not.toHaveBeenCalled();
@@ -775,31 +775,31 @@ describe('NotificationDetailScreen', () => {
         publicUrl: 'https://frontend-results.example/votacion/elecciones/public-url/publica',
         actionUrl: 'https://frontend-results.example/votacion/elecciones/action-url/publica',
       },
-    })).toBe('https://frontend-results.example/votacion/elecciones/public-url/publica');
+    })).toBe('https://frontend-results.example/votacion/elecciones/public-url/publica?hideLogin=true');
 
     expect(resolvePublicElectionUrl({
       data: {
         actionUrl: 'https://frontend-results.example/votacion/elecciones/action-url/publica',
       },
-    })).toBe('https://frontend-results.example/votacion/elecciones/action-url/publica');
+    })).toBe('https://frontend-results.example/votacion/elecciones/action-url/publica?hideLogin=true');
 
     expect(resolvePublicElectionUrl({
       data: {
         link: 'https://frontend-results.example/votacion/elecciones/link-url/publica',
       },
-    })).toBe('https://frontend-results.example/votacion/elecciones/link-url/publica');
+    })).toBe('https://frontend-results.example/votacion/elecciones/link-url/publica?hideLogin=true');
 
     expect(resolvePublicElectionUrl({
       data: {
         publicPath: '/votacion/elecciones/path-url/publica',
       },
-    })).toBe('https://frontend-results.example/votacion/elecciones/path-url/publica');
+    })).toBe('https://frontend-results.example/votacion/elecciones/path-url/publica?hideLogin=true');
 
     expect(resolvePublicElectionUrl({
       data: {
         eventId: 'fallback-url',
       },
-    })).toBe('https://frontend-results.example/votacion/elecciones/fallback-url/publica');
+    })).toBe('https://frontend-results.example/votacion/elecciones/fallback-url/publica?hideLogin=true');
   });
 
   it('rechaza URLs no http/https o externas que no apuntan a elección pública', () => {

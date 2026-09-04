@@ -284,6 +284,7 @@ const INSTITUTIONAL_DETAIL_TYPES = new Set([
   'INSTITUTIONAL_VOTING_STARTS_IN_15M',
   'INSTITUTIONAL_VOTING_ENDS_IN_1H',
   'INSTITUTIONAL_VOTING_ENDS_IN_15M',
+  'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER',
 ]);
 
 const normalizeNotificationType = value =>
@@ -397,6 +398,22 @@ export const buildInstitutionalNotificationCopy = notification => {
           ? `Tienes que confirmar la publicación oficial de "${eventName}".`
           : 'Tienes que confirmar una publicación oficial.',
       };
+    case 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER': {
+      const deadlineLabel =
+        String(data?.deadline || '').trim() ||
+        formatShortNotificationDate(data?.publishDeadline);
+      return {
+        title:
+          String(data?.bannerTitle || '').trim() || 'Confirma la publicación oficial',
+        body:
+          String(data?.bannerSubtitle || '').trim() ||
+          (eventName
+            ? deadlineLabel
+              ? `Confirma la publicación oficial de ${eventName} antes del ${deadlineLabel}.`
+              : `Confirma la publicación oficial de ${eventName}.`
+            : 'Confirma la publicación oficial antes de que termine el plazo.'),
+      };
+    }
     case 'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED':
       return {
         title: 'La votación fue publicada oficialmente',
@@ -514,6 +531,8 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
   const isScheduleUpdate = type === 'INSTITUTIONAL_SCHEDULE_UPDATED';
   const isCancelled = type === 'INSTITUTIONAL_VOTING_CANCELLED';
+  const isOfficialPublicationReminder =
+    type === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER';
   const isVotingReminder = VOTING_REMINDER_TYPES.has(type);
   const reminderDetailBody = isVotingReminder
     ? buildVotingReminderDetailBody({
@@ -533,6 +552,8 @@ export const buildInstitutionalNotificationForDetail = notification => {
       ? 'Autorización pendiente'
       : isOfficialPublicationRequest
       ? 'Revisar solicitud'
+      : isOfficialPublicationReminder
+      ? 'Confirmar publicación'
       : isVotingEnabled
       ? 'Abrir votación'
       : isPadronReview
@@ -548,18 +569,21 @@ export const buildInstitutionalNotificationForDetail = notification => {
               : isVotingReminder
                 ? 'Ver votación'
                 : 'Ver fechas',
-    mesa:
-      title ||
-      data?.bannerTitle ||
-      (isResults
-        ? 'Resultados disponibles'
-        : isNews
-          ? 'Noticia'
-          : 'Actualización institucional'),
-    direccion: reminderDetailBody || body || data?.eventName || '',
+    mesa: isOfficialPublicationReminder
+      ? String(data?.eventName || '').trim() || title || 'Confirmación de publicación'
+      : title ||
+        data?.bannerTitle ||
+        (isResults
+          ? 'Resultados disponibles'
+          : isNews
+            ? 'Noticia'
+            : 'Actualización institucional'),
+    direccion: isOfficialPublicationReminder
+      ? String(data?.bannerSubtitle || '').trim() || body || ''
+      : reminderDetailBody || body || data?.eventName || '',
     timestamp: Date.now(),
     estado: data?.status || 'iniciado',
-    statusTone: isCancelled ? 'danger' : 'success',
+    statusTone: isCancelled || isOfficialPublicationReminder ? 'danger' : 'success',
     actionLabel: isInstitutionalAuthorizationRequest || isOfficialPublicationRequest
       ? 'Revisar solicitud'
       : isVotingReminder

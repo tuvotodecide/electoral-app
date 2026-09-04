@@ -200,7 +200,6 @@ export default function LoginUser({ navigation, route }) {
         let userData;
         try {
           userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions, dni);
-          console.log(userData)
         } catch (error) {
           if (error?.message?.includes('Invalid PIN')) {
             return { ok: false, type: 'bad_pin' };
