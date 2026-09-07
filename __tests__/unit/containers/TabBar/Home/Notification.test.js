@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { waitFor} from '@testing-library/react-native';
+import { fireEvent, waitFor} from '@testing-library/react-native';
 import axios from 'axios';
 import Notification from '../../../../../src/container/TabBar/Home/Notification';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
@@ -58,6 +58,12 @@ jest.mock('../../../../../src/notifications', () => ({
       '',
     data: notification?.data || {},
   })),
+  buildVoteRewardRoute: jest.fn(() => ({name: 'RewardsScreen'})),
+  isVoteRewardNotification: jest.fn(
+    data =>
+      String(data?.type || '').toUpperCase() === 'VOTE_REWARD_AVAILABLE' ||
+      String(data?.action || '').toUpperCase() === 'OPEN_VOTE_REWARD',
+  ),
   getLocalStoredNotifications: jest.fn(() => Promise.resolve([])),
   mergeAndDedupeNotifications: jest.fn(({localList, remoteList}) => remoteList),
 }));
@@ -336,6 +342,55 @@ describe('Notification Screen', () => {
       });
 
       expect(getByText('Ver fechas')).toBeTruthy();
+    });
+
+    it('muestra la recompensa por voto y navega a la lista de recompensas al pulsarla', async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              _id: '6a88c9b0ae24441db68cea72',
+              title: 'Recompensa disponible',
+              body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+              createdAt: new Date().toISOString(),
+              data: {
+                type: 'VOTE_REWARD_AVAILABLE',
+                action: 'OPEN_VOTE_REWARD',
+                eventId: '6a88c7363525d831e56885a0',
+              },
+            },
+          ],
+        },
+      });
+
+      const localNavigation = {
+        ...navigationWithListener,
+        navigate: jest.fn(),
+      };
+
+      const {getByText, getByTestId} = renderWithProviders(
+        <Notification navigation={localNavigation} />,
+        {initialState: mockStore},
+      );
+
+      await waitFor(() => {
+        expect(getByText('Recompensa disponible')).toBeTruthy();
+      });
+
+      expect(
+        getByText(
+          'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+        ),
+      ).toBeTruthy();
+      expect(getByText('Reclamar recompensa')).toBeTruthy();
+
+      fireEvent.press(getByTestId('notificationItem_0'));
+
+      // Sin params: la pantalla de recompensas resuelve la disponibilidad real.
+      expect(localNavigation.navigate).toHaveBeenCalledWith(
+        'RewardsScreen',
+        undefined,
+      );
     });
   });
 

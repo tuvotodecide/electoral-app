@@ -605,7 +605,7 @@ describe('HomeScreen voting flow routing', () => {
         expect(navigation.navigate).toHaveBeenCalledWith(
           StackNav.PublicElectionWebViewScreen,
           {
-            url: `https://frontend-results.example/votacion/elecciones/${election.id}/publica`,
+            url: `https://frontend-results.example/votacion/elecciones/${election.id}/publica?hideLogin=true`,
             title: 'Resultados',
           },
         );

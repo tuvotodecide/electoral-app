@@ -18,6 +18,7 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
+import DemoBanner from '../../demo/DemoBanner';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
@@ -353,6 +354,7 @@ const ParticipationsListScreen = () => {
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader title={UI_STRINGS.participationsHeader} />
+      <DemoBanner />
 
       {isLoading ? (
         renderLoading()

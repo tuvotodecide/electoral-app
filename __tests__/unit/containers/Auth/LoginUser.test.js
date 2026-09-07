@@ -8,9 +8,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {incAttempts, isLocked, resetAttempts} from '../../../../src/utils/PinAttempts';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 import String from '../../../../src/i18n/String';
+import {DEMO_PIN} from '../../../../src/features/demo/demoConfig';
+import {
+  __resetDemoSessionForTests,
+  startDemoSession,
+} from '../../../../src/features/demo/demoSession';
+import {activateDemoSession} from '../../../../src/features/demo/demoLifecycle';
 
 jest.mock('../../../../src/config/sentry', () => ({
   captureError: jest.fn(),
+}));
+
+jest.mock('../../../../src/features/demo/demoLifecycle', () => ({
+  activateDemoSession: jest.fn(() => Promise.resolve()),
 }));
 
 describe('LoginUser', () => {
@@ -19,6 +29,7 @@ describe('LoginUser', () => {
     AsyncStorage.multiSet = jest.fn(() => Promise.resolve());
     AsyncStorage.setItem = jest.fn(() => Promise.resolve());
     AsyncStorage.getItem = jest.fn(() => Promise.resolve(null));
+    __resetDemoSessionForTests();
   });
 
   it('renderiza y navega a SelectRecuperation desde olvide mi PIN', async () => {
@@ -215,5 +226,86 @@ describe('LoginUser', () => {
         /Ocurrió un error inesperado al verificar tu credencial/i,
       ),
     ).toBeTruthy();
+  });
+
+  describe('bypass del modo demostración', () => {
+    const renderLogin = () => {
+      const localNavigation = {
+        ...mockNavigation,
+        navigate: jest.fn(),
+        replace: jest.fn(),
+        reset: jest.fn(),
+      };
+      const utils = renderWithProviders(
+        <LoginUser navigation={localNavigation} route={{params: {}}} />,
+      );
+      return {localNavigation, ...utils};
+    };
+
+    it('activa la demo con el PIN demo cuando NO hay billetera local', async () => {
+      await startDemoSession();
+      wira.Storage.checkUserData.mockResolvedValue(false);
+
+      const {getByTestId} = renderLogin();
+      await waitFor(() => {
+        expect(getByTestId('textInput')).toBeTruthy();
+      });
+
+      fireEvent.changeText(getByTestId('textInput'), DEMO_PIN);
+
+      await waitFor(() => {
+        expect(activateDemoSession).toHaveBeenCalledTimes(1);
+      });
+      expect(wira.signIn).not.toHaveBeenCalled();
+    });
+
+    it('NO eclipsa a un usuario real cuyo PIN coincida con el demo', async () => {
+      // El caso peligroso: billetera real presente y PIN igual al de la demo.
+      await startDemoSession();
+      wira.Storage.checkUserData.mockResolvedValue(true);
+
+      const {getByTestId} = renderLogin();
+      await waitFor(() => {
+        expect(getByTestId('textInput')).toBeTruthy();
+      });
+
+      fireEvent.changeText(getByTestId('textInput'), DEMO_PIN);
+
+      await waitFor(() => {
+        expect(wira.signIn).toHaveBeenCalled();
+      });
+      expect(activateDemoSession).not.toHaveBeenCalled();
+    });
+
+    it('no activa la demo con un PIN distinto', async () => {
+      await startDemoSession();
+      wira.Storage.checkUserData.mockResolvedValue(false);
+
+      const {getByTestId} = renderLogin();
+      await waitFor(() => {
+        expect(getByTestId('textInput')).toBeTruthy();
+      });
+
+      fireEvent.changeText(getByTestId('textInput'), '1111');
+
+      await waitFor(() => {
+        expect(activateDemoSession).not.toHaveBeenCalled();
+      });
+    });
+
+    it('sin sesión demo activa el PIN demo no hace nada especial', async () => {
+      wira.Storage.checkUserData.mockResolvedValue(false);
+
+      const {getByTestId} = renderLogin();
+      await waitFor(() => {
+        expect(getByTestId('textInput')).toBeTruthy();
+      });
+
+      fireEvent.changeText(getByTestId('textInput'), DEMO_PIN);
+
+      await waitFor(() => {
+        expect(activateDemoSession).not.toHaveBeenCalled();
+      });
+    });
   });
 });

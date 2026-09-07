@@ -1,6 +1,7 @@
 import React from 'react';
-import {render} from '@testing-library/react-native';
+import {fireEvent, render} from '@testing-library/react-native';
 import CandidateCard from '../../../../src/features/voting/components/CandidateCard';
+import {blankVote} from '../../../../src/features/voting/data/params';
 
 jest.mock('../../../../src/components/common/CText', () => {
   const React = require('react');
@@ -66,5 +67,20 @@ describe('CandidateCard', () => {
     expect(screen.getByText('Ana Perez')).toBeTruthy();
     expect(screen.getByText('Vicepresidente')).toBeTruthy();
     expect(screen.getByText('Luis Rojas')).toBeTruthy();
+  });
+
+  it('muestra el voto en blanco con encabezado propio y nombre de opcion', () => {
+    const onSelect = jest.fn();
+    const screen = render(
+      <CandidateCard candidate={blankVote} onSelect={onSelect} />,
+    );
+
+    expect(screen.getByText('Sin apoyo a ninguna')).toBeTruthy();
+    expect(screen.getByText('Voto en blanco')).toBeTruthy();
+    expect(screen.queryByText('BLANK')).toBeNull();
+    expect(screen.queryByText('person')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('candidateCard_blank'));
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 });

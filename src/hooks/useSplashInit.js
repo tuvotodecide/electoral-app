@@ -15,6 +15,23 @@ import { colors } from '../themes/colors';
 import { getThemeColor } from '../utils/AsyncStorage';
 import { getDraft } from '../utils/RegisterDraft';
 import { captureError, flushSentry } from '../config/sentry';
+import { hydrateDemoSession } from '../features/demo/demoSession';
+
+const circuitsData = {
+  bucketUrl: CIRCUITS_URL,
+  zipFileName: 'circuits',
+  circuitsWithChecksum: [
+    {
+      fileName: 'authV2.dat',
+      circuitId: 'authV2',
+      checksum: null,
+    },{
+      fileName: 'credentialAtomicQuerySigV2.dat',
+      circuitId: 'credentialAtomicQuerySigV2',
+      checksum: null,
+    },
+  ],
+}
 
 const CIRCUIT_DOWNLOAD_STATUS =
   config?.CircuitDownloadStatus || {
@@ -31,11 +48,48 @@ const initDownloadCircuits = params => {
   return initFn(params);
 };
 
+const circuitsAreDownloaded = async params => {
+  const checkFn = config?.circuitsAreDownloaded;
+  if (!checkFn) {
+    return false;
+  }
+  return checkFn(params);
+};
+
+const getDownloadSizeMB = async (url) => {
+  try {
+    const response = await fetch(url, {method: 'HEAD'});
+    const length = response.headers?.get?.('Content-Length');
+    const bytes = parseInt(length, 10);
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+      return null;
+    }
+    return bytes / (1024 * 1024);
+  } catch (_error) {
+    return null;
+  }
+};
+
 export const useSplashInit = (navigation) => {
-  const [downloadMessage, setDownloadMessage] = useState('');
+  const [downloadMessage, setDownloadMessage] = useState([]);
+  const [downloadPrompt, setDownloadPrompt] = useState({visible: false, sizeMB: null});
+  const confirmDownloadResolveRef = useRef(null);
   const dispatch = useDispatch();
   const dispatchRef = useRef(dispatch);
   dispatchRef.current = dispatch;
+
+  const requestDownloadConfirmation = useCallback((sizeMB) => {
+    return new Promise((resolve) => {
+      confirmDownloadResolveRef.current = resolve;
+      setDownloadPrompt({visible: true, sizeMB});
+    });
+  }, []);
+
+  const onConfirmDownload = useCallback(() => {
+    setDownloadPrompt({visible: false, sizeMB: null});
+    confirmDownloadResolveRef.current?.();
+    confirmDownloadResolveRef.current = null;
+  }, []);
 
   const waitForCircuitDownloadCompletion = useCallback(() => {
     let subscription;
@@ -48,14 +102,14 @@ export const useSplashInit = (navigation) => {
         switch (status) {
           case CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING:
             if (safeInfo.startsWith('-')) {
-              setDownloadMessage(Strings.downloadingData + '-');
+              setDownloadMessage([Strings.downloadingData + '-']);
             } else {
-              setDownloadMessage(Strings.downloadingData + safeInfo);
+              setDownloadMessage([Strings.downloadingData, safeInfo]);
             }
             break;
 
           case CIRCUIT_DOWNLOAD_STATUS.DONE:
-            setDownloadMessage(Strings.initApp);
+            setDownloadMessage([Strings.initApp]);
             subscription?.remove();
             resolve(true);
             break;
@@ -69,7 +123,7 @@ export const useSplashInit = (navigation) => {
               info: safeInfo,
             });
             flushSentry(2500).catch(() => {});
-            setDownloadMessage(Strings.downloadingFailed);
+            setDownloadMessage([Strings.downloadingFailed]);
             subscription?.remove();
             resolve(false);
             break;
@@ -84,7 +138,7 @@ export const useSplashInit = (navigation) => {
             });
             flushSentry(2000).catch(() => {});
             subscription?.remove();
-            setDownloadMessage(Strings.downloadingFailed);
+            setDownloadMessage([Strings.downloadingFailed]);
             resolve(false);
             break;
         }
@@ -114,39 +168,36 @@ export const useSplashInit = (navigation) => {
 
   const initializeApp = useCallback(async () => {
     const router = NavigationAdapter(navigation);
-    setDownloadMessage('');
+    setDownloadMessage([]);
+
+    // Antes de la descarga de circuitos: isDemoActive() debe estar resuelto
+    // antes del primer getElectionRepository(), aunque la descarga se cuelgue.
+    await hydrateDemoSession();
 
     try {
       try {
         await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
       } catch (_provisionError) {}
 
+      const downloaded = await circuitsAreDownloaded(circuitsData);
+
       const alreadyDownloading = await isDownloadAlreadyInProgress();
       const {promise: downloadComplete} = waitForCircuitDownloadCompletion();
 
       if (!alreadyDownloading) {
-        await initDownloadCircuits({
-          bucketUrl: CIRCUITS_URL,
-          zipFileName: 'circuits',
-          circuitsWithChecksum: [
-            {
-              fileName: 'authV2.dat',
-              circuitId: 'authV2',
-              checksum: null,
-            },{
-              fileName: 'credentialAtomicQuerySigV2.dat',
-              circuitId: 'credentialAtomicQuerySigV2',
-              checksum: null,
-            },
-          ],
-        });
+        if(!downloaded) {
+          const sizeMB = await getDownloadSizeMB(CIRCUITS_URL);
+          await requestDownloadConfirmation(sizeMB);
+        }
+
+        await initDownloadCircuits(circuitsData);
       }
       const downloadOk = await downloadComplete;
       if (!downloadOk) {
         return;
       }
     } catch (_error) {
-      setDownloadMessage(Strings.downloadingFailed);
+      setDownloadMessage([Strings.downloadingFailed]);
       return;
     }
 
@@ -186,12 +237,12 @@ export const useSplashInit = (navigation) => {
     } catch (_e) {
       router.replace(StackNav.AuthNavigation);
     }
-  }, [navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress]);
+  }, [navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress, requestDownloadConfirmation]);
 
   useEffect(() => {
     const initAppWithSdk = async () => {
       try {
-await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
+        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
           pushUrl: 'https://push-staging.polygonid.com/api/v1',
           ipfsGatewayUrl: 'https://ipfs.io',
           chainConfigs: {
@@ -222,6 +273,8 @@ await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }
 
   return {
     downloadMessage,
-    initializeApp
+    initializeApp,
+    downloadPrompt,
+    onConfirmDownload,
   };
 };

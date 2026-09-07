@@ -623,6 +623,43 @@ describe('NotificationDetailScreen', () => {
     expect(screen.queryByText('Votación eliminada')).toBeNull();
   });
 
+  it('abre la eleccion publica en WebView para INSTITUTIONAL_VOTING_STARTED', () => {
+    const screen = renderScreen({
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+      kind: 'voting_event',
+      direccion: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
+      reminderDetailBody: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
+      actionLabel: 'Ver votación',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        eventId: 'event-open',
+        eventName: 'Vote test 101',
+        phase: 'START',
+        offsetMinutes: '0',
+        publicPath: '/votacion/elecciones/event-open/publica',
+        publicUrl: '',
+        link: '/votacion/elecciones/event-open/publica',
+        votingStart: '2026-09-05T15:25:00.000Z',
+        votingEnd: '2026-09-05T16:24:00.000Z',
+      },
+    });
+
+    expect(screen.getByText('La votación ya está abierta')).toBeTruthy();
+    expect(screen.getByText('Vote test 101')).toBeTruthy();
+    expect(
+      screen.getByText('Abierta desde las 11:25. Ya puedes emitir tu voto.'),
+    ).toBeTruthy();
+    expect(screen.getByText('Ver votación')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('goToResultsButton'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
+      url: 'https://frontend-results.example/votacion/elecciones/event-open/publica?hideLogin=true',
+      title: 'Elección',
+    });
+  });
+
   it('muestra vista roja de votacion eliminada sin CTA para INSTITUTIONAL_VOTING_CANCELLED', () => {
     const screen = renderScreen({
       title: 'Votación eliminada',

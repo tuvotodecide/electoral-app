@@ -237,7 +237,7 @@ export default {
   backedOnDownloads: 'Archivo guardado en Descargas 📁:\n\n',
   openDownloads: 'Abrir descargas',
   backedOnSelectedDir: 'Tu respaldo fue guardado exitosamente.',
-  backupSaveError: 'No se pudo guardar la imagen',
+  backupSaveError: 'No se pudo guardar el respaldo',
   permissionDeniedMessage: 'Sin permisos para escribir. Verifica los permisos de la app.',
   badDirectoryMessage: 'Error de directorio. Verifica los permisos de almacenamiento.',
   saveErrorTitle: 'Error',
@@ -298,6 +298,10 @@ export default {
   downloadingData: 'Descargando datos adicionales: ',
   downloadingFailed: 'Revisa tu conexión a internet.',
   initApp: 'Iniciando...',
+  downloadPromptTitle: 'Descarga de datos requerida',
+  downloadPromptMessage: 'Se necesitan descargar {size} MB de datos para continuar.',
+  downloadPromptMessageUnknownSize: 'Se necesitan descargar datos adicionales para continuar.',
+  exitApp: 'Salir',
   onBoardingTitleText1: 'Obtén tu identidad digital soberana',
   onBoardingTitleText2: 'Hojas de trabajo electorales inalterables con NFTs',
   onBoardingTitleText3: 'Validación abierta, con firma electrónica',
@@ -1415,4 +1419,23 @@ export default {
   migrationInProgress: 'Migración en progreso...',
   migrationSuccess: 'Migración completada exitosamente',
   migrationError: 'Error durante la migración, inténtalo de nuevo o contacta al soporte si el problema persiste.',
+
+  //Demo mode
+  demoModeBanner:
+    'Modo demostración: los datos que ves son de ejemplo y tu voto no se registra en la elección real.',
+  demoExitTitle: 'Salir del modo demostración',
+  demoExitValue: 'Borra los datos de ejemplo y cierra la sesión',
+  accountAccessTitle: 'Iniciar sesión',
+  accountAccessSubtitle:
+    'Ingresa tu cédula de identidad y tu PIN de 4 dígitos.',
+  accountAccessDniLabel: 'Cédula de identidad',
+  accountAccessDniPlaceholder: 'Ej. 1234567',
+  accountAccessPinLabel: 'PIN',
+  accountAccessSubmit: 'Ingresar',
+  accountAccessNotFoundTitle: 'Cuenta no encontrada',
+  accountAccessNotFound:
+    'No encontramos tus datos en este dispositivo.\nPara volver a usar tu cuenta necesitas recuperarla.',
+  accountAccessRecover: 'Recuperar cuenta',
+  accountAccessResume:
+    'Tienes una sesión de demostración en curso. Ingresa el PIN para continuar.',
 };

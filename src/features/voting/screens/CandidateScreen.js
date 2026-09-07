@@ -47,6 +47,8 @@ import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { captureError } from '../../../config/sentry';
 import { blankVote } from '../data/params';
 import { useCameraPermissions } from 'expo-camera';
+import { isDemoActive } from '../../demo/demoSession';
+import DemoBanner from '../../demo/DemoBanner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -201,7 +203,7 @@ const CandidateScreen = ({ route }) => {
   
   // State
   const [candidates, setCandidates] = useState([]);
-  const [selectedCandidate, setSelectedCandidate] = useState(blankVote);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
@@ -321,7 +323,7 @@ const CandidateScreen = ({ route }) => {
   // Handle candidate selection
   const handleSelectCandidate = useCallback((candidate) => {
     if (selectedCandidate?.id === candidate.id) {
-      setSelectedCandidate(blankVote);
+      setSelectedCandidate(null);
     } else {
       setSelectedCandidate(candidate);
     }
@@ -329,8 +331,9 @@ const CandidateScreen = ({ route }) => {
 
   // Handle vote button press
   const handleVotePress = useCallback(() => {
+    if (!selectedCandidate) return;
     setShowConfirmModal(true);
-  }, []);
+  }, [selectedCandidate]);
 
   const submitInPlaceVote = async () => {
     setIsCameraMounted(true);
@@ -469,10 +472,14 @@ const CandidateScreen = ({ route }) => {
         setShowOfflineModal(true);
       };
 
-      // Check connectivity (allow DEV_FLAGS override for testing)
-      const isOnline = DEV_FLAGS.FORCE_OFFLINE_VOTING
-        ? false
-        : await checkInternetConnection();
+      // Check connectivity (allow DEV_FLAGS override for testing).
+      // En demo se fuerza "online": el sondeo golpea BACKEND_RESULT y, si
+      // falla, el voto acabaría en la cola offline en vez de dar comprobante.
+      const isOnline = isDemoActive()
+        ? true
+        : DEV_FLAGS.FORCE_OFFLINE_VOTING
+          ? false
+          : await checkInternetConnection();
 
       if (isInPlaceVote) {
         if (!isOnline) {
@@ -489,7 +496,9 @@ const CandidateScreen = ({ route }) => {
       }
 
       if (isOnline) {
-        const probe = await backendProbe({ timeoutMs: 2000 });
+        const probe = isDemoActive()
+          ? { ok: true }
+          : await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
           await enqueueVote({
             electionId,
@@ -678,7 +687,12 @@ const CandidateScreen = ({ route }) => {
 
   // Get button text
   const getButtonText = () => {
-    if (!selectedCandidate || selectedCandidate.id === blankVote.id) {
+    if (!selectedCandidate) {
+      return isReferendumElection
+        ? UI_STRINGS.chooseOption
+        : UI_STRINGS.selectCandidate;
+    }
+    if (selectedCandidate.id === blankVote.id) {
       return UI_STRINGS.voteBlank;
     }
     if (isReferendumElection) {
@@ -692,6 +706,7 @@ const CandidateScreen = ({ route }) => {
   return (
     <CSafeAreaView style={styles.container}>
       <CHeader title={isReferendumElection ? UI_STRINGS.referendumHeader : UI_STRINGS.candidateHeader} />
+      <DemoBanner />
 
       <ScrollView
         style={styles.scrollView}
@@ -714,6 +729,15 @@ const CandidateScreen = ({ route }) => {
               onSelect={() => handleSelectCandidate(candidate)}
             />
           ))}
+
+          {/* Voto en blanco como una opción más */}
+          {candidates.length > 0 ? (
+            <CandidateCard
+              candidate={blankVote}
+              isSelected={selectedCandidate?.id === blankVote.id}
+              onSelect={() => handleSelectCandidate(blankVote)}
+            />
+          ) : null}
         </View>
       </ScrollView>
 
@@ -723,7 +747,7 @@ const CandidateScreen = ({ route }) => {
           title={getButtonText()}
           type="B16"
           onPress={handleVotePress}
-          disabled={candidates.length === 0}
+          disabled={candidates.length === 0 || !selectedCandidate}
           containerStyle={styles.voteButton}
           style={styles.voteButtonText}
           textProps={{

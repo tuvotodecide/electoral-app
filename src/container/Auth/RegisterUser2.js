@@ -1,7 +1,7 @@
 import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 // Custom imports
 
@@ -15,10 +15,8 @@ import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CText from '../../components/common/CText';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import UploadCardImage from '../../components/common/UploadCardImage';
-import { DEMO_SECRETS, REVIEW_DNI } from '../../config/review';
 import String from '../../i18n/String';
-import { AuthNav, StackNav } from '../../navigation/NavigationKey';
-import { setSecrets } from '../../redux/action/walletAction';
+import { AuthNav } from '../../navigation/NavigationKey';
 import { styles } from '../../themes';
 
 import SimpleModal from '../../components/modal/SimpleModal';
@@ -37,9 +35,7 @@ export default function RegisterUser2({navigation, route}) {
     message: null,
   });
   const [submitting, setSubmitting] = useState(false);
-  const hasRedirectedRef = useRef(false);
 
-  const dispatch = useDispatch();
   const isFormValid = () => idNumber.trim() !== '' && frontImage && backImage;
 
   const closeModal = () => {
@@ -75,29 +71,9 @@ export default function RegisterUser2({navigation, route}) {
     }
   }
 
-  useEffect(() => {
-    const trimmed = idNumber.trim();
-    if (!hasRedirectedRef.current && trimmed === REVIEW_DNI) {
-      hasRedirectedRef.current = true;
-      dispatch(setSecrets(DEMO_SECRETS));
-      navigation.reset({
-        index: 0,
-        routes: [{name: StackNav.TabNavigation}],
-      });
-    }
-  }, [idNumber, dispatch, navigation]);
-
   const handleCheckAndNext = useCallback(
     debounce(() => {
       const trimmedId = idNumber.trim();
-      if (trimmedId === REVIEW_DNI) {
-        dispatch(setSecrets(DEMO_SECRETS));
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.TabNavigation}],
-        });
-        return;
-      }
 
       if (trimmedId === '') {
         return;
@@ -165,7 +141,6 @@ export default function RegisterUser2({navigation, route}) {
       idNumber,
       frontImage,
       backImage,
-      dispatch,
       navigation,
       isRecovery,
     ],

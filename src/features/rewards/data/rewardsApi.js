@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { getCredentialForVote } from '@/src/data/credentials';
 import { captureError } from '@/src/config/sentry';
 import { hashVoteNullifier } from '../../voting/utils/dataHasher';
+import { isDemoActive } from '../../demo/demoSession';
 
 const rewardStatuses = {
   received: {
@@ -108,6 +109,12 @@ const getRewardsStatusByElection = async (electionIdsWithSecrets) => {
 }
 
 const fetchVoteRewards = async (did, privKey) => {
+  // TokenRewardsCard está en HomeScreen y lleva a RewardsScreen -> getVoteReward()
+  // -> RPC de cadena. En demo se devuelve vacío en lugar de una pantalla de error.
+  if (isDemoActive()) {
+    return {rewardsAvailable: false, data: []};
+  }
+
   const rewardAmount = await getVoteReward();
   const electionsWithSecrets = await getUserElectionsFromVcs(did, privKey);
   const rewardsByElection = await getRewardsStatusByElection(electionsWithSecrets);

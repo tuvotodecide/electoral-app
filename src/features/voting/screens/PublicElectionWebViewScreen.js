@@ -35,7 +35,7 @@ const PublicElectionWebViewScreen = () => {
   const [hasError, setHasError] = useState(!isValidUrl);
 
   return (
-    <CSafeAreaView style={styles.container} addTabPadding={false}>
+    <CSafeAreaView style={styles.container} addTabPadding={false} edges={['bottom', 'left', 'right']}>
       {hasError ? (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={moderateScale(36)} color="#B91C1C" />

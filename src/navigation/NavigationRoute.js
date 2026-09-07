@@ -110,6 +110,7 @@ import RegisterUser9 from '../container/Auth/RegisterUser9Pin';
 import RegisterUser10 from '../container/Auth/RegisterUser10';
 import RegisterUser11 from '../container/Auth/RegisterUser11';
 import LoginUser from '../container/Auth/LoginUser';
+import AccountAccess from '../container/Auth/AccountAccess';
 import SelectRecuperation from '../container/Auth/SelectRecuperation';
 import AccountLock from '../container/Auth/AccountLock';
 
@@ -204,6 +205,7 @@ export const AuthRoute = {
   RegisterUser11,
   AccountLock,
   LoginUser,
+  AccountAccess,
   SelectRecuperation,
   ConditionsRegister,
   SignUpWithMobileNumber,

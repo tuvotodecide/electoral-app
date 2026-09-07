@@ -18,6 +18,7 @@ import COptionItem from '../../../components/common/COptionItem';
 import { registryApi } from '../../../data/client/kyc';
 import CAlert from '../../../components/common/CAlert';
 import InfoModal from '../../../components/modal/InfoModal';
+import {isDemoActive} from '../../../features/demo/demoSession';
 
 const PUBLIC_NAME_CONFIRM_MESSAGE =
   'Autorizas a que tu nombre será visible para otros usuarios';
@@ -35,6 +36,12 @@ export default function PersonalDetails() {
 
   useEffect(() => {
     async function fetchDisplayName() {
+      // Sin `did` la función retorna y `loading` se queda en true para siempre
+      // (spinner permanente). En demo se cierra explícitamente.
+      if (isDemoActive()) {
+        setShowName({value: false, loading: false, errorMsg: null});
+        return;
+      }
       if (!userData?.did) return;
       const data = await registryApi.resolveByDid(userData.did);
       if(!data.ok) {

@@ -284,6 +284,67 @@ describe('notifications', () => {
     });
   });
 
+  it('normaliza copy institucional para el aviso de votacion abierta', () => {
+    const votingStarted = {
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        eventId: '6a9c25c964823d71a50a2a97',
+        electionId: '6a9c25c964823d71a50a2a97',
+        eventName: 'Vote test 101',
+        phase: 'START',
+        offsetMinutes: '0',
+        scheduledFor: '2026-09-05T15:25:00.000Z',
+        votingStart: '2026-09-05T15:25:00.000Z',
+        votingEnd: '2026-09-05T16:24:00.000Z',
+        bannerTitle: 'La votación ya está abierta',
+        bannerSubtitle:
+          'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+        publicPath: '/votacion/elecciones/6a9c25c964823d71a50a2a97/publica',
+        publicUrl: '',
+        link: '/votacion/elecciones/6a9c25c964823d71a50a2a97/publica',
+        eligible: 'true',
+      },
+    };
+
+    expect(buildInstitutionalNotificationCopy(votingStarted)).toEqual({
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+    });
+    expect(buildNotificationTextFallback(votingStarted)).toMatchObject({
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+    });
+    expect(buildInstitutionalNotificationForDetail(votingStarted)).toMatchObject({
+      kind: 'voting_event',
+      tipo: 'Ver votación',
+      statusTone: 'success',
+      actionLabel: 'Ver votación',
+      mesa: 'La votación ya está abierta',
+      reminderDetailBody: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
+      data: expect.objectContaining({
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        eventId: '6a9c25c964823d71a50a2a97',
+      }),
+    });
+  });
+
+  it('usa scheduledFor cuando el aviso de votacion abierta no trae votingStart', () => {
+    expect(
+      buildInstitutionalNotificationForDetail({
+        data: {
+          type: 'INSTITUTIONAL_VOTING_STARTED',
+          eventId: 'event-open',
+          eventName: 'Elección abierta',
+          scheduledFor: '2026-09-05T15:25:00.000Z',
+        },
+      }),
+    ).toMatchObject({
+      reminderDetailBody: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
+    });
+  });
+
   it.each([
     ['INSTITUTIONAL_VOTING_STARTS_IN_1H', 'La votación inicia en 1 hora', 'START', '60'],
     ['INSTITUTIONAL_VOTING_STARTS_IN_15M', 'La votación inicia en 15 minutos', 'START', '15'],
@@ -513,10 +574,6 @@ describe('notifications', () => {
       }),
     ).toEqual({
       name: 'RewardsScreen',
-      params: {
-        voteRewardAvailable: true,
-        rewardAction: 'OPEN_VOTE_REWARD',
-      },
     });
     expect(
       JSON.stringify(
@@ -556,6 +613,39 @@ describe('notifications', () => {
     );
     expect(JSON.stringify(notifee.displayNotification.mock.calls)).not.toMatch(
       /candidate|option|proof|nullifier|credential|privateKey|seed|authToken|deviceToken/i,
+    );
+  });
+
+  it('reconoce la recompensa por voto por type o por action de forma equivalente', async () => {
+    const rewardRoute = {
+      name: 'RewardsScreen',
+    };
+
+    expect(
+      buildRouteFromNotification({data: {type: 'VOTE_REWARD_AVAILABLE'}}),
+    ).toEqual(rewardRoute);
+    expect(
+      buildRouteFromNotification({data: {type: 'generic', action: 'OPEN_VOTE_REWARD'}}),
+    ).toEqual(rewardRoute);
+
+    notifee.displayNotification.mockClear();
+    await showLocalNotification({
+      title: 'Recompensa disponible',
+      body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+      data: {type: 'VOTE_REWARD_AVAILABLE', eventId: 'event-1'},
+    });
+
+    expect(notifee.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        android: expect.objectContaining({
+          actions: [
+            {
+              title: 'Reclamar',
+              pressAction: {id: 'OPEN_VOTE_REWARD'},
+            },
+          ],
+        }),
+      }),
     );
   });
 

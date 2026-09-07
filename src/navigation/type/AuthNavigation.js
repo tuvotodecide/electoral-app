@@ -112,6 +112,11 @@ export default function AuthNavigation() {
       <Stack.Screen name={AuthNav.LoginUser} component={AuthRoute.LoginUser} />
 
       <Stack.Screen
+        name={AuthNav.AccountAccess}
+        component={AuthRoute.AccountAccess}
+      />
+
+      <Stack.Screen
         name={AuthNav.SelectRecuperation}
         component={AuthRoute.SelectRecuperation}
       />

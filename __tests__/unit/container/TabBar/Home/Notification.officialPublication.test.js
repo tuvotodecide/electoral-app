@@ -103,6 +103,12 @@ jest.mock('../../../../../src/notifications', () => ({
     title: notification?.title,
     body: notification?.body,
   })),
+  buildVoteRewardRoute: jest.fn(() => ({name: 'RewardsScreen'})),
+  isVoteRewardNotification: jest.fn(
+    data =>
+      String(data?.type || '').toUpperCase() === 'VOTE_REWARD_AVAILABLE' ||
+      String(data?.action || '').toUpperCase() === 'OPEN_VOTE_REWARD',
+  ),
   getLocalStoredNotifications: jest.fn(async () => []),
   mergeAndDedupeNotifications: jest.fn(({localList = [], remoteList = []}) => [
     ...remoteList,

@@ -35,6 +35,9 @@ import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
 import {startLocalSession} from '../../utils/Session';
 import {consumePendingNotificationNavigation} from '../../notifications';
+import {isDemoPin} from '../../features/demo/demoConfig';
+import {isDemoActive} from '../../features/demo/demoSession';
+import {activateDemoSession} from '../../features/demo/demoLifecycle';
 
 
 const sharedSession = new wira.SharedSession(
@@ -196,6 +199,14 @@ export default function LoginUser({ navigation, route }) {
       }
 
       const hasUserData = await wira.Storage.checkUserData();
+
+      // Red de seguridad para un dispositivo que registre una billetera real
+      // después de activar la demo. Va condicionado a !hasUserData: si no,
+      // eclipsaría el PIN de un usuario registrado que use el mismo número.
+      if (!hasUserData && isDemoActive() && isDemoPin(code)) {
+        return { ok: true, demo: true };
+      }
+
       if (hasUserData) {
         let userData;
         try {
@@ -245,6 +256,12 @@ export default function LoginUser({ navigation, route }) {
     setTimeout(() => {
       verifyPin(code.trim())
         .then(async (res) => {
+          // No pasa por unlock(): ese escribe FINLINE_FLAGS con el hash del PIN
+          // y consulta el flag biométrico de la billetera real.
+          if (res.demo) {
+            await activateDemoSession({dispatch, navigation});
+            return;
+          }
           if (res.ok) {
             await unlock(res.payload, res.jwt, code.trim());
             return;

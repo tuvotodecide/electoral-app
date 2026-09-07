@@ -222,7 +222,26 @@ const buildBackendNotificationAlertKeys = notification => {
   return Array.from(new Set(keys.filter(Boolean)));
 };
 
-// OCP: Strategy pattern dictionary. 
+const VOTE_REWARD_TYPE = 'vote_reward_available';
+const VOTE_REWARD_ACTION = 'open_vote_reward';
+
+/**
+ * Reconoce la recompensa por voto tanto por `type` como por `action`, para que el
+ * push, la acción "Reclamar" y la lista de notificaciones resuelvan el mismo destino.
+ */
+export const isVoteRewardNotification = data => {
+  const source = data?.data && typeof data.data === 'object' ? data.data : data;
+  return (
+    normalizeNotificationField(source?.type) === VOTE_REWARD_TYPE ||
+    normalizeNotificationField(source?.action) === VOTE_REWARD_ACTION
+  );
+};
+
+export const buildVoteRewardRoute = () => ({
+  name: StackNav.RewardsScreen,
+});
+
+// OCP: Strategy pattern dictionary.
 // Para extender nuevos tipos de notificación, simplemente añade una entrada aquí sin modificar la función principal.
 const NotificationTypeStrategies = {
   participation_certificate: {
@@ -253,16 +272,10 @@ const NotificationTypeStrategies = {
       params: {screen: TabNav.HomeScreen},
     }),
   },
-  vote_reward_available: {
+  [VOTE_REWARD_TYPE]: {
     getTitle: () => 'Recompensa disponible',
     getBody: () => 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
-    getRoute: () => ({
-      name: StackNav.RewardsScreen,
-      params: {
-        voteRewardAvailable: true,
-        rewardAction: 'OPEN_VOTE_REWARD',
-      },
-    }),
+    getRoute: buildVoteRewardRoute,
   },
   default: {
     getTitle: () => 'Tu Voto Decide',
@@ -282,6 +295,7 @@ const INSTITUTIONAL_DETAIL_TYPES = new Set([
   'INSTITUTIONAL_VOTING_CANCELLED',
   'INSTITUTIONAL_VOTING_STARTS_IN_1H',
   'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_STARTED',
   'INSTITUTIONAL_VOTING_ENDS_IN_1H',
   'INSTITUTIONAL_VOTING_ENDS_IN_15M',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER',
@@ -321,19 +335,36 @@ const formatNotificationTime = rawValue => {
   }).format(new Date(parsed));
 };
 
-const VOTING_REMINDER_TYPES = new Set([
+const VOTING_STARTED_TYPE = 'INSTITUTIONAL_VOTING_STARTED';
+
+// Recordatorios que se apoyan en la hora de inicio (incluye el aviso de apertura).
+const VOTING_START_REMINDER_TYPES = new Set([
   'INSTITUTIONAL_VOTING_STARTS_IN_1H',
   'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  VOTING_STARTED_TYPE,
+]);
+
+const VOTING_REMINDER_TYPES = new Set([
+  ...VOTING_START_REMINDER_TYPES,
   'INSTITUTIONAL_VOTING_ENDS_IN_1H',
   'INSTITUTIONAL_VOTING_ENDS_IN_15M',
 ]);
 
 const buildVotingReminderBody = ({type, eventName, votingStart, votingEnd, body}) => {
-  const isStartReminder =
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const isStartReminder = VOTING_START_REMINDER_TYPES.has(type);
   const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
   const eventLabel = eventName || 'La votación';
+
+  if (type === VOTING_STARTED_TYPE) {
+    if (timeLabel) {
+      return `${eventLabel} ya está abierta desde las ${timeLabel}. Ya puedes emitir tu voto.`;
+    }
+
+    return (
+      String(body || '').trim() ||
+      `${eventLabel} ya está abierta. Ya puedes emitir tu voto.`
+    );
+  }
 
   if (isStartReminder) {
     if (timeLabel) {
@@ -351,10 +382,14 @@ const buildVotingReminderBody = ({type, eventName, votingStart, votingEnd, body}
 };
 
 const buildVotingReminderDetailBody = ({type, votingStart, votingEnd, body}) => {
-  const isStartReminder =
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const isStartReminder = VOTING_START_REMINDER_TYPES.has(type);
   const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
+
+  if (type === VOTING_STARTED_TYPE) {
+    return timeLabel
+      ? `Abierta desde las ${timeLabel}. Ya puedes emitir tu voto.`
+      : 'Ya está abierta. Ya puedes emitir tu voto.';
+  }
 
   if (isStartReminder) {
     return timeLabel
@@ -477,6 +512,17 @@ export const buildInstitutionalNotificationCopy = notification => {
           body: notificationBody,
         }),
       };
+    case VOTING_STARTED_TYPE:
+      return {
+        title: 'La votación ya está abierta',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart || data?.scheduledFor,
+          votingEnd: data?.votingEnd,
+          body: notificationBody,
+        }),
+      };
     case 'INSTITUTIONAL_VOTING_ENDS_IN_1H':
       return {
         title: 'La votación termina en 1 hora',
@@ -537,7 +583,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const reminderDetailBody = isVotingReminder
     ? buildVotingReminderDetailBody({
         type,
-        votingStart: data?.votingStart || (type.includes('_STARTS_') ? data?.scheduledFor : ''),
+        votingStart:
+          data?.votingStart ||
+          (VOTING_START_REMINDER_TYPES.has(type) ? data?.scheduledFor : ''),
         votingEnd: data?.votingEnd || (type.includes('_ENDS_') ? data?.scheduledFor : ''),
         body,
       })
@@ -961,9 +1009,8 @@ export async function showLocalNotification({
   dni = null,
 } = {}) {
   await ensureNotificationChannel();
-  const action = normalizeNotificationField(data?.action);
   const androidActions =
-    action === 'open_vote_reward'
+    isVoteRewardNotification(data)
       ? [
           {
             title: 'Reclamar',
@@ -1081,11 +1128,9 @@ export function buildRouteFromNotification(notification) {
   }
   
   // OCP: Utilizamos el mismo diccionario de estrategias previamente definido (Reutilización y OCP)
-  const action = normalizeNotificationField(data?.action);
-  const strategy =
-    action === 'open_vote_reward'
-      ? NotificationTypeStrategies.vote_reward_available
-      : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
+  const strategy = isVoteRewardNotification(data)
+    ? NotificationTypeStrategies[VOTE_REWARD_TYPE]
+    : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
   if (strategy && strategy.getRoute && typeof strategy.getRoute === 'function') {
     return strategy.getRoute();
   }

@@ -346,7 +346,8 @@ describe('CandidateScreen', () => {
     });
 
     const voteButton = screen.getByTestId('voteButton');
-    expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
+    expect(screen.queryByTestId('candidateCard_blank')).toBeNull();
+    expect(screen.getByText(/selecciona un candidato/i)).toBeTruthy();
     expect(voteButton.props.accessibilityState.disabled).toBe(true);
   });
 
@@ -363,7 +364,8 @@ describe('CandidateScreen', () => {
     expect(screen.queryByText('Lista Verde')).toBeNull();
 
     const voteButton = screen.getByTestId('voteButton');
-    expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
+    expect(screen.queryByTestId('candidateCard_blank')).toBeNull();
+    expect(screen.getByText(/selecciona un candidato/i)).toBeTruthy();
     expect(voteButton.props.accessibilityState.disabled).toBe(true);
   });
 
@@ -382,14 +384,45 @@ describe('CandidateScreen', () => {
     expect(screen.getByText('VOTAR POR BRUNO DIAZ')).toBeTruthy();
   });
 
-  it('mantiene el boton en voto blanco habilitado cuando no existe seleccion', async () => {
+  it('deshabilita el boton de votar mientras no exista seleccion', async () => {
     const screen = renderScreen({params: {election}});
 
     await screen.findByText('Lista Azul');
 
-    const voteButton = screen.getByTestId('voteButton');
+    const isVoteButtonDisabled = () =>
+      screen.getByTestId('voteButton').props.accessibilityState.disabled;
+
+    expect(screen.getByText(/selecciona un candidato/i)).toBeTruthy();
+    expect(isVoteButtonDisabled()).toBe(true);
+
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    expect(isVoteButtonDisabled()).toBe(false);
+
+    fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+    expect(isVoteButtonDisabled()).toBe(true);
+  });
+
+  it('ofrece el voto en blanco como una opcion mas debajo de las candidaturas', async () => {
+    const screen = renderScreen({params: {election}});
+
+    await screen.findByText('Lista Azul');
+
+    const cardIds = screen
+      .getAllByTestId(/^candidateCard_/)
+      .map(card => card.props.testID);
+    expect(cardIds).toEqual([
+      'candidateCard_cand-1',
+      'candidateCard_cand-2',
+      'candidateCard_blank',
+    ]);
+
+    fireEvent.press(screen.getByTestId('candidateCard_blank'));
+
+    expect(screen.getByText('selected:blank')).toBeTruthy();
     expect(screen.getByText(/votar en blanco/i)).toBeTruthy();
-    expect(voteButton.props.accessibilityState.disabled).toBe(false);
+    expect(
+      screen.getByTestId('voteButton').props.accessibilityState.disabled,
+    ).toBe(false);
   });
 
   it('usa la descripcion de la consulta y copy de opciones cuando es referendum', async () => {
@@ -1146,6 +1179,57 @@ describe('CandidateScreen', () => {
 
     await waitFor(() => {
       expect(navigation.replace).toHaveBeenCalled();
+    });
+  });
+
+  describe('modo demostración', () => {
+    const {
+      __resetDemoSessionForTests,
+      startDemoSession,
+    } = require('../../../../src/features/demo/demoSession');
+
+    afterEach(() => {
+      __resetDemoSessionForTests();
+    });
+
+    it('no sondea la red y emite el voto igualmente', async () => {
+      await startDemoSession();
+      // Peor caso: el revisor prueba con la red caída.
+      checkInternetConnection.mockResolvedValue(false);
+      backendProbe.mockResolvedValue({ok: false});
+
+      const screen = renderScreen({params: {election}});
+
+      await screen.findByText('Lista Azul');
+      fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+      fireEvent.press(screen.getByTestId('voteButton'));
+      fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+      await waitFor(() => {
+        expect(repository.submitVote).toHaveBeenCalled();
+      });
+
+      expect(backendProbe).not.toHaveBeenCalled();
+      expect(checkInternetConnection).not.toHaveBeenCalled();
+      expect(enqueueVote).not.toHaveBeenCalled();
+      expect(navigation.replace).toHaveBeenCalled();
+    });
+
+    it('sin demo, la red caída sigue encolando el voto', async () => {
+      checkInternetConnection.mockResolvedValueOnce(false);
+      recordVote.mockResolvedValueOnce({id: 'queued-offline'});
+
+      const screen = renderScreen({params: {election}});
+
+      await screen.findByText('Lista Azul');
+      fireEvent.press(screen.getByTestId('candidateCard_cand-1'));
+      fireEvent.press(screen.getByTestId('voteButton'));
+      fireEvent.press(screen.getByTestId('confirmVoteButton'));
+
+      await waitFor(() => {
+        expect(enqueueVote).toHaveBeenCalled();
+      });
+      expect(repository.submitVote).not.toHaveBeenCalled();
     });
   });
 });

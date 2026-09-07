@@ -172,6 +172,14 @@ describe('Notification routing helpers', () => {
 
     expect(
       getNotificationKind({
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        title: 'La votación ya está abierta',
+        body: '',
+      }),
+    ).toBe('voting_event');
+
+    expect(
+      getNotificationKind({
         type: 'INSTITUTIONAL_VOTING_ENDS_IN_15M',
         title: 'La votación termina en 15 minutos',
         body: '',
@@ -255,6 +263,7 @@ describe('Notification routing helpers', () => {
   it.each([
     'INSTITUTIONAL_VOTING_STARTS_IN_1H',
     'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+    'INSTITUTIONAL_VOTING_STARTED',
     'INSTITUTIONAL_VOTING_ENDS_IN_1H',
     'INSTITUTIONAL_VOTING_ENDS_IN_15M',
   ])('navega recordatorio institucional %s al detalle de votacion', type => {
@@ -271,6 +280,55 @@ describe('Notification routing helpers', () => {
       name: 'VotingNotificationDetailScreen',
       params: {notification},
     });
+  });
+
+  it('navega la recompensa por voto a la lista de recompensas desde la lista de notificaciones', () => {
+    const rewardRoute = {
+      name: 'RewardsScreen',
+    };
+
+    expect(
+      buildNotificationNavigationTarget({
+        kind: 'generic',
+        data: {
+          type: 'VOTE_REWARD_AVAILABLE',
+          action: 'OPEN_VOTE_REWARD',
+          eventId: '6a88c7363525d831e56885a0',
+          deduplicationKey:
+            'VOTE_REWARD_AVAILABLE:6a88c7363525d831e56885a0:68f031a3847a17b4099d99da',
+        },
+      }),
+    ).toEqual(rewardRoute);
+
+    // Solo el type, sin action.
+    expect(
+      buildNotificationNavigationTarget({
+        kind: 'generic',
+        data: {type: 'VOTE_REWARD_AVAILABLE'},
+      }),
+    ).toEqual(rewardRoute);
+
+    // Solo la action, sin type reconocible.
+    expect(
+      buildNotificationNavigationTarget({
+        kind: 'generic',
+        data: {type: 'generic', action: 'OPEN_VOTE_REWARD'},
+      }),
+    ).toEqual(rewardRoute);
+  });
+
+  it('no expone datos del voto en la ruta de recompensa', () => {
+    expect(
+      JSON.stringify(
+        buildNotificationNavigationTarget({
+          data: {
+            type: 'VOTE_REWARD_AVAILABLE',
+            action: 'OPEN_VOTE_REWARD',
+            eventId: '6a88c7363525d831e56885a0',
+          },
+        }),
+      ),
+    ).not.toMatch(/candidate|option|proof|nullifier|privateKey|deviceToken|eventId/i);
   });
 
   it('redirige worksheet_uploaded al home sin navegar a pantallas erradas', () => {

@@ -88,6 +88,7 @@ export const AuthNav = {
   OnBoardingGuardians: 'OnBoardingGuardians',
   Login: 'Login',
   LoginUser: 'LoginUser',
+  AccountAccess: 'AccountAccess',
   SignUp: 'SignUp',
   RegisterUser1: 'RegisterUser1',
   RegisterUser2: 'RegisterUser2',

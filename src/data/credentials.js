@@ -3,6 +3,9 @@ import wira from "wira-sdk";
 import { authenticateWithBackend } from "../utils/offlineQueueHandler";
 import { BACKEND_RESULT, BACKEND_IDENTITY, IDENTITY_KEY } from "@env";
 import { captureError } from "../config/sentry";
+// Import directo (no el barrel de features/demo) para no arrastrar redux ni
+// navegación a este módulo.
+import { isDemoActive } from "../features/demo/demoSession";
 
 const wiraClient = wira?.default && typeof wira.default === 'object'
   ? wira.default
@@ -13,7 +16,24 @@ const getWiraMethod = methodName =>
     ? wiraClient[methodName].bind(wiraClient)
     : null;
 
+/** Credencial sintética del modo demostración. */
+const buildDemoCredential = voteId => ({
+  id: 'demo_credential',
+  info: {
+    credentialSubject: {
+      eventId: voteId,
+      nullifier: '1',
+    },
+  },
+});
+
 export async function getCredentialForVote(voteId, did, privKey) {
+  // Llama al módulo nativo `wira.getUserCredentials`. En demo no hay identidad
+  // en el wallet nativo, así que se devuelve una credencial sintética.
+  if (isDemoActive()) {
+    return buildDemoCredential(voteId);
+  }
+
   try {
     const getUserCredentials = getWiraMethod('getUserCredentials');
     if (!getUserCredentials) {
@@ -33,6 +53,12 @@ export async function getCredentialForVote(voteId, did, privKey) {
 }
 
 export async function checkClaimedCredForVote(voteId, did, privKey) {
+  // Sin este corte, HomeScreen.handleVotingPress abriría el modal de PIN y
+  // dispararía claimForVote (4 llamadas de red + una prueba ZK).
+  if (isDemoActive()) {
+    return true;
+  }
+
   try {
     const hasCredForVote = await getCredentialForVote(voteId, did, privKey) !== undefined;
     return hasCredForVote;
@@ -43,6 +69,12 @@ export async function checkClaimedCredForVote(voteId, did, privKey) {
 };
 
 export async function claimForVote(voteId, dni, did, privKey, pin) {
+  // Inalcanzable con el corte de checkClaimedCredForVote, pero esta es la
+  // función que escribe en el registro de identidad vía claimNewCredential.
+  if (isDemoActive()) {
+    return { claimed: true, invalidPin: false };
+  }
+
   try {
     const claimNewCredential = getWiraMethod('claimNewCredential');
     if (!claimNewCredential) {

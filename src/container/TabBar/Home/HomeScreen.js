@@ -29,6 +29,7 @@ import {
   JWT_KEY
 } from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
+import DemoBanner from '../../../features/demo/DemoBanner';
 import CText from '../../../components/common/CText';
 import RegisterAlertCard from '../../../components/home/RegisterAlertCard';
 import I18nStrings from '../../../i18n/String';
@@ -137,7 +138,7 @@ const buildPublicVotingUrl = eventId => {
   try {
     const url = new URL(frontendBase);
     url.pathname = publicPath;
-    url.search = '';
+    url.search = 'hideLogin=true';
     url.hash = '';
     return url.toString();
   } catch {
@@ -2517,6 +2518,7 @@ export default function HomeScreen({ navigation, route }) {
 
     if (hasVotingResultsAvailable(selectedElection)) {
       const resultsUrl = buildPublicVotingUrl(selectedElection?.id);
+      console.log(resultsUrl)
       if (resultsUrl) {
         navigation.navigate(StackNav.PublicElectionWebViewScreen, {
           url: resultsUrl,
@@ -2652,6 +2654,9 @@ export default function HomeScreen({ navigation, route }) {
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
+      <View style={stylesx.demoBannerWrapper}>
+        <DemoBanner />
+      </View>
       {votingSyncBanner.visible && (
         <View style={stylesx.votingSyncBanner}>
           <CText style={stylesx.votingSyncBannerText}>
@@ -3147,6 +3152,9 @@ export default function HomeScreen({ navigation, route }) {
 }
 
 const stylesx = StyleSheet.create({
+  demoBannerWrapper: {
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+  },
   votingSyncBanner: {
     position: 'absolute',
     top: getResponsiveSize(14, 18, 22),

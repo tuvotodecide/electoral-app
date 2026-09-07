@@ -25,6 +25,8 @@ import { colors } from '../../../themes/colors';
 import { changeThemeAction } from '../../../redux/action/themeAction';
 import { setAsyncStorageData } from '../../../utils/AsyncStorage';
 import LogOutModal from '../../../components/modal/LogOutModal';
+import { useIsDemoActive } from '../../../features/demo/demoSession';
+import { exitDemoSession } from '../../../features/demo/demoLifecycle';
 import CHash from '../../../components/common/CHash';
 import String from '../../../i18n/String';
 
@@ -35,6 +37,8 @@ export default function Profile({ navigation }) {
   const color = useSelector(state => state.theme.theme);
   const [isEnabled, setIsEnabled] = useState(!!color.dark);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isExitDemoVisible, setIsExitDemoVisible] = useState(false);
+  const isDemo = useIsDemoActive();
 
   const dispatch = useDispatch();
 
@@ -102,6 +106,21 @@ export default function Profile({ navigation }) {
 
   const onPressCancelBtn = () => {
     setIsModalVisible(false);
+  };
+
+  // Borra los datos de ejemplo y cierra sesión con el flujo canónico
+  // (utils/auth.js), que sí limpia redux y la sesión local.
+  const onPressExitDemo = async () => {
+    setIsExitDemoVisible(false);
+    try {
+      await exitDemoSession(navigation);
+    } catch (_err) {
+      captureError(_err, {
+        flow: 'Profile',
+        step: 'onPressExitDemo',
+        critical: true,
+      });
+    }
   };
 
   const onPressLOut = async () => {
@@ -349,6 +368,47 @@ export default function Profile({ navigation }) {
               style={styles.mr10}
             />
           </TouchableOpacity>
+
+          {isDemo ? (
+            <TouchableOpacity
+              testID="profileExitDemoItem"
+              activeOpacity={0.6}
+              onPress={() => setIsExitDemoVisible(true)}
+              style={[
+                localStyle.renderItemContainer,
+                {
+                  borderColor: color.dark
+                    ? color.grayScale700
+                    : color.grayScale200,
+                },
+              ]}>
+              <View style={styles.rowCenter}>
+                <View
+                  style={[
+                    localStyle.iconBackground,
+                    { backgroundColor: color.inputBackground },
+                  ]}>
+                  <Entypo
+                    name="log-out"
+                    size={moderateScale(20)}
+                    color={color.dark ? color.grayScale500 : color.grayScale400}
+                  />
+                </View>
+                <View style={styles.ml10}>
+                  <CText type={'B16'}>{String.demoExitTitle}</CText>
+                  <CText type={'R12'} color={color.grayScale500}>
+                    {String.demoExitValue}
+                  </CText>
+                </View>
+              </View>
+              <Ionicons
+                name={'chevron-forward-outline'}
+                size={moderateScale(24)}
+                color={color.dark ? color.grayScale500 : color.grayScale400}
+                style={styles.mr10}
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Botón de seleccionar insignia 
@@ -366,6 +426,13 @@ export default function Profile({ navigation }) {
           visible={isModalVisible}
           onPressCancel={onPressCancelBtn}
           onPressLogOut={onPressLOut}
+        />
+
+        <LogOutModal
+          testID="profileExitDemoModal"
+          visible={isExitDemoVisible}
+          onPressCancel={() => setIsExitDemoVisible(false)}
+          onPressLogOut={onPressExitDemo}
         />
       </ScrollView>
     </CSafeAreaView>

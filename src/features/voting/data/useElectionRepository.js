@@ -9,42 +9,37 @@ import { useMemo } from 'react';
 import ElectionRepositoryMock from './repositories/ElectionRepository.mock';
 import ElectionRepositoryApi from './repositories/ElectionRepository.api';
 import {FEATURE_FLAGS} from '../../../config/featureFlags';
+import {isDemoActive, useIsDemoActive} from '../../demo/demoSession';
 
-const getRepositoryType = () => {
-  if (FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
-    return 'api';
+/**
+ * @param {boolean} demoActive estado del modo demostración
+ * @returns {typeof ElectionRepositoryMock}
+ */
+const resolveRepository = demoActive => {
+  // El modo demostración gana sobre el flag. No basta con apagar
+  // ENABLE_VOTING_FLOW: eso hace que enqueueVote y
+  // enqueueBackendParticipationSync lancen 'Voting flow is disabled'
+  // (queueAdapter.js:261, :294).
+  if (demoActive) {
+    return ElectionRepositoryMock;
   }
-  return 'mock';
+  return FEATURE_FLAGS.ENABLE_VOTING_FLOW
+    ? ElectionRepositoryApi
+    : ElectionRepositoryMock;
 };
 
 /**
- * Hook que retorna el repositorio de elecciones configurado
+ * Hook que retorna el repositorio de elecciones configurado.
+ * Se re-evalúa al entrar o salir del modo demostración.
  * @returns {typeof ElectionRepositoryMock}
  */
 export const useElectionRepository = () => {
-  const repository = useMemo(() => {
-    switch (getRepositoryType()) {
-      case 'api':
-        return ElectionRepositoryApi;
-      case 'mock':
-      default:
-        return ElectionRepositoryMock;
-    }
-  }, []);
-
-  return repository;
+  const demoActive = useIsDemoActive();
+  return useMemo(() => resolveRepository(demoActive), [demoActive]);
 };
 
 /**
  * Obtener repositorio sin hook (para uso en callbacks/handlers)
  * @returns {typeof ElectionRepositoryMock}
  */
-export const getElectionRepository = () => {
-  switch (getRepositoryType()) {
-    case 'api':
-      return ElectionRepositoryApi;
-    case 'mock':
-    default:
-      return ElectionRepositoryMock;
-  }
-};
+export const getElectionRepository = () => resolveRepository(isDemoActive());

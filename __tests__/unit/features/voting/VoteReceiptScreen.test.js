@@ -389,7 +389,7 @@ describe('VoteReceiptScreen', () => {
     fireEvent.press(screen.getByText('Ver resultados'));
 
     expect(navigation.navigate).toHaveBeenCalledWith(StackNav.PublicElectionWebViewScreen, {
-      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica',
+      url: 'https://frontend-results.example/votacion/elecciones/event-results/publica?hideLogin=true',
       title: 'Resultados',
     });
 
