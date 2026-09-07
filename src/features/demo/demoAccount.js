@@ -1,4 +1,4 @@
-import {DEMO_DNI} from './demoConfig';
+import { DEMO_DNI } from "./demoConfig";
 
 /**
  * Fecha de nacimiento en SEGUNDOS: PersonalDetails.js hace
@@ -18,11 +18,11 @@ const DEMO_BIRTH_DATE_SECONDS = Math.floor(Date.UTC(1990, 0, 1) / 1000);
 export const DEMO_WALLET_PAYLOAD = Object.freeze({
   isDemo: true,
   dni: DEMO_DNI,
-  account: '0xdededededededededededededededededededede',
+  account: "0xdededededededededededededededededededede",
   guardian: null,
   vc: {
     credentialSubject: {
-      fullName: 'Cuenta de demostración',
+      fullName: "Cuenta demo",
       nationalIdNumber: DEMO_DNI,
       documentNumber: DEMO_DNI,
       governmentIdentifier: DEMO_DNI,

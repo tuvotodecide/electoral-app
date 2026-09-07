@@ -1,24 +1,24 @@
-import React, {useRef, useState} from 'react';
-import {ActivityIndicator, Dimensions, StyleSheet, View} from 'react-native';
-import OTPTextInput from 'react-native-otp-textinput';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useRef, useState } from "react";
+import { ActivityIndicator, Dimensions, StyleSheet, View } from "react-native";
+import OTPTextInput from "react-native-otp-textinput";
+import { useDispatch, useSelector } from "react-redux";
 
-import {moderateScale} from '../../common/constants';
-import CAlert from '../../components/common/CAlert';
-import CButton from '../../components/common/CButton';
-import CHeader from '../../components/common/CHeader';
-import CInput from '../../components/common/CInput';
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CText from '../../components/common/CText';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import InfoModal from '../../components/modal/InfoModal';
-import {captureError} from '../../config/sentry';
-import {matchesDemoCredentials} from '../../features/demo/demoConfig';
-import {activateDemoSession} from '../../features/demo/demoLifecycle';
-import String from '../../i18n/String';
-import {AuthNav} from '../../navigation/NavigationKey';
-import {styles} from '../../themes';
-import typography from '../../themes/typography';
+import { moderateScale } from "../../common/constants";
+import CAlert from "../../components/common/CAlert";
+import CButton from "../../components/common/CButton";
+import CHeader from "../../components/common/CHeader";
+import CInput from "../../components/common/CInput";
+import CSafeAreaViewAuth from "../../components/common/CSafeAreaViewAuth";
+import CText from "../../components/common/CText";
+import KeyBoardAvoidWrapper from "../../components/common/KeyBoardAvoidWrapper";
+import InfoModal from "../../components/modal/InfoModal";
+import { captureError } from "../../config/sentry";
+import { matchesDemoCredentials } from "../../features/demo/demoConfig";
+import { activateDemoSession } from "../../features/demo/demoLifecycle";
+import String from "../../i18n/String";
+import { AuthNav } from "../../navigation/NavigationKey";
+import { styles } from "../../themes";
+import typography from "../../themes/typography";
 
 /**
  * Acceso con cédula + PIN.
@@ -32,14 +32,14 @@ import typography from '../../themes/typography';
  * No se conecta con `incAttempts`/`isLocked`: esas claves pertenecen al PIN de
  * la billetera real.
  */
-export default function AccountAccess({navigation, route}) {
-  const {resumeDemo = false} = route?.params ?? {};
+export default function AccountAccess({ navigation, route }) {
+  const { resumeDemo = false } = route?.params ?? {};
 
-  const colors = useSelector(state => state.theme.theme);
+  const colors = useSelector((state) => state.theme.theme);
   const dispatch = useDispatch();
 
-  const [dni, setDni] = useState('');
-  const [pin, setPin] = useState('');
+  const [dni, setDni] = useState("");
+  const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [notFoundVisible, setNotFoundVisible] = useState(false);
   const otpRef = useRef(null);
@@ -58,18 +58,18 @@ export default function AccountAccess({navigation, route}) {
 
     if (!matchesDemoCredentials(dni, pin)) {
       otpRef.current?.clear();
-      setPin('');
+      setPin("");
       setNotFoundVisible(true);
       return;
     }
 
     setLoading(true);
     try {
-      await activateDemoSession({dispatch, navigation});
+      await activateDemoSession({ dispatch, navigation });
     } catch (error) {
       captureError(error, {
-        flow: 'AccountAccess',
-        step: 'activateDemoSession',
+        flow: "AccountAccess",
+        step: "activateDemoSession",
         critical: true,
       });
       setLoading(false);
@@ -81,22 +81,25 @@ export default function AccountAccess({navigation, route}) {
       <CHeader testID="accountAccessHeader" />
       <KeyBoardAvoidWrapper
         contentContainerStyle={styles.flexGrow1}
-        testID="accountAccessKeyboardWrapper">
+        testID="accountAccessKeyboardWrapper"
+      >
         <View style={localStyle.mainContainer}>
           <View>
             <CText
-              type={'B24'}
-              align={'center'}
+              type={"B24"}
+              align={"center"}
               style={styles.mb10}
-              testID="accountAccessTitle">
+              testID="accountAccessTitle"
+            >
               {String.accountAccessTitle}
             </CText>
 
             <CText
-              type={'R16'}
-              align={'center'}
+              type={"R16"}
+              align={"center"}
               style={styles.mb20}
-              testID="accountAccessSubtitle">
+              testID="accountAccessSubtitle"
+            >
               {String.accountAccessSubtitle}
             </CText>
 
@@ -122,10 +125,11 @@ export default function AccountAccess({navigation, route}) {
             />
 
             <CText
-              type={'B14'}
+              type={"B14"}
               color={colors.textColor}
               style={styles.mt10}
-              testID="accountAccessPinLabel">
+              testID="accountAccessPinLabel"
+            >
               {String.accountAccessPinLabel}
             </CText>
 
@@ -137,7 +141,7 @@ export default function AccountAccess({navigation, route}) {
               handleTextChange={setPin}
               secureTextEntry={true}
               editable={!loading}
-              keyboardAppearance={'dark'}
+              keyboardAppearance={"dark"}
               placeholderTextColor={colors.textColor}
               autoFocus={false}
               ref={otpRef}
@@ -161,8 +165,16 @@ export default function AccountAccess({navigation, route}) {
           testID="accountAccessSubmitButton"
           disabled={!isFormValid || loading}
           title={String.accountAccessSubmit}
-          type={'B16'}
+          type={"B16"}
           onPress={onPressSubmit}
+          containerStyle={localStyle.btnStyle}
+        />
+        <CButton
+          testID="accountAccessRecoveryButton"
+          disabled={loading}
+          title={String.accountAccessRecovery}
+          type={"B16"}
+          onPress={onPressRecover}
           containerStyle={localStyle.btnStyle}
         />
       </View>
@@ -187,7 +199,7 @@ export default function AccountAccess({navigation, route}) {
   );
 }
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const localStyle = StyleSheet.create({
   mainContainer: {
@@ -209,7 +221,7 @@ const localStyle = StyleSheet.create({
     ...styles.mh5,
   },
   btnStyle: {
-    width: '90%',
+    width: "90%",
     ...styles.selfCenter,
   },
   bottomButtons: {
@@ -217,14 +229,14 @@ const localStyle = StyleSheet.create({
     paddingBottom: moderateScale(16),
   },
   loadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     width,
     height,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 100,
   },
 });

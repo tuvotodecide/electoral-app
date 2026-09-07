@@ -1,5 +1,5 @@
-import { BACKEND_RESULT, FRONTEND_RESULTS } from '@env';
-import { Image } from 'expo-image';
+import { BACKEND_RESULT, FRONTEND_RESULTS } from "@env";
+import { Image } from "expo-image";
 import {
   AppState,
   Dimensions,
@@ -9,48 +9,45 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View
-} from 'react-native';
-import messaging from '@react-native-firebase/messaging';
+  View,
+} from "react-native";
+import messaging from "@react-native-firebase/messaging";
 
-import * as Location from 'expo-location';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { useDispatch , useSelector } from 'react-redux';
-import { clearWallet } from '../../../redux/action/walletAction';
-import { clearAuth } from '../../../redux/slices/authSlice';
-import MigrationModal from '../../Migration/MigrationModal';
+import * as Location from "expo-location";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useDispatch, useSelector } from "react-redux";
+import { clearWallet } from "../../../redux/action/walletAction";
+import { clearAuth } from "../../../redux/slices/authSlice";
+import MigrationModal from "../../Migration/MigrationModal";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import images from '../../../assets/images';
-import {
-  LAST_USER_TOPIC_KEY,
-  JWT_KEY
-} from '../../../common/constants';
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import DemoBanner from '../../../features/demo/DemoBanner';
-import CText from '../../../components/common/CText';
-import RegisterAlertCard from '../../../components/home/RegisterAlertCard';
-import I18nStrings from '../../../i18n/String';
-import { StackNav } from '../../../navigation/NavigationKey';
-import { clearSession } from '../../../utils/Session';
-import { TokenRewardsCard } from '@/src/components/home/TokenRewardsCard';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import images from "../../../assets/images";
+import { LAST_USER_TOPIC_KEY, JWT_KEY } from "../../../common/constants";
+import CSafeAreaView from "../../../components/common/CSafeAreaView";
+import DemoBanner from "../../../features/demo/DemoBanner";
+import CText from "../../../components/common/CText";
+import RegisterAlertCard from "../../../components/home/RegisterAlertCard";
+import I18nStrings from "../../../i18n/String";
+import { StackNav } from "../../../navigation/NavigationKey";
+import { clearSession } from "../../../utils/Session";
+import { TokenRewardsCard } from "@/src/components/home/TokenRewardsCard";
 
-import NetInfo from '@react-native-community/netinfo';
-import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator } from 'react-native-paper';
-import CustomModal from '../../../components/common/CustomModal';
-import VotingPinModal from './VotingPinModal';
+import NetInfo from "@react-native-community/netinfo";
+import { useFocusEffect } from "@react-navigation/native";
+import { ActivityIndicator } from "react-native-paper";
+import CustomModal from "../../../components/common/CustomModal";
+import VotingPinModal from "./VotingPinModal";
 import {
   alertNewBackendNotifications,
   getLocalStoredNotifications,
   mergeAndDedupeNotifications,
-} from '../../../notifications';
+} from "../../../notifications";
 import {
   isStateEffectivelyOnline,
   NET_POLICIES,
-} from '../../../utils/networkQuality';
+} from "../../../utils/networkQuality";
 import {
   getAll as getOfflineQueue,
   clearVotePlace,
@@ -59,32 +56,32 @@ import {
   removeById,
   retryNow,
   saveVotePlace,
-} from '../../../utils/offlineQueue';
+} from "../../../utils/offlineQueue";
 import {
   getAttestationAvailabilityCache,
   saveAttestationAvailabilityCache,
-} from '../../../utils/attestationAvailabilityCache';
+} from "../../../utils/attestationAvailabilityCache";
 import {
   buildSelectedElectionContext,
   saveSelectedElectionContext,
-} from '../../../utils/electionContext';
-import { getCache, isFresh, setCache } from '../../../utils/lookupCache';
+} from "../../../utils/electionContext";
+import { getCache, isFresh, setCache } from "../../../utils/lookupCache";
 import {
   authenticateWithBackend,
   publishActaHandler,
   publishWorksheetHandler,
   syncActaBackendHandler,
-} from '../../../utils/offlineQueueHandler';
+} from "../../../utils/offlineQueueHandler";
 import {
   subscribeToPushTopic,
   unsubscribeFromPushTopic,
-} from '../../../services/notifications';
-import { clearWorksheetLocalStatus } from '../../../utils/worksheetLocalStatus';
-import { captureError, captureMessage } from '../../../config/sentry';
-import { useBackupCheck } from '../../../hooks/useBackupCheck';
-import { backendProbe } from '../../../utils/networkUtils';
+} from "../../../services/notifications";
+import { clearWorksheetLocalStatus } from "../../../utils/worksheetLocalStatus";
+import { captureError, captureMessage } from "../../../config/sentry";
+import { useBackupCheck } from "../../../hooks/useBackupCheck";
+import { backendProbe } from "../../../utils/networkUtils";
 
-import { FEATURE_FLAGS } from '../../../config/featureFlags';
+import { FEATURE_FLAGS } from "../../../config/featureFlags";
 import {
   ElectionCard,
   handleVotingQueueVote,
@@ -94,18 +91,17 @@ import {
   useVotingState,
   useElectionRepository,
   UI_STRINGS as VotingStrings,
-} from '../../../features/voting';
-import { getMockRewardsSummary } from '../../../features/rewards';
-import { checkClaimedCredForVote, claimForVote } from '@/src/data/credentials';
-import { FlashList } from '@shopify/flash-list';
+} from "../../../features/voting";
+import { getMockRewardsSummary } from "../../../features/rewards";
+import { checkClaimedCredForVote, claimForVote } from "@/src/data/credentials";
+import { FlashList } from "@shopify/flash-list";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
 const isSmallPhone = screenWidth < 375;
 const isLandscape = screenWidth > screenHeight;
-
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -114,68 +110,80 @@ const getResponsiveSize = (small, medium, large) => {
 };
 
 const QUEUE_WRITE_TASK_TYPES = new Set([
-  'publishActa',
-  'publishWorksheet',
-  'syncActaBackend',
-  'votingFlowVote',
+  "publishActa",
+  "publishWorksheet",
+  "syncActaBackend",
+  "votingFlowVote",
 ]);
 
-const HOME_VOTING_DETAIL_NOTIFICATION_TYPE = 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
+const HOME_VOTING_DETAIL_NOTIFICATION_TYPE = "INSTITUTIONAL_PADRON_REVIEW_OPEN";
 const SHOW_HOME_PARTICIPATIONS_CARD = false;
-const buildPublicVotingPath = eventId => {
-  const normalizedEventId = String(eventId || '').trim();
-  return normalizedEventId ? `/votacion/elecciones/${normalizedEventId}/publica` : '';
+const buildPublicVotingPath = (eventId) => {
+  const normalizedEventId = String(eventId || "").trim();
+  return normalizedEventId
+    ? `/votacion/elecciones/${normalizedEventId}/publica`
+    : "";
 };
 
-const buildPublicVotingUrl = eventId => {
+const buildPublicVotingUrl = (eventId) => {
   const publicPath = buildPublicVotingPath(eventId);
-  const frontendBase = String(FRONTEND_RESULTS || '').trim();
+  const frontendBase = String(FRONTEND_RESULTS || "").trim();
 
   if (!publicPath || !frontendBase) {
-    return '';
+    return "";
   }
 
   try {
     const url = new URL(frontendBase);
     url.pathname = publicPath;
-    url.search = 'hideLogin=true';
-    url.hash = '';
+    url.search = "hideLogin=true";
+    url.hash = "";
     return url.toString();
   } catch {
-    return '';
+    return "";
   }
 };
 
-const buildVotingResultsRouteParams = election => {
-  const eventId = String(election?.id || '').trim();
+const buildVotingResultsRouteParams = (election) => {
+  const eventId = String(election?.id || "").trim();
   const resultsAt = Number(election?.resultsAt || 0);
   const publicPath = buildPublicVotingPath(eventId);
-  const normalizedStatus = String(election?.status || '').trim().toUpperCase();
-  const normalizedPhase = String(election?.phase || '').trim().toUpperCase();
-  const normalizedState = String(election?.state || '').trim().toUpperCase();
+  const normalizedStatus = String(election?.status || "")
+    .trim()
+    .toUpperCase();
+  const normalizedPhase = String(election?.phase || "")
+    .trim()
+    .toUpperCase();
+  const normalizedState = String(election?.state || "")
+    .trim()
+    .toUpperCase();
 
   return {
     eventId,
-    eventName: election?.title || '',
+    eventName: election?.title || "",
     phase: normalizedPhase,
     state: normalizedState,
     status: normalizedStatus,
     resultsAvailable:
       election?.resultsAvailable === true ||
-      normalizedPhase === 'RESULTS' ||
-      normalizedState === 'RESULTS_PUBLISHED',
+      normalizedPhase === "RESULTS" ||
+      normalizedState === "RESULTS_PUBLISHED",
     resultsAt: resultsAt > 0 ? resultsAt : null,
     publicPath,
   };
 };
 
-const isVotingCancelled = election => {
-  const normalizedState = String(election?.state || '').trim().toUpperCase();
-  const normalizedStatus = String(election?.status || '').trim().toUpperCase();
-  return normalizedState === 'CANCELLED' || normalizedStatus === 'CANCELLED';
+const isVotingCancelled = (election) => {
+  const normalizedState = String(election?.state || "")
+    .trim()
+    .toUpperCase();
+  const normalizedStatus = String(election?.status || "")
+    .trim()
+    .toUpperCase();
+  return normalizedState === "CANCELLED" || normalizedStatus === "CANCELLED";
 };
 
-const hasVotingResultsAvailable = election => {
+const hasVotingResultsAvailable = (election) => {
   if (isVotingCancelled(election)) {
     return false;
   }
@@ -189,58 +197,58 @@ const hasVotingResultsAvailable = election => {
   return Number.isFinite(resultsAt) && resultsAt > 0 && resultsAt <= Date.now();
 };
 
-const canOpenDisabledVotingDetail = election => {
-  const eligibilityStatus = String(election?.eligibilityStatus || '')
+const canOpenDisabledVotingDetail = (election) => {
+  const eligibilityStatus = String(election?.eligibilityStatus || "")
     .trim()
     .toUpperCase();
   const startsAt = Number(election?.startsAt || 0);
   return (
-    eligibilityStatus === 'DISABLED' &&
+    eligibilityStatus === "DISABLED" &&
     startsAt > Date.now() &&
     !election?.alreadyVoted
   );
 };
 
-const isQueueWriteTask = taskType => QUEUE_WRITE_TASK_TYPES.has(taskType);
+const isQueueWriteTask = (taskType) => QUEUE_WRITE_TASK_TYPES.has(taskType);
 const RETRIABLE_NETWORK_ERROR_TYPES = new Set([
-  'NETWORK_TIMEOUT',
-  'NETWORK_DOWN',
-  'SERVER_5XX',
-  'RATE_LIMIT',
+  "NETWORK_TIMEOUT",
+  "NETWORK_DOWN",
+  "SERVER_5XX",
+  "RATE_LIMIT",
 ]);
 
 const BLOCKCHAIN_ERROR_HINTS = [
-  'blockchain',
-  'oracle',
-  'attest',
-  'attestation',
-  'createattestation',
-  'smart contract',
-  'transaction',
-  'tx ',
-  'evm',
-  'revert',
-  'nonce',
-  'gas',
-  'insufficient funds',
-  'user rejected',
-  'eth_getlogs',
-  'invalid block range',
-  'viem@',
-  'mainnet.base.org',
-  'missing or invalid parameters',
+  "blockchain",
+  "oracle",
+  "attest",
+  "attestation",
+  "createattestation",
+  "smart contract",
+  "transaction",
+  "tx ",
+  "evm",
+  "revert",
+  "nonce",
+  "gas",
+  "insufficient funds",
+  "user rejected",
+  "eth_getlogs",
+  "invalid block range",
+  "viem@",
+  "mainnet.base.org",
+  "missing or invalid parameters",
 ];
 
-const isBusinessTerminalFailure = failedItem =>
-  String(failedItem?.errorType || '')
+const isBusinessTerminalFailure = (failedItem) =>
+  String(failedItem?.errorType || "")
     .trim()
-    .toUpperCase() === 'BUSINESS_TERMINAL';
+    .toUpperCase() === "BUSINESS_TERMINAL";
 
-const shouldShowQueueFailModal = failedItem => {
-  const errorType = String(failedItem?.errorType || '')
+const shouldShowQueueFailModal = (failedItem) => {
+  const errorType = String(failedItem?.errorType || "")
     .trim()
     .toUpperCase();
-  const errorMessage = String(failedItem?.error || '')
+  const errorMessage = String(failedItem?.error || "")
     .trim()
     .toLowerCase();
 
@@ -248,12 +256,12 @@ const shouldShowQueueFailModal = failedItem => {
     return false;
   }
 
-  if (errorMessage.includes('status code 404')) {
+  if (errorMessage.includes("status code 404")) {
     return false;
   }
 
-  if (errorType === 'UNKNOWN') {
-    const isLikelyBlockchainError = BLOCKCHAIN_ERROR_HINTS.some(hint =>
+  if (errorType === "UNKNOWN") {
+    const isLikelyBlockchainError = BLOCKCHAIN_ERROR_HINTS.some((hint) =>
       errorMessage.includes(hint),
     );
     if (isLikelyBlockchainError) {
@@ -264,47 +272,49 @@ const shouldShowQueueFailModal = failedItem => {
   return failedItem?.removedFromQueue === true;
 };
 
-const deriveQueueFailMessage = failedItems => {
+const deriveQueueFailMessage = (failedItems) => {
   const list = Array.isArray(failedItems) ? failedItems : [];
-  const hasVotingFailure = list.some(item => item?.type === 'votingFlowVote');
+  const hasVotingFailure = list.some((item) => item?.type === "votingFlowVote");
   if (hasVotingFailure) {
     const joinedVotingErrors = list
-      .filter(item => item?.type === 'votingFlowVote')
-      .map(item => String(item?.error || '').trim())
+      .filter((item) => item?.type === "votingFlowVote")
+      .map((item) => String(item?.error || "").trim())
       .filter(Boolean)
-      .join('\n\n');
+      .join("\n\n");
 
-    return joinedVotingErrors ||
-      'No se pudo completar el registro del voto. Puedes volver a intentarlo o liberar el voto para votar de nuevo.';
+    return (
+      joinedVotingErrors ||
+      "No se pudo completar el registro del voto. Puedes volver a intentarlo o liberar el voto para votar de nuevo."
+    );
   }
 
   const joinedErrors = list
-    .map(item => String(item?.error || '').toLowerCase())
-    .join(' | ');
+    .map((item) => String(item?.error || "").toLowerCase())
+    .join(" | ");
   const alreadyAttested =
-    joinedErrors.includes('already attested') ||
-    joinedErrors.includes('616c7265616479206174746573746564') ||
-    joinedErrors.includes('acta ya atestiguada');
+    joinedErrors.includes("already attested") ||
+    joinedErrors.includes("616c7265616479206174746573746564") ||
+    joinedErrors.includes("acta ya atestiguada");
   const duplicateVotes =
-    joinedErrors.includes('mismos votos') ||
-    joinedErrors.includes('votos duplicados') ||
-    joinedErrors.includes('acta duplicada');
+    joinedErrors.includes("mismos votos") ||
+    joinedErrors.includes("votos duplicados") ||
+    joinedErrors.includes("acta duplicada");
 
   if (alreadyAttested) {
-    return 'Hoja de trabajo ya atestiguada.';
+    return "Hoja de trabajo ya atestiguada.";
   }
   if (duplicateVotes) {
-    return 'Ya existe una hoja de trabajo con los mismos votos para esta mesa.';
+    return "Ya existe una hoja de trabajo con los mismos votos para esta mesa.";
   }
-  return 'Reintenta o elimina para subir otra hoja de trabajo.';
+  return "Reintenta o elimina para subir otra hoja de trabajo.";
 };
 
-const deriveQueueFailTitle = failedItems => {
+const deriveQueueFailTitle = (failedItems) => {
   const list = Array.isArray(failedItems) ? failedItems : [];
-  if (list.some(item => item?.type === 'votingFlowVote')) {
-    return 'No se pudo completar el voto';
+  if (list.some((item) => item?.type === "votingFlowVote")) {
+    return "No se pudo completar el voto";
   }
-  return 'No se pudo completar la subida';
+  return "No se pudo completar la subida";
 };
 
 // Responsive grid calculations
@@ -345,19 +355,23 @@ const CarouselItem = ({ item }) => (
 
       <View
         testID={`homeCarouselRight_${item.id}`}
-        style={stylesx.carouselRight}>
+        style={stylesx.carouselRight}
+      >
         <View
           testID={`homeCarouselTextContainer_${item.id}`}
-          style={stylesx.carouselTextContainer}>
+          style={stylesx.carouselTextContainer}
+        >
           <CText
             testID={`homeCarouselTitle_${item.id}`}
-            style={stylesx.carouselTitle}>
+            style={stylesx.carouselTitle}
+          >
             {item.title}
           </CText>
           <CText
             testID={`homeCarouselSubtitle_${item.id}`}
             style={stylesx.carouselSubtitle}
-            numberOfLines={3}>
+            numberOfLines={3}
+          >
             {item.subtitle}
           </CText>
         </View>
@@ -366,10 +380,12 @@ const CarouselItem = ({ item }) => (
           testID={`homeCarouselButton_${item.id}`}
           style={stylesx.carouselButtonInline}
           onPress={item.onPress}
-          activeOpacity={0.8}>
+          activeOpacity={0.8}
+        >
           <CText
             testID={`homeCarouselButtonText_${item.id}`}
-            style={stylesx.carouselButtonText}>
+            style={stylesx.carouselButtonText}
+          >
             {item.buttonText}
           </CText>
         </TouchableOpacity>
@@ -407,7 +423,8 @@ const MiVotoLogo = () => (
     </View> */}
     <View
       testID="homeMiVotoLogoText"
-      style={{ marginLeft: getResponsiveSize(6, 8, 10) }}>
+      style={{ marginLeft: getResponsiveSize(6, 8, 10) }}
+    >
       <CText testID="homeMiVotoLogoTitle" style={stylesx.logoTitle}>
         Tu Voto Decide
       </CText>
@@ -421,17 +438,21 @@ const MiVotoLogo = () => (
 const CTA_MARGIN = getResponsiveSize(16, 20, 24);
 const LEFT_COL_WIDTH = getResponsiveSize(56, 64, 72);
 
-const buildNotificationSeenKey = dniValue => {
-  const normalized = String(dniValue || '')
+const buildNotificationSeenKey = (dniValue) => {
+  const normalized = String(dniValue || "")
     .trim()
     .toLowerCase();
-  return `@notifications:last-seen:${normalized || 'anon'}`;
+  return `@notifications:last-seen:${normalized || "anon"}`;
 };
 
 const LOOKUP_CACHE_KEYS = {
-  electionStatus: 'home:election-config-status',
-  notifications: dniValue =>
-    `home:notifications:${String(dniValue || '').trim().toLowerCase() || 'anon'}`,
+  electionStatus: "home:election-config-status",
+  notifications: (dniValue) =>
+    `home:notifications:${
+      String(dniValue || "")
+        .trim()
+        .toLowerCase() || "anon"
+    }`,
 };
 
 const LOOKUP_CACHE_TTLS = {
@@ -445,7 +466,7 @@ const ATT_AVAILABILITY_SYNC_COOLDOWN_MS = 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
 const VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS = 15 * 1000;
 
-const shouldKeepElectionInCarousel = election => {
+const shouldKeepElectionInCarousel = (election) => {
   const closesAt = Number(election?.closesAt || 0);
   if (!Number.isFinite(closesAt) || closesAt <= 0) {
     return true;
@@ -454,7 +475,7 @@ const shouldKeepElectionInCarousel = election => {
   return Date.now() - closesAt <= VOTING_CAROUSEL_RETENTION_MS;
 };
 
-const extractNotificationTimestamp = notification => {
+const extractNotificationTimestamp = (notification) => {
   const raw =
     notification?.createdAt ||
     notification?.timestamp ||
@@ -462,31 +483,34 @@ const extractNotificationTimestamp = notification => {
     notification?.data?.timestamp ||
     0;
 
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
     return raw > 9999999999 ? raw : raw * 1000;
   }
 
-  const parsed = Date.parse(String(raw || ''));
+  const parsed = Date.parse(String(raw || ""));
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const getTablesByLocationCacheKey = locationId =>
-  `tables-by-location:${String(locationId || '').trim()}`;
+const getTablesByLocationCacheKey = (locationId) =>
+  `tables-by-location:${String(locationId || "").trim()}`;
 
 const warmTablesCacheByLocationId = async ({
   locationId,
   seedTables = [],
   timeoutMs = 10000,
 }) => {
-  const normalizedLocationId = String(locationId || '').trim();
+  const normalizedLocationId = String(locationId || "").trim();
   if (!normalizedLocationId) return;
 
   const cacheKey = getTablesByLocationCacheKey(normalizedLocationId);
-  const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.tablesByLocationMs);
+  const cacheFresh = await isFresh(
+    cacheKey,
+    LOOKUP_CACHE_TTLS.tablesByLocationMs,
+  );
   if (cacheFresh) return;
 
   if (Array.isArray(seedTables) && seedTables.length > 0) {
-    await setCache(cacheKey, seedTables, { version: 'tables-v1' });
+    await setCache(cacheKey, seedTables, { version: "tables-v1" });
     return;
   }
 
@@ -496,7 +520,7 @@ const warmTablesCacheByLocationId = async ({
     const { data } = await axios.get(primaryUrl, { timeout: timeoutMs });
     const list = data?.data || data?.tables || data?.data?.tables || [];
     if (Array.isArray(list) && list.length > 0) {
-      await setCache(cacheKey, list, { version: 'tables-v1' });
+      await setCache(cacheKey, list, { version: "tables-v1" });
       return;
     }
   } catch {
@@ -508,22 +532,22 @@ const warmTablesCacheByLocationId = async ({
     const { data } = await axios.get(legacyUrl, { timeout: timeoutMs });
     const list = data?.tables || data?.data?.tables || [];
     if (Array.isArray(list) && list.length > 0) {
-      await setCache(cacheKey, list, { version: 'tables-v1' });
+      await setCache(cacheKey, list, { version: "tables-v1" });
     }
   } catch {
     // non-blocking warmup
   }
 };
 
-const resolveElectionWindowState = status => {
-  if (!status || typeof status !== 'object') {
+const resolveElectionWindowState = (status) => {
+  if (!status || typeof status !== "object") {
     return { known: false, enabled: true, reason: null };
   }
 
   const elections = Array.isArray(status?.elections) ? status.elections : [];
   const selectedConfig =
     status?.config ||
-    elections.find(e => e?.isActive) ||
+    elections.find((e) => e?.isActive) ||
     elections[0] ||
     null;
 
@@ -531,7 +555,7 @@ const resolveElectionWindowState = status => {
     return {
       known: true,
       enabled: false,
-      reason: 'No hay una elección activa en este momento.',
+      reason: "No hay una elección activa en este momento.",
     };
   }
 
@@ -539,22 +563,22 @@ const resolveElectionWindowState = status => {
     return {
       known: true,
       enabled: false,
-      reason: 'La elección no está activa en este momento.',
+      reason: "La elección no está activa en este momento.",
     };
   }
 
   const isVotingPeriod =
-    typeof status?.isVotingPeriod === 'boolean'
+    typeof status?.isVotingPeriod === "boolean"
       ? status.isVotingPeriod
-      : typeof selectedConfig?.isVotingPeriod === 'boolean'
-        ? selectedConfig.isVotingPeriod
-        : null;
+      : typeof selectedConfig?.isVotingPeriod === "boolean"
+      ? selectedConfig.isVotingPeriod
+      : null;
 
   if (isVotingPeriod === false) {
     return {
       known: true,
       enabled: false,
-      reason: 'Fuera del periodo de votación.',
+      reason: "Fuera del periodo de votación.",
     };
   }
 
@@ -567,7 +591,7 @@ const resolveElectionWindowState = status => {
 
 export default function HomeScreen({ navigation, route }) {
   const dispatch = useDispatch();
-  const auth = useSelector(s => s.auth);
+  const auth = useSelector((s) => s.auth);
   const userTopicRef = useRef(null);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
@@ -576,12 +600,12 @@ export default function HomeScreen({ navigation, route }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
   const queueRunPromiseRef = useRef(null);
-  const runOfflineQueueRef = useRef(() => { });
+  const runOfflineQueueRef = useRef(() => {});
   const loadVotingElectionRef = useRef(async () => {});
   const refreshVotingStateRef = useRef(() => {});
   const requestLocationAndCheckAvailabilityRef = useRef(async () => {});
   const checkUserVotePlaceRef = useRef(async () => {});
-  const refreshNotificationBadgeCountRef = useRef(async () => { });
+  const refreshNotificationBadgeCountRef = useRef(async () => {});
   const notificationsApiKeyRef = useRef(null);
   const notificationsAuthRetryAtRef = useRef(0);
   const votingElectionLoadRef = useRef({
@@ -617,12 +641,13 @@ export default function HomeScreen({ navigation, route }) {
   const [queueFailModal, setQueueFailModal] = useState({
     visible: false,
     failedItems: [],
-    message: '',
+    message: "",
   });
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [isHomeOnline, setIsHomeOnline] = useState(true);
   const [votingElections, setVotingElections] = useState([]);
-  const [currentVotingElectionIndex, setCurrentVotingElectionIndex] = useState(0);
+  const [currentVotingElectionIndex, setCurrentVotingElectionIndex] =
+    useState(0);
   const [loadingVotingElection, setLoadingVotingElection] = useState(
     FEATURE_FLAGS.ENABLE_VOTING_FLOW,
   );
@@ -662,26 +687,25 @@ export default function HomeScreen({ navigation, route }) {
     try {
       setLoadingVotingElection(true);
       const request =
-        typeof votingRepository.getElections === 'function'
+        typeof votingRepository.getElections === "function"
           ? votingRepository.getElections()
           : votingRepository.getElection();
       votingElectionLoadRef.current.promise = request;
       const result = await request;
-      const elections = Array.isArray(result)
-        ? result
-        : result
-          ? [result]
-          : [];
+      const elections = Array.isArray(result) ? result : result ? [result] : [];
       const visibleElections = elections.filter(shouldKeepElectionInCarousel);
       setVotingElections(visibleElections);
-      setCurrentVotingElectionIndex(currentIndex =>
+      setCurrentVotingElectionIndex((currentIndex) =>
         visibleElections.length === 0
           ? 0
           : Math.min(currentIndex, visibleElections.length - 1),
       );
       return visibleElections;
     } catch (error) {
-      console.warn('[HomeScreen] voting election load failed:', error?.message || error);
+      console.warn(
+        "[HomeScreen] voting election load failed:",
+        error?.message || error,
+      );
       setVotingElections([]);
       setCurrentVotingElectionIndex(0);
       return [];
@@ -693,8 +717,7 @@ export default function HomeScreen({ navigation, route }) {
   }, [votingRepository]);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
-  const [locationStatus, setLocationStatus] = useState('unknown');
-
+  const [locationStatus, setLocationStatus] = useState("unknown");
 
   const pendingPermissionFromSettings = useRef(false);
   const availabilityRef = useRef({ lastCheckAt: 0 }); // evita spam en focus
@@ -702,42 +725,42 @@ export default function HomeScreen({ navigation, route }) {
 
   const [permissionModal, setPermissionModal] = useState({
     visible: false,
-    type: 'settings', // o 'warning'
-    title: '',
-    message: '',
-    primaryText: 'Abrir ajustes',
+    type: "settings", // o 'warning'
+    title: "",
+    message: "",
+    primaryText: "Abrir ajustes",
     onPrimary: null,
-    secondaryText: 'Cancelar',
+    secondaryText: "Cancelar",
     onSecondary: null,
   });
   const showPermissionModal = (
     title,
     message,
     onOpenSettings,
-    onCancel = () => setPermissionModal(m => ({ ...m, visible: false })),
+    onCancel = () => setPermissionModal((m) => ({ ...m, visible: false })),
   ) => {
     setPermissionModal({
       visible: true,
-      type: 'settings',
+      type: "settings",
       title,
       message,
-      primaryText: 'Abrir ajustes',
+      primaryText: "Abrir ajustes",
       onPrimary: onOpenSettings,
-      secondaryText: 'Cancelar',
+      secondaryText: "Cancelar",
       onSecondary: onCancel,
     });
   };
 
   const openLocationSettings = () => {
-    setPermissionModal(m => ({ ...m, visible: false }));
+    setPermissionModal((m) => ({ ...m, visible: false }));
     pendingPermissionFromSettings.current = true;
 
-    if (Platform.OS === 'android') {
-      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() =>
-        Linking.openSettings(),
+    if (Platform.OS === "android") {
+      Linking.sendIntent("android.settings.LOCATION_SOURCE_SETTINGS").catch(
+        () => Linking.openSettings(),
       );
     } else {
-      Linking.openURL('App-Prefs:Privacy&path=LOCATION').catch(() =>
+      Linking.openURL("App-Prefs:Privacy&path=LOCATION").catch(() =>
         Linking.openSettings(),
       );
     }
@@ -747,80 +770,88 @@ export default function HomeScreen({ navigation, route }) {
   const checkLocationPermissionOnly = useCallback(async () => {
     try {
       const permission = await Location.getForegroundPermissionsAsync();
-      return permission?.status === 'granted';
+      return permission?.status === "granted";
     } catch {
       return false;
     }
   }, []);
 
-
   const requestLocationPermission = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    return status === 'granted';
+    return status === "granted";
   }, []);
 
   const getCurrentPositionAsync = async (useHighAccuracy = true) => {
     const location = await Location.getCurrentPositionAsync({
-      accuracy: useHighAccuracy ? Location.LocationAccuracy.High : Location.LocationAccuracy.Low
+      accuracy: useHighAccuracy
+        ? Location.LocationAccuracy.High
+        : Location.LocationAccuracy.Low,
     });
 
     return location;
-  }
+  };
 
   /**
-* Obtiene la ubicación SIN mostrar modales.
-* Si el permiso no está concedido, actualiza locationStatus y retorna null.
-*/
+   * Obtiene la ubicación SIN mostrar modales.
+   * Si el permiso no está concedido, actualiza locationStatus y retorna null.
+   */
 
-  const getHomeLocation = useCallback(async (silent = true) => {
-    const ok = await checkLocationPermissionOnly();
-    if (!ok) {
-      setLocationStatus('denied');
-      if (!silent) {
-        // Solo muestra modal si el usuario pidió explícitamente activar
-        showPermissionModal(
-          'Ubicación requerida',
-          'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
-          openLocationSettings,
-        );
-      }
-      return null;
-    }
-    setLocationStatus('granted');
-    try {
-      // intento 1: high accuracy
-      const pos = await getCurrentPositionAsync(true);
-      return pos.coords;
-    } catch (err1) {
-      // fallback: low accuracy si es TIMEOUT/POSITION_UNAVAILABLE
-      try {
-        const pos2 = await getCurrentPositionAsync(false);
-        return pos2.coords;
-      } catch (err2) {
-        // GPS desactivado: marcar como 'denied' para mostrar botón "Activar Ubicación"
-        setLocationStatus('denied');
+  const getHomeLocation = useCallback(
+    async (silent = true) => {
+      const ok = await checkLocationPermissionOnly();
+      if (!ok) {
+        setLocationStatus("denied");
         if (!silent) {
+          // Solo muestra modal si el usuario pidió explícitamente activar
           showPermissionModal(
-            'No se pudo obtener ubicación',
-            'Activa la ubicación (GPS) e intenta nuevamente.',
+            "Ubicación requerida",
+            "Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.",
             openLocationSettings,
           );
         }
         return null;
       }
-    }
-  }, [checkLocationPermissionOnly]);
+      setLocationStatus("granted");
+      try {
+        // intento 1: high accuracy
+        const pos = await getCurrentPositionAsync(true);
+        return pos.coords;
+      } catch (err1) {
+        // fallback: low accuracy si es TIMEOUT/POSITION_UNAVAILABLE
+        try {
+          const pos2 = await getCurrentPositionAsync(false);
+          return pos2.coords;
+        } catch (err2) {
+          // GPS desactivado: marcar como 'denied' para mostrar botón "Activar Ubicación"
+          setLocationStatus("denied");
+          if (!silent) {
+            showPermissionModal(
+              "No se pudo obtener ubicación",
+              "Activa la ubicación (GPS) e intenta nuevamente.",
+              openLocationSettings,
+            );
+          }
+          return null;
+        }
+      }
+    },
+    [checkLocationPermissionOnly],
+  );
 
   const buildContractsAvailabilityFromElections = useCallback(
     (availableElections, nearestLocation = null) => {
-      const elections = Array.isArray(availableElections) ? availableElections : [];
+      const elections = Array.isArray(availableElections)
+        ? availableElections
+        : [];
 
       // ALCALDE -> municipal
-      const municipal = elections.find(e => e?.electionType === 'municipal');
+      const municipal = elections.find((e) => e?.electionType === "municipal");
       const municipalEnabled = !!municipal?.canAttest;
 
       // GOBERNADOR -> departamental
-      const departamental = elections.find(e => e?.electionType === 'departamental');
+      const departamental = elections.find(
+        (e) => e?.electionType === "departamental",
+      );
       const departamentalEnabled = !!departamental?.canAttest;
 
       return {
@@ -854,7 +885,6 @@ export default function HomeScreen({ navigation, route }) {
         try {
           const cached = await getAttestationAvailabilityCache(dni);
           if (cached?.availableElections) {
-
             setContractsAvailability(
               buildContractsAvailabilityFromElections(
                 cached.availableElections,
@@ -863,7 +893,6 @@ export default function HomeScreen({ navigation, route }) {
             );
             return true;
           }
-
         } catch {
           // noop
         }
@@ -878,12 +907,21 @@ export default function HomeScreen({ navigation, route }) {
 
         const probe = await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
-
           if (!hasCached) {
             setContractsAvailability({
               nearestLocation: null,
-              ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-              GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+              ALCALDE: {
+                enabled: false,
+                electionId: null,
+                electionName: null,
+                reason: null,
+              },
+              GOBERNADOR: {
+                enabled: false,
+                electionId: null,
+                electionName: null,
+                reason: null,
+              },
             });
           }
           return;
@@ -908,14 +946,16 @@ export default function HomeScreen({ navigation, route }) {
           ? data.availableElections
           : [];
 
-
         await saveAttestationAvailabilityCache(dni, {
           nearestLocation: data?.nearestLocation || null,
           availableElections: elections,
         });
 
         setContractsAvailability(
-          buildContractsAvailabilityFromElections(elections, data?.nearestLocation),
+          buildContractsAvailabilityFromElections(
+            elections,
+            data?.nearestLocation,
+          ),
         );
       } catch (e) {
         const hasCached = await applyCachedAvailability();
@@ -923,8 +963,18 @@ export default function HomeScreen({ navigation, route }) {
         if (!hasCached) {
           setContractsAvailability({
             nearestLocation: null,
-            ALCALDE: { enabled: false, electionId: null, electionName: null, reason: null },
-            GOBERNADOR: { enabled: false, electionId: null, electionName: null, reason: null },
+            ALCALDE: {
+              enabled: false,
+              electionId: null,
+              electionName: null,
+              reason: null,
+            },
+            GOBERNADOR: {
+              enabled: false,
+              electionId: null,
+              electionName: null,
+              reason: null,
+            },
           });
         }
       } finally {
@@ -936,9 +986,9 @@ export default function HomeScreen({ navigation, route }) {
     [dni, buildContractsAvailabilityFromElections],
   );
   /**
- * Verificación automática (en focus / red) — modo silencioso:
- * solo CHECK, nunca muestra diálogos del sistema ni modales.
- */
+   * Verificación automática (en focus / red) — modo silencioso:
+   * solo CHECK, nunca muestra diálogos del sistema ni modales.
+   */
   const requestLocationAndCheckAvailability = useCallback(async () => {
     const now = Date.now();
     if (now - (availabilityRef.current.lastCheckAt || 0) < 4000) return;
@@ -963,9 +1013,9 @@ export default function HomeScreen({ navigation, route }) {
     let hasPermission = false;
     try {
       hasPermission = await checkLocationPermissionOnly();
-      setLocationStatus(hasPermission ? 'granted' : 'denied');
+      setLocationStatus(hasPermission ? "granted" : "denied");
     } catch {
-      setLocationStatus('unknown');
+      setLocationStatus("unknown");
     }
 
     const cachedSavedAt = Number(cachedAvailability?.savedAt || 0);
@@ -973,9 +1023,7 @@ export default function HomeScreen({ navigation, route }) {
       cachedSavedAt > 0 &&
       now - cachedSavedAt < ATT_AVAILABILITY_SYNC_COOLDOWN_MS;
 
-
     const probe = await backendProbe({ timeoutMs: 2000 });
-
 
     try {
       const coords = await getHomeLocation(true);
@@ -997,7 +1045,6 @@ export default function HomeScreen({ navigation, route }) {
     checkLocationPermissionOnly,
   ]);
 
-
   /**
    * Acción EXPLÍCITA del usuario: toca "Activar Ubicación".
    * Aquí SÍ pedimos el permiso al sistema y mostramos modal si falla.
@@ -1005,18 +1052,17 @@ export default function HomeScreen({ navigation, route }) {
   const handleActivateLocation = useCallback(async () => {
     const ok = await requestLocationPermission();
     if (!ok) {
-      setLocationStatus('denied');
+      setLocationStatus("denied");
 
       showPermissionModal(
-        'Ubicación requerida',
-        'Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.',
+        "Ubicación requerida",
+        "Necesitas habilitar la ubicación para verificar si tienes contratos activos en esta zona.",
         openLocationSettings,
       );
       return;
     }
 
-
-    setLocationStatus('granted');
+    setLocationStatus("granted");
     setLoadingAvailability(true);
     try {
       let coords = null;
@@ -1031,18 +1077,18 @@ export default function HomeScreen({ navigation, route }) {
       if (coords?.latitude && coords?.longitude) {
         await checkAttestationAvailability(coords.latitude, coords.longitude);
       } else {
-        setLocationStatus('denied');
+        setLocationStatus("denied");
         showPermissionModal(
-          'No se pudo obtener ubicación',
-          'Activa la ubicación (GPS) e intenta nuevamente.',
+          "No se pudo obtener ubicación",
+          "Activa la ubicación (GPS) e intenta nuevamente.",
           openLocationSettings,
         );
       }
     } catch {
-      setLocationStatus('denied');
+      setLocationStatus("denied");
       showPermissionModal(
-        'No se pudo obtener ubicación',
-        'Activa la ubicación (GPS) e intenta nuevamente.',
+        "No se pudo obtener ubicación",
+        "Activa la ubicación (GPS) e intenta nuevamente.",
         openLocationSettings,
       );
     } finally {
@@ -1051,8 +1097,8 @@ export default function HomeScreen({ navigation, route }) {
   }, [requestLocationPermission, checkAttestationAvailability]);
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', async state => {
-      if (state !== 'active') return;
+    const sub = AppState.addEventListener("change", async (state) => {
+      if (state !== "active") return;
 
       runOfflineQueueRef.current?.();
 
@@ -1061,23 +1107,22 @@ export default function HomeScreen({ navigation, route }) {
         try {
           const ok = await checkLocationPermissionOnly();
           if (ok) {
-            setLocationStatus('granted');
-            setPermissionModal(m => ({ ...m, visible: false }));
+            setLocationStatus("granted");
+            setPermissionModal((m) => ({ ...m, visible: false }));
             // Forzar re-check ahora que hay permiso
             availabilityRef.current.lastCheckAt = 0;
             requestLocationAndCheckAvailability();
           } else {
-            setLocationStatus('denied');
+            setLocationStatus("denied");
             // No mostramos modal de nuevo, el botón "Activar Ubicación" ya está visible
-            setPermissionModal(m => ({ ...m, visible: false }));
+            setPermissionModal((m) => ({ ...m, visible: false }));
           }
-        } catch (e) { }
+        } catch (e) {}
       }
     });
 
     return () => sub.remove();
   }, [requestLocationAndCheckAvailability, checkLocationPermissionOnly]);
-
 
   const fetchElectionStatus = useCallback(async () => {
     const cachedEntry = await getCache(LOOKUP_CACHE_KEYS.electionStatus);
@@ -1092,9 +1137,7 @@ export default function HomeScreen({ navigation, route }) {
       LOOKUP_CACHE_TTLS.electionStatusMs,
     );
 
-
     const probe = await backendProbe({ timeoutMs: 2000 });
-
 
     try {
       const res = await axios.get(
@@ -1106,17 +1149,16 @@ export default function HomeScreen({ navigation, route }) {
 
       setElectionStatus(res.data);
       await setCache(LOOKUP_CACHE_KEYS.electionStatus, res.data, {
-        version: 'elections-config-v1',
+        version: "elections-config-v1",
       });
     } catch (err) {
-
       if (!cachedData) {
-        console.error('[HOME] fetchElectionStatus error', err);
+        console.error("[HOME] fetchElectionStatus error", err);
       }
     }
   }, []);
 
-  const userData = useSelector(state => state.wallet.payload);
+  const userData = useSelector((state) => state.wallet.payload);
   const vc = userData?.vc;
   const subject = vc?.credentialSubject || vc?.vc?.credentialSubject || {};
   const dni =
@@ -1127,19 +1169,25 @@ export default function HomeScreen({ navigation, route }) {
 
   const [infoModal, setInfoModal] = useState({
     visible: false,
-    type: 'warning',
-    title: '',
-    message: '',
+    type: "warning",
+    title: "",
+    message: "",
   });
   const [votingSyncBanner, setVotingSyncBanner] = useState({
     visible: false,
-    message: '',
+    message: "",
   });
 
   const runOfflineQueueOnce = useCallback(async () => {
     if (queueRunPromiseRef.current) return queueRunPromiseRef.current;
     if (processingRef.current) return;
-    if (!auth?.isAuthenticated || !userData?.privKey || !userData?.account || !userData?.did) return;
+    if (
+      !auth?.isAuthenticated ||
+      !userData?.privKey ||
+      !userData?.account ||
+      !userData?.did
+    )
+      return;
     queueRunPromiseRef.current = (async () => {
       processingRef.current = true;
       let processedVotingSyncCount = 0;
@@ -1150,44 +1198,49 @@ export default function HomeScreen({ navigation, route }) {
         if (!online) return;
         const probe = await backendProbe({ timeoutMs: 2000 });
         if (!probe?.ok) {
-          console.warn('[OFFLINE-QUEUE] backend probe failed; skip queue drain', probe);
+          console.warn(
+            "[OFFLINE-QUEUE] backend probe failed; skip queue drain",
+            probe,
+          );
           return;
         }
 
-        const result = await processQueue(async item => {
+        const result = await processQueue(async (item) => {
           const taskType = item?.task?.type;
-          if (taskType === 'publishWorksheet') {
+          if (taskType === "publishWorksheet") {
             await publishWorksheetHandler(item, userData);
             return;
           }
-          if (taskType === 'publishActa') {
+          if (taskType === "publishActa") {
             await publishActaHandler(item, userData);
             return;
           }
-          if (taskType === 'syncActaBackend') {
+          if (taskType === "syncActaBackend") {
             await syncActaBackendHandler(item, userData);
             return;
           }
-          if (taskType === 'votingFlowVote') {
+          if (taskType === "votingFlowVote") {
             await handleVotingQueueVote(item);
             processedVotingSyncCount += 1;
             return;
           }
           const unknownTaskError = new Error(
-            `Tipo de tarea offline no soportado: ${String(taskType || 'unknown')}`,
+            `Tipo de tarea offline no soportado: ${String(
+              taskType || "unknown",
+            )}`,
           );
           unknownTaskError.removeFromQueue = true;
-          unknownTaskError.errorType = 'BUSINESS_TERMINAL';
+          unknownTaskError.errorType = "BUSINESS_TERMINAL";
           throw unknownTaskError;
         });
 
         // Actualiza badge/pending
-        if (typeof result?.remaining === 'number') {
+        if (typeof result?.remaining === "number") {
           setHasPendingActa(result.remaining > 0);
         } else {
           const listAfter = await getOfflineQueue();
-          const pendingAfter = (listAfter || []).some(
-            i => isQueueWriteTask(i?.task?.type),
+          const pendingAfter = (listAfter || []).some((i) =>
+            isQueueWriteTask(i?.task?.type),
           );
           setHasPendingActa(pendingAfter);
         }
@@ -1202,7 +1255,7 @@ export default function HomeScreen({ navigation, route }) {
                 visible: true,
                 message:
                   processedVotingSyncCount === 1
-                    ? 'Votacion completada'
+                    ? "Votacion completada"
                     : `${processedVotingSyncCount} votaciones completadas`,
               });
             }
@@ -1212,9 +1265,13 @@ export default function HomeScreen({ navigation, route }) {
         }
 
         if (result?.failed > 0) {
-          const failedItems = Array.isArray(result.failedItems) ? result.failedItems : [];
+          const failedItems = Array.isArray(result.failedItems)
+            ? result.failedItems
+            : [];
           const failedVotingItems = failedItems.filter(
-            item => item?.type === 'votingFlowVote' && item?.removedFromQueue === true,
+            (item) =>
+              item?.type === "votingFlowVote" &&
+              item?.removedFromQueue === true,
           );
           if (failedVotingItems.length > 0) {
             // Un fallo terminal no se reintenta: se limpia el estado local de
@@ -1224,13 +1281,14 @@ export default function HomeScreen({ navigation, route }) {
             );
 
             await Promise.all(
-              failedVotingItems.map(item =>
+              failedVotingItems.map((item) =>
                 isBusinessTerminalFailure(item)
                   ? releaseVoteForElection(item?.electionId)
                   : markVoteFailed({
                       electionId: item?.electionId,
                       reason:
-                        item?.error || 'No se pudo completar el registro del voto.',
+                        item?.error ||
+                        "No se pudo completar el registro del voto.",
                     }),
               ),
             );
@@ -1251,14 +1309,14 @@ export default function HomeScreen({ navigation, route }) {
         }
       } catch (e) {
         captureError(e, {
-          flow: 'offline_queue',
-          step: 'run_once_fatal',
+          flow: "offline_queue",
+          step: "run_once_fatal",
           critical: false,
         });
         setQueueFailModal({
           visible: true,
           failedItems: [],
-          message: ' Reintenta nuevamente.',
+          message: " Reintenta nuevamente.",
         });
       } finally {
         processingRef.current = false;
@@ -1289,7 +1347,7 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     const timer = setTimeout(() => {
-      setVotingSyncBanner(current => ({...current, visible: false}));
+      setVotingSyncBanner((current) => ({ ...current, visible: false }));
     }, 3500);
 
     return () => clearTimeout(timer);
@@ -1301,13 +1359,17 @@ export default function HomeScreen({ navigation, route }) {
 
       const clearUserTopicSubscription = async () => {
         const previousTopic =
-          userTopicRef.current || (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
+          userTopicRef.current ||
+          (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
         if (!previousTopic) return;
 
         try {
           await unsubscribeFromPushTopic(previousTopic);
         } catch (error) {
-          console.warn('[PushTopic] Failed to unsubscribe previous user topic', error);
+          console.warn(
+            "[PushTopic] Failed to unsubscribe previous user topic",
+            error,
+          );
         }
 
         userTopicRef.current = null;
@@ -1315,39 +1377,42 @@ export default function HomeScreen({ navigation, route }) {
       };
 
       const syncUserTopicSubscription = async () => {
-
-
-        if (!auth?.isAuthenticated || !dni || !userData?.did || !userData?.privKey) {
-
+        if (
+          !auth?.isAuthenticated ||
+          !dni ||
+          !userData?.did ||
+          !userData?.privKey
+        ) {
           await clearUserTopicSubscription();
           return;
         }
 
         try {
-
-
-          const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
-
+          const apiKey = await authenticateWithBackend(
+            userData.did,
+            userData.privKey,
+          );
 
           if (!apiKey) {
             return;
           }
 
-          const requestUrl = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1/users/${encodeURIComponent(
-            dni,
-          )}`;
+          const requestUrl = `${String(BACKEND_RESULT || "").replace(
+            /\/+$/,
+            "",
+          )}/api/v1/users/${encodeURIComponent(dni)}`;
           const response = await fetch(requestUrl, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
             },
           });
 
           if (!response.ok) {
-            const responseText = await response.text().catch(() => '');
-            console.warn('[PushTopic] HomeScreen user lookup failed', {
+            const responseText = await response.text().catch(() => "");
+            console.warn("[PushTopic] HomeScreen user lookup failed", {
               dni,
               requestUrl,
               status: response.status,
@@ -1357,19 +1422,25 @@ export default function HomeScreen({ navigation, route }) {
           }
 
           const payload = await response.json();
-          const backendUserId = String(payload?._id || payload?.id || '').trim();
+          const backendUserId = String(
+            payload?._id || payload?.id || "",
+          ).trim();
           if (!backendUserId) {
-            console.warn('[PushTopic] HomeScreen user lookup payload missing id', {
-              dni,
-              requestUrl,
-              payload,
-            });
+            console.warn(
+              "[PushTopic] HomeScreen user lookup payload missing id",
+              {
+                dni,
+                requestUrl,
+                payload,
+              },
+            );
             return;
           }
 
           const nextTopic = `user_${backendUserId}`;
           const previousTopic =
-            userTopicRef.current || (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
+            userTopicRef.current ||
+            (await AsyncStorage.getItem(LAST_USER_TOPIC_KEY));
 
           if (previousTopic && previousTopic !== nextTopic) {
             await unsubscribeFromPushTopic(previousTopic);
@@ -1381,9 +1452,8 @@ export default function HomeScreen({ navigation, route }) {
 
           userTopicRef.current = nextTopic;
           await AsyncStorage.setItem(LAST_USER_TOPIC_KEY, nextTopic);
-
         } catch (error) {
-          console.warn('[PushTopic] HomeScreen sync failed', {
+          console.warn("[PushTopic] HomeScreen sync failed", {
             dni,
             message: error?.message || String(error),
           });
@@ -1399,39 +1469,38 @@ export default function HomeScreen({ navigation, route }) {
   );
 
   useEffect(() => {
-    requestLocationAndCheckAvailabilityRef.current = requestLocationAndCheckAvailability;
+    requestLocationAndCheckAvailabilityRef.current =
+      requestLocationAndCheckAvailability;
   }, [requestLocationAndCheckAvailability]);
 
-  const buildWorksheetIdentity = payload => {
+  const buildWorksheetIdentity = (payload) => {
     const dni = String(
-      payload?.dni ||
-      payload?.additionalData?.dni ||
-      '',
+      payload?.dni || payload?.additionalData?.dni || "",
     ).trim();
     const electionId = String(
-      payload?.electionId ||
-      payload?.additionalData?.electionId ||
-      '',
+      payload?.electionId || payload?.additionalData?.electionId || "",
     ).trim();
     const tableCode = String(
       payload?.tableCode ||
-      payload?.additionalData?.tableCode ||
-      payload?.tableData?.codigo ||
-      payload?.tableData?.tableCode ||
-      '',
+        payload?.additionalData?.tableCode ||
+        payload?.tableData?.codigo ||
+        payload?.tableData?.tableCode ||
+        "",
     ).trim();
 
     if (!dni || !electionId || !tableCode) return null;
     return { dni, electionId, tableCode };
   };
 
-  const clearWorksheetStatusForFailedItem = async failedItem => {
-    if (failedItem?.type !== 'publishWorksheet') return;
+  const clearWorksheetStatusForFailedItem = async (failedItem) => {
+    if (failedItem?.type !== "publishWorksheet") return;
 
     let identity = buildWorksheetIdentity(failedItem);
     if (!identity && failedItem?.id) {
       const queue = await getOfflineQueue();
-      const queueItem = (queue || []).find(item => item?.id === failedItem.id);
+      const queueItem = (queue || []).find(
+        (item) => item?.id === failedItem.id,
+      );
       const queuePayload = queueItem?.task?.payload || {};
       identity = buildWorksheetIdentity(queuePayload);
     }
@@ -1441,9 +1510,9 @@ export default function HomeScreen({ navigation, route }) {
     }
   };
 
-  const clearVotingStatusForFailedItem = async failedItem => {
-    if (failedItem?.type !== 'votingFlowVote') return;
-    const electionId = String(failedItem?.electionId || '').trim();
+  const clearVotingStatusForFailedItem = async (failedItem) => {
+    if (failedItem?.type !== "votingFlowVote") return;
+    const electionId = String(failedItem?.electionId || "").trim();
     if (!electionId) return;
 
     await releaseVoteForElection(electionId);
@@ -1451,61 +1520,62 @@ export default function HomeScreen({ navigation, route }) {
     await loadVotingElectionRef.current?.();
     setInfoModal({
       visible: true,
-      type: 'success',
-      title: 'Voto liberado',
-      message: 'Puedes volver a ingresar y registrar tu voto nuevamente.',
+      type: "success",
+      title: "Voto liberado",
+      message: "Puedes volver a ingresar y registrar tu voto nuevamente.",
     });
   };
 
   const handleRemoveFailedItem = async (id) => {
     if (!id) return;
     try {
-      const failedItem = (queueFailModal.failedItems || []).find(x => x.id === id);
+      const failedItem = (queueFailModal.failedItems || []).find(
+        (x) => x.id === id,
+      );
       await clearWorksheetStatusForFailedItem(failedItem);
       await clearVotingStatusForFailedItem(failedItem);
       await removeById(id);
-      setQueueFailModal(m => ({
+      setQueueFailModal((m) => ({
         ...m,
-        failedItems: (m.failedItems || []).filter(x => x.id !== id),
-        visible: ((m.failedItems || []).length - 1) > 0,
+        failedItems: (m.failedItems || []).filter((x) => x.id !== id),
+        visible: (m.failedItems || []).length - 1 > 0,
       }));
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some(
-        i => isQueueWriteTask(i?.task?.type),
+      const pendingAfter = (listAfter || []).some((i) =>
+        isQueueWriteTask(i?.task?.type),
       );
       setHasPendingActa(pendingAfter);
     } catch (e) {
       setInfoModal({
         visible: true,
-        type: 'error',
-        title: 'No se pudo actualizar el estado',
-        message: 'No fue posible liberar el voto fallido. Intenta nuevamente.',
+        type: "error",
+        title: "No se pudo actualizar el estado",
+        message: "No fue posible liberar el voto fallido. Intenta nuevamente.",
       });
     }
   };
 
   const handleQueueRetry = async () => {
-    await retryNow(item => isQueueWriteTask(item?.task?.type));
-    setQueueFailModal(m => ({ ...m, visible: false }));
+    await retryNow((item) => isQueueWriteTask(item?.task?.type));
+    setQueueFailModal((m) => ({ ...m, visible: false }));
     await runOfflineQueueOnce();
   };
 
-
   const handleSentryTest = () => {
-    const error = new Error('Error de prueba');
+    const error = new Error("Error de prueba");
     const userDni = userData?.dni ?? null;
-    const dniSource = userDni ? 'userData' : (dni ? 'vc' : 'unknown');
+    const dniSource = userDni ? "userData" : dni ? "vc" : "unknown";
 
-    captureMessage('Mensaje de prueba Sentry', 'info', {
-      flow: 'sentry_test',
-      screen: 'home',
+    captureMessage("Mensaje de prueba Sentry", "info", {
+      flow: "sentry_test",
+      screen: "home",
       dni_source: dniSource,
     });
 
     captureError(error, {
-      flow: 'sentry_test',
-      step: 'home_button',
+      flow: "sentry_test",
+      step: "home_button",
       critical: false,
       allowPii: true,
       dni_source: dniSource,
@@ -1513,9 +1583,10 @@ export default function HomeScreen({ navigation, route }) {
 
     setInfoModal({
       visible: true,
-      type: 'warning',
-      title: 'Sentry',
-      message: 'Evento de prueba enviado con DNI (solo dev). Revisa Sentry en 1-2 minutos.',
+      type: "warning",
+      title: "Sentry",
+      message:
+        "Evento de prueba enviado con DNI (solo dev). Revisa Sentry en 1-2 minutos.",
     });
   };
 
@@ -1524,11 +1595,11 @@ export default function HomeScreen({ navigation, route }) {
     if (electionWindow.known && !electionWindow.enabled) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'No disponible',
+        type: "warning",
+        title: "No disponible",
         message:
           electionWindow.reason ||
-          'La aplicación solo está disponible durante el periodo de votación activo.',
+          "La aplicación solo está disponible durante el periodo de votación activo.",
       });
       return;
     }
@@ -1548,23 +1619,27 @@ export default function HomeScreen({ navigation, route }) {
           ? cached.availableElections
           : [];
         let wantedElectionType = null;
-        if (type === 'ALCALDE') wantedElectionType = 'municipal';
-        else if (type === 'GOBERNADOR') wantedElectionType = 'departamental';
+        if (type === "ALCALDE") wantedElectionType = "municipal";
+        else if (type === "GOBERNADOR") wantedElectionType = "departamental";
         const match = wantedElectionType
-          ? elections.find(e => e?.electionType === wantedElectionType && !!e?.canAttest)
+          ? elections.find(
+              (e) => e?.electionType === wantedElectionType && !!e?.canAttest,
+            )
           : null;
         electionId = match?.electionId || null;
         contractId = match?.contract?.id || contractId;
         electionName = match?.electionName || electionName;
         backendElectionType = match?.electionType || backendElectionType;
-      } catch { }
+      } catch {}
     }
     if (!electionId) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'No disponible',
-        message: selected?.reason || 'No tienes contratos activos para esta elección en tu ubicación.',
+        type: "warning",
+        title: "No disponible",
+        message:
+          selected?.reason ||
+          "No tienes contratos activos para esta elección en tu ubicación.",
       });
       return;
     }
@@ -1575,25 +1650,25 @@ export default function HomeScreen({ navigation, route }) {
       electionName,
       electionType:
         backendElectionType ||
-        (type === 'ALCALDE'
-          ? 'municipal'
-          : type === 'GOBERNADOR'
-          ? 'departamental'
+        (type === "ALCALDE"
+          ? "municipal"
+          : type === "GOBERNADOR"
+          ? "departamental"
           : type),
       territory: {
-        type: 'unknown',
+        type: "unknown",
         locationId: contractsAvailability?.nearestLocation?._id || null,
         locationName: contractsAvailability?.nearestLocation?.name || null,
       },
       allowedParties: [],
-      source: online ? 'backend' : 'cache',
+      source: online ? "backend" : "cache",
     });
     if (dni) {
       await saveSelectedElectionContext(dni, selectedElectionContext);
     }
 
     const params = {
-      targetScreen: 'UnifiedParticipation',
+      targetScreen: "UnifiedParticipation",
       electionType: type,
       electionId,
       selectedElectionContext,
@@ -1624,9 +1699,9 @@ export default function HomeScreen({ navigation, route }) {
     if (!dni) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'Sin conexión',
-        message: 'No se pudo detectar tu DNI para cargar tu recinto.',
+        type: "warning",
+        title: "Sin conexión",
+        message: "No se pudo detectar tu DNI para cargar tu recinto.",
       });
       return;
     }
@@ -1643,9 +1718,9 @@ export default function HomeScreen({ navigation, route }) {
     } else {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'Sin conexión',
-        message: 'Necesitas conexión para escoger tu recinto por primera vez.',
+        type: "warning",
+        title: "Sin conexión",
+        message: "Necesitas conexión para escoger tu recinto por primera vez.",
       });
     }
   };
@@ -1654,9 +1729,9 @@ export default function HomeScreen({ navigation, route }) {
     if (!dni) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'Sin conexión',
-        message: 'No se pudo detectar tu DNI para registrar tu recinto.',
+        type: "warning",
+        title: "Sin conexión",
+        message: "No se pudo detectar tu DNI para registrar tu recinto.",
       });
       return;
     }
@@ -1666,9 +1741,10 @@ export default function HomeScreen({ navigation, route }) {
     if (!online) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'Sin conexión',
-        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+        type: "warning",
+        title: "Sin conexión",
+        message:
+          "Necesitas conexión a internet para registrar tu recinto por primera vez.",
       });
       return;
     }
@@ -1677,9 +1753,10 @@ export default function HomeScreen({ navigation, route }) {
     if (!probe?.ok) {
       setInfoModal({
         visible: true,
-        type: 'warning',
-        title: 'Sin conexión',
-        message: 'Necesitas conexión a internet para registrar tu recinto por primera vez.',
+        type: "warning",
+        title: "Sin conexión",
+        message:
+          "Necesitas conexión a internet para registrar tu recinto por primera vez.",
       });
       return;
     }
@@ -1735,19 +1812,23 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
-    if (locationStatus !== 'granted') {
+    if (locationStatus !== "granted") {
       return (
         <TouchableOpacity
           style={stylesx.activateLocationBtn}
           activeOpacity={0.8}
-          onPress={handleActivateLocation}>
+          onPress={handleActivateLocation}
+        >
           <View style={stylesx.activateLocationIconBox}>
             <Ionicons name="location-outline" size={24} color="#F59E0B" />
           </View>
           <View style={stylesx.splitBtnContent}>
-            <CText style={stylesx.activateLocationTitle}>Activar Ubicación</CText>
+            <CText style={stylesx.activateLocationTitle}>
+              Activar Ubicación
+            </CText>
             <CText style={stylesx.activateLocationDescription}>
-              Activa tu ubicación para ver las opciones de envío de hojas de trabajo.
+              Activa tu ubicación para ver las opciones de envío de hojas de
+              trabajo.
             </CText>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#D97706" />
@@ -1761,11 +1842,19 @@ export default function HomeScreen({ navigation, route }) {
     if (!showAlcalde && !showGobernador) {
       return (
         <View style={stylesx.warningContractCard}>
-          <Ionicons name="warning-outline" size={32} color="#F59E0B" style={{ marginRight: 12 }} />
+          <Ionicons
+            name="warning-outline"
+            size={32}
+            color="#F59E0B"
+            style={{ marginRight: 12 }}
+          />
           <View style={{ flex: 1 }}>
-            <CText style={stylesx.warningContractTitle}>No puedes enviar hojas de trabajo desde aquí</CText>
+            <CText style={stylesx.warningContractTitle}>
+              No puedes enviar hojas de trabajo desde aquí
+            </CText>
             <CText style={stylesx.warningContractText}>
-              Esta ubicación no está habilitada para el envío de hojas de trabajo. Verifica tu ubicación o muevete a otra zona.
+              Esta ubicación no está habilitada para el envío de hojas de
+              trabajo. Verifica tu ubicación o muevete a otra zona.
             </CText>
           </View>
         </View>
@@ -1774,21 +1863,25 @@ export default function HomeScreen({ navigation, route }) {
 
     // CASO 2 y 3: Mostrar botones según corresponda
     return (
-      <View style={{ width: '100%' }}>
+      <View style={{ width: "100%" }}>
         {showAlcalde && (
           <TouchableOpacity
             style={stylesx.splitBtn}
             activeOpacity={0.8}
-            onPress={() => handleParticiparPress('ALCALDE')}>
-
+            onPress={() => handleParticiparPress("ALCALDE")}
+          >
             <View style={stylesx.splitBtnIconBox}>
               {/* Icono Casita / Alcaldía */}
               <Ionicons name="business-outline" size={24} color="#41A44D" />
             </View>
 
             <View style={stylesx.splitBtnContent}>
-              <CText style={stylesx.cardTitle}>Enviar Hoja de Trabajo Alcalde</CText>
-              <CText style={stylesx.cardDescription}>Revisa o sube una hoja de trabajo municipal</CText>
+              <CText style={stylesx.cardTitle}>
+                Enviar Hoja de Trabajo Alcalde
+              </CText>
+              <CText style={stylesx.cardDescription}>
+                Revisa o sube una hoja de trabajo municipal
+              </CText>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
@@ -1799,16 +1892,20 @@ export default function HomeScreen({ navigation, route }) {
           <TouchableOpacity
             style={stylesx.splitBtn}
             activeOpacity={0.8}
-            onPress={() => handleParticiparPress('GOBERNADOR')}>
-
+            onPress={() => handleParticiparPress("GOBERNADOR")}
+          >
             <View style={stylesx.splitBtnIconBox}>
               {/* Icono Mapa / Gobernación */}
               <Ionicons name="map-outline" size={24} color="#41A44D" />
             </View>
 
             <View style={stylesx.splitBtnContent}>
-              <CText style={stylesx.cardTitle}>Enviar Hoja de Trabajo Gobernador</CText>
-              <CText style={stylesx.cardDescription}>Revisa o sube una hoja de trabajo departamental</CText>
+              <CText style={stylesx.cardTitle}>
+                Enviar Hoja de Trabajo Gobernador
+              </CText>
+              <CText style={stylesx.cardDescription}>
+                Revisa o sube una hoja de trabajo departamental
+              </CText>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
@@ -1824,12 +1921,12 @@ export default function HomeScreen({ navigation, route }) {
         try {
           const list = await getOfflineQueue();
 
-          const pending = (list || []).some(
-            i => isQueueWriteTask(i?.task?.type),
+          const pending = (list || []).some((i) =>
+            isQueueWriteTask(i?.task?.type),
           );
 
           if (isActive) setHasPendingActa(pending);
-        } catch { }
+        } catch {}
       };
       checkQueue();
       const t = setInterval(checkQueue, 4000); // refresca cada 4s mientras está enfocada
@@ -1843,12 +1940,12 @@ export default function HomeScreen({ navigation, route }) {
   useEffect(() => {
     let active = true;
 
-    NetInfo.fetch().then(state => {
+    NetInfo.fetch().then((state) => {
       if (!active) return;
       setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
     });
 
-    const unsub = NetInfo.addEventListener(state => {
+    const unsub = NetInfo.addEventListener((state) => {
       if (!active) return;
       setIsHomeOnline(isStateEffectivelyOnline(state, NET_POLICIES.balanced));
     });
@@ -1874,7 +1971,7 @@ export default function HomeScreen({ navigation, route }) {
       // intenta una vez al enfocar
       runOfflineQueueOnce();
       // escucha cambios de red mientras esta pantalla está activa
-      const unsubNet = NetInfo.addEventListener(state => {
+      const unsubNet = NetInfo.addEventListener((state) => {
         const online = isStateEffectivelyOnline(state, NET_POLICIES.balanced);
         if (online && alive) {
           runOfflineQueueOnce();
@@ -1892,31 +1989,28 @@ export default function HomeScreen({ navigation, route }) {
         alive = false;
         unsubNet && unsubNet();
       };
-    }, [
-      runOfflineQueueOnce,
-      fetchElectionStatus,
-    ]),
+    }, [runOfflineQueueOnce, fetchElectionStatus]),
   );
 
   // Datos del carrusel
   const carouselData = [
     {
       id: 1,
-      title: '¿Necesita una app blockchain?',
-      subtitle: 'Blockchain Consultora desarrolló esta aplicación, contáctelos',
-      buttonText: 'Más Info',
-      backgroundColor: '#e8f5e8',
-      image: require('../../../assets/images/block-con.png'),
-      onPress: () => Linking.openURL('https://blockchainconsultora.com/es'),
+      title: "¿Necesita una app blockchain?",
+      subtitle: "Blockchain Consultora desarrolló esta aplicación, contáctelos",
+      buttonText: "Más Info",
+      backgroundColor: "#e8f5e8",
+      image: require("../../../assets/images/block-con.png"),
+      onPress: () => Linking.openURL("https://blockchainconsultora.com/es"),
     },
     {
       id: 2,
-      title: 'Asoblockchain',
-      subtitle: 'Impulsamos el Futuro con Blockchain',
-      buttonText: 'Conocer más',
-      backgroundColor: '#e8f0ff',
-      image: require('../../../assets/images/block-aso.png'),
-      onPress: () => Linking.openURL('https://asoblockchainbolivia.org/'),
+      title: "Asoblockchain",
+      subtitle: "Impulsamos el Futuro con Blockchain",
+      buttonText: "Conocer más",
+      backgroundColor: "#e8f0ff",
+      image: require("../../../assets/images/block-aso.png"),
+      onPress: () => Linking.openURL("https://asoblockchainbolivia.org/"),
     },
   ];
 
@@ -1939,7 +2033,7 @@ export default function HomeScreen({ navigation, route }) {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem(JWT_KEY);
-      delete axios.defaults.headers.common['Authorization'];
+      delete axios.defaults.headers.common["Authorization"];
       await clearSession();
       dispatch(clearWallet());
       dispatch(clearAuth());
@@ -1948,7 +2042,7 @@ export default function HomeScreen({ navigation, route }) {
         index: 0,
         routes: [{ name: StackNav.AuthNavigation }],
       });
-    } catch (err) { }
+    } catch (err) {}
   };
 
   const ensureNotificationsApiKey = useCallback(async () => {
@@ -1980,7 +2074,7 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     const seenKey = buildNotificationSeenKey(dni);
-    const applyUnreadFromList = async list => {
+    const applyUnreadFromList = async (list) => {
       const localList = await getLocalStoredNotifications(dni);
       const mergedList = mergeAndDedupeNotifications({
         localList,
@@ -1990,10 +2084,11 @@ export default function HomeScreen({ navigation, route }) {
       const seenAt = Number(seenRaw || 0);
       const timestamps = mergedList
         .map(extractNotificationTimestamp)
-        .filter(ts => ts > 0);
+        .filter((ts) => ts > 0);
 
       if (!seenAt) {
-        const baseline = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
+        const baseline =
+          timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
         await AsyncStorage.setItem(seenKey, String(baseline));
         setNotificationUnreadCount(0);
         return;
@@ -2012,8 +2107,10 @@ export default function HomeScreen({ navigation, route }) {
     const cachedList = Array.isArray(cachedEntry?.data) ? cachedEntry.data : [];
     await applyUnreadFromList(cachedList);
 
-
-    const cacheFresh = await isFresh(cacheKey, LOOKUP_CACHE_TTLS.notificationsMs);
+    const cacheFresh = await isFresh(
+      cacheKey,
+      LOOKUP_CACHE_TTLS.notificationsMs,
+    );
     if (cacheFresh) {
       return;
     }
@@ -2036,8 +2133,8 @@ export default function HomeScreen({ navigation, route }) {
         `${BACKEND_RESULT}/api/v1/users/${dni}/notifications`,
         {
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
           },
           timeout: 10000,
         },
@@ -2046,8 +2143,8 @@ export default function HomeScreen({ navigation, route }) {
       const list = Array.isArray(response?.data?.data)
         ? response.data.data
         : Array.isArray(response?.data)
-          ? response.data
-          : [];
+        ? response.data
+        : [];
 
       const seenRaw = await AsyncStorage.getItem(seenKey);
       const seenAt = Number(seenRaw || 0);
@@ -2057,7 +2154,7 @@ export default function HomeScreen({ navigation, route }) {
         minTimestampExclusive: seenAt,
       });
 
-      await setCache(cacheKey, list, { version: 'notifications-v1' });
+      await setCache(cacheKey, list, { version: "notifications-v1" });
       await applyUnreadFromList(list);
     } catch (error) {
       const status = Number(error?.response?.status || 0);
@@ -2114,7 +2211,7 @@ export default function HomeScreen({ navigation, route }) {
     useCallback(() => {
       if (!auth?.isAuthenticated) return undefined;
       const unsubscribe = messaging().onMessage(() => {
-        setNotificationUnreadCount(prev => (prev < 99 ? prev + 1 : 99));
+        setNotificationUnreadCount((prev) => (prev < 99 ? prev + 1 : 99));
         setTimeout(() => {
           refreshNotificationBadgeCount();
         }, 1200);
@@ -2128,7 +2225,7 @@ export default function HomeScreen({ navigation, route }) {
 
   const { hasBackup } = useBackupCheck();
 
-  const normalizeVotePlace = srv => {
+  const normalizeVotePlace = (srv) => {
     const loc = srv?.location || {};
     const tab = srv?.table || {};
     const hasLocation = !!(loc && Object.keys(loc).length);
@@ -2136,83 +2233,144 @@ export default function HomeScreen({ navigation, route }) {
     return {
       location: hasLocation
         ? {
-          ...loc,
-          _id: loc._id || loc.id,
-          id: loc.id || loc._id,
-        }
+            ...loc,
+            _id: loc._id || loc.id,
+            id: loc.id || loc._id,
+          }
         : undefined,
       table: hasTable
         ? {
-          ...tab,
-          _id: tab._id || tab.id,
-          id: tab.id || tab._id,
-          tableId: tab.tableId || tab._id || tab.id,
-          tableCode: tab.tableCode || tab.code || tab.codigo,
-          tableNumber: String(
-            tab.tableNumber || tab.numero || tab.number || '',
-          ),
-        }
+            ...tab,
+            _id: tab._id || tab.id,
+            id: tab.id || tab._id,
+            tableId: tab.tableId || tab._id || tab.id,
+            tableCode: tab.tableCode || tab.code || tab.codigo,
+            tableNumber: String(
+              tab.tableNumber || tab.numero || tab.number || "",
+            ),
+          }
         : undefined,
     };
   };
 
-  const checkUserVotePlace = useCallback(async ({ forceSync = false } = {}) => {
-    if (!dni) {
-      setShouldShowRegisterAlert(false);
-      setCheckingVotePlace(false);
-      votePlaceSyncRef.current.lastSyncAt = 0;
-      return;
-    }
-
-    const cachedBefore = await getVotePlace(dni);
-    const hasLocationCached = !!(cachedBefore?.location?._id || cachedBefore?.location?.id);
-
-    setShouldShowRegisterAlert(!hasLocationCached);
-
-    // Si ya hay cache local, no bloqueamos la UI mientras sincroniza backend.
-    if (hasLocationCached) {
-      setCheckingVotePlace(false);
-    }
-
-    const now = Date.now();
-    const lastSyncAt = votePlaceSyncRef.current.lastSyncAt || 0;
-    const votePlaceCooldownMs = hasLocationCached
-      ? VOTE_PLACE_SYNC_COOLDOWN_MS
-      : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
-    const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
-
-    if (!forceSync && (votePlaceSyncRef.current.inFlight || isRecentSync)) {
-      return;
-    }
-
-    if (!hasLocationCached) {
-      setCheckingVotePlace(true);
-    }
-
-    votePlaceSyncRef.current.inFlight = true;
-
-    try {
-      const probe = await backendProbe({ timeoutMs: 2000 });
-      votePlaceSyncRef.current.lastSyncAt = Date.now();
-      if (!probe?.ok) {
+  const checkUserVotePlace = useCallback(
+    async ({ forceSync = false } = {}) => {
+      if (!dni) {
+        setShouldShowRegisterAlert(false);
+        setCheckingVotePlace(false);
+        votePlaceSyncRef.current.lastSyncAt = 0;
         return;
       }
 
-
-      const res = await axios.get(
-        `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
-        {
-          timeout: 10000,
-
-        },
+      const cachedBefore = await getVotePlace(dni);
+      const hasLocationCached = !!(
+        cachedBefore?.location?._id || cachedBefore?.location?.id
       );
 
-      if (res?.data) {
-        const normalizedVotePlace = normalizeVotePlace(res.data);
-        const hasLocationFromBackend =
-          !!(normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id);
+      setShouldShowRegisterAlert(!hasLocationCached);
 
-        if (!hasLocationFromBackend) {
+      // Si ya hay cache local, no bloqueamos la UI mientras sincroniza backend.
+      if (hasLocationCached) {
+        setCheckingVotePlace(false);
+      }
+
+      const now = Date.now();
+      const lastSyncAt = votePlaceSyncRef.current.lastSyncAt || 0;
+      const votePlaceCooldownMs = hasLocationCached
+        ? VOTE_PLACE_SYNC_COOLDOWN_MS
+        : VOTE_PLACE_SYNC_COOLDOWN_NO_CACHE_MS;
+      const isRecentSync = now - lastSyncAt < votePlaceCooldownMs;
+
+      if (!forceSync && (votePlaceSyncRef.current.inFlight || isRecentSync)) {
+        return;
+      }
+
+      if (!hasLocationCached) {
+        setCheckingVotePlace(true);
+      }
+
+      votePlaceSyncRef.current.inFlight = true;
+
+      try {
+        const probe = await backendProbe({ timeoutMs: 2000 });
+        votePlaceSyncRef.current.lastSyncAt = Date.now();
+        if (!probe?.ok) {
+          return;
+        }
+
+        const res = await axios.get(
+          `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
+          {
+            timeout: 10000,
+          },
+        );
+
+        if (res?.data) {
+          const normalizedVotePlace = normalizeVotePlace(res.data);
+          const hasLocationFromBackend = !!(
+            normalizedVotePlace?.location?._id ||
+            normalizedVotePlace?.location?.id
+          );
+
+          if (!hasLocationFromBackend) {
+            if (hasLocationCached) {
+              setShouldShowRegisterAlert(false);
+              return;
+            }
+            await clearVotePlace(dni);
+            setShouldShowRegisterAlert(true);
+            return;
+          }
+
+          const cachedLocationId =
+            cachedBefore?.location?._id || cachedBefore?.location?.id;
+          const normalizedLocationId =
+            normalizedVotePlace?.location?._id ||
+            normalizedVotePlace?.location?.id;
+          const canMergeCachedLocation =
+            !!cachedLocationId &&
+            !!normalizedLocationId &&
+            String(cachedLocationId) === String(normalizedLocationId);
+
+          const location = normalizedVotePlace.location
+            ? {
+                ...(canMergeCachedLocation ? cachedBefore?.location || {} : {}),
+                ...normalizedVotePlace.location,
+                _id:
+                  normalizedVotePlace.location._id ||
+                  normalizedVotePlace.location.id,
+                id:
+                  normalizedVotePlace.location.id ||
+                  normalizedVotePlace.location._id,
+              }
+            : undefined;
+
+          await saveVotePlace(dni, {
+            dni,
+            userId: res.data.userId,
+            location,
+            table: undefined,
+          });
+          warmTablesCacheByLocationId({
+            locationId: location?._id || location?.id,
+            seedTables: location?.tables || [],
+          }).catch(() => {});
+
+          const hasLocation = !!location?._id;
+
+          setShouldShowRegisterAlert(!hasLocation);
+        } else {
+          if (hasLocationCached) {
+            setShouldShowRegisterAlert(false);
+            return;
+          }
+          await clearVotePlace(dni);
+          setShouldShowRegisterAlert(true);
+        }
+      } catch (e) {
+        votePlaceSyncRef.current.lastSyncAt = Date.now();
+        const status = Number(e?.response?.status || 0);
+        if (status === 404) {
           if (hasLocationCached) {
             setShouldShowRegisterAlert(false);
             return;
@@ -2222,66 +2380,14 @@ export default function HomeScreen({ navigation, route }) {
           return;
         }
 
-        const cachedLocationId =
-          cachedBefore?.location?._id || cachedBefore?.location?.id;
-        const normalizedLocationId =
-          normalizedVotePlace?.location?._id || normalizedVotePlace?.location?.id;
-        const canMergeCachedLocation =
-          !!cachedLocationId &&
-          !!normalizedLocationId &&
-          String(cachedLocationId) === String(normalizedLocationId);
-
-        const location = normalizedVotePlace.location
-          ? {
-            ...(canMergeCachedLocation ? cachedBefore?.location || {} : {}),
-            ...normalizedVotePlace.location,
-            _id: normalizedVotePlace.location._id || normalizedVotePlace.location.id,
-            id: normalizedVotePlace.location.id || normalizedVotePlace.location._id,
-          }
-          : undefined;
-
-        await saveVotePlace(dni, {
-          dni,
-          userId: res.data.userId,
-          location,
-          table: undefined,
-        });
-        warmTablesCacheByLocationId({
-          locationId: location?._id || location?.id,
-          seedTables: location?.tables || [],
-        }).catch(() => { });
-
-        const hasLocation = !!location?._id;
-
-        setShouldShowRegisterAlert(!hasLocation);
-      } else {
-        if (hasLocationCached) {
-
-          setShouldShowRegisterAlert(false);
-          return;
-        }
-        await clearVotePlace(dni);
-        setShouldShowRegisterAlert(true);
+        setShouldShowRegisterAlert(!hasLocationCached);
+      } finally {
+        votePlaceSyncRef.current.inFlight = false;
+        setCheckingVotePlace(false);
       }
-    } catch (e) {
-      votePlaceSyncRef.current.lastSyncAt = Date.now();
-      const status = Number(e?.response?.status || 0);
-      if (status === 404) {
-        if (hasLocationCached) {
-          setShouldShowRegisterAlert(false);
-          return;
-        }
-        await clearVotePlace(dni);
-        setShouldShowRegisterAlert(true);
-        return;
-      }
-
-      setShouldShowRegisterAlert(!hasLocationCached);
-    } finally {
-      votePlaceSyncRef.current.inFlight = false;
-      setCheckingVotePlace(false);
-    }
-  }, [dni]);
+    },
+    [dni],
+  );
 
   useEffect(() => {
     if (!dni) return;
@@ -2292,13 +2398,11 @@ export default function HomeScreen({ navigation, route }) {
     checkUserVotePlaceRef.current = checkUserVotePlace;
   }, [checkUserVotePlace]);
 
-
-
   const data = {
-    name: subject.fullName || '(sin nombre)',
-    hash: userData?.account?.slice(0, 10) + '…' || '(sin hash)',
+    name: subject?.fullName?.split(" ").slice(0, 1).join(" ") || "(sin nombre)",
+    hash: userData?.account?.slice(0, 10) + "…" || "(sin hash)",
   };
-  const userFullName = data.name || '(sin nolombre)';
+  const userFullName = data.name || "(sin nombre)";
   const rewardsSummary = getMockRewardsSummary();
 
   const onPressLogout = () => setLogoutModalVisible(true);
@@ -2306,39 +2410,41 @@ export default function HomeScreen({ navigation, route }) {
 
   const menuItems = [
     {
-      icon: 'people-outline',
+      icon: "people-outline",
       title: I18nStrings.sendAct,
       description: I18nStrings.sendActDescription,
       onPress: handleParticiparPress,
       iconComponent: Ionicons,
     },
     {
-      icon: 'megaphone-outline',
+      icon: "megaphone-outline",
       title: I18nStrings.announceCount,
       description: I18nStrings.announceCountDescription,
       onPress: () =>
         navigation.navigate(StackNav.ElectoralLocations, {
-          targetScreen: 'AnnounceCount',
+          targetScreen: "AnnounceCount",
         }),
       iconComponent: Ionicons,
     },
     {
-      icon: 'bar-chart-outline',
+      icon: "bar-chart-outline",
       title: FEATURE_FLAGS.ENABLE_VOTING_FLOW
         ? VotingStrings.myParticipations
         : I18nStrings.myWitnesses,
       description: I18nStrings.myWitnessesDescription,
-      onPress: () => navigation.navigate(
-        FEATURE_FLAGS.ENABLE_VOTING_FLOW
-          ? StackNav.VotingParticipationsScreen
-          : StackNav.MyWitnessesListScreen
-      ),
+      onPress: () =>
+        navigation.navigate(
+          FEATURE_FLAGS.ENABLE_VOTING_FLOW
+            ? StackNav.VotingParticipationsScreen
+            : StackNav.MyWitnessesListScreen,
+        ),
       iconComponent: Ionicons,
     },
   ];
   const currentParticipationId =
     (votingState.participations || []).find(
-      item => String(item?.electionId || '') === String(votingElection?.id || ''),
+      (item) =>
+        String(item?.electionId || "") === String(votingElection?.id || ""),
     )?.id ||
     (votingState.lastReceipt?.electionId === votingElection?.id
       ? votingState.lastReceipt?.id
@@ -2346,29 +2452,28 @@ export default function HomeScreen({ navigation, route }) {
     votingState.participationId ||
     null;
 
-
   const [loadVoteMsg, setLoadVoteMsg] = useState(null);
   const [votingPinModal, setVotingPinModal] = useState({
     visible: false,
     election: null,
     loading: false,
-    error: '',
+    error: "",
   });
-  const getVotingParticipationForElection = electionId =>
+  const getVotingParticipationForElection = (electionId) =>
     (votingState.participations || []).find(
-      item => String(item?.electionId || '') === String(electionId || ''),
+      (item) => String(item?.electionId || "") === String(electionId || ""),
     ) || null;
 
-  const goToVotingCandidate = selectedElection => {
+  const goToVotingCandidate = (selectedElection) => {
     navigation.navigate(StackNav.VotingCandidateScreen, {
       electionId: selectedElection.id,
       election: selectedElection,
-      isInPlaceVote: selectedElection.presentialKioskEnabled
+      isInPlaceVote: selectedElection.presentialKioskEnabled,
     });
   };
 
-  const handleVotingPress = async targetElection => {
-    setLoadVoteMsg('Verificando credenciales...');
+  const handleVotingPress = async (targetElection) => {
+    setLoadVoteMsg("Verificando credenciales...");
     const selectedElection = targetElection || votingElection;
     if (!selectedElection?.id) {
       setLoadVoteMsg(null);
@@ -2376,24 +2481,34 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     try {
-      const hasCredential = await checkClaimedCredForVote(selectedElection.id, userData.did, userData.privKey);
+      const hasCredential = await checkClaimedCredForVote(
+        selectedElection.id,
+        userData.did,
+        userData.privKey,
+      );
       setLoadVoteMsg(null);
       if (!hasCredential) {
-        setVotingPinModal({visible: true, election: selectedElection, loading: false, error: ''});
+        setVotingPinModal({
+          visible: true,
+          election: selectedElection,
+          loading: false,
+          error: "",
+        });
         return;
       }
     } catch (error) {
       captureError(error, {
-        flow: 'voting_flow',
-        step: 'claim_nullifier',
+        flow: "voting_flow",
+        step: "claim_nullifier",
         critical: true,
         allowPii: true,
-      })
+      });
       setInfoModal({
         visible: true,
-        type: 'error',
-        title: 'Error',
-        message: 'No se pudo obtener la credencial de voto necesaria para participar. Intenta nuevamente más tarde.',
+        type: "error",
+        title: "Error",
+        message:
+          "No se pudo obtener la credencial de voto necesaria para participar. Intenta nuevamente más tarde.",
       });
       setLoadVoteMsg(null);
       return;
@@ -2403,28 +2518,46 @@ export default function HomeScreen({ navigation, route }) {
   };
 
   const handleVotingPinCancel = () => {
-    setVotingPinModal({visible: false, election: null, loading: false, error: ''});
+    setVotingPinModal({
+      visible: false,
+      election: null,
+      loading: false,
+      error: "",
+    });
   };
 
-  const handleVotingPinSubmit = async pin => {
+  const handleVotingPinSubmit = async (pin) => {
     const selectedElection = votingPinModal.election;
     if (!selectedElection?.id) {
       return;
     }
-    setVotingPinModal(m => ({...m, loading: true, error: ''}));
-    const { claimed, invalidPin } = await claimForVote(selectedElection.id, userData.dni, userData.did, userData.privKey, pin);
+    setVotingPinModal((m) => ({ ...m, loading: true, error: "" }));
+    const { claimed, invalidPin } = await claimForVote(
+      selectedElection.id,
+      userData.dni,
+      userData.did,
+      userData.privKey,
+      pin,
+    );
     if (claimed) {
-      setVotingPinModal({visible: false, election: null, loading: false, error: ''});
+      setVotingPinModal({
+        visible: false,
+        election: null,
+        loading: false,
+        error: "",
+      });
       goToVotingCandidate(selectedElection);
     } else {
-      setVotingPinModal(m => ({
+      setVotingPinModal((m) => ({
         ...m,
         loading: false,
-        error: invalidPin ? I18nStrings.incorrectPinVoteError : I18nStrings.claimVoteError
+        error: invalidPin
+          ? I18nStrings.incorrectPinVoteError
+          : I18nStrings.claimVoteError,
       }));
     }
   };
-  const handleVotingDetailsPress = targetElection => {
+  const handleVotingDetailsPress = (targetElection) => {
     const selectedElection = targetElection || votingElection;
     const resultsRouteParams = buildVotingResultsRouteParams(selectedElection);
     const isUpcomingElection =
@@ -2432,35 +2565,35 @@ export default function HomeScreen({ navigation, route }) {
       !selectedElection?.alreadyVoted;
     const shouldOpenElectionDetail =
       isUpcomingElection || canOpenDisabledVotingDetail(selectedElection);
-    const toIsoDate = value => {
-      const parsed = Date.parse(String(value || ''));
-      return Number.isFinite(parsed) ? new Date(parsed).toISOString() : '';
+    const toIsoDate = (value) => {
+      const parsed = Date.parse(String(value || ""));
+      return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
     };
-    const formatVotingDate = value => {
+    const formatVotingDate = (value) => {
       const isoDate = toIsoDate(value);
       return isoDate
-        ? new Intl.DateTimeFormat('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
+        ? new Intl.DateTimeFormat("es-ES", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
           }).format(new Date(isoDate))
-        : '';
+        : "";
     };
 
     if (shouldOpenElectionDetail) {
-      const eventId = String(selectedElection?.id || '').trim();
+      const eventId = String(selectedElection?.id || "").trim();
       const publicPath = buildPublicVotingPath(eventId);
       const votingStartLabel = formatVotingDate(selectedElection?.startsAt);
       const votingEndLabel = formatVotingDate(selectedElection?.closesAt);
 
       navigation.navigate(StackNav.VotingNotificationDetailScreen, {
         notification: {
-          mesa: selectedElection?.title || 'Detalle de elección',
-          kind: 'voting_event',
-          statusTone: 'success',
-          direccion: selectedElection?.instituteName || '',
+          mesa: selectedElection?.title || "Detalle de elección",
+          kind: "voting_event",
+          statusTone: "success",
+          direccion: selectedElection?.instituteName || "",
           eventId,
           votingStartLabel,
           votingEndLabel,
@@ -2468,11 +2601,11 @@ export default function HomeScreen({ navigation, route }) {
             type: HOME_VOTING_DETAIL_NOTIFICATION_TYPE,
             eventId,
             electionId: eventId,
-            eventName: selectedElection?.title || '',
+            eventName: selectedElection?.title || "",
             bannerTitle: selectedElection?.isEligible
-              ? 'Habilitado para votar'
-              : selectedElection?.title || 'Detalle de elección',
-            body: selectedElection?.instituteName || '',
+              ? "Habilitado para votar"
+              : selectedElection?.title || "Detalle de elección",
+            body: selectedElection?.instituteName || "",
             votingStart: toIsoDate(selectedElection?.startsAt),
             votingEnd: toIsoDate(selectedElection?.closesAt),
             resultsPublishAt: toIsoDate(selectedElection?.resultsAt),
@@ -2484,16 +2617,18 @@ export default function HomeScreen({ navigation, route }) {
       return;
     }
 
-    const participation = getVotingParticipationForElection(selectedElection?.id)?.id ?? selectedElection.participationId;
+    const participation =
+      getVotingParticipationForElection(selectedElection?.id)?.id ??
+      selectedElection.participationId;
     if (participation) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: participation,
         electionId: selectedElection?.id,
         allowBack: true,
         participation: {
-          electionTitle: selectedElection?.title || '',
-          fullDate: selectedElection?.participatedAt || '',
-          organization: selectedElection?.organization || '',
+          electionTitle: selectedElection?.title || "",
+          fullDate: selectedElection?.participatedAt || "",
+          organization: selectedElection?.organization || "",
           candidateSelected: null,
           transactionId: null,
           blockchainHash: null,
@@ -2505,7 +2640,7 @@ export default function HomeScreen({ navigation, route }) {
 
     if (
       currentParticipationId &&
-      String(votingElection?.id || '') === String(selectedElection?.id || '')
+      String(votingElection?.id || "") === String(selectedElection?.id || "")
     ) {
       navigation.navigate(StackNav.VotingReceiptScreen, {
         participationId: currentParticipationId,
@@ -2518,17 +2653,17 @@ export default function HomeScreen({ navigation, route }) {
 
     if (hasVotingResultsAvailable(selectedElection)) {
       const resultsUrl = buildPublicVotingUrl(selectedElection?.id);
-      console.log(resultsUrl)
+      console.log(resultsUrl);
       if (resultsUrl) {
         navigation.navigate(StackNav.PublicElectionWebViewScreen, {
           url: resultsUrl,
-          title: 'Resultados',
+          title: "Resultados",
         });
         return;
       } else {
-        captureError(new Error('Missing results URL for election'), {
-          flow: 'voting_flow',
-          step: 'results_url_missing',
+        captureError(new Error("Missing results URL for election"), {
+          flow: "voting_flow",
+          step: "results_url_missing",
           critical: true,
         });
         return;
@@ -2546,7 +2681,8 @@ export default function HomeScreen({ navigation, route }) {
       return (
         <View
           testID="voting-election-inline-loader"
-          style={stylesx.votingElectionInlineLoader}>
+          style={stylesx.votingElectionInlineLoader}
+        >
           <ActivityIndicator size="small" color="#41A44D" />
         </View>
       );
@@ -2556,11 +2692,12 @@ export default function HomeScreen({ navigation, route }) {
       return null;
     }
 
-    const cardWidth = isTablet && isLandscape
-      ? Math.min(screenWidth * 0.36, 440)
-      : screenWidth - getResponsiveSize(32, 40, 48);
+    const cardWidth =
+      isTablet && isLandscape
+        ? Math.min(screenWidth * 0.36, 440)
+        : screenWidth - getResponsiveSize(32, 40, 48);
 
-    const renderVotingCard = item => {
+    const renderVotingCard = (item) => {
       const participation = getVotingParticipationForElection(item?.id);
       const hasVotedForElection =
         Boolean(participation) || Boolean(item?.alreadyVoted);
@@ -2580,7 +2717,7 @@ export default function HomeScreen({ navigation, route }) {
           onDetailsPress={() => handleVotingDetailsPress(item)}
           loadMsg={
             loadVoteMsg &&
-            String(item?.id || '') === String(votingElection?.id || '')
+            String(item?.id || "") === String(votingElection?.id || "")
               ? loadVoteMsg
               : null
           }
@@ -2608,7 +2745,7 @@ export default function HomeScreen({ navigation, route }) {
           decelerationRate="fast"
           snapToInterval={cardWidth}
           snapToAlignment="center"
-          onMomentumScrollEnd={event => {
+          onMomentumScrollEnd={(event) => {
             const index = Math.round(
               event.nativeEvent.contentOffset.x / cardWidth,
             );
@@ -2616,7 +2753,9 @@ export default function HomeScreen({ navigation, route }) {
               Math.max(0, Math.min(index, votingElections.length - 1)),
             );
           }}
-          renderItem={({item}) => <View style={{width: cardWidth}}>{renderVotingCard(item)}</View>}
+          renderItem={({ item }) => (
+            <View style={{ width: cardWidth }}>{renderVotingCard(item)}</View>
+          )}
         />
         {votingElections.length > 1 && (
           <View style={stylesx.votingPageIndicators}>
@@ -2636,21 +2775,21 @@ export default function HomeScreen({ navigation, route }) {
     );
   };
   const retryableFailedItems = (queueFailModal.failedItems || []).filter(
-    item => item?.removedFromQueue !== true,
+    (item) => item?.removedFromQueue !== true,
   );
   const firstRetryableFailedId = retryableFailedItems?.[0]?.id;
   const canRetryFailedItems = retryableFailedItems.length > 0;
   const firstVotingFailedItem = (queueFailModal.failedItems || []).find(
-    item => item?.type === 'votingFlowVote',
+    (item) => item?.type === "votingFlowVote",
   );
   const canReleaseFailedVote =
     Boolean(firstVotingFailedItem?.id) && !canRetryFailedItems;
-  const queueFailPrimaryText = canRetryFailedItems ? 'Reintentar' : 'Aceptar';
+  const queueFailPrimaryText = canRetryFailedItems ? "Reintentar" : "Aceptar";
   const queueFailTertiaryText = firstRetryableFailedId
-    ? 'Eliminar'
+    ? "Eliminar"
     : canReleaseFailedVote
-      ? 'Volver a votar'
-      : undefined;
+    ? "Volver a votar"
+    : undefined;
 
   return (
     <CSafeAreaView testID="homeContainer" style={stylesx.bg}>
@@ -2670,62 +2809,71 @@ export default function HomeScreen({ navigation, route }) {
         visible={logoutModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setLogoutModalVisible(false)}>
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
         <View
           testID="homeLogoutModalOverlay"
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <View
             testID="homeLogoutModalContent"
             style={{
-              backgroundColor: '#fff',
+              backgroundColor: "#fff",
               borderRadius: 16,
               padding: 28,
-              alignItems: 'center',
-              width: '80%',
-            }}>
+              alignItems: "center",
+              width: "80%",
+            }}
+          >
             <CText
               testID="homeLogoutModalTitle"
-              style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+              style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}
+            >
               {I18nStrings.areYouSureWantToLogout ||
-                '¿Seguro que quieres cerrar sesión?'}
+                "¿Seguro que quieres cerrar sesión?"}
             </CText>
             <View
               testID="homeLogoutModalButtons"
-              style={{ flexDirection: 'row', marginTop: 18, gap: 16 }}>
+              style={{ flexDirection: "row", marginTop: 18, gap: 16 }}
+            >
               <TouchableOpacity
                 testID="homeLogoutModalCancelButton"
                 style={{
-                  backgroundColor: '#f5f5f5',
+                  backgroundColor: "#f5f5f5",
                   paddingVertical: 10,
                   paddingHorizontal: 22,
                   borderRadius: 8,
                   marginRight: 8,
                 }}
-                onPress={() => setLogoutModalVisible(false)}>
+                onPress={() => setLogoutModalVisible(false)}
+              >
                 <CText
                   testID="homeLogoutModalCancelText"
-                  style={{ color: '#222', fontWeight: '600' }}>
-                  {I18nStrings.cancel || 'Cancelar'}
+                  style={{ color: "#222", fontWeight: "600" }}
+                >
+                  {I18nStrings.cancel || "Cancelar"}
                 </CText>
               </TouchableOpacity>
               <TouchableOpacity
                 testID="homeLogoutModalConfirmButton"
                 style={{
-                  backgroundColor: '#E72F2F',
+                  backgroundColor: "#E72F2F",
                   paddingVertical: 10,
                   paddingHorizontal: 22,
                   borderRadius: 8,
                 }}
-                onPress={handleLogout}>
+                onPress={handleLogout}
+              >
                 <CText
                   testID="homeLogoutModalConfirmText"
-                  style={{ color: '#fff', fontWeight: '600' }}>
-                  {I18nStrings.logOut || 'Cerrar sesión'}
+                  style={{ color: "#fff", fontWeight: "600" }}
+                >
+                  {I18nStrings.logOut || "Cerrar sesión"}
                 </CText>
               </TouchableOpacity>
             </View>
@@ -2743,17 +2891,18 @@ export default function HomeScreen({ navigation, route }) {
               <View style={stylesx.headerIcons}>
                 <TouchableOpacity
                   onPress={handleOpenNotifications}
-                  style={stylesx.notificationIconButton}>
+                  style={stylesx.notificationIconButton}
+                >
                   <Ionicons
-                    name={'notifications-outline'}
+                    name={"notifications-outline"}
                     size={getResponsiveSize(24, 28, 32)}
-                    color={'#41A44D'}
+                    color={"#41A44D"}
                   />
                   {notificationUnreadCount > 0 && (
                     <View style={stylesx.notificationBadge}>
                       <CText style={stylesx.notificationBadgeText}>
                         {notificationUnreadCount > 99
-                          ? '99+'
+                          ? "99+"
                           : String(notificationUnreadCount)}
                       </CText>
                     </View>
@@ -2772,7 +2921,9 @@ export default function HomeScreen({ navigation, route }) {
             <View style={stylesx.welcomeContainer}>
               <View style={stylesx.welcomeHeader}>
                 <View style={stylesx.welcomeTextContainer}>
-                  <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
+                  <CText style={stylesx.bienvenido}>
+                    {I18nStrings.homeWelcome}
+                  </CText>
                   <CText style={stylesx.nombre}>{userFullName}!</CText>
                 </View>
                 <TokenRewardsCard
@@ -2788,11 +2939,11 @@ export default function HomeScreen({ navigation, route }) {
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}
-                keyExtractor={item => item.id.toString()}
+                keyExtractor={(item) => item.id.toString()}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={event => {
+                onMomentumScrollEnd={(event) => {
                   const index = Math.round(
                     event.nativeEvent.contentOffset.x / screenWidth,
                   );
@@ -2806,7 +2957,7 @@ export default function HomeScreen({ navigation, route }) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                        stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -2819,9 +2970,7 @@ export default function HomeScreen({ navigation, route }) {
             <RegisterAlertCard
               title={I18nStrings.backupAccount}
               description={I18nStrings.backupAccountDescription}
-              onPress={() =>
-                navigation.navigate(StackNav.RecuperationQR)
-              }
+              onPress={() => navigation.navigate(StackNav.RecuperationQR)}
             />
           )}
 
@@ -2856,12 +3005,16 @@ export default function HomeScreen({ navigation, route }) {
               </TouchableOpacity> */}
 
               <View style={stylesx.gridDiv1}>
-                {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
+                {loadingAvailability ? (
+                  <ActionButtonsLoader />
+                ) : (
+                  <ActionButtonsGroup />
+                )}
               </View>
               {SHOW_HOME_PARTICIPATIONS_CARD && (
-              <View style={stylesx.gridRow2}>
-                {/* Anunciar conteo */}
-                {/* <TouchableOpacity
+                <View style={stylesx.gridRow2}>
+                  {/* Anunciar conteo */}
+                  {/* <TouchableOpacity
                   style={[stylesx.gridDiv2, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[1].onPress}
@@ -2879,38 +3032,49 @@ export default function HomeScreen({ navigation, route }) {
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity> */}
-                {/* Mis atestiguamientos */}
-                <TouchableOpacity
-                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
-                  activeOpacity={0.87}
-                  onPress={menuItems[2].onPress}
-                  testID="myWitnessesButton">
-                  {hasPendingActa && (
-                    <View style={stylesx.cardBadge}>
-                      <ActivityIndicator size="small" color="#41A44D" />
+                  {/* Mis atestiguamientos */}
+                  <TouchableOpacity
+                    style={[
+                      stylesx.gridDiv3,
+                      stylesx.card,
+                      stylesx.myWitnessesCard,
+                    ]}
+                    activeOpacity={0.87}
+                    onPress={menuItems[2].onPress}
+                    testID="myWitnessesButton"
+                  >
+                    {hasPendingActa && (
+                      <View style={stylesx.cardBadge}>
+                        <ActivityIndicator size="small" color="#41A44D" />
+                      </View>
+                    )}
+                    <View style={stylesx.cardHeaderRow}>
+                      {React.createElement(menuItems[2].iconComponent, {
+                        name: menuItems[2].icon,
+                        size: getResponsiveSize(30, 36, 42),
+                        color: "#fff",
+                        style: stylesx.cardHeaderIcon,
+                      })}
+                      <CText
+                        style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                      >
+                        {menuItems[2].title}
+                      </CText>
                     </View>
-                  )}
-                  <View style={stylesx.cardHeaderRow}>
-                    {React.createElement(menuItems[2].iconComponent, {
-                      name: menuItems[2].icon,
-                      size: getResponsiveSize(30, 36, 42),
-                      color: '#fff',
-                      style: stylesx.cardHeaderIcon,
-                    })}
                     <CText
-                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.85}>
-                      {menuItems[2].title}
+                      style={[
+                        stylesx.cardDescription,
+                        stylesx.cardDescriptionEmph,
+                      ]}
+                    >
+                      {menuItems[2].description}
                     </CText>
-                  </View>
-                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
-                    {menuItems[2].description}
-                  </CText>
-                </TouchableOpacity>
-              </View>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
@@ -2924,17 +3088,21 @@ export default function HomeScreen({ navigation, route }) {
               <TouchableOpacity
                 testID="notificationsButton"
                 onPress={handleOpenNotifications}
-                style={stylesx.notificationIconButton}>
+                style={stylesx.notificationIconButton}
+              >
                 <Ionicons
-                  name={'notifications-outline'}
+                  name={"notifications-outline"}
                   size={getResponsiveSize(24, 28, 32)}
-                  color={'#41A44D'}
+                  color={"#41A44D"}
                 />
                 {notificationUnreadCount > 0 && (
-                  <View style={stylesx.notificationBadge} testID="notificationsBadge">
+                  <View
+                    style={stylesx.notificationBadge}
+                    testID="notificationsBadge"
+                  >
                     <CText style={stylesx.notificationBadgeText}>
                       {notificationUnreadCount > 99
-                        ? '99+'
+                        ? "99+"
                         : String(notificationUnreadCount)}
                     </CText>
                   </View>
@@ -2953,7 +3121,9 @@ export default function HomeScreen({ navigation, route }) {
           <View style={stylesx.welcomeContainer}>
             <View style={stylesx.welcomeHeader}>
               <View style={stylesx.welcomeTextContainer}>
-                <CText style={stylesx.bienvenido}>{I18nStrings.homeWelcome}</CText>
+                <CText style={stylesx.bienvenido}>
+                  {I18nStrings.homeWelcome}
+                </CText>
                 <CText style={stylesx.nombre}>{userFullName}!</CText>
               </View>
               <TokenRewardsCard
@@ -2962,18 +3132,18 @@ export default function HomeScreen({ navigation, route }) {
               />
             </View>
           </View>
-          <ScrollView>
+          <ScrollView style={stylesx.regularScroll}>
             {/* Carrusel deslizable */}
             <View style={stylesx.carouselContainer}>
               <FlashList
                 ref={carouselRef}
                 data={carouselData}
                 renderItem={({ item }) => <CarouselItem item={item} />}
-                keyExtractor={item => item.id.toString()}
+                keyExtractor={(item) => item.id.toString()}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={event => {
+                onMomentumScrollEnd={(event) => {
                   const index = Math.round(
                     event.nativeEvent.contentOffset.x / screenWidth,
                   );
@@ -2987,7 +3157,7 @@ export default function HomeScreen({ navigation, route }) {
                     style={[
                       stylesx.pageIndicator,
                       index === currentCarouselIndex &&
-                      stylesx.activePageIndicator,
+                        stylesx.activePageIndicator,
                     ]}
                   />
                 ))}
@@ -3000,9 +3170,7 @@ export default function HomeScreen({ navigation, route }) {
               <RegisterAlertCard
                 title={I18nStrings.backupAccount}
                 description={I18nStrings.backupAccountDescription}
-                onPress={() =>
-                  navigation.navigate(StackNav.RecuperationQR)
-                }
+                onPress={() => navigation.navigate(StackNav.RecuperationQR)}
               />
             )}
 
@@ -3042,12 +3210,16 @@ export default function HomeScreen({ navigation, route }) {
               </TouchableOpacity>
               */}
               <View style={stylesx.gridDiv1}>
-                {loadingAvailability ? <ActionButtonsLoader /> : <ActionButtonsGroup />}
+                {loadingAvailability ? (
+                  <ActionButtonsLoader />
+                ) : (
+                  <ActionButtonsGroup />
+                )}
               </View>
               {SHOW_HOME_PARTICIPATIONS_CARD && (
-              <View style={stylesx.gridRow2}>
-                {/* Anunciar conteo */}
-                {/* <TouchableOpacity
+                <View style={stylesx.gridRow2}>
+                  {/* Anunciar conteo */}
+                  {/* <TouchableOpacity
                   style={[stylesx.gridDiv2, stylesx.card]}
                   activeOpacity={0.87}
                   onPress={menuItems[1].onPress}
@@ -3063,38 +3235,49 @@ export default function HomeScreen({ navigation, route }) {
                     {menuItems[1].description}
                   </CText>
                 </TouchableOpacity> */}
-                {/* Mis atestiguamientos */}
-                <TouchableOpacity
-                  style={[stylesx.gridDiv3, stylesx.card, stylesx.myWitnessesCard]}
-                  activeOpacity={0.87}
-                  onPress={menuItems[2].onPress}
-                  testID="myWitnessesButtonRegular">
-                  {hasPendingActa && (
-                    <View style={stylesx.cardBadge}>
-                      <ActivityIndicator size="small" color="#ff0000ff" />
+                  {/* Mis atestiguamientos */}
+                  <TouchableOpacity
+                    style={[
+                      stylesx.gridDiv3,
+                      stylesx.card,
+                      stylesx.myWitnessesCard,
+                    ]}
+                    activeOpacity={0.87}
+                    onPress={menuItems[2].onPress}
+                    testID="myWitnessesButtonRegular"
+                  >
+                    {hasPendingActa && (
+                      <View style={stylesx.cardBadge}>
+                        <ActivityIndicator size="small" color="#ff0000ff" />
+                      </View>
+                    )}
+                    <View style={stylesx.cardHeaderRow}>
+                      {React.createElement(menuItems[2].iconComponent, {
+                        name: menuItems[2].icon,
+                        size: getResponsiveSize(30, 36, 42),
+                        color: "#41A44D",
+                        style: stylesx.cardHeaderIcon,
+                      })}
+                      <CText
+                        style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                      >
+                        {menuItems[2].title}
+                      </CText>
                     </View>
-                  )}
-                  <View style={stylesx.cardHeaderRow}>
-                    {React.createElement(menuItems[2].iconComponent, {
-                      name: menuItems[2].icon,
-                      size: getResponsiveSize(30, 36, 42),
-                      color: '#41A44D',
-                      style: stylesx.cardHeaderIcon,
-                    })}
                     <CText
-                      style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.85}>
-                      {menuItems[2].title}
+                      style={[
+                        stylesx.cardDescription,
+                        stylesx.cardDescriptionEmph,
+                      ]}
+                    >
+                      {menuItems[2].description}
                     </CText>
-                  </View>
-                  <CText style={[stylesx.cardDescription, stylesx.cardDescriptionEmph]}>
-                    {menuItems[2].description}
-                  </CText>
-                </TouchableOpacity>
-              </View>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </ScrollView>
@@ -3102,7 +3285,7 @@ export default function HomeScreen({ navigation, route }) {
       )}
       <CustomModal
         visible={permissionModal.visible}
-        onClose={() => setPermissionModal(m => ({ ...m, visible: false }))}
+        onClose={() => setPermissionModal((m) => ({ ...m, visible: false }))}
         type={permissionModal.type}
         title={permissionModal.title}
         message={permissionModal.message}
@@ -3113,33 +3296,35 @@ export default function HomeScreen({ navigation, route }) {
       />
       <CustomModal
         visible={!!infoModal.visible}
-        onClose={() => setInfoModal(m => ({ ...m, visible: false }))}
+        onClose={() => setInfoModal((m) => ({ ...m, visible: false }))}
         type={infoModal.type}
         title={infoModal.title}
         message={infoModal.message}
-        buttonText={'Aceptar'}
+        buttonText={"Aceptar"}
       />
       <CustomModal
         visible={queueFailModal.visible}
-        onClose={() => setQueueFailModal(m => ({ ...m, visible: false }))}
+        onClose={() => setQueueFailModal((m) => ({ ...m, visible: false }))}
         type="warning"
         title={deriveQueueFailTitle(queueFailModal.failedItems)}
         message={queueFailModal.message}
         buttonText={queueFailPrimaryText}
-        onButtonPress={canRetryFailedItems
-          ? handleQueueRetry
-          : () => setQueueFailModal(m => ({ ...m, visible: false }))}
+        onButtonPress={
+          canRetryFailedItems
+            ? handleQueueRetry
+            : () => setQueueFailModal((m) => ({ ...m, visible: false }))
+        }
         tertiaryButtonText={queueFailTertiaryText}
-        onTertiaryPress={firstRetryableFailedId
-          ? () => handleRemoveFailedItem(firstRetryableFailedId)
-          : canReleaseFailedVote
+        onTertiaryPress={
+          firstRetryableFailedId
+            ? () => handleRemoveFailedItem(firstRetryableFailedId)
+            : canReleaseFailedVote
             ? () => handleRemoveFailedItem(firstVotingFailedItem?.id)
-            : undefined}
+            : undefined
+        }
         tertiaryVariant="danger"
       />
-      <MigrationModal
-        userDid={userData?.did}
-      />
+      <MigrationModal userDid={userData?.did} />
       <VotingPinModal
         visible={votingPinModal.visible}
         loading={votingPinModal.loading}
@@ -3156,42 +3341,42 @@ const stylesx = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(16, 20, 24),
   },
   votingSyncBanner: {
-    position: 'absolute',
+    position: "absolute",
     top: getResponsiveSize(14, 18, 22),
     left: getResponsiveSize(16, 20, 24),
     right: getResponsiveSize(16, 20, 24),
     zIndex: 20,
-    backgroundColor: '#1F7A36',
+    backgroundColor: "#1F7A36",
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 4,
   },
   votingSyncBannerText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontWeight: '700',
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "700",
     fontSize: getResponsiveSize(13, 14, 16),
   },
   gridParent: {
-    width: '100%',
+    width: "100%",
     marginTop: getResponsiveSize(10, 13, 16),
     paddingRight: getResponsiveSize(16, 20, 24),
     paddingLeft: getResponsiveSize(16, 20, 24),
     marginBottom: getResponsiveSize(10, 13, 16),
   },
   gridDiv1: {
-    flexDirection: 'column',
-    width: '100%',
+    flexDirection: "column",
+    width: "100%",
     marginBottom: getResponsiveSize(10, 13, 16),
   },
   gridRow2: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   gridDiv2: {
     flex: 1,
@@ -3202,13 +3387,13 @@ const stylesx = StyleSheet.create({
     // No marginRight aquí, así queda a la derecha
   },
   bg: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: "#FAFAFA",
     paddingHorizontal: 0,
   },
   // Tablet Landscape Layout Styles
   tabletLandscapeContainer: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   tabletLeftColumn: {
     flex: 0.4,
@@ -3219,30 +3404,33 @@ const stylesx = StyleSheet.create({
     paddingLeft: getResponsiveSize(8, 12, 16),
   },
   regularContainer: {
-    height: '105%',
+    flex: 1,
+  },
+  regularScroll: {
+    flex: 1,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingTop: getResponsiveSize(8, 10, 14),
     paddingBottom: getResponsiveSize(0, 2, 4),
   },
   logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   flagBox: {
     width: getResponsiveSize(32, 38, 44),
     height: getResponsiveSize(32, 38, 44),
     marginRight: getResponsiveSize(1, 2, 3),
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   flagStripe: {
-    position: 'absolute',
+    position: "absolute",
     left: getResponsiveSize(9, 11, 13),
     width: getResponsiveSize(16, 19, 22),
     height: getResponsiveSize(4, 5.3, 6),
@@ -3250,28 +3438,28 @@ const stylesx = StyleSheet.create({
     zIndex: 2,
   },
   flagCheckOutline: {
-    position: 'absolute',
+    position: "absolute",
     left: getResponsiveSize(1, 2, 3),
     top: getResponsiveSize(4, 5, 6),
     width: getResponsiveSize(24, 28, 32),
     height: getResponsiveSize(24, 28, 32),
     borderWidth: getResponsiveSize(2.8, 3.3, 3.8),
-    borderColor: '#292D32',
+    borderColor: "#292D32",
     borderRadius: getResponsiveSize(5, 6, 7),
     zIndex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderBottomLeftRadius: getResponsiveSize(7, 8, 9),
   },
   logoTitle: {
     fontSize: getResponsiveSize(16, 18, 21),
-    fontWeight: '800',
-    color: '#222',
+    fontWeight: "800",
+    color: "#222",
     letterSpacing: 0,
   },
   logoSubtitle: {
     fontSize: getResponsiveSize(10, 11, 13),
-    color: '#8B9399',
-    fontWeight: '400',
+    color: "#8B9399",
+    fontWeight: "400",
     marginTop: 0,
     marginLeft: 1,
   },
@@ -3281,42 +3469,42 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(12, 14, 18),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(40, 50, 60),
-      marginBottom: getResponsiveSize(20, 25, 30),
-    }),
+        marginTop: getResponsiveSize(40, 50, 60),
+        marginBottom: getResponsiveSize(20, 25, 30),
+      }),
   },
   bienvenido: {
     fontSize: getResponsiveSize(16, 18, 22),
-    color: '#41A44D',
-    fontWeight: '700',
+    color: "#41A44D",
+    fontWeight: "700",
     marginBottom: -2,
     letterSpacing: 0,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   nombre: {
     fontSize: getResponsiveSize(21, 24, 30),
-    color: '#232323',
-    fontWeight: '800',
+    color: "#232323",
+    fontWeight: "800",
     marginBottom: 0,
     letterSpacing: 0,
     ...(isTablet &&
       isLandscape && {
-      fontSize: getResponsiveSize(24, 28, 32),
-    }),
+        fontSize: getResponsiveSize(24, 28, 32),
+      }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: "#E8F5E9",
     borderRadius: 16,
     padding: 16,
     marginHorizontal: getResponsiveSize(12, 20, 24),
     marginBottom: getResponsiveSize(16, 18, 22),
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -3326,11 +3514,11 @@ const stylesx = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderWidth: 1.5,
-    borderColor: '#41A44D',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "#41A44D",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 2,
   },
   bcLogoImage: {
@@ -3339,46 +3527,46 @@ const stylesx = StyleSheet.create({
     marginRight: getResponsiveSize(12, 16, 20),
   },
   bcLogoText: {
-    color: '#41A44D',
-    fontWeight: 'bold',
+    color: "#41A44D",
+    fontWeight: "bold",
     fontSize: 24,
     letterSpacing: -1,
     fontFamily: undefined,
   },
   bannerTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#232323',
+    fontWeight: "700",
+    color: "#232323",
   },
   bannerSubtitle: {
     fontSize: 14,
-    fontWeight: '400',
-    color: '#232323',
+    fontWeight: "400",
+    color: "#232323",
     marginTop: 2,
     opacity: 0.87,
   },
   bannerButton: {
-    backgroundColor: '#4CA950',
+    backgroundColor: "#4CA950",
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 18,
     marginLeft: 14,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   bannerButtonText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
     fontSize: 16,
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent:
       CARDS_PER_ROW === 4
-        ? 'space-around'
+        ? "space-around"
         : isTablet
-          ? 'flex-start'
-          : 'space-between',
+        ? "flex-start"
+        : "space-between",
     paddingHorizontal: getResponsiveSize(8, 12, 16),
     marginTop: getResponsiveSize(6, 10, 14),
     ...(isTablet && {
@@ -3389,43 +3577,43 @@ const stylesx = StyleSheet.create({
     }),
     ...(isTablet &&
       isLandscape && {
-      marginTop: getResponsiveSize(20, 25, 30),
-      paddingHorizontal: getResponsiveSize(12, 16, 20),
-    }),
+        marginTop: getResponsiveSize(20, 25, 30),
+        paddingHorizontal: getResponsiveSize(12, 16, 20),
+      }),
   },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: getResponsiveSize(14, 17, 20),
     borderWidth: getResponsiveSize(1.1, 1.3, 1.5),
-    borderColor: '#E0E0E0',
-    alignItems: 'flex-start',
+    borderColor: "#E0E0E0",
+    alignItems: "flex-start",
     padding: getResponsiveSize(14, 18, 22),
     elevation: 0,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     ...(isTablet &&
       CARDS_PER_ROW === 2 && {
-      marginRight: getResponsiveSize(8, 12, 16),
-    }),
+        marginRight: getResponsiveSize(8, 12, 16),
+      }),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '700',
-    color: '#232323',
+    fontWeight: "700",
+    color: "#232323",
     marginBottom: getResponsiveSize(1, 2, 3),
   },
   cardTitle1: {
     fontSize: getResponsiveSize(16, 18, 20),
-    fontWeight: '700',
-    color: '#232323',
+    fontWeight: "700",
+    color: "#232323",
     marginBottom: getResponsiveSize(1, 2, 3),
   },
   cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
     marginBottom: getResponsiveSize(4, 6, 8),
   },
   cardHeaderIcon: {
@@ -3437,8 +3625,8 @@ const stylesx = StyleSheet.create({
   },
   cardDescription: {
     fontSize: getResponsiveSize(12, 14, 16),
-    color: '#282828',
-    fontWeight: '400',
+    color: "#282828",
+    fontWeight: "400",
     marginTop: 1,
     marginBottom: -3,
     opacity: 0.78,
@@ -3449,35 +3637,35 @@ const stylesx = StyleSheet.create({
   },
   myWitnessesCard: {
     borderRightWidth: getResponsiveSize(3, 4, 5),
-    borderRightColor: '#41A44D',
+    borderRightColor: "#41A44D",
   },
   // Gas Indicator Styles
   gasContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     paddingHorizontal: getResponsiveSize(10, 12, 14),
     paddingVertical: getResponsiveSize(6, 8, 10),
     borderRadius: getResponsiveSize(8, 10, 12),
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    alignItems: 'center',
+    borderColor: "#e9ecef",
+    alignItems: "center",
     minWidth: getResponsiveSize(80, 90, 100),
   },
   gasLabel: {
     fontSize: getResponsiveSize(10, 11, 12),
-    color: '#6c757d',
-    fontWeight: '500',
+    color: "#6c757d",
+    fontWeight: "500",
   },
   gasPrice: {
     fontSize: getResponsiveSize(14, 16, 18),
-    color: '#4CAF50',
-    fontWeight: '700',
+    color: "#4CAF50",
+    fontWeight: "700",
   },
   // Welcome Section Styles
   welcomeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     paddingRight: getResponsiveSize(16, 20, 24),
   },
   welcomeTextContainer: {
@@ -3487,32 +3675,32 @@ const stylesx = StyleSheet.create({
   },
   // Header Styles
   headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: getResponsiveSize(8, 12, 16),
   },
   notificationIconButton: {
-    position: 'relative',
+    position: "relative",
     padding: 2,
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -6,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#E72F2F',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#E72F2F",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 3,
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   notificationBadgeText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: "700",
     lineHeight: 10,
   },
   // Carousel Styles
@@ -3525,30 +3713,30 @@ const stylesx = StyleSheet.create({
     marginHorizontal: getResponsiveSize(16, 20, 24),
     borderRadius: getResponsiveSize(12, 16, 20),
     minHeight: getResponsiveSize(110, 130, 140),
-    backgroundColor: '#E8F5E9',
+    backgroundColor: "#E8F5E9",
     padding: getResponsiveSize(12, 18, 18),
     // position: 'relative',
     // paddingBottom: CTA_HEIGHT + CTA_MARGIN, // espacio para el botón
   },
   carouselGrid: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
   },
 
   // Columna izquierda (logo)
   carouselLeft: {
     width: LEFT_COL_WIDTH,
     marginRight: getResponsiveSize(12, 16, 20),
-    justifyContent: 'flex-start', // ← antes estaba 'center'
-    alignItems: 'center',
+    justifyContent: "flex-start", // ← antes estaba 'center'
+    alignItems: "center",
     paddingTop: getResponsiveSize(2, 4, 6),
   },
   carouselContent: {
     flex: 1,
   },
   carouselMainContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     flex: 1,
   },
   carouselTextContainer: {
@@ -3559,64 +3747,64 @@ const stylesx = StyleSheet.create({
     // paddingRight: CTA_WIDTH + CTA_MARGIN,
   },
   carouselArrow: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     width: getResponsiveSize(28, 32, 36),
     height: getResponsiveSize(28, 32, 36),
   },
   carouselRight: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   carouselTitle: {
     fontSize: getResponsiveSize(16, 18, 22),
-    fontWeight: '700',
-    color: '#232323', // Texto oscuro como en la imagen
+    fontWeight: "700",
+    color: "#232323", // Texto oscuro como en la imagen
     marginBottom: getResponsiveSize(6, 8, 10),
   },
   carouselSubtitle: {
     fontSize: getResponsiveSize(13, 14, 16),
-    color: '#232323', // Texto oscuro como en la imagen
+    color: "#232323", // Texto oscuro como en la imagen
     lineHeight: getResponsiveSize(18, 20, 22),
     marginBottom: getResponsiveSize(8, 12, 16),
     opacity: 0.87,
   },
   carouselButton: {
-    position: 'absolute',
+    position: "absolute",
     right: CTA_MARGIN,
     bottom: CTA_MARGIN,
-    backgroundColor: '#4CA950',
+    backgroundColor: "#4CA950",
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingVertical: getResponsiveSize(8, 10, 12),
     borderRadius: getResponsiveSize(8, 10, 12),
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   carouselButtonInline: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#4CA950',
+    alignSelf: "flex-end",
+    backgroundColor: "#4CA950",
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     paddingVertical: getResponsiveSize(8, 10, 12),
     borderRadius: getResponsiveSize(8, 10, 12),
     // Sombra opcional:
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   carouselButtonText: {
     fontSize: getResponsiveSize(14, 16, 18),
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   pageIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: getResponsiveSize(12, 16, 20),
     gap: getResponsiveSize(6, 8, 10),
   },
@@ -3625,17 +3813,17 @@ const stylesx = StyleSheet.create({
   },
   votingElectionInlineLoader: {
     minHeight: getResponsiveSize(84, 96, 108),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: getResponsiveSize(4, 6, 8),
   },
   singleVotingCardContainer: {
-    width: '100%',
+    width: "100%",
   },
   votingPageIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: getResponsiveSize(12, 16, 20),
     marginBottom: getResponsiveSize(2, 4, 6),
     gap: getResponsiveSize(6, 8, 10),
@@ -3644,10 +3832,10 @@ const stylesx = StyleSheet.create({
     width: getResponsiveSize(6, 8, 10),
     height: getResponsiveSize(6, 8, 10),
     borderRadius: getResponsiveSize(3, 4, 5),
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
   },
   activePageIndicator: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     width: getResponsiveSize(16, 20, 24),
   },
   logoImage: {
@@ -3658,78 +3846,78 @@ const stylesx = StyleSheet.create({
     opacity: 0.6,
   },
   disabledText: {
-    color: '#999999',
+    color: "#999999",
   },
   disabledIcon: {
     opacity: 0.6,
   },
   cardBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: getResponsiveSize(10, 12, 14),
     right: getResponsiveSize(10, 12, 14),
-    backgroundColor: '#f8a1a1ff',
+    backgroundColor: "#f8a1a1ff",
     borderRadius: 12,
     paddingVertical: 4,
     paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   activateLocationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFBEB",
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(14, 16, 18),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     marginBottom: getResponsiveSize(10, 12, 14),
     borderWidth: 1.5,
-    borderColor: '#F59E0B',
-    borderStyle: 'dashed',
+    borderColor: "#F59E0B",
+    borderStyle: "dashed",
   },
   activateLocationIconBox: {
     width: getResponsiveSize(42, 48, 54),
     height: getResponsiveSize(42, 48, 54),
     borderRadius: getResponsiveSize(10, 12, 14),
-    backgroundColor: '#FEF3C7',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FEF3C7",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: getResponsiveSize(12, 16, 18),
   },
   activateLocationTitle: {
     fontSize: getResponsiveSize(14, 16, 18),
-    fontWeight: '700',
-    color: '#92400E',
+    fontWeight: "700",
+    color: "#92400E",
     marginBottom: getResponsiveSize(2, 3, 4),
   },
   activateLocationDescription: {
     fontSize: getResponsiveSize(12, 13, 14),
-    color: '#B45309',
+    color: "#B45309",
     lineHeight: getResponsiveSize(17, 19, 22),
   },
   splitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(12, 14, 16),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     marginBottom: getResponsiveSize(10, 12, 14),
 
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: "#F0F0F0",
   },
   splitBtnIconBox: {
     width: getResponsiveSize(42, 48, 54),
     height: getResponsiveSize(42, 48, 54),
     borderRadius: getResponsiveSize(10, 12, 14),
-    backgroundColor: '#F0FDF4',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: getResponsiveSize(12, 16, 18),
   },
   splitBtnContent: {
@@ -3737,10 +3925,10 @@ const stylesx = StyleSheet.create({
   },
 
   warningContractCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FCD34D',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FCD34D",
     borderWidth: 1,
     borderRadius: getResponsiveSize(12, 14, 16),
     padding: getResponsiveSize(16, 18, 20),
@@ -3748,23 +3936,23 @@ const stylesx = StyleSheet.create({
   },
   warningContractTitle: {
     fontSize: getResponsiveSize(14, 16, 18),
-    fontWeight: '700',
-    color: '#92400E', // Marrón oscuro/dorado
+    fontWeight: "700",
+    color: "#92400E", // Marrón oscuro/dorado
     marginBottom: 2,
   },
   warningContractText: {
     fontSize: getResponsiveSize(12, 13, 14),
-    color: '#B45309',
-    flexWrap: 'wrap',
+    color: "#B45309",
+    flexWrap: "wrap",
   },
   availabilityLoaderCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: getResponsiveSize(12, 14, 16),
     paddingVertical: getResponsiveSize(14, 16, 18),
     paddingHorizontal: getResponsiveSize(16, 20, 24),
     borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
+    borderColor: "#F0F0F0",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
@@ -3772,21 +3960,20 @@ const stylesx = StyleSheet.create({
   },
 
   availabilityLoaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   availabilityLoaderTitle: {
     marginLeft: 10,
     fontSize: getResponsiveSize(14, 16, 18),
-    fontWeight: '700',
-    color: '#232323',
+    fontWeight: "700",
+    color: "#232323",
   },
 
   availabilityLoaderSubtitle: {
     marginTop: 6,
     fontSize: getResponsiveSize(12, 13, 14),
-    color: '#6B7280',
+    color: "#6B7280",
   },
-
 });

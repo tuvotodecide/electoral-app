@@ -2,6 +2,7 @@ const {
   withDangerousMod,
   withInfoPlist,
   withEntitlementsPlist,
+  withXcodeProject,
 } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
@@ -17,6 +18,14 @@ const path = require("path");
  *      notification settings).
  *   2. Adds push-notification and remote-notification entitlements.
  *   3. Patches the Podfile post_install block with build-setting tweaks.
+ *   4. Sets STRIP_STYLE = non-global on the Runner target's Release config so
+ *      the polygonid_flutter_sdk native module's Go-exported PLGN* symbols
+ *      (only resolved at runtime via Dart FFI's dlsym/DynamicLibrary.process())
+ *      survive the archive/App Store strip pass – otherwise they're stripped
+ *      as "unused" (nothing in Obj-C/Swift/C references them directly) and
+ *      registerer.createVC() fails in TestFlight/App Store builds with
+ *      "Failed to lookup symbol 'PLGNBabyJubJubPrivate2Public'" even though
+ *      it works fine when run from Xcode (Debug builds aren't stripped).
  */
 
 function withIOSNativeModules(config) {
@@ -166,6 +175,37 @@ function withIOSNativeModules(config) {
       return config;
     },
   ]);
+
+  // ───────────────────────────────────────────────────────────────
+  // Step 4: Set STRIP_STYLE = non-global for Release builds.
+  //
+  //         Go-exported symbols (PLGN*) from the polygonid_flutter_sdk
+  //         native module are looked up at runtime via Dart FFI's
+  //         DynamicLibrary.process() → dlsym(RTLD_DEFAULT, ...). Nothing
+  //         in Obj-C/Swift/C calls them directly, so Xcode's default
+  //         "All Symbols" strip style (applied on Archive/Release builds
+  //         but not Debug runs from Xcode) removes them from the symbol
+  //         table, causing dlsym to fail once the app is archived and
+  //         distributed via App Store Connect / TestFlight.
+  // ───────────────────────────────────────────────────────────────
+  config = withXcodeProject(config, (config) => {
+    const project = config.modResults;
+    const xcBuildConfiguration = project.pbxXCBuildConfigurationSection();
+
+    for (const key in xcBuildConfiguration) {
+      const buildConfig = xcBuildConfiguration[key];
+
+      if (typeof buildConfig !== "string" && buildConfig.name === "Release") {
+        buildConfig.buildSettings.STRIP_STYLE = "non-global";
+      }
+    }
+
+    console.log(
+      "[withIOSNativeModules] Set STRIP_STYLE=non-global on Release build configurations",
+    );
+
+    return config;
+  });
 
   return config;
 }

@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
-      "buildNumber": "44",
+      "buildNumber": "64",
       "icon": "./assets/images/ic_launcher.png",
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
