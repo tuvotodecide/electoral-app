@@ -1,4 +1,6 @@
 import {
+  Alert,
+  Linking,
   ScrollView,
   SectionList,
   StyleSheet,
@@ -8,6 +10,8 @@ import {
 } from 'react-native';
 import React, {useState} from 'react';
 import { Ionicons, Entypo } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import {SUPPORT_EMAIL} from '@env';
 
 // custom import
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -32,9 +36,36 @@ export default function More({navigation}) {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const dispatch = useDispatch();
+
+  // openURL falla si no hay app de correo configurada; en ese caso mostramos
+  // el correo para que el usuario pueda copiarlo.
+  const onContactSupport = async () => {
+    const subject = encodeURIComponent(String.contactSupportSubject);
+    try {
+      await Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}`);
+    } catch {
+      Alert.alert(
+        String.contactSupportTitle,
+        `${String.contactSupportNoMailApp}\n${SUPPORT_EMAIL}`,
+        [
+          {text: String.cancel, style: 'cancel'},
+          {
+            text: String.contactSupportCopy,
+            onPress: async () => {
+              await Clipboard.setStringAsync(SUPPORT_EMAIL);
+              Alert.alert(String.contactSupportCopied);
+            },
+          },
+        ],
+      );
+    }
+  };
+
   const onPressItem = item => {
     if (!!item.route) {
       navigation.navigate(item.route, {item: item});
+    } else if (item.action === 'contactSupport') {
+      onContactSupport();
     } else if (!!item.logOut) {
       setIsModalVisible(!isModalVisible);
     }

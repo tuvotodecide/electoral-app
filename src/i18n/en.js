@@ -26,6 +26,8 @@ export default {
   connectItem2Desc: "Tomaremos una selfie para verificar que eres tú",
   termsPrefix: "Leí y acepto los ",
   termsLink: "Términos y Condiciones",
+  termsAnd: ", la ",
+  termsPrivacy: "Política de privacidad",
   termsSuffix: " y entiendo por qué se solicita mi carnet.",
   termsTitle: "Términos y Condiciones de Uso",
   termsLastUpdate: "Última actualización: 2025",
@@ -114,6 +116,7 @@ export default {
   alertFingerprintInfo:
     "Tu huella se guarda de forma local y segura, no se comparte con nadie",
   btnActivateFingerprint: "Activar huella",
+  btnActivateFaceId: "Activar Touch ID/Face ID",
   btnActivateLater: "Activar más tarde",
   //page 8
   pinAccessTitle: "Crea tu PIN de acceso",
@@ -138,12 +141,12 @@ export default {
   //page 10
   welcomeTitle: "¡Bienvenido a Tu Voto!",
   verifiedIdentity: "Identidad verificada. Ya puedes usar tu cuenta.",
-  activosTitle: "Activos",
-  activosDesc: "Compra, guarda y vende criptomonedas libremente",
-  transfiereTitle: "Transfiere",
-  transfiereDesc: "Envía y recibe cripto de forma rápida",
+  activosTitle: "Identidad",
+  activosDesc: "Ya tienes tu identidad digital soberana",
+  transfiereTitle: "Atestiguamiento",
+  transfiereDesc: "Registra hojas de trabajo electorales",
   historialTitle: "Historial",
-  historialDesc: "Revisa todas tus transacciones",
+  historialDesc: "Revisa tus propias operaciones",
   seguridadTitle: "Seguridad",
   seguridadDesc: "Eres dueño de tu clave y tu cuenta",
   goToWalletButton: "Ir a mi cuenta",
@@ -357,6 +360,13 @@ export default {
   moreOthers3Subtitle: "Datos personales",
   moreOthers4Title: "Cerrar sesión",
   moreOthers4Subtitle: "Salir de la cuenta",
+  contactSupportTitle: "Contactar soporte",
+  contactSupportSubtitle: "Escríbenos por correo",
+  contactSupportSubject: "Solicitud de soporte",
+  contactSupportNoMailApp:
+    "No encontramos una app de correo. Escríbenos a:",
+  contactSupportCopy: "Copiar correo",
+  contactSupportCopied: "Correo copiado al portapapeles",
   //Secury data
   security1Title: "Cambiar PIN",
   security1Subtitle: "Actualiza tu PIN de acceso",
@@ -1292,7 +1302,7 @@ export default {
   needBlockchainApp: "¿Necesitas una aplicación en Blockchain?",
 
   connectItem1: "Obtén tu identidad digital soberana",
-  connectItem2: "Convierte hojas de trabajo electorales en NFTs",
+  connectItem2: "Registra hojas de trabajo electorales",
   connectItem3: "Valida con tu firma electrónica",
   // connectBtnInfo: 'Más información',
 
@@ -1468,4 +1478,26 @@ export default {
   accountAccessRecover: "Recuperar cuenta",
   accountAccessResume:
     "Tienes una sesión de demostración en curso. Ingresa el PIN para continuar.",
+  deleteAccountTitle: "Eliminar cuenta",
+  deleteAccountOptionValue: "Elimina tu cuenta y todos tus datos",
+  deleteAccountDescription:
+    "Se eliminará tu cuenta junto con tus datos personales, tus credenciales verificables y las copias de recuperación guardadas en la nube.",
+  deleteAccountTimeframe:
+    "Este proceso puede tardar hasta un máximo de 30 días.",
+  deleteAccountEmailLabel: "Correo electrónico",
+  deleteAccountEmailPlaceholder: "ejemplo@correo.com",
+  deleteAccountEmailHelp:
+    "Te avisaremos a este correo cuando tus datos se hayan eliminado por completo. Esta dirección de correo también será eliminada después de enviarte la notificación.",
+  deleteAccountEmailInvalid: "Ingresa un correo electrónico válido",
+  deleteAccountPinLabel: "Ingresa tu PIN de acceso",
+  deleteAccountSubmit: "Eliminar cuenta",
+  deleteAccountDeleting: "Eliminando cuenta...",
+  deleteAccountWrongPin: "PIN incorrecto",
+  deleteAccountRequestError:
+    "No pudimos enviar la solicitud de eliminación. No se eliminó ningún dato, intenta nuevamente.",
+  deleteAccountError: "Ocurrió un error al eliminar tu cuenta. Intenta nuevamente.",
+  deleteAccountSuccessTitle: "Cuenta eliminada",
+  deleteAccountSuccessMessage:
+    "Los datos de tu cuenta en este teléfono se eliminaron correctamente.\nTe notificaremos por correo cuando tu cuenta haya sido eliminada por completo de la nube.",
+  deleteAccountGoHome: "Ir al inicio",
 };

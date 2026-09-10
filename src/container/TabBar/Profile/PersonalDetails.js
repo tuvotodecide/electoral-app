@@ -18,12 +18,14 @@ import COptionItem from '../../../components/common/COptionItem';
 import { registryApi } from '../../../data/client/kyc';
 import CAlert from '../../../components/common/CAlert';
 import InfoModal from '../../../components/modal/InfoModal';
-import {isDemoActive} from '../../../features/demo/demoSession';
+import {isDemoActive, useIsDemoActive} from '../../../features/demo/demoSession';
+import DemoBanner from '../../../features/demo/DemoBanner';
+import {StackNav} from '../../../navigation/NavigationKey';
 
 const PUBLIC_NAME_CONFIRM_MESSAGE =
   'Autorizas a que tu nombre será visible para otros usuarios';
 
-export default function PersonalDetails() {
+export default function PersonalDetails({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const [showName, setShowName] = useState({
@@ -33,6 +35,7 @@ export default function PersonalDetails() {
   });
   const [showPublicNameConfirmModal, setShowPublicNameConfirmModal] =
     useState(false);
+  const isDemo = useIsDemoActive();
 
   useEffect(() => {
     async function fetchDisplayName() {
@@ -91,17 +94,21 @@ export default function PersonalDetails() {
       value: showName.value,
       loading: true,
     });
-    const userName = userData?.vc?.credentialSubject?.fullName;
-    if(!userName) {
-      setShowName({
-        value: showName.value,
-        loading: false,
-        errorMsg: String.error + ': ' + String.noNameAvailable,
-      });
-      return;
+
+    if(!isDemo) {
+      const userName = userData?.vc?.credentialSubject?.fullName;
+      if(!userName) {
+        setShowName({
+          value: showName.value,
+          loading: false,
+          errorMsg: String.error + ': ' + String.noNameAvailable,
+        });
+        return;
+      }
+
+      await registryApi.registryUpdateDisplayName(userData.did, value ? userName : null);
     }
 
-    await registryApi.registryUpdateDisplayName(userData.did, value ? userName : null);
     setShowName({
       value,
       loading: false,
@@ -135,6 +142,7 @@ export default function PersonalDetails() {
       <KeyBoardAvoidWrapper
         testID="personalDetailsKeyboardWrapper"
         contentContainerStyle={styles.ph20}>
+        <DemoBanner testID="personalDetailsDemoBanner" />
         <View
           testID="personalDetailsAvatarContainer"
           style={{alignItems: 'center', width: '100%'}}>
@@ -188,6 +196,15 @@ export default function PersonalDetails() {
           onSwitchValueChange={onSwitchShowName}
         />
         {showName.errorMsg && <CAlert status="error" message={showName.errorMsg} testID="personalDetailsErrorAlert" />}
+        <COptionItem
+          item={{
+            id: 2,
+            icon: 'trash',
+            title: String.deleteAccountTitle,
+            value: String.deleteAccountOptionValue,
+          }}
+          onPressItem={() => navigation.navigate(StackNav.DeleteAccount)}
+        />
       </KeyBoardAvoidWrapper>
       <InfoModal
         testID="publicNameVisibilityConfirmModal"

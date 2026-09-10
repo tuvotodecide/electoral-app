@@ -55,6 +55,7 @@ const mockPaths = [
   '../../../src/container/TabBar/Profile/OracleParticipation',
   '../../../src/container/TabBar/Profile/Profile',
   '../../../src/container/TabBar/Profile/PersonalDetails',
+  '../../../src/container/TabBar/Profile/DeleteAccount',
   '../../../src/container/TabBar/Profile/SelectLanguage',
   '../../../src/container/TabBar/Profile/PushNotification',
   '../../../src/container/TabBar/Profile/HelpCenter',

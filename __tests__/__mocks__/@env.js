@@ -22,6 +22,7 @@ const envConfig = {
   GATEWAY_BASE: 'https://gateway.example',
   TERMS_URL: 'https://terms.example',
   PRIVACY_URL: 'https://privacy.example',
+  SUPPORT_EMAIL: 'support@example.com',
   VERIFIER_REQUEST_ENDPOINT: 'https://verifier.example/request',
   APP_ENV: 'test',
   APP_FLOW: 'attestation',
@@ -51,6 +52,7 @@ module.exports.CIRCUITS_URL = 'https://circuits.example';
 module.exports.GATEWAY_BASE = 'https://gateway.example';
 module.exports.TERMS_URL = 'https://terms.example';
 module.exports.PRIVACY_URL = 'https://privacy.example';
+module.exports.SUPPORT_EMAIL = 'support@example.com';
 module.exports.VERIFIER_REQUEST_ENDPOINT = 'https://verifier.example/request';
 module.exports.APP_ENV = 'test';
 module.exports.APP_FLOW = 'attestation';

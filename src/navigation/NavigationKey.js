@@ -57,6 +57,7 @@ export const StackNav = {
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
+  DeleteAccount: 'DeleteAccount',
   RecuperationQR: 'RecuperationQR',
   Guardians: 'Guardians',
   GuardiansAdmin: 'GuardiansAdmin',

@@ -1,4 +1,4 @@
-import {Image, StyleSheet, View} from 'react-native';
+import {Image, Platform, StyleSheet, View} from 'react-native';
 import React, {useState} from 'react';
 
 // custom import
@@ -110,7 +110,7 @@ export default function RegisterUser7({navigation, route}) {
         <CAlert status="info" message={String.alertFingerprintInfo} testID="registerUser7InfoAlert" />
 
         <CButton
-          title={String.btnActivateFingerprint}
+          title={Platform.OS === 'ios' ? String.btnActivateFaceId : String.btnActivateFingerprint}
           onPress={handleActivateBio}
           type={'B16'}
           variant="outlined"

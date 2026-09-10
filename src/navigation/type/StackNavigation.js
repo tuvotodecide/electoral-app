@@ -100,6 +100,10 @@ export default function StackNavigation() {
         component={StackRoute.PersonalDetails}
       />
       <Stack.Screen
+        name={StackNav.DeleteAccount}
+        component={StackRoute.DeleteAccount}
+      />
+      <Stack.Screen
         name={StackNav.RecuperationQR}
         component={StackRoute.RecuperationQR}
       />

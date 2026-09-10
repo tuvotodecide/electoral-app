@@ -331,6 +331,13 @@ export const ProfileDataV3 = [
         value: String.moreOthers3Subtitle,
         route: StackNav.PrivacyPolicies,
       },
+      {
+        id: 13,
+        icon: 'mail',
+        title: String.contactSupportTitle,
+        value: String.contactSupportSubtitle,
+        action: 'contactSupport',
+      },
       // {
       //   id: 14,
       //   title: String.moreOthers4Title,

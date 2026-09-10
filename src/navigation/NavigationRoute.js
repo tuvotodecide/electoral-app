@@ -79,6 +79,7 @@ import HomeStackNavigation from './type/HomeStackNavigation';
 
 // Profile screens necesarios
 import PersonalDetails from '../container/TabBar/Profile/PersonalDetails';
+import DeleteAccount from '../container/TabBar/Profile/DeleteAccount';
 import SelectLanguage from '../container/TabBar/Profile/SelectLanguage';
 import PushNotification from '../container/TabBar/Profile/PushNotification';
 import HelpCenter from '../container/TabBar/Profile/HelpCenter';
@@ -166,6 +167,7 @@ export const StackRoute = {
 
   // Profile y configuración
   PersonalDetails,
+  DeleteAccount,
   RecuperationQR,
   Guardians,
   GuardiansAdmin,
