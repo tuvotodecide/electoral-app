@@ -651,6 +651,7 @@ describe('notifications', () => {
 
   it('abre el detalle institucional desde push para tipos de votacion sin caer a Splash', () => {
     const institutionalTypes = [
+      'MOBILE_AUTHORIZATION_REQUESTED',
       'INSTITUTIONAL_ADMIN_INVITATION',
       'INSTITUTIONAL_PADRON_REVIEW_OPEN',
       'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
@@ -676,6 +677,55 @@ describe('notifications', () => {
         mesa: expect.any(String),
         direccion: expect.any(String),
       });
+    });
+  });
+
+  it('abre el detalle de autorización móvil e invitación institucional desde push', () => {
+    const authorizationRoute = buildRouteFromNotification({
+      title: 'Autorización pendiente',
+      body: 'Revisa esta solicitud de Test company A.',
+      data: {
+        type: 'MOBILE_AUTHORIZATION_REQUESTED',
+        applicationId: '6aa847cc7da40622a3ca56f6',
+        action: 'ADD_AUTHORIZED_ADDRESS',
+      },
+    });
+
+    expect(authorizationRoute).toMatchObject({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'institutional_authorization',
+          tipo: 'Autorización pendiente',
+          mesa: 'Autorización pendiente',
+          direccion: 'Revisa esta solicitud de Test company A.',
+          actionLabel: 'Revisar solicitud',
+          data: expect.objectContaining({applicationId: '6aa847cc7da40622a3ca56f6'}),
+        },
+      },
+    });
+
+    const invitationRoute = buildRouteFromNotification({
+      title: 'Invitación institucional',
+      body: 'Tienes una invitación pendiente para administrar Test company A.',
+      data: {
+        type: 'INSTITUTIONAL_ADMIN_INVITATION',
+        invitationId: '6aa847567da40622a3ca56f3',
+        tenantId: '6a92166f60390c5a3d35e8f6',
+      },
+    });
+
+    expect(invitationRoute).toMatchObject({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'institutional_authorization',
+          tipo: 'Ver invitación',
+          mesa: 'Invitación institucional',
+          direccion: 'Tienes una invitación pendiente para administrar Test company A.',
+          data: expect.objectContaining({invitationId: '6aa847567da40622a3ca56f3'}),
+        },
+      },
     });
   });
 

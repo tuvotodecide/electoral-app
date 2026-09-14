@@ -1,35 +1,35 @@
 {
-  "lastRunningTimeSecs": 189,
+  "lastRunningTimeSecs": 108,
   "integrations": {
-    "integrationsCount": 2,
-    "countedFrom": "2026-09-05T00:00:00.000Z",
-    "countedTo": "2026-09-12T00:00:00.000Z"
+    "integrationsCount": 1,
+    "countedFrom": "2026-09-12T00:00:00.000Z",
+    "countedTo": "2026-09-19T00:00:00.000Z"
   },
   "preCommitSummary": {
-    "lintWarningCount": 560,
-    "totalTests": 1843,
+    "lintWarningCount": 562,
+    "totalTests": 1845,
     "status": "SUCCESS"
   },
   "coverageTable": {
     "lines": {
-      "percent": 68.62,
-      "covered": 6130,
-      "total": 8933
+      "percent": 68.63,
+      "covered": 6149,
+      "total": 8959
     },
     "statements": {
-      "percent": 67.47,
-      "covered": 6420,
-      "total": 9515
+      "percent": 67.49,
+      "covered": 6440,
+      "total": 9542
     },
     "functions": {
-      "percent": 68.29,
-      "covered": 1299,
-      "total": 1902
+      "percent": 68.34,
+      "covered": 1304,
+      "total": 1908
     },
     "branches": {
-      "percent": 53.52,
-      "covered": 4803,
-      "total": 8974
+      "percent": 53.48,
+      "covered": 4815,
+      "total": 9002
     }
   }
 }

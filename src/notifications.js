@@ -284,6 +284,7 @@ const NotificationTypeStrategies = {
 };
 
 const INSTITUTIONAL_DETAIL_TYPES = new Set([
+  'MOBILE_AUTHORIZATION_REQUESTED',
   'INSTITUTIONAL_ADMIN_INVITATION',
   'OFFICIAL_PUBLICATION_REQUEST',
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
@@ -572,6 +573,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const isNews = type === 'INSTITUTIONAL_NEWS';
   const isOfficialPublicationRequest = type === 'OFFICIAL_PUBLICATION_REQUEST';
   const isInstitutionalAuthorizationRequest = type === 'MOBILE_AUTHORIZATION_REQUESTED';
+  const isInstitutionalInvitation = type === 'INSTITUTIONAL_ADMIN_INVITATION';
   const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
@@ -595,9 +597,11 @@ export const buildInstitutionalNotificationForDetail = notification => {
     id: notification?._id || notification?.id || `push_${Date.now()}`,
     raw: notification,
     data,
-    kind: isInstitutionalAuthorizationRequest ? 'institutional_authorization' : isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
+    kind: isInstitutionalAuthorizationRequest || isInstitutionalInvitation ? 'institutional_authorization' : isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
     tipo: isInstitutionalAuthorizationRequest
       ? 'Autorización pendiente'
+      : isInstitutionalInvitation
+      ? 'Ver invitación'
       : isOfficialPublicationRequest
       ? 'Revisar solicitud'
       : isOfficialPublicationReminder
@@ -621,11 +625,15 @@ export const buildInstitutionalNotificationForDetail = notification => {
       ? String(data?.eventName || '').trim() || title || 'Confirmación de publicación'
       : title ||
         data?.bannerTitle ||
-        (isResults
-          ? 'Resultados disponibles'
-          : isNews
-            ? 'Noticia'
-            : 'Actualización institucional'),
+        (isInstitutionalAuthorizationRequest
+          ? 'Autorización pendiente'
+          : isInstitutionalInvitation
+            ? 'Invitación institucional'
+            : isResults
+              ? 'Resultados disponibles'
+              : isNews
+                ? 'Noticia'
+                : 'Actualización institucional'),
     direccion: isOfficialPublicationReminder
       ? String(data?.bannerSubtitle || '').trim() || body || ''
       : reminderDetailBody || body || data?.eventName || '',

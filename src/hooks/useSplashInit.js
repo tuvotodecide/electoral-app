@@ -244,7 +244,7 @@ export const useSplashInit = (navigation) => {
       try {
         await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
           pushUrl: 'https://push-staging.polygonid.com/api/v1',
-          ipfsGatewayUrl: 'https://ipfs.io',
+          ipfsGatewayUrl: BACKEND_IDENTITY,
           chainConfigs: {
             "80002": {
               blockchain: 'polygon',

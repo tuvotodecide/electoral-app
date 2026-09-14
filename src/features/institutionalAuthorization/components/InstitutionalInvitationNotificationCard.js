@@ -5,8 +5,11 @@ import {
   acceptInstitutionalInvitation,
   extractInstitutionalAuthorizationErrorCode,
   getInstitutionalInvitationRequest,
+  isInstitutionalInvitationUnavailableError,
   rejectInstitutionalInvitation,
 } from '../api/institutionalAuthorizationApi';
+
+const INVITATION_ALREADY_PROCESSED_MESSAGE = 'Esta invitación ya fue procesada.';
 
 const statusLabels = {
   PENDING: 'Pendiente',
@@ -73,9 +76,11 @@ export default function InstitutionalInvitationNotificationCard({
   const [message, setMessage] = useState('');
   const [requiresAdminAccount, setRequiresAdminAccount] = useState(false);
   const [registrationContinuationCode, setRegistrationContinuationCode] = useState('');
+  const [alreadyProcessed, setAlreadyProcessed] = useState(false);
   const inFlightRef = useRef(false);
   const status = invitation.status;
-  const actionable = status === 'PENDING' && validated && !busy && !loading;
+  const actionable =
+    status === 'PENDING' && validated && !busy && !loading && !alreadyProcessed;
   const hasExistingAccount = invitation.hasAdminAccount === true;
 
   useEffect(() => {
@@ -98,7 +103,11 @@ export default function InstitutionalInvitationNotificationCard({
       } catch (error) {
         if (active) {
           setValidated(false);
-          setMessage(resolveErrorMessage(error, 'No se pudo validar la invitación.'));
+          if (isInstitutionalInvitationUnavailableError(error)) {
+            setAlreadyProcessed(true);
+          } else {
+            setMessage(resolveErrorMessage(error, 'No se pudo validar la invitación.'));
+          }
         }
       } finally {
         if (active) setLoading(false);
@@ -134,6 +143,10 @@ export default function InstitutionalInvitationNotificationCard({
       onStatusChange?.(next.status);
       setMessage('Invitación aceptada. Queda pendiente de aprobación.');
     } catch (error) {
+      if (isInstitutionalInvitationUnavailableError(error)) {
+        setAlreadyProcessed(true);
+        return;
+      }
       setMessage(resolveErrorMessage(error, 'No se pudo aceptar la invitación.'));
     } finally {
       inFlightRef.current = false;
@@ -169,12 +182,26 @@ export default function InstitutionalInvitationNotificationCard({
       onStatusChange?.('REJECTED');
       setMessage('Invitación rechazada.');
     } catch (error) {
+      if (isInstitutionalInvitationUnavailableError(error)) {
+        setAlreadyProcessed(true);
+        return;
+      }
       setMessage(resolveErrorMessage(error, 'No se pudo rechazar la invitación.'));
     } finally {
       inFlightRef.current = false;
       setBusy(false);
     }
   };
+
+  if (alreadyProcessed) {
+    return (
+      <View testID="institutionalInvitationCard" style={styles.card}>
+        <Text testID="institutionalInvitationAlreadyProcessed" style={styles.processedText}>
+          {INVITATION_ALREADY_PROCESSED_MESSAGE}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View testID="institutionalInvitationCard" style={styles.card}>
@@ -269,6 +296,11 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 14,
     marginTop: 12,
+  },
+  processedText: {
+    color: '#334155',
+    fontSize: 15,
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',

@@ -400,6 +400,10 @@ export default function Notification({ navigation }) {
     const isVoteReward = isVoteRewardNotification(data);
     const isOfficialPublicationReminder =
       normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER';
+    const isAuthorizationRequest =
+      normalizedType === 'MOBILE_AUTHORIZATION_REQUESTED';
+    const isAdminInvitation =
+      normalizedType === 'INSTITUTIONAL_ADMIN_INVITATION';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -407,7 +411,11 @@ export default function Notification({ navigation }) {
     });
 
     let mesaLabel = '';
-    if (notificationKind === 'news') {
+    if (isAuthorizationRequest) {
+      mesaLabel = titleFromBackend || 'Autorización pendiente';
+    } else if (isAdminInvitation) {
+      mesaLabel = titleFromBackend || 'Invitación institucional';
+    } else if (notificationKind === 'news') {
       mesaLabel = titleFromBackend || data?.title || 'Noticia';
     } else if (isOfficialPublicationRequest) {
       mesaLabel = 'Publicación oficial pendiente';
@@ -439,7 +447,11 @@ export default function Notification({ navigation }) {
     }
 
     let tipo = 'Actualizar';
-    if (notificationKind === 'voting_event') {
+    if (isAuthorizationRequest) {
+      tipo = 'Revisar solicitud';
+    } else if (isAdminInvitation) {
+      tipo = 'Ver invitación';
+    } else if (notificationKind === 'voting_event') {
       const startsAt = data?.votingStart || data?.startsAt;
       if (isPadronReview) {
         tipo = 'Ver padrón';
@@ -510,7 +522,9 @@ export default function Notification({ navigation }) {
       mesa: mesaLabel,
       colegio: data?.locationName || n?.locationName || '',
       direccion:
-        notificationKind === 'news'
+        isAuthorizationRequest || isAdminInvitation
+          ? bodyFromBackend || data?.body || ''
+          : notificationKind === 'news'
           ? bodyFromBackend || data?.summary || data?.body || ''
           : isVotingCancelled
             ? bodyFromBackend || data?.body || ''
@@ -765,6 +779,10 @@ export default function Notification({ navigation }) {
         return 'checkbox-outline';
       case 'Reclamar recompensa':
         return 'gift-outline';
+      case 'Revisar solicitud':
+        return 'shield-checkmark-outline';
+      case 'Ver invitación':
+        return 'mail-outline';
       default:
         return 'sparkles-outline';
     }

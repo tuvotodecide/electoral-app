@@ -20,6 +20,7 @@ import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
 import CustomModal from '../../../components/common/CustomModal';
+import ServiceStatusWarning from '../../../components/common/ServiceStatusWarning';
 import CameraScannerModal from '../components/CameraScannerModal';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -713,6 +714,8 @@ const CandidateScreen = ({ route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <ServiceStatusWarning />
+
         {/* Title */}
         <CText type="B22" style={styles.title}>
           {electionDisplayTitle}

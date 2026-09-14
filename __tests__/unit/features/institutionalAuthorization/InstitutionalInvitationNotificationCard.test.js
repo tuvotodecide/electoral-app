@@ -7,6 +7,11 @@ jest.mock('../../../../src/features/institutionalAuthorization/api/institutional
   acceptInstitutionalInvitation: jest.fn(),
   extractInstitutionalAuthorizationErrorCode: jest.fn(error => error?.code || null),
   getInstitutionalInvitationRequest: jest.fn(),
+  isInstitutionalInvitationUnavailableError: jest.fn(
+    error =>
+      error?.response?.status === 400 &&
+      error?.response?.data?.message === 'Institutional invitation is not available',
+  ),
   rejectInstitutionalInvitation: jest.fn(),
 }));
 
@@ -142,6 +147,27 @@ describe('InstitutionalInvitationNotificationCard', () => {
     );
 
     expect(await screen.findByText('La invitación venció.')).toBeTruthy();
+    expect(screen.queryByTestId('institutionalInvitationAcceptButton')).toBeNull();
+    expect(screen.queryByTestId('institutionalInvitationRejectButton')).toBeNull();
+  });
+
+  it('muestra solo el aviso de invitación procesada si ya no está disponible', async () => {
+    api.getInstitutionalInvitationRequest.mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: {
+          statusCode: 400,
+          message: 'Institutional invitation is not available',
+        },
+      },
+    });
+    const screen = render(
+      <InstitutionalInvitationNotificationCard notification={notification} />,
+    );
+
+    expect(await screen.findByText('Esta invitación ya fue procesada.')).toBeTruthy();
+    expect(screen.queryByText('Invitación institucional')).toBeNull();
+    expect(screen.queryByTestId('institutionalInvitationStatus')).toBeNull();
     expect(screen.queryByTestId('institutionalInvitationAcceptButton')).toBeNull();
     expect(screen.queryByTestId('institutionalInvitationRejectButton')).toBeNull();
   });

@@ -349,6 +349,26 @@ export const getInstitutionalInvitationRequest = async invitationId => {
   return unwrapRequest(response);
 };
 
+const INSTITUTIONAL_INVITATION_UNAVAILABLE_MESSAGE =
+  'institutional invitation is not available';
+
+export const isInstitutionalInvitationUnavailableError = error => {
+  const response = error?.response || error?.cause?.response;
+  if (Number(response?.status) !== 400) return false;
+  let data = response?.data;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return false;
+    }
+  }
+  return (
+    String(data?.message || '').trim().toLowerCase() ===
+    INSTITUTIONAL_INVITATION_UNAVAILABLE_MESSAGE
+  );
+};
+
 export const extractInstitutionalAuthorizationErrorCode = error => {
   const data =
     error?.response?.data ||

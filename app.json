@@ -28,7 +28,7 @@
       "appleTeamId": "U63JS7RZD3"
     },
     "android": {
-      "versionCode": 42,
+      "versionCode": 82,
       "googleServicesFile": "./native-files/google-services.json",
       "package": "com.tuvotodecide",
       "usesFeatures": [
