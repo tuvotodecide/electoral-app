@@ -14,7 +14,7 @@ import {useSelector} from 'react-redux';
 import Icono from '../../components/common/Icono';
 
 
-export default function SelectRecuperation({navigation, route}) {
+export default function SelectRecuperation({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const initCIrecovery = () => {
     const params = {
@@ -42,44 +42,8 @@ export default function SelectRecuperation({navigation, route}) {
             {String.recoverymethod}
           </CText>
         </View>
-        {!route.params?.disableCI &&
-          <TouchableOpacity
-            testID="selectRecuperationCiOption"
-            style={[
-              localStyle.optionContainer,
-              {
-                backgroundColor: colors.backgroundColor,
-                borderColor: colors.dark
-                  ? colors.grayScale700
-                  : colors.grayScale200,
-
-                elevation: 5,
-              },
-            ]}
-            onPress={initCIrecovery}>
-            <View style={styles.rowCenter}>
-              <View
-                style={[
-                  localStyle.iconBg,
-                  {
-                    borderColor: colors.dark
-                      ? colors.stepBackgroundColor
-                      : colors.grayScale200,
-                  },
-                ]}>
-                <Icono name="card-account-details" size={moderateScale(24)} />
-              </View>
-              <View style={styles.ml10}>
-                <View style={styles.rowCenter}>
-                  <CText type="B16">{String.recoveryWithCI}</CText>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        }
-        
         <TouchableOpacity
-          testID="selectRecuperationFileOption"
+          testID="selectRecuperationCiOption"
           style={[
             localStyle.optionContainer,
             {
@@ -91,12 +55,9 @@ export default function SelectRecuperation({navigation, route}) {
               elevation: 5,
             },
           ]}
-          onPress={() => {
-            navigation.navigate(AuthNav.RecoveryQr);
-          }}>
+          onPress={initCIrecovery}>
           <View style={styles.rowCenter}>
             <View
-              testID="selectRecuperationFileIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -105,15 +66,55 @@ export default function SelectRecuperation({navigation, route}) {
                     : colors.grayScale200,
                 },
               ]}>
-              <Icono name="file-download-outline" size={moderateScale(24)} />
+              <Icono name="card-account-details" size={moderateScale(24)} />
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText testID="selectRecuperationFileText" type="B16">{String.recoverymethodFile}</CText>
+                <CText type="B16">{String.recoveryWithCI}</CText>
               </View>
             </View>
           </View>
         </TouchableOpacity>
+        
+        { __DEV__ &&
+          <TouchableOpacity
+            testID="selectRecuperationFileOption"
+            style={[
+              localStyle.optionContainer,
+              {
+                backgroundColor: colors.backgroundColor,
+                borderColor: colors.dark
+                  ? colors.grayScale700
+                  : colors.grayScale200,
+
+                elevation: 5,
+              },
+            ]}
+            onPress={() => {
+              navigation.navigate(AuthNav.RecoveryQr);
+            }}>
+            <View style={styles.rowCenter}>
+              <View
+                testID="selectRecuperationFileIcon"
+                style={[
+                  localStyle.iconBg,
+                  {
+                    borderColor: colors.dark
+                      ? colors.stepBackgroundColor
+                      : colors.grayScale200,
+                  },
+                ]}>
+                <Icono name="file-download-outline" size={moderateScale(24)} />
+              </View>
+              <View style={styles.ml10}>
+                <View style={styles.rowCenter}>
+                  <CText testID="selectRecuperationFileText" type="B16">{String.recoverymethodFile}</CText>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        }
+        
       </KeyBoardAvoidWrapper>
     </CSafeAreaViewAuth>
   );

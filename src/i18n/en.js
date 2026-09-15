@@ -1471,7 +1471,7 @@ export default {
   accountAccessDniPlaceholder: "Ej. 1234567",
   accountAccessPinLabel: "PIN",
   accountAccessSubmit: "Ingresar",
-  accountAccessRecovery: "Olvidé mi PIN",
+  accountAccessRecovery: "Recuperar cuenta",
   accountAccessNotFoundTitle: "Cuenta no encontrada",
   accountAccessNotFound:
     "No encontramos tus datos en este dispositivo.\nPara volver a usar tu cuenta necesitas recuperarla.",

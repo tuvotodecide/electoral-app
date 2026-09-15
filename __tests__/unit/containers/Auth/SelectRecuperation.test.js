@@ -53,12 +53,12 @@ describe('SelectRecuperation', () => {
     expect(() => getByTestId('selectRecuperationGuardiansOption')).toThrow();
   });
 
-  it('oculta la opción CI cuando disableCI es true', () => {
+  it('no oculta la opción CI cuando disableCI es true', () => {
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const {queryByTestId} = renderWithProviders(
       <SelectRecuperation navigation={localNavigation} route={{params: {disableCI: true}}} />,
     );
 
-    expect(queryByTestId('selectRecuperationCiOption')).toBeNull();
+    expect(queryByTestId('selectRecuperationCiOption')).toBeTruthy();
   });
 });
