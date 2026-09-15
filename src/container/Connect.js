@@ -14,6 +14,7 @@ import CText from '../components/common/CText';
 import String from '../i18n/String';
 import { hydrateDemoSession } from '../features/demo/demoSession';
 import { AuthNav, StackNav } from '../navigation/NavigationKey';
+import { describeNav, notifNavLog } from '../utils/notifNavDebug';
 import { styles } from '../themes';
 import { commonColor } from '../themes/colors';
 import { HandleModal } from './TabBar/SignIn/HandleModal';
@@ -22,13 +23,16 @@ export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
 
   useEffect(() => {
+    notifNavLog('Connect', 'mounted', { current: describeNav() });
     const checkUserData = async () => {
       if (Platform.OS === 'ios') {
         await wira.Storage.checkFirstLaunch();
       }
       const response = await wira.Storage.checkUserData();
+      notifNavLog('Connect', 'checkUserData', { hasUserData: Boolean(response) });
       if (response) {
         // Una billetera real siempre gana sobre una sesión demo persistida.
+        notifNavLog('Connect', 'replace -> LoginUser', { current: describeNav() });
         navigation.replace(AuthNav.LoginUser);
         return;
       }

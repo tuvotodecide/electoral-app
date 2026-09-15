@@ -27,6 +27,7 @@
  *
  * @typedef {Object} IElectionRepository
  * @property {() => Promise<Election[]>} [getElections]
+ * @property {() => Promise<Election[]>} [getCachedElections] copia guardada de getElections, sin red
  * @property {() => Promise<Election>} getElection
  * @property {(electionId: string) => Promise<Candidate[]>} getCandidates
  * @property {(electionId: string, candidateId: string) => Promise<VoteResult>} [registerParticipation]

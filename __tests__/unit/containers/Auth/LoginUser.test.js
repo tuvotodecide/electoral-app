@@ -14,6 +14,7 @@ import {
   startDemoSession,
 } from '../../../../src/features/demo/demoSession';
 import {activateDemoSession} from '../../../../src/features/demo/demoLifecycle';
+import {consumeHomeEntryFromLogin} from '../../../../src/utils/homeEntry';
 
 jest.mock('../../../../src/config/sentry', () => ({
   captureError: jest.fn(),
@@ -98,6 +99,8 @@ describe('LoginUser', () => {
         routes: [{name: StackNav.TabNavigation}],
       });
     });
+    // Home debe cargar las elecciones desde la API en primer plano.
+    expect(consumeHomeEntryFromLogin()).toBe(true);
   });
 
   it('al llegar al limite de intentos muestra modal y redirige a recuperacion', async () => {

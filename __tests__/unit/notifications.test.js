@@ -80,6 +80,10 @@ jest.mock('../../src/navigation/RootNavigation', () => {
   const navigate = jest.fn();
   return {
     navigate,
+    navigationRef: {
+      isReady: jest.fn(() => false),
+      getCurrentRoute: jest.fn(() => null),
+    },
     safeNavigate: jest.fn((name, params) => {
       navigate(name, params);
       return true;
@@ -880,6 +884,46 @@ describe('notifications', () => {
     await handleNotificationPress(notification);
     await handleNotificationPress(notification);
 
+    expect(rootNav.navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('en arranque en frio (Splash) guarda pending sin navegar al login', async () => {
+    storeModule.__setAuthState({isAuthenticated: false});
+    rootNav.navigationRef.isReady.mockReturnValueOnce(true);
+    rootNav.navigationRef.getCurrentRoute.mockReturnValueOnce({name: 'Splash'});
+
+    await handleNotificationPress({
+      data: {id: 'cold-start-1', screen: 'ClaimCredScreen'},
+    });
+
+    expect(storeModule.__getDispatch()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'setPendingNotificationNavigation',
+        payload: expect.objectContaining({targetRoute: 'ClaimCredScreen'}),
+      }),
+    );
+    expect(rootNav.navigate).not.toHaveBeenCalled();
+  });
+
+  it('comparte el consumo del pending cuando se pide dos veces a la vez', async () => {
+    storeModule.__setAuthState({
+      isAuthenticated: true,
+      pendingNotificationNavigation: {
+        type: 'notification',
+        targetRoute: 'ClaimCredScreen',
+        params: {notificationId: 'concurrent'},
+        createdAt: Date.now(),
+        dedupeKey: 'notification:test:ClaimCredScreen:concurrent',
+      },
+    });
+
+    const [first, second] = await Promise.all([
+      consumePendingNotificationNavigation('LoginUser.unlock'),
+      consumePendingNotificationNavigation('App.pendingEffect'),
+    ]);
+
+    expect(first).toBe(true);
+    expect(second).toBe(true);
     expect(rootNav.navigate).toHaveBeenCalledTimes(1);
   });
 

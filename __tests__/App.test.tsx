@@ -7,6 +7,7 @@ const mockOnTokenRefresh = jest.fn();
 const mockSubscribeToLocationTopic = jest.fn(() => Promise.resolve());
 const mockSubscribeToPushTopic = jest.fn(() => Promise.resolve());
 const mockGetItem = jest.fn();
+const mockDispatch = jest.fn();
 
 jest.mock('@sentry/react-native', () => ({
   wrap: Component => Component,
@@ -42,18 +43,17 @@ jest.mock('../src/utils/Session', () => ({
   isSessionValid: jest.fn(() => Promise.resolve(true)),
 }));
 
-jest.mock('@react-native-firebase/messaging', () => {
-  return () => ({
-    onTokenRefresh: mockOnTokenRefresh,
-  });
-});
+jest.mock('@react-native-firebase/messaging', () => ({
+  getMessaging: () => ({}),
+  onTokenRefresh: (_messaging, callback) => mockOnTokenRefresh(callback),
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: (...args) => mockGetItem(...args),
 }));
 
 jest.mock('react-redux', () => ({
-  useDispatch: () => jest.fn(),
+  useDispatch: () => mockDispatch,
   useSelector: selector =>
     selector({
       auth: {isAuthenticated: false, pendingNav: null},
@@ -73,6 +73,15 @@ describe('src/App', () => {
   it('renderiza el navegador principal', () => {
     const {getByTestId} = render(<App />);
     expect(getByTestId('appNavigator')).toBeTruthy();
+  });
+
+  it('al montar resetea isAuthenticated para pedir siempre el PIN', () => {
+    render(<App />);
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'auth/setAuthenticated',
+      payload: false,
+    });
   });
 
   it('re-suscribe los topicos guardados cuando firebase refresca el token', async () => {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import wira from 'wira-sdk';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ElectionRepositoryApi from '../../../../src/features/voting/data/repositories/ElectionRepository.api';
 
 jest.mock('axios');
@@ -743,6 +744,41 @@ describe('ElectionRepository.api', () => {
       );
       expect(clearVoteJournal).toHaveBeenCalledWith('event-1');
       expect(axios.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getCachedElections', () => {
+    const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
+
+    it('devuelve la copia guardada vigente sin llamar a la API', async () => {
+      const cached = [{id: 'event-1', title: 'Eleccion guardada'}];
+      AsyncStorage.getItem.mockResolvedValueOnce(
+        JSON.stringify({expiresAt: Date.now() + 60 * 1000, data: cached}),
+      );
+
+      await expect(ElectionRepositoryApi.getCachedElections()).resolves.toEqual(
+        cached,
+      );
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith(LANDING_CACHE_KEY);
+      expect(axios.get).not.toHaveBeenCalled();
+    });
+
+    it('descarta la copia vencida y devuelve lista vacía', async () => {
+      AsyncStorage.getItem.mockResolvedValueOnce(
+        JSON.stringify({
+          expiresAt: Date.now() - 1000,
+          data: [{id: 'event-1'}],
+        }),
+      );
+
+      await expect(ElectionRepositoryApi.getCachedElections()).resolves.toEqual([]);
+      expect(AsyncStorage.removeItem).toHaveBeenCalledWith(LANDING_CACHE_KEY);
+    });
+
+    it('devuelve lista vacía cuando no hay copia guardada', async () => {
+      AsyncStorage.getItem.mockResolvedValueOnce(null);
+
+      await expect(ElectionRepositoryApi.getCachedElections()).resolves.toEqual([]);
     });
   });
 });

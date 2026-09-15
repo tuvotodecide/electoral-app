@@ -424,44 +424,45 @@ jest.mock('@react-native-firebase/auth', () => ({
   }),
 }));
 
-jest.mock('@react-native-firebase/messaging', () => {
-  const messaging = () => ({
-    hasPermission: jest.fn(() => Promise.resolve(true)),
-    subscribeToTopic: jest.fn(),
-    unsubscribeFromTopic: jest.fn(),
-    requestPermission: jest.fn(() => Promise.resolve(true)),
-    getToken: jest.fn(() => Promise.resolve('fcm-token')),
-    onMessage: jest.fn(),
-    setBackgroundMessageHandler: jest.fn(),
-  });
-  messaging.AuthorizationStatus = {
+jest.mock('@react-native-firebase/messaging', () => ({
+  AuthorizationStatus: {
+    NOT_DETERMINED: -1,
+    DENIED: 0,
     AUTHORIZED: 1,
     PROVISIONAL: 2,
-    DENIED: 0,
-  };
-  return messaging;
-});
+    EPHEMERAL: 3,
+  },
+  getMessaging: () => ({}),
+  hasPermission: () => Promise.resolve(1),
+  registerDeviceForRemoteMessages: () => Promise.resolve(),
+  requestPermission: () => Promise.resolve(1),
+  getToken: () => Promise.resolve('fcm-token'),
+  subscribeToTopic: () => Promise.resolve(),
+  unsubscribeFromTopic: () => Promise.resolve(),
+  onMessage: () => () => {},
+  onTokenRefresh: () => () => {},
+  onNotificationOpenedApp: () => () => {},
+  getInitialNotification: () => Promise.resolve(null),
+  setBackgroundMessageHandler: () => {},
+}));
 
-jest.mock('@react-native-firebase/database', () => {
-  const database = () => ({
-    ref: jest.fn(() => ({
-      once: jest.fn(() => Promise.resolve({val: () => null})),
-      set: jest.fn(() => Promise.resolve()),
-      update: jest.fn(() => Promise.resolve()),
-      on: jest.fn(),
-      off: jest.fn(),
-    })),
-  });
-  database.ServerValue = {TIMESTAMP: 0};
-  return database;
-});
+jest.mock('@react-native-firebase/database', () => ({
+  getDatabase: () => ({}),
+  ref: () => ({}),
+  get: () => Promise.resolve({val: () => null, exists: () => false}),
+  set: () => Promise.resolve(),
+  update: () => Promise.resolve(),
+  onValue: () => () => {},
+  off: () => {},
+  goOnline: () => {},
+  goOffline: () => {},
+  serverTimestamp: () => 0,
+}));
 
-jest.mock('@react-native-firebase/functions', () => {
-  const functions = () => ({
-    httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({data: {}}))),
-  });
-  return functions;
-});
+jest.mock('@react-native-firebase/functions', () => ({
+  getFunctions: () => ({}),
+  httpsCallable: () => () => Promise.resolve({data: {}}),
+}));
 
 // Mock Keychain
 jest.mock('expo-secure-store', () => ({

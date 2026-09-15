@@ -28,7 +28,7 @@
       "appleTeamId": "U63JS7RZD3"
     },
     "android": {
-      "versionCode": 82,
+      "versionCode": 83,
       "googleServicesFile": "./native-files/google-services.json",
       "package": "com.tuvotodecide",
       "usesFeatures": [
@@ -145,6 +145,7 @@
       ],
       "./plugins/withIOSCodeSigning",
       "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "./plugins/withNativeModules",
       "./plugins/withIOSNativeModules",
       "./plugins/withIOSOrientation",

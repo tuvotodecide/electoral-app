@@ -1,12 +1,12 @@
-import database from '@react-native-firebase/database';
-import messaging from '@react-native-firebase/messaging';
-import functions from '@react-native-firebase/functions';
+import { getDatabase, goOnline } from '@react-native-firebase/database';
+import { getMessaging } from '@react-native-firebase/messaging';
+import { getFunctions } from '@react-native-firebase/functions';
 import {Platform} from 'react-native';
 
 // Configuración Firebase
-export const firebaseDatabase = database();
-export const firebaseMessaging = messaging();
-export const firebaseFunctions = functions();
+export const firebaseDatabase = getDatabase();
+export const firebaseMessaging = getMessaging();
+export const firebaseFunctions = getFunctions();
 
 // Configurar región de functions si es necesario
 // firebaseFunctions.useFunctionsEmulator('http://localhost:5001');
@@ -38,10 +38,10 @@ export const setupNotificationChannels = async () => {
 export const initializeFirebase = async () => {
   try {
 
-    // Verificar que Firebase esté conectado
-    const isConnected = await firebaseDatabase.goOnline();
-  
-    
+    // Verificar que Firebase esté conectado (goOnline es síncrono desde v25)
+    goOnline(firebaseDatabase);
+
+
     // Configurar canales de notificación
     await setupNotificationChannels();
 

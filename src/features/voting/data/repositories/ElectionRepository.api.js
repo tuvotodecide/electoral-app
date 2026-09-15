@@ -804,6 +804,10 @@ const ElectionRepositoryApi = {
     return elections.find(election => election?.status === 'ACTIVA') || elections[0] || null;
   },
 
+  async getCachedElections() {
+    return getCachedLandingModels();
+  },
+
   async getCandidates(electionId) {
     if (!String(electionId || '').trim()) {
       return [];

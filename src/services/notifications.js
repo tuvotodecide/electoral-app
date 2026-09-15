@@ -1,15 +1,39 @@
 import {Platform, PermissionsAndroid} from 'react-native';
-import messaging from '@react-native-firebase/messaging';
+import {
+  AuthorizationStatus,
+  getInitialNotification,
+  getMessaging,
+  onMessage,
+  onNotificationOpenedApp,
+  registerDeviceForRemoteMessages,
+  requestPermission,
+  setBackgroundMessageHandler,
+  subscribeToTopic,
+  unsubscribeFromTopic,
+} from '@react-native-firebase/messaging';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 import { buildNotificationTextFallback } from '../notifications';
+import { notifNavLog, summarizeNotification } from '../utils/notifNavDebug';
 
 export async function ensureFCMSetup() {
-  await messaging().registerDeviceForRemoteMessages();
+  const messaging = getMessaging();
 
-  const authStatus = await messaging().requestPermission();
+  try {
+    await registerDeviceForRemoteMessages(messaging);
+  } catch (error) {
+    // Desde v26 el registro APNs puede expirar o ser reemplazado por otra llamada
+    if (
+      error?.code !== 'messaging/registration-timeout' &&
+      error?.code !== 'messaging/registration-superseded'
+    ) {
+      throw error;
+    }
+  }
+
+  const authStatus = await requestPermission(messaging);
   const enabled =
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+    authStatus === AuthorizationStatus.AUTHORIZED ||
+    authStatus === AuthorizationStatus.PROVISIONAL;
 
   if (Platform.OS === 'android' && Platform.Version >= 33) {
     await PermissionsAndroid.request(
@@ -41,7 +65,7 @@ export async function showLocalNotification({title, body, data} = {}) {
     data: data || {},
     android: {
       channelId,
-      pressAction: {id: 'default'}, 
+      pressAction: {id: 'default'},
     },
     ios: {
       // para que aparezca banner/sonido en foreground
@@ -61,31 +85,32 @@ export function makeLocationTopicKey(locationKey) {
 
 export async function subscribeToLocationTopic(locationKey) {
   const topic = makeLocationTopicKey(locationKey);
-  await messaging().subscribeToTopic(topic);
+  await subscribeToTopic(getMessaging(), topic);
 }
 
 export async function unsubscribeFromLocationTopic(locationKey) {
   const topic = makeLocationTopicKey(locationKey);
-  await messaging().unsubscribeFromTopic(topic);
+  await unsubscribeFromTopic(getMessaging(), topic);
 }
 
 export async function subscribeToPushTopic(topic) {
   const normalizedTopic = sanitizeTopicKey(topic);
   if (!normalizedTopic) return null;
-  await messaging().subscribeToTopic(normalizedTopic);
+  await subscribeToTopic(getMessaging(), normalizedTopic);
   return normalizedTopic;
 }
 
 export async function unsubscribeFromPushTopic(topic) {
   const normalizedTopic = sanitizeTopicKey(topic);
   if (!normalizedTopic) return null;
-  await messaging().unsubscribeFromTopic(normalizedTopic);
+  await unsubscribeFromTopic(getMessaging(), normalizedTopic);
   return normalizedTopic;
 }
 
 export function registerBackgroundHandler() {
   // Se ejecuta cuando el app está en background/quit y llega un mensaje data-only o para procesar info
-  messaging().setBackgroundMessageHandler(async remoteMessage => {
+  setBackgroundMessageHandler(getMessaging(), async remoteMessage => {
+    notifNavLog('FCM', 'backgroundMessageHandler', summarizeNotification(remoteMessage));
     if (remoteMessage?.notification?.title || remoteMessage?.notification?.body) {
       return;
     }
@@ -106,15 +131,15 @@ export function registerBackgroundHandler() {
 
 let _fgUnsub = null;
 // eslint-disable-next-line import/no-unused-modules
-export function registerForegroundListener(onMessage) {
+export function registerForegroundListener(onForegroundMessage) {
   if (_fgUnsub) {
     _fgUnsub();
     _fgUnsub = null;
   }
-  _fgUnsub = messaging().onMessage(async remoteMessage => {
+  _fgUnsub = onMessage(getMessaging(), async remoteMessage => {
     // Aquí decides qué hacer con la notificación en foreground
     // Por ejemplo: mostrar un modal o un banner in-app
-    onMessage && onMessage(remoteMessage);
+    onForegroundMessage && onForegroundMessage(remoteMessage);
   });
   return () => {
     _fgUnsub && _fgUnsub();
@@ -124,12 +149,19 @@ export function registerForegroundListener(onMessage) {
 
 // eslint-disable-next-line import/no-unused-modules
 export function registerOpenHandlers(onOpened) {
-  const unsubOpen = messaging().onNotificationOpenedApp(remoteMessage => {
+  const messaging = getMessaging();
+  const unsubOpen = onNotificationOpenedApp(messaging, remoteMessage => {
+    notifNavLog('FCM', 'onNotificationOpenedApp', summarizeNotification(remoteMessage));
     onOpened && onOpened(remoteMessage);
   });
 
   (async () => {
-    const initial = await messaging().getInitialNotification();
+    const initial = await getInitialNotification(messaging);
+    notifNavLog(
+      'FCM',
+      'getInitialNotification',
+      initial ? summarizeNotification(initial) : null,
+    );
     if (initial && onOpened) onOpened(initial);
   })();
 
@@ -143,7 +175,9 @@ export async function initNotifications({
   onOpenedFromNotification,
 } = {}) {
   // Permisos + registro
+  notifNavLog('FCM', 'initNotifications: ensureFCMSetup start');
   await ensureFCMSetup();
+  notifNavLog('FCM', 'initNotifications: ensureFCMSetup done, registering open handlers');
 
   // Foreground
   const unsubFG = registerForegroundListener(onForegroundMessage);

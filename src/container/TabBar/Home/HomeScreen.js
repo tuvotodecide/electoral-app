@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import messaging from "@react-native-firebase/messaging";
+import { getMessaging, onMessage } from "@react-native-firebase/messaging";
 
 import * as Location from "expo-location";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -66,6 +66,7 @@ import {
   saveSelectedElectionContext,
 } from "../../../utils/electionContext";
 import { getCache, isFresh, setCache } from "../../../utils/lookupCache";
+import { consumeHomeEntryFromLogin } from "../../../utils/homeEntry";
 import {
   authenticateWithBackend,
   publishActaHandler,
@@ -456,7 +457,6 @@ const LOOKUP_CACHE_KEYS = {
 };
 
 const LOOKUP_CACHE_TTLS = {
-  electionStatusMs: 60 * 1000,
   notificationsMs: 10 * 1000,
   tablesByLocationMs: 6 * 60 * 60 * 1000,
 };
@@ -667,6 +667,18 @@ export default function HomeScreen({ navigation, route }) {
       };
   const refreshVotingState = votingState.refreshState;
 
+  const applyVotingElections = useCallback((result) => {
+    const elections = Array.isArray(result) ? result : result ? [result] : [];
+    const visibleElections = elections.filter(shouldKeepElectionInCarousel);
+    setVotingElections(visibleElections);
+    setCurrentVotingElectionIndex((currentIndex) =>
+      visibleElections.length === 0
+        ? 0
+        : Math.min(currentIndex, visibleElections.length - 1),
+    );
+    return visibleElections;
+  }, []);
+
   const loadVotingElection = useCallback(async () => {
     if (!FEATURE_FLAGS.ENABLE_VOTING_FLOW) {
       setLoadingVotingElection(false);
@@ -684,37 +696,48 @@ export default function HomeScreen({ navigation, route }) {
     votingElectionLoadRef.current.lastAttemptAt = now;
     votingElectionLoadRef.current.inFlight = true;
 
+    // Recién llegado desde LoginUser se espera a la API mostrando el loader;
+    // en cualquier otra entrada se muestra la copia guardada y se refresca en
+    // segundo plano.
+    const foreground = consumeHomeEntryFromLogin();
+    let hasCachedElections = false;
+
     try {
-      setLoadingVotingElection(true);
+      if (
+        !foreground &&
+        typeof votingRepository.getCachedElections === "function"
+      ) {
+        const cached = await votingRepository
+          .getCachedElections()
+          .catch(() => []);
+        if (Array.isArray(cached) && cached.length > 0) {
+          hasCachedElections = applyVotingElections(cached).length > 0;
+        }
+      }
+
+      setLoadingVotingElection(!hasCachedElections);
       const request =
         typeof votingRepository.getElections === "function"
           ? votingRepository.getElections()
           : votingRepository.getElection();
       votingElectionLoadRef.current.promise = request;
-      const result = await request;
-      const elections = Array.isArray(result) ? result : result ? [result] : [];
-      const visibleElections = elections.filter(shouldKeepElectionInCarousel);
-      setVotingElections(visibleElections);
-      setCurrentVotingElectionIndex((currentIndex) =>
-        visibleElections.length === 0
-          ? 0
-          : Math.min(currentIndex, visibleElections.length - 1),
-      );
-      return visibleElections;
+      return applyVotingElections(await request);
     } catch (error) {
       console.warn(
         "[HomeScreen] voting election load failed:",
         error?.message || error,
       );
-      setVotingElections([]);
-      setCurrentVotingElectionIndex(0);
+      if (!hasCachedElections) {
+        setVotingElections([]);
+        setCurrentVotingElectionIndex(0);
+      }
       return [];
     } finally {
       votingElectionLoadRef.current.inFlight = false;
       votingElectionLoadRef.current.promise = null;
       setLoadingVotingElection(false);
     }
-  }, [votingRepository]);
+  }, [votingRepository, applyVotingElections]);
 
   // 'unknown' | 'granted' | 'denied'  — rastrea si el usuario ya dio permiso
   const [locationStatus, setLocationStatus] = useState("unknown");
@@ -1129,15 +1152,7 @@ export default function HomeScreen({ navigation, route }) {
     const cachedData = cachedEntry?.data || null;
     if (cachedData) {
       setElectionStatus(cachedData);
-    } else {
     }
-
-    const cacheFresh = await isFresh(
-      LOOKUP_CACHE_KEYS.electionStatus,
-      LOOKUP_CACHE_TTLS.electionStatusMs,
-    );
-
-    const probe = await backendProbe({ timeoutMs: 2000 });
 
     try {
       const res = await axios.get(
@@ -2210,7 +2225,7 @@ export default function HomeScreen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       if (!auth?.isAuthenticated) return undefined;
-      const unsubscribe = messaging().onMessage(() => {
+      const unsubscribe = onMessage(getMessaging(), () => {
         setNotificationUnreadCount((prev) => (prev < 99 ? prev + 1 : 99));
         setTimeout(() => {
           refreshNotificationBadgeCount();

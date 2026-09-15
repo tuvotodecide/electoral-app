@@ -7,15 +7,49 @@ import { handleNotificationPress } from '../notifications';
 import { NavigationLogConfig, navLog } from '../config/navigationLogConfig';
 import NavigationDebugOverlay from '../components/common/NavigationDebugOverlay';
 import { addNavigationBreadcrumb } from '../config/sentry';
+import {
+  describeNav,
+  notifNavLog,
+  summarizeNotification,
+} from '../utils/notifNavDebug';
 
 export default function AppNavigator() {
   useEffect(() => {
     (async () => {
       const initial = await notifee.getInitialNotification();
+      notifNavLog(
+        'AppNavigator',
+        'notifee.getInitialNotification',
+        initial
+          ? {
+              pressActionId: initial.pressAction?.id ?? null,
+              notification: summarizeNotification(initial.notification),
+            }
+          : null,
+      );
       if (initial) {
-        handleNotificationPress(initial.notification);
+        handleNotificationPress(initial.notification, {
+          source: 'notifee.getInitialNotification',
+        });
       }
     })();
+  }, []);
+
+  // Registra toda acción de navegación, incluidas las despachadas desde
+  // screens (Splash, Connect...). action.source es la key de la ruta que la
+  // despachó (empieza con el nombre de la pantalla).
+  useEffect(() => {
+    return navigationRef.addListener?.('__unsafe_action__', e => {
+      const action = e?.data?.action;
+      notifNavLog('NavAction', action?.type ?? 'unknown', {
+        name: action?.payload?.name ?? null,
+        screen: action?.payload?.params?.screen ?? null,
+        source: action?.source ?? null,
+        target: action?.target ?? null,
+        noop: e?.data?.noop ?? null,
+        before: describeNav(),
+      });
+    });
   }, []);
 
   // Función para obtener información detallada de la ruta actual
@@ -54,6 +88,9 @@ export default function AppNavigator() {
   // Handler para logging del cambio de estado
   const onNavigationStateChange = () => {
     const routeInfo = getRouteInfo();
+    notifNavLog('NavState', `now on ${routeInfo.routeName}`, {
+      state: describeNav(),
+    });
 
     // ========================================================================
     // SENTRY: Agregar breadcrumb de navegacion
@@ -85,6 +122,11 @@ export default function AppNavigator() {
     <>
       <NavigationContainer
         ref={navigationRef}
+        onReady={() =>
+          notifNavLog('AppNavigator', 'NavigationContainer ready', {
+            state: describeNav(),
+          })
+        }
         onStateChange={onNavigationStateChange}
       >
         <StackNavigation />

@@ -6,7 +6,7 @@ import {useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import CText from './CText';
 import {StackNav} from '../../navigation/NavigationKey';
@@ -222,7 +222,7 @@ const UniversalHeader = ({
     useCallback(() => {
       if (!auth?.isAuthenticated || !showNotification) return undefined;
 
-      const unsubscribe = messaging().onMessage(() => {
+      const unsubscribe = onMessage(getMessaging(), () => {
         setNotificationUnreadCount(prev => (prev < 99 ? prev + 1 : 99));
         setTimeout(() => {
           refreshNotificationBadgeCount();

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, onTokenRefresh } from '@react-native-firebase/messaging';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { captureError } from './config/sentry';
 import { Platform, StatusBar, View } from 'react-native';
@@ -17,7 +17,7 @@ import {
   markNotificationAsAlerted,
   registerNotifications,
 } from './notifications';
-import { setPendingNav } from './redux/slices/authSlice';
+import { setAuthenticated, setPendingNav } from './redux/slices/authSlice';
 import { isSessionValid } from './utils/Session';
 import {
   ensureFCMSetup,
@@ -27,6 +27,7 @@ import {
   subscribeToLocationTopic,
 } from './services/notifications';
 import { styles } from './themes';
+import { notifNavLog } from './utils/notifNavDebug';
 
 import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import CustomModal from './components/common/CustomModal';
@@ -45,6 +46,19 @@ const App = () => {
     credentialSubject?.documentNumber ||
     credentialSubject?.governmentIdentifier ||
     userData?.dni;
+
+  // Cada montaje de la raíz arranca en Splash y siempre pide el PIN. Android
+  // puede reutilizar el proceso (y el store en memoria) al reabrir la app desde
+  // una push, así que resetAuthOnRehydrate no basta. useLayoutEffect corre antes
+  // de los useEffect de AppNavigator y de App que procesan la notificación.
+  useLayoutEffect(() => {
+    notifNavLog('App', 'root mounted: resetting isAuthenticated', {
+      wasAuthenticated: auth.isAuthenticated,
+    });
+    dispatch(setAuthenticated(false));
+    // Solo una vez por montaje de la raíz; no debe repetirse tras el login.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [mustUpdate, setMustUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -110,7 +124,21 @@ const App = () => {
   };
 
   useEffect(() => {
+    notifNavLog('App', 'auth state', {
+      isAuthenticated: auth.isAuthenticated,
+      pendingNav: auth.pendingNav?.name ?? null,
+      pendingNotificationTarget:
+        auth.pendingNotificationNavigation?.targetRoute ?? null,
+    });
+  }, [auth.isAuthenticated, auth.pendingNav, auth.pendingNotificationNavigation]);
+
+  useEffect(() => {
     let cleanup;
+    // Si este efecto corre más de una vez (cambia notificationDni), se vuelve
+    // a llamar getInitialNotification de FCM.
+    notifNavLog('App', 'notifications effect run (initNotifications)', {
+      hasDni: Boolean(notificationDni),
+    });
     (async () => {
       await registerNotifications({ askPermissionOnInit: false });
       cleanup = await initNotifications({
@@ -145,8 +173,12 @@ const App = () => {
         onOpenedFromNotification: msg => {
           try {
             const data = msg?.data || {};
+            notifNavLog('App', 'onOpenedFromNotification', {
+              messageId: msg?.messageId ?? null,
+              dataKeys: Object.keys(data),
+            });
             if (!data || Object.keys(data).length === 0) return;
-            handleNotificationPress({ data });
+            handleNotificationPress({ data }, { source: 'fcm.opened' });
           } catch (e) {
             captureError(e, {
               flow: 'notification',
@@ -187,7 +219,7 @@ const App = () => {
       await ensureFCMSetup();
       await resubscribeStoredTopics();
     })();
-    const unsub = messaging().onTokenRefresh(async () => {
+    const unsub = onTokenRefresh(getMessaging(), async () => {
       await resubscribeStoredTopics();
     });
     return () => unsub();
@@ -203,6 +235,7 @@ const App = () => {
           valid = false;
         }
         if (!active || !valid) return;
+        notifNavLog('App', `pendingNav -> ${auth.pendingNav.name}`);
         navigate(auth.pendingNav.name, auth.pendingNav.params);
         dispatch(setPendingNav(null));
       })();
@@ -226,11 +259,13 @@ const App = () => {
       }
       if (!active) return;
       if (!valid) {
+        notifNavLog('App', 'pending notification: session not valid yet, retry in 250ms');
         retryTimer = setTimeout(tryConsumePendingNotification, 250);
         return;
       }
 
-      const consumed = await consumePendingNotificationNavigation();
+      const consumed = await consumePendingNotificationNavigation('App.pendingEffect');
+      notifNavLog('App', 'pending notification consumed?', { consumed, active });
       if (!active || consumed) return;
       retryTimer = setTimeout(tryConsumePendingNotification, 250);
     };

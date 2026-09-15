@@ -38,6 +38,10 @@ import {consumePendingNotificationNavigation} from '../../notifications';
 import {isDemoPin} from '../../features/demo/demoConfig';
 import {isDemoActive} from '../../features/demo/demoSession';
 import {activateDemoSession} from '../../features/demo/demoLifecycle';
+import {describeNav, notifNavLog} from '../../utils/notifNavDebug';
+import {markHomeEntryFromLogin} from '../../utils/homeEntry';
+
+let loginUserInstanceCounter = 0;
 
 
 const sharedSession = new wira.SharedSession(
@@ -133,8 +137,31 @@ export default function LoginUser({ navigation, route }) {
   const dispatch = useDispatch();
 
   const otpRef = useRef(null);
+  const instanceIdRef = useRef(null);
+  if (instanceIdRef.current === null) {
+    loginUserInstanceCounter += 1;
+    instanceIdRef.current = loginUserInstanceCounter;
+  }
+
+  useEffect(() => {
+    const instance = instanceIdRef.current;
+    notifNavLog('LoginUser', `MOUNT instance #${instance}`, {
+      routeKey: route?.key ?? null,
+      params: route?.params ?? null,
+      current: describeNav(),
+    });
+    return () => {
+      notifNavLog('LoginUser', `UNMOUNT instance #${instance}`, {
+        routeKey: route?.key ?? null,
+        current: describeNav(),
+      });
+    };
+  }, []);
 
   async function unlock(payload, _jwt, pin) {
+    notifNavLog('LoginUser', `unlock() instance #${instanceIdRef.current}`, {
+      viaBiometric: !pin,
+    });
     try {
       if (payload?.vc?.vc && !payload?.vc?.credentialSubject) {
         payload.vc = payload.vc.vc;
@@ -164,6 +191,7 @@ export default function LoginUser({ navigation, route }) {
       );
     }
 
+    markHomeEntryFromLogin();
     navigation.reset({
       index: 0,
       routes: [
@@ -172,7 +200,7 @@ export default function LoginUser({ navigation, route }) {
         },
       ],
     });
-    await consumePendingNotificationNavigation();
+    await consumePendingNotificationNavigation('LoginUser.unlock');
   }
 
   const onPressLoginUser1 = () => {
@@ -358,6 +386,7 @@ export default function LoginUser({ navigation, route }) {
   useEffect(() => {
     (async () => {
       const blocked = await isLocked();
+      notifNavLog('LoginUser', `isLocked instance #${instanceIdRef.current}`, {blocked});
       setLocked(blocked);
       if (blocked) {
         navigation.replace(AuthNav.AccountLock);
@@ -377,6 +406,10 @@ export default function LoginUser({ navigation, route }) {
       setLoading(true);
       try {
         const { error, userData } = await wira.checkBiometricAuth();
+        notifNavLog('LoginUser', `checkBiometricAuth instance #${instanceIdRef.current}`, {
+          hasUserData: Boolean(userData),
+          error: error ?? null,
+        });
 
         if (!userData) {
           if (error === 'No credentials stored') {

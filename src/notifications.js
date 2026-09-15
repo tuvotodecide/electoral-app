@@ -2,7 +2,8 @@
 
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import { StorageService as AsyncStorage } from './services/StorageService';
-import {navigate, safeNavigate} from './navigation/RootNavigation';
+import {navigate, navigationRef, safeNavigate} from './navigation/RootNavigation';
+import {describeNav, notifNavLog, summarizeNotification} from './utils/notifNavDebug';
 import store from './redux/store';
 import {
   clearPendingNotificationNavigation,
@@ -993,14 +994,25 @@ export async function registerNotifications({
 
     // Tap con app en foreground
     notifee.onForegroundEvent(({type, detail}) => {
-      if (type === EventType.PRESS || type === EventType.ACTION_PRESS)
-        handleNotificationPress(detail.notification);
+      if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+        notifNavLog('notifee', 'onForegroundEvent PRESS', {
+          eventType: type,
+          notification: summarizeNotification(detail.notification),
+        });
+        handleNotificationPress(detail.notification, {
+          source: 'notifee.onForegroundEvent',
+        });
+      }
     });
   } catch {}
 }
 
 notifee.onBackgroundEvent(async ({type, detail}) => {
   if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+    notifNavLog('notifee', 'onBackgroundEvent PRESS', {
+      eventType: type,
+      notification: summarizeNotification(detail.notification),
+    });
     handleNotificationPressBackground(detail.notification);
   }
 });
@@ -1208,16 +1220,35 @@ function isPendingNotificationNavigationExpired(intent) {
 
 async function canOpenProtectedNotificationRoute() {
   const {isAuthenticated} = store.getState().auth || {};
-  if (!isAuthenticated) return false;
+  if (!isAuthenticated) {
+    notifNavLog('notifications', 'canOpenProtectedRoute: not authenticated');
+    return false;
+  }
   try {
-    return await isSessionValid();
-  } catch {
+    const valid = await isSessionValid();
+    notifNavLog('notifications', 'canOpenProtectedRoute', {
+      isAuthenticated,
+      sessionValid: valid,
+    });
+    return valid;
+  } catch (e) {
+    notifNavLog('notifications', 'canOpenProtectedRoute: isSessionValid threw', {
+      error: e?.message,
+    });
     return false;
   }
 }
 
-function navigateToLoginUser() {
+function isOnSplash() {
+  if (!navigationRef?.isReady?.()) return false;
+  return navigationRef.getCurrentRoute?.()?.name === StackNav.Splash;
+}
+
+function navigateToLoginUser(source) {
   const loginScreen = AuthNav?.LoginUser || 'LoginUser';
+  notifNavLog('notifications', `navigateToLoginUser (from ${source})`, {
+    current: describeNav(),
+  });
   if (StackNav.AuthNavigation && AuthNav?.LoginUser) {
     navigate(StackNav.AuthNavigation, {screen: loginScreen});
   } else {
@@ -1228,6 +1259,10 @@ function navigateToLoginUser() {
 function navigateToNotificationIntent(intent) {
   if (!intent?.targetRoute) return false;
   const navigated = safeNavigate(intent.targetRoute, intent.params);
+  notifNavLog('notifications', 'navigateToNotificationIntent', {
+    targetRoute: intent.targetRoute,
+    navigated,
+  });
   if (!navigated) {
     return false;
   }
@@ -1238,19 +1273,36 @@ function navigateToNotificationIntent(intent) {
 
 async function processNotificationNavigationIntent(
   intent,
-  {fromPending = false} = {},
+  {fromPending = false, source = 'unknown'} = {},
 ) {
+  const logCtx = {
+    source,
+    fromPending,
+    targetRoute: intent?.targetRoute ?? null,
+    dedupeKey: intent?.dedupeKey ?? null,
+  };
+  notifNavLog('notifications', 'processIntent start', {
+    ...logCtx,
+    current: describeNav(),
+  });
+
   if (!intent?.targetRoute) {
+    notifNavLog('notifications', 'processIntent: no targetRoute, clearing pending', logCtx);
     store.dispatch(clearPendingNotificationNavigation());
     return false;
   }
 
   if (isPendingNotificationNavigationExpired(intent)) {
+    notifNavLog('notifications', 'processIntent: expired, clearing pending', {
+      ...logCtx,
+      ageMs: Date.now() - Number(intent.createdAt),
+    });
     store.dispatch(clearPendingNotificationNavigation());
     return false;
   }
 
   if (!fromPending && isNavigationKeyRecentlyProcessed(intent.dedupeKey)) {
+    notifNavLog('notifications', 'processIntent: SKIPPED (dedupe, recently processed)', logCtx);
     return false;
   }
 
@@ -1258,34 +1310,74 @@ async function processNotificationNavigationIntent(
     return navigateToNotificationIntent(intent);
   }
 
+  notifNavLog('notifications', 'processIntent: not allowed -> store pending + go to LoginUser', logCtx);
   store.dispatch(setPendingNotificationNavigation(intent));
   markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
-  navigateToLoginUser();
+
+  // En arranque en frío la notificación llega mientras Splash sigue
+  // inicializando. Si aquí navegamos a LoginUser, Splash termina después y hace
+  // replace a AuthNavigation -> Connect -> LoginUser (segundo LoginUser).
+  // El flujo normal de Splash ya lleva al login y LoginUser.unlock consume el pending.
+  if (isOnSplash()) {
+    notifNavLog('notifications', 'on Splash: pending stored, boot flow will reach LoginUser', logCtx);
+    return false;
+  }
+
+  navigateToLoginUser(source);
   return false;
 }
 
-export async function consumePendingNotificationNavigation() {
+// LoginUser.unlock y el efecto de App pueden consumir el pending casi a la vez;
+// compartir la promesa evita navegar dos veces al destino.
+let pendingConsumption = null;
+
+export function consumePendingNotificationNavigation(source = 'unknown') {
+  if (pendingConsumption) {
+    notifNavLog('notifications', `consumePending (from ${source}): already in progress, reusing`);
+    return pendingConsumption;
+  }
   const intent = store.getState().auth?.pendingNotificationNavigation;
-  if (!intent) return false;
-  return processNotificationNavigationIntent(intent, {fromPending: true});
+  notifNavLog('notifications', `consumePending (from ${source})`, {
+    hasPending: Boolean(intent),
+    targetRoute: intent?.targetRoute ?? null,
+  });
+  if (!intent) return Promise.resolve(false);
+  pendingConsumption = processNotificationNavigationIntent(intent, {
+    fromPending: true,
+    source,
+  }).finally(() => {
+    pendingConsumption = null;
+  });
+  return pendingConsumption;
 }
 
 /**
  * Handler de taps en notificaciones (locales o remotas a través de notifee).
  * Soporta data.routeParams (JSON) para pantallas que necesiten objetos complejos.
  */
-export async function handleNotificationPress(notification) {
+export async function handleNotificationPress(notification, {source = 'unknown'} = {}) {
+  notifNavLog('notifications', `handleNotificationPress (from ${source})`, {
+    notification: summarizeNotification(notification),
+  });
   const intent = buildNotificationNavigationIntent(notification);
-  return processNotificationNavigationIntent(intent);
+  return processNotificationNavigationIntent(intent, {source});
 }
 
 function handleNotificationPressBackground(notification) {
   const intent = buildNotificationNavigationIntent(notification);
+  notifNavLog('notifications', 'handleNotificationPressBackground', {
+    notification: summarizeNotification(notification),
+    targetRoute: intent?.targetRoute ?? null,
+    dedupeKey: intent?.dedupeKey ?? null,
+  });
   if (!intent || isPendingNotificationNavigationExpired(intent)) {
     store.dispatch(clearPendingNotificationNavigation());
     return;
   }
-  if (isNavigationKeyRecentlyProcessed(intent.dedupeKey)) return;
+  if (isNavigationKeyRecentlyProcessed(intent.dedupeKey)) {
+    notifNavLog('notifications', 'handleNotificationPressBackground: SKIPPED (dedupe)');
+    return;
+  }
   store.dispatch(setPendingNotificationNavigation(intent));
   markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
 }

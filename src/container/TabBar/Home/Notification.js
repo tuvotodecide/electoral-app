@@ -657,7 +657,6 @@ export default function Notification({ navigation }) {
             timeout: 30000,
           },
         );
-        console.log(response);
         const list = response?.data?.data || response?.data || [];
         await setCache(notificationsCacheKey(dni), list, { version: 'notifications-v1' });
         const localList = await getLocalStoredNotifications(dni);

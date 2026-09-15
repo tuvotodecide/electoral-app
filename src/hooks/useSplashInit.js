@@ -16,6 +16,7 @@ import { getThemeColor } from '../utils/AsyncStorage';
 import { getDraft } from '../utils/RegisterDraft';
 import { captureError, flushSentry } from '../config/sentry';
 import { hydrateDemoSession } from '../features/demo/demoSession';
+import { describeNav, notifNavLog } from '../utils/notifNavDebug';
 
 const circuitsData = {
   bucketUrl: CIRCUITS_URL,
@@ -169,6 +170,7 @@ export const useSplashInit = (navigation) => {
   const initializeApp = useCallback(async () => {
     const router = NavigationAdapter(navigation);
     setDownloadMessage([]);
+    notifNavLog('Splash', 'initializeApp start', { current: describeNav() });
 
     // Antes de la descarga de circuitos: isDemoActive() debe estar resuelto
     // antes del primer getElectionRepository(), aunque la descarga se cuelgue.
@@ -182,6 +184,7 @@ export const useSplashInit = (navigation) => {
       const downloaded = await circuitsAreDownloaded(circuitsData);
 
       const alreadyDownloading = await isDownloadAlreadyInProgress();
+      notifNavLog('Splash', 'circuits status', { downloaded, alreadyDownloading });
       const {promise: downloadComplete} = waitForCircuitDownloadCompletion();
 
       if (!alreadyDownloading) {
@@ -193,10 +196,12 @@ export const useSplashInit = (navigation) => {
         await initDownloadCircuits(circuitsData);
       }
       const downloadOk = await downloadComplete;
+      notifNavLog('Splash', 'circuits download finished', { downloadOk });
       if (!downloadOk) {
         return;
       }
     } catch (_error) {
+      notifNavLog('Splash', 'circuits step threw', { error: _error?.message });
       setDownloadMessage([Strings.downloadingFailed]);
       return;
     }
@@ -206,6 +211,9 @@ export const useSplashInit = (navigation) => {
       const draft = await getDraft();
 
       if (draft) {
+        notifNavLog('Splash', 'replace -> AuthNavigation/RegisterUser10 (draft)', {
+          current: describeNav(),
+        });
         router.replace(StackNav.AuthNavigation, {
           screen: AuthNav.RegisterUser10,
           params: draft,
@@ -227,14 +235,24 @@ export const useSplashInit = (navigation) => {
       const pending = await StorageService.getItem(PENDINGRECOVERY);
 
       if (pending === 'true') {
+        notifNavLog('Splash', 'navigate -> AuthNavigation/MyGuardiansStatus', {
+          current: describeNav(),
+        });
         router.navigate(StackNav.AuthNavigation, {
           screen: AuthNav.MyGuardiansStatus,
         });
         return;
       }
 
+      notifNavLog('Splash', 'replace -> AuthNavigation (Connect)', {
+        current: describeNav(),
+      });
       router.replace(StackNav.AuthNavigation);
     } catch (_e) {
+      notifNavLog('Splash', 'replace -> AuthNavigation after error', {
+        error: _e?.message,
+        current: describeNav(),
+      });
       router.replace(StackNav.AuthNavigation);
     }
   }, [navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress, requestDownloadConfirmation]);
