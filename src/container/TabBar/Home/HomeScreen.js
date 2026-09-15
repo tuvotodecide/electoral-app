@@ -2981,7 +2981,7 @@ export default function HomeScreen({ navigation, route }) {
           </View>
           {renderVotingElectionCarousel()}
 
-          {!hasBackup && (
+          {!hasBackup && __DEV__ && (
             <RegisterAlertCard
               title={I18nStrings.backupAccount}
               description={I18nStrings.backupAccountDescription}
@@ -3181,7 +3181,7 @@ export default function HomeScreen({ navigation, route }) {
 
             {renderVotingElectionCarousel()}
 
-            {!hasBackup && (
+            {!hasBackup && __DEV__ && (
               <RegisterAlertCard
                 title={I18nStrings.backupAccount}
                 description={I18nStrings.backupAccountDescription}

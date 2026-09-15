@@ -404,14 +404,18 @@ export const ProfileDataV2 = [
         value: String.personalDataValue,
         route: StackNav.PersonalDetails,
       },
-      {
-        id: 2,
-        darkIcon: <IdentityVerification_Dark />,
-        lightIcon: <IdentityVerification_Light />,
-        title: String.dataBackup,
-        value: String.dataBackupValue,
-        route: StackNav.RecuperationQR,
-      },
+      ...(__DEV__
+        ? [
+            {
+              id: 2,
+              darkIcon: <IdentityVerification_Dark />,
+              lightIcon: <IdentityVerification_Light />,
+              title: String.dataBackup,
+              value: String.dataBackupValue,
+              route: StackNav.RecuperationQR,
+            },
+          ]
+        : []),
       {
         id: 5,
         darkIcon: <LockIcon />,

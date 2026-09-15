@@ -1,7 +1,7 @@
 {
   "lastRunningTimeSecs": 29,
   "integrations": {
-    "integrationsCount": 3,
+    "integrationsCount": 4,
     "countedFrom": "2026-09-12T00:00:00.000Z",
     "countedTo": "2026-09-19T00:00:00.000Z"
   },
@@ -27,9 +27,9 @@
       "total": 1928
     },
     "branches": {
-      "percent": 53.52,
+      "percent": 53.51,
       "covered": 4865,
-      "total": 9089
+      "total": 9091
     }
   }
 }
