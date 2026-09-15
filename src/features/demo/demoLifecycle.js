@@ -33,6 +33,8 @@ const VOTING_KEYS = {
 };
 const CANDIDATES_CACHE_PREFIX = 'voting.cache.candidates:';
 const LOCAL_NOTIFICATIONS_KEY = '@local-notifications:v1';
+/** lookupCache.js:3 + la clave que usa ElectoralLocationsSave para las mesas. */
+const TABLES_CACHE_PREFIX = '@lookup-cache:v1:tables-by-location:';
 
 const safeParseJson = value => {
   try {
@@ -147,8 +149,18 @@ export const clearDemoData = async () => {
         key.startsWith(CANDIDATES_CACHE_PREFIX) &&
         isDemoOwnedId(key.slice(CANDIDATES_CACHE_PREFIX.length)),
     ),
+    // Mesas sembradas al guardar un recinto sintético. El id lleva el prefijo
+    // demo, así que las de recintos reales no se tocan.
+    ...allKeys.filter(
+      key =>
+        key.startsWith(TABLES_CACHE_PREFIX) &&
+        isDemoOwnedId(key.slice(TABLES_CACHE_PREFIX.length)),
+    ),
     `@notifications:last-seen:${DEMO_DNI}`,
     `@backend-notifications:alerted:v1:${DEMO_DNI}`,
+    // Recinto guardado por ElectoralLocationsSave en modo demostración
+    // (offlineQueue.js:5 define la clave). Solo se borra el del DNI demo.
+    `@vote-place:${DEMO_DNI}`,
   );
 
   if (writes.length) {

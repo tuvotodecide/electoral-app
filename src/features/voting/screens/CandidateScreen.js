@@ -5,53 +5,57 @@
  * Usa los componentes existentes del repo.
  */
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
+import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 // Components
-import CSafeAreaView from '../../../components/common/CSafeAreaView';
-import CHeader from '../../../components/common/CHeader';
-import CText from '../../../components/common/CText';
-import CButton from '../../../components/common/CButton';
-import CustomModal from '../../../components/common/CustomModal';
-import ServiceStatusWarning from '../../../components/common/ServiceStatusWarning';
-import CameraScannerModal from '../components/CameraScannerModal';
-import { Ionicons } from '@expo/vector-icons';
+import CSafeAreaView from "../../../components/common/CSafeAreaView";
+import CHeader from "../../../components/common/CHeader";
+import CText from "../../../components/common/CText";
+import CButton from "../../../components/common/CButton";
+import CustomModal from "../../../components/common/CustomModal";
+import ServiceStatusWarning from "../../../components/common/ServiceStatusWarning";
+import CameraScannerModal from "../components/CameraScannerModal";
+import { Ionicons } from "@expo/vector-icons";
 
 // Feature components
-import CandidateCard from '../components/CandidateCard';
-import ConfirmVoteModal from '../components/ConfirmVoteModal';
-import OfflineQueuedModal from '../components/OfflineQueuedModal';
+import CandidateCard from "../components/CandidateCard";
+import ConfirmVoteModal from "../components/ConfirmVoteModal";
+import OfflineQueuedModal from "../components/OfflineQueuedModal";
 
 // Feature logic
-import { useVotingState } from '../state/useVotingState';
-import { useElectionRepository } from '../data/useElectionRepository';
-import { CREDITS_EMPTY_ERROR_MESSAGE } from '../data/voteErrors';
+import { useVotingState } from "../state/useVotingState";
+import { useElectionRepository } from "../data/useElectionRepository";
+import { CREDITS_EMPTY_ERROR_MESSAGE } from "../data/voteErrors";
 import {
   enqueueBackendParticipationSync,
   enqueueVote,
-} from '../offline/queueAdapter';
-import { clearVoteJournal, startVoteJournal } from '../offline/voteJournal';
-import { UI_STRINGS } from '../data/mockData';
-import { DEV_FLAGS } from '../../../config/featureFlags';
+} from "../offline/queueAdapter";
+import { clearVoteJournal, startVoteJournal } from "../offline/voteJournal";
+import { UI_STRINGS } from "../data/mockData";
+import { DEV_FLAGS } from "../../../config/featureFlags";
 
 // Utils
-import { backendProbe, checkInternetConnection } from '../../../utils/networkUtils';
-import { moderateScale, getHeight } from '../../../common/constants';
-import { StackNav, TabNav } from '../../../navigation/NavigationKey';
-import { captureError } from '../../../config/sentry';
-import { blankVote } from '../data/params';
-import { useCameraPermissions } from 'expo-camera';
-import { isDemoActive } from '../../demo/demoSession';
-import DemoBanner from '../../demo/DemoBanner';
+import {
+  backendProbe,
+  checkInternetConnection,
+} from "../../../utils/networkUtils";
+import { moderateScale, getHeight } from "../../../common/constants";
+import { StackNav, TabNav } from "../../../navigation/NavigationKey";
+import { captureError } from "../../../config/sentry";
+import { blankVote } from "../data/params";
+import { useCameraPermissions } from "expo-camera";
+import { isDemoActive, useIsDemoActive } from "../../demo/demoSession";
+import DemoBanner from "../../demo/DemoBanner";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // Responsive helpers
 const isTablet = screenWidth >= 768;
@@ -63,76 +67,74 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const getPrimaryCandidateName = candidate => {
+const getPrimaryCandidateName = (candidate) => {
   if (!candidate) return UI_STRINGS.confirmVoteBlank;
 
   const primaryTicketEntry = Array.isArray(candidate?.ticketEntries)
-    ? candidate.ticketEntries.find(entry => String(entry?.name || '').trim())
+    ? candidate.ticketEntries.find((entry) => String(entry?.name || "").trim())
     : null;
 
   return String(
     primaryTicketEntry?.name ||
       candidate?.presidentName ||
       candidate?.partyName ||
-      '',
+      "",
   ).trim();
 };
 
-const isLikelyNetworkVoteError = error => {
-  const message = String(error?.message || error || '').toLowerCase();
+const isLikelyNetworkVoteError = (error) => {
+  const message = String(error?.message || error || "").toLowerCase();
   return (
-    message.includes('network') ||
-    message.includes('internet') ||
-    message.includes('timeout') ||
-    message.includes('failed to fetch') ||
-    message.includes('request failed')
+    message.includes("network") ||
+    message.includes("internet") ||
+    message.includes("timeout") ||
+    message.includes("failed to fetch") ||
+    message.includes("request failed")
   );
 };
 
-const isCreditsEmptyError = error =>
-  String(error?.message || error || '').trim() === CREDITS_EMPTY_ERROR_MESSAGE;
+const isCreditsEmptyError = (error) =>
+  String(error?.message || error || "").trim() === CREDITS_EMPTY_ERROR_MESSAGE;
 
-const buildVoteErrorMessage = error => {
-  const raw = String(error?.message || error || '').trim();
+const buildVoteErrorMessage = (error) => {
+  const raw = String(error?.message || error || "").trim();
   const message = raw.toLowerCase();
 
   if (!raw) {
-    return 'Ocurrió un error al registrar el voto. Puedes reintentar.';
+    return "Ocurrió un error al registrar el voto. Puedes reintentar.";
   }
   if (
-    message.includes('already voted') ||
-    message.includes('ya participaste') ||
-    message.includes('already_voted')
+    message.includes("already voted") ||
+    message.includes("ya participaste") ||
+    message.includes("already_voted")
   ) {
-    return 'Esta votación ya figura como registrada para tu usuario.';
+    return "Esta votación ya figura como registrada para tu usuario.";
   }
   if (
-    message.includes('outside_voting_window') ||
-    message.includes('fuera del horario')
+    message.includes("outside_voting_window") ||
+    message.includes("fuera del horario")
   ) {
-    return 'La votación ya no se encuentra disponible en este horario.';
+    return "La votación ya no se encuentra disponible en este horario.";
   }
   if (
-    message.includes('vote does not exist') ||
-    message.includes('execution reverted')
+    message.includes("vote does not exist") ||
+    message.includes("execution reverted")
   ) {
-    return 'No se pudo confirmar el voto en este momento. Puedes reintentar o volver a votar más tarde.';
+    return "No se pudo confirmar el voto en este momento. Puedes reintentar o volver a votar más tarde.";
   }
   if (isLikelyNetworkVoteError(raw)) {
-    return 'Hubo un problema de conexión al registrar el voto. Puedes reintentar.';
+    return "Hubo un problema de conexión al registrar el voto. Puedes reintentar.";
   }
 
   return raw;
 };
 
-const buildPendingSyncCopy = ({
-  serverUnavailable = false,
-} = {}) => {
+const buildPendingSyncCopy = ({ serverUnavailable = false } = {}) => {
   if (serverUnavailable) {
     return {
-      title: 'Conexión con el servidor pendiente',
+      title: "Conexión con el servidor pendiente",
       message:
-        'Detectamos red disponible, pero el servidor no respondio. Tu voto quedo guardado y la app lo sincronizara automaticamente.',
+        "Detectamos red disponible, pero el servidor no respondio. Tu voto quedo guardado y la app lo sincronizara automaticamente.",
     };
   }
 
@@ -142,7 +144,7 @@ const buildPendingSyncCopy = ({
   };
 };
 
-const resolveElectionTitle = election =>
+const resolveElectionTitle = (election) =>
   (() => {
     const isReferendum = election?.isReferendum === true;
     const questionTitle = String(
@@ -150,7 +152,7 @@ const resolveElectionTitle = election =>
         election?.objective ||
         election?.description ||
         election?.instituteName ||
-        '',
+        "",
     ).trim();
 
     if (isReferendum && questionTitle) {
@@ -163,19 +165,19 @@ const resolveElectionTitle = election =>
           election?.name ||
           election?.eventName ||
           election?.electionTitle ||
-          '',
-      ).trim() || 'Votación institucional'
+          "",
+      ).trim() || "Votación institucional"
     );
   })();
 
-const resolveElectionOrganization = election =>
+const resolveElectionOrganization = (election) =>
   String(
     election?.organization ||
       election?.organizationName ||
       election?.institutionName ||
       election?.instituteName ||
       election?.tenantName ||
-      '',
+      "",
   ).trim();
 
 const buildSelectedOptionPayload = ({
@@ -198,10 +200,13 @@ const buildSelectedOptionPayload = ({
 const CandidateScreen = ({ route }) => {
   const navigation = useNavigation();
   const repository = useElectionRepository();
+  const isDemo = useIsDemoActive();
 
-  const [electionInfo, setElectionInfo] = useState(route?.params?.election || null);
-  const electionId = route?.params?.electionId || electionInfo?.id || '';
-  
+  const [electionInfo, setElectionInfo] = useState(
+    route?.params?.election || null,
+  );
+  const electionId = route?.params?.electionId || electionInfo?.id || "";
+
   // State
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -215,8 +220,8 @@ const CandidateScreen = ({ route }) => {
   });
   const [errorModal, setErrorModal] = useState({
     visible: false,
-    title: 'No se pudo registrar el voto',
-    message: '',
+    title: "No se pudo registrar el voto",
+    message: "",
     // Sin tokens de respaldo el voto no es reintentable: el modal solo ofrece
     // volver al inicio.
     creditsEmpty: false,
@@ -248,7 +253,7 @@ const CandidateScreen = ({ route }) => {
   const isReferendumElection = useMemo(
     () =>
       electionInfo?.isReferendum === true ||
-      candidates.some(candidate => candidate?.isReferendum === true),
+      candidates.some((candidate) => candidate?.isReferendum === true),
     [candidates, electionInfo?.isReferendum],
   );
   const electionDisplayTitle = useMemo(() => {
@@ -282,7 +287,8 @@ const CandidateScreen = ({ route }) => {
           }
         }
 
-        const resolvedElectionId = route?.params?.electionId || resolvedElection?.id || '';
+        const resolvedElectionId =
+          route?.params?.electionId || resolvedElection?.id || "";
         if (!resolvedElectionId) {
           setCandidates([]);
           return;
@@ -291,7 +297,7 @@ const CandidateScreen = ({ route }) => {
         const data = await repository.getCandidates(resolvedElectionId);
         setCandidates(data);
       } catch (error) {
-        console.error('[CandidateScreen] Error loading candidates:', error);
+        console.error("[CandidateScreen] Error loading candidates:", error);
         setCandidates([]);
       }
     };
@@ -304,7 +310,9 @@ const CandidateScreen = ({ route }) => {
     }
 
     const resolvedParticipationId =
-      lastReceipt?.electionId === electionId ? lastReceipt?.id : participationId;
+      lastReceipt?.electionId === electionId
+        ? lastReceipt?.id
+        : participationId;
 
     if (resolvedParticipationId) {
       navigation.replace(StackNav.VotingReceiptScreen, {
@@ -322,13 +330,16 @@ const CandidateScreen = ({ route }) => {
   ]);
 
   // Handle candidate selection
-  const handleSelectCandidate = useCallback((candidate) => {
-    if (selectedCandidate?.id === candidate.id) {
-      setSelectedCandidate(null);
-    } else {
-      setSelectedCandidate(candidate);
-    }
-  }, [selectedCandidate]);
+  const handleSelectCandidate = useCallback(
+    (candidate) => {
+      if (selectedCandidate?.id === candidate.id) {
+        setSelectedCandidate(null);
+      } else {
+        setSelectedCandidate(candidate);
+      }
+    },
+    [selectedCandidate],
+  );
 
   // Handle vote button press
   const handleVotePress = useCallback(() => {
@@ -352,7 +363,7 @@ const CandidateScreen = ({ route }) => {
           title: UI_STRINGS.badQrTitle,
           message: UI_STRINGS.badQrDesc,
         });
-        throw new Error('QR code data is empty');
+        throw new Error("QR code data is empty");
       }
 
       let presentialSessionId = null;
@@ -360,7 +371,7 @@ const CandidateScreen = ({ route }) => {
       try {
         presentialSessionId = await repository.verifyVoteQrCode(result.data);
         if (!presentialSessionId) {
-          throw new Error('Invalid QR code: No session ID returned');
+          throw new Error("Invalid QR code: No session ID returned");
         }
       } catch (error) {
         setErrorModal({
@@ -372,7 +383,10 @@ const CandidateScreen = ({ route }) => {
       }
 
       voteResult = await submitVote(presentialSessionId);
-      if (voteResult?.shouldQueueBackendSync && voteResult?.blockchainCommitted) {
+      if (
+        voteResult?.shouldQueueBackendSync &&
+        voteResult?.blockchainCommitted
+      ) {
         await enqueueBackendParticipationSync({
           electionId,
           candidateId: selectedCandidate.id,
@@ -386,7 +400,7 @@ const CandidateScreen = ({ route }) => {
           electionId,
           electionTitle: resolveElectionTitle(electionCopySource),
           organization: resolveElectionOrganization(electionInfo),
-          ...(isReferendumElection ? {isReferendum: true} : {}),
+          ...(isReferendumElection ? { isReferendum: true } : {}),
           candidateSelected: buildSelectedOptionPayload({
             selectedCandidate,
             isReferendum: isReferendumElection,
@@ -396,9 +410,9 @@ const CandidateScreen = ({ route }) => {
         });
 
         setOfflineModalCopy({
-          title: 'Voto emitido, sincronización pendiente',
+          title: "Voto emitido, sincronización pendiente",
           message:
-            'Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.',
+            "Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.",
         });
         setQueuedParticipationId(receipt?.id || null);
         setShowConfirmModal(false);
@@ -411,20 +425,20 @@ const CandidateScreen = ({ route }) => {
         setErrorModal({
           visible: true,
           title: creditsEmpty
-            ? 'No se pudo registrar el voto'
+            ? "No se pudo registrar el voto"
             : UI_STRINGS.qrVoteErrorTitle,
           message: creditsEmpty
             ? CREDITS_EMPTY_ERROR_MESSAGE
             : UI_STRINGS.qrVoteErrorDesc,
           creditsEmpty,
         });
-        throw new Error(voteResult.error || 'Vote submission failed');
+        throw new Error(voteResult.error || "Vote submission failed");
       }
     } catch (error) {
-      console.error('[CandidateScreen] Error in QR vote flow:', error);
+      console.error("[CandidateScreen] Error in QR vote flow:", error);
       captureError(error, {
-        flow: 'qr_voting_flow',
-        step: 'submit_vote',
+        flow: "qr_voting_flow",
+        step: "submit_vote",
         critical: false,
         allowPii: false,
         extra: {
@@ -459,7 +473,7 @@ const CandidateScreen = ({ route }) => {
           electionId,
           electionTitle: resolveElectionTitle(electionCopySource),
           organization: resolveElectionOrganization(electionInfo),
-          ...(isReferendumElection ? {isReferendum: true} : {}),
+          ...(isReferendumElection ? { isReferendum: true } : {}),
           candidateSelected: buildSelectedOptionPayload({
             selectedCandidate,
             isReferendum: isReferendumElection,
@@ -479,8 +493,8 @@ const CandidateScreen = ({ route }) => {
       const isOnline = isDemoActive()
         ? true
         : DEV_FLAGS.FORCE_OFFLINE_VOTING
-          ? false
-          : await checkInternetConnection();
+        ? false
+        : await checkInternetConnection();
 
       if (isInPlaceVote) {
         if (!isOnline) {
@@ -514,7 +528,7 @@ const CandidateScreen = ({ route }) => {
             electionId,
             electionTitle: resolveElectionTitle(electionCopySource),
             organization: resolveElectionOrganization(electionInfo),
-            ...(isReferendumElection ? {isReferendum: true} : {}),
+            ...(isReferendumElection ? { isReferendum: true } : {}),
             candidateSelected: buildSelectedOptionPayload({
               selectedCandidate,
               isReferendum: isReferendumElection,
@@ -522,7 +536,9 @@ const CandidateScreen = ({ route }) => {
             }),
           });
 
-          setOfflineModalCopy(buildPendingSyncCopy({ serverUnavailable: true }));
+          setOfflineModalCopy(
+            buildPendingSyncCopy({ serverUnavailable: true }),
+          );
           setQueuedParticipationId(receipt?.id || null);
           setShowConfirmModal(false);
           setShowOfflineModal(true);
@@ -548,7 +564,7 @@ const CandidateScreen = ({ route }) => {
             electionId,
             electionTitle: resolveElectionTitle(electionCopySource),
             organization: resolveElectionOrganization(electionInfo),
-            ...(isReferendumElection ? {isReferendum: true} : {}),
+            ...(isReferendumElection ? { isReferendum: true } : {}),
             candidateSelected: buildSelectedOptionPayload({
               selectedCandidate,
               isReferendum: isReferendumElection,
@@ -558,9 +574,9 @@ const CandidateScreen = ({ route }) => {
           });
 
           setOfflineModalCopy({
-            title: 'Voto emitido, sincronización pendiente',
+            title: "Voto emitido, sincronización pendiente",
             message:
-              'Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.',
+              "Tu voto ya fue emitido, pero aún falta completar el registro. La app lo reintentará automáticamente.",
           });
           setQueuedParticipationId(receipt?.id || null);
           setShowConfirmModal(false);
@@ -571,18 +587,22 @@ const CandidateScreen = ({ route }) => {
             await queueVoteAndShowReceipt();
             return;
           }
-          throw new Error(result.error || 'Vote failed');
+          throw new Error(result.error || "Vote failed");
         }
       } else {
         await queueVoteAndShowReceipt();
       }
     } catch (error) {
-      if (!String(error?.message || '').toLowerCase().includes('blockchain')) {
+      if (
+        !String(error?.message || "")
+          .toLowerCase()
+          .includes("blockchain")
+      ) {
         await clearVoteJournal(electionId);
       }
       captureError(error, {
-        flow: 'voting_flow',
-        step: 'submit_vote',
+        flow: "voting_flow",
+        step: "submit_vote",
         critical: false,
         allowPii: false,
         extra: {
@@ -590,11 +610,11 @@ const CandidateScreen = ({ route }) => {
           candidateId: selectedCandidate?.id || null,
         },
       });
-      console.error('[CandidateScreen] Vote error:', error);
+      console.error("[CandidateScreen] Vote error:", error);
       setShowConfirmModal(false);
       setErrorModal({
         visible: true,
-        title: 'No se pudo registrar el voto',
+        title: "No se pudo registrar el voto",
         message: buildVoteErrorMessage(error),
         creditsEmpty: isCreditsEmptyError(error),
       });
@@ -602,57 +622,82 @@ const CandidateScreen = ({ route }) => {
       isSubmittingVoteRef.current = false;
       setIsLoading(false);
     }
-  }, [selectedCandidate, isInPlaceVote, electionId, electionCopySource, recordVote, electionInfo, isReferendumElection, submitVote]);
+  }, [
+    selectedCandidate,
+    isInPlaceVote,
+    electionId,
+    electionCopySource,
+    recordVote,
+    electionInfo,
+    isReferendumElection,
+    submitVote,
+  ]);
 
-  const submitVote = useCallback(async (presentialSessionId) => {
-    await startVoteJournal({
-      electionId,
-      candidateId: selectedCandidate.id,
-      candidateName: selectedCandidate.partyName,
-      presidentName: selectedCandidate.presidentName,
-      electionTitle: resolveElectionTitle(electionCopySource),
-      organization: resolveElectionOrganization(electionInfo),
-      presentialSessionId: presentialSessionId || null,
-      candidateSelected: {
-        partyName: selectedCandidate.partyName,
-        presidentName: selectedCandidate.presidentName,
-        viceName: selectedCandidate.viceName,
-        ticketEntries: selectedCandidate.ticketEntries || [],
-      },
-    });
-
-    // Online: Submit vote directly
-    const result = await repository.submitVote(electionId, selectedCandidate.id, presentialSessionId);
-
-    if (result.success) {
-      const receipt = await recordVote(selectedCandidate.id, true, {
-        participationId: result.participationId,
-        participatedAt: result.participatedAt,
-        transactionId: result.transactionId || null,
+  const submitVote = useCallback(
+    async (presentialSessionId) => {
+      await startVoteJournal({
         electionId,
+        candidateId: selectedCandidate.id,
+        candidateName: selectedCandidate.partyName,
+        presidentName: selectedCandidate.presidentName,
         electionTitle: resolveElectionTitle(electionCopySource),
         organization: resolveElectionOrganization(electionInfo),
-        ...(isReferendumElection ? {isReferendum: true} : {}),
-        candidateSelected: buildSelectedOptionPayload({
-          selectedCandidate,
-          isReferendum: isReferendumElection,
-          electionTitle: resolveElectionTitle(electionCopySource),
-        }),
+        presentialSessionId: presentialSessionId || null,
+        candidateSelected: {
+          partyName: selectedCandidate.partyName,
+          presidentName: selectedCandidate.presidentName,
+          viceName: selectedCandidate.viceName,
+          ticketEntries: selectedCandidate.ticketEntries || [],
+        },
       });
 
-      setShowConfirmModal(false);
-
-      // Navigate to receipt/comprobante screen
-      navigation.replace(StackNav.VotingReceiptScreen, {
-        participationId: receipt?.id || result.participationId,
+      // Online: Submit vote directly
+      const result = await repository.submitVote(
         electionId,
-      });
-    } else {
-      await clearVoteJournal(electionId);
-    }
+        selectedCandidate.id,
+        presentialSessionId,
+      );
 
-    return result;
-  }, [electionId, selectedCandidate, electionCopySource, electionInfo, repository, recordVote, isReferendumElection, navigation]);
+      if (result.success) {
+        const receipt = await recordVote(selectedCandidate.id, true, {
+          participationId: result.participationId,
+          participatedAt: result.participatedAt,
+          transactionId: result.transactionId || null,
+          electionId,
+          electionTitle: resolveElectionTitle(electionCopySource),
+          organization: resolveElectionOrganization(electionInfo),
+          ...(isReferendumElection ? { isReferendum: true } : {}),
+          candidateSelected: buildSelectedOptionPayload({
+            selectedCandidate,
+            isReferendum: isReferendumElection,
+            electionTitle: resolveElectionTitle(electionCopySource),
+          }),
+        });
+
+        setShowConfirmModal(false);
+
+        // Navigate to receipt/comprobante screen
+        navigation.replace(StackNav.VotingReceiptScreen, {
+          participationId: receipt?.id || result.participationId,
+          electionId,
+        });
+      } else {
+        await clearVoteJournal(electionId);
+      }
+
+      return result;
+    },
+    [
+      electionId,
+      selectedCandidate,
+      electionCopySource,
+      electionInfo,
+      repository,
+      recordVote,
+      isReferendumElection,
+      navigation,
+    ],
+  );
 
   // Handle cancel confirm
   const handleCancelConfirm = useCallback(() => {
@@ -663,24 +708,31 @@ const CandidateScreen = ({ route }) => {
   const handleOfflineDismiss = useCallback(() => {
     setShowOfflineModal(false);
     navigation.replace(StackNav.VotingReceiptScreen, {
-      participationId: queuedParticipationId || participationId || lastReceipt?.id,
+      participationId:
+        queuedParticipationId || participationId || lastReceipt?.id,
       electionId,
     });
-  }, [electionId, lastReceipt?.id, navigation, participationId, queuedParticipationId]);
+  }, [
+    electionId,
+    lastReceipt?.id,
+    navigation,
+    participationId,
+    queuedParticipationId,
+  ]);
 
   const handleRetryVote = useCallback(() => {
-    setErrorModal(modal => ({...modal, visible: false}));
+    setErrorModal((modal) => ({ ...modal, visible: false }));
     handleConfirmVote();
   }, [handleConfirmVote]);
 
   const handleErrorModalGoHome = useCallback(() => {
-    setErrorModal(modal => ({...modal, visible: false}));
+    setErrorModal((modal) => ({ ...modal, visible: false }));
     navigation.reset({
       index: 0,
       routes: [
         {
           name: StackNav.TabNavigation,
-          params: {screen: TabNav.HomeScreen},
+          params: { screen: TabNav.HomeScreen },
         },
       ],
     });
@@ -700,13 +752,21 @@ const CandidateScreen = ({ route }) => {
       return UI_STRINGS.voteForOption;
     }
     const primaryName = getPrimaryCandidateName(selectedCandidate);
-    const [firstName = '', secondName = ''] = primaryName.split(' ');
-    return `${UI_STRINGS.voteFor} ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
+    const [firstName = "", secondName = ""] = primaryName.split(" ");
+    return `${
+      UI_STRINGS.voteFor
+    } ${firstName.toUpperCase()} ${secondName.toUpperCase()}`.trim();
   };
 
   return (
     <CSafeAreaView style={styles.container}>
-      <CHeader title={isReferendumElection ? UI_STRINGS.referendumHeader : UI_STRINGS.candidateHeader} />
+      <CHeader
+        title={
+          isReferendumElection
+            ? UI_STRINGS.referendumHeader
+            : UI_STRINGS.candidateHeader
+        }
+      />
       <DemoBanner />
 
       <ScrollView
@@ -714,7 +774,7 @@ const CandidateScreen = ({ route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ServiceStatusWarning />
+        {!isDemo && <ServiceStatusWarning />}
 
         {/* Title */}
         <CText type="B22" style={styles.title}>
@@ -760,11 +820,14 @@ const CandidateScreen = ({ route }) => {
           }}
           sinMargen
           testID="voteButton"
-          icon={<Ionicons
-            name={isInPlaceVote ? 'qr-code' : 'checkmark-circle'}
-            style={{marginLeft: moderateScale(8)}}
-            size={moderateScale(24)} color="white"
-          />}
+          icon={
+            <Ionicons
+              name={isInPlaceVote ? "qr-code" : "checkmark-circle"}
+              style={{ marginLeft: moderateScale(8) }}
+              size={moderateScale(24)}
+              color="white"
+            />
+          }
         />
 
         <CText type="R12" style={styles.securityNote}>
@@ -783,9 +846,11 @@ const CandidateScreen = ({ route }) => {
       {/* Confirm Modal */}
       <ConfirmVoteModal
         visible={showConfirmModal}
-        isBlankVote={!selectedCandidate || selectedCandidate.id === blankVote.id}
+        isBlankVote={
+          !selectedCandidate || selectedCandidate.id === blankVote.id
+        }
         presidentName={getPrimaryCandidateName(selectedCandidate)}
-        partyName={selectedCandidate?.partyName || ''}
+        partyName={selectedCandidate?.partyName || ""}
         partyColor={selectedCandidate?.partyColor}
         isReferendum={isReferendumElection}
         questionTitle={resolveElectionTitle(electionCopySource)}
@@ -807,17 +872,19 @@ const CandidateScreen = ({ route }) => {
         onClose={
           errorModal.creditsEmpty
             ? handleErrorModalGoHome
-            : () => setErrorModal(modal => ({...modal, visible: false}))
+            : () => setErrorModal((modal) => ({ ...modal, visible: false }))
         }
         type="error"
         title={errorModal.title}
         message={errorModal.message}
-        buttonText={errorModal.creditsEmpty ? 'Volver al inicio' : 'Reintentar'}
+        buttonText={errorModal.creditsEmpty ? "Volver al inicio" : "Reintentar"}
         onButtonPress={
           errorModal.creditsEmpty ? handleErrorModalGoHome : handleRetryVote
         }
-        secondaryButtonText={errorModal.creditsEmpty ? undefined : 'Cerrar'}
-        onSecondaryPress={() => setErrorModal(modal => ({...modal, visible: false}))}
+        secondaryButtonText={errorModal.creditsEmpty ? undefined : "Cerrar"}
+        onSecondaryPress={() =>
+          setErrorModal((modal) => ({ ...modal, visible: false }))
+        }
       />
     </CSafeAreaView>
   );
@@ -826,7 +893,7 @@ const CandidateScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   scrollView: {
     flex: 1,
@@ -837,10 +904,10 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveSize(20, 24, 28),
   },
   title: {
-    color: '#1F2937',
+    color: "#1F2937",
     fontSize: getResponsiveSize(20, 24, 28),
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     marginBottom: getResponsiveSize(20, 24, 28),
   },
   candidatesList: {
@@ -851,25 +918,25 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveSize(12, 14, 16),
     paddingBottom: getResponsiveSize(20, 24, 28),
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
   },
   voteButton: {
     minHeight: getHeight(52),
-    height: 'auto',
+    height: "auto",
     borderRadius: moderateScale(12),
     paddingHorizontal: moderateScale(12),
     paddingVertical: moderateScale(10),
     marginBottom: getResponsiveSize(10, 12, 14),
   },
   voteButtonText: {
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: moderateScale(20),
   },
   securityNote: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     fontSize: getResponsiveSize(11, 12, 13),
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: getResponsiveSize(16, 18, 20),
   },
 });

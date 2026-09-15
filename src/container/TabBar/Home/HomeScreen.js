@@ -27,8 +27,8 @@ import images from "../../../assets/images";
 import { LAST_USER_TOPIC_KEY, JWT_KEY } from "../../../common/constants";
 import CSafeAreaView from "../../../components/common/CSafeAreaView";
 import DemoBanner from "../../../features/demo/DemoBanner";
+import { isDemoActive } from "../../../features/demo/demoSession";
 import CText from "../../../components/common/CText";
-import RegisterAlertCard from "../../../components/home/RegisterAlertCard";
 import I18nStrings from "../../../i18n/String";
 import { StackNav } from "../../../navigation/NavigationKey";
 import { clearSession } from "../../../utils/Session";
@@ -1751,29 +1751,34 @@ export default function HomeScreen({ navigation, route }) {
       return;
     }
 
-    const net = await NetInfo.fetch();
-    const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
-    if (!online) {
-      setInfoModal({
-        visible: true,
-        type: "warning",
-        title: "Sin conexión",
-        message:
-          "Necesitas conexión a internet para registrar tu recinto por primera vez.",
-      });
-      return;
-    }
+    // Las dos comprobaciones existen porque el registro real necesita el
+    // backend. En demo ElectoralLocationsSave se sirve entero de datos
+    // sintéticos, así que exigir conexión solo cerraría el flujo al revisor.
+    if (!isDemoActive()) {
+      const net = await NetInfo.fetch();
+      const online = isStateEffectivelyOnline(net, NET_POLICIES.balanced);
+      if (!online) {
+        setInfoModal({
+          visible: true,
+          type: "warning",
+          title: "Sin conexión",
+          message:
+            "Necesitas conexión a internet para registrar tu recinto por primera vez.",
+        });
+        return;
+      }
 
-    const probe = await backendProbe({ timeoutMs: 2000 });
-    if (!probe?.ok) {
-      setInfoModal({
-        visible: true,
-        type: "warning",
-        title: "Sin conexión",
-        message:
-          "Necesitas conexión a internet para registrar tu recinto por primera vez.",
-      });
-      return;
+      const probe = await backendProbe({ timeoutMs: 2000 });
+      if (!probe?.ok) {
+        setInfoModal({
+          visible: true,
+          type: "warning",
+          title: "Sin conexión",
+          message:
+            "Necesitas conexión a internet para registrar tu recinto por primera vez.",
+        });
+        return;
+      }
     }
 
     navigation.navigate(StackNav.ElectoralLocationsSave, { dni });
@@ -2981,14 +2986,6 @@ export default function HomeScreen({ navigation, route }) {
           </View>
           {renderVotingElectionCarousel()}
 
-          {!hasBackup && __DEV__ && (
-            <RegisterAlertCard
-              title={I18nStrings.backupAccount}
-              description={I18nStrings.backupAccountDescription}
-              onPress={() => navigation.navigate(StackNav.RecuperationQR)}
-            />
-          )}
-
           {/* {!checkingVotePlace && shouldShowRegisterAlert && (
             <RegisterAlertCard
               title={I18nStrings.registerPlace}
@@ -3180,14 +3177,6 @@ export default function HomeScreen({ navigation, route }) {
             </View>
 
             {renderVotingElectionCarousel()}
-
-            {!hasBackup && __DEV__ && (
-              <RegisterAlertCard
-                title={I18nStrings.backupAccount}
-                description={I18nStrings.backupAccountDescription}
-                onPress={() => navigation.navigate(StackNav.RecuperationQR)}
-              />
-            )}
 
             {/* {!checkingVotePlace && shouldShowRegisterAlert && (
               <RegisterAlertCard
