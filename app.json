@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
-      "buildNumber": "65",
+      "buildNumber": "66",
       "icon": "./assets/images/ic_launcher.png",
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
@@ -99,8 +99,7 @@
           },
           "ios": {
             "deploymentTarget": "16.0",
-            "useFrameworks": "static",
-            "forceStaticLinking": ["RNFBApp", "RNFBAuth", "RNFBDatabase"]
+            "useFrameworks": "static"
           }
         }
       ],
@@ -144,7 +143,14 @@
         }
       ],
       "./plugins/withIOSCodeSigning",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/auth",
       "./plugins/withNativeModules",
       "./plugins/withIOSNativeModules",
