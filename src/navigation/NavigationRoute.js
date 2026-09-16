@@ -79,6 +79,7 @@ import HomeStackNavigation from './type/HomeStackNavigation';
 
 // Profile screens necesarios
 import PersonalDetails from '../container/TabBar/Profile/PersonalDetails';
+import DeleteAccount from '../container/TabBar/Profile/DeleteAccount';
 import SelectLanguage from '../container/TabBar/Profile/SelectLanguage';
 import PushNotification from '../container/TabBar/Profile/PushNotification';
 import HelpCenter from '../container/TabBar/Profile/HelpCenter';
@@ -110,6 +111,7 @@ import RegisterUser9 from '../container/Auth/RegisterUser9Pin';
 import RegisterUser10 from '../container/Auth/RegisterUser10';
 import RegisterUser11 from '../container/Auth/RegisterUser11';
 import LoginUser from '../container/Auth/LoginUser';
+import AccountAccess from '../container/Auth/AccountAccess';
 import SelectRecuperation from '../container/Auth/SelectRecuperation';
 import AccountLock from '../container/Auth/AccountLock';
 
@@ -165,6 +167,7 @@ export const StackRoute = {
 
   // Profile y configuración
   PersonalDetails,
+  DeleteAccount,
   RecuperationQR,
   Guardians,
   GuardiansAdmin,
@@ -204,6 +207,7 @@ export const AuthRoute = {
   RegisterUser11,
   AccountLock,
   LoginUser,
+  AccountAccess,
   SelectRecuperation,
   ConditionsRegister,
   SignUpWithMobileNumber,

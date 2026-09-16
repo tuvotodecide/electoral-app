@@ -9,6 +9,14 @@ import RewardSummaryCard from '../components/RewardSummaryCard';
 import {useRewardsQuery} from '../data/rewardsApi';
 import {colors} from '../../../themes/colors';
 
+const STATUS_ORDER = ['available', 'pending', 'received'];
+
+// Los estados desconocidos van al final.
+const getStatusOrder = status => {
+  const index = STATUS_ORDER.indexOf(status);
+  return index === -1 ? STATUS_ORDER.length : index;
+};
+
 const RewardsScreen = ({navigation, route}) => {
   const {
     rewards: {data: rewards, rewardsAvailable},
@@ -38,10 +46,13 @@ const RewardsScreen = ({navigation, route}) => {
           : reward,
       )
     : rewards;
-  const rewardsToDisplay =
+  const rewardsToDisplay = (
     hasVoteRewardNotice && !displayedRewards.some(reward => reward.id === 'reward-vote')
       ? [voteReward, ...displayedRewards]
-      : displayedRewards;
+      : displayedRewards || []
+  )
+    .slice()
+    .sort((a, b) => getStatusOrder(a.status) - getStatusOrder(b.status));
 
   const handleRewardPress = reward => {
     navigation.navigate(StackNav.RewardDetailScreen, {

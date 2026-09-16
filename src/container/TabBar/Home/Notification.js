@@ -21,7 +21,9 @@ import { requestPushPermissionExplicit } from '../../../services/pushPermission'
 import { formatTiempoRelativo } from '../../../services/notifications';
 import {
   buildNotificationTextFallback,
+  buildVoteRewardRoute,
   getLocalStoredNotifications,
+  isVoteRewardNotification,
   mergeAndDedupeNotifications,
 } from '../../../notifications';
 import { getCache, setCache } from '../../../utils/lookupCache';
@@ -127,6 +129,7 @@ export const getNotificationKind = ({ type, title, body }) => {
     normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED' ||
     normalizedType === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
     normalizedType === 'INSTITUTIONAL_VOTING_STARTS_IN_15M' ||
+    normalizedType === 'INSTITUTIONAL_VOTING_STARTED' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_1H' ||
     normalizedType === 'INSTITUTIONAL_VOTING_ENDS_IN_15M' ||
     normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER' ||
@@ -162,6 +165,7 @@ const isVotingNotificationType = type => {
     'INSTITUTIONAL_VOTING_CANCELLED',
     'INSTITUTIONAL_VOTING_STARTS_IN_1H',
     'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+    'INSTITUTIONAL_VOTING_STARTED',
     'INSTITUTIONAL_VOTING_ENDS_IN_1H',
     'INSTITUTIONAL_VOTING_ENDS_IN_15M',
     'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER',
@@ -228,6 +232,10 @@ export const buildNotificationNavigationTarget = (
 
   if (String(rawData?.type || '').trim().toUpperCase() === 'OFFICIAL_PUBLICATION_REQUEST') {
     return null;
+  }
+
+  if (isVoteRewardNotification(rawData)) {
+    return buildVoteRewardRoute();
   }
 
   if (enableVotingFlow) {
@@ -388,8 +396,14 @@ export default function Notification({ navigation }) {
       normalizedType === 'OFFICIAL_PUBLICATION_REQUEST';
     const isVotingEnabled = normalizedType === 'INSTITUTIONAL_VOTING_ENABLED';
     const isVotingCancelled = normalizedType === 'INSTITUTIONAL_VOTING_CANCELLED';
+    const isVotingStarted = normalizedType === 'INSTITUTIONAL_VOTING_STARTED';
+    const isVoteReward = isVoteRewardNotification(data);
     const isOfficialPublicationReminder =
       normalizedType === 'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER';
+    const isAuthorizationRequest =
+      normalizedType === 'MOBILE_AUTHORIZATION_REQUESTED';
+    const isAdminInvitation =
+      normalizedType === 'INSTITUTIONAL_ADMIN_INVITATION';
     const notificationKind = getNotificationKind({
       type: data?.type,
       title: titleFromBackend,
@@ -397,7 +411,11 @@ export default function Notification({ navigation }) {
     });
 
     let mesaLabel = '';
-    if (notificationKind === 'news') {
+    if (isAuthorizationRequest) {
+      mesaLabel = titleFromBackend || 'Autorización pendiente';
+    } else if (isAdminInvitation) {
+      mesaLabel = titleFromBackend || 'Invitación institucional';
+    } else if (notificationKind === 'news') {
       mesaLabel = titleFromBackend || data?.title || 'Noticia';
     } else if (isOfficialPublicationRequest) {
       mesaLabel = 'Publicación oficial pendiente';
@@ -429,7 +447,11 @@ export default function Notification({ navigation }) {
     }
 
     let tipo = 'Actualizar';
-    if (notificationKind === 'voting_event') {
+    if (isAuthorizationRequest) {
+      tipo = 'Revisar solicitud';
+    } else if (isAdminInvitation) {
+      tipo = 'Ver invitación';
+    } else if (notificationKind === 'voting_event') {
       const startsAt = data?.votingStart || data?.startsAt;
       if (isPadronReview) {
         tipo = 'Ver padrón';
@@ -443,6 +465,8 @@ export default function Notification({ navigation }) {
         tipo = 'Ver fechas';
       } else if (isVotingEnabled) {
         tipo = 'Abrir votación';
+      } else if (isVotingStarted) {
+        tipo = 'Ver votación';
       } else if (isScheduleUpdate) {
         tipo = 'Ver fechas';
       } else {
@@ -456,6 +480,8 @@ export default function Notification({ navigation }) {
         : 'Ver ganador';
     } else if (notificationKind === 'news') {
       tipo = 'Ver noticia';
+    } else if (isVoteReward) {
+      tipo = 'Reclamar recompensa';
     } else if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
@@ -496,7 +522,9 @@ export default function Notification({ navigation }) {
       mesa: mesaLabel,
       colegio: data?.locationName || n?.locationName || '',
       direccion:
-        notificationKind === 'news'
+        isAuthorizationRequest || isAdminInvitation
+          ? bodyFromBackend || data?.body || ''
+          : notificationKind === 'news'
           ? bodyFromBackend || data?.summary || data?.body || ''
           : isVotingCancelled
             ? bodyFromBackend || data?.body || ''
@@ -508,7 +536,9 @@ export default function Notification({ navigation }) {
           ? resolveVotingEventDescription(data, bodyFromBackend) || dateRange
           : notificationKind === 'election_results'
             ? bodyFromBackend || data?.summary || 'Resultados preliminares disponibles'
-            : data?.locationAddress || n?.locationAddress || '',
+            : isVoteReward
+              ? bodyFromBackend || data?.body || ''
+              : data?.locationAddress || n?.locationAddress || '',
       distancia: data?.distance ?? null,
       timestamp: new Date(created).getTime(),
       estado: data?.status || 'iniciado',
@@ -746,6 +776,12 @@ export default function Notification({ navigation }) {
         return 'alert-circle-outline';
       case 'Votar':
         return 'checkbox-outline';
+      case 'Reclamar recompensa':
+        return 'gift-outline';
+      case 'Revisar solicitud':
+        return 'shield-checkmark-outline';
+      case 'Ver invitación':
+        return 'mail-outline';
       default:
         return 'sparkles-outline';
     }

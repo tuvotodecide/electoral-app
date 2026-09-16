@@ -11,6 +11,7 @@ import { getOwnVoteInfo } from '@/src/api/vote';
 import { getCredentialForVote } from '@/src/data/credentials';
 import { useSelector } from 'react-redux';
 import { hashVoteNullifier } from '../utils/dataHasher';
+import { isDemoActive } from '@/src/features/demo/demoSession';
 
 // Storage keys - namespaced para evitar colisiones
 const STORAGE_KEYS = {
@@ -205,6 +206,20 @@ export const useVotingState = (electionId = '') => {
 
     try {
       setSyncedWithBlockchain({status: 'loading'});
+
+      // En demo no hay credencial ni lectura de cadena: sin este corte,
+      // VoteReceiptScreen muestra el aviso de "no se encontró la credencial".
+      if (isDemoActive()) {
+        setSyncedWithBlockchain({
+          status: 'synced',
+          data: {
+            hasVoted: true,
+            option: localParticipation?.candidateSelected?.partyName || '',
+          },
+        });
+        return;
+      }
+
       const credential = await getCredentialForVote(electionId, userData.did, userData.privKey);
       if(!credential?.info?.credentialSubject?.nullifier) {
         setSyncedWithBlockchain({status: 'failed'});

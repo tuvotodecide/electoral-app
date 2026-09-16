@@ -2,9 +2,8 @@ import React from 'react';
 import {Alert} from 'react-native';
 import {fireEvent, waitFor, act} from '@testing-library/react-native';
 import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
-import {AuthNav, StackNav} from '../../../../src/navigation/NavigationKey';
+import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser2 from '../../../../src/container/Auth/RegisterUser2';
-import {REVIEW_DNI} from '../../../../src/config/review';
 import String from '../../../../src/i18n/String';
 import wira from 'wira-sdk';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
@@ -79,20 +78,26 @@ describe('RegisterUser2', () => {
     jest.useRealTimers();
   });
 
-  it('si ingresa el DNI de revision redirige a TabNavigation', async () => {
+  it('el DNI que antes era puerta trasera de revision ya no salta a TabNavigation', async () => {
+    jest.useFakeTimers();
+    new wira.RegistryApi().registryCheckByDni.mockResolvedValueOnce({
+      exists: false,
+    });
     const localNavigation = {...mockNavigation, reset: jest.fn()};
     const {getByTestId} = renderWithProviders(
       <RegisterUser2 navigation={localNavigation} route={{params: {}}} />,
     );
 
-    fireEvent.changeText(getByTestId('idNumberInput'), REVIEW_DNI);
-
-    await waitFor(() => {
-      expect(localNavigation.reset).toHaveBeenCalledWith({
-        index: 0,
-        routes: [{name: StackNav.TabNavigation}],
-      });
+    fireEvent.changeText(getByTestId('idNumberInput'), '927643154');
+    fireEvent(getByTestId('idNumberInput'), 'onEndEditing');
+    await act(async () => {
+      jest.advanceTimersByTime(600);
     });
+
+    expect(localNavigation.reset).not.toHaveBeenCalled();
+    expect(new wira.RegistryApi().registryCheckByDni).toHaveBeenCalledWith(
+      '927643154',
+    );
   });
 
   it('si el DNI ya existe en registro muestra modal y redirige a SelectRecuperation', async () => {

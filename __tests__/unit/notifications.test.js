@@ -80,6 +80,10 @@ jest.mock('../../src/navigation/RootNavigation', () => {
   const navigate = jest.fn();
   return {
     navigate,
+    navigationRef: {
+      isReady: jest.fn(() => false),
+      getCurrentRoute: jest.fn(() => null),
+    },
     safeNavigate: jest.fn((name, params) => {
       navigate(name, params);
       return true;
@@ -281,6 +285,67 @@ describe('notifications', () => {
         type: 'INSTITUTIONAL_VOTING_ENDS_IN_15M',
         eventId: 'event-reminder',
       }),
+    });
+  });
+
+  it('normaliza copy institucional para el aviso de votacion abierta', () => {
+    const votingStarted = {
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+      data: {
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        eventId: '6a9c25c964823d71a50a2a97',
+        electionId: '6a9c25c964823d71a50a2a97',
+        eventName: 'Vote test 101',
+        phase: 'START',
+        offsetMinutes: '0',
+        scheduledFor: '2026-09-05T15:25:00.000Z',
+        votingStart: '2026-09-05T15:25:00.000Z',
+        votingEnd: '2026-09-05T16:24:00.000Z',
+        bannerTitle: 'La votación ya está abierta',
+        bannerSubtitle:
+          'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+        publicPath: '/votacion/elecciones/6a9c25c964823d71a50a2a97/publica',
+        publicUrl: '',
+        link: '/votacion/elecciones/6a9c25c964823d71a50a2a97/publica',
+        eligible: 'true',
+      },
+    };
+
+    expect(buildInstitutionalNotificationCopy(votingStarted)).toEqual({
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+    });
+    expect(buildNotificationTextFallback(votingStarted)).toMatchObject({
+      title: 'La votación ya está abierta',
+      body: 'Vote test 101 ya está abierta desde las 11:25. Ya puedes emitir tu voto.',
+    });
+    expect(buildInstitutionalNotificationForDetail(votingStarted)).toMatchObject({
+      kind: 'voting_event',
+      tipo: 'Ver votación',
+      statusTone: 'success',
+      actionLabel: 'Ver votación',
+      mesa: 'La votación ya está abierta',
+      reminderDetailBody: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
+      data: expect.objectContaining({
+        type: 'INSTITUTIONAL_VOTING_STARTED',
+        eventId: '6a9c25c964823d71a50a2a97',
+      }),
+    });
+  });
+
+  it('usa scheduledFor cuando el aviso de votacion abierta no trae votingStart', () => {
+    expect(
+      buildInstitutionalNotificationForDetail({
+        data: {
+          type: 'INSTITUTIONAL_VOTING_STARTED',
+          eventId: 'event-open',
+          eventName: 'Elección abierta',
+          scheduledFor: '2026-09-05T15:25:00.000Z',
+        },
+      }),
+    ).toMatchObject({
+      reminderDetailBody: 'Abierta desde las 11:25. Ya puedes emitir tu voto.',
     });
   });
 
@@ -513,10 +578,6 @@ describe('notifications', () => {
       }),
     ).toEqual({
       name: 'RewardsScreen',
-      params: {
-        voteRewardAvailable: true,
-        rewardAction: 'OPEN_VOTE_REWARD',
-      },
     });
     expect(
       JSON.stringify(
@@ -559,8 +620,42 @@ describe('notifications', () => {
     );
   });
 
+  it('reconoce la recompensa por voto por type o por action de forma equivalente', async () => {
+    const rewardRoute = {
+      name: 'RewardsScreen',
+    };
+
+    expect(
+      buildRouteFromNotification({data: {type: 'VOTE_REWARD_AVAILABLE'}}),
+    ).toEqual(rewardRoute);
+    expect(
+      buildRouteFromNotification({data: {type: 'generic', action: 'OPEN_VOTE_REWARD'}}),
+    ).toEqual(rewardRoute);
+
+    notifee.displayNotification.mockClear();
+    await showLocalNotification({
+      title: 'Recompensa disponible',
+      body: 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
+      data: {type: 'VOTE_REWARD_AVAILABLE', eventId: 'event-1'},
+    });
+
+    expect(notifee.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        android: expect.objectContaining({
+          actions: [
+            {
+              title: 'Reclamar',
+              pressAction: {id: 'OPEN_VOTE_REWARD'},
+            },
+          ],
+        }),
+      }),
+    );
+  });
+
   it('abre el detalle institucional desde push para tipos de votacion sin caer a Splash', () => {
     const institutionalTypes = [
+      'MOBILE_AUTHORIZATION_REQUESTED',
       'INSTITUTIONAL_ADMIN_INVITATION',
       'INSTITUTIONAL_PADRON_REVIEW_OPEN',
       'INSTITUTIONAL_OFFICIAL_PUBLICATION_CONFIRMED',
@@ -586,6 +681,55 @@ describe('notifications', () => {
         mesa: expect.any(String),
         direccion: expect.any(String),
       });
+    });
+  });
+
+  it('abre el detalle de autorización móvil e invitación institucional desde push', () => {
+    const authorizationRoute = buildRouteFromNotification({
+      title: 'Autorización pendiente',
+      body: 'Revisa esta solicitud de Test company A.',
+      data: {
+        type: 'MOBILE_AUTHORIZATION_REQUESTED',
+        applicationId: '6aa847cc7da40622a3ca56f6',
+        action: 'ADD_AUTHORIZED_ADDRESS',
+      },
+    });
+
+    expect(authorizationRoute).toMatchObject({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'institutional_authorization',
+          tipo: 'Autorización pendiente',
+          mesa: 'Autorización pendiente',
+          direccion: 'Revisa esta solicitud de Test company A.',
+          actionLabel: 'Revisar solicitud',
+          data: expect.objectContaining({applicationId: '6aa847cc7da40622a3ca56f6'}),
+        },
+      },
+    });
+
+    const invitationRoute = buildRouteFromNotification({
+      title: 'Invitación institucional',
+      body: 'Tienes una invitación pendiente para administrar Test company A.',
+      data: {
+        type: 'INSTITUTIONAL_ADMIN_INVITATION',
+        invitationId: '6aa847567da40622a3ca56f3',
+        tenantId: '6a92166f60390c5a3d35e8f6',
+      },
+    });
+
+    expect(invitationRoute).toMatchObject({
+      name: 'VotingNotificationDetailScreen',
+      params: {
+        notification: {
+          kind: 'institutional_authorization',
+          tipo: 'Ver invitación',
+          mesa: 'Invitación institucional',
+          direccion: 'Tienes una invitación pendiente para administrar Test company A.',
+          data: expect.objectContaining({invitationId: '6aa847567da40622a3ca56f3'}),
+        },
+      },
     });
   });
 
@@ -740,6 +884,46 @@ describe('notifications', () => {
     await handleNotificationPress(notification);
     await handleNotificationPress(notification);
 
+    expect(rootNav.navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('en arranque en frio (Splash) guarda pending sin navegar al login', async () => {
+    storeModule.__setAuthState({isAuthenticated: false});
+    rootNav.navigationRef.isReady.mockReturnValueOnce(true);
+    rootNav.navigationRef.getCurrentRoute.mockReturnValueOnce({name: 'Splash'});
+
+    await handleNotificationPress({
+      data: {id: 'cold-start-1', screen: 'ClaimCredScreen'},
+    });
+
+    expect(storeModule.__getDispatch()).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'setPendingNotificationNavigation',
+        payload: expect.objectContaining({targetRoute: 'ClaimCredScreen'}),
+      }),
+    );
+    expect(rootNav.navigate).not.toHaveBeenCalled();
+  });
+
+  it('comparte el consumo del pending cuando se pide dos veces a la vez', async () => {
+    storeModule.__setAuthState({
+      isAuthenticated: true,
+      pendingNotificationNavigation: {
+        type: 'notification',
+        targetRoute: 'ClaimCredScreen',
+        params: {notificationId: 'concurrent'},
+        createdAt: Date.now(),
+        dedupeKey: 'notification:test:ClaimCredScreen:concurrent',
+      },
+    });
+
+    const [first, second] = await Promise.all([
+      consumePendingNotificationNavigation('LoginUser.unlock'),
+      consumePendingNotificationNavigation('App.pendingEffect'),
+    ]);
+
+    expect(first).toBe(true);
+    expect(second).toBe(true);
     expect(rootNav.navigate).toHaveBeenCalledTimes(1);
   });
 

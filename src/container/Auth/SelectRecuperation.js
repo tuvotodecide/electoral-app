@@ -1,21 +1,20 @@
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import React from 'react';
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React from "react";
 
 // custom import
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CHeader from '../../components/common/CHeader';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import {getHeight, moderateScale} from '../../common/constants';
-import CText from '../../components/common/CText';
-import {styles} from '../../themes';
-import {AuthNav} from '../../navigation/NavigationKey';
-import String from '../../i18n/String';
-import {useSelector} from 'react-redux';
-import Icono from '../../components/common/Icono';
+import CSafeAreaViewAuth from "../../components/common/CSafeAreaViewAuth";
+import CHeader from "../../components/common/CHeader";
+import KeyBoardAvoidWrapper from "../../components/common/KeyBoardAvoidWrapper";
+import { getHeight, moderateScale } from "../../common/constants";
+import CText from "../../components/common/CText";
+import { styles } from "../../themes";
+import { AuthNav } from "../../navigation/NavigationKey";
+import String from "../../i18n/String";
+import { useSelector } from "react-redux";
+import Icono from "../../components/common/Icono";
 
-
-export default function SelectRecuperation({navigation, route}) {
-  const colors = useSelector(state => state.theme.theme);
+export default function SelectRecuperation({ navigation }) {
+  const colors = useSelector((state) => state.theme.theme);
   const initCIrecovery = () => {
     const params = {
       isRecovery: true,
@@ -35,51 +34,21 @@ export default function SelectRecuperation({navigation, route}) {
           styles.justifyBetween,
           styles.flex,
           styles.ph20,
-          {top: moderateScale(10)},
-        ]}>
+          { top: moderateScale(10) },
+        ]}
+      >
         <View style={localStyle.mainContainer}>
-          <CText testID="selectRecuperationTitle" type={'B20'} style={styles.boldText} align={'center'}>
+          <CText
+            testID="selectRecuperationTitle"
+            type={"B20"}
+            style={styles.boldText}
+            align={"center"}
+          >
             {String.recoverymethod}
           </CText>
         </View>
-        {!route.params?.disableCI &&
-          <TouchableOpacity
-            testID="selectRecuperationCiOption"
-            style={[
-              localStyle.optionContainer,
-              {
-                backgroundColor: colors.backgroundColor,
-                borderColor: colors.dark
-                  ? colors.grayScale700
-                  : colors.grayScale200,
-
-                elevation: 5,
-              },
-            ]}
-            onPress={initCIrecovery}>
-            <View style={styles.rowCenter}>
-              <View
-                style={[
-                  localStyle.iconBg,
-                  {
-                    borderColor: colors.dark
-                      ? colors.stepBackgroundColor
-                      : colors.grayScale200,
-                  },
-                ]}>
-                <Icono name="card-account-details" size={moderateScale(24)} />
-              </View>
-              <View style={styles.ml10}>
-                <View style={styles.rowCenter}>
-                  <CText type="B16">{String.recoveryWithCI}</CText>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        }
-        
         <TouchableOpacity
-          testID="selectRecuperationFileOption"
+          testID="selectRecuperationCiOption"
           style={[
             localStyle.optionContainer,
             {
@@ -91,12 +60,10 @@ export default function SelectRecuperation({navigation, route}) {
               elevation: 5,
             },
           ]}
-          onPress={() => {
-            navigation.navigate(AuthNav.RecoveryQr);
-          }}>
+          onPress={initCIrecovery}
+        >
           <View style={styles.rowCenter}>
             <View
-              testID="selectRecuperationFileIcon"
               style={[
                 localStyle.iconBg,
                 {
@@ -104,12 +71,13 @@ export default function SelectRecuperation({navigation, route}) {
                     ? colors.stepBackgroundColor
                     : colors.grayScale200,
                 },
-              ]}>
-              <Icono name="file-download-outline" size={moderateScale(24)} />
+              ]}
+            >
+              <Icono name="card-account-details" size={moderateScale(24)} />
             </View>
             <View style={styles.ml10}>
               <View style={styles.rowCenter}>
-                <CText testID="selectRecuperationFileText" type="B16">{String.recoverymethodFile}</CText>
+                <CText type="B16">{String.recoveryWithCI}</CText>
               </View>
             </View>
           </View>
@@ -134,12 +102,12 @@ const localStyle = StyleSheet.create({
   },
   orContainer: {
     height: getHeight(1),
-    width: '20%',
+    width: "20%",
   },
   socialBtn: {
     ...styles.center,
     height: getHeight(45),
-    width: '46%',
+    width: "46%",
     borderRadius: moderateScale(16),
     borderWidth: moderateScale(1),
     ...styles.mh10,
@@ -156,11 +124,11 @@ const localStyle = StyleSheet.create({
     marginTop: moderateScale(2),
   },
   rowWithGap: {
-    flexDirection: 'row',
+    flexDirection: "row",
     columnGap: 10,
   },
   item: {
-    width: '95%',
+    width: "95%",
   },
   imageContainer: {
     ...styles.selfCenter,
@@ -168,12 +136,12 @@ const localStyle = StyleSheet.create({
     width: moderateScale(180),
   },
   margin: {
-    marginBottom: '20px',
+    marginBottom: "20px",
   },
   optionContainer: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(12),
     paddingHorizontal: moderateScale(10),
@@ -184,8 +152,8 @@ const localStyle = StyleSheet.create({
     height: moderateScale(40),
     width: moderateScale(40),
     borderRadius: moderateScale(20),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: moderateScale(3),
   },
   badge: {
@@ -193,12 +161,12 @@ const localStyle = StyleSheet.create({
     paddingHorizontal: moderateScale(6),
     height: moderateScale(20),
     borderRadius: moderateScale(10),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: moderateScale(4),
   },
   actionButton: {

@@ -89,18 +89,29 @@ jest.mock('../../../../../src/components/common/CHash', () => {
 
 jest.mock('../../../../../src/components/common/COptionItem', () => {
   const React = require('react');
-  const {View, Switch} = require('react-native');
-  const MockCOptionItem = ({item, switchValue, onSwitchValueChange, loading}) =>
-    React.createElement(
-      View,
-      {testID: `optionItem_${item.id}`},
-      React.createElement(Switch, {
-        testID: 'showNameSwitch',
-        value: switchValue,
-        onValueChange: val => onSwitchValueChange(item, val),
-        disabled: loading,
-      }),
-    );
+  const {View, Switch, TouchableOpacity} = require('react-native');
+  const MockCOptionItem = ({
+    item,
+    switchValue,
+    onSwitchValueChange,
+    onPressItem,
+    loading,
+  }) =>
+    item.rightIcon === 'switch'
+      ? React.createElement(
+          View,
+          {testID: `optionItem_${item.id}`},
+          React.createElement(Switch, {
+            testID: 'showNameSwitch',
+            value: switchValue,
+            onValueChange: val => onSwitchValueChange(item, val),
+            disabled: loading,
+          }),
+        )
+      : React.createElement(TouchableOpacity, {
+          testID: `optionItem_${item.id}`,
+          onPress: () => onPressItem(item),
+        });
   return MockCOptionItem;
 });
 

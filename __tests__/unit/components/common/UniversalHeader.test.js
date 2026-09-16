@@ -61,12 +61,10 @@ jest.mock('../../../../src/utils/lookupCache', () => ({
   setCache: jest.fn(async () => true),
 }));
 
-jest.mock('@react-native-firebase/messaging', () => {
-  const messaging = () => ({
-    onMessage: mockOnMessage,
-  });
-  return messaging;
-});
+jest.mock('@react-native-firebase/messaging', () => ({
+  getMessaging: () => ({}),
+  onMessage: (_messaging, callback) => mockOnMessage(callback),
+}));
 
 describe('UniversalHeader', () => {
   const AsyncStorage = require('@react-native-async-storage/async-storage');

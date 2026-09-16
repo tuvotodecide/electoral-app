@@ -147,6 +147,15 @@ describe('RewardDetailScreen', () => {
       });
 
       expect(screen.getByText('Reclamaste tu recompensa correctamente.')).toBeTruthy();
+      expect(screen.getAllByText('Recibida').length).toBeGreaterThanOrEqual(2);
+      expect(screen.queryByText('Disponible')).toBeNull();
+      expect(
+        screen.getByText('Recibiste esta recompensa por tu participación.'),
+      ).toBeTruthy();
+      expect(
+        screen.queryByText('Tienes una recompensa por voto disponible para reclamar.'),
+      ).toBeNull();
+      expect(screen.queryByText('Reclamar')).toBeNull();
       expect(screen.getByTestId('loadingModalCloseButton')).toBeTruthy();
       expect(screen.queryByTestId('loadingModalSecondButton')).toBeNull();
 
@@ -201,6 +210,8 @@ describe('RewardDetailScreen', () => {
       fireEvent.press(screen.getByTestId('loadingModalSecondButton'));
 
       expect(claimReward).toHaveBeenCalledTimes(1);
+      expect(screen.getAllByText('Disponible').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText('Reclamar')).toBeTruthy();
       expect(
         screen.queryByText('No se pudo reclamar la recompensa. Inténtalo de nuevo.'),
       ).toBeNull();

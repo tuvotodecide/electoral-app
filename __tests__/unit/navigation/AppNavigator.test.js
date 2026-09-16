@@ -74,7 +74,10 @@ describe('AppNavigator', () => {
     render(<AppNavigator />);
 
     await waitFor(() =>
-      expect(handleNotificationPress).toHaveBeenCalledWith({id: 'notif-1'}),
+      expect(handleNotificationPress).toHaveBeenCalledWith(
+        {id: 'notif-1'},
+        {source: 'notifee.getInitialNotification'},
+      ),
     );
 
     capturedOnStateChange?.();

@@ -11,18 +11,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
-      "buildNumber": "44",
+      "buildNumber": "66",
       "icon": "./assets/images/ic_launcher.png",
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
       "requireFullScreen": false,
       "infoPlist": {
-        "NSCameraUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu c\ufffdmara",
-        "NSPhotoLibraryUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu galer\ufffda de fotos",
-        "NSLocationWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci\ufffdn",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci\ufffdn en segundo plano",
-        "NSFaceIDUsageDescription": "Permitir a $(PRODUCT_NAME) usar Face ID para autenticaci\ufffdn",
-        "UIBackgroundModes": ["remote-notification", "fetch"]
+        "NSCameraUsageDescription": "La app usará la cámara para el reconocimiento de identidad y el voto presencial con escaneo QR",
+        "NSPhotoLibraryUsageDescription": "La app requiere capturas de sus documentos para el reconocimiento de identidad",
+        "NSLocationWhenInUseUsageDescription": "Activar la ubicación permite mostrar los recintos de votación cercanos",
+        "NSFaceIDUsageDescription": "Activar para iniciar sesión con Face ID"
       },
       "entitlements": {
         "aps-environment": "production"
@@ -30,7 +28,7 @@
       "appleTeamId": "U63JS7RZD3"
     },
     "android": {
-      "versionCode": 42,
+      "versionCode": 83,
       "googleServicesFile": "./native-files/google-services.json",
       "package": "com.tuvotodecide",
       "usesFeatures": [
@@ -101,8 +99,7 @@
           },
           "ios": {
             "deploymentTarget": "16.0",
-            "useFrameworks": "static",
-            "forceStaticLinking": ["RNFBApp", "RNFBAuth", "RNFBDatabase"]
+            "useFrameworks": "static"
           }
         }
       ],
@@ -121,7 +118,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
+          "cameraPermission": "La app requiere capturas de sus documentos para el reconocimiento de identidad",
           "microphonePermission": false
         }
       ],
@@ -134,7 +131,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permitir a $(PRODUCT_NAME) acceder a tu c�mara",
+          "cameraPermission": "La app usará la cámara para el reconocimiento de identidad y el voto presencial con escaneo QR",
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }
@@ -142,11 +139,19 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) acceder a tu ubicaci�n."
+          "locationAlwaysAndWhenInUsePermission": "Activar la ubicación permite mostrar los recintos de votación cercanos"
         }
       ],
       "./plugins/withIOSCodeSigning",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      "@react-native-firebase/auth",
       "./plugins/withNativeModules",
       "./plugins/withIOSNativeModules",
       "./plugins/withIOSOrientation",

@@ -12,7 +12,9 @@ import CIconText from '../components/common/CIconText';
 import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
 import CText from '../components/common/CText';
 import String from '../i18n/String';
+import { hydrateDemoSession } from '../features/demo/demoSession';
 import { AuthNav, StackNav } from '../navigation/NavigationKey';
+import { describeNav, notifNavLog } from '../utils/notifNavDebug';
 import { styles } from '../themes';
 import { commonColor } from '../themes/colors';
 import { HandleModal } from './TabBar/SignIn/HandleModal';
@@ -21,13 +23,26 @@ export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
 
   useEffect(() => {
+    notifNavLog('Connect', 'mounted', { current: describeNav() });
     const checkUserData = async () => {
       if (Platform.OS === 'ios') {
         await wira.Storage.checkFirstLaunch();
       }
       const response = await wira.Storage.checkUserData();
+      notifNavLog('Connect', 'checkUserData', { hasUserData: Boolean(response) });
       if (response) {
+        // Una billetera real siempre gana sobre una sesión demo persistida.
+        notifNavLog('Connect', 'replace -> LoginUser', { current: describeNav() });
         navigation.replace(AuthNav.LoginUser);
+        return;
+      }
+
+      // No se retoma la demo en LoginUser: su efecto de montaje llama a
+      // wira.checkBiometricAuth() y, sin billetera, abre el modal de
+      // "no hay datos biométricos".
+      const demoActive = await hydrateDemoSession();
+      if (demoActive) {
+        navigation.replace(AuthNav.AccountAccess, {resumeDemo: true});
       }
     };
     checkUserData();
@@ -44,7 +59,9 @@ export default function Connect({ navigation }) {
   const onPressLoginUser = async () => {
     const response = await wira.Storage.checkUserData();
     if (!response) {
-      navigation.navigate(AuthNav.SelectRecuperation);
+      // Sin billetera local: pantalla de cédula + PIN, que deriva a
+      // recuperación para cualquier cuenta real.
+      navigation.navigate(AuthNav.AccountAccess);
     } else {
       navigation.navigate(AuthNav.LoginUser);
     }

@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Dimensions, TouchableOpacity, StyleSheet, View } from "react-native";
 import CText from '@/src/components/common/CText';
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import  { TvdTokenCalls } from "@/src/api/tvdToken";
 import { formatEther } from "viem";
 
@@ -26,17 +27,30 @@ const getBalances = async (address) => {
 
 export const TokenRewardsCard = ({currency, onPress}) => {
   const userData = useSelector(state => state.wallet.payload);
+  const account = userData?.account;
   const [balance, setBalance] = useState('-');
 
-  useEffect(() => {
-    if (userData?.account) {
-      getBalances(userData.account)
-        .then(bal => setBalance(bal))
+  // HomeScreen permanece montado en el tab, así que se refresca el saldo cada
+  // vez que la pantalla gana foco (incluido el primer render), p. ej. al volver
+  // de reclamar una recompensa.
+  useFocusEffect(
+    useCallback(() => {
+      if (!account) return undefined;
+
+      let active = true;
+      getBalances(account)
+        .then(bal => {
+          if (active) setBalance(bal);
+        })
         .catch(() => {
-          setBalance('-');
+          if (active) setBalance('-');
         });
-    }
-  }, [userData]);
+
+      return () => {
+        active = false;
+      };
+    }, [account]),
+  );
 
 
   return (

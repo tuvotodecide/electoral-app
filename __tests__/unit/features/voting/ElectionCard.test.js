@@ -163,7 +163,10 @@ describe('ElectionCard', () => {
       expect(getByText('Elecciones Universitarias')).toBeTruthy();
       expect(getByText('Carrera de Informática')).toBeTruthy();
       expect(getByText('CIERRA EN')).toBeTruthy();
-      expect(getByText('2h 11m 33s')).toBeTruthy();
+      // Con ENABLE_DYNAMIC_COUNTDOWN en false se usa election.closesInLabel,
+      // que ahora replica lo que produce buildElectionModel para una elección
+      // activa en vez de un contador falso fijo.
+      expect(getByText('Cierra pronto')).toBeTruthy();
       expect(getByText('Votar ahora')).toBeTruthy();
     });
 

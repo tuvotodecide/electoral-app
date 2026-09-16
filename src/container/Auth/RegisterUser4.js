@@ -1,40 +1,34 @@
-import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useSelector } from 'react-redux';
+import { BACKEND_IDENTITY, IDENTITY_KEY } from "@env";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useSelector } from "react-redux";
 // Custom imports
-import { moderateScale } from '../../common/constants';
-import StepIndicator from '../../components/authComponents/StepIndicator';
-import CButton from '../../components/common/CButton';
-import CHeader from '../../components/common/CHeader';
-import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
-import CText from '../../components/common/CText';
-import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import String from '../../i18n/String';
-import { AuthNav } from '../../navigation/NavigationKey';
-import { styles } from '../../themes';
-import { resizeImage } from '@/src/services/ImageManipulatorService';
+import { moderateScale } from "../../common/constants";
+import StepIndicator from "../../components/authComponents/StepIndicator";
+import CButton from "../../components/common/CButton";
+import CHeader from "../../components/common/CHeader";
+import CSafeAreaViewAuth from "../../components/common/CSafeAreaViewAuth";
+import CText from "../../components/common/CText";
+import KeyBoardAvoidWrapper from "../../components/common/KeyBoardAvoidWrapper";
+import String from "../../i18n/String";
+import { AuthNav } from "../../navigation/NavigationKey";
+import { styles } from "../../themes";
+import { resizeImage } from "@/src/services/ImageManipulatorService";
 
-import wira from 'wira-sdk';
-import LoadingModal from '../../components/modal/LoadingModal';
-import { captureError } from '@/src/config/sentry';
-import { useCameraPermissions } from 'expo-camera';
-import CameraModal from '@/src/components/modal/CameraModal';
-import * as ImagePicker from 'expo-image-picker';
+import wira from "wira-sdk";
+import LoadingModal from "../../components/modal/LoadingModal";
+import { captureError } from "@/src/config/sentry";
+import { useCameraPermissions } from "expo-camera";
+import CameraModal from "@/src/components/modal/CameraModal";
+import * as ImagePicker from "expo-image-picker";
 
-export default function RegisterUser4({navigation, route}) {
-  const {dni = '', frontImage, backImage, isRecovery = false} = route.params;
+export default function RegisterUser4({ navigation, route }) {
+  const { dni = "", frontImage, backImage, isRecovery = false } = route.params;
   const [selfie, setSelfie] = useState(null);
-  const colors = useSelector(state => state.theme.theme);
+  const colors = useSelector((state) => state.theme.theme);
   const [modal, setModal] = useState({
     visible: false,
-    message: '',
+    message: "",
     isLoading: false,
   });
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -43,7 +37,8 @@ export default function RegisterUser4({navigation, route}) {
   const cameraRef = useRef(null);
 
   const pickFromGallery = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
       return;
@@ -75,7 +70,7 @@ export default function RegisterUser4({navigation, route}) {
       setCameraOpen(true);
     };
 
-    if(permission) {
+    if (permission) {
       openCamera();
     }
   }, [permission, requestPermission]);
@@ -94,7 +89,7 @@ export default function RegisterUser4({navigation, route}) {
   const onPressNext = async () => {
     try {
       if (!selfie) {
-        Alert.alert('Foto requerida', 'Debes tomar una foto para continuar.');
+        Alert.alert("Foto requerida", "Debes tomar una foto para continuar.");
         return;
       }
 
@@ -111,15 +106,14 @@ export default function RegisterUser4({navigation, route}) {
       });
     } catch (error) {
       captureError(error, {
-        flow: 'recoveryWithDni',
-        step: 'onPressNext',
-        critical: true
+        flow: "recoveryWithDni",
+        step: "onPressNext",
+        critical: true,
       });
     }
-
   };
 
-  const yieldUI = () => new Promise(resolve => setTimeout(resolve, 50));
+  const yieldUI = () => new Promise((resolve) => setTimeout(resolve, 50));
 
   const triggerRecovery = async () => {
     setModal({
@@ -152,25 +146,27 @@ export default function RegisterUser4({navigation, route}) {
       });
     } catch (error) {
       let errorMessage = String.recoveryError;
-      if(error.message.includes('front/back order')) {
+      if (error.message.includes("front/back order")) {
         errorMessage = String.frontBackOrderError;
-      } else if (error.message.includes('face match failed')) {
+      } else if (error.message.includes("face match failed")) {
         errorMessage = String.faceMatchFailedError;
-      } else if (error.message.includes('missing data')) {
-        errorMessage = String.missingDataError; 
-      } else if (error.message.includes('El análisis no está disponible temporalmente')) {
+      } else if (error.message.includes("missing data")) {
+        errorMessage = String.missingDataError;
+      } else if (
+        error.message.includes("El análisis no está disponible temporalmente")
+      ) {
         errorMessage = String.analysisUnavailableError;
       } else {
         captureError(error, {
-          flow: 'recoveryWithDni',
-          step: 'triggerRecovery',
-          critical: true
+          flow: "recoveryWithDni",
+          step: "triggerRecovery",
+          critical: true,
         });
       }
-      
+
       setModal({
         visible: true,
-        title: '',
+        title: "",
         message: errorMessage,
         isLoading: false,
       });
@@ -181,12 +177,14 @@ export default function RegisterUser4({navigation, route}) {
   const goToLogin = () => {
     navigation.reset({
       index: 0,
-      routes: [{
-        name: AuthNav.LoginUser,
-        params: {isCIRecovery: true, dni: dni.trim()},
-      }],
+      routes: [
+        {
+          name: AuthNav.LoginUser,
+          params: { isCIRecovery: true, dni: dni.trim() },
+        },
+      ],
     });
-  }
+  };
 
   return (
     <CSafeAreaViewAuth testID="registerUser4Container">
@@ -197,10 +195,11 @@ export default function RegisterUser4({navigation, route}) {
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
-          {top: moderateScale(10)},
-        ]}>
+          { top: moderateScale(10) },
+        ]}
+      >
         <View style={localStyle.mainContainer}>
-          <CText testID="registerUser4Title" type={'B16'}>
+          <CText testID="registerUser4Title" type={"B16"}>
             {String.takePhoto}
           </CText>
           <TouchableOpacity
@@ -210,19 +209,21 @@ export default function RegisterUser4({navigation, route}) {
             onPress={pickFromGallery}
             style={[
               localStyle.imageBox,
-              {backgroundColor: colors.inputBackground},
-            ]}>
+              { backgroundColor: colors.inputBackground },
+            ]}
+          >
             {selfie ? (
               <Image
                 testID="registerUser4SelfieImage"
-                source={{uri: selfie.uri}}
+                source={{ uri: selfie.uri }}
                 style={localStyle.image}
               />
             ) : (
               <CText
                 testID="registerUser4LoadingText"
                 type="R14"
-                color={colors.primary}>
+                color={colors.primary}
+              >
                 {__DEV__ ? String.tapToSelectPhoto : String.loadingCamera}
               </CText>
             )}
@@ -231,24 +232,25 @@ export default function RegisterUser4({navigation, route}) {
       </KeyBoardAvoidWrapper>
       <View
         testID="registerUser4BottomContainer"
-        style={localStyle.bottomTextContainer}>
+        style={localStyle.bottomTextContainer}
+      >
         <CButton
           testID="registerUser4NextButton"
-          title={'Siguiente'}
+          title={"Siguiente"}
           onPress={onPressNext}
-          type={'B16'}
+          type={"B16"}
           containerStyle={localStyle.btnStyle}
         />
       </View>
       <CameraModal
-        testID='selfieCameraModal'
+        testID="selfieCameraModal"
         cameraOpen={cameraOpen}
         setCameraOpen={setCameraOpen}
         cameraRef={cameraRef}
         isCameraReady={isCameraReady}
         setIsCameraReady={setIsCameraReady}
         onTakePhoto={takePhoto}
-        facing='front'
+        facing="front"
       />
       <LoadingModal
         {...modal}
@@ -256,7 +258,7 @@ export default function RegisterUser4({navigation, route}) {
         onClose={modal.success ? goToLogin : triggerRecovery}
         secondBtn={modal.success ? undefined : String.btnCheckData}
         onSecondPress={() =>
-          navigation.navigate(AuthNav.RegisterUser1, {isRecovery: true})
+          navigation.navigate(AuthNav.RegisterUser1, { isRecovery: true })
         }
       />
     </CSafeAreaViewAuth>
@@ -271,13 +273,13 @@ const localStyle = StyleSheet.create({
   imageBox: {
     height: 400,
     borderRadius: moderateScale(12),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: moderateScale(10),
   },
   image: {
-    height: '100%',
-    width: '100%',
+    height: "100%",
+    width: "100%",
     borderRadius: moderateScale(10),
   },
   btnStyle: {

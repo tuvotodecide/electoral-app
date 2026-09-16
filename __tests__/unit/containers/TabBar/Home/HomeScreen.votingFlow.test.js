@@ -6,6 +6,10 @@ import HomeScreen from '../../../../../src/container/TabBar/Home/HomeScreen';
 import {StackNav} from '../../../../../src/navigation/NavigationKey';
 import {checkClaimedCredForVote, claimForVote} from '@/src/data/credentials';
 import I18nStrings from '../../../../../src/i18n/String';
+import {
+  consumeHomeEntryFromLogin,
+  markHomeEntryFromLogin,
+} from '../../../../../src/utils/homeEntry';
 
 const mockGetElections = jest.fn();
 const mockUseVotingState = jest.fn();
@@ -331,6 +335,99 @@ describe('HomeScreen voting flow routing', () => {
     expect(view.queryByText('No hay votaciones disponibles')).toBeNull();
   });
 
+  describe('copia guardada de votaciones', () => {
+    const {useElectionRepository} = require('../../../../../src/features/voting');
+    const mockGetCachedElections = jest.fn();
+    const cachedElection = {
+      id: 'event-cached',
+      title: 'Eleccion guardada',
+      isEligible: true,
+      canVote: true,
+      alreadyVoted: false,
+      presentialKioskEnabled: false,
+    };
+
+    beforeEach(() => {
+      useElectionRepository.mockImplementation(() => ({
+        getElections: mockGetElections,
+        getCachedElections: mockGetCachedElections,
+      }));
+      mockGetCachedElections.mockResolvedValue([cachedElection]);
+    });
+
+    afterEach(() => {
+      useElectionRepository.mockImplementation(() => ({
+        getElections: mockGetElections,
+      }));
+      consumeHomeEntryFromLogin();
+    });
+
+    it('muestra la copia guardada sin loader y refresca en segundo plano', async () => {
+      mockGetElections.mockReturnValueOnce(new Promise(() => {}));
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingCard_event-cached')).toBeTruthy();
+        expect(view.queryByTestId('voting-election-inline-loader')).toBeNull();
+      });
+      expect(mockGetElections).toHaveBeenCalled();
+    });
+
+    it('al llegar desde LoginUser espera la API con loader sin usar la copia guardada', async () => {
+      markHomeEntryFromLogin();
+      let resolveElections;
+      mockGetElections.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveElections = resolve;
+        }),
+      );
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(mockGetElections).toHaveBeenCalled();
+      });
+      expect(view.getByTestId('voting-election-inline-loader')).toBeTruthy();
+      expect(mockGetCachedElections).not.toHaveBeenCalled();
+      expect(view.queryByTestId('votingCard_event-cached')).toBeNull();
+
+      await act(async () => {
+        resolveElections([
+          {...cachedElection, id: 'event-fresh', title: 'Eleccion nueva'},
+        ]);
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingCard_event-fresh')).toBeTruthy();
+        expect(view.queryByTestId('voting-election-inline-loader')).toBeNull();
+      });
+    });
+
+    it('conserva la copia guardada si el refresco en segundo plano falla', async () => {
+      mockGetElections.mockRejectedValueOnce(new Error('offline'));
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(mockGetElections).toHaveBeenCalled();
+      });
+      await act(async () => {});
+
+      expect(view.getByTestId('votingCard_event-cached')).toBeTruthy();
+      expect(view.queryByTestId('voting-election-inline-loader')).toBeNull();
+    });
+  });
+
   describe('EA2-09 cola de votos sin tokens de respaldo', () => {
     const {processQueue} = require('../../../../../src/utils/offlineQueue');
     const {
@@ -605,7 +702,7 @@ describe('HomeScreen voting flow routing', () => {
         expect(navigation.navigate).toHaveBeenCalledWith(
           StackNav.PublicElectionWebViewScreen,
           {
-            url: `https://frontend-results.example/votacion/elecciones/${election.id}/publica`,
+            url: `https://frontend-results.example/votacion/elecciones/${election.id}/publica?hideLogin=true`,
             title: 'Resultados',
           },
         );

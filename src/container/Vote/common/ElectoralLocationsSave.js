@@ -35,8 +35,16 @@ import {
 } from '../../../services/notifications';
 import { FlashList } from '@shopify/flash-list';
 import { captureError } from '../../../config/sentry';
+import { isDemoActive } from '../../../features/demo/demoSession';
+import DemoBanner from '../../../features/demo/DemoBanner';
+import {
+  DEMO_USER_COORDS,
+  getDemoElectoralLocations,
+} from '../../../features/demo/demoLocations';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Responsive helper functions
 const isTablet = screenWidth >= 768;
@@ -214,6 +222,16 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
   };
 
   const fetchNearbyLocations = useCallback(async (latitude, longitude) => {
+    // El endpoint `nearby` filtra por coordenadas reales: fuera de Bolivia
+    // devuelve una lista vacía. En demo se sirven recintos sintéticos y no se
+    // toca la caché, para no dejar rastro al salir del modo demostración.
+    if (isDemoActive()) {
+      setLocations(getDemoElectoralLocations());
+      setLoading(false);
+      setLoadingLocation(false);
+      return;
+    }
+
     const cacheKey = getNearbyLocationCacheKey(latitude, longitude);
     const cachedEntry = await getCache(cacheKey);
     const cachedLocations = Array.isArray(cachedEntry?.data)
@@ -296,6 +314,18 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
 
   const getCurrentLocation = useCallback(
     async (retryCount = 0, useHighAccuracy = true) => {
+      // En demo los recintos no dependen de dónde esté el dispositivo. Pedir el
+      // permiso aquí solo añadiría un diálogo del sistema que, si el revisor lo
+      // rechaza, deja la pantalla en el modal de ajustes y sin lista.
+      if (isDemoActive()) {
+        setUserLocation(DEMO_USER_COORDS);
+        fetchNearbyLocations(
+          DEMO_USER_COORDS.latitude,
+          DEMO_USER_COORDS.longitude,
+        );
+        return;
+      }
+
       try {
         setLoadingLocation(true);
 
@@ -421,6 +451,15 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
   }, [closeModal, getCurrentLocation]);
 
   const fetchElectionStatus = useCallback(async () => {
+    // Esta llamada solo abre la pantalla (`configLoading` / `configError`). Si
+    // falla muestra un modal que hace `navigation.goBack()`, así que en demo
+    // expulsaría al revisor del flujo cada vez que el backend no responda.
+    if (isDemoActive()) {
+      setConfigError(false);
+      setConfigLoading(false);
+      return;
+    }
+
     const cacheKey = 'electoral-locations:config-status';
     const cachedEntry = await getCache(cacheKey);
     const cachedData = cachedEntry?.data || null;
@@ -542,6 +581,51 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
       return;
     }
 
+    const normalizedLocation = {
+      ...location,
+      _id: locationId,
+      id: location?.id || locationId,
+    };
+
+    // Modo demostración: el recinto se guarda solo en local. `DEMO_WALLET_PAYLOAD`
+    // no trae `did` ni `privKey` (demoAccount.js:11-17), así que el camino real
+    // moriría en la validación de credenciales antes del PATCH. Aquí se
+    // reproduce el resultado visible —recinto persistido y modal de éxito— sin
+    // autenticar, sin escribir en el backend y sin tocar los topics de FCM.
+    if (isDemoActive()) {
+      try {
+        setSavingLocation(true);
+        // El modal "Guardando recinto..." se vería como un parpadeo sin esto.
+        await delay(600);
+
+        await saveVotePlace(dni, {
+          dni,
+          location: normalizedLocation,
+        });
+
+        // Solo se siembra la caché con las mesas que ya vienen en la respuesta:
+        // `warmTablesCacheByLocationId` sin `seedTables` sale a la red.
+        const seedTables = location?.tables || [];
+        if (seedTables.length > 0) {
+          warmTablesCacheByLocationId({ locationId, seedTables }).catch(() => { });
+        }
+
+        showModal(
+          'success',
+          'Guardado',
+          'Tu recinto fue guardado correctamente.',
+          i18nString.accept,
+          () => {
+            setModalVisible(false);
+            navigation.goBack();
+          },
+        );
+      } finally {
+        setSavingLocation(false);
+      }
+      return;
+    }
+
     try {
       setSavingLocation(true);
       const did = userData?.did;
@@ -575,11 +659,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
         await AsyncStorage.setItem(LAST_TOPIC_KEY, newTopic);
       } catch { }
 
-      const normalizedLocation = {
-        ...location,
-        _id: locationId,
-        id: location?.id || locationId,
-      };
       await saveVotePlace(dni, {
         dni,
         location: normalizedLocation,
@@ -824,6 +903,8 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
           showNotification={false}
         />
       )}
+
+      <DemoBanner />
 
       {renderContent()}
 

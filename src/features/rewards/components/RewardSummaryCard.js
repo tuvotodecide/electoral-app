@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {StyleSheet, View} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
 import { TvdTokenCalls } from '@/src/api/tvdToken';
@@ -13,17 +14,30 @@ const getBalances = async (address) => {
 
 const RewardSummaryCard = ({currency = 'TVD'}) => {
   const userData = useSelector(state => state.wallet.payload);
+  const account = userData?.account;
   const [balance, setBalance] = useState('-');
 
-  useEffect(() => {
-    if (userData?.account) {
-      getBalances(userData.account)
-        .then(bal => setBalance(bal))
+  // RewardsScreen sigue montado al abrir el detalle, así que se refresca el
+  // saldo cada vez que gana foco (incluido el primer render), p. ej. al volver
+  // de reclamar una recompensa.
+  useFocusEffect(
+    useCallback(() => {
+      if (!account) return undefined;
+
+      let active = true;
+      getBalances(account)
+        .then(bal => {
+          if (active) setBalance(bal);
+        })
         .catch(() => {
-          setBalance('-');
+          if (active) setBalance('-');
         });
-    }
-  }, [userData]);
+
+      return () => {
+        active = false;
+      };
+    }, [account]),
+  );
 
   return (
     <View testID="rewardsSummaryCard" style={styles.container}>

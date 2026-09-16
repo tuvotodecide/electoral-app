@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
 import { firebaseNotificationService } from '../../services/FirebaseNotificationService';
-import database from '@react-native-firebase/database';
+import { get, getDatabase, ref } from '@react-native-firebase/database';
 
 export const FirebaseDebugInfo = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -12,12 +12,12 @@ export const FirebaseDebugInfo = () => {
 
   const loadUserInfo = async () => {
     if (!userData?.address) return;
-    
+
     setLoading(true);
     try {
       // Obtener información del usuario desde Realtime Database
-      const userRef = database().ref(`usuarios/${userData.address}`);
-      const snapshot = await userRef.once('value');
+      const userRef = ref(getDatabase(), `usuarios/${userData.address}`);
+      const snapshot = await get(userRef);
       const data = snapshot.val();
       
       if (data) {

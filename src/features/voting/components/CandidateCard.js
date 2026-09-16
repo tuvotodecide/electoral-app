@@ -25,6 +25,8 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const BLANK_VOTE_COLOR = '#64748B';
+
 const buildTicketEntries = candidate => {
   if (candidate?.isReferendum) {
     const responseValue = String(candidate?.presidentName || '').trim();
@@ -93,10 +95,65 @@ const CandidateCard = ({
   displayIndex = null,
 }) => {
   const isSpecial = candidate.isSpecial || false;
+  const isBlankVote = candidate?.isBlankVote === true;
   const isReferendum = candidate?.isReferendum === true;
   const ticketEntries = buildTicketEntries(candidate);
   const candidateColors = getCandidateColors(candidate);
   const primaryColor = candidateColors[0] || '#2563EB';
+
+  // Render para el voto en blanco (opcion listada debajo de las candidaturas)
+  if (isBlankVote) {
+    return (
+      <TouchableOpacity
+        style={[styles.container, isSelected && styles.containerSelected]}
+        onPress={onSelect}
+        activeOpacity={0.8}
+        testID={`candidateCard_${candidate.id}`}
+      >
+        {/* Header */}
+        <View style={[styles.partyHeader, {backgroundColor: BLANK_VOTE_COLOR}]}>
+          <CText
+            type="B14"
+            style={styles.partyName}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
+            {UI_STRINGS.blankVoteHeader}
+          </CText>
+        </View>
+
+        {/* Contenido */}
+        <View style={styles.content}>
+          <View style={styles.info}>
+            <CText type="R12" style={styles.label}>
+              {UI_STRINGS.option}
+            </CText>
+            <CText
+              type="B16"
+              style={styles.blankName}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              {UI_STRINGS.blankVoteName}
+            </CText>
+          </View>
+
+          {/* Radio button / Check */}
+          <View style={styles.radioContainer}>
+            {isSelected ? (
+              <View style={styles.checkCircle}>
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+              </View>
+            ) : (
+              <View style={styles.radioCircle} />
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   // Render para votos especiales (Blanco/Nulo)
   if (isSpecial) {
@@ -388,6 +445,11 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(15, 16, 18),
     fontWeight: '700',
     marginBottom: getResponsiveSize(6, 8, 10),
+  },
+  blankName: {
+    color: '#1F2937',
+    fontSize: getResponsiveSize(15, 16, 18),
+    fontWeight: '700',
   },
   secondaryName: {
     color: '#374151',

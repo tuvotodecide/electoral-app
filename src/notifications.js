@@ -2,7 +2,8 @@
 
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import { StorageService as AsyncStorage } from './services/StorageService';
-import {navigate, safeNavigate} from './navigation/RootNavigation';
+import {navigate, navigationRef, safeNavigate} from './navigation/RootNavigation';
+import {describeNav, notifNavLog, summarizeNotification} from './utils/notifNavDebug';
 import store from './redux/store';
 import {
   clearPendingNotificationNavigation,
@@ -222,7 +223,26 @@ const buildBackendNotificationAlertKeys = notification => {
   return Array.from(new Set(keys.filter(Boolean)));
 };
 
-// OCP: Strategy pattern dictionary. 
+const VOTE_REWARD_TYPE = 'vote_reward_available';
+const VOTE_REWARD_ACTION = 'open_vote_reward';
+
+/**
+ * Reconoce la recompensa por voto tanto por `type` como por `action`, para que el
+ * push, la acción "Reclamar" y la lista de notificaciones resuelvan el mismo destino.
+ */
+export const isVoteRewardNotification = data => {
+  const source = data?.data && typeof data.data === 'object' ? data.data : data;
+  return (
+    normalizeNotificationField(source?.type) === VOTE_REWARD_TYPE ||
+    normalizeNotificationField(source?.action) === VOTE_REWARD_ACTION
+  );
+};
+
+export const buildVoteRewardRoute = () => ({
+  name: StackNav.RewardsScreen,
+});
+
+// OCP: Strategy pattern dictionary.
 // Para extender nuevos tipos de notificación, simplemente añade una entrada aquí sin modificar la función principal.
 const NotificationTypeStrategies = {
   participation_certificate: {
@@ -253,16 +273,10 @@ const NotificationTypeStrategies = {
       params: {screen: TabNav.HomeScreen},
     }),
   },
-  vote_reward_available: {
+  [VOTE_REWARD_TYPE]: {
     getTitle: () => 'Recompensa disponible',
     getBody: () => 'Tu voto fue registrado correctamente. Tienes una recompensa disponible para reclamar.',
-    getRoute: () => ({
-      name: StackNav.RewardsScreen,
-      params: {
-        voteRewardAvailable: true,
-        rewardAction: 'OPEN_VOTE_REWARD',
-      },
-    }),
+    getRoute: buildVoteRewardRoute,
   },
   default: {
     getTitle: () => 'Tu Voto Decide',
@@ -271,6 +285,7 @@ const NotificationTypeStrategies = {
 };
 
 const INSTITUTIONAL_DETAIL_TYPES = new Set([
+  'MOBILE_AUTHORIZATION_REQUESTED',
   'INSTITUTIONAL_ADMIN_INVITATION',
   'OFFICIAL_PUBLICATION_REQUEST',
   'INSTITUTIONAL_PADRON_REVIEW_OPEN',
@@ -282,6 +297,7 @@ const INSTITUTIONAL_DETAIL_TYPES = new Set([
   'INSTITUTIONAL_VOTING_CANCELLED',
   'INSTITUTIONAL_VOTING_STARTS_IN_1H',
   'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  'INSTITUTIONAL_VOTING_STARTED',
   'INSTITUTIONAL_VOTING_ENDS_IN_1H',
   'INSTITUTIONAL_VOTING_ENDS_IN_15M',
   'INSTITUTIONAL_OFFICIAL_PUBLICATION_REMINDER',
@@ -321,19 +337,36 @@ const formatNotificationTime = rawValue => {
   }).format(new Date(parsed));
 };
 
-const VOTING_REMINDER_TYPES = new Set([
+const VOTING_STARTED_TYPE = 'INSTITUTIONAL_VOTING_STARTED';
+
+// Recordatorios que se apoyan en la hora de inicio (incluye el aviso de apertura).
+const VOTING_START_REMINDER_TYPES = new Set([
   'INSTITUTIONAL_VOTING_STARTS_IN_1H',
   'INSTITUTIONAL_VOTING_STARTS_IN_15M',
+  VOTING_STARTED_TYPE,
+]);
+
+const VOTING_REMINDER_TYPES = new Set([
+  ...VOTING_START_REMINDER_TYPES,
   'INSTITUTIONAL_VOTING_ENDS_IN_1H',
   'INSTITUTIONAL_VOTING_ENDS_IN_15M',
 ]);
 
 const buildVotingReminderBody = ({type, eventName, votingStart, votingEnd, body}) => {
-  const isStartReminder =
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const isStartReminder = VOTING_START_REMINDER_TYPES.has(type);
   const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
   const eventLabel = eventName || 'La votación';
+
+  if (type === VOTING_STARTED_TYPE) {
+    if (timeLabel) {
+      return `${eventLabel} ya está abierta desde las ${timeLabel}. Ya puedes emitir tu voto.`;
+    }
+
+    return (
+      String(body || '').trim() ||
+      `${eventLabel} ya está abierta. Ya puedes emitir tu voto.`
+    );
+  }
 
   if (isStartReminder) {
     if (timeLabel) {
@@ -351,10 +384,14 @@ const buildVotingReminderBody = ({type, eventName, votingStart, votingEnd, body}
 };
 
 const buildVotingReminderDetailBody = ({type, votingStart, votingEnd, body}) => {
-  const isStartReminder =
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_1H' ||
-    type === 'INSTITUTIONAL_VOTING_STARTS_IN_15M';
+  const isStartReminder = VOTING_START_REMINDER_TYPES.has(type);
   const timeLabel = formatNotificationTime(isStartReminder ? votingStart : votingEnd);
+
+  if (type === VOTING_STARTED_TYPE) {
+    return timeLabel
+      ? `Abierta desde las ${timeLabel}. Ya puedes emitir tu voto.`
+      : 'Ya está abierta. Ya puedes emitir tu voto.';
+  }
 
   if (isStartReminder) {
     return timeLabel
@@ -477,6 +514,17 @@ export const buildInstitutionalNotificationCopy = notification => {
           body: notificationBody,
         }),
       };
+    case VOTING_STARTED_TYPE:
+      return {
+        title: 'La votación ya está abierta',
+        body: buildVotingReminderBody({
+          type,
+          eventName,
+          votingStart: data?.votingStart || data?.scheduledFor,
+          votingEnd: data?.votingEnd,
+          body: notificationBody,
+        }),
+      };
     case 'INSTITUTIONAL_VOTING_ENDS_IN_1H':
       return {
         title: 'La votación termina en 1 hora',
@@ -526,6 +574,7 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const isNews = type === 'INSTITUTIONAL_NEWS';
   const isOfficialPublicationRequest = type === 'OFFICIAL_PUBLICATION_REQUEST';
   const isInstitutionalAuthorizationRequest = type === 'MOBILE_AUTHORIZATION_REQUESTED';
+  const isInstitutionalInvitation = type === 'INSTITUTIONAL_ADMIN_INVITATION';
   const isResults = type === 'INSTITUTIONAL_RESULTS_AVAILABLE';
   const isVotingEnabled = type === 'INSTITUTIONAL_VOTING_ENABLED';
   const isPadronReview = type === 'INSTITUTIONAL_PADRON_REVIEW_OPEN';
@@ -537,7 +586,9 @@ export const buildInstitutionalNotificationForDetail = notification => {
   const reminderDetailBody = isVotingReminder
     ? buildVotingReminderDetailBody({
         type,
-        votingStart: data?.votingStart || (type.includes('_STARTS_') ? data?.scheduledFor : ''),
+        votingStart:
+          data?.votingStart ||
+          (VOTING_START_REMINDER_TYPES.has(type) ? data?.scheduledFor : ''),
         votingEnd: data?.votingEnd || (type.includes('_ENDS_') ? data?.scheduledFor : ''),
         body,
       })
@@ -547,9 +598,11 @@ export const buildInstitutionalNotificationForDetail = notification => {
     id: notification?._id || notification?.id || `push_${Date.now()}`,
     raw: notification,
     data,
-    kind: isInstitutionalAuthorizationRequest ? 'institutional_authorization' : isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
+    kind: isInstitutionalAuthorizationRequest || isInstitutionalInvitation ? 'institutional_authorization' : isNews ? 'news' : isResults ? 'election_results' : 'voting_event',
     tipo: isInstitutionalAuthorizationRequest
       ? 'Autorización pendiente'
+      : isInstitutionalInvitation
+      ? 'Ver invitación'
       : isOfficialPublicationRequest
       ? 'Revisar solicitud'
       : isOfficialPublicationReminder
@@ -573,11 +626,15 @@ export const buildInstitutionalNotificationForDetail = notification => {
       ? String(data?.eventName || '').trim() || title || 'Confirmación de publicación'
       : title ||
         data?.bannerTitle ||
-        (isResults
-          ? 'Resultados disponibles'
-          : isNews
-            ? 'Noticia'
-            : 'Actualización institucional'),
+        (isInstitutionalAuthorizationRequest
+          ? 'Autorización pendiente'
+          : isInstitutionalInvitation
+            ? 'Invitación institucional'
+            : isResults
+              ? 'Resultados disponibles'
+              : isNews
+                ? 'Noticia'
+                : 'Actualización institucional'),
     direccion: isOfficialPublicationReminder
       ? String(data?.bannerSubtitle || '').trim() || body || ''
       : reminderDetailBody || body || data?.eventName || '',
@@ -937,14 +994,25 @@ export async function registerNotifications({
 
     // Tap con app en foreground
     notifee.onForegroundEvent(({type, detail}) => {
-      if (type === EventType.PRESS || type === EventType.ACTION_PRESS)
-        handleNotificationPress(detail.notification);
+      if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+        notifNavLog('notifee', 'onForegroundEvent PRESS', {
+          eventType: type,
+          notification: summarizeNotification(detail.notification),
+        });
+        handleNotificationPress(detail.notification, {
+          source: 'notifee.onForegroundEvent',
+        });
+      }
     });
   } catch {}
 }
 
 notifee.onBackgroundEvent(async ({type, detail}) => {
   if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+    notifNavLog('notifee', 'onBackgroundEvent PRESS', {
+      eventType: type,
+      notification: summarizeNotification(detail.notification),
+    });
     handleNotificationPressBackground(detail.notification);
   }
 });
@@ -961,9 +1029,8 @@ export async function showLocalNotification({
   dni = null,
 } = {}) {
   await ensureNotificationChannel();
-  const action = normalizeNotificationField(data?.action);
   const androidActions =
-    action === 'open_vote_reward'
+    isVoteRewardNotification(data)
       ? [
           {
             title: 'Reclamar',
@@ -1081,11 +1148,9 @@ export function buildRouteFromNotification(notification) {
   }
   
   // OCP: Utilizamos el mismo diccionario de estrategias previamente definido (Reutilización y OCP)
-  const action = normalizeNotificationField(data?.action);
-  const strategy =
-    action === 'open_vote_reward'
-      ? NotificationTypeStrategies.vote_reward_available
-      : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
+  const strategy = isVoteRewardNotification(data)
+    ? NotificationTypeStrategies[VOTE_REWARD_TYPE]
+    : NotificationTypeStrategies[normalizeNotificationField(notificationType)];
   if (strategy && strategy.getRoute && typeof strategy.getRoute === 'function') {
     return strategy.getRoute();
   }
@@ -1155,16 +1220,35 @@ function isPendingNotificationNavigationExpired(intent) {
 
 async function canOpenProtectedNotificationRoute() {
   const {isAuthenticated} = store.getState().auth || {};
-  if (!isAuthenticated) return false;
+  if (!isAuthenticated) {
+    notifNavLog('notifications', 'canOpenProtectedRoute: not authenticated');
+    return false;
+  }
   try {
-    return await isSessionValid();
-  } catch {
+    const valid = await isSessionValid();
+    notifNavLog('notifications', 'canOpenProtectedRoute', {
+      isAuthenticated,
+      sessionValid: valid,
+    });
+    return valid;
+  } catch (e) {
+    notifNavLog('notifications', 'canOpenProtectedRoute: isSessionValid threw', {
+      error: e?.message,
+    });
     return false;
   }
 }
 
-function navigateToLoginUser() {
+function isOnSplash() {
+  if (!navigationRef?.isReady?.()) return false;
+  return navigationRef.getCurrentRoute?.()?.name === StackNav.Splash;
+}
+
+function navigateToLoginUser(source) {
   const loginScreen = AuthNav?.LoginUser || 'LoginUser';
+  notifNavLog('notifications', `navigateToLoginUser (from ${source})`, {
+    current: describeNav(),
+  });
   if (StackNav.AuthNavigation && AuthNav?.LoginUser) {
     navigate(StackNav.AuthNavigation, {screen: loginScreen});
   } else {
@@ -1175,6 +1259,10 @@ function navigateToLoginUser() {
 function navigateToNotificationIntent(intent) {
   if (!intent?.targetRoute) return false;
   const navigated = safeNavigate(intent.targetRoute, intent.params);
+  notifNavLog('notifications', 'navigateToNotificationIntent', {
+    targetRoute: intent.targetRoute,
+    navigated,
+  });
   if (!navigated) {
     return false;
   }
@@ -1185,19 +1273,36 @@ function navigateToNotificationIntent(intent) {
 
 async function processNotificationNavigationIntent(
   intent,
-  {fromPending = false} = {},
+  {fromPending = false, source = 'unknown'} = {},
 ) {
+  const logCtx = {
+    source,
+    fromPending,
+    targetRoute: intent?.targetRoute ?? null,
+    dedupeKey: intent?.dedupeKey ?? null,
+  };
+  notifNavLog('notifications', 'processIntent start', {
+    ...logCtx,
+    current: describeNav(),
+  });
+
   if (!intent?.targetRoute) {
+    notifNavLog('notifications', 'processIntent: no targetRoute, clearing pending', logCtx);
     store.dispatch(clearPendingNotificationNavigation());
     return false;
   }
 
   if (isPendingNotificationNavigationExpired(intent)) {
+    notifNavLog('notifications', 'processIntent: expired, clearing pending', {
+      ...logCtx,
+      ageMs: Date.now() - Number(intent.createdAt),
+    });
     store.dispatch(clearPendingNotificationNavigation());
     return false;
   }
 
   if (!fromPending && isNavigationKeyRecentlyProcessed(intent.dedupeKey)) {
+    notifNavLog('notifications', 'processIntent: SKIPPED (dedupe, recently processed)', logCtx);
     return false;
   }
 
@@ -1205,34 +1310,74 @@ async function processNotificationNavigationIntent(
     return navigateToNotificationIntent(intent);
   }
 
+  notifNavLog('notifications', 'processIntent: not allowed -> store pending + go to LoginUser', logCtx);
   store.dispatch(setPendingNotificationNavigation(intent));
   markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
-  navigateToLoginUser();
+
+  // En arranque en frío la notificación llega mientras Splash sigue
+  // inicializando. Si aquí navegamos a LoginUser, Splash termina después y hace
+  // replace a AuthNavigation -> Connect -> LoginUser (segundo LoginUser).
+  // El flujo normal de Splash ya lleva al login y LoginUser.unlock consume el pending.
+  if (isOnSplash()) {
+    notifNavLog('notifications', 'on Splash: pending stored, boot flow will reach LoginUser', logCtx);
+    return false;
+  }
+
+  navigateToLoginUser(source);
   return false;
 }
 
-export async function consumePendingNotificationNavigation() {
+// LoginUser.unlock y el efecto de App pueden consumir el pending casi a la vez;
+// compartir la promesa evita navegar dos veces al destino.
+let pendingConsumption = null;
+
+export function consumePendingNotificationNavigation(source = 'unknown') {
+  if (pendingConsumption) {
+    notifNavLog('notifications', `consumePending (from ${source}): already in progress, reusing`);
+    return pendingConsumption;
+  }
   const intent = store.getState().auth?.pendingNotificationNavigation;
-  if (!intent) return false;
-  return processNotificationNavigationIntent(intent, {fromPending: true});
+  notifNavLog('notifications', `consumePending (from ${source})`, {
+    hasPending: Boolean(intent),
+    targetRoute: intent?.targetRoute ?? null,
+  });
+  if (!intent) return Promise.resolve(false);
+  pendingConsumption = processNotificationNavigationIntent(intent, {
+    fromPending: true,
+    source,
+  }).finally(() => {
+    pendingConsumption = null;
+  });
+  return pendingConsumption;
 }
 
 /**
  * Handler de taps en notificaciones (locales o remotas a través de notifee).
  * Soporta data.routeParams (JSON) para pantallas que necesiten objetos complejos.
  */
-export async function handleNotificationPress(notification) {
+export async function handleNotificationPress(notification, {source = 'unknown'} = {}) {
+  notifNavLog('notifications', `handleNotificationPress (from ${source})`, {
+    notification: summarizeNotification(notification),
+  });
   const intent = buildNotificationNavigationIntent(notification);
-  return processNotificationNavigationIntent(intent);
+  return processNotificationNavigationIntent(intent, {source});
 }
 
 function handleNotificationPressBackground(notification) {
   const intent = buildNotificationNavigationIntent(notification);
+  notifNavLog('notifications', 'handleNotificationPressBackground', {
+    notification: summarizeNotification(notification),
+    targetRoute: intent?.targetRoute ?? null,
+    dedupeKey: intent?.dedupeKey ?? null,
+  });
   if (!intent || isPendingNotificationNavigationExpired(intent)) {
     store.dispatch(clearPendingNotificationNavigation());
     return;
   }
-  if (isNavigationKeyRecentlyProcessed(intent.dedupeKey)) return;
+  if (isNavigationKeyRecentlyProcessed(intent.dedupeKey)) {
+    notifNavLog('notifications', 'handleNotificationPressBackground: SKIPPED (dedupe)');
+    return;
+  }
   store.dispatch(setPendingNotificationNavigation(intent));
   markNavigationKeyAsRecentlyProcessed(intent.dedupeKey);
 }

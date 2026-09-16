@@ -22,7 +22,9 @@ const InfoRow = ({label, value}) => (
 const RewardDetailScreen = ({route}) => {
   const paramReward = route?.params?.reward || null;
   const rewardId = route?.params?.rewardId || paramReward?.id;
-  const reward = paramReward || getMockRewardById(rewardId);
+  const [reward, setReward] = useState(
+    () => paramReward || getMockRewardById(rewardId),
+  );
   const {claimReward} = useClaimVoteRewardMutation();
   const [claimModal, setClaimModal] = useState({
     visible: false,
@@ -40,6 +42,12 @@ const RewardDetailScreen = ({route}) => {
     });
     claimReward(reward.id, {
       onSuccess: () => {
+        setReward(prev => ({
+          ...prev,
+          status: 'received',
+          statusLabel: 'Recibida',
+          message: 'Recibiste esta recompensa por tu participación.',
+        }));
         setClaimModal({
           visible: true,
           isLoading: false,

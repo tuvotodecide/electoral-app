@@ -19,6 +19,7 @@ const mockConfig = {
     ERROR: 'ERROR',
   },
   initDownloadCircuits: jest.fn(() => Promise.resolve()),
+  circuitsAreDownloaded: jest.fn(() => Promise.resolve(false)),
 };
 
 jest.mock('wira-sdk', () => ({

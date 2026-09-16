@@ -18,6 +18,7 @@ import {
   upsertWorksheetLocalStatus,
 } from './worksheetLocalStatus';
 import { enqueue, updateById } from './offlineQueue';
+import { isDemoActive } from '../features/demo/demoSession';
 import { sanitizeElectoralDataForVisibleOffices } from './electionContext';
 
 const ACTA_CHECKPOINT_KEY = '__actaCheckpoint';
@@ -2058,6 +2059,12 @@ export const getVoteRequestForBackend = async () => {
 }
 
 export const authenticateWithBackend = async (did, privateKey) => {
+  // Único punto que ejecuta wira.authenticateWithVerifier (prueba ZK nativa).
+  // Todos los llamadores ya tienen su catch / return null.
+  if (isDemoActive()) {
+    throw new Error('Demo mode: backend authentication disabled');
+  }
+
   const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
 
   const authData = request.data;

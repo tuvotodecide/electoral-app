@@ -9,11 +9,17 @@ import CSafeAreaView from '../components/common/CSafeAreaView';
 import CText from '../components/common/CText';
 import Strings from '../i18n/String';
 import CButton from '../components/common/CButton';
+import DownloadSizeModal from '../components/modal/DownloadSizeModal';
 import { useSplashInit } from '../hooks/useSplashInit';
 
 export default function Splash({navigation}) {
   const color = useSelector(state => state.theme.theme);
-  const { downloadMessage, initializeApp } = useSplashInit(navigation);
+  const {
+    downloadMessage,
+    initializeApp,
+    downloadPrompt,
+    onConfirmDownload,
+  } = useSplashInit(navigation);
 
   return (
     <CSafeAreaView
@@ -30,12 +36,12 @@ export default function Splash({navigation}) {
         />
       </View>
       <View style={localStyle.infoContainer}>
-        {!!downloadMessage && (
-          <CText type={'R14'} testID="downloadMessage">
-            {downloadMessage}
+        {(downloadMessage.length > 0) && downloadMessage.map((data, index) => 
+          <CText key={'downtext-' + index} type={'R14'} testID={"downloadMessage-" + index}>
+            {data}
           </CText>
         )}
-        {downloadMessage.startsWith(Strings.downloadingFailed) &&
+        {downloadMessage[0]?.startsWith(Strings.downloadingFailed) &&
           <CButton
             title={Strings.retry}
             containerStyle={localStyle.button}
@@ -44,6 +50,11 @@ export default function Splash({navigation}) {
           />
         }
       </View>
+      <DownloadSizeModal
+        visible={downloadPrompt.visible}
+        sizeMB={downloadPrompt.sizeMB}
+        onPressOk={onConfirmDownload}
+      />
     </CSafeAreaView>
   );
 }

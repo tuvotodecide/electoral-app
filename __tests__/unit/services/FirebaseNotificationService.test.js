@@ -19,31 +19,35 @@ const mockUserRef = {
 };
 
 jest.mock('@react-native-firebase/messaging', () => {
-  const messaging = () => mockMessaging;
-  messaging.AuthorizationStatus = {
-    AUTHORIZED: 1,
-    PROVISIONAL: 2,
-    DENIED: 0,
+  // API modular: el primer argumento es la instancia de messaging
+  const call = name => (_messaging, ...args) => mockMessaging[name](...args);
+  return {
+    AuthorizationStatus: {
+      AUTHORIZED: 1,
+      PROVISIONAL: 2,
+      DENIED: 0,
+    },
+    getMessaging: () => mockMessaging,
+    requestPermission: call('requestPermission'),
+    getToken: call('getToken'),
+    onMessage: call('onMessage'),
+    setBackgroundMessageHandler: call('setBackgroundMessageHandler'),
   };
-  return messaging;
 });
 
-jest.mock('@react-native-firebase/database', () => {
-  const database = () => ({
-    ref: jest.fn(() => mockUserRef),
-  });
-  database.ServerValue = {TIMESTAMP: 'server-timestamp'};
-  return database;
-});
+jest.mock('@react-native-firebase/database', () => ({
+  getDatabase: () => ({}),
+  ref: jest.fn(() => mockUserRef),
+  set: (ref, value) => ref.set(value),
+  serverTimestamp: () => 'server-timestamp',
+}));
 
-jest.mock('@react-native-firebase/functions', () => {
-  const functions = () => ({
-    httpsCallable: jest.fn(() =>
-      jest.fn(() => Promise.resolve({data: {usuariosNotificados: 3}})),
-    ),
-  });
-  return functions;
-});
+jest.mock('@react-native-firebase/functions', () => ({
+  getFunctions: () => ({}),
+  httpsCallable: jest.fn(() =>
+    jest.fn(() => Promise.resolve({data: {usuariosNotificados: 3}})),
+  ),
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(key => Promise.resolve(mockStorage.has(key) ? mockStorage.get(key) : null)),

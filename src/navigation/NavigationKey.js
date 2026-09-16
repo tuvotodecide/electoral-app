@@ -57,6 +57,7 @@ export const StackNav = {
 
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
+  DeleteAccount: 'DeleteAccount',
   RecuperationQR: 'RecuperationQR',
   Guardians: 'Guardians',
   GuardiansAdmin: 'GuardiansAdmin',
@@ -88,6 +89,7 @@ export const AuthNav = {
   OnBoardingGuardians: 'OnBoardingGuardians',
   Login: 'Login',
   LoginUser: 'LoginUser',
+  AccountAccess: 'AccountAccess',
   SignUp: 'SignUp',
   RegisterUser1: 'RegisterUser1',
   RegisterUser2: 'RegisterUser2',

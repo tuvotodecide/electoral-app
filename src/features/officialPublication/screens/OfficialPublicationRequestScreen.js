@@ -24,6 +24,7 @@ import {
   syncOfficialPublicationOutbox,
 } from '../outbox/officialPublicationOutbox';
 import {sendOfficialPublicationSubmission} from '../services/officialPublicationConfirmation';
+import { captureError } from '@/src/config/sentry';
 
 const POLLING_MS = 5000;
 const PROCESSING_STATUSES = [
@@ -271,6 +272,11 @@ const OfficialPublicationRequestScreen = ({route}) => {
       userOpHash = submittedUserOpHash;
       await loadRequest();
     } catch (error) {
+      captureError(error, {
+        flow: 'Vote Publication',
+        step: 'Accept Publication',
+        critical: true,
+      });
       if (userOpHash) {
         setErrorMessage(
           'La operación fue enviada. Reintentaremos sincronizarla automáticamente.',

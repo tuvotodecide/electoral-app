@@ -24,6 +24,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
+import DemoBanner from '../../demo/DemoBanner';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
@@ -78,7 +79,7 @@ const resolvePublicElectionUrl = ({eventId, publicUrl, publicPath}) => {
   try {
     const url = new URL(frontendBase);
     url.pathname = relativePath;
-    url.search = '';
+    url.search = 'hideLogin=true';
     url.hash = '';
     return isPublicElectionPath(url.pathname) ? url.toString() : null;
   } catch {
@@ -322,6 +323,7 @@ const VoteReceiptScreen = () => {
         title={UI_STRINGS.receiptHeader}
         isHideBack={!allowBackNavigation}
       />
+      <DemoBanner />
 
       <ScrollView
         style={styles.scrollView}

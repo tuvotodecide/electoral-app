@@ -35,6 +35,13 @@ import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
 import {startLocalSession} from '../../utils/Session';
 import {consumePendingNotificationNavigation} from '../../notifications';
+import {isDemoPin} from '../../features/demo/demoConfig';
+import {isDemoActive} from '../../features/demo/demoSession';
+import {activateDemoSession} from '../../features/demo/demoLifecycle';
+import {describeNav, notifNavLog} from '../../utils/notifNavDebug';
+import {markHomeEntryFromLogin} from '../../utils/homeEntry';
+
+let loginUserInstanceCounter = 0;
 
 
 const sharedSession = new wira.SharedSession(
@@ -130,8 +137,31 @@ export default function LoginUser({ navigation, route }) {
   const dispatch = useDispatch();
 
   const otpRef = useRef(null);
+  const instanceIdRef = useRef(null);
+  if (instanceIdRef.current === null) {
+    loginUserInstanceCounter += 1;
+    instanceIdRef.current = loginUserInstanceCounter;
+  }
+
+  useEffect(() => {
+    const instance = instanceIdRef.current;
+    notifNavLog('LoginUser', `MOUNT instance #${instance}`, {
+      routeKey: route?.key ?? null,
+      params: route?.params ?? null,
+      current: describeNav(),
+    });
+    return () => {
+      notifNavLog('LoginUser', `UNMOUNT instance #${instance}`, {
+        routeKey: route?.key ?? null,
+        current: describeNav(),
+      });
+    };
+  }, []);
 
   async function unlock(payload, _jwt, pin) {
+    notifNavLog('LoginUser', `unlock() instance #${instanceIdRef.current}`, {
+      viaBiometric: !pin,
+    });
     try {
       if (payload?.vc?.vc && !payload?.vc?.credentialSubject) {
         payload.vc = payload.vc.vc;
@@ -161,6 +191,7 @@ export default function LoginUser({ navigation, route }) {
       );
     }
 
+    markHomeEntryFromLogin();
     navigation.reset({
       index: 0,
       routes: [
@@ -169,7 +200,7 @@ export default function LoginUser({ navigation, route }) {
         },
       ],
     });
-    await consumePendingNotificationNavigation();
+    await consumePendingNotificationNavigation('LoginUser.unlock');
   }
 
   const onPressLoginUser1 = () => {
@@ -196,6 +227,14 @@ export default function LoginUser({ navigation, route }) {
       }
 
       const hasUserData = await wira.Storage.checkUserData();
+
+      // Red de seguridad para un dispositivo que registre una billetera real
+      // después de activar la demo. Va condicionado a !hasUserData: si no,
+      // eclipsaría el PIN de un usuario registrado que use el mismo número.
+      if (!hasUserData && isDemoActive() && isDemoPin(code)) {
+        return { ok: true, demo: true };
+      }
+
       if (hasUserData) {
         let userData;
         try {
@@ -245,6 +284,12 @@ export default function LoginUser({ navigation, route }) {
     setTimeout(() => {
       verifyPin(code.trim())
         .then(async (res) => {
+          // No pasa por unlock(): ese escribe FINLINE_FLAGS con el hash del PIN
+          // y consulta el flag biométrico de la billetera real.
+          if (res.demo) {
+            await activateDemoSession({dispatch, navigation});
+            return;
+          }
           if (res.ok) {
             await unlock(res.payload, res.jwt, code.trim());
             return;
@@ -341,6 +386,7 @@ export default function LoginUser({ navigation, route }) {
   useEffect(() => {
     (async () => {
       const blocked = await isLocked();
+      notifNavLog('LoginUser', `isLocked instance #${instanceIdRef.current}`, {blocked});
       setLocked(blocked);
       if (blocked) {
         navigation.replace(AuthNav.AccountLock);
@@ -360,6 +406,10 @@ export default function LoginUser({ navigation, route }) {
       setLoading(true);
       try {
         const { error, userData } = await wira.checkBiometricAuth();
+        notifNavLog('LoginUser', `checkBiometricAuth instance #${instanceIdRef.current}`, {
+          hasUserData: Boolean(userData),
+          error: error ?? null,
+        });
 
         if (!userData) {
           if (error === 'No credentials stored') {

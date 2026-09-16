@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
-import images from '../assets/images';
+import { Platform } from "react-native";
+import images from "../assets/images";
 import {
   AppleIcon,
   Apple_Dark,
@@ -36,9 +36,9 @@ import {
   USFlagIcon,
   UkrainIcon,
   UrgauayIcon,
-} from '../assets/svg';
-import String from '../i18n/String';
-import { StackNav} from '../navigation/NavigationKey';
+} from "../assets/svg";
+import String from "../i18n/String";
+import { StackNav } from "../navigation/NavigationKey";
 
 export const OnBoardingData = [
   {
@@ -331,6 +331,13 @@ export const ProfileDataV3 = [
         value: String.moreOthers3Subtitle,
         route: StackNav.PrivacyPolicies,
       },
+      {
+        id: 13,
+        icon: "mail",
+        title: String.contactSupportTitle,
+        value: String.contactSupportSubtitle,
+        action: "contactSupport",
+      },
       // {
       //   id: 14,
       //   title: String.moreOthers4Title,
@@ -377,9 +384,15 @@ export const SecuryData = [
         id: 10,
         darkIcon: <IdentityVerification_Dark />,
         lightIcon: <IdentityVerification_Light />,
-        title: Platform.OS === 'ios' ? String.security4TitleIos : String.security4TitleAndroid,
-        value: Platform.OS === 'ios' ? String.security4SubtitleIos : String.security4SubtitleAndroid,
-        rightIcon: 'switch',
+        title:
+          Platform.OS === "ios"
+            ? String.security4TitleIos
+            : String.security4TitleAndroid,
+        value:
+          Platform.OS === "ios"
+            ? String.security4SubtitleIos
+            : String.security4SubtitleAndroid,
+        rightIcon: "switch",
       },
     ],
   },
@@ -387,7 +400,7 @@ export const SecuryData = [
 
 export const ProfileDataV2 = [
   {
-    section: '',
+    section: "",
     data: [
       {
         id: 1,
@@ -396,14 +409,6 @@ export const ProfileDataV2 = [
         title: String.personalData,
         value: String.personalDataValue,
         route: StackNav.PersonalDetails,
-      },
-      {
-        id: 2,
-        darkIcon: <IdentityVerification_Dark />,
-        lightIcon: <IdentityVerification_Light />,
-        title: String.dataBackup,
-        value: String.dataBackupValue,
-        route: StackNav.RecuperationQR,
       },
       {
         id: 5,
@@ -535,22 +540,22 @@ export const SearchTopicsFaqs = [
 export const ShareReferralCodeMediaData = [
   {
     id: 1,
-    name: 'copy-outline',
+    name: "copy-outline",
     title: String.copy,
   },
   {
     id: 2,
-    name: 'logo-whatsapp',
+    name: "logo-whatsapp",
     title: String.whatsapp,
   },
   {
     id: 3,
-    name: 'logo-instagram',
+    name: "logo-instagram",
     title: String.instagram,
   },
   {
     id: 4,
-    name: 'menu',
+    name: "menu",
     title: String.more,
   },
 ];
@@ -569,4 +574,3 @@ export const NotificationSortData = [
     title: String.unread,
   },
 ];
-

@@ -17,13 +17,25 @@ const mockMessaging = {
 };
 
 jest.mock('@react-native-firebase/messaging', () => {
-  const messaging = () => mockMessaging;
-  messaging.AuthorizationStatus = {
-    AUTHORIZED: 1,
-    PROVISIONAL: 2,
-    DENIED: 0,
+  // API modular: el primer argumento es la instancia de messaging
+  const call = name => (_messaging, ...args) => mockMessaging[name](...args);
+  return {
+    AuthorizationStatus: {
+      AUTHORIZED: 1,
+      PROVISIONAL: 2,
+      DENIED: 0,
+    },
+    getMessaging: () => mockMessaging,
+    registerDeviceForRemoteMessages: call('registerDeviceForRemoteMessages'),
+    requestPermission: call('requestPermission'),
+    getToken: call('getToken'),
+    subscribeToTopic: call('subscribeToTopic'),
+    unsubscribeFromTopic: call('unsubscribeFromTopic'),
+    onMessage: call('onMessage'),
+    onNotificationOpenedApp: call('onNotificationOpenedApp'),
+    getInitialNotification: call('getInitialNotification'),
+    setBackgroundMessageHandler: call('setBackgroundMessageHandler'),
   };
-  return messaging;
 });
 
 jest.mock('@notifee/react-native', () => {

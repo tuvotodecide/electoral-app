@@ -1,6 +1,13 @@
-import messaging from '@react-native-firebase/messaging';
-import database from '@react-native-firebase/database';
-import functions from '@react-native-firebase/functions';
+import {
+  AuthorizationStatus,
+  getMessaging,
+  getToken,
+  onMessage,
+  requestPermission,
+  setBackgroundMessageHandler,
+} from '@react-native-firebase/messaging';
+import { getDatabase, ref, serverTimestamp, set } from '@react-native-firebase/database';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { geoLocationService } from './GeoLocationService';
 import { localNotificationStorageService } from './LocalNotificationStorageService';
 
@@ -22,10 +29,10 @@ export class FirebaseNotificationService {
 
   // Solicitar permisos de notificación
   async requestUserPermission() {
-    const authStatus = await messaging().requestPermission();
+    const authStatus = await requestPermission(getMessaging());
     const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      authStatus === AuthorizationStatus.AUTHORIZED ||
+      authStatus === AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
       return true;
@@ -36,7 +43,7 @@ export class FirebaseNotificationService {
   // Obtener token FCM
   async getFCMToken() {
     try {
-      const token = await messaging().getToken();
+      const token = await getToken(getMessaging());
       return token;
     } catch (_) {
       return null;
@@ -45,7 +52,7 @@ export class FirebaseNotificationService {
 
   // Configurar handler para mensajes en primer plano
   setupForegroundMessageHandler() {
-    messaging().onMessage(async remoteMessage => {
+    onMessage(getMessaging(), async remoteMessage => {
       // Delegar almacenamiento a LocalNotificationStorageService
       await this.storageService.storeNotificationLocally(remoteMessage);
     });
@@ -63,7 +70,7 @@ export class FirebaseNotificationService {
 
   // Configurar handler para mensajes en segundo plano
   setupBackgroundMessageHandler() {
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
+    setBackgroundMessageHandler(getMessaging(), async remoteMessage => {
       // Delegar almacenamiento a LocalNotificationStorageService
       await this.storageService.storeNotificationLocally(remoteMessage);
     });
@@ -93,15 +100,15 @@ export class FirebaseNotificationService {
           longitude: location?.longitude || 0,
         },
         geohash: geohash,
-        ultimaActualizacion: database.ServerValue.TIMESTAMP,
+        ultimaActualizacion: serverTimestamp(),
         activo: true,
         nombre: userData.nombre || 'Usuario',
         ...userData, // Otros datos del usuario que se pasen
       };
 
       // Guardar en Realtime Database
-      const userRef = database().ref(`usuarios/${userId}`);
-      await userRef.set(userInfo);
+      const userRef = ref(getDatabase(), `usuarios/${userId}`);
+      await set(userRef, userInfo);
 
       return {
         success: true,
@@ -140,7 +147,7 @@ export class FirebaseNotificationService {
       const currentLocation = await this.locationService.getCurrentLocation();
 
       // Llamar a Cloud Function para procesar y enviar notificaciones
-      const announceCount = functions().httpsCallable('announceCountToNearby');
+      const announceCount = httpsCallable(getFunctions(), 'announceCountToNearby');
 
       const result = await announceCount({
         emisorId: userId,

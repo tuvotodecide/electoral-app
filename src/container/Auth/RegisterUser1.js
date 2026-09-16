@@ -38,6 +38,10 @@ export default function RegisterUser1({navigation, route}) {
     navigation.navigate(StackNav.TermsAndCondition);
   };
 
+  const onPressPrivacy = () => {
+    navigation.navigate(StackNav.PrivacyPolicies);
+  }
+
   const isRecoveryFlow = !!route?.params?.isRecovery;
 
   return (
@@ -140,6 +144,14 @@ export default function RegisterUser1({navigation, route}) {
               color={colors.primary}
               onPress={onPressConditions}>
               {String.termsLink}
+            </CText>
+            {String.termsAnd}
+            <CText
+              testID="privacyLink"
+              type={'r14'}
+              color={colors.primary}
+              onPress={onPressPrivacy}>
+              {String.termsPrivacy}
             </CText>
             <CText testID="termsSuffix" type={'r14'} color={colors.colorText}>
               {String.termsSuffix}

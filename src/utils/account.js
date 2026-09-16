@@ -1,17 +1,17 @@
-
-import axios from 'axios';
-import { computeAccountAddress } from 'viem/account-abstraction';
-import { privateKeyToAccount }     from 'viem/accounts';
-import { walletConfig }            from './constants';
-import { BACKEND_RESULT } from '@env';
+import axios from "axios";
+import { computeAccountAddress } from "viem/account-abstraction";
+import { privateKeyToAccount } from "viem/accounts";
+import { walletConfig } from "./constants";
+import { BACKEND_RESULT } from "@env";
 import { authenticateWithBackend } from "@/src/utils/offlineQueueHandler";
 
 export function predictSmartAccount(chain, privateKey, salt) {
   // si te llega undefined salt, crea uno aleatorio
-  const index = salt ?? crypto.getRandomValues(new Uint8Array(32)).reduce(
-    (acc, v) => (acc << 8n) + BigInt(v),
-    0n
-  );
+  const index =
+    salt ??
+    crypto
+      .getRandomValues(new Uint8Array(32))
+      .reduce((acc, v) => (acc << 8n) + BigInt(v), 0n);
 
   const owner = privateKeyToAccount(privateKey).address;
 
@@ -34,7 +34,8 @@ export async function claimRegisterRewardIfAvailable(address, did, privKey) {
     {
       params: { recipient: address },
       headers: {
-        'x-api-key': apikey
+        "Content-Type": "application/json",
+        "x-api-key": apikey,
       },
     },
   );

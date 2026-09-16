@@ -1,5 +1,4 @@
 import React from 'react';
-import {fireEvent} from '@testing-library/react-native';
 import axios from 'axios';
 import wira from 'wira-sdk';
 import ElectionRepositoryApi from '../../../../src/features/voting/data/repositories/ElectionRepository.api';
@@ -148,28 +147,19 @@ describe('MX-08 post-vote participation acceptance', () => {
       },
     });
 
-    expect(target).toEqual({
-      name: StackNav.RewardsScreen,
-      params: {
-        voteRewardAvailable: true,
-        rewardAction: 'OPEN_VOTE_REWARD',
-      },
-    });
+    // La ruta no lleva params: la disponibilidad de la recompensa la resuelve el
+    // backend en la propia pantalla, no la notificación.
+    expect(target).toEqual({name: StackNav.RewardsScreen});
 
     const screen = renderWithProviders(
       <RewardsScreen navigation={navigation} route={{params: target.params}} />,
     );
 
-    expect(screen.getByText('Recompensa por voto disponible')).toBeTruthy();
-    expect(screen.getByText('Disponible')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('rewardItem_reward-vote'));
-    expect(navigation.navigate).toHaveBeenCalledWith(
-      StackNav.RewardDetailScreen,
-      expect.objectContaining({
-        rewardId: 'reward-vote',
-        reward: expect.objectContaining({status: 'available'}),
-      }),
-    );
+    // PAR-RWD-P0-001: no se fabrica una recompensa local de 0 TVD al abrir la lista.
+    expect(screen.queryByTestId('rewardItem_reward-vote')).toBeNull();
+    expect(screen.queryByText('Recompensa por voto disponible')).toBeNull();
+    expect(screen.queryByText('0 TVD')).toBeNull();
+    expect(navigation.navigate).not.toHaveBeenCalled();
     expect(screen.queryByText(/transfer/i)).toBeNull();
     expect(screen.queryByText(/saldo actualizado/i)).toBeNull();
   });

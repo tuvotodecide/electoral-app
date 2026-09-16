@@ -3,8 +3,14 @@ import voteAbi from '../abi/VoteAbi.json';
 import { availableNetworks } from "./params";
 import { CHAIN } from "@env";
 import { poseidon2 } from "poseidon-lite";
+import { isDemoActive } from "../features/demo/demoSession";
 
 function getVoteReadContract() {
+  // Único punto donde se construye un cliente viem contra el RPC del bundler.
+  if (isDemoActive()) {
+    throw new Error('Demo mode: on-chain reads are disabled');
+  }
+
   const { voteContract, bundler, chain } = availableNetworks[CHAIN];
 
   const publicClient = createPublicClient({

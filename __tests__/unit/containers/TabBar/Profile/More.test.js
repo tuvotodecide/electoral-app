@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {render} from '@testing-library/react-native';
+import {fireEvent, render, waitFor} from '@testing-library/react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
@@ -38,9 +38,20 @@ jest.mock('../../../../../src/api/constant', () => ({
       data: [
         {id: 1, title: 'Option 1', value: 'Value 1'},
         {id: 2, title: 'Option 2', value: 'Value 2', rightIcon: true},
+        {
+          id: 13,
+          icon: 'mail',
+          title: 'Contact support',
+          value: 'Email us',
+          action: 'contactSupport',
+        },
       ],
     },
   ],
+}));
+
+jest.mock('expo-clipboard', () => ({
+  setStringAsync: jest.fn(),
 }));
 
 jest.mock('../../../../../src/components/modal/LogOutModal', () => {
@@ -158,6 +169,52 @@ describe('More screen', () => {
       );
 
       expect(UNSAFE_root).toBeTruthy();
+    });
+  });
+
+  describe('Contactar soporte', () => {
+    const {Alert, Linking} = require('react-native');
+    const Clipboard = require('expo-clipboard');
+
+    it('abre el cliente de correo con SUPPORT_EMAIL', async () => {
+      const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+      const More = require('../../../../../src/container/TabBar/Profile/More').default;
+      const {getByTestId} = renderWithProvider(
+        <More navigation={{navigate: mockNavigate}} />
+      );
+
+      fireEvent.press(getByTestId('moreMenuItem_13'));
+
+      await waitFor(() =>
+        expect(openURL).toHaveBeenCalledWith(
+          expect.stringMatching(/^mailto:support@example\.com\?subject=/),
+        ),
+      );
+      expect(mockNavigate).not.toHaveBeenCalled();
+      openURL.mockRestore();
+    });
+
+    it('muestra el correo y permite copiarlo si no hay app de correo', async () => {
+      const openURL = jest
+        .spyOn(Linking, 'openURL')
+        .mockRejectedValue(new Error('no mail app'));
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const More = require('../../../../../src/container/TabBar/Profile/More').default;
+      const {getByTestId} = renderWithProvider(
+        <More navigation={{navigate: mockNavigate}} />
+      );
+
+      fireEvent.press(getByTestId('moreMenuItem_13'));
+
+      await waitFor(() => expect(alert).toHaveBeenCalled());
+      const [, message, buttons] = alert.mock.calls[0];
+      expect(message).toContain('support@example.com');
+
+      await buttons[1].onPress();
+      expect(Clipboard.setStringAsync).toHaveBeenCalledWith('support@example.com');
+
+      openURL.mockRestore();
+      alert.mockRestore();
     });
   });
 });
