@@ -8,6 +8,7 @@ import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/v
 import { CREDITS_EMPTY_ERROR_MESSAGE } from '../voteErrors';
 import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
+import { getOwnVoteInfo } from '@/src/api/vote';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
@@ -912,16 +913,22 @@ const ElectionRepositoryApi = {
       voteRequest.body.callbackUrl = callbackUrl + `?optionId=${candidateId}`
 
       const credential = await getCredentialForVote(electionId, did, privKey);
-      if (!credential) {
+      const credNullifier = credential?.info?.credentialSubject?.nullifier
+      if (!credential || !credNullifier) {
         throw new Error('No se pudo validar tu acceso para emitir el voto');
       }
 
-      await wira.authenticateWithVerifier(
-        JSON.stringify(voteRequest),
-        did,
-        privKey,
-        [credential.id]
-      );
+      try {
+        // Check own vote info, if throws, user didn't voted yet, so execute vote
+        await getOwnVoteInfo(electionId, credNullifier);
+      } catch {
+        await wira.authenticateWithVerifier(
+          JSON.stringify(voteRequest),
+          did,
+          privKey,
+          [credential.id]
+        );
+      }
 
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {

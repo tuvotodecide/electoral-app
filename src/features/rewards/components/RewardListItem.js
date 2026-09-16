@@ -4,34 +4,52 @@ import {Ionicons} from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import {moderateScale} from '../../../common/constants';
 
-const RewardListItem = ({reward, onPress}) => (
-  <TouchableOpacity
-    testID={`rewardItem_${reward.id}`}
-    accessibilityRole="button"
-    accessibilityLabel={`Ver detalle de ${reward.title}`}
-    activeOpacity={0.82}
-    onPress={() => onPress(reward)}
-    style={styles.container}>
-    <View style={styles.iconBox}>
-      <Ionicons name="gift-outline" size={moderateScale(22)} color="#459151" />
-    </View>
-    <View style={styles.content}>
-      <CText style={styles.title} numberOfLines={1}>
-        {reward.title}
-      </CText>
-      <CText style={styles.meta} numberOfLines={2}>
-        {reward.processLabel}
-      </CText>
-      <View style={styles.statusBadge}>
-        <CText style={styles.statusText}>{reward.statusLabel}</CText>
+const STATUS_ICONS = {
+  pending: {name: 'time-outline', color: '#9CA3AF', background: '#F3F4F6'},
+  available: {name: 'gift-outline', color: '#F59E0B', background: '#FEF3C7'},
+  received: {name: 'checkmark-circle-outline', color: '#459151', background: '#E8F5E9'},
+};
+
+const RewardListItem = ({reward, onPress}) => {
+  const statusIcon = STATUS_ICONS[reward.status] || STATUS_ICONS.available;
+
+  return (
+    <TouchableOpacity
+      testID={`rewardItem_${reward.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver detalle de ${reward.title}`}
+      activeOpacity={0.82}
+      onPress={() => onPress(reward)}
+      style={styles.container}>
+      <View
+        testID={`rewardItemIconBox_${reward.id}`}
+        style={[styles.iconBox, {backgroundColor: statusIcon.background}]}>
+        <Ionicons
+          testID={`rewardItemIcon_${reward.id}`}
+          name={statusIcon.name}
+          size={moderateScale(22)}
+          color={statusIcon.color}
+        />
       </View>
-    </View>
-    <View style={styles.amountBlock}>
-      <CText style={styles.amount}>+{reward.amount}</CText>
-      <CText style={styles.currency}>{reward.currency}</CText>
-    </View>
-  </TouchableOpacity>
-);
+      <View style={styles.content}>
+        <CText style={styles.title} numberOfLines={1}>
+          {reward.title}
+        </CText>
+        <CText style={styles.meta} numberOfLines={2}>
+          {reward.processLabel + ' - ' + reward.statusLabel}
+        </CText>
+        {reward.status === 'available' &&
+          <View style={styles.statusBadge}>
+            <CText style={styles.statusText}>Reclamar</CText>
+          </View>
+        }
+      </View>
+      <View style={styles.amountBlock}>
+        <CText style={styles.amount}>{(reward.status === 'received' ? '+':'') + reward.amount + ' ' + reward.currency}</CText>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -54,7 +72,6 @@ const styles = StyleSheet.create({
     width: moderateScale(36),
     height: moderateScale(36),
     borderRadius: moderateScale(9),
-    backgroundColor: '#E8F5E9',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: moderateScale(12),
@@ -84,7 +101,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#459151',
-    fontSize: moderateScale(9),
+    fontSize: moderateScale(13),
     fontWeight: '700',
   },
   amountBlock: {

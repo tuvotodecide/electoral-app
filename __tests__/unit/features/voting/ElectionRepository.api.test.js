@@ -33,7 +33,8 @@ jest.mock('@/src/api/account', () => ({
 
 jest.mock('@/src/api/vote', () => ({
   castVote: jest.fn(),
-  getVoteInfo: jest.fn(() => Promise.resolve({registeredVoters: []}))
+  getVoteInfo: jest.fn(() => Promise.resolve({registeredVoters: []})),
+  getOwnVoteInfo: jest.fn(),
 }));
 
 jest.mock('@/src/data/credentials', () => ({
@@ -66,6 +67,7 @@ jest.mock('wira-sdk', () => ({
 
 const store = require('../../../../src/redux/store').default;
 const {getCredentialForVote} = require('@/src/data/credentials');
+const {getOwnVoteInfo} = require('@/src/api/vote');
 const {getVoteRequestForBackend} = require('../../../../src/utils/offlineQueueHandler');
 const {clearVoteJournal} = require('../../../../src/features/voting/offline/voteJournal');
 const {markVoteJournalChainConfirmed} = require('../../../../src/features/voting/offline/voteJournal');
@@ -78,6 +80,7 @@ describe('ElectionRepository.api', () => {
     axios.get.mockReset();
     axios.post.mockReset();
     wira.authenticateWithVerifier.mockResolvedValue(undefined);
+    getOwnVoteInfo.mockRejectedValue(new Error('Not voted yet'));
     store.getState.mockReturnValue(defaultWalletState());
   });
 
@@ -458,6 +461,7 @@ describe('ElectionRepository.api', () => {
       'priv-key-test',
       ['credential-1'],
     );
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', '0x123');
     expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('123abc');
     expect(axios.post).toHaveBeenCalledWith(
       'https://test-backend.com/api/v1/voting/events/123abc/participations',
@@ -524,6 +528,44 @@ describe('ElectionRepository.api', () => {
     const verifierRequest = JSON.parse(requestJson);
     expect(verifierRequest.body.callbackUrl).toBe(
       'https://callback.example/vote?optionId=option-custom-1',
+    );
+  });
+
+  it('no vuelve a votar on-chain cuando el voto ya existe y registra la participación', async () => {
+    getOwnVoteInfo.mockResolvedValueOnce({optionId: 'option-1'});
+    axios.get
+      .mockResolvedValueOnce({
+        data: {status: 'CAN_VOTE', canVote: true, alreadyVoted: false},
+      })
+      .mockResolvedValueOnce({
+        data: {
+          status: 'ALREADY_VOTED',
+          canVote: false,
+          alreadyVoted: true,
+          participationId: 'participation-retry-1',
+          participatedAt: '2026-01-01T10:00:00.000Z',
+        },
+      });
+    axios.post.mockResolvedValueOnce({
+      data: {
+        id: 'participation-retry-1',
+        participatedAt: '2026-01-01T10:00:00.000Z',
+      },
+    });
+
+    const result = await ElectionRepositoryApi.submitVote('event-retry', 'option-1', null);
+
+    expect(result).toMatchObject({
+      success: true,
+      participationId: 'participation-retry-1',
+    });
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-retry', '0x123');
+    expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+    expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('event-retry');
+    expect(axios.post).toHaveBeenCalledWith(
+      'https://test-backend.com/api/v1/voting/events/event-retry/participations',
+      {carnet: '12345678'},
+      expect.any(Object),
     );
   });
 
