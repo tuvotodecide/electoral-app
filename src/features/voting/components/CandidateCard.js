@@ -7,17 +7,15 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
-import { moderateScale } from '../../../common/constants';
+import { moderateScale, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helpers
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

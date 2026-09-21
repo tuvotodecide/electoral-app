@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { useSelector } from 'react-redux';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -23,10 +23,8 @@ import { normalizeUri } from '../../../utils/normalizedUri';
 import { useFocusEffect } from '@react-navigation/native';
 import { captureError } from '../../../config/sentry';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {

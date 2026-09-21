@@ -4,8 +4,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,11 +14,9 @@ import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import String from '../../../i18n/String';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

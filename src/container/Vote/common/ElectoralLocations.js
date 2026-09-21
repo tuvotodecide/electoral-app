@@ -4,13 +4,13 @@ import {
   View,
   TouchableOpacity,
   Platform,
-  Dimensions,
   Linking,
   TextInput,
   Animated,
   Easing,
   AppState,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { useSelector } from 'react-redux';
 import * as Location from 'expo-location';
 import axios from 'axios';
@@ -29,11 +29,9 @@ import { getVotePlace } from '../../../utils/offlineQueue';
 import { FlashList } from '@shopify/flash-list';
 import { captureError } from '../../../config/sentry';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {

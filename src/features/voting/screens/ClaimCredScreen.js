@@ -10,21 +10,18 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
-import { moderateScale, getHeight } from '../../../common/constants';
+import { moderateScale, getHeight, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import strings from '@/src/i18n/String';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

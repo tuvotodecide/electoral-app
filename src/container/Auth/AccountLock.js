@@ -1,4 +1,4 @@
-import {Dimensions, Image, StyleSheet, View} from 'react-native';
+import {Image, StyleSheet, useWindowDimensions, View} from 'react-native';
 import React from 'react';
 
 // custom import
@@ -18,7 +18,8 @@ import String from '../../i18n/String';
 
 export default function AccountLock({navigation}) {
   const colors = useSelector(state => state.theme.theme);
-  
+  const {width, height} = useWindowDimensions();
+
   const onPressNext = () => {
     navigation.navigate(AuthNav.SelectRecuperation, {disableCI: true});
   };
@@ -27,7 +28,17 @@ export default function AccountLock({navigation}) {
     <CSafeAreaViewAuth testID="accountLockContainer">
       <View
         testID="accountLockOvalBackground"
-        style={[localStyle.ovalBackground, {backgroundColor: colors.primary}]}
+        style={[
+          localStyle.ovalBackground,
+          {
+            top: -height * 0.5,
+            left: -width * 0.25,
+            width: width * 1.5,
+            height: height * 0.6,
+            borderRadius: height,
+            backgroundColor: colors.primary,
+          },
+        ]}
       />
       <CHeader
         testID="accountLockHeader"
@@ -75,8 +86,6 @@ export default function AccountLock({navigation}) {
     </CSafeAreaViewAuth>
   );
 }
-
-const {width, height} = Dimensions.get('window');
 
 const localStyle = StyleSheet.create({
   mainContainer: {
@@ -132,11 +141,6 @@ const localStyle = StyleSheet.create({
 
   ovalBackground: {
     position: 'absolute',
-    top: -height * 0.5,
-    left: -width * 0.25,
-    width: width * 1.5,
-    height: height * 0.6,
-    borderRadius: height,
     zIndex: 0,
     elevation: 6,
     shadowColor: '#000',

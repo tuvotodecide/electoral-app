@@ -3,9 +3,10 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
   TouchableOpacity,
 } from 'react-native';
+import {screenShortSide} from '../../common/constants';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CSafeAreaView from './CSafeAreaView';
 import CText from './CText';
@@ -19,12 +20,10 @@ import {
 } from './RecordReviewComponents';
 import { Ionicons } from '@expo/vector-icons';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375; // Increased from 350 to catch more small devices
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375; // Increased from 350 to catch more small devices
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -71,6 +70,8 @@ const BaseRecordReviewScreen = ({
   photoToggleLabelCollapsed = 'Ver foto de la hoja de trabajo',
   photoToggleLabelExpanded = 'Ocultar foto de la hoja de trabajo',
 }) => {
+  const {width: screenWidth, height: screenHeight} = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const insets = useSafeAreaInsets();
   const [isPhotoCollapsed, setIsPhotoCollapsed] = useState(true);
   const togglePhoto = () => setIsPhotoCollapsed(prev => !prev);

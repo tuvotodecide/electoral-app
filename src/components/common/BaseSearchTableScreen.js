@@ -3,10 +3,11 @@ import React from 'react';
 import {
   ScrollView,
   View,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import {screenShortSide} from '../../common/constants';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import CSafeAreaView from './CSafeAreaView';
@@ -23,12 +24,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -36,7 +35,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const getCardLayout = () => {
+const getCardLayout = isLandscape => {
   if (isTablet) {
     // Tablets: Different layouts for landscape vs portrait
     if (isLandscape) {
@@ -227,6 +226,8 @@ const BaseSearchTableScreen = ({
   // Styles
   styles,
 }) => {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const navigation = useNavigation();
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);
@@ -618,7 +619,7 @@ const BaseSearchTableScreen = ({
       );
     }
 
-    const layout = getCardLayout();
+    const layout = getCardLayout(isLandscape);
 
     if (layout.cardsPerRow === 1) {
       // Single column layout for phones

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Dimensions, TouchableOpacity, StyleSheet, View } from "react-native";
+import { TouchableOpacity, StyleSheet, View } from "react-native";
+import {screenShortSide} from '../../common/constants';
 import CText from '@/src/components/common/CText';
 import { useSelector } from "react-redux";
 import { useCallback, useState } from "react";
@@ -7,11 +8,9 @@ import { useFocusEffect } from "@react-navigation/native";
 import  { TvdTokenCalls } from "@/src/api/tvdToken";
 import { formatEther } from "viem";
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 
 const getResponsiveSize = (small, medium, large) => {

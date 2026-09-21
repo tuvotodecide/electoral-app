@@ -1,11 +1,10 @@
-import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import {screenShortSide} from '../../common/constants';
 import { Ionicons } from '@expo/vector-icons';
 import CText from '../common/CText';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
   if (isTablet) return large;

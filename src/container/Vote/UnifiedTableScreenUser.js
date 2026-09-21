@@ -1,6 +1,6 @@
 import { BACKEND_RESULT } from '@env';
 import React, {useState, useEffect} from 'react';
-import {ActivityIndicator, View, Dimensions} from 'react-native';
+import {ActivityIndicator, View} from 'react-native';
 import axios from 'axios';
 import CustomModal from '../../components/common/CustomModal';
 import CText from '../../components/common/CText';
@@ -15,15 +15,13 @@ import {
   unsubscribeFromLocationTopic,
 } from '../../services/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {LAST_TOPIC_KEY} from '../../common/constants';
+import {LAST_TOPIC_KEY, screenShortSide} from '../../common/constants';
 import {saveVotePlace} from '../../utils/offlineQueue';
 import { captureError } from '../../config/sentry';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

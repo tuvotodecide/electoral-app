@@ -7,11 +7,22 @@ export const deviceHeight = viewportHeight;
 let sampleHeight = 812;
 let sampleWidth = 375;
 
-const scale = viewportWidth / 375;
+// Scale from the shorter side so it doesn't depend on orientation, and cap it
+// so tablets don't get oversized UI.
+const MAX_SCALE = 1.3;
+const shortSide = Math.min(viewportWidth, viewportHeight);
+const scale = Math.min(shortSide / sampleWidth, MAX_SCALE);
+
+// Use for device size categories (phone/tablet): unlike the window width, it
+// doesn't change when the device rotates.
+export const screenShortSide = shortSide;
+
+// Minimum window width to place paired elements (action buttons, cards) side by side
+export const ROW_LAYOUT_MIN_WIDTH = 600;
 
 export const isIOS = Platform.OS === 'ios';
 export const isAndroid = Platform.OS === 'android';
-export const isTablet = viewportHeight / viewportWidth < 1.6;
+export const isTablet = shortSide >= 768;
 
 export const checkPlatform = () => {
   if (Platform.OS === 'android') {
@@ -38,8 +49,8 @@ export function getHeight(value) {
   return (value / sampleHeight) * deviceHeight;
 }
 
-export function moderateScale(size) {
-  const newSize = size * scale;
+export function moderateScale(size, factor = 0.5) {
+  const newSize = size + (size * scale - size) * factor;
   return Math.round(newSize);
 }
 

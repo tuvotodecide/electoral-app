@@ -1,6 +1,7 @@
 import { BACKEND_RESULT } from '@env';
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, View, Dimensions } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import BaseSearchTableScreen from '../../../components/common/BaseSearchTableScreen';
 import CustomModal from '../../../components/common/CustomModal';
 import CText from '../../../components/common/CText';
@@ -11,11 +12,9 @@ import String from '../../../i18n/String';
 import axios from 'axios';
 import { captureError } from '../../../config/sentry';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

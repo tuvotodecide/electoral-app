@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   Image,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
@@ -25,12 +26,9 @@ import InfoModal from '../../../components/modal/InfoModal';
 import axios from 'axios';
 import { captureError } from '../../../config/sentry';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = SCREEN_WIDTH >= 768;
-const isSmallPhone = SCREEN_WIDTH < 375;
-const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -38,7 +36,16 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
+const getConfirmModalWidth = screenWidth =>
+  getResponsiveSize(
+    screenWidth - 40,
+    screenWidth > 400 ? 340 : screenWidth - 40,
+    screenWidth > 600 ? 400 : screenWidth - 80,
+  );
+
 const RecordCertificationScreen = () => {
+  const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = useWindowDimensions();
+  const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const navigation = useNavigation();
   const route = useRoute();
   const colors = useSelector(state => state.theme.theme);
@@ -305,7 +312,7 @@ const RecordCertificationScreen = () => {
         animationType="fade"
         onRequestClose={closeModal}>
         <View testID="confirmModalOverlay" style={modalStyles.modalOverlay}>
-          <View testID="confirmModalContainer" style={modalStyles.modalContainer}>
+          <View testID="confirmModalContainer" style={[modalStyles.modalContainer, {width: getConfirmModalWidth(SCREEN_WIDTH)}]}>
             {step === 0 && (
               <>
                 <View testID="warningIconContainer" style={modalStyles.iconCircleWarning}>
@@ -690,11 +697,6 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: getResponsiveSize(
-      SCREEN_WIDTH - 40,
-      SCREEN_WIDTH > 400 ? 340 : SCREEN_WIDTH - 40,
-      SCREEN_WIDTH > 600 ? 400 : SCREEN_WIDTH - 80,
-    ),
     backgroundColor: '#fff',
     borderRadius: getResponsiveSize(18, 22, 26),
     paddingVertical: getResponsiveSize(24, 32, 40),

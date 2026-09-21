@@ -16,7 +16,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import {FRONTEND_RESULTS} from '@env';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -26,7 +25,7 @@ import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
 import DemoBanner from '../../demo/DemoBanner';
 import CText from '../../../components/common/CText';
-import { moderateScale } from '../../../common/constants';
+import { moderateScale, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { useVotingState } from '../state/useVotingState';
 import { releaseVoteForElection } from '../offline/queueAdapter';
@@ -35,10 +34,8 @@ import { blankVote } from '../data/params';
 import { commonColor } from '../../../themes/colors';
 import CAlert from '@/src/components/common/CAlert';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

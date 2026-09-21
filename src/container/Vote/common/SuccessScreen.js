@@ -6,7 +6,6 @@ import {
 import React, { useCallback, useState } from 'react';
 import {
   BackHandler,
-  Dimensions,
   Image,
   ScrollView,
   Share,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
@@ -25,9 +25,8 @@ import { StackNav, TabNav } from '../../../navigation/NavigationKey';
 import { normalizeUri } from '../../../utils/normalizedUri';
 import { captureError } from '../../../config/sentry';
 
-const { width: screenWidth } = Dimensions.get('window');
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

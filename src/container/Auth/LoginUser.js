@@ -2,16 +2,16 @@ import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, IDENTITY_KEY, BACKEND_RE
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import OTPTextInput from 'react-native-otp-textinput';
 import { useDispatch, useSelector } from 'react-redux';
 
 import images from '../../assets/images';
-import { moderateScale } from '../../common/constants';
+import { isTablet, moderateScale } from '../../common/constants';
 import CHeader from '../../components/common/CHeader';
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CText from '../../components/common/CText';
@@ -125,10 +125,24 @@ const logNetworkIssue = (label, error, extra = {}) => {
   });
 };
 
+const LOGO_SIZE = isTablet ? 150 : 100;
+const OVAL_TOP_RATIO = 0.45;
+const OVAL_HEIGHT_RATIO = 0.6;
+const OVAL_BOTTOM_RATIO = OVAL_HEIGHT_RATIO - OVAL_TOP_RATIO;
+
 export default function LoginUser({ navigation, route }) {
   const { sharedSessionId, sharedSessionSalt, isCIRecovery = false, dni } = route.params ?? {};
 
   const colors = useSelector(state => state.theme.theme);
+  const { width, height } = useWindowDimensions();
+  const [headerBottom, setHeaderBottom] = useState(null);
+  // Keep the logo straddling the bottom edge of the oval (as on phones) when
+  // the oval is taller than the header + logo, e.g. on tablets in portrait.
+  const ovalBottom = height * OVAL_BOTTOM_RATIO;
+  const logoOffset =
+    headerBottom === null
+      ? 0
+      : Math.max(0, ovalBottom - LOGO_SIZE * 0.65 - headerBottom);
   const [locked, setLocked] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ visible: false, msg: '', btn: String.understand, onClose: null });
@@ -451,11 +465,29 @@ export default function LoginUser({ navigation, route }) {
     <CSafeAreaViewAuth testID="loginUserSafeArea">
       <View
         testID="loginUserBackground"
-        style={[localStyle.ovalBackground, { backgroundColor: colors.primary }]}
+        style={[
+          localStyle.ovalBackground,
+          {
+            top: -height * OVAL_TOP_RATIO,
+            left: -width * 0.25,
+            width: width * 1.5,
+            height: height * OVAL_HEIGHT_RATIO,
+            borderRadius: height,
+            backgroundColor: colors.primary,
+          },
+        ]}
       />
 
-      <CHeader color={colors.white} isHideBack testID="loginUserHeader" />
-      <View style={localStyle.imageContainer} testID="loginUserLogoContainer">
+      <View
+        onLayout={e => {
+          const { y, height: h } = e.nativeEvent.layout;
+          setHeaderBottom(y + h);
+        }}>
+        <CHeader color={colors.white} isHideBack testID="loginUserHeader" />
+      </View>
+      <View
+        style={[localStyle.imageContainer, { marginTop: logoOffset }]}
+        testID="loginUserLogoContainer">
         <Image source={images.logoImg} style={localStyle.imageStyle} />
       </View>
       <KeyBoardAvoidWrapper
@@ -536,8 +568,6 @@ export default function LoginUser({ navigation, route }) {
   );
 }
 
-const { width, height } = Dimensions.get('window');
-
 const localStyle = StyleSheet.create({
   bottomButtons: {
     position: 'absolute',
@@ -579,16 +609,16 @@ const localStyle = StyleSheet.create({
     marginBottom: moderateScale(20),
   },
   imageStyle: {
-    width: 100,
-    height: 100,
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
     resizeMode: 'contain',
   },
   loadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width,
-    height,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -596,11 +626,6 @@ const localStyle = StyleSheet.create({
   },
   ovalBackground: {
     position: 'absolute',
-    top: -height * 0.45,
-    left: -width * 0.25,
-    width: width * 1.5,
-    height: height * 0.6,
-    borderRadius: height,
     zIndex: 0,
     elevation: 6,
     shadowColor: '#000',

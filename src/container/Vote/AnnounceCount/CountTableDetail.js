@@ -5,8 +5,9 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { useSelector } from 'react-redux';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
@@ -17,12 +18,10 @@ import String from '../../../i18n/String';
 import { firebaseNotificationService } from '../../../services/FirebaseNotificationService';
 import { captureError } from '../../../config/sentry';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -40,6 +39,8 @@ const mockMesa = {
 };
 
 export default function CountTableDetail({ navigation, route }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const colors = useSelector(state => state.theme.theme);
 
   // Obtener datos del usuario actual desde Redux

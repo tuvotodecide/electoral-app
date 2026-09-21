@@ -10,7 +10,7 @@ import {
   View,
   StyleSheet,
   Modal,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,8 +19,6 @@ import CButton from '../../../components/common/CButton';
 import { moderateScale, getHeight } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { blankVote } from '../data/params';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * @param {Object} props
@@ -47,6 +45,7 @@ const ConfirmVoteModal = ({
   onCancel,
   isLoading = false,
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
   const isReferendumVote = isReferendum && !isBlankVote;
   const title = isBlankVote
     ? UI_STRINGS.confirmVoteBlank
@@ -62,7 +61,7 @@ const ConfirmVoteModal = ({
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { width: screenWidth * 0.85 }]}>
           {/* Header con color del partido */}
           <View style={[styles.partyHeader, { backgroundColor: partyColor }]}>
             <CText type="B14" style={styles.partyName}>
@@ -149,7 +148,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: moderateScale(20),
     overflow: 'hidden',
-    width: screenWidth * 0.85,
     maxWidth: 400,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

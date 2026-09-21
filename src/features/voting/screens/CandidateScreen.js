@@ -12,7 +12,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 // Components
@@ -47,7 +47,7 @@ import {
   backendProbe,
   checkInternetConnection,
 } from "../../../utils/networkUtils";
-import { moderateScale, getHeight } from "../../../common/constants";
+import { moderateScale, getHeight, screenShortSide } from "../../../common/constants";
 import { StackNav, TabNav } from "../../../navigation/NavigationKey";
 import { captureError } from "../../../config/sentry";
 import { blankVote } from "../data/params";
@@ -55,11 +55,9 @@ import { useCameraPermissions } from "expo-camera";
 import { isDemoActive, useIsDemoActive } from "../../demo/demoSession";
 import DemoBanner from "../../demo/DemoBanner";
 
-const { width: screenWidth } = Dimensions.get("window");
-
 // Responsive helpers
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

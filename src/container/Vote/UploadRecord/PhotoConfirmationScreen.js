@@ -3,12 +3,13 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   Modal,
   ActivityIndicator,
   Image,
   Switch,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -36,11 +37,9 @@ import {
   sanitizeElectoralDataForVisibleOffices,
 } from '../../../utils/electionContext';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 
 // const fetchUserAttestations = async (dniValue, electionId) => {
 //   if (!dniValue) return [];
@@ -66,7 +65,7 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const getResponsiveModalWidth = () => {
+const getResponsiveModalWidth = screenWidth => {
   if (isTablet) {
     return screenWidth * 0.6; // Tablets: 60% width
   }
@@ -109,6 +108,11 @@ const formatWorksheetDiffFieldLabel = rawField => {
 };
 
 const PhotoConfirmationScreen = ({ route }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const modalSizeStyle = {
+    width: getResponsiveModalWidth(screenWidth),
+    maxWidth: isTablet ? 500 : screenWidth * 0.95,
+  };
   const { electionId, electionType, selectedElectionContext } = route.params || {};
   const navigation = useNavigation();
   const navigateHome = useCallback(() => {
@@ -862,7 +866,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           style={modalStyles.modalOverlay}>
           <View
             testID="photoConfirmationModalContainer"
-            style={modalStyles.modalContainer}>
+            style={[modalStyles.modalContainer, modalSizeStyle]}>
             {step === 0 && (
               <>
                 <View
@@ -999,7 +1003,7 @@ const PhotoConfirmationScreen = ({ route }) => {
           style={modalStyles.modalOverlay}>
           <View
             testID="photoConfirmationDuplicateModalContainer"
-            style={modalStyles.modalContainer}>
+            style={[modalStyles.modalContainer, modalSizeStyle]}>
             <View
               testID="photoConfirmationDuplicateModalWarningIcon"
               style={modalStyles.iconCircleWarning}>
@@ -1085,8 +1089,6 @@ const modalStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    width: getResponsiveModalWidth(),
-    maxWidth: isTablet ? 500 : screenWidth * 0.95,
   },
   iconCircleWarning: {
     backgroundColor: '#fdf4f4',

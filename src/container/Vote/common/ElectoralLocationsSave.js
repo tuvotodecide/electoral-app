@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  Dimensions,
   Linking,
   TextInput,
   Animated,
@@ -25,7 +24,7 @@ import wira from 'wira-sdk';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LAST_TOPIC_KEY } from '../../../common/constants';
+import { LAST_TOPIC_KEY, screenShortSide } from '../../../common/constants';
 import { saveVotePlace } from '../../../utils/offlineQueue';
 import { getCache, setCache } from '../../../utils/lookupCache';
 import { backendProbe } from '../../../utils/networkUtils';
@@ -42,13 +41,11 @@ import {
   getDemoElectoralLocations,
 } from '../../../features/demo/demoLocations';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {

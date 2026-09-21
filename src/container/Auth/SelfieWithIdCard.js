@@ -1,4 +1,10 @@
-import {Image, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import React, {useRef} from 'react';
 
 // custom import
@@ -12,11 +18,12 @@ import TakePictureModal from '../../components/modal/TakePictureModal';
 import CButton from '../../components/common/CButton';
 import images from '../../assets/images';
 import {AuthNav} from '../../navigation/NavigationKey';
-import {deviceHeight, moderateScale} from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
 
 export default function SelfieWithIdCard({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  const {height} = useWindowDimensions();
   const SheetRef = useRef(null);
   const onPressImage = () => {
     SheetRef?.current?.show();
@@ -37,7 +44,10 @@ export default function SelfieWithIdCard({navigation}) {
           <TouchableOpacity onPress={onPressImage} testID="selfieWithIdCardImageButton">
             <Image
               source={images.TakePictureIdImage}
-              style={localStyle.pictureImage}
+              style={[
+                localStyle.pictureImage,
+                {height: height - moderateScale(300)},
+              ]}
               testID="selfieWithIdCardImage"
             />
           </TouchableOpacity>
@@ -63,7 +73,6 @@ const localStyle = StyleSheet.create({
   },
   pictureImage: {
     width: '100%',
-    height: deviceHeight - moderateScale(300),
     position: 'relative',
     bottom: 0,
   },

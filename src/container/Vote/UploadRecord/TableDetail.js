@@ -9,8 +9,9 @@ import {
   ActivityIndicator,
   Image,
   Modal,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
 import { useSelector } from 'react-redux';
@@ -41,12 +42,10 @@ import {
 } from '../../../utils/electionContext';
 
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -291,6 +290,8 @@ const withTimeout = (promise, timeoutMs = 12000) =>
 
 
 export default function TableDetail({ navigation, route }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const colors = useSelector(state => state.theme.theme);
   const userData = useSelector(state => state.wallet.payload);
   const { electionId, electionType } = route.params || {};

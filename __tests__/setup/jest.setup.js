@@ -121,6 +121,12 @@ jest.mock('react-native', () => ({
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
   },
+  useWindowDimensions: jest.fn(() => ({
+    width: 375,
+    height: 667,
+    scale: 2,
+    fontScale: 1,
+  })),
   PixelRatio: {
     get: jest.fn(() => 2),
     roundToNearestPixel: jest.fn(x => Math.round(x)),

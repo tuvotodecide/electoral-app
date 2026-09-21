@@ -10,7 +10,6 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -20,7 +19,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import DemoBanner from '../../demo/DemoBanner';
 import CText from '../../../components/common/CText';
-import { moderateScale } from '../../../common/constants';
+import { moderateScale, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { StackNav } from '../../../navigation/NavigationKey';
 import { useVotingState } from '../state/useVotingState';
@@ -28,10 +27,8 @@ import { useElectionRepository } from '../data/useElectionRepository';
 import { normalizeUri } from '../../../utils/normalizedUri';
 import { FlashList } from '@shopify/flash-list';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

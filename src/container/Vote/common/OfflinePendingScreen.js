@@ -1,5 +1,10 @@
 import React from 'react';
-import {View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
@@ -8,17 +13,15 @@ import {CommonActions} from '@react-navigation/native';
 import {StackNav, TabNav} from '../../../navigation/NavigationKey';
 
 
-const {width} = Dimensions.get('window');
-
 export default function OfflinePendingScreen({navigation}) {
-  
+  const {width} = useWindowDimensions();
   
   return (
     <CSafeAreaView style={styles.container}>
       <View style={styles.center}>
         <Ionicons name="warning-outline" size={72} color="#2563eb" />
         <CText style={styles.title}>No tienes conexión a Internet.</CText>
-        <CText style={styles.body}>
+        <CText style={[styles.body, {maxWidth: width * 0.82}]}>
           El acta se guardará y se publicará automáticamente cuando vuelvas a
           conectarte. En ese momento recibirás tu NFT.
         </CText>
@@ -69,7 +72,6 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     textAlign: 'center',
     lineHeight: 20,
-    maxWidth: width * 0.82,
   },
   button: {
     marginTop: 24,

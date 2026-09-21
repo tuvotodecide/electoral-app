@@ -1,4 +1,4 @@
-import { ActivityIndicator, Dimensions, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import CText from "./CText";
 import String from "../../i18n/String";
 import { useSelector } from "react-redux";
@@ -17,15 +17,13 @@ export default function CLoaderOverlay({message = String.loading}) {
   );
 }
 
-const {width, height} = Dimensions.get('window');
-
 const localStyle = StyleSheet.create({
   loadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width,
-    height,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',

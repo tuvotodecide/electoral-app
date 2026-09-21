@@ -1,9 +1,9 @@
 import React from 'react';
-import {View, TouchableOpacity, TextInput, Dimensions} from 'react-native';
+import {View, TouchableOpacity, TextInput} from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import CText from './CText';
 import UniversalHeader from './UniversalHeader';
-import {moderateScale} from '../../common/constants';
+import {moderateScale, screenShortSide} from '../../common/constants';
 
 export const getTableNumber = table => {
   const raw =
@@ -17,11 +17,9 @@ export const getTableNumber = table => {
   return Number.isNaN(n) ? 0 : n;
 };
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

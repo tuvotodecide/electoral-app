@@ -1,12 +1,11 @@
 import React from 'react';
-import {View, StyleSheet, Dimensions} from 'react-native';
+import {View, StyleSheet} from 'react-native';
+import {screenShortSide} from '../../common/constants';
 import CText from './CText';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375; // Increased from 350
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375; // Increased from 350
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

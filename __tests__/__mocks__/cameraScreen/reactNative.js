@@ -118,6 +118,11 @@ const createReactNativeMock = () => {
   define('Image', MockImage);
   define('Modal', MockModal);
   define('Dimensions', mockedDimensions);
+  define('useWindowDimensions', () => ({
+    scale: 2,
+    fontScale: 1,
+    ...mockedDimensions.get('window'),
+  }));
   define('AppState', mockedAppState);
   define('StatusBar', mockedStatusBar);
   define('Alert', mockedAlert);

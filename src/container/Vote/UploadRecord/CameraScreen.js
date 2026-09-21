@@ -6,13 +6,14 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   Alert,
   AppState,
   StatusBar,
   PanResponder,
   Animated,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageViewing from 'react-native-image-viewing';
@@ -25,9 +26,8 @@ import { isStateEffectivelyOnline, NET_POLICIES } from '../../../utils/networkQu
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { captureError } from '../../../config/sentry';
 
-const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
-const isTablet = windowWidth >= 768;
-const isSmallPhone = windowWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 const MAX_CAPTURE_HEIGHT = 1080;
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
@@ -82,8 +82,9 @@ export default function CameraScreen({ navigation, route }) {
   const [isActive, setIsActive] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
   const [cameraKey, setCameraKey] = useState(0); // Para forzar re-render
-  const [orientation, setOrientation] = useState('portrait');
-  const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const screenData = useWindowDimensions();
+  const orientation =
+    screenData.width > screenData.height ? 'landscape' : 'portrait';
   // Estados para zoom y navegación de imagen
   const [imageScale, setImageScale] = useState(new Animated.Value(1));
   const [photoMeta, setPhotoMeta] = useState({ width: 0, height: 0 });
@@ -142,18 +143,6 @@ export default function CameraScreen({ navigation, route }) {
     return () => {
       StatusBar.setHidden(false);
     };
-  }, []);
-
-  // Detectar cambios de orientación
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setScreenData(window);
-      const newOrientation =
-        window.width > window.height ? 'landscape' : 'portrait';
-      setOrientation(newOrientation);
-    });
-
-    return () => subscription?.remove();
   }, []);
 
   const openGallery = async () => {
@@ -935,8 +924,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    width: windowWidth,
-    height: windowHeight,
     ...StyleSheet.absoluteFillObject,
   },
   fullContainer: {
@@ -1004,8 +991,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   zoomableImage: {
-    width: windowWidth,
-    height: windowHeight * 0.7,
     maxWidth: '100%',
     maxHeight: '100%',
   },

@@ -4,8 +4,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  Dimensions,
 } from 'react-native';
+import {screenShortSide} from '../../common/constants';
 
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -17,11 +17,9 @@ import String from '../../i18n/String';
 import Icono from '../../components/common/Icono';
 import {isSessionValid, refreshSession} from '../../utils/Session';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 const ACTIVE_TAB_COLOR = '#459151';
 const INACTIVE_TAB_COLOR = '#6B7280';
 

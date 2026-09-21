@@ -4,14 +4,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Dimensions,
+  useWindowDimensions,
   ScrollView, // <--- 1. Importamos ScrollView
 } from 'react-native';
 import CText from './CText';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale } from '../../common/constants';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window'); // <--- 2. Obtenemos el alto de la pantalla
 
 const CustomModal = ({
   visible,
@@ -28,6 +26,8 @@ const CustomModal = ({
   onTertiaryPress,
   tertiaryVariant = 'ghost',
 }) => {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+
   const getIconConfig = () => {
     switch (type) {
       case 'success':
@@ -53,7 +53,15 @@ const CustomModal = ({
       onRequestClose={onClose}>
       <View style={styles.overlay}>
         {/* Agregamos maxHeight al contenedor para que no se salga de la pantalla */}
-        <View style={[styles.modalContainer, { maxHeight: screenHeight * 0.85 }]}>
+        <View
+          style={[
+            styles.modalContainer,
+            {
+              maxHeight: screenHeight * 0.85,
+              maxWidth: screenWidth * 0.9,
+              minWidth: screenWidth * 0.8,
+            },
+          ]}>
           
           {/* Icon */}
           <View
@@ -161,8 +169,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24, 
     paddingHorizontal: 24,
     alignItems: 'center',
-    maxWidth: screenWidth * 0.9,
-    minWidth: screenWidth * 0.8,
     // Sombra
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

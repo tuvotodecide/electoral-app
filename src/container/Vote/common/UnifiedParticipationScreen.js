@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import { useSelector } from 'react-redux';
 
 import CSafeAreaView from '../../../components/common/CSafeAreaView';
@@ -7,11 +8,9 @@ import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import { StackNav } from '../../../navigation/NavigationKey';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

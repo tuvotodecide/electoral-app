@@ -6,20 +6,18 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
-import { moderateScale, getHeight } from '../../../common/constants';
+import { moderateScale, getHeight, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS, MOCK_ELECTION } from '../data/mockData';
 import { useCountdown } from '../utils/useCountdown';
 import { DEV_FLAGS } from '../../../config/featureFlags';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Responsive helpers (matching HomeScreen pattern)
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

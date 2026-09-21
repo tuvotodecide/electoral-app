@@ -1,13 +1,14 @@
-import {SafeAreaView, StyleSheet, View} from 'react-native';
+import {SafeAreaView, StyleSheet, useWindowDimensions, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import React from 'react';
-import {deviceWidth, moderateScale} from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 
 export default function StepIndicator({step, style, totalSteps = 10}) {
   const colors = useSelector(state => state.theme.theme);
+  const {width} = useWindowDimensions();
 
   return (
-    <SafeAreaView style={[localStyle.viewStyle, style]}>
+    <SafeAreaView style={[{width}, style]}>
       <View style={localStyle.wrapper}>
         {Array.from({length: totalSteps}).map((_, index) => (
           <View
@@ -27,9 +28,6 @@ export default function StepIndicator({step, style, totalSteps = 10}) {
 }
 
 const localStyle = StyleSheet.create({
-  viewStyle: {
-    width: deviceWidth,
-  },
   wrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',

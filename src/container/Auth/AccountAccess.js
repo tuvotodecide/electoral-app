@@ -1,9 +1,14 @@
 import React, { useRef, useState } from "react";
-import { ActivityIndicator, Dimensions, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import OTPTextInput from "react-native-otp-textinput";
 import { useDispatch, useSelector } from "react-redux";
 
-import { moderateScale } from "../../common/constants";
+import { ROW_LAYOUT_MIN_WIDTH, moderateScale } from "../../common/constants";
 import CAlert from "../../components/common/CAlert";
 import CButton from "../../components/common/CButton";
 import CHeader from "../../components/common/CHeader";
@@ -37,6 +42,12 @@ export default function AccountAccess({ navigation, route }) {
 
   const colors = useSelector((state) => state.theme.theme);
   const dispatch = useDispatch();
+  const { width } = useWindowDimensions();
+  const buttonsInRow = width >= ROW_LAYOUT_MIN_WIDTH;
+  const buttonStyle = [
+    localStyle.btnStyle,
+    buttonsInRow && localStyle.rowBtnStyle,
+  ];
 
   const [dni, setDni] = useState("");
   const [pin, setPin] = useState("");
@@ -161,22 +172,24 @@ export default function AccountAccess({ navigation, route }) {
       </KeyBoardAvoidWrapper>
 
       <View style={localStyle.bottomButtons} testID="accountAccessActions">
-        <CButton
-          testID="accountAccessSubmitButton"
-          disabled={!isFormValid || loading}
-          title={String.accountAccessSubmit}
-          type={"B16"}
-          onPress={onPressSubmit}
-          containerStyle={localStyle.btnStyle}
-        />
-        <CButton
-          testID="accountAccessRecoveryButton"
-          disabled={loading}
-          title={String.accountAccessRecovery}
-          type={"B16"}
-          onPress={onPressRecover}
-          containerStyle={localStyle.btnStyle}
-        />
+        <View style={buttonsInRow && localStyle.buttonsRow}>
+          <CButton
+            testID="accountAccessSubmitButton"
+            disabled={!isFormValid || loading}
+            title={String.accountAccessSubmit}
+            type={"B16"}
+            onPress={onPressSubmit}
+            containerStyle={buttonStyle}
+          />
+          <CButton
+            testID="accountAccessRecoveryButton"
+            disabled={loading}
+            title={String.accountAccessRecovery}
+            type={"B16"}
+            onPress={onPressRecover}
+            containerStyle={buttonStyle}
+          />
+        </View>
       </View>
 
       {loading && (
@@ -198,8 +211,6 @@ export default function AccountAccess({ navigation, route }) {
     </CSafeAreaViewAuth>
   );
 }
-
-const { width, height } = Dimensions.get("window");
 
 const localStyle = StyleSheet.create({
   mainContainer: {
@@ -228,12 +239,22 @@ const localStyle = StyleSheet.create({
     paddingHorizontal: moderateScale(20),
     paddingBottom: moderateScale(16),
   },
+  buttonsRow: {
+    flexDirection: "row",
+    width: "90%",
+    gap: moderateScale(15),
+    ...styles.selfCenter,
+  },
+  rowBtnStyle: {
+    flex: 1,
+    width: "auto",
+  },
   loadingOverlay: {
     position: "absolute",
     top: 0,
     left: 0,
-    width,
-    height,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",

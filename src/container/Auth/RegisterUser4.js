@@ -272,6 +272,8 @@ const localStyle = StyleSheet.create({
   },
   imageBox: {
     height: 400,
+    aspectRatio: 1,
+    alignSelf: "center",
     borderRadius: moderateScale(12),
     justifyContent: "center",
     alignItems: "center",

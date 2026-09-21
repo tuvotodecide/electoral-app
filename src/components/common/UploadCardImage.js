@@ -13,7 +13,10 @@ import { moderateScale } from '../../common/constants';
 import CText from './CText';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function UploadCardImage({label, image, setImage, testID, editable = true}) {
+// ID-1 card size (85.6mm x 54mm), so the box keeps the card's shape at any width
+const ID_CARD_ASPECT_RATIO = 85.6 / 54;
+
+export default function UploadCardImage({label, image, setImage, testID, style, editable = true}) {
   const colors = useSelector(state => state.theme.theme);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -59,7 +62,7 @@ export default function UploadCardImage({label, image, setImage, testID, editabl
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <CText testID={testID ? `${testID}_label` : undefined} type="B16" color={colors.textColor}>
         {label}
       </CText>
@@ -120,7 +123,10 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(20),
   },
   imageBox: {
-    height: 150,
+    // Explicit width so the box fills its column and the height follows the ratio
+    width: '100%',
+    aspectRatio: ID_CARD_ASPECT_RATIO,
+    minHeight: 150,
     borderRadius: moderateScale(10),
     justifyContent: 'center',
     alignItems: 'center',

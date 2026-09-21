@@ -2,18 +2,14 @@ import {
   ImageBackground,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import {
-  deviceHeight,
-  deviceWidth,
-  getHeight,
-  moderateScale,
-} from '../common/constants';
+import {getHeight, moderateScale} from '../common/constants';
 import {styles} from '../themes';
 import CText from '../components/common/CText';
 import {OnBoardingGuardiansData} from '../api/constant';
@@ -26,8 +22,18 @@ import { FlashList } from '@shopify/flash-list';
 
 export default function OnBoardingGuardians({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  const {width, height} = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideRef = useRef(null);
+
+  // Keep the current slide aligned when the window width changes (rotation, resize)
+  useEffect(() => {
+    slideRef.current?.scrollToOffset({
+      offset: currentIndex * width,
+      animated: false,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width]);
   const _onViewableItemsChanged = useCallback(({viewableItems}) => {
     setCurrentIndex(viewableItems[0]?.index);
   }, []);
@@ -53,11 +59,11 @@ export default function OnBoardingGuardians({navigation}) {
   const RenderItemData = useCallback(
     ({item, index}) => {
       return (
-        <View testID={`onboardingGuardiansSlide_${index}`} style={localStyle.container}>
+        <View testID={`onboardingGuardiansSlide_${index}`} style={{width}}>
           <ImageBackground
             testID={`onboardingGuardiansImage_${index}`}
             source={colors.dark ? item.darkImage : item.lightImage}
-            style={localStyle.imageStyle}></ImageBackground>
+            style={{width, height: height - getHeight(390)}}></ImageBackground>
           <View testID={`onboardingGuardiansTextContainer_${index}`} style={localStyle.boardingTextContainer}>
             <CText testID={`onboardingGuardiansTitle_${index}`} type={'B24'} style={localStyle.boardingTitleText}>
               {item.title}
@@ -74,7 +80,7 @@ export default function OnBoardingGuardians({navigation}) {
         </View>
       );
     },
-    [OnBoardingGuardiansData],
+    [OnBoardingGuardiansData, width, height],
   );
 
   return (
@@ -103,6 +109,7 @@ export default function OnBoardingGuardians({navigation}) {
         bounces={false}
         onViewableItemsChanged={_onViewableItemsChanged}
         viewabilityConfig={_onViewabilityConfig}
+        extraData={width}
         pagingEnabled
       />
 
@@ -141,10 +148,6 @@ export default function OnBoardingGuardians({navigation}) {
 }
 
 const localStyle = StyleSheet.create({
-  imageStyle: {
-    width: deviceWidth,
-    height: deviceHeight - getHeight(390),
-  },
   skipContainer: {
     ...styles.selfEnd,
     ...styles.pv10,
@@ -157,9 +160,6 @@ const localStyle = StyleSheet.create({
     top: getHeight(50),
     right: moderateScale(20),
     zIndex: 99,
-  },
-  container: {
-    width: deviceWidth,
   },
   boardingTextContainer: {
     width: '100%',

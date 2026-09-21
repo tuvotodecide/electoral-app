@@ -4,8 +4,8 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
@@ -20,11 +20,9 @@ import {
   hasSecondaryVoteData,
 } from '../../../utils/electionContext';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

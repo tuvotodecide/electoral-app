@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Linking,
   ActivityIndicator,
   Image,
@@ -17,7 +16,7 @@ import CSafeAreaView from '../../../components/common/CSafeAreaView';
 import CHeader from '../../../components/common/CHeader';
 import CText from '../../../components/common/CText';
 import CButton from '../../../components/common/CButton';
-import { moderateScale, getHeight } from '../../../common/constants';
+import { moderateScale, getHeight, screenShortSide } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
 import { BACKEND_RESULT, FRONTEND_RESULTS } from '@env';
 import { StackNav } from '../../../navigation/NavigationKey';
@@ -27,10 +26,8 @@ import {
   InstitutionalInvitationNotificationCard,
 } from '../../institutionalAuthorization';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

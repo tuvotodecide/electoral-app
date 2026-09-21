@@ -2,6 +2,7 @@ import {
   Modal,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
@@ -10,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 // custom import
 import CText from '../common/CText';
 import {styles} from '../../themes';
-import {deviceWidth, moderateScale} from '../../common/constants';
+import {moderateScale} from '../../common/constants';
 import {useSelector} from 'react-redux';
 import {SelectCountryData} from '../../api/constant';
 import String from '../../i18n/String';
@@ -22,6 +23,7 @@ export default function SelectCountryModal(props) {
   let {visible, selectedCountry , onPressClose} = props;
 
   const colors = useSelector(state => state.theme.theme);
+  const {width} = useWindowDimensions();
   const [isSelect, setIsSelect] = useState('');
   const [searchText, setSearchText] = useState('');
   const [searchData, setSearchData] = useState(SelectCountryData);
@@ -97,6 +99,7 @@ export default function SelectCountryModal(props) {
             style={[
               localStyle.lineStyle,
               {
+                width: width - moderateScale(60),
                 borderColor: colors.dark
                   ? colors.grayScale700
                   : colors.grayScale200,
@@ -145,6 +148,7 @@ export default function SelectCountryModal(props) {
               renderItem={RenderCountryData}
               keyExtractor={(item, index) => index.toString()}
               showsVerticalScrollIndicator={false}
+              extraData={width}
             />
           </View>
         </View>
@@ -160,7 +164,6 @@ const localStyle = StyleSheet.create({
     ...styles.m10,
   },
   lineStyle: {
-    width: deviceWidth - moderateScale(60),
     borderWidth: moderateScale(1),
     ...styles.ph10,
     ...styles.selfCenter,

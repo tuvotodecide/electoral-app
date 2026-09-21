@@ -3,13 +3,14 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 
 // custom import
-import {deviceWidth, getHeight, moderateScale} from '../common/constants';
+import {getHeight, moderateScale} from '../common/constants';
 import {styles} from '../themes';
 import CText from '../components/common/CText';
 import {OnBoardingData} from '../api/constant';
@@ -22,9 +23,19 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function OnBoarding({navigation}) {
   const colors = useSelector(state => state.theme.theme);
+  const {width} = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideRef = useRef(null);
   const lastSlideIndex = OnBoardingData.length - 1;
+
+  // Keep the current slide aligned when the window width changes (rotation, resize)
+  useEffect(() => {
+    slideRef.current?.scrollToOffset({
+      offset: currentIndex * width,
+      animated: false,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width]);
 
 
   const _onViewableItemsChanged = useCallback(({viewableItems}) => {
@@ -48,7 +59,7 @@ export default function OnBoarding({navigation}) {
     } else {
       const nextIndex = currentIndex + 1;
       slideRef.current?.scrollToOffset({
-        offset: nextIndex * deviceWidth,
+        offset: nextIndex * width,
         animated: true,
       });
     }
@@ -63,7 +74,7 @@ export default function OnBoarding({navigation}) {
   const RenderItemData = useCallback(
     ({item, index}) => {
       return (
-        <View style={localStyle.container} testID={`onboardingSlide_${index}`}>
+        <View style={[localStyle.container, {width}]} testID={`onboardingSlide_${index}`}>
           <View style={localStyle.imageContainer} testID={`onboardingSlideImageContainer_${index}`}>
             <Image
               source={colors.dark ? item.darkImage : item.lightImage}
@@ -88,7 +99,7 @@ export default function OnBoarding({navigation}) {
         </View>
       );
     },
-    [colors.dark, colors.grayScale500],
+    [colors.dark, colors.grayScale500, width],
   );
 
   return (
@@ -117,10 +128,11 @@ export default function OnBoarding({navigation}) {
         onViewableItemsChanged={_onViewableItemsChanged}
         viewabilityConfig={_onViewabilityConfig}
         getItemLayout={(_, index) => ({
-          length: deviceWidth,
-          offset: deviceWidth * index,
+          length: width,
+          offset: width * index,
           index,
         })}
+        extraData={width}
         pagingEnabled
         testID="onboardingFlatList"
       />
@@ -161,7 +173,6 @@ export default function OnBoarding({navigation}) {
 
 const localStyle = StyleSheet.create({
   container: {
-    width: deviceWidth,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -213,7 +224,7 @@ const localStyle = StyleSheet.create({
   },
   bottomIndicatorContainer: {
     ...styles.flexRow,
-    ...styles.ml15,
+    justifyContent: 'center',
   },
   bottomIndicatorStyle: {
     height: moderateScale(10),

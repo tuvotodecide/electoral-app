@@ -3,10 +3,11 @@ import {
   View,
   StyleSheet,
   Image,
-  Dimensions,
+  useWindowDimensions,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import {screenShortSide} from '../../common/constants';
 
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,11 +16,9 @@ import {
   buildIpfsCandidates,
 } from '../../utils/normalizedUri';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = SCREEN_WIDTH >= 768;
-const isSmallPhone = SCREEN_WIDTH < 375; // Increased from 350
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375; // Increased from 350
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) {
@@ -31,15 +30,20 @@ const getResponsiveSize = (small, medium, large) => {
   return medium;
 };
 
-const getDynamicPhotoHeight = () => {
-  const isPortrait = SCREEN_HEIGHT >= SCREEN_WIDTH;
-  const maxHeight = SCREEN_HEIGHT * (isTablet ? 0.55 : isPortrait ? 0.4 : 0.5);
+const getDynamicPhotoHeight = (screenWidth, screenHeight) => {
+  const isPortrait = screenHeight >= screenWidth;
+  const maxHeight = screenHeight * (isTablet ? 0.55 : isPortrait ? 0.4 : 0.5);
   const minHeight = getResponsiveSize(180, 220, 260);
-  return Math.min(maxHeight, Math.max(minHeight, SCREEN_HEIGHT * 0.35));
+  return Math.min(maxHeight, Math.max(minHeight, screenHeight * 0.35));
+};
+
+// Recalculated when the window size changes (rotation, resize)
+const usePhotoHeight = () => {
+  const { width, height } = useWindowDimensions();
+  return useMemo(() => getDynamicPhotoHeight(width, height), [width, height]);
 };
 
 // Constantes calculadas fuera de los worklets
-const PHOTO_HEIGHT = getDynamicPhotoHeight();
 const CONTAINER_PADDING = getResponsiveSize(2, 4, 6);
 const CORNER_SIZE = getResponsiveSize(12, 20, 25);
 const CORNER_BORDER_WIDTH = 2;
@@ -81,6 +85,7 @@ const StaticPhotoContainer = ({
   photoUri,
   useAspectRatio = false,
 }) => {
+  const photoHeight = usePhotoHeight();
 
   const baseUri = useMemo(() => normalizeIpfsUri(photoUri), [photoUri]);
   const candidates = useMemo(
@@ -116,12 +121,16 @@ const StaticPhotoContainer = ({
       style={
         useAspectRatio
           ? styles.photoContainerAspectRatio
-          : styles.photoContainer
+          : [styles.photoContainer, { minHeight: photoHeight }]
       }>
       <Image
         testID={`${testID}Image`}
         source={{ uri: currentUri }}
-        style={useAspectRatio ? styles.photoAspectRatio : styles.photo}
+        style={
+          useAspectRatio
+            ? styles.photoAspectRatio
+            : [styles.photo, { height: photoHeight }]
+        }
         resizeMode="contain"
         onLoadStart={() => setIsLoading(true)}
         onLoad={() => setIsLoading(false)}
@@ -164,6 +173,8 @@ const ZoomablePhotoContainer = ({
   photoUri,
   useAspectRatio = false,
 }) => {
+  const { height: screenHeight } = useWindowDimensions();
+  const photoHeight = usePhotoHeight();
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [img, setImg] = useState({ w: 0, h: 0 });
   const [rotation, setRotation] = useState(0);
@@ -283,9 +294,9 @@ const ZoomablePhotoContainer = ({
     // Al girar 90°, un documento "portrait" se ve pequeño si el contenedor es bajo.
     // Preferimos aumentar altura (sin recortar) y dejar que el usuario haga pinch si desea.
     const factor = isTablet ? 0.85 : 0.92;
-    const target = Math.round(SCREEN_HEIGHT * factor);
-    return Math.max(PHOTO_HEIGHT, target);
-  }, []);
+    const target = Math.round(screenHeight * factor);
+    return Math.max(photoHeight, target);
+  }, [screenHeight, photoHeight]);
 
   useEffect(() => {
     const metricsKey = [
@@ -335,7 +346,7 @@ const ZoomablePhotoContainer = ({
       style={[
         useAspectRatio
           ? styles.photoContainerZoomAspectRatio
-          : styles.photoContainer,
+          : [styles.photoContainer, { minHeight: photoHeight }],
         isTablet && styles.photoContainerFill,
         isTablet && isRotated && { height: rotatedContainerHeight },
       ]}>
@@ -385,7 +396,7 @@ const ZoomablePhotoContainer = ({
         // Render vacío mientras medimos: sin “salto”
         <View
           testID={`${testID}PlaceholderView`}
-          style={{ width: '100%', height: PHOTO_HEIGHT }}
+          style={{ width: '100%', height: photoHeight }}
         />
       )}
       {isLoading && (
@@ -458,11 +469,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: PHOTO_HEIGHT,
   },
   photoWrapper: {
     width: '100%',
-    height: PHOTO_HEIGHT,
   },
   photoWrapperAspectRatio: {
     width: '100%',
@@ -470,7 +479,6 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: '100%',
-    height: PHOTO_HEIGHT,
     borderRadius: BORDER_RADIUS,
   },
   photoContainerAspectRatio: {

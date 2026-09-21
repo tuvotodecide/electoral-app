@@ -1,10 +1,9 @@
-import {StyleSheet, Dimensions} from 'react-native';
-
-const {width: screenWidth} = Dimensions.get('window');
+import {StyleSheet} from 'react-native';
+import {screenShortSide} from '../common/constants';
 
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

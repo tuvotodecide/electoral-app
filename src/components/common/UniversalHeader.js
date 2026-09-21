@@ -1,6 +1,7 @@
 import { BACKEND_RESULT } from '@env';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {View, TouchableOpacity, StyleSheet, Dimensions} from 'react-native';
+import {View, TouchableOpacity, StyleSheet} from 'react-native';
+import {screenShortSide} from '../../common/constants';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,11 +20,9 @@ import {
 } from '../../notifications';
 import {getCache, isFresh, setCache} from '../../utils/lookupCache';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

@@ -1,13 +1,13 @@
 import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSelector } from 'react-redux';
 
 // Custom imports
 
 import debounce from 'lodash.debounce';
 import wira from 'wira-sdk';
-import { moderateScale } from '../../common/constants';
+import { moderateScale, ROW_LAYOUT_MIN_WIDTH } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import CButton from '../../components/common/CButton';
 import CHeader from '../../components/common/CHeader';
@@ -27,6 +27,9 @@ import { captureError } from '@/src/config/sentry';
 export default function RegisterUser2({navigation, route}) {
   const isRecovery = !!route?.params?.isRecovery;
   const colors = useSelector(state => state.theme.theme);
+  const { width } = useWindowDimensions();
+  const cardsInRow = width >= ROW_LAYOUT_MIN_WIDTH;
+  const cardStyle = cardsInRow ? localStyle.rowCard : null;
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [idNumber, setIdNumber] = useState('');
@@ -195,21 +198,25 @@ export default function RegisterUser2({navigation, route}) {
             input
           />
 
-          <UploadCardImage
-            testID="frontCardUpload"
-            label={String.frontLabel}
-            image={frontImage}
-            setImage={setFrontImage}
-            editable={!submitting}
-          />
+          <View style={cardsInRow && localStyle.cardsRow}>
+            <UploadCardImage
+              testID="frontCardUpload"
+              label={String.frontLabel}
+              image={frontImage}
+              setImage={setFrontImage}
+              editable={!submitting}
+              style={cardStyle}
+            />
 
-          <UploadCardImage
-            testID="backCardUpload"
-            label={String.backLabel}
-            image={backImage}
-            setImage={setBackImage}
-            editable={!submitting}
-          />
+            <UploadCardImage
+              testID="backCardUpload"
+              label={String.backLabel}
+              image={backImage}
+              setImage={setBackImage}
+              editable={!submitting}
+              style={cardStyle}
+            />
+          </View>
         </View>
       </KeyBoardAvoidWrapper>
       <View
@@ -238,6 +245,13 @@ export default function RegisterUser2({navigation, route}) {
 }
 
 const localStyle = StyleSheet.create({
+  cardsRow: {
+    flexDirection: 'row',
+    gap: moderateScale(15),
+  },
+  rowCard: {
+    flex: 1,
+  },
   mainContainer: {
     ...styles.ph20,
     gap: 5,

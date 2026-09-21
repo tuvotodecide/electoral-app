@@ -2,7 +2,7 @@ import { BACKEND_RESULT, FRONTEND_RESULTS } from "@env";
 import { Image } from "expo-image";
 import {
   AppState,
-  Dimensions,
+  useWindowDimensions,
   Linking,
   Modal,
   Platform,
@@ -24,7 +24,7 @@ import MigrationModal from "../../Migration/MigrationModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import images from "../../../assets/images";
-import { LAST_USER_TOPIC_KEY, JWT_KEY } from "../../../common/constants";
+import { LAST_USER_TOPIC_KEY, JWT_KEY, screenShortSide } from "../../../common/constants";
 import CSafeAreaView from "../../../components/common/CSafeAreaView";
 import DemoBanner from "../../../features/demo/DemoBanner";
 import { isDemoActive } from "../../../features/demo/demoSession";
@@ -97,12 +97,9 @@ import { getMockRewardsSummary } from "../../../features/rewards";
 import { checkClaimedCredForVote, claimForVote } from "@/src/data/credentials";
 import { FlashList } from "@shopify/flash-list";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 375;
-const isLandscape = screenWidth > screenHeight;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 375;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;
@@ -318,32 +315,14 @@ const deriveQueueFailTitle = (failedItems) => {
   return "No se pudo completar la subida";
 };
 
-// Responsive grid calculations
-const getCardLayout = () => {
-  if (isTablet) {
-    const CARD_MARGIN = getResponsiveSize(12, 16, 20);
-    let CARDS_PER_ROW;
-    if (isLandscape) {
-      CARDS_PER_ROW = screenWidth > 1000 ? 4 : 3;
-    } else {
-      CARDS_PER_ROW = 2;
-    }
-    const CARD_WIDTH =
-      (screenWidth - (CARDS_PER_ROW + 1) * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
-  } else {
-    const CARD_MARGIN = getResponsiveSize(8, 10, 12);
-    const CARDS_PER_ROW = 2;
-    const CARD_WIDTH = (screenWidth - 3 * CARD_MARGIN) / CARDS_PER_ROW;
-    return { CARD_MARGIN, CARD_WIDTH, CARDS_PER_ROW };
-  }
-};
-
-const { CARDS_PER_ROW } = getCardLayout();
-
 // Carousel Item Component
-const CarouselItem = ({ item }) => (
-  <View testID={`homeCarouselItem_${item.id}`} style={stylesx.carouselItem}>
+const CarouselItem = ({ item, listWidth }) => (
+  <View
+    testID={`homeCarouselItem_${item.id}`}
+    style={[
+      stylesx.carouselItem,
+      { width: listWidth - getResponsiveSize(32, 40, 48) },
+    ]}>
     <View testID={`homeCarouselGrid_${item.id}`} style={stylesx.carouselGrid}>
       <View testID={`homeCarouselLeft_${item.id}`} style={stylesx.carouselLeft}>
         <Image
@@ -590,11 +569,19 @@ const resolveElectionWindowState = (status) => {
 };
 
 export default function HomeScreen({ navigation, route }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
   const dispatch = useDispatch();
   const auth = useSelector((s) => s.auth);
   const userTopicRef = useRef(null);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  // Width of the promo carousel's container (a column on tablet landscape)
+  const [carouselWidth, setCarouselWidth] = useState(screenWidth);
+  const onCarouselLayout = useCallback((event) => {
+    const { width } = event.nativeEvent.layout;
+    setCarouselWidth((prev) => (prev === width ? prev : width));
+  }, []);
   const carouselRef = useRef(null);
   const [hasPendingActa, setHasPendingActa] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
@@ -2709,7 +2696,21 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     if (votingElections.length === 0) {
-      return null;
+      return (
+        <View testID="voting-election-empty" style={stylesx.votingEmptyCard}>
+          <Ionicons
+            name="calendar-outline"
+            size={getResponsiveSize(28, 32, 36)}
+            color="#41A44D"
+          />
+          <CText style={stylesx.votingEmptyTitle}>
+            {I18nStrings.noActiveElection}
+          </CText>
+          <CText style={stylesx.votingEmptySubtitle}>
+            {I18nStrings.noActiveElectionSubtitle}
+          </CText>
+        </View>
+      );
     }
 
     const cardWidth =
@@ -2904,191 +2905,218 @@ export default function HomeScreen({ navigation, route }) {
       {/* Tablet Landscape Layout */}
       {isTablet && isLandscape ? (
         <View style={stylesx.tabletLandscapeContainer}>
-          {/* Left Column: Header and Welcome */}
-          <View style={stylesx.tabletLeftColumn}>
-            <View style={stylesx.headerRow}>
-              <MiVotoLogo />
-              <View style={stylesx.headerIcons}>
-                <TouchableOpacity
-                  onPress={handleOpenNotifications}
-                  style={stylesx.notificationIconButton}
-                >
-                  <Ionicons
-                    name={"notifications-outline"}
-                    size={getResponsiveSize(24, 28, 32)}
-                    color={"#41A44D"}
-                  />
-                  {notificationUnreadCount > 0 && (
-                    <View style={stylesx.notificationBadge}>
-                      <CText style={stylesx.notificationBadgeText}>
-                        {notificationUnreadCount > 99
-                          ? "99+"
-                          : String(notificationUnreadCount)}
-                      </CText>
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onPressLogout}>
-                  <Ionicons
-                    name="log-out-outline"
-                    size={getResponsiveSize(24, 28, 32)}
-                    color="#E72F2F"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={stylesx.welcomeContainer}>
-              <View style={stylesx.welcomeHeader}>
-                <View style={stylesx.welcomeTextContainer}>
-                  <CText style={stylesx.bienvenido}>
-                    {I18nStrings.homeWelcome}
-                  </CText>
-                  <CText style={stylesx.nombre}>{userFullName}!</CText>
-                </View>
-                <TokenRewardsCard
-                  currency={rewardsSummary.currency}
-                  onPress={handleRewardsPress}
+          {/* Header across both columns */}
+          <View style={stylesx.headerRow}>
+            <MiVotoLogo />
+            <View style={stylesx.headerIcons}>
+              <TouchableOpacity
+                onPress={handleOpenNotifications}
+                style={stylesx.notificationIconButton}
+              >
+                <Ionicons
+                  name={"notifications-outline"}
+                  size={getResponsiveSize(24, 28, 32)}
+                  color={"#41A44D"}
                 />
-              </View>
-            </View>
-
-            {/* Carrusel deslizable */}
-            <View style={stylesx.carouselContainer}>
-              <FlashList
-                ref={carouselRef}
-                data={carouselData}
-                renderItem={({ item }) => <CarouselItem item={item} />}
-                keyExtractor={(item) => item.id.toString()}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={(event) => {
-                  const index = Math.round(
-                    event.nativeEvent.contentOffset.x / screenWidth,
-                  );
-                  setCurrentCarouselIndex(index);
-                }}
-              />
-              <View style={stylesx.pageIndicators}>
-                {carouselData.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      stylesx.pageIndicator,
-                      index === currentCarouselIndex &&
-                        stylesx.activePageIndicator,
-                    ]}
-                  />
-                ))}
-              </View>
+                {notificationUnreadCount > 0 && (
+                  <View style={stylesx.notificationBadge}>
+                    <CText style={stylesx.notificationBadgeText}>
+                      {notificationUnreadCount > 99
+                        ? "99+"
+                        : String(notificationUnreadCount)}
+                    </CText>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onPressLogout}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={getResponsiveSize(24, 28, 32)}
+                  color="#E72F2F"
+                />
+              </TouchableOpacity>
             </View>
           </View>
-          {renderVotingElectionCarousel()}
 
-          {/* {!checkingVotePlace && shouldShowRegisterAlert && (
-            <RegisterAlertCard
-              title={I18nStrings.registerPlace}
-              description={I18nStrings.registerPlaceDescription}
-              onPress={handleRegisterPlacePress}
-            />
-          )} */}
-
-          <View style={stylesx.tabletRightColumn}>
-            {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
-            <View style={stylesx.gridParent}>
-              {/* Participar (arriba, ocupa dos columnas) */}
-              {/* <TouchableOpacity
-                style={[stylesx.gridDiv1, stylesx.card]}
-                activeOpacity={0.87}
-                onPress={menuItems[0].onPress}
-                testID="participateButton">
-                {React.createElement(menuItems[0].iconComponent, {
-                  name: menuItems[0].icon,
-                  size: getResponsiveSize(30, 36, 42),
-                  color: '#41A44D',
-                  style: { marginBottom: getResponsiveSize(6, 8, 10) },
-                })}
-
-                <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
-                <CText style={stylesx.cardDescription}>
-                  {menuItems[0].description}
-                </CText>
-              </TouchableOpacity> */}
-
-              <View style={stylesx.gridDiv1}>
-                {loadingAvailability ? (
-                  <ActionButtonsLoader />
-                ) : (
-                  <ActionButtonsGroup />
-                )}
+          <View style={stylesx.tabletColumns}>
+            {/* Left Column: Welcome and promo carousel */}
+            <View style={stylesx.tabletLeftColumn}>
+              <View
+                style={[
+                  stylesx.welcomeContainer,
+                  stylesx.welcomeContainerTabletLandscape,
+                ]}>
+                <View style={stylesx.welcomeHeader}>
+                  <View style={stylesx.welcomeTextContainer}>
+                    <CText
+                      style={[
+                        stylesx.bienvenido,
+                        stylesx.welcomeTextTabletLandscape,
+                      ]}>
+                      {I18nStrings.homeWelcome}
+                    </CText>
+                    <CText
+                      style={[
+                        stylesx.nombre,
+                        stylesx.welcomeTextTabletLandscape,
+                      ]}>
+                      {userFullName}!
+                    </CText>
+                  </View>
+                  <TokenRewardsCard
+                    currency={rewardsSummary.currency}
+                    onPress={handleRewardsPress}
+                  />
+                </View>
               </View>
-              {SHOW_HOME_PARTICIPATIONS_CARD && (
-                <View style={stylesx.gridRow2}>
-                  {/* Anunciar conteo */}
-                  {/* <TouchableOpacity
-                  style={[stylesx.gridDiv2, stylesx.card]}
+
+              {/* Carrusel deslizable */}
+              <View
+                style={stylesx.carouselContainer}
+                onLayout={onCarouselLayout}
+              >
+                <FlashList
+                  ref={carouselRef}
+                  data={carouselData}
+                  renderItem={({ item }) => (
+                    <CarouselItem item={item} listWidth={carouselWidth} />
+                  )}
+                  extraData={carouselWidth}
+                  keyExtractor={(item) => item.id.toString()}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={(event) => {
+                    const index = Math.round(
+                      event.nativeEvent.contentOffset.x / carouselWidth,
+                    );
+                    setCurrentCarouselIndex(index);
+                  }}
+                />
+                <View style={stylesx.pageIndicators}>
+                  {carouselData.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        stylesx.pageIndicator,
+                        index === currentCarouselIndex &&
+                          stylesx.activePageIndicator,
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* {!checkingVotePlace && shouldShowRegisterAlert && (
+              <RegisterAlertCard
+                title={I18nStrings.registerPlace}
+                description={I18nStrings.registerPlaceDescription}
+                onPress={handleRegisterPlacePress}
+              />
+            )} */}
+
+            {/* Right Column: elections to vote in and actions */}
+            <ScrollView
+              style={stylesx.tabletRightColumn}
+              showsVerticalScrollIndicator={false}
+            >
+              {renderVotingElectionCarousel()}
+              {/* --- AQUÍ CAMBIA EL GRID DE BOTONES --- */}
+              <View style={stylesx.gridParent}>
+                {/* Participar (arriba, ocupa dos columnas) */}
+                {/* <TouchableOpacity
+                  style={[stylesx.gridDiv1, stylesx.card]}
                   activeOpacity={0.87}
-                  onPress={menuItems[1].onPress}
-                  testID="announceCountButtonTablet">
-                  {React.createElement(menuItems[1].iconComponent, {
-                    name: menuItems[1].icon,
+                  onPress={menuItems[0].onPress}
+                  testID="participateButton">
+                  {React.createElement(menuItems[0].iconComponent, {
+                    name: menuItems[0].icon,
                     size: getResponsiveSize(30, 36, 42),
                     color: '#41A44D',
                     style: { marginBottom: getResponsiveSize(6, 8, 10) },
                   })}
-                  <CText style={[stylesx.cardTitle]}>
-                    {menuItems[1].title}
-                  </CText>
-                  <CText style={[stylesx.cardDescription]}>
-                    {menuItems[1].description}
+
+                  <CText style={stylesx.cardTitle}>{menuItems[0].title}</CText>
+                  <CText style={stylesx.cardDescription}>
+                    {menuItems[0].description}
                   </CText>
                 </TouchableOpacity> */}
-                  {/* Mis atestiguamientos */}
-                  <TouchableOpacity
-                    style={[
-                      stylesx.gridDiv3,
-                      stylesx.card,
-                      stylesx.myWitnessesCard,
-                    ]}
-                    activeOpacity={0.87}
-                    onPress={menuItems[2].onPress}
-                    testID="myWitnessesButton"
-                  >
-                    {hasPendingActa && (
-                      <View style={stylesx.cardBadge}>
-                        <ActivityIndicator size="small" color="#41A44D" />
-                      </View>
-                    )}
-                    <View style={stylesx.cardHeaderRow}>
-                      {React.createElement(menuItems[2].iconComponent, {
-                        name: menuItems[2].icon,
-                        size: getResponsiveSize(30, 36, 42),
-                        color: "#fff",
-                        style: stylesx.cardHeaderIcon,
-                      })}
-                      <CText
-                        style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
-                      >
-                        {menuItems[2].title}
-                      </CText>
-                    </View>
-                    <CText
-                      style={[
-                        stylesx.cardDescription,
-                        stylesx.cardDescriptionEmph,
-                      ]}
-                    >
-                      {menuItems[2].description}
-                    </CText>
-                  </TouchableOpacity>
+
+                <View style={stylesx.gridDiv1}>
+                  {loadingAvailability ? (
+                    <ActionButtonsLoader />
+                  ) : (
+                    <ActionButtonsGroup />
+                  )}
                 </View>
-              )}
-            </View>
+                {SHOW_HOME_PARTICIPATIONS_CARD && (
+                  <View style={stylesx.gridRow2}>
+                    {/* Anunciar conteo */}
+                    {/* <TouchableOpacity
+                    style={[stylesx.gridDiv2, stylesx.card]}
+                    activeOpacity={0.87}
+                    onPress={menuItems[1].onPress}
+                    testID="announceCountButtonTablet">
+                    {React.createElement(menuItems[1].iconComponent, {
+                      name: menuItems[1].icon,
+                      size: getResponsiveSize(30, 36, 42),
+                      color: '#41A44D',
+                      style: { marginBottom: getResponsiveSize(6, 8, 10) },
+                    })}
+                    <CText style={[stylesx.cardTitle]}>
+                      {menuItems[1].title}
+                    </CText>
+                    <CText style={[stylesx.cardDescription]}>
+                      {menuItems[1].description}
+                    </CText>
+                  </TouchableOpacity> */}
+                    {/* Mis atestiguamientos */}
+                    <TouchableOpacity
+                      style={[
+                        stylesx.gridDiv3,
+                        stylesx.card,
+                        stylesx.myWitnessesCard,
+                      ]}
+                      activeOpacity={0.87}
+                      onPress={menuItems[2].onPress}
+                      testID="myWitnessesButton"
+                    >
+                      {hasPendingActa && (
+                        <View style={stylesx.cardBadge}>
+                          <ActivityIndicator size="small" color="#41A44D" />
+                        </View>
+                      )}
+                      <View style={stylesx.cardHeaderRow}>
+                        {React.createElement(menuItems[2].iconComponent, {
+                          name: menuItems[2].icon,
+                          size: getResponsiveSize(30, 36, 42),
+                          color: "#fff",
+                          style: stylesx.cardHeaderIcon,
+                        })}
+                        <CText
+                          style={[stylesx.cardTitle1, stylesx.cardTitleInline]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.85}
+                        >
+                          {menuItems[2].title}
+                        </CText>
+                      </View>
+                      <CText
+                        style={[
+                          stylesx.cardDescription,
+                          stylesx.cardDescriptionEmph,
+                        ]}
+                      >
+                        {menuItems[2].description}
+                      </CText>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
           </View>
         </View>
       ) : (
@@ -3146,18 +3174,24 @@ export default function HomeScreen({ navigation, route }) {
           </View>
           <ScrollView style={stylesx.regularScroll}>
             {/* Carrusel deslizable */}
-            <View style={stylesx.carouselContainer}>
+            <View
+              style={stylesx.carouselContainer}
+              onLayout={onCarouselLayout}
+            >
               <FlashList
                 ref={carouselRef}
                 data={carouselData}
-                renderItem={({ item }) => <CarouselItem item={item} />}
+                renderItem={({ item }) => (
+                  <CarouselItem item={item} listWidth={carouselWidth} />
+                )}
+                extraData={carouselWidth}
                 keyExtractor={(item) => item.id.toString()}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={(event) => {
                   const index = Math.round(
-                    event.nativeEvent.contentOffset.x / screenWidth,
+                    event.nativeEvent.contentOffset.x / carouselWidth,
                   );
                   setCurrentCarouselIndex(index);
                 }}
@@ -3244,6 +3278,7 @@ export default function HomeScreen({ navigation, route }) {
                     style={[
                       stylesx.gridDiv3,
                       stylesx.card,
+                      isTablet && stylesx.cardTabletPortrait,
                       stylesx.myWitnessesCard,
                     ]}
                     activeOpacity={0.87}
@@ -3397,14 +3432,19 @@ const stylesx = StyleSheet.create({
   // Tablet Landscape Layout Styles
   tabletLandscapeContainer: {
     flex: 1,
+  },
+  tabletColumns: {
+    flex: 1,
     flexDirection: "row",
   },
+  // Equal grow on both columns: the right one is a ScrollView, whose default
+  // flexGrow: 1 would override a fractional flex value
   tabletLeftColumn: {
-    flex: 0.4,
+    flex: 1,
     paddingRight: getResponsiveSize(16, 20, 24),
   },
   tabletRightColumn: {
-    flex: 0.6,
+    flex: 1,
     paddingLeft: getResponsiveSize(8, 12, 16),
   },
   regularContainer: {
@@ -3471,11 +3511,13 @@ const stylesx = StyleSheet.create({
     marginTop: getResponsiveSize(28, 34, 40),
     marginLeft: getResponsiveSize(18, 21, 24),
     marginBottom: getResponsiveSize(12, 14, 18),
-    ...(isTablet &&
-      isLandscape && {
-        marginTop: getResponsiveSize(40, 50, 60),
-        marginBottom: getResponsiveSize(20, 25, 30),
-      }),
+  },
+  welcomeContainerTabletLandscape: {
+    marginTop: getResponsiveSize(40, 50, 60),
+    marginBottom: getResponsiveSize(20, 25, 30),
+  },
+  welcomeTextTabletLandscape: {
+    fontSize: getResponsiveSize(24, 28, 32),
   },
   bienvenido: {
     fontSize: getResponsiveSize(16, 18, 22),
@@ -3483,10 +3525,6 @@ const stylesx = StyleSheet.create({
     fontWeight: "700",
     marginBottom: -2,
     letterSpacing: 0,
-    ...(isTablet &&
-      isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
   },
   nombre: {
     fontSize: getResponsiveSize(21, 24, 30),
@@ -3494,10 +3532,6 @@ const stylesx = StyleSheet.create({
     fontWeight: "800",
     marginBottom: 0,
     letterSpacing: 0,
-    ...(isTablet &&
-      isLandscape && {
-        fontSize: getResponsiveSize(24, 28, 32),
-      }),
   },
   // Banner Blockchain Consultora
   bannerBC: {
@@ -3562,29 +3596,6 @@ const stylesx = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
   },
-  gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent:
-      CARDS_PER_ROW === 4
-        ? "space-around"
-        : isTablet
-        ? "flex-start"
-        : "space-between",
-    paddingHorizontal: getResponsiveSize(8, 12, 16),
-    marginTop: getResponsiveSize(6, 10, 14),
-    ...(isTablet && {
-      gap:
-        CARDS_PER_ROW === 4
-          ? getResponsiveSize(8, 12, 16)
-          : getResponsiveSize(12, 16, 20),
-    }),
-    ...(isTablet &&
-      isLandscape && {
-        marginTop: getResponsiveSize(20, 25, 30),
-        paddingHorizontal: getResponsiveSize(12, 16, 20),
-      }),
-  },
   card: {
     minHeight: getResponsiveSize(100, 116, 140),
     backgroundColor: "#FFF",
@@ -3597,10 +3608,9 @@ const stylesx = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
-    ...(isTablet &&
-      CARDS_PER_ROW === 2 && {
-        marginRight: getResponsiveSize(8, 12, 16),
-      }),
+  },
+  cardTabletPortrait: {
+    marginRight: getResponsiveSize(8, 12, 16),
   },
   cardTitle: {
     fontSize: getResponsiveSize(16, 18, 20),
@@ -3713,7 +3723,6 @@ const stylesx = StyleSheet.create({
     marginBottom: getResponsiveSize(30, 24, 28),
   },
   carouselItem: {
-    width: screenWidth - getResponsiveSize(32, 40, 48),
     marginHorizontal: getResponsiveSize(16, 20, 24),
     borderRadius: getResponsiveSize(12, 16, 20),
     minHeight: getResponsiveSize(110, 130, 140),
@@ -3814,6 +3823,30 @@ const stylesx = StyleSheet.create({
   },
   votingCarouselContainer: {
     marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  votingEmptyCard: {
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    borderRadius: getResponsiveSize(14, 17, 20),
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    padding: getResponsiveSize(16, 20, 24),
+    marginTop: getResponsiveSize(10, 13, 16),
+    marginHorizontal: getResponsiveSize(16, 20, 24),
+    marginBottom: getResponsiveSize(4, 6, 8),
+  },
+  votingEmptyTitle: {
+    marginTop: getResponsiveSize(6, 8, 10),
+    fontSize: getResponsiveSize(16, 18, 20),
+    fontWeight: "700",
+    color: "#232323",
+    textAlign: "center",
+  },
+  votingEmptySubtitle: {
+    marginTop: getResponsiveSize(2, 4, 6),
+    fontSize: getResponsiveSize(13, 14, 16),
+    color: "#8B9399",
+    textAlign: "center",
   },
   votingElectionInlineLoader: {
     minHeight: getResponsiveSize(84, 96, 108),

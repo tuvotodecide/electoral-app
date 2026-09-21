@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
+import {screenShortSide} from '../../../common/constants';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import CText from '../../../components/common/CText';
@@ -20,11 +20,9 @@ import {StackNav} from '../../../navigation/NavigationKey';
 import String from '../../../i18n/String';
 import { captureError } from '../../../config/sentry';
 
-const {width: screenWidth} = Dimensions.get('window');
-
 // Responsive helper functions
-const isTablet = screenWidth >= 768;
-const isSmallPhone = screenWidth < 350;
+const isTablet = screenShortSide >= 768;
+const isSmallPhone = screenShortSide < 350;
 
 const getResponsiveSize = (small, medium, large) => {
   if (isSmallPhone) return small;

@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSelector } from 'react-redux';
 
 // custom import
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import wira from 'wira-sdk';
 import images from '../assets/images';
-import { deviceWidth, moderateScale } from '../common/constants';
+import { ROW_LAYOUT_MIN_WIDTH, getHeight, moderateScale } from '../common/constants';
 import CButton from '../components/common/CButton';
 import CIconText from '../components/common/CIconText';
 import CSafeAreaViewAuth from '../components/common/CSafeAreaViewAuth';
@@ -21,6 +21,10 @@ import { HandleModal } from './TabBar/SignIn/HandleModal';
 
 export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
+  const { width } = useWindowDimensions();
+  const buttonsInRow = width >= ROW_LAYOUT_MIN_WIDTH;
+  // The group already sets the 90% width; buttons fill it (stacked) or share it (row)
+  const actionButtonStyle = buttonsInRow ? localStyle.rowBtnStyle : null;
 
   useEffect(() => {
     notifNavLog('Connect', 'mounted', { current: describeNav() });
@@ -127,26 +131,34 @@ export default function Connect({ navigation }) {
             testID="connectInfoButton"
           />
 
-          <CButton
-            onPress={onPressRegister1}
-            title={String.connectBtnRegister}
-            type={'B16'}
-            containerStyle={localStyle.btnStyle}
-            color={commonColor.gradient2}
-            bgColor={commonColor.white}
-            sinMargen
-            testID="connectRegisterButton"
-          />
+          <View
+            style={[
+              localStyle.actionButtons,
+              buttonsInRow && localStyle.actionButtonsRow,
+            ]}
+            testID="connectActionButtons">
+            <CButton
+              onPress={onPressRegister1}
+              title={String.connectBtnRegister}
+              type={'B16'}
+              containerStyle={actionButtonStyle}
+              color={commonColor.gradient2}
+              bgColor={commonColor.white}
+              sinMargen
+              testID="connectRegisterButton"
+            />
 
-          <CButton
-            onPress={onPressLoginUser}
-            title={String.connectBtnLogin}
-            type={'B16'}
-            containerStyle={localStyle.btnStyle}
-            color={colors.white}
-            bgColor={commonColor.gradient2}
-            testID="connectLoginButton"
-          />
+            <CButton
+              onPress={onPressLoginUser}
+              title={String.connectBtnLogin}
+              type={'B16'}
+              containerStyle={actionButtonStyle}
+              color={colors.white}
+              bgColor={commonColor.gradient2}
+              sinMargen
+              testID="connectLoginButton"
+            />
+          </View>
 
           {/*<CButton
             onPress={onLoginWithWira}
@@ -164,10 +176,6 @@ export default function Connect({ navigation }) {
 }
 
 const localStyle = StyleSheet.create({
-  Container: {
-    width: deviceWidth,
-    ...styles.itemsCenter,
-  },
   imageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -213,5 +221,19 @@ const localStyle = StyleSheet.create({
   },
   bottomButtons: {
     width: '100%',
+  },
+  actionButtons: {
+    width: '90%',
+    ...styles.selfCenter,
+    gap: getHeight(15),
+    marginTop: getHeight(24),
+    marginBottom: getHeight(15),
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+  },
+  rowBtnStyle: {
+    flex: 1,
+    width: 'auto',
   },
 });

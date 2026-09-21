@@ -10,7 +10,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView } from 'expo-camera';
@@ -18,8 +18,6 @@ import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import I18nStrings from '../../../i18n/String';
 import { useSelector } from 'react-redux';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 /**
  * @param {Object} props
@@ -45,6 +43,7 @@ const CameraScannerModal = ({
   permissionDescription = I18nStrings.scanQrPermissionMessage,
 }) => {
   const colors = useSelector(state => state.theme.theme);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const shouldShowPermissionView = !hasPermission;
 
   return (
@@ -56,7 +55,7 @@ const CameraScannerModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={{...styles.modalContainer, borderColor: colors.background}}>
+        <View style={{...styles.modalContainer, width: screenWidth * 0.92, borderColor: colors.background}}>
           <View style={{...styles.header, backgroundColor: colors.background}}>
             <CText type="B16" style={styles.title}>
               {title}
@@ -101,9 +100,9 @@ const CameraScannerModal = ({
               )}
             </View>
           ) : (
-            <View style={styles.cameraContainer}>
+            <View style={{ height: screenHeight * 0.5 }}>
               <CameraView
-                style={styles.camera}
+                style={{ height: screenHeight * 0.5 }}
                 barcodeScannerSettings={{ barcodeTypes }}
                 onBarcodeScanned={onBarcodeScanned}
               />
@@ -128,7 +127,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(16),
   },
   modalContainer: {
-    width: screenWidth * 0.92,
     maxWidth: moderateScale(420),
     overflow: 'hidden',
   },
@@ -151,12 +149,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: moderateScale(12),
-  },
-  cameraContainer: {
-    height: screenHeight * 0.5,
-  },
-  camera: {
-    height: screenHeight * 0.5,
   },
   scanGuideContainer: {
     ...StyleSheet.absoluteFillObject,

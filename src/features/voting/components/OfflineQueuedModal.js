@@ -11,14 +11,12 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CText from '../../../components/common/CText';
 import { moderateScale } from '../../../common/constants';
 import { UI_STRINGS } from '../data/mockData';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * @param {Object} props
@@ -31,6 +29,8 @@ const OfflineQueuedModal = ({
   title = UI_STRINGS.offlineTitle,
   message = UI_STRINGS.offlineMessage,
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
+
   return (
     <Modal
       visible={visible}
@@ -39,7 +39,7 @@ const OfflineQueuedModal = ({
       onRequestClose={onDismiss}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { width: screenWidth * 0.85 }]}>
           {/* Icono */}
           <View style={styles.iconContainer}>
             <View style={styles.iconCircle}>
@@ -87,7 +87,6 @@ const styles = StyleSheet.create({
     paddingTop: moderateScale(32),
     paddingBottom: moderateScale(24),
     paddingHorizontal: moderateScale(24),
-    width: screenWidth * 0.85,
     maxWidth: 400,
     alignItems: 'center',
     shadowColor: '#000',
