@@ -21,8 +21,6 @@ import { styles } from '../../themes';
 import typography from '../../themes/typography';
 
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SHA256 } from 'crypto-js';
 import wira from 'wira-sdk';
 import CButton from '../../components/common/CButton';
 import InfoModal from '../../components/modal/InfoModal';
@@ -31,15 +29,15 @@ import { clearWallet, setSecrets } from '../../redux/action/walletAction';
 import { setAddresses } from '../../redux/slices/addressSlice';
 import { clearAuth, setAuthenticated } from '../../redux/slices/authSlice';
 import { commonColor } from '../../themes/colors';
-import { incAttempts, isLocked, resetAttempts } from '../../utils/PinAttempts';
+import { incAttempts, isLocked, resetAttempts, validateAttempts, } from '../../utils/PinAttempts';
 import { captureError } from '../../config/sentry';
-import {startLocalSession} from '../../utils/Session';
-import {consumePendingNotificationNavigation} from '../../notifications';
-import {isDemoPin} from '../../features/demo/demoConfig';
-import {isDemoActive} from '../../features/demo/demoSession';
-import {activateDemoSession} from '../../features/demo/demoLifecycle';
-import {describeNav, notifNavLog} from '../../utils/notifNavDebug';
-import {markHomeEntryFromLogin} from '../../utils/homeEntry';
+import { startLocalSession } from '../../utils/Session';
+import { consumePendingNotificationNavigation } from '../../notifications';
+import { isDemoPin } from '../../features/demo/demoConfig';
+import { isDemoActive } from '../../features/demo/demoSession';
+import { activateDemoSession } from '../../features/demo/demoLifecycle';
+import { describeNav, notifNavLog } from '../../utils/notifNavDebug';
+import { markHomeEntryFromLogin } from '../../utils/homeEntry';
 
 let loginUserInstanceCounter = 0;
 
@@ -179,18 +177,6 @@ export default function LoginUser({ navigation, route }) {
     await startLocalSession();
     await resetAttempts();
 
-    const exists = await AsyncStorage.getItem('FINLINE_FLAGS');
-    if (!exists && typeof pin === 'string' && pin.length) {
-      await AsyncStorage.setItem(
-        'FINLINE_FLAGS',
-        JSON.stringify({
-          PIN_HASH: SHA256(pin.trim()).toString(),
-          BIO_ENABLED: await wira.Biometric.getBioFlag(),
-          HAS_WALLET: true,
-        }),
-      );
-    }
-
     markHomeEntryFromLogin();
     navigation.reset({
       index: 0,
@@ -275,6 +261,20 @@ export default function LoginUser({ navigation, route }) {
   const onCodeFilled = async code => {
     if (code.length !== 4) return;
 
+    const isValid = await validateAttempts();
+    if (!isValid) {
+      setModal({
+        visible: true,
+        msg: 'Datos de seguridad corrupto. Intenta de nuevo.',
+        onClose: () => {
+          dispatch(clearWallet());
+          dispatch(clearAuth());
+          navigation.replace(AuthNav.RegisterUser1);
+        }
+      });
+      return;
+    }
+
     if (await isLocked()) {
       navigation.replace(AuthNav.AccountLock);
       return;
@@ -287,7 +287,7 @@ export default function LoginUser({ navigation, route }) {
           // No pasa por unlock(): ese escribe FINLINE_FLAGS con el hash del PIN
           // y consulta el flag biométrico de la billetera real.
           if (res.demo) {
-            await activateDemoSession({dispatch, navigation});
+            await activateDemoSession({ dispatch, navigation });
             return;
           }
           if (res.ok) {
@@ -386,7 +386,7 @@ export default function LoginUser({ navigation, route }) {
   useEffect(() => {
     (async () => {
       const blocked = await isLocked();
-      notifNavLog('LoginUser', `isLocked instance #${instanceIdRef.current}`, {blocked});
+      notifNavLog('LoginUser', `isLocked instance #${instanceIdRef.current}`, { blocked });
       setLocked(blocked);
       if (blocked) {
         navigation.replace(AuthNav.AccountLock);
