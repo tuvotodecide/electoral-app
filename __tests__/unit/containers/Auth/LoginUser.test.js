@@ -5,8 +5,8 @@ import {AuthNav, StackNav} from '../../../../src/navigation/NavigationKey';
 import LoginUser from '../../../../src/container/Auth/LoginUser';
 import wira from 'wira-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {incAttempts, isLocked, resetAttempts} from '../../../../src/utils/PinAttempts';
-import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
+import { incAttempts, isLocked, resetAttempts, validateAttempts } from '../../../../src/utils/PinAttempts';
+import { mockNavigation, renderWithProviders } from '../../../setup/test-utils';
 import String from '../../../../src/i18n/String';
 import {DEMO_PIN} from '../../../../src/features/demo/demoConfig';
 import {
@@ -30,7 +30,7 @@ describe('LoginUser', () => {
     AsyncStorage.multiSet = jest.fn(() => Promise.resolve());
     AsyncStorage.setItem = jest.fn(() => Promise.resolve());
     AsyncStorage.getItem = jest.fn(() => Promise.resolve(null));
-    __resetDemoSessionForTests();
+        __resetDemoSessionForTests();
   });
 
   it('renderiza y navega a SelectRecuperation desde olvide mi PIN', async () => {
@@ -99,11 +99,11 @@ describe('LoginUser', () => {
         routes: [{name: StackNav.TabNavigation}],
       });
     });
-    // Home debe cargar las elecciones desde la API en primer plano.
     expect(consumeHomeEntryFromLogin()).toBe(true);
   });
 
   it('al llegar al limite de intentos muestra modal y redirige a recuperacion', async () => {
+    validateAttempts.mockResolvedValueOnce(true);
     incAttempts.mockResolvedValueOnce(5);
     wira.Storage.checkUserData.mockResolvedValueOnce(true);
     wira.signIn.mockRejectedValueOnce(new Error('Invalid PIN'));
@@ -310,5 +310,19 @@ describe('LoginUser', () => {
         expect(activateDemoSession).not.toHaveBeenCalled();
       });
     });
+  });
+});
+describe('LoginUser - Security: PIN Hash in AsyncStorage', () => {
+  it('DEBE FALLAR: LoginUser.js no debe guardar PIN_HASH en AsyncStorage (MASVS-STORAGE-1)', () => {
+    const fs = require('fs');
+
+    const loginUserCode = fs.readFileSync(
+      require.resolve('../../../../src/container/Auth/LoginUser.js'),
+      'utf-8',
+    );
+
+    const dangerousPattern = /AsyncStorage\.setItem\s*\(\s*['"]FINLINE_FLAGS['"][\s\S]*?PIN_HASH/;
+
+    expect(loginUserCode).not.toMatch(dangerousPattern);
   });
 });

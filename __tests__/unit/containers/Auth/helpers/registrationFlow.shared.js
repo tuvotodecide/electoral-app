@@ -1,11 +1,11 @@
 import wira from 'wira-sdk';
-import {getDraft} from '../../../../../src/utils/RegisterDraft';
+import { getDraft } from '../../../../../src/utils/RegisterDraft';
 
 jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
-  const {TextInput} = require('react-native');
+  const { TextInput } = require('react-native');
 
-  const MockTextInput = ({testID, handleTextChange, inputCount}) =>
+  const MockTextInput = ({ testID, handleTextChange, inputCount }) =>
     React.createElement(TextInput, {
       testID: testID || 'otpInput',
       onChangeText: handleTextChange,
@@ -16,7 +16,7 @@ jest.mock('react-native-otp-textinput', () => {
 });
 
 jest.mock('react-native-gesture-handler', () => {
-  const {TouchableOpacity, View} = require('react-native');
+  const { TouchableOpacity, View } = require('react-native');
   return {
     TouchableOpacity,
     PanGestureHandler: View,
@@ -29,14 +29,14 @@ jest.mock('react-native-gesture-handler', () => {
 jest.mock('react-native-vector-icons/Ionicons', () => 'Icon');
 
 jest.mock('expo-image-picker', () => ({
-  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({granted: true})),
-  requestCameraPermissionsAsync: jest.fn(async () => ({granted: true})),
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
   launchImageLibraryAsync: jest.fn(async () => ({
     canceled: false,
-    assets: [{uri: 'file://gallery.jpg'}],
+    assets: [{ uri: 'file://gallery.jpg' }],
   })),
   launchCameraAsync: jest.fn(async () => ({
-    assets: [{uri: 'file://camera.jpg'}],
+    assets: [{ uri: 'file://camera.jpg' }],
   })),
   CameraType: {
     front: 'front',
@@ -52,6 +52,7 @@ jest.mock('../../../../../src/utils/PinAttempts', () => ({
   incAttempts: jest.fn(async () => 0),
   isLocked: jest.fn(async () => false),
   resetAttempts: jest.fn(async () => undefined),
+  validateAttempts: jest.fn(async () => true),
 }));
 
 jest.mock('../../../../../src/utils/RegisterDraft', () => ({
@@ -67,15 +68,15 @@ export const configurarMocksRegistro = () => {
   if (!ReactNative.AppState) {
     ReactNative.AppState = {
       currentState: 'active',
-      addEventListener: jest.fn(() => ({remove: jest.fn()})),
+      addEventListener: jest.fn(() => ({ remove: jest.fn() })),
     };
   } else {
     ReactNative.AppState.currentState =
       ReactNative.AppState.currentState || 'active';
-    ReactNative.AppState.addEventListener = jest.fn(() => ({remove: jest.fn()}));
+    ReactNative.AppState.addEventListener = jest.fn(() => ({ remove: jest.fn() }));
   }
 
   wira.Storage.checkUserData.mockResolvedValue(false);
-  wira.checkBiometricAuth.mockResolvedValue({error: null, userData: null});
+  wira.checkBiometricAuth.mockResolvedValue({ error: null, userData: null });
   getDraft.mockResolvedValue(null);
 };
