@@ -74,4 +74,43 @@ describe('RegisterUser5', () => {
       ],
     });
   });
+
+  it('LIV-47 - Exigencia de la prueba de vida en /registry/analyze · envía la selfie verificada y el resultado firmado', async () => {
+    const localNavigation = {...mockNavigation, replace: jest.fn()};
+    wira.idCardAnalyzer.analyzeFromRegistry.mockClear();
+
+    renderWithProviders(
+      <RegisterUser5
+        navigation={localNavigation}
+        route={{
+          params: {
+            ...baseParams,
+            selfie: {base64: 'SELFIE_VERIFICADA'},
+            livenessResult: 'JWT_FIRMADO',
+          },
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(wira.idCardAnalyzer.analyzeFromRegistry).toHaveBeenCalled();
+    });
+    const args = wira.idCardAnalyzer.analyzeFromRegistry.mock.calls[0];
+    expect(args[4]).toBe('SELFIE_VERIFICADA');
+    expect(args[5]).toBe('JWT_FIRMADO');
+  });
+
+  it('LIV-47 - Exigencia de la prueba de vida en /registry/analyze · sin prueba de vida no envía resultado firmado', async () => {
+    const localNavigation = {...mockNavigation, replace: jest.fn()};
+    wira.idCardAnalyzer.analyzeFromRegistry.mockClear();
+
+    renderWithProviders(
+      <RegisterUser5 navigation={localNavigation} route={{params: baseParams}} />,
+    );
+
+    await waitFor(() => {
+      expect(wira.idCardAnalyzer.analyzeFromRegistry).toHaveBeenCalled();
+    });
+    expect(wira.idCardAnalyzer.analyzeFromRegistry.mock.calls[0][5]).toBeUndefined();
+  });
 });

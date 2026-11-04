@@ -9,6 +9,16 @@ import RegisterUser4 from '../../../../src/container/Auth/RegisterUser4';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 import wira from 'wira-sdk';
 
+// Estas pruebas cubren el flujo de foto simple; la prueba de vida tiene las suyas
+// en RegisterUser4.liveness.test.js.
+jest.mock('../../../../src/config/featureFlags', () => ({
+  ...jest.requireActual('../../../../src/config/featureFlags'),
+  isFeatureEnabled: flag =>
+    flag === 'ENABLE_FACE_LIVENESS'
+      ? false
+      : jest.requireActual('../../../../src/config/featureFlags').isFeatureEnabled(flag),
+}));
+
 describe('RegisterUser4', () => {
   const originalDev = global.__DEV__;
 

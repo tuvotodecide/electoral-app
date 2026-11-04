@@ -5,6 +5,8 @@
 export const FEATURE_FLAGS = {
   ENABLE_ATTESTATION_FLOW: true,
   ENABLE_VOTING_FLOW: true,
+  // Selfie con prueba de vida (servidor decide) en vez de foto simple.
+  ENABLE_FACE_LIVENESS: true,
 };
 
 /**

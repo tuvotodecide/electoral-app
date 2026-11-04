@@ -21,10 +21,17 @@ import { captureError } from "@/src/config/sentry";
 import { useCameraPermissions } from "expo-camera";
 import CameraModal from "@/src/components/modal/CameraModal";
 import * as ImagePicker from "expo-image-picker";
+import { isFeatureEnabled } from "@/src/config/featureFlags";
+import LivenessSelfieStep from "@/src/components/liveness/LivenessSelfieStep";
+
+const USE_LIVENESS = isFeatureEnabled("ENABLE_FACE_LIVENESS");
 
 export default function RegisterUser4({ navigation, route }) {
   const { dni = "", frontImage, backImage, isRecovery = false } = route.params;
   const [selfie, setSelfie] = useState(null);
+  // Resultado firmado de la prueba de vida (solo con ENABLE_FACE_LIVENESS).
+  const [livenessResult, setLivenessResult] = useState(null);
+  const [livenessKey, setLivenessKey] = useState(0);
   const colors = useSelector((state) => state.theme.theme);
   const [modal, setModal] = useState({
     visible: false,
@@ -54,6 +61,7 @@ export default function RegisterUser4({ navigation, route }) {
   };
 
   useEffect(() => {
+    if (USE_LIVENESS) return;
     if (__DEV__) {
       pickFromGallery();
       return;
@@ -103,6 +111,7 @@ export default function RegisterUser4({ navigation, route }) {
         frontImage,
         backImage,
         selfie,
+        livenessResult,
       });
     } catch (error) {
       captureError(error, {
@@ -115,7 +124,12 @@ export default function RegisterUser4({ navigation, route }) {
 
   const yieldUI = () => new Promise((resolve) => setTimeout(resolve, 50));
 
-  const triggerRecovery = async () => {
+  // Con prueba de vida, la selfie y el resultado llegan como argumentos porque
+  // el estado aún no se actualizó cuando se llama justo tras verificar.
+  const triggerRecovery = async (
+    verifiedSelfie = selfie,
+    verifiedLiveness = livenessResult,
+  ) => {
     setModal({
       visible: true,
       message: String.recoveringData,
@@ -126,7 +140,8 @@ export default function RegisterUser4({ navigation, route }) {
     try {
       const resizedFrontBase64 = await resizeImage(frontImage.uri);
       const resizedBackBase64 = await resizeImage(backImage.uri);
-      const resizedSelfieBase64 = await resizeImage(selfie.uri);
+      // Con prueba de vida la selfie ya viene verificada del servidor en base64.
+      const resizedSelfieBase64 = verifiedSelfie?.base64 ?? (await resizeImage(verifiedSelfie.uri));
 
       const recoveryService = new wira.RecoveryService();
       await recoveryService.recoveryAndSave(
@@ -136,6 +151,7 @@ export default function RegisterUser4({ navigation, route }) {
         resizedBackBase64,
         resizedSelfieBase64,
         dni,
+        verifiedLiveness ?? undefined,
       );
 
       setModal({
@@ -174,6 +190,35 @@ export default function RegisterUser4({ navigation, route }) {
     }
   };
 
+  const onLivenessVerified = ({ selfie: verified, livenessResult: result }) => {
+    setSelfie(verified);
+    setLivenessResult(result);
+    if (isRecovery) {
+      triggerRecovery(verified, result);
+      return;
+    }
+    navigation.navigate(AuthNav.RegisterUser5, {
+      dni,
+      frontImage,
+      backImage,
+      selfie: verified,
+      livenessResult: result,
+    });
+  };
+
+  // El resultado de la prueba de vida puede caducar o usarse una sola vez:
+  // ante un fallo del análisis se repite la verificación completa.
+  const retryRecovery = () => {
+    if (USE_LIVENESS) {
+      setModal({ visible: false, message: "", isLoading: false });
+      setSelfie(null);
+      setLivenessResult(null);
+      setLivenessKey(k => k + 1);
+      return;
+    }
+    triggerRecovery();
+  };
+
   const goToLogin = () => {
     navigation.reset({
       index: 0,
@@ -192,12 +237,20 @@ export default function RegisterUser4({ navigation, route }) {
       <CHeader testID="registerUser4Header" />
       <KeyBoardAvoidWrapper
         testID="registerUser4KeyboardWrapper"
+        contentContainerStyle={USE_LIVENESS ? { flexGrow: 1 } : undefined}
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
           { top: moderateScale(10) },
         ]}
       >
+        {USE_LIVENESS ? (
+          <LivenessSelfieStep
+            key={livenessKey}
+            testID="registerUser4Liveness"
+            onVerified={onLivenessVerified}
+          />
+        ) : (
         <View style={localStyle.mainContainer}>
           <CText testID="registerUser4Title" type={"B16"}>
             {String.takePhoto}
@@ -229,18 +282,21 @@ export default function RegisterUser4({ navigation, route }) {
             )}
           </TouchableOpacity>
         </View>
+        )}
       </KeyBoardAvoidWrapper>
       <View
         testID="registerUser4BottomContainer"
         style={localStyle.bottomTextContainer}
       >
-        <CButton
-          testID="registerUser4NextButton"
-          title={"Siguiente"}
-          onPress={onPressNext}
-          type={"B16"}
-          containerStyle={localStyle.btnStyle}
-        />
+        {!USE_LIVENESS && (
+          <CButton
+            testID="registerUser4NextButton"
+            title={"Siguiente"}
+            onPress={onPressNext}
+            type={"B16"}
+            containerStyle={localStyle.btnStyle}
+          />
+        )}
       </View>
       <CameraModal
         testID="selfieCameraModal"
@@ -255,7 +311,7 @@ export default function RegisterUser4({ navigation, route }) {
       <LoadingModal
         {...modal}
         buttonText={modal.success ? String.continue : String.retryRecovery}
-        onClose={modal.success ? goToLogin : triggerRecovery}
+        onClose={modal.success ? goToLogin : retryRecovery}
         secondBtn={modal.success ? undefined : String.btnCheckData}
         onSecondPress={() =>
           navigation.navigate(AuthNav.RegisterUser1, { isRecovery: true })
