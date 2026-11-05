@@ -5,7 +5,7 @@ import React from 'react';
 import CSafeAreaViewAuth from '../../components/common/CSafeAreaViewAuth';
 import CHeader from '../../components/common/CHeader';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
-import {getHeight, moderateScale} from '../../common/constants';
+import {getHeight, isTablet, moderateScale} from '../../common/constants';
 import CText from '../../components/common/CText';
 import {styles} from '../../themes';
 import CButton from '../../components/common/CButton';
@@ -18,6 +18,8 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 
+
+const ICON_SIZE = isTablet ? 32 : moderateScale(30);
 
 export default function RegisterUser3({navigation, route}) {
   const colors = useSelector(state => state.theme.theme);
@@ -54,8 +56,9 @@ export default function RegisterUser3({navigation, route}) {
           </CText>
         </View>
         <CIconText
+          containerStyle={localStyle.tip}
           testID="tipWellLit"
-          icon={<Icono name="white-balance-sunny" color={colors.primary} size={moderateScale(30)} />} 
+          icon={<Icono name="white-balance-sunny" color={colors.primary} size={ICON_SIZE} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               <CText style={styles.boldText}>{String.tip_well_lit1}</CText>
@@ -64,8 +67,9 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
+          containerStyle={localStyle.tip}
           testID="tipRemoveItems"
-          icon={<Icono name="account-remove-outline" color={colors.primary} size={moderateScale(30)} />} 
+          icon={<Icono name="account-remove-outline" color={colors.primary} size={ICON_SIZE} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               <CText style={styles.boldText}>{String.tip_remove_items1}</CText>
@@ -74,8 +78,9 @@ export default function RegisterUser3({navigation, route}) {
           }
         />
         <CIconText
+          containerStyle={localStyle.tip}
           testID="tipLookCamera"
-          icon={<Icono name="camera-outline" color={colors.primary} size={moderateScale(30)} />} 
+          icon={<Icono name="camera-outline" color={colors.primary} size={ICON_SIZE} />} 
           text={
             <CText type={'B16'} color={getSecondaryTextColor(colors)}>
               <CText style={styles.boldText}>{String.tip_look_camera1}</CText>
@@ -101,8 +106,12 @@ const localStyle = StyleSheet.create({
   mainContainer: {
     ...styles.ph20,
     gap: 5,
-    marginBottom: moderateScale(40),
+    marginBottom: isTablet ? 32 : moderateScale(40),
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
   },
+  tip: isTablet ? {width: '100%', maxWidth: 520, paddingHorizontal: 20} : {},
   btnStyle: {
     ...styles.selfCenter,
   },
@@ -142,8 +151,9 @@ const localStyle = StyleSheet.create({
   },
   imageContainer: {
     ...styles.selfCenter,
-    height: moderateScale(180),
-    width: moderateScale(180),
+    height: isTablet ? 220 : moderateScale(180),
+    width: isTablet ? 220 : moderateScale(180),
+    resizeMode: 'contain',
   },
   margin: {
     marginBottom: '20px',

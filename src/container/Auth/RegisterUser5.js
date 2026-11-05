@@ -25,7 +25,7 @@ function onlyDigits(s = '') {
 }
 
 export default function RegisterUser5({navigation, route}) {
-  const {dni, frontImage, backImage, selfie} = route.params;
+  const {dni, frontImage, backImage, selfie, livenessResult} = route.params;
   const [loading, setLoading] = useState(true);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -37,14 +37,16 @@ export default function RegisterUser5({navigation, route}) {
         const idCardAnalyzer = wira.idCardAnalyzer;
         const frontImageB64 = await resizeImage(frontImage.uri);
         const backImageB64 = await resizeImage(backImage.uri);
-        const selfieImageB64 = await resizeImage(selfie.uri);
+        // Con prueba de vida la selfie ya viene verificada en base64.
+        const selfieImageB64 = selfie.base64 ?? (await resizeImage(selfie.uri));
 
         const res = await idCardAnalyzer.analyzeFromRegistry(
           BACKEND_IDENTITY,
           IDENTITY_KEY,
           frontImageB64,
           backImageB64,
-          selfieImageB64
+          selfieImageB64,
+          livenessResult
         );
 
         if (!res.success) {
@@ -97,7 +99,7 @@ export default function RegisterUser5({navigation, route}) {
         setLoading(false);
       }
     })();
-  }, [backImage?.uri, frontImage?.uri, selfie?.uri, dni, navigation]);
+  }, [backImage?.uri, frontImage?.uri, selfie?.uri, selfie?.base64, livenessResult, dni, navigation]);
 
   return (
     <CSafeAreaViewAuth testID="registerUser5Container">

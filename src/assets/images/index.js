@@ -107,4 +107,5 @@ export default {
   AssetAllocation_Light: require('./AssetAllocation_Light.png'),
   ProfileBgImage: require('./ProfileBgImage.png'),
   GenericCrypto: require('./GenericCrypto.png'),
+  FaceVerifyFailedImage: require('./autenticacion.png'),
 };
