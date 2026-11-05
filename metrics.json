@@ -1,7 +1,7 @@
 {
-  "lastRunningTimeSecs": 481,
+  "lastRunningTimeSecs": 402,
   "integrations": {
-    "integrationsCount": 1,
+    "integrationsCount": 2,
     "countedFrom": "2026-10-31T00:00:00.000Z",
     "countedTo": "2026-11-07T00:00:00.000Z"
   },
@@ -12,24 +12,24 @@
   },
   "coverageTable": {
     "lines": {
-      "percent": 68.59,
-      "covered": 6332,
-      "total": 9231
+      "percent": 68.56,
+      "covered": 6335,
+      "total": 9240
     },
     "statements": {
-      "percent": 67.41,
-      "covered": 6638,
-      "total": 9846
+      "percent": 67.37,
+      "covered": 6641,
+      "total": 9857
     },
     "functions": {
-      "percent": 68.16,
+      "percent": 68.06,
       "covered": 1334,
-      "total": 1957
+      "total": 1960
     },
     "branches": {
-      "percent": 53.57,
-      "covered": 4929,
-      "total": 9200
+      "percent": 53.58,
+      "covered": 4931,
+      "total": 9202
     }
   }
 }

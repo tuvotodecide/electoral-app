@@ -73,7 +73,7 @@ export default function LivenessSelfieStep({ onVerified, testID = 'livenessSelfi
 
   if (estado.tipo === 'captura') {
     return (
-      <View style={local.contenedor} testID={`${testID}_captura`}>
+      <View style={[local.contenedor, local.contenedorCaptura]} testID={`${testID}_captura`}>
         <LivenessCapture
           sesion={estado.sesion}
           onResultado={alResultado}
@@ -126,6 +126,7 @@ export default function LivenessSelfieStep({ onVerified, testID = 'livenessSelfi
 
 const local = StyleSheet.create({
   contenedor: { flex: 1, justifyContent: 'space-between', ...appStyles.ph20, paddingVertical: moderateScale(10) },
+  contenedorCaptura: { paddingTop: 0, paddingBottom: moderateScale(6) },
   contenido: {
     flex: 1,
     justifyContent: 'center',

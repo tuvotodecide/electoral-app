@@ -4,6 +4,10 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, Vibration, View } from 'react-native';
 
+import BocaAbierta from '../../assets/svg/gesto_boca_abierta.svg';
+import BocaCerrada from '../../assets/svg/gesto_boca_cerrada.svg';
+import OjosAbiertos from '../../assets/svg/gesto_ojos_abiertos.svg';
+import OjosCerrados from '../../assets/svg/gesto_ojos_cerrados.svg';
 import { isTablet } from '../../common/constants';
 
 import { styles as appStyles } from '../../themes';
@@ -34,7 +38,14 @@ const TEXTO_MOVIMIENTO = {
   mouth: 'Abre la boca',
   eyes: 'Cierra los ojos hasta sentir la vibración',
 };
-const ICONO_GESTO = { mouth: '😮', eyes: '😑' };
+// [reposo, gesto]: el gesto se funde sobre el reposo y vuelve, en bucle.
+const ESTADOS_GESTO = {
+  mouth: { reposo: BocaCerrada, gesto: BocaAbierta, mantener: 900 },
+  eyes: { reposo: OjosAbiertos, gesto: OjosCerrados, mantener: 1200 },
+};
+const ANCHO_GESTO = 150;
+const ALTO_GESTO = 157;
+const VIEWBOX_GESTO = '0 0 526 550';
 const GIRO_FLECHA = { up: '0deg', right: '90deg', left: '-90deg' };
 const VAIVEN = {
   left: { eje: 'x', px: -16 },
@@ -65,18 +76,37 @@ function useLatido(clave, duracion = 450) {
   return valor;
 }
 
-function IconoGesto({ gesto, color }) {
-  const latido = useLatido(gesto);
-  const escala = latido.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
+function IconoGesto({ gesto }) {
+  const [progreso] = useState(() => new Animated.Value(0));
+  const { reposo: Reposo, gesto: Gesto, mantener } = ESTADOS_GESTO[gesto];
+  useEffect(() => {
+    progreso.setValue(0);
+    const animacion = Animated.loop(
+      Animated.sequence([
+        Animated.delay(600),
+        Animated.timing(progreso, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.delay(mantener),
+        Animated.timing(progreso, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]),
+    );
+    animacion.start();
+    return () => animacion.stop();
+  }, [progreso, mantener]);
+  const medidas = { width: ANCHO_GESTO, height: ALTO_GESTO, viewBox: VIEWBOX_GESTO };
   return (
     <View
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[styles.capaFlecha, { alignItems: 'center', justifyContent: 'flex-end' }]}>
-      <Animated.View style={[styles.flecha, { backgroundColor: color }, { transform: [{ scale: escala }] }]}>
-        <Text style={styles.simboloGesto}>{ICONO_GESTO[gesto]}</Text>
-      </Animated.View>
+      <View style={styles.tarjetaGesto}>
+        <View style={{ width: ANCHO_GESTO, height: ALTO_GESTO }}>
+          <Reposo {...medidas} />
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: progreso }]}>
+            <Gesto {...medidas} />
+          </Animated.View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -268,7 +298,7 @@ export default function LivenessCapture({
           (esDireccion(movimiento) ? (
             <FlechaMovimiento movimiento={movimiento} color={primaryColor} />
           ) : (
-            <IconoGesto gesto={movimiento} color={primaryColor} />
+            <IconoGesto gesto={movimiento} />
           ))}
       </View>
     </View>
@@ -316,11 +346,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
-  simboloGesto: {
-    fontSize: 56,
-    lineHeight: 64,
-    textAlign: 'center',
-    includeFontPadding: false,
+  tarjetaGesto: {
+    padding: 14,
+    borderRadius: 28,
+    backgroundColor: 'rgba(214, 207, 237, 0.94)',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   oculto: { opacity: 0 },
 });

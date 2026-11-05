@@ -241,7 +241,7 @@ export default function RegisterUser4({ navigation, route }) {
         containerStyle={[
           styles.justifyBetween,
           styles.flex,
-          { top: moderateScale(10) },
+          { top: USE_LIVENESS ? 0 : moderateScale(10) },
         ]}
       >
         {USE_LIVENESS ? (
