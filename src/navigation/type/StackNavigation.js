@@ -53,10 +53,6 @@ export default function StackNavigation() {
         name={StackNav.SearchTable}
         component={StackRoute.SearchTable}
       />
-            <Stack.Screen
-        name={StackNav.OnBoardingGuardians}
-        component={StackRoute.OnBoardingGuardians}
-      />
       <Stack.Screen
         name={StackNav.TableDetail}
         component={StackRoute.TableDetail}
@@ -102,22 +98,6 @@ export default function StackNavigation() {
       <Stack.Screen
         name={StackNav.DeleteAccount}
         component={StackRoute.DeleteAccount}
-      />
-      <Stack.Screen
-        name={StackNav.RecuperationQR}
-        component={StackRoute.RecuperationQR}
-      />
-      <Stack.Screen
-        name={StackNav.Guardians}
-        component={StackRoute.Guardians}
-      />
-      <Stack.Screen
-        name={StackNav.GuardiansAdmin}
-        component={StackRoute.GuardiansAdmin}
-      />
-      <Stack.Screen
-        name={StackNav.AddGuardians}
-        component={StackRoute.AddGuardians}
       />
 
       <Stack.Screen

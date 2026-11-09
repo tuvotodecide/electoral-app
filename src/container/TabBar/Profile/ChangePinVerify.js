@@ -4,7 +4,6 @@ import OTPTextInput from 'react-native-otp-textinput';
 import { useSelector } from 'react-redux';
 
 // custom import
-import wira from 'wira-sdk';
 import { moderateScale } from '../../../common/constants';
 import CHeader from '../../../components/common/CHeader';
 import CLoaderOverlay from '../../../components/common/CLoaderOverlay';
@@ -20,6 +19,7 @@ import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 
 import { captureError } from '../../../config/sentry';
+import { getPrivadoVault } from '../../../services/privado/privadoSession';
 export default function ChangePinVerify({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   const [verifying, setVerifying] = useState(false);
@@ -35,7 +35,8 @@ export default function ChangePinVerify({navigation}) {
   const verify = async code => {
     if (code.length !== 4) return;
     try {
-      if (!(await wira.checkPin(code))) {
+      const vault = await getPrivadoVault();
+      if (!(await vault.verifyPin(code))) {
         otpRef.current?.clear();
         return setModal({
           visible: true,

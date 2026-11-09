@@ -577,10 +577,7 @@ export default function Notification({ navigation }) {
     setAuthResolved(false);
     (async () => {
       try {
-        const key = await authenticateWithBackend(
-          userData?.did,
-          userData?.privKey,
-        );
+        const key = await authenticateWithBackend();
         if (mounted) setApiKey(key);
       } catch (e) {
         captureError(e, {
@@ -596,7 +593,7 @@ export default function Notification({ navigation }) {
     return () => {
       mounted = false;
     };
-  }, [userData?.did, userData?.privKey]);
+  }, [userData?.did]);
 
 
   const fetchFromBackend = useCallback(
@@ -609,12 +606,9 @@ export default function Notification({ navigation }) {
       }
 
       let resolvedApiKey = apiKey;
-      if (!resolvedApiKey && authResolved && userData?.did && userData?.privKey) {
+      if (!resolvedApiKey && authResolved && userData?.did) {
         try {
-          resolvedApiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
+          resolvedApiKey = await authenticateWithBackend();
           setApiKey(resolvedApiKey);
         } catch {
           resolvedApiKey = null;
@@ -696,7 +690,6 @@ export default function Notification({ navigation }) {
       markNotificationsAsSeen,
       notificationNow,
       userData?.did,
-      userData?.privKey,
     ],
   );
 

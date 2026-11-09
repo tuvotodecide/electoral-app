@@ -7,7 +7,18 @@ import React from 'react';
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import PersonalDetails from '../../../../../src/container/TabBar/Profile/PersonalDetails';
 import {renderWithProviders} from '../../../../setup/test-utils';
-import {registryApi} from '../../../../../src/data/client/kyc';
+import {
+  IdentityApiUnreachableError,
+  RegistryProfileError,
+  createMockSession,
+} from '@privado-id/expo-sdk';
+import {getPrivadoClient} from '../../../../../src/services/privado/privadoSession';
+import {
+  VaultUnlockCancelledError,
+  setVaultUnlockPrompter,
+  vaultUnlockProvider,
+  __resetVaultUnlockForTests,
+} from '../../../../../src/services/privado/vaultUnlock';
 
 // Mocks
 jest.mock('../../../../../src/utils/Cifrate', () => ({
@@ -18,19 +29,15 @@ jest.mock('../../../../../src/utils/Cifrate', () => ({
   })),
 }));
 
-jest.mock('../../../../../src/data/client/kyc', () => ({
-  registryApi: {
-    resolveByDid: jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        record: {
-          displayNamePublic: true,
-        },
-      }),
-    ),
-    registryUpdateDisplayName: jest.fn(() => Promise.resolve({ok: true})),
-  },
+jest.mock('../../../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(),
 }));
+
+let client;
+const RECORD = {
+  did: 'did:example:123',
+  accountAddress: '0x00000000000000000000000000000000000000aa',
+};
 
 jest.mock('../../../../../src/utils/ThemeUtils', () => ({
   getSecondaryTextColor: jest.fn(() => '#666666'),
@@ -194,13 +201,10 @@ describe('PersonalDetails Screen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    registryApi.resolveByDid.mockResolvedValue({
-      ok: true,
-      record: {
-        displayNamePublic: true,
-      },
-    });
-    registryApi.registryUpdateDisplayName.mockResolvedValue({ok: true});
+    __resetVaultUnlockForTests();
+    client = createMockSession().client;
+    client.getRegistryProfile.mockResolvedValue({...RECORD, displayNamePublic: 'Test User'});
+    getPrivadoClient.mockResolvedValue(client);
   });
 
   describe('Renderizado', () => {
@@ -312,12 +316,7 @@ describe('PersonalDetails Screen', () => {
     });
 
     it('abre modal de aviso al activar nombre público', async () => {
-      registryApi.resolveByDid.mockResolvedValueOnce({
-        ok: true,
-        record: {
-          displayNamePublic: false,
-        },
-      });
+      client.getRegistryProfile.mockResolvedValueOnce(RECORD);
 
       const {getByTestId} = renderWithProviders(<PersonalDetails />, {
         initialState: mockStore,
@@ -336,16 +335,11 @@ describe('PersonalDetails Screen', () => {
         .toMatchObject({backgroundColor: '#D83031'});
       expect(getByTestId('publicNameVisibilityConfirmModalSecondaryButtonText').props.style)
         .toMatchObject({color: '#FFFFFF'});
-      expect(registryApi.registryUpdateDisplayName).not.toHaveBeenCalled();
+      expect(client.updateRegistryProfile).not.toHaveBeenCalled();
     });
 
     it('no guarda el cambio si cancela el aviso de nombre público', async () => {
-      registryApi.resolveByDid.mockResolvedValueOnce({
-        ok: true,
-        record: {
-          displayNamePublic: false,
-        },
-      });
+      client.getRegistryProfile.mockResolvedValueOnce(RECORD);
 
       const {getByTestId, queryByTestId} = renderWithProviders(
         <PersonalDetails />,
@@ -362,17 +356,12 @@ describe('PersonalDetails Screen', () => {
       fireEvent.press(getByTestId('publicNameVisibilityConfirmModalSecondaryButton'));
 
       expect(queryByTestId('publicNameVisibilityConfirmModal')).toBeNull();
-      expect(registryApi.registryUpdateDisplayName).not.toHaveBeenCalled();
+      expect(client.updateRegistryProfile).not.toHaveBeenCalled();
       expect(getByTestId('showNameSwitch').props.value).toBe(false);
     });
 
     it('guarda el cambio si acepta el aviso de nombre público', async () => {
-      registryApi.resolveByDid.mockResolvedValueOnce({
-        ok: true,
-        record: {
-          displayNamePublic: false,
-        },
-      });
+      client.getRegistryProfile.mockResolvedValueOnce(RECORD);
 
       const {getByTestId} = renderWithProviders(<PersonalDetails />, {
         initialState: mockStore,
@@ -386,10 +375,9 @@ describe('PersonalDetails Screen', () => {
       fireEvent.press(getByTestId('publicNameVisibilityConfirmModalButton'));
 
       await waitFor(() => {
-        expect(registryApi.registryUpdateDisplayName).toHaveBeenCalledWith(
-          'did:example:123',
-          'Test User',
-        );
+        expect(client.updateRegistryProfile).toHaveBeenCalledWith({
+          displayNamePublic: 'Test User',
+        });
       });
     });
 
@@ -409,21 +397,102 @@ describe('PersonalDetails Screen', () => {
 
       expect(queryByTestId('publicNameVisibilityConfirmModal')).toBeNull();
       await waitFor(() => {
-        expect(registryApi.registryUpdateDisplayName).toHaveBeenCalledWith(
-          'did:example:123',
-          null,
-        );
+        // Vacío borra el nombre público del registro.
+        expect(client.updateRegistryProfile).toHaveBeenCalledWith({
+          displayNamePublic: '',
+        });
       });
     });
   });
 
-  describe('Manejo de Errores', () => {
-    it('muestra alerta de error cuando falla la API', async () => {
-      const {UNSAFE_root} = renderWithProviders(<PersonalDetails />, {
-        initialState: mockStore,
+  describe('Registro público con el SDK', () => {
+    const renderLoaded = async () => {
+      const utils = renderWithProviders(<PersonalDetails />, {initialState: mockStore});
+      await waitFor(() => {
+        expect(utils.getByTestId('showNameSwitch').props.disabled).toBe(false);
       });
+      return utils;
+    };
 
-      expect(UNSAFE_root).toBeTruthy();
+    it('el switch refleja si el registro tiene nombre público', async () => {
+      const {getByTestId} = await renderLoaded();
+
+      expect(client.getRegistryProfile).toHaveBeenCalledTimes(1);
+      expect(getByTestId('showNameSwitch').props.value).toBe(true);
+    });
+
+    it('sin nombre público en el registro el switch queda apagado', async () => {
+      client.getRegistryProfile.mockResolvedValueOnce(RECORD);
+
+      const {getByTestId} = await renderLoaded();
+
+      expect(getByTestId('showNameSwitch').props.value).toBe(false);
+    });
+
+    it('si la cuenta no está en el registro muestra el error', async () => {
+      client.getRegistryProfile.mockResolvedValueOnce(undefined);
+
+      const {getByTestId} = await renderLoaded();
+
+      expect(getByTestId('personalDetailsErrorAlert')).toHaveTextContent('Error: not-found');
+    });
+
+    it('sin red al cargar muestra el error de red y no se queda cargando', async () => {
+      client.getRegistryProfile.mockRejectedValueOnce(
+        new IdentityApiUnreachableError('registry/by-did', new Error('offline')),
+      );
+
+      const {getByTestId} = await renderLoaded();
+
+      expect(getByTestId('personalDetailsErrorAlert')).toHaveTextContent(
+        'Error de red, revise su conexión a internet.',
+      );
+    });
+
+    it('si falla el guardado conserva el valor anterior y lo informa', async () => {
+      client.updateRegistryProfile.mockRejectedValueOnce(new RegistryProfileError('not-found'));
+      const {getByTestId} = await renderLoaded();
+
+      fireEvent(getByTestId('showNameSwitch'), 'valueChange', false);
+
+      await waitFor(() => {
+        expect(getByTestId('personalDetailsErrorAlert')).toHaveTextContent('Error: not-found');
+      });
+      expect(getByTestId('showNameSwitch').props.value).toBe(true);
+    });
+
+    it('si el usuario cierra el desbloqueo vuelve al valor anterior sin error', async () => {
+      client.updateRegistryProfile.mockRejectedValueOnce(new VaultUnlockCancelledError());
+      const {getByTestId, queryByTestId} = await renderLoaded();
+
+      fireEvent(getByTestId('showNameSwitch'), 'valueChange', false);
+
+      await waitFor(() => {
+        expect(getByTestId('showNameSwitch').props.disabled).toBe(false);
+      });
+      expect(getByTestId('showNameSwitch').props.value).toBe(true);
+      expect(queryByTestId('personalDetailsErrorAlert')).toBeNull();
+    });
+
+    it('explica en el modal de desbloqueo para qué se abre la cuenta', async () => {
+      const prompter = jest.fn(async () => ({type: 'pin', pin: '1234'}));
+      setVaultUnlockPrompter(prompter);
+      client.updateRegistryProfile.mockImplementationOnce(async () => {
+        await vaultUnlockProvider({purpose: 'unlock'});
+        return {id: RECORD.did};
+      });
+      const {getByTestId} = await renderLoaded();
+
+      fireEvent(getByTestId('showNameSwitch'), 'valueChange', false);
+
+      await waitFor(() => {
+        expect(prompter).toHaveBeenCalledWith(
+          expect.objectContaining({reason: expect.stringContaining('nombre público')}),
+        );
+      });
+      await waitFor(() => {
+        expect(getByTestId('showNameSwitch').props.value).toBe(false);
+      });
     });
   });
 

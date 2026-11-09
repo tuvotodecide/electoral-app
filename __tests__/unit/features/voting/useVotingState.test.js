@@ -249,7 +249,7 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('participation-1');
     });
 
-    expect(getCredentialForVote).toHaveBeenCalledWith('123abc', 'did:example:123', undefined );
+    expect(getCredentialForVote).toHaveBeenCalledWith('123abc');
     expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(result.current.syncedWithBlockchain).not.toBeNull();
     expect(result.current.syncedWithBlockchain.status).toBe('synced');
@@ -309,7 +309,7 @@ describe('useVotingState', () => {
       await result.current.syncStateWithBlockchain('backend-participation');
     });
 
-    expect(getCredentialForVote).toHaveBeenCalledWith('123abc', 'did:example:123', undefined);
+    expect(getCredentialForVote).toHaveBeenCalledWith('123abc');
     expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(result.current.syncedWithBlockchain).toEqual({
       status: 'synced',

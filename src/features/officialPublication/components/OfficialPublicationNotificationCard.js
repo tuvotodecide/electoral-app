@@ -171,9 +171,6 @@ const abbreviate = value => {
   return `${text.slice(0, 6)}...${text.slice(-4)}`;
 };
 
-const getPrivateKey = payload =>
-  String(payload?.privKey || payload?.payloadQr?.privKey || '').trim();
-
 const getSmartAccountAddress = payload =>
   String(
     payload?.account ||
@@ -237,7 +234,6 @@ export default function OfficialPublicationNotificationCard({notification, onSta
   const onStatusChangeRef = useRef(onStatusChange);
   onStatusChangeRef.current = onStatusChange;
 
-  const privateKey = useMemo(() => getPrivateKey(walletPayload), [walletPayload]);
   const smartAccountAddress = useMemo(
     () => getSmartAccountAddress(walletPayload),
     [walletPayload],
@@ -347,7 +343,7 @@ export default function OfficialPublicationNotificationCard({notification, onSta
     setErrorMessage('');
     let userOpHash = null;
     try {
-      if (!privateKey || !smartAccountAddress) {
+      if (!smartAccountAddress) {
         throw new Error('Esta solicitud debe confirmarse con la cuenta institucional asignada.');
       }
       const {submitted, userOpHash: submittedUserOpHash} =
@@ -356,7 +352,6 @@ export default function OfficialPublicationNotificationCard({notification, onSta
           deviceId,
           request: preparedClaim.request,
           claim: preparedClaim.claim,
-          privateKey,
           smartAccountAddress,
         });
       userOpHash = submittedUserOpHash;

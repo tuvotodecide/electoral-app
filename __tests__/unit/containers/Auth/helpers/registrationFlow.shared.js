@@ -1,4 +1,3 @@
-import wira from 'wira-sdk';
 import {getDraft} from '../../../../../src/utils/RegisterDraft';
 
 jest.mock('react-native-otp-textinput', () => {
@@ -58,6 +57,7 @@ jest.mock('../../../../../src/utils/RegisterDraft', () => ({
   getDraft: jest.fn(async () => null),
   saveDraft: jest.fn(async () => undefined),
   clearDraft: jest.fn(async () => undefined),
+  updateDraft: jest.fn(async () => undefined),
 }));
 
 export const configurarMocksRegistro = () => {
@@ -75,7 +75,5 @@ export const configurarMocksRegistro = () => {
     ReactNative.AppState.addEventListener = jest.fn(() => ({remove: jest.fn()}));
   }
 
-  wira.Storage.checkUserData.mockResolvedValue(false);
-  wira.checkBiometricAuth.mockResolvedValue({error: null, userData: null});
   getDraft.mockResolvedValue(null);
 };

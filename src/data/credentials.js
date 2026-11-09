@@ -1,19 +1,28 @@
 import axios from "axios";
-import wira from "wira-sdk";
+import { BACKEND_RESULT } from "@env";
 import { authenticateWithBackend } from "../utils/offlineQueueHandler";
-import { BACKEND_RESULT, BACKEND_IDENTITY, IDENTITY_KEY } from "@env";
 import { captureError } from "../config/sentry";
 // Import directo (no el barrel de features/demo) para no arrastrar redux ni
 // navegación a este módulo.
 import { isDemoActive } from "../features/demo/demoSession";
+import { getPrivadoSession, getPrivadoClient } from "../services/privado/privadoSession";
+import { getVoteCredentialType } from "../services/privado/privadoConfig";
+import { withVaultPin, withVaultUnlockReason } from "../services/privado/vaultUnlock";
+import { uploadRegistryBackup } from "../services/privado/registryBackupSync";
 
-const wiraClient =
-  wira?.default && typeof wira.default === "object" ? wira.default : wira;
+/**
+ * Credenciales de voto (una por evento) con el SDK de Privado ID.
+ *
+ * back-results emite la credencial en el issuer-node y devuelve el enlace de
+ * su oferta; la app la reclama con `claimCredentialFromIssuer` y vuelve a
+ * subir el respaldo del registro para que la recuperación con carnet la
+ * incluya.
+ *
+ * `getCredentialForVote` devuelve `{id, type, info}`, con la credencial W3C en
+ * `info` (la forma que esperan la votación y las recompensas).
+ */
 
-const getWiraMethod = (methodName) =>
-  typeof wiraClient?.[methodName] === "function"
-    ? wiraClient[methodName].bind(wiraClient)
-    : null;
+const UNLOCK_REASON = "Abre tu cuenta para revisar tu credencial de voto.";
 
 /** Credencial sintética del modo demostración. */
 const buildDemoCredential = (voteId) => ({
@@ -26,70 +35,118 @@ const buildDemoCredential = (voteId) => ({
   },
 });
 
-export async function getCredentialForVote(voteId, did, privKey) {
-  // Llama al módulo nativo `wira.getUserCredentials`. En demo no hay identidad
-  // en el wallet nativo, así que se devuelve una credencial sintética.
+/**
+ * Busca entre las credenciales de voto guardadas la del evento `voteId`. Los
+ * resúmenes no están cifrados; solo se descifran las candidatas (si el vault
+ * está bloqueado, el SDK pide el desbloqueo). Sin credenciales de voto no se
+ * descifra nada.
+ */
+async function findVoteCredential(voteId) {
+  const client = await getPrivadoClient();
+  const summaries = await client.findCredentialsByType(getVoteCredentialType(), {
+    includeExpired: true,
+  });
+  if (summaries.length === 0) {
+    return undefined;
+  }
+  const wanted = String(voteId ?? "");
+  return withVaultUnlockReason(UNLOCK_REASON, async () => {
+    for (const summary of summaries) {
+      const credential = await client.getCredentialById(summary.id);
+      if (String(credential?.credentialSubject?.eventId ?? "") === wanted) {
+        return { id: summary.id, type: summary.type, info: credential };
+      }
+    }
+    return undefined;
+  });
+}
+
+/**
+ * Todas las credenciales de voto guardadas, `{id, type, info}`, más recientes
+ * primero. Descifra cada una (si el vault está bloqueado, el SDK pide el
+ * desbloqueo con `reason`). Lanza si no se pueden leer.
+ */
+export async function listVoteCredentials({ reason = UNLOCK_REASON } = {}) {
+  if (isDemoActive()) {
+    return [];
+  }
+  const client = await getPrivadoClient();
+  const summaries = await client.findCredentialsByType(getVoteCredentialType(), {
+    includeExpired: true,
+  });
+  if (summaries.length === 0) {
+    return [];
+  }
+  return withVaultUnlockReason(reason, async () => {
+    const credentials = [];
+    for (const summary of summaries) {
+      const credential = await client.getCredentialById(summary.id);
+      if (credential) {
+        credentials.push({ id: summary.id, type: summary.type, info: credential });
+      }
+    }
+    return credentials;
+  });
+}
+
+/**
+ * Credencial de voto del evento, o `undefined` si no está o no se pudo leer.
+ * Los argumentos que siguen a `voteId` (did, privKey) ya no se usan.
+ */
+export async function getCredentialForVote(voteId) {
+  // En demo no hay identidad en el SDK: se devuelve una credencial sintética.
   if (isDemoActive()) {
     return buildDemoCredential(voteId);
   }
 
   try {
-    const getUserCredentials = getWiraMethod("getUserCredentials");
-    if (!getUserCredentials) {
-      return false;
-    }
-
-    const userCreds = await getUserCredentials(did, privKey);
-
-    return userCreds.find(
-      (cred) => cred.info?.credentialSubject?.eventId === voteId,
-    );
+    return await findVoteCredential(voteId);
   } catch (error) {
     console.error("Error fetching user credentials:", error);
-    return false;
+    return undefined;
   }
 }
 
-export async function checkClaimedCredForVote(voteId, did, privKey) {
+/**
+ * Si ya está guardada la credencial de voto del evento. Lanza si no se pudo
+ * comprobar (p. ej. `VaultUnlockCancelledError` si el usuario cerró el
+ * desbloqueo), para no tratar un error como "ya reclamada".
+ */
+export async function checkClaimedCredForVote(voteId) {
   // Sin este corte, HomeScreen.handleVotingPress abriría el modal de PIN y
-  // dispararía claimForVote (4 llamadas de red + una prueba ZK).
+  // dispararía claimForVote (llamadas de red y el reclamo al issuer).
   if (isDemoActive()) {
     return true;
   }
-
-  try {
-    const hasCredForVote =
-      (await getCredentialForVote(voteId, did, privKey)) !== undefined;
-    return hasCredForVote;
-  } catch (error) {
-    console.error("Error fetching user credentials:", error);
-    return false;
-  }
+  return (await findVoteCredential(voteId)) !== undefined;
 }
 
-export async function claimForVote(voteId, dni, did, privKey, pin) {
-  // Inalcanzable con el corte de checkClaimedCredForVote, pero esta es la
-  // función que escribe en el registro de identidad vía claimNewCredential.
+/**
+ * Reclama la credencial de voto del evento y actualiza el respaldo del
+ * registro. Devuelve `{claimed, invalidPin, backupUpdated}`:
+ * - `invalidPin`: el PIN no es el del vault; no se pidió nada a la red.
+ * - `backupUpdated: false`: la credencial quedó guardada pero el respaldo no
+ *   se pudo subir; queda pendiente y se reintenta con el próximo PIN.
+ */
+export async function claimForVote(voteId, dni, pin) {
+  // Inalcanzable con el corte de checkClaimedCredForVote.
   if (isDemoActive()) {
-    return { claimed: true, invalidPin: false };
+    return { claimed: true, invalidPin: false, backupUpdated: true };
   }
 
   try {
-    const claimNewCredential = getWiraMethod("claimNewCredential");
-    if (!claimNewCredential) {
-      throw new Error("claimNewCredential is not available in wira-sdk");
+    const { client, vault } = await getPrivadoSession();
+    // El PIN abre el vault y cifra el respaldo: se comprueba antes de que
+    // back-results emita la credencial.
+    if (!(await vault.verifyPin(String(pin)))) {
+      return { claimed: false, invalidPin: true, backupUpdated: false };
     }
 
-    const isPinValid = await wira.checkPin(pin);
-    if (!isPinValid) {
-      return { claimed: false, invalidPin: true };
-    }
-
-    const resolvedApiKey = await authenticateWithBackend(did, privKey);
-
+    const resolvedApiKey = await authenticateWithBackend();
     const response = await axios.get(
-      `${BACKEND_RESULT}/api/v1/voting/events/vote/cred-vc?eventId=${voteId}&dni=${dni}`,
+      `${BACKEND_RESULT}/api/v1/voting/events/vote/cred-vc`,
       {
+        params: { eventId: voteId, dni },
         headers: {
           "Content-Type": "application/json",
           "x-api-key": resolvedApiKey,
@@ -98,31 +155,47 @@ export async function claimForVote(voteId, dni, did, privKey, pin) {
       },
     );
 
-    if (!response?.data?.vc) {
+    const offer = response?.data?.offer;
+    if (!offer) {
       throw new Error(
-        "No credential data found in response when trying to claim credential for vote.",
+        "back-results no devolvió la oferta de la credencial de voto.",
       );
     }
 
-    await claimNewCredential(response.data.vc, did, privKey, {
-      pin,
-      registryUrl: BACKEND_IDENTITY,
-      registryApiKey: IDENTITY_KEY,
-    });
+    return await withVaultPin(pin, async () => {
+      const claim = await client.claimCredentialFromIssuer({
+        offer,
+        credentialType: getVoteCredentialType(),
+      });
+      if (!claim?.stored) {
+        throw new Error("No se pudo guardar la credencial de voto.");
+      }
 
-    return { claimed: true, invalidPin: false };
+      let backupUpdated = true;
+      try {
+        await uploadRegistryBackup(pin);
+      } catch (error) {
+        // La credencial ya está en el dispositivo: se puede votar. El
+        // respaldo queda pendiente (ver registryBackupSync).
+        backupUpdated = false;
+        captureError(error, {
+          flow: "institution-voting",
+          critical: false,
+          step: "registry-backup",
+          allowPii: false,
+        });
+      }
+      return { claimed: true, invalidPin: false, backupUpdated };
+    });
   } catch (error) {
     console.error(error);
-    const err = new Error(
-      `Error fetching notifications for vote claim:` + error,
-    );
-    captureError(err, {
+    captureError(error, {
       flow: "institution-voting",
       critical: true,
       step: "claim-credential",
       tableCode: "",
       allowPii: false,
     });
-    return { claimed: false, invalidPin: false };
+    return { claimed: false, invalidPin: false, backupUpdated: false };
   }
 }

@@ -11,7 +11,7 @@ import {
   showLocalNotification,
 } from '../notifications';
 import { requestPushPermissionExplicit } from '../services/pushPermission';
-import wira from 'wira-sdk';
+import { getPrivadoClient } from '../services/privado/privadoSession';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
 import {
   WorksheetStatus,
@@ -460,10 +460,7 @@ export const publishActaHandler = async (item, userData) => {
     const isAttestMode = flowMode === 'attest';
 
     // Make zk-auth to get API key for backend for upload atestation
-    const apiKey = await authenticateWithBackend(
-      userData.did,
-      userData.privKey,
-    );
+    const apiKey = await authenticateWithBackend();
 
     // --- Normalización de metadatos adicionales (mismos nombres) ---
     const normalizedAdditional = (() => {
@@ -626,23 +623,19 @@ export const publishActaHandler = async (item, userData) => {
         throw missingRecordError;
       }
 
-      const privateKey = userData?.privKey;
       let isRegistered = await oracleReads.isRegistered(
         CHAIN,
-        userData.privKey,
         userData.account,
         1,
       );
       if (!isRegistered) {
         await executeOperation(
-          privateKey,
           userData.account,
           CHAIN,
           oracleCalls.requestRegister(CHAIN, ''),
         );
         isRegistered = await oracleReads.isRegistered(
           CHAIN,
-          userData.privKey,
           userData.account,
           20,
         );
@@ -656,7 +649,6 @@ export const publishActaHandler = async (item, userData) => {
       let response;
       try {
         response = await executeOperation(
-          privateKey,
           userData.account,
           CHAIN,
           oracleCalls.attest(CHAIN, tableCodeForOracle, recordIdBigInt, ''),
@@ -687,7 +679,7 @@ export const publishActaHandler = async (item, userData) => {
           );
 
       try {
-        const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
+        const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
         const queryEID = electionId
           ? `?electionId=${encodeURIComponent(electionId)}`
           : '';
@@ -911,23 +903,19 @@ export const publishActaHandler = async (item, userData) => {
           return true;
         }
 
-        const privateKey = userData?.privKey;
         let isRegistered = await oracleReads.isRegistered(
           CHAIN,
-          userData.privKey,
           userData.account,
           1,
         );
         if (!isRegistered) {
           await executeOperation(
-            privateKey,
             userData.account,
             CHAIN,
             oracleCalls.requestRegister(CHAIN, jsonUrl),
           );
           isRegistered = await oracleReads.isRegistered(
             CHAIN,
-            userData.privKey,
             userData.account,
             20,
           );
@@ -939,7 +927,6 @@ export const publishActaHandler = async (item, userData) => {
         }
 
         const response = await executeOperation(
-          privateKey,
           userData.account,
           CHAIN,
           oracleCalls.attest(CHAIN, tableCodeForOracle, BigInt(0), jsonUrl),
@@ -960,7 +947,6 @@ export const publishActaHandler = async (item, userData) => {
           if (existingBallot && existingBallot._id) {
             const isJury = await oracleReads.isUserJury(
               CHAIN,
-              userData.privKey,
               userData.account,
             );
             const dniValue =
@@ -1152,23 +1138,19 @@ export const publishActaHandler = async (item, userData) => {
       }
 
       // Registrar si falta y ATESTIGUAR con JSON nuevo
-      const privateKey = userData?.privKey;
       let isRegistered = await oracleReads.isRegistered(
         CHAIN,
-        userData.privKey,
         userData.account,
         1,
       );
       if (!isRegistered) {
         await executeOperation(
-          privateKey,
           userData.account,
           CHAIN,
           oracleCalls.requestRegister(CHAIN, ipfsData.imageUrl),
         );
         isRegistered = await oracleReads.isRegistered(
           CHAIN,
-          userData.privKey,
           userData.account,
           20,
         );
@@ -1188,7 +1170,6 @@ export const publishActaHandler = async (item, userData) => {
       }
 
       const response = await executeOperation(
-        privateKey,
         userData.account,
         CHAIN,
         oracleCalls.attest(
@@ -1255,7 +1236,7 @@ export const publishActaHandler = async (item, userData) => {
 
       try {
         if (backendBallot && backendBallot._id) {
-          const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
+          const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
           const queryEID = electionId
             ? `?electionId=${encodeURIComponent(electionId)}`
             : '';
@@ -1428,23 +1409,19 @@ export const publishActaHandler = async (item, userData) => {
     }
 
     // Registro + createAttestation (fallback a attest)
-    const privateKey = userData?.privKey;
     let isRegistered = await oracleReads.isRegistered(
       CHAIN,
-      userData.privKey,
       userData.account,
       1,
     );
     if (!isRegistered) {
       await executeOperation(
-        privateKey,
         userData.account,
         CHAIN,
         oracleCalls.requestRegister(CHAIN, ipfsData.imageUrl),
       );
       isRegistered = await oracleReads.isRegistered(
         CHAIN,
-        userData.privKey,
         userData.account,
         20,
       );
@@ -1466,7 +1443,6 @@ export const publishActaHandler = async (item, userData) => {
     let response;
     try {
       response = await executeOperation(
-        privateKey,
         userData.account,
         CHAIN,
         oracleCalls.createAttestation(
@@ -1487,7 +1463,6 @@ export const publishActaHandler = async (item, userData) => {
         normalizedMsg.includes('already created');
       if (isAlreadyCreatedError) {
         response = await executeOperation(
-          privateKey,
           userData.account,
           CHAIN,
           oracleCalls.attest(
@@ -1571,7 +1546,7 @@ export const publishActaHandler = async (item, userData) => {
 
     try {
       if (backendBallot && backendBallot._id) {
-        const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
+        const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
         const queryEID = electionId
           ? `?electionId=${encodeURIComponent(electionId)}`
           : '';
@@ -1797,7 +1772,7 @@ export const publishWorksheetHandler = async (item, userData) => {
   const worksheetVotes = buildWorksheetVotesFromElectoralData(electoralData);
 
   try {
-    const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+    const apiKey = await authenticateWithBackend();
 
     if (!jsonUrl) {
       if (!imageUri) {
@@ -1979,7 +1954,7 @@ export const syncActaBackendHandler = async (item, userData) => {
     throw invalidPayloadError;
   }
 
-  const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+  const apiKey = await authenticateWithBackend();
   let backendBallot = null;
 
   try {
@@ -2015,7 +1990,7 @@ export const syncActaBackendHandler = async (item, userData) => {
     return { success: true, backendOnly: true };
   }
 
-  const isJury = await oracleReads.isUserJury(CHAIN, userData.privKey, userData.account);
+  const isJury = await oracleReads.isUserJury(CHAIN, userData.account);
   const queryEID = electionId ? `?electionId=${encodeURIComponent(electionId)}` : '';
   try {
     await axios.post(
@@ -2058,9 +2033,11 @@ export const getVoteRequestForBackend = async () => {
   return data.request;
 }
 
-export const authenticateWithBackend = async (did, privateKey) => {
-  // Único punto que ejecuta wira.authenticateWithVerifier (prueba ZK nativa).
-  // Todos los llamadores ya tienen su catch / return null.
+// Sin argumentos: el SDK de Privado ID responde con el titular guardado y su
+// clave, que está en el vault.
+export const authenticateWithBackend = async () => {
+  // Único punto que responde la solicitud de autorización iden3comm del
+  // verificador (prueba ZK nativa). Todos los llamadores ya tienen su catch / return null.
   if (isDemoActive()) {
     throw new Error('Demo mode: backend authentication disabled');
   }
@@ -2072,11 +2049,12 @@ export const authenticateWithBackend = async (did, privateKey) => {
     throw new Error('Invalid authentication request response: missing message');
   }
 
-  await wira.authenticateWithVerifier(
-    JSON.stringify(authData.request),
-    did,
-    privateKey
-  );
+  // Lee la solicitud, genera la respuesta JWZ (authV2 + una prueba por scope)
+  // y la envía al callbackUrl del verificador. Abre el vault si está bloqueado.
+  const {offChainZk} = await getPrivadoClient();
+  const zkRequest = await offChainZk.getZkRequest({link: authData.request});
+  const prepared = await offChainZk.generateZkResponse({request: zkRequest});
+  await offChainZk.submitZkResponse({prepared});
 
   return authData.apiKey;
 }

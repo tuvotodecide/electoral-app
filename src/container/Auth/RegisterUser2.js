@@ -1,4 +1,3 @@
-import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -6,7 +5,7 @@ import { useSelector } from 'react-redux';
 // Custom imports
 
 import debounce from 'lodash.debounce';
-import wira from 'wira-sdk';
+import { IdentityApiUnreachableError } from '@privado-id/expo-sdk';
 import { moderateScale } from '../../common/constants';
 import StepIndicator from '../../components/authComponents/StepIndicator';
 import CButton from '../../components/common/CButton';
@@ -23,6 +22,7 @@ import SimpleModal from '../../components/modal/SimpleModal';
 import CInput from '@/src/components/common/CInput';
 import CIconButton from '@/src/components/common/CIconButton';
 import { captureError } from '@/src/config/sentry';
+import { getPrivadoClient } from '@/src/services/privado/privadoSession';
 
 export default function RegisterUser2({navigation, route}) {
   const isRecovery = !!route?.params?.isRecovery;
@@ -82,9 +82,8 @@ export default function RegisterUser2({navigation, route}) {
       setSubmitting(true);
       setModalVisible({visible: false, message: null});
 
-      const api = new wira.RegistryApi(BACKEND_IDENTITY, IDENTITY_KEY);
-      api
-        .registryCheckByDni(trimmedId)
+      getPrivadoClient()
+        .then(client => client.registryCheckByDni(trimmedId))
         .then(({exists}) => {
           setSubmitting(false);
 
@@ -122,10 +121,9 @@ export default function RegisterUser2({navigation, route}) {
         })
         .catch(err => {
           setSubmitting(false);
-          const msg =
-            err?.response?.data?.message || err.message || String.error;
+          const msg = err?.message || String.error;
 
-          if (msg.includes('Network Error')) {
+          if (err instanceof IdentityApiUnreachableError) {
             Alert.alert(String.error, String.networkError);
           } else {
             captureError(err, {

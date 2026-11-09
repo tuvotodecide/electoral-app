@@ -1,4 +1,4 @@
-import { BACKEND_RESULT, VERIFIER_REQUEST_ENDPOINT } from '@env';
+import { BACKEND_RESULT } from '@env';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -21,9 +21,6 @@ import CText from '../../../components/common/CText';
 import i18nString from '../../../i18n/String';
 import CustomModal from '../../../components/common/CustomModal';
 import UniversalHeader from '../../../components/common/UniversalHeader';
-import wira from 'wira-sdk';
-
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LAST_TOPIC_KEY } from '../../../common/constants';
 import { saveVotePlace } from '../../../utils/offlineQueue';
@@ -35,6 +32,8 @@ import {
 } from '../../../services/notifications';
 import { FlashList } from '@shopify/flash-list';
 import { captureError } from '../../../config/sentry';
+// Prueba de autenticación al verificador de back-results con el SDK de Privado ID.
+import { authenticateWithBackend } from '../../../utils/offlineQueueHandler';
 import { isDemoActive } from '../../../features/demo/demoSession';
 import DemoBanner from '../../../features/demo/DemoBanner';
 import {
@@ -588,7 +587,7 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     };
 
     // Modo demostración: el recinto se guarda solo en local. `DEMO_WALLET_PAYLOAD`
-    // no trae `did` ni `privKey` (demoAccount.js:11-17), así que el camino real
+    // no trae `did` (demoAccount.js:11-17), así que el camino real
     // moriría en la validación de credenciales antes del PATCH. Aquí se
     // reproduce el resultado visible —recinto persistido y modal de éxito— sin
     // autenticar, sin escribir en el backend y sin tocar los topics de FCM.
@@ -628,12 +627,10 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
 
     try {
       setSavingLocation(true);
-      const did = userData?.did;
-      const privateKey = userData?.privKey;
-      if (!did || !privateKey) {
+      if (!userData?.did) {
         throw new Error('No se pudo autenticar el usuario para guardar recinto.');
       }
-      const apiKey = await authenticateWithBackend(did, privateKey);
+      const apiKey = await authenticateWithBackend();
 
       await axios.patch(
         `${BACKEND_RESULT}/api/v1/users/${dni}/vote-place`,
@@ -694,25 +691,6 @@ const ElectoralLocationsSave = ({ navigation, route }) => {
     } finally {
       setSavingLocation(false);
     }
-  };
-
-  const authenticateWithBackend = async (did, privateKey) => {
-    const request = await axios.get(VERIFIER_REQUEST_ENDPOINT);
-
-    const authData = request.data;
-    if (!authData.apiKey || !authData.request) {
-      throw new Error(
-        'Invalid authentication request response: missing message',
-      );
-    }
-
-    await wira.authenticateWithVerifier(
-      JSON.stringify(authData.request),
-      did,
-      privateKey,
-    );
-
-    return authData.apiKey;
   };
 
   const renderLocationItem = ({ item }) => (

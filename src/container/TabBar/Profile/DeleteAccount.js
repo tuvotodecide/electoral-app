@@ -4,7 +4,7 @@ import OTPTextInput from 'react-native-otp-textinput';
 import { useSelector } from 'react-redux';
 
 // custom import
-import wira from 'wira-sdk';
+import { VaultError } from '@privado-id/expo-sdk';
 import { moderateScale } from '../../../common/constants';
 import CButton from '../../../components/common/CButton';
 import CHeader from '../../../components/common/CHeader';
@@ -25,6 +25,8 @@ import { StackNav } from '../../../navigation/NavigationKey';
 import { styles } from '../../../themes';
 import typography from '../../../themes/typography';
 import { clearAppLocalData, requestAccountDeletion } from '../../../utils/deleteAccount';
+import { getPrivadoSession } from '../../../services/privado/privadoSession';
+import { loadIdentityPayload } from '../../../services/privado/identityPayload';
 import { getSecondaryTextColor } from '../../../utils/ThemeUtils';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,7 +57,7 @@ export default function DeleteAccount({navigation}) {
     setDeleting(true);
     let step = 'checkPin';
     try {
-      // La demo no tiene billetera wira ni cuenta en la nube: se valida el PIN
+      // La demo no tiene billetera ni cuenta en la nube: se valida el PIN
       // de demostración y se usa el mismo "Salir del modo demostración" de
       // Profile, que borra los datos de ejemplo y lleva al inicio.
       if (isDemo) {
@@ -69,14 +71,21 @@ export default function DeleteAccount({navigation}) {
         return;
       }
 
-      if (!(await wira.checkPin(pin))) {
-        resetPin();
-        setErrorMsg(String.deleteAccountWrongPin);
-        return;
+      // Abrir el vault con el PIN también lo valida.
+      const {client, vault} = await getPrivadoSession();
+      try {
+        await vault.unlock({type: 'pin', pin});
+      } catch (error) {
+        if (error instanceof VaultError && error.code === 'INVALID_PIN') {
+          resetPin();
+          setErrorMsg(String.deleteAccountWrongPin);
+          return;
+        }
+        throw error;
       }
 
-      step = 'signIn';
-      const {did, dni, privKey} = await wira.signIn(pin);
+      step = 'loadIdentity';
+      const {dni} = await loadIdentityPayload();
 
       step = 'requestDelete';
       await requestAccountDeletion({dni, email: trimmedEmail});
@@ -84,8 +93,9 @@ export default function DeleteAccount({navigation}) {
       step = 'clearAppData';
       await clearAppLocalData();
 
-      step = 'deleteWiraData';
-      await wira.deleteAllData(did, privKey);
+      // Identidad, vault (PIN y biometría), claves y credenciales del dispositivo.
+      step = 'deleteLocalData';
+      await client.deleteLocalData();
 
       setSuccess(true);
     } catch (error) {

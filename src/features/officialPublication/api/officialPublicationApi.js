@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {BACKEND_RESULT} from '@env';
-import wira from 'wira-sdk';
+import {answerVerifierRequest} from '../../../services/privado/verifierProof';
 import store, {persistor} from '../../../redux/store';
 import {StorageService} from '../../../services/StorageService';
 
@@ -19,11 +19,6 @@ const getCurrentDid = () => {
   const payload = getWalletPayload();
   const subject = getCredentialSubject(payload);
   return String(payload?.did || payload?.payloadQr?.did || subject?.did || '').trim();
-};
-
-const getCurrentPrivKey = () => {
-  const payload = getWalletPayload();
-  return String(payload?.privKey || payload?.payloadQr?.privKey || '').trim();
 };
 
 export const getOfficialPublicationWalletPayload = () => getWalletPayload();
@@ -67,10 +62,9 @@ export const getOrCreateOfficialPublicationApiKey = async (
 ) => {
   await waitForOfficialPublicationWalletBootstrap();
 
-  const did = getCurrentDid();
-  const privKey = getCurrentPrivKey();
-
-  if (!did || !privKey) {
+  // La clave del titular está en el vault del SDK; el DID de la sesión indica
+  // que hay una cuenta abierta.
+  if (!getCurrentDid()) {
     throw new Error('No se pudo validar tu acceso institucional');
   }
 
@@ -96,11 +90,11 @@ export const getOrCreateOfficialPublicationApiKey = async (
     throw new Error('No se pudo validar la identidad de este dispositivo.');
   }
 
-  await wira.authenticateWithVerifier(
-    JSON.stringify(authData.request),
-    did,
-    privKey,
-  );
+  // Solicitud de solo autenticación (sin scopes): el verificador obtiene el
+  // DID del titular y lo cruza con la cuenta firmante asignada.
+  await answerVerifierRequest(authData.request, {
+    reason: 'Abre tu cuenta para validar tu acceso institucional.',
+  });
 
   const expiresAt =
     authData.expiresAt ||

@@ -207,13 +207,6 @@ jest.mock('../../../../../src/features/voting', () => {
   };
 });
 
-jest.mock('wira-sdk', () => ({
-  MigrationService: jest.fn().mockImplementation(() => ({
-    checkMigration: jest.fn(() => Promise.resolve(false)),
-    startMigration: jest.fn(() => Promise.resolve()),
-  })),
-}));
-
 const buildState = () => ({
   auth: {isAuthenticated: true},
   wallet: {
@@ -869,10 +862,36 @@ describe('HomeScreen voting flow routing', () => {
 
       await openPinModal(view);
 
-      expect(checkClaimedCredForVote).toHaveBeenCalledWith(
-        'event-pin',
-        'did:test:123',
-        'priv-key-test',
+      expect(checkClaimedCredForVote).toHaveBeenCalledWith('event-pin');
+      expect(navigation.navigate).not.toHaveBeenCalledWith(
+        StackNav.VotingCandidateScreen,
+        expect.any(Object),
+      );
+    });
+
+    it('RA-P0-01-002 no muestra error ni el modal de PIN si el usuario cancela el desbloqueo del vault', async () => {
+      const {VaultUnlockCancelledError} = require('@/src/services/privado/vaultUnlock');
+      const {captureError} = require('../../../../../src/config/sentry');
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockRejectedValueOnce(new VaultUnlockCancelledError());
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingCard_event-pin')).toBeTruthy();
+      });
+      fireEvent.press(view.getByTestId('votingCard_event-pin'));
+
+      await waitFor(() => {
+        expect(checkClaimedCredForVote).toHaveBeenCalledWith('event-pin');
+      });
+      expect(view.getByTestId('votingPinModal').props.visible).toBe(false);
+      expect(captureError).not.toHaveBeenCalledWith(
+        expect.any(VaultUnlockCancelledError),
+        expect.anything(),
       );
       expect(navigation.navigate).not.toHaveBeenCalledWith(
         StackNav.VotingCandidateScreen,
@@ -922,8 +941,6 @@ describe('HomeScreen voting flow routing', () => {
         expect(claimForVote).toHaveBeenCalledWith(
           'event-pin',
           '12345678',
-          'did:test:123',
-          'priv-key-test',
           '4321',
         );
       });

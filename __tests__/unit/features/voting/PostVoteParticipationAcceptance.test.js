@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from 'axios';
-import wira from 'wira-sdk';
+import {answerVerifierRequest} from '../../../../src/services/privado/verifierProof';
 import ElectionRepositoryApi from '../../../../src/features/voting/data/repositories/ElectionRepository.api';
 import RewardsScreen from '../../../../src/features/rewards/screens/RewardsScreen';
 import {buildRouteFromNotification} from '../../../../src/notifications';
@@ -79,8 +79,9 @@ jest.mock('@/src/data/credentials', () => ({
   getCredentialForVote: jest.fn(),
 }));
 
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(() => Promise.resolve()),
+jest.mock('../../../../src/services/privado/verifierProof', () => ({
+  answerVerifierRequest: jest.fn(() => Promise.resolve()),
+  isVerifierRejection: jest.fn(() => false),
 }));
 
 jest.mock('../../../../src/components/common/CHeader', () => {
@@ -125,7 +126,7 @@ describe('MX-08 post-vote participation acceptance', () => {
       alreadyVoted: true,
       status: 'ALREADY_VOTED',
     });
-    expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+    expect(answerVerifierRequest).not.toHaveBeenCalled();
     expect(axios.post).toHaveBeenCalledWith(
       expect.stringContaining('/voting/events/event-1/participations'),
       {carnet: '12345678'},

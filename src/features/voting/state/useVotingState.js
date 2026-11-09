@@ -9,7 +9,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FEATURE_FLAGS, DEV_FLAGS } from '../../../config/featureFlags';
 import { getOwnVoteInfo } from '@/src/api/vote';
 import { getCredentialForVote } from '@/src/data/credentials';
-import { useSelector } from 'react-redux';
 import { hashVoteNullifier } from '../utils/dataHasher';
 import { isDemoActive } from '@/src/features/demo/demoSession';
 
@@ -139,7 +138,6 @@ export const useVotingState = (electionId = '') => {
     status: 'loading',
 
   });
-  const userData = useSelector(state => state.wallet.payload);
 
   // Cargar estado inicial desde AsyncStorage
   useEffect(() => {
@@ -220,7 +218,7 @@ export const useVotingState = (electionId = '') => {
         return;
       }
 
-      const credential = await getCredentialForVote(electionId, userData.did, userData.privKey);
+      const credential = await getCredentialForVote(electionId);
       if(!credential?.info?.credentialSubject?.nullifier) {
         setSyncedWithBlockchain({status: 'failed'});
         throw new Error(`Credential not found for electionId ${electionId}`);

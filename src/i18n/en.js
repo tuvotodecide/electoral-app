@@ -2,18 +2,9 @@ export default {
   sendInvitation: " Enviar invitación",
   finishingRecovery: "Finalizando recuperación",
   return: "Regresar",
-  guardiansDescriptionStatus: "Aquí verás el estado de aprobación de tu cuenta",
-  noGuardians: "Aún no hay votos de tus guardianes",
-  guardiansApprovedTitle: "¡Aprobado!",
-  guardiansApprovedMessage:
-    "Tus guardianes aprobaron la recuperación de tu cuenta, recuperando datos...",
   noRecoveryDni:
     "No se encontró el DNI de recuperación. Regresa e inténtalo de nuevo.",
-  guardiansTitleStatus: "Estado",
   connectBtnForgot: "Olvidé mi cuenta",
-  messagetorecovery:
-    "Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes horas desde su cuenta.",
-  recoveryAccountWithGuardians: "Recuperar cuenta con guardianes",
   confirmDataCorrect: "Confirma que los datos son correctos",
 
   //Register user
@@ -152,9 +143,6 @@ export default {
   goToWalletButton: "Ir a mi cuenta",
   creatingWallet: "Creando cuenta…",
   issuingVC: "Generando credenciales…",
-  migrating: "Migrando datos…",
-  migratingOnLogin:
-    "Estamos migrando su cuenta a la nueva versión, por favor espere...",
   noBiometricData:
     "No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.",
   uploadingBlockchain: "Subiendo a la blockchain",
@@ -175,8 +163,6 @@ export default {
   personalDataValue: "Mira tu información",
   dataBackup: "Respaldo de identidad",
   dataBackupValue: "Guarda un archivo de recuperación",
-  guardians: "Guardianes",
-  guardianSettings: "Configuración de Guardianes",
   threshholdLabel:
     "Número mínimo de aprobaciones requeridas para recuperar cuenta:",
   invalidThreshold: "El umbral debe ser un número mayor a 0",
@@ -189,34 +175,15 @@ export default {
   notEnoughLegacyData: "Este QR no tiene suficientes datos",
   alreadyMigrated:
     "Esta cuenta ya fue migrada, intente recuperar usando su Carnet y PIN",
-  myProtectedInfo: "Personas de las cuales soy guardián",
   myInvitations: "Mis invitaciones",
   myRecovery: "Solicitudes de recuperación",
   protectedValue: "Administra solicitudes y recuperaciones",
   moresub: "Revisa más opciones",
-  onBoardingGuardiansTitleText1: "¿Qué son los guardianes?",
-  onBoardingGuardiansTitleText2: "¿Quién puede ser un guardián?",
-  onBoardingGuardiansTitleText3: "¿Cuántos guardianes se necesitan?",
-  onBoardingGuardiansTitleText4: "¿Cómo funciona la recuperación?",
-  onBoardingGuardiansDescriptionText1:
-    "Son personas o dispositivos que ayudan a confirmar tu identidad cuando necesitas recuperar tu cuenta. Funcionan como respaldo de seguridad ",
-  onBoardingGuardiansDescriptionText2:
-    "Puede ser un familiar, un amigo o incluso otro dispositivo de confianza que tengas registrado. Solo se debe elegir opciones seguras.",
-  onBoardingGuardiansDescriptionText3:
-    "Se requieren al menos 2 guardianes activos para autorizar una recuperación. Tener más aumenta la seguridad",
-  onBoardingGuardiansDescriptionText4:
-    "Al solicitar la recuperación, se notifica a tus guardianes. Ellos deben aprobar la solicitud para que puedas acceder nuevamente a tu cuenta.",
   totalBalance: "Saldo total",
   balanceByCoin: "Saldo por moneda",
   commomPayments: "Pagos frecuentes",
   help: "Ayuda",
   me: "Yo",
-  configGuardian: "Configuración de guardianes",
-  configGuardianSubtitle1:
-    "Número mínimo de aprobaciones requeridas para recuperar cuenta:",
-  configGuardianSubtitle2:
-    "Número mínimo de aprobaciones requeridas para transacciones grandes:",
-  guardiansValue: "Administra tus guardianes",
   transactionHistory: "Historial de transacciones",
   transactionHistoryValue: "Movimientos recientes",
   earnRewards: "Gana recompensas",
@@ -292,16 +259,9 @@ export default {
   connectBtnInfo: "Saber más",
   connectBtnRegister: "Registrar cuenta",
   register: "REGISTRARSE",
-  sessionReceived: "Sesión recibida",
-  sessionReceivedMessage: "Ingrese su pin para iniciar la sesión compartida.",
-  sharedSessionError: "Error al recibir archivos compartidos.",
-  sharedSessionTitle: "Solicitud para compartir la sesión de Wira",
-  sharedSessionMessage:
-    "¿Deseas compartir tu sesión actual con otra aplicación?",
 
   recoveryWallet: "Recuperar cuenta",
   recoverymethod: "Selecciona método para recuperar cuenta",
-  recoverymethodGuardians: "Recuperar con guardianes",
   recoverymethodFile: "Usar archivo de recuperación",
   recoveryWithCI: "Recuperar con Carnet y PIN",
   recoveryCIIntro: "También debes tener el PIN de acceso a tu cuenta.",
@@ -486,12 +446,6 @@ export default {
   - Confirmar que tienes suficiente saldo para cubrir el gas.
   - Verificar siempre la dirección del destinatario.`,
 
-  //guardianes
-  guardiansTitle: "Tus Guardianes",
-  addGuardian: "Agregar guardián",
-  addGuardianSubtitle:
-    "Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.",
-  addGuardianSubtitleSpan: " Debe tener una cuenta abierta en Tu Voto Decide.",
   approved: "Aprobado",
   pending: "Pendiente",
   rejected: "Rechazado",
@@ -499,10 +453,6 @@ export default {
   carnet: "Carnet",
   foundUserName: "¿Eres tú? tu nombre aparecerá aquí si lo hiciste público:",
   nickname: "Apodo",
-  guardiansSubtitle:
-    "Administra las personas que pueden ayudarte a recuperar tu cuenta.",
-  guardianNotificationTitle:
-    "El guardián recibirá una notificación para aceptar su rol.",
   skip: "X",
   allInOneInvestmentPlatform: "All in One Investment Platform",
   continueWithEmail: "Continue with Email",
@@ -537,7 +487,7 @@ export default {
     "Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.",
   forgotPassWord2: "¿Olvidaste tu acceso?",
   forgot2: "Tu cuenta ha sido bloqueada",
-  forgot3: "Recupéralo con tus guardianes o QR",
+  forgot3: "Recupéralo con tu carnet de identidad",
   and: "and",
   orSignUpWith: "Or Sign Up With",
   loginText: "Already have an account?",
@@ -1293,7 +1243,6 @@ export default {
   photoPreview: "Vista previa de la foto",
 
   personaNotFound: "Persona no encontrada",
-  noGuardiansAssigned: "Este carnet no tiene guardianes asignados",
   removed: "Removido",
   sendRecovery: "Solicitar recuperación",
   learnMore: "Más info",
@@ -1307,8 +1256,6 @@ export default {
   // connectBtnInfo: 'Más información',
 
   active: "Aceptado",
-  whatIsGuardians: "¿Qué son los Guardianes?",
-  alertguardiansrequired: "Necesitas al menos un guardián activo",
   recoverywithFile: "Recuperación con archivo",
   recoveryFileSubtitle:
     "Para continuar con la recuperación de su cuenta, ingrese su PIN y seleccione su archivo de respaldo",
@@ -1429,14 +1376,6 @@ export default {
     "El GPS está desactivado. Active la ubicación del dispositivo para continuar",
   locationPermissionDeniedMessage:
     "La aplicación no tiene permisos de ubicación. Active los permisos en configuración",
-  //Sign In with Wira
-  signInWithWira: "Ingresar con Wira",
-  enterDni: "Ingresa tu carnet",
-  deviceNotFound:
-    "No tiene una sesión en este dispositivo, regístrese o recupere su cuenta por favor.",
-  deviceGetError: "Error al buscar aplicaciones",
-  shareDeclined: "Rechazado",
-  shareDeclinedMessage: "El usuario rechazó la solicitud de compartir",
 
   //Credentials
   credentialReceived: "Votante habilitado",
@@ -1449,15 +1388,6 @@ export default {
     "Error al reclamar credenciales, inténtalo de nuevo o contacta al soporte si el problema persiste.",
   credentialsClaimedDesc:
     "Tus credenciales han sido reclamadas exitosamente, ahora puedes ir a la votación.",
-
-  //Migration
-  migrationModalDesc:
-    "Se ha detectado un respaldo antiguo en tu dispositivo. Para continuar, debes migrar tu respaldo a la nueva versión de la aplicación. Esto tomará un minuto.",
-  migrateBackup: "Migrar Respaldo",
-  migrationInProgress: "Migración en progreso...",
-  migrationSuccess: "Migración completada exitosamente",
-  migrationError:
-    "Error durante la migración, inténtalo de nuevo o contacta al soporte si el problema persiste.",
 
   //Demo mode
   demoModeBanner:

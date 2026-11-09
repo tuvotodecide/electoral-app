@@ -1,8 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  account: null,      
-  guardian: null,     
+  account: null,
 };
 
 const addressSlice = createSlice({
@@ -13,12 +12,10 @@ const addressSlice = createSlice({
       state,
       action
     ) => {
-      state.account  = action.payload.account;
-      state.guardian = action.payload.guardian;  
+      state.account = action.payload.account;
     },
     clearAddresses: state => {
-      state.account  = null;
-      state.guardian = null;
+      state.account = null;
     },
   },
 });

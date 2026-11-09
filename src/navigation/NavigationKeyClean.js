@@ -3,11 +3,6 @@ export const StackNav = {
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
 
-  // Recovery
-  MyGuardiansStatus: 'MyGuardiansStatus',
-  RecoveryUser1Pin: 'RecoveryUser1Pin',
-  RecoveryUser2Pin: 'RecoveryUser2Pin',
-  RecoveryFinalize: 'RecoveryFinalize',
 
   // Nuevas rutas para Mi Voto
   SearchTable: 'SearchTable',
@@ -34,10 +29,6 @@ export const StackNav = {
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
   DeleteAccount: 'DeleteAccount',
-  RecuperationQR: 'RecuperationQR',
-  Guardians: 'Guardians',
-  GuardiansAdmin: 'GuardiansAdmin',
-  AddGuardians: 'AddGuardians',
   SelectLanguage: 'SelectLanguage',
   PushNotification: 'PushNotification',
   HelpCenter: 'HelpCenter',
@@ -90,8 +81,4 @@ export const AuthNav = {
   UploadPhotoId: 'UploadPhotoId',
   SelfieWithIdCard: 'SelfieWithIdCard',
   VerifySuccess: 'VerifySuccess',
-  FindMyUser: 'FindMyUser',
-  RecoveryUserQrpin: 'RecoveryUserQrpin',
-  RecoveryUserQrpin2: 'RecoveryUserQrpin2',
-  RecoveryQr: 'RecoveryQr',
 };

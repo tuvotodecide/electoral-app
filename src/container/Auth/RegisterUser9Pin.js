@@ -19,7 +19,15 @@ import typography from '../../themes/typography';
 import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 
 export default function RegisterUser9({navigation, route}) {
-  const {originalPin, ocrData, useBiometry, dni} = route.params;
+  const {
+    originalPin,
+    ocrData,
+    useBiometry,
+    dni,
+    identityData,
+    identityToken,
+    identityTokenExpiresAt,
+  } = route.params;
 
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
@@ -31,9 +39,11 @@ export default function RegisterUser9({navigation, route}) {
       const params = {
         originalPin: otp,
         ocrData,
-
         useBiometry,
         dni,
+        identityData,
+        identityToken,
+        identityTokenExpiresAt,
       };
       navigation.navigate(AuthNav.RegisterUser10, params);
     } else {

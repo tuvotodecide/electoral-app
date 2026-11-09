@@ -50,8 +50,9 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@shopify/flash-list$': '<rootDir>/__tests__/__mocks__/flash-list.js',
-    '^expo-file-system$': '<rootDir>/__tests__/__mocks__/expo-file-system.js',
-    '^wira-sdk$': '<rootDir>/__tests__/__mocks__/wira-sdk.js',
+    '^expo-file-system(/legacy)?$': '<rootDir>/__tests__/__mocks__/expo-file-system.js',
+    '^@privado-id/expo-sdk$': '<rootDir>/__tests__/__mocks__/privado-expo-sdk.js',
+    '^expo-local-authentication$': '<rootDir>/__tests__/__mocks__/expo-local-authentication.js',
     '^expo-crypto$': '<rootDir>/__tests__/__mocks__/expo-crypto.js',
     '^.+\\.svg$': '<rootDir>/__tests__/__mocks__/svgMock.js',
     '^@env$': '<rootDir>/__tests__/__mocks__/@env.js',

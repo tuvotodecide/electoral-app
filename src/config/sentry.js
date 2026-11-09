@@ -96,7 +96,6 @@ export const setUserContext = (userData) => {
     Sentry.setContext('user_context', {
         user_role: userData.role || 'voter',
         has_wallet: !!userData.account,
-        has_guardian: !!userData.guardian,
     });
 };
 

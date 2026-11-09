@@ -9,20 +9,13 @@ import {clearWallet} from '../redux/action/walletAction';
 import {clearAuth} from '../redux/slices/authSlice';
 import {clearSession} from './Session';
 import {discoverableHashFromDni} from './idHash';
+import {FIRST_LAUNCH_KEY} from '../services/privado/localAccount';
 
-// Preferencias del dispositivo, no son datos personales.
-const PRESERVED_APP_KEYS = [THEME, ON_BOARDING];
+// Preferencias del dispositivo (no son datos personales) y la marca de primer
+// arranque: sin ella, el siguiente arranque en iOS borraría otra vez el Keychain.
+const PRESERVED_APP_KEYS = [THEME, ON_BOARDING, FIRST_LAUNCH_KEY];
 
-// Claves propias de wira-sdk: las borra wira.deleteAllData()
-// (Storage.deleteAllLocalData) y 'hasRunBefore' la usa
-// wira.Storage.checkFirstLaunch. No se tocan antes de llamar a la librería.
-const WIRA_KEYS = ['BIO_ENABLED', 'SALT', 'WIRA_MIGRATED', 'hasRunBefore'];
-const WIRA_KEY_PREFIX = 'wira-sdk-';
-
-const isPreservedKey = key =>
-  PRESERVED_APP_KEYS.includes(key) ||
-  WIRA_KEYS.includes(key) ||
-  key.startsWith(WIRA_KEY_PREFIX);
+const isPreservedKey = key => PRESERVED_APP_KEYS.includes(key);
 
 /**
  * Solicita al backend de identidad la eliminación de la cuenta en la nube.
@@ -38,7 +31,8 @@ export async function requestAccountDeletion({dni, email}) {
 
 /**
  * Elimina todo lo que la app guarda localmente (sesión, redux persistido y
- * AsyncStorage), salvo preferencias del dispositivo y los datos de wira-sdk.
+ * AsyncStorage), salvo las preferencias del dispositivo. Los datos del SDK
+ * (identidad, vault y credenciales) se borran con `client.deleteLocalData()`.
  */
 export async function clearAppLocalData() {
   delete axios.defaults.headers.common.Authorization;

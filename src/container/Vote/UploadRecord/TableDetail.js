@@ -673,14 +673,10 @@ export default function TableDetail({ navigation, route }) {
       if (
         isOnline &&
         userData?.did &&
-        userData?.privKey &&
         String(electionId || '').trim()
       ) {
         try {
-          const apiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
+          const apiKey = await authenticateWithBackend();
           const { data } = await axios.get(
             `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
               currentDni,
@@ -735,7 +731,6 @@ export default function TableDetail({ navigation, route }) {
     isActaTaskForCurrentTable,
     tableNumberForWorksheet,
     userData?.did,
-    userData?.privKey,
   ]);
 
   // If an image comes from CameraScreen, use it
@@ -1280,7 +1275,6 @@ export default function TableDetail({ navigation, route }) {
     ).trim();
     const canFetchDetailFromBackend =
       !!userData?.did &&
-      !!userData?.privKey &&
       !!currentDni &&
       !!tableCodeForWorksheet &&
       !!String(electionId || '').trim();
@@ -1297,7 +1291,7 @@ export default function TableDetail({ navigation, route }) {
     };
 
     const loadFromBackend = async () => {
-      const apiKey = await authenticateWithBackend(userData.did, userData.privKey);
+      const apiKey = await authenticateWithBackend();
       const baseEndpoint = `${BACKEND_RESULT}/api/v1/worksheets/${encodeURIComponent(
         currentDni,
       )}/by-table/${encodeURIComponent(tableCodeForWorksheet)}`;

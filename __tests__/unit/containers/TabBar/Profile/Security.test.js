@@ -4,16 +4,23 @@
  */
 
 import React from 'react';
-import {fireEvent, waitFor} from '@testing-library/react-native';
+import {Alert} from 'react-native';
+import {act, fireEvent, waitFor} from '@testing-library/react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
+import {VaultError, createMockVault} from '@privado-id/expo-sdk';
 import Security from '../../../../../src/container/TabBar/Profile/Security';
 import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils';
+import {getPrivadoVault} from '../../../../../src/services/privado/privadoSession';
+import {VaultUnlockCancelledError} from '../../../../../src/services/privado/vaultUnlock';
+import {captureError} from '../../../../../src/config/sentry';
 
 // Mocks
-jest.mock('wira-sdk', () => ({
-  Biometric: {
-    getBioFlag: jest.fn(() => Promise.resolve(false)),
-  },
-  toggleBiometricAuth: jest.fn(() => Promise.resolve()),
+jest.mock('../../../../../src/services/privado/privadoSession', () => ({
+  getPrivadoVault: jest.fn(),
+}));
+
+jest.mock('../../../../../src/config/sentry', () => ({
+  captureError: jest.fn(),
 }));
 
 jest.mock('../../../../../src/api/constant', () => ({
@@ -89,17 +96,28 @@ describe('Security Screen', () => {
         white: '#FFFFFF',
       },
     },
-    wallet: {
-      payload: {
-        did: 'did:example:123',
-        privKey: 'mockPrivKey',
-      },
-    },
   };
+
+  let vault;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    vault = createMockVault();
+    getPrivadoVault.mockResolvedValue(vault);
   });
+
+  const renderSecurity = () =>
+    renderWithProviders(<Security navigation={mockNavigation} />, {
+      initialState: mockStore,
+    });
+
+  const toggleTo = async (getByTestId, value) => {
+    await waitFor(() => expect(vault.isBiometricsEnabled).toHaveBeenCalled());
+    await act(async () => {
+      fireEvent(getByTestId('securityBiometricSwitch'), 'valueChange', value);
+    });
+  };
 
   describe('Renderizado', () => {
     it('renderiza el contenedor principal de seguridad', () => {
@@ -173,19 +191,78 @@ describe('Security Screen', () => {
       });
     });
 
-    it('toggle de biometría llama a la función correspondiente', async () => {
-      const wira = require('wira-sdk');
-      const {getByTestId} = renderWithProviders(
-        <Security navigation={mockNavigation} />,
-        {initialState: mockStore},
+    it('en iOS activarla confirma con la huella y habilita la biometría del vault', async () => {
+      const {getByTestId} = renderSecurity();
+
+      await toggleTo(getByTestId, true);
+
+      expect(LocalAuthentication.authenticateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({promptMessage: 'Escanea tu huella dactilar'}),
+      );
+      expect(vault.enableBiometrics).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(getByTestId('securityBiometricSwitch').props.value).toBe(true),
+      );
+    });
+
+    it('en Android no pide la confirmación previa: el sistema la pide al guardar', async () => {
+      const {Platform} = require('react-native');
+      const original = Platform.OS;
+      Platform.OS = 'android';
+      try {
+        const {getByTestId} = renderSecurity();
+
+        await toggleTo(getByTestId, true);
+
+        expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
+        expect(vault.enableBiometrics).toHaveBeenCalledTimes(1);
+        await waitFor(() =>
+          expect(getByTestId('securityBiometricSwitch').props.value).toBe(true),
+        );
+      } finally {
+        Platform.OS = original;
+      }
+    });
+
+    it('desactivarla borra el acceso biométrico del vault', async () => {
+      vault.isBiometricsEnabled.mockResolvedValue(true);
+      const {getByTestId} = renderSecurity();
+      await waitFor(() =>
+        expect(getByTestId('securityBiometricSwitch').props.value).toBe(true),
       );
 
-      await waitFor(() => {
-        const bioSwitch = getByTestId('securityBiometricSwitch');
-        fireEvent(bioSwitch, 'valueChange', true);
-      });
+      await toggleTo(getByTestId, false);
 
-      expect(wira.toggleBiometricAuth).toHaveBeenCalled();
+      expect(vault.disableBiometrics).toHaveBeenCalledTimes(1);
+      expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
+      expect(getByTestId('securityBiometricSwitch').props.value).toBe(false);
+    });
+
+    it('si el usuario cancela la huella no activa nada ni muestra alertas', async () => {
+      LocalAuthentication.authenticateAsync.mockResolvedValueOnce({
+        success: false,
+        error: 'user_cancel',
+      });
+      const {getByTestId} = renderSecurity();
+
+      await toggleTo(getByTestId, true);
+
+      expect(vault.enableBiometrics).not.toHaveBeenCalled();
+      expect(Alert.alert).not.toHaveBeenCalled();
+      expect(getByTestId('securityBiometricSwitch').props.value).toBe(false);
+    });
+
+    it('si cancela el desbloqueo del vault deja el switch como estaba', async () => {
+      vault.enableBiometrics.mockRejectedValueOnce(new VaultUnlockCancelledError());
+      const {getByTestId} = renderSecurity();
+
+      await toggleTo(getByTestId, true);
+
+      expect(Alert.alert).not.toHaveBeenCalled();
+      expect(captureError).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(getByTestId('securityBiometricSwitch').props.value).toBe(false),
+      );
     });
   });
 
@@ -206,13 +283,9 @@ describe('Security Screen', () => {
 
   describe('Estados y Props', () => {
     it('maneja correctamente el estado inicial de biometría', async () => {
-      const wira = require('wira-sdk');
-      wira.Biometric.getBioFlag.mockResolvedValueOnce(true);
+      vault.isBiometricsEnabled.mockResolvedValueOnce(true);
 
-      const {getByTestId} = renderWithProviders(
-        <Security navigation={mockNavigation} />,
-        {initialState: mockStore},
-      );
+      const {getByTestId} = renderSecurity();
 
       await waitFor(() => {
         const bioSwitch = getByTestId('securityBiometricSwitch');
@@ -222,82 +295,75 @@ describe('Security Screen', () => {
   });
 
   describe('Manejo de Errores', () => {
-    it('muestra alerta cuando biometría no está disponible', async () => {
-      const wira = require('wira-sdk');
-      const {Alert} = require('react-native');
-      jest.spyOn(Alert, 'alert');
+    it('sin huella registrada avisa que la biometría no está disponible', async () => {
+      LocalAuthentication.isEnrolledAsync.mockResolvedValueOnce(false);
+      const {getByTestId} = renderSecurity();
 
-      wira.toggleBiometricAuth.mockRejectedValueOnce(
-        new Error('Biometric authentication is not available'),
+      await toggleTo(getByTestId, true);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Biometría no disponible',
+        'Actívala en Ajustes del sistema',
       );
-
-      const {getByTestId} = renderWithProviders(
-        <Security navigation={mockNavigation} />,
-        {initialState: mockStore},
-      );
-
-      await waitFor(() => {
-        const bioSwitch = getByTestId('securityBiometricSwitch');
-        fireEvent(bioSwitch, 'valueChange', true);
-      });
-
-      await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith(
-          'Biometría no disponible',
-          'Actívala en Ajustes del sistema',
-        );
-      });
+      expect(vault.enableBiometrics).not.toHaveBeenCalled();
     });
 
-    it('muestra alerta cuando no hay datos de usuario', async () => {
-      const wira = require('wira-sdk');
-      const {Alert} = require('react-native');
-      jest.spyOn(Alert, 'alert');
-
-      wira.toggleBiometricAuth.mockRejectedValueOnce(
-        new Error('User data is required to enable biometric authentication'),
+    it('si el vault no puede usar la biometría también lo avisa', async () => {
+      vault.enableBiometrics.mockRejectedValueOnce(
+        new VaultError('BIOMETRICS_UNAVAILABLE', 'unavailable'),
       );
+      const {getByTestId} = renderSecurity();
 
-      const {getByTestId} = renderWithProviders(
-        <Security navigation={mockNavigation} />,
-        {initialState: mockStore},
+      await toggleTo(getByTestId, true);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Biometría no disponible',
+        'Actívala en Ajustes del sistema',
       );
-
-      await waitFor(() => {
-        const bioSwitch = getByTestId('securityBiometricSwitch');
-        fireEvent(bioSwitch, 'valueChange', true);
-      });
-
-      await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith(
-          'Sin datos',
-          'Crea tu cuenta/PIN antes de activar la biometría',
-        );
-      });
     });
 
-    it('maneja cancelación del usuario correctamente', async () => {
-      const wira = require('wira-sdk');
-
-      wira.toggleBiometricAuth.mockRejectedValueOnce(
-        new Error('User cancelled biometric change'),
+    it('sin vault pide crear la cuenta primero', async () => {
+      vault.enableBiometrics.mockRejectedValueOnce(
+        new VaultError('VAULT_NOT_CREATED', 'no vault'),
       );
+      const {getByTestId} = renderSecurity();
 
-      const {getByTestId} = renderWithProviders(
-        <Security navigation={mockNavigation} />,
-        {initialState: mockStore},
+      await toggleTo(getByTestId, true);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Sin datos',
+        'Crea tu cuenta/PIN antes de activar la biometría',
       );
+    });
 
-      await waitFor(() => {
-        const bioSwitch = getByTestId('securityBiometricSwitch');
-        fireEvent(bioSwitch, 'valueChange', true);
+    it('si la huella falla lo indica y no activa nada', async () => {
+      LocalAuthentication.authenticateAsync.mockResolvedValueOnce({
+        success: false,
+        error: 'authentication_failed',
       });
+      const {getByTestId} = renderSecurity();
 
-      // El switch debería volver a false
-      await waitFor(() => {
-        const bioSwitch = getByTestId('securityBiometricSwitch');
-        expect(bioSwitch.props.value).toBe(false);
-      });
+      await toggleTo(getByTestId, true);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Biometría',
+        'La autenticación falló. Inténtalo de nuevo.',
+      );
+      expect(vault.enableBiometrics).not.toHaveBeenCalled();
+    });
+
+    it('un error inesperado se registra y se muestra', async () => {
+      vault.enableBiometrics.mockRejectedValueOnce(new Error('boom'));
+      const {getByTestId} = renderSecurity();
+
+      await toggleTo(getByTestId, true);
+
+      expect(captureError).toHaveBeenCalledWith(
+        expect.objectContaining({message: 'boom'}),
+        expect.objectContaining({flow: 'Security', step: 'toggleBio'}),
+      );
+      expect(Alert.alert).toHaveBeenCalledWith('Error', 'boom');
+      expect(getByTestId('securityBiometricSwitch').props.value).toBe(false);
     });
   });
 

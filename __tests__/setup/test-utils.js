@@ -186,20 +186,6 @@ export function createMockVotingTable(overrides = {}) {
 }
 
 /**
- * Creates a mock guardian object
- */
-export function createMockGuardian(overrides = {}) {
-  return {
-    id: 'guardian-123',
-    name: 'Test Guardian',
-    email: 'guardian@example.com',
-    phone: '+1234567890',
-    status: 'active',
-    ...overrides,
-  };
-}
-
-/**
  * Creates a mock electoral record
  */
 export function createMockElectoralRecord(overrides = {}) {

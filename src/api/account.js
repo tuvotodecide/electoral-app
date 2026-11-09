@@ -1,112 +1,180 @@
-
 import { CHAIN } from '@env';
-import { createSmartAccountClient } from 'permissionless';
-import { createPimlicoClient } from 'permissionless/clients/pimlico';
+import { IdentityApiError, UserOperationReceiptError } from '@privado-id/expo-sdk';
 import { createPublicClient, getContract, http } from 'viem';
-import { entryPoint06Address, toCoinbaseSmartAccount } from 'viem/account-abstraction';
-import { privateKeyToAccount } from 'viem/accounts';
 import walletAbi from './contracts/SimpleAccount.json';
-import {
-  availableNetworks,
-  sponsorshipPolicyId,
-} from './params';
-import { ethers } from 'ethers';
+import { availableNetworks, getReadRpcUrl } from './params';
+import { getPrivadoClient } from '../services/privado/privadoSession';
+
+/**
+ * Transacciones de la app: se envían como UserOperation desde la smart wallet
+ * del titular con el SDK de Privado ID. La firma se hace en el vault y el
+ * patrocinio pasa por el proxy del paymaster de backend-identity (solo para
+ * cuentas registradas). Ya no hace falta la clave privada.
+ */
 
 const RECEIPT_WAIT_TIMEOUT_MS = 15 * 60 * 1000;
-const RECEIPT_POLL_INTERVAL_MS = 2000;
+// Segunda consulta tras vencer la espera: en móvil, al volver de segundo plano
+// el recibo puede existir aunque la espera haya vencido.
+const RECEIPT_RECHECK_TIMEOUT_MS = 10 * 1000;
 
-const isReceiptTimeoutError = error => {
-  const name = String(error?.name || '').toLowerCase();
-  const message = String(error?.message || '').toLowerCase();
-  return (
-    name.includes('waitfortransactionreceipttimeouterror') ||
-    message.includes('waitfortransactionreceipttimeouterror') ||
-    message.includes('timed out while waiting for transaction')
-  );
+const sameAddress = (a, b) =>
+  String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+
+/**
+ * Cliente del SDK para la red `chainId` de la app. La red debe ser la del SDK
+ * (PRIVADO_CHAIN_ID) y `address`, si se indica, la smart wallet del titular:
+ * el SDK solo envía desde esa cuenta.
+ */
+async function getHolderOnChain(address, chainId) {
+  const network = availableNetworks[chainId];
+  if (!network) {
+    throw new Error(`Red no soportada: ${chainId}`);
+  }
+  const client = await getPrivadoClient();
+  const sdkChainId = client.config?.network?.chainId;
+  if (network.chain?.id !== sdkChainId) {
+    throw new Error(
+      `La red ${chainId} (chainId ${network.chain?.id}) no es la del SDK (chainId ${sdkChainId}).`,
+    );
+  }
+  const holder = await client.getHolderDid();
+  const sender = holder?.wallet?.address;
+  if (!sender) {
+    throw new Error('No hay una smart wallet en este dispositivo.');
+  }
+  if (address && !sameAddress(address, sender)) {
+    throw new Error('La operación debe enviarse desde la cuenta de este dispositivo.');
+  }
+  return {onChainZk: client.onChainZk, network, sender};
+}
+
+const toSdkCalls = callData =>
+  (Array.isArray(callData) ? callData : [callData]).map(call => ({
+    to: call.to,
+    data: call.data || '0x',
+    value: BigInt(call.value || 0),
+  }));
+
+/**
+ * Errores del SDK con el `errorType` que usa la cola offline
+ * (offlineQueue.classifyQueueError) y el hash de la operación si ya se envió.
+ */
+const toAppError = error => {
+  if (error instanceof UserOperationReceiptError) {
+    const wrapped = new Error(error.message);
+    wrapped.name = error.timedOut
+      ? 'WaitForTransactionReceiptTimeoutError'
+      : 'UserOperationReceiptError';
+    wrapped.errorType = 'NETWORK_TIMEOUT';
+    wrapped.userOpHash = error.userOperationHash;
+    wrapped.cause = error;
+    return wrapped;
+  }
+  if (error instanceof IdentityApiError && !error.errorType) {
+    const status = Number(error.status);
+    if (status === 401 || status === 403) error.errorType = 'AUTH';
+    else if (status === 429) error.errorType = 'RATE_LIMIT';
+    else if (status >= 500) error.errorType = 'SERVER_5XX';
+  }
+  return error;
 };
 
-const waitForReceiptWithFallback = async (publicClient, txHash) => {
+const waitForReceipt = async (onChainZk, userOperationHash) => {
   try {
-    return await publicClient.waitForTransactionReceipt({
-      hash: txHash,
-      timeout: RECEIPT_WAIT_TIMEOUT_MS,
-      pollingInterval: RECEIPT_POLL_INTERVAL_MS,
+    return await onChainZk.waitForUserOperationReceipt({
+      userOperationHash,
+      timeoutMs: RECEIPT_WAIT_TIMEOUT_MS,
     });
   } catch (error) {
-    if (!isReceiptTimeoutError(error)) {
+    if (!(error instanceof UserOperationReceiptError) || !error.timedOut) {
       throw error;
     }
-
-    // En móvil, al volver de background el receipt puede existir aunque el wait haya vencido.
-    try {
-      return await publicClient.getTransactionReceipt({ hash: txHash });
-    } catch {
-      const timeoutError = new Error(
-        `Timed out while waiting for transaction receipt for ${txHash}`,
-      );
-      timeoutError.name = 'WaitForTransactionReceiptTimeoutError';
-      timeoutError.errorType = 'NETWORK_TIMEOUT';
-      timeoutError.txHash = txHash;
-      timeoutError.cause = error;
-      throw timeoutError;
-    }
+    return onChainZk.waitForUserOperationReceipt({
+      userOperationHash,
+      timeoutMs: RECEIPT_RECHECK_TIMEOUT_MS,
+    });
   }
 };
 
-const getSmartAccountEntryPoint = account =>
-  account?.entryPoint || {
-    address: entryPoint06Address,
-    version: '0.6',
-  };
-
-const createOfficialSmartAccountClient = async (
-  privateKey,
+/**
+ * Envía `callData` (`{to, data, value}` o una lista) en una UserOperation,
+ * espera su recibo y, con `waitEvent`/`eventName`, lee el evento del bloque.
+ * Devuelve `{returnData, receipt: {transactionHash, blockNumber}, userOpHash, date}`.
+ */
+export async function executeOperation(
   address,
   chainId,
-  ephemeral = false,
-) => {
-  const {account, publicClient} = ephemeral
-  ? await getRandomAccount(chainId)
-  : await getAccount(
-    privateKey,
-    address,
-    chainId,
-  );
-  const {chain, bundler} = availableNetworks[chainId];
+  callData,
+  waitEvent,
+  eventName,
+) {
+  const {onChainZk, network} = await getHolderOnChain(address, chainId);
 
-  const pimlicoClient = createPimlicoClient({
-    chain,
-    transport: http(bundler),
-    entryPoint: getSmartAccountEntryPoint(account),
+  let result;
+  try {
+    const {userOperationHash} = await onChainZk.sendHolderUserOperation({
+      calls: toSdkCalls(callData),
+    });
+    result = await waitForReceipt(onChainZk, userOperationHash);
+  } catch (error) {
+    throw toAppError(error);
+  }
+
+  if (!result.success) {
+    const reverted = new Error(
+      'La operación se incluyó en la cadena, pero su ejecución falló.',
+    );
+    reverted.code = 'USER_OPERATION_REVERTED';
+    reverted.userOpHash = result.userOperationHash;
+    reverted.txHash = result.transactionHash;
+    throw reverted;
+  }
+
+  const blockNumber = BigInt(result.blockNumber);
+  const receipt = {transactionHash: result.transactionHash, blockNumber};
+
+  let returnData;
+  if (waitEvent && eventName) {
+    returnData = await waitEvent(chainId, eventName, blockNumber);
+  }
+
+  const publicClient = createPublicClient({
+    chain: network.chain,
+    transport: http(getReadRpcUrl(network.chain)),
   });
-
-  const customParams = availableNetworks[chainId].getCustomPaymasterParams
-    ? availableNetworks[chainId].getCustomPaymasterParams(
-        pimlicoClient,
-        sponsorshipPolicyId,
-      )
-    : {};
-
-  const smartAccountClient = createSmartAccountClient({
-    account,
-    chain,
-    bundlerTransport: http(bundler),
-    paymaster: pimlicoClient,
-    ...customParams,
-  });
-
+  const block = await publicClient.getBlock({blockNumber});
+  const date = new Date(Number(block.timestamp) * 1000);
   return {
-    account,
-    publicClient,
-    smartAccountClient,
-    entryPoint: getSmartAccountEntryPoint(account),
+    returnData,
+    receipt,
+    userOpHash: result.userOperationHash,
+    date: date.toLocaleString(),
   };
-};
+}
+
+/**
+ * Envía las llamadas en una UserOperation y devuelve en cuanto el bundler la
+ * acepta, sin esperar el recibo: `{userOpHash, smartAccountAddress}`. Sin
+ * simulación previa: las llamadas de un lote pueden depender unas de otras y el
+ * bundler ya las estima juntas.
+ */
+export async function sendOperationWithUserOpHash(address, chainId, callData) {
+  const {onChainZk} = await getHolderOnChain(address, chainId);
+  try {
+    const {sender, userOperationHash} = await onChainZk.sendHolderUserOperation({
+      calls: toSdkCalls(callData),
+      simulate: false,
+    });
+    return {userOpHash: userOperationHash, smartAccountAddress: sender};
+  } catch (error) {
+    throw toAppError(error);
+  }
+}
 
 export function getReadAccountContract(chain, address) {
   const client = createPublicClient({
     chain: availableNetworks[chain].chain,
-    transport: http(),
+    transport: http(getReadRpcUrl(availableNetworks[chain].chain)),
   });
 
   return getContract({
@@ -116,102 +184,10 @@ export function getReadAccountContract(chain, address) {
   });
 }
 
-export async function getAccount(privateKey, address, chain) {
-  const owner = privateKeyToAccount(privateKey);
-  const {chain: chainConfig, bundler} = availableNetworks[chain];
-
-  const publicClient = createPublicClient({
-    chain: chainConfig,
-    transport: http(bundler),
-  });
-
-  const account = await toCoinbaseSmartAccount({
-    client: publicClient,
-    owners: [owner],
-  });
-
-  return {account, publicClient};
-}
-
-export async function getRandomAccount(chain) {
-  const privateKey = ethers.Wallet.createRandom().privateKey;
-  const {chain: chainConfig, bundler} = availableNetworks[chain];
-
-  const publicClient = createPublicClient({
-    chain: chainConfig,
-    transport: http(bundler),
-  });
-
-  const account = await toCoinbaseSmartAccount({
-    client: publicClient,
-    owners: [privateKeyToAccount(privateKey)],
-  });
-
-  return {account, publicClient};
-}
-
-export async function executeOperation(
-  privateKey,
-  address,
-  chainId,
-  callData,
-  waitEvent,
-  eventName,
-  ephemeral = false,
-) {
-  const {publicClient, smartAccountClient} =
-    await createOfficialSmartAccountClient(
-      privateKey,
-      address,
-      chainId,
-      ephemeral,
-    );
-
-  const txHash = await smartAccountClient.sendTransaction(callData);
-  const receipt = await waitForReceiptWithFallback(publicClient, txHash);
-
-  let returnData;
-  if (waitEvent && eventName) {
-    returnData = await waitEvent(chainId, eventName, receipt.blockNumber);
-  }
-
-  const block = await publicClient.getBlock({blockNumber: receipt.blockNumber});
-  const date = new Date(Number(block.timestamp) * 1000);
-  return {returnData, receipt, date: date.toLocaleString()};
-}
-
-export async function sendOperationWithUserOpHash(
-  privateKey,
-  address,
-  chainId,
-  callData,
-) {
-  const {smartAccountClient, entryPoint, account} =
-    await createOfficialSmartAccountClient(privateKey, address, chainId, false);
-
-  const preparedCalls = Array.isArray(callData)
-    ? callData
-    : [callData];
-  const userOpHash = await smartAccountClient.sendUserOperation({
-    calls: preparedCalls.map(call => ({
-      to: call.to,
-      value: BigInt(call.value || 0),
-      data: call.data || '0x',
-    })),
-  });
-
-  return {
-    userOpHash,
-    smartAccountAddress: account.address,
-    entryPointAddress: entryPoint.address,
-    entryPointVersion: entryPoint.version,
-  };
-}
-
 export async function isWallet(address) {
   const client = createPublicClient({
     chain: availableNetworks[CHAIN].chain,
-    transport: http(),
+    transport: http(getReadRpcUrl(availableNetworks[CHAIN].chain)),
   });
 
   const wallet = getContract({

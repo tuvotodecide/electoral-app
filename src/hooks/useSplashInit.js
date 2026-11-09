@@ -1,12 +1,14 @@
-import { CIRCUITS_URL, GATEWAY_BASE, BACKEND_IDENTITY } from '@env';
+import { CIRCUITS_URL } from '@env';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DeviceEventEmitter, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { StorageService } from '../services/StorageService';
-import wira, { config } from 'wira-sdk';
+import { getPrivadoSession } from '../services/privado/privadoSession';
+import {
+  downloadCircuits,
+  isCircuitDownloadInProgress,
+  registerCachedCircuits,
+} from '../services/privado/privadoCircuits';
 
-
-import { PENDINGRECOVERY } from '../common/constants';
 import Strings from '../i18n/String';
 import { NavigationAdapter } from '../services/NavigationAdapter';
 import { AuthNav, StackNav } from '../navigation/NavigationKey';
@@ -17,45 +19,6 @@ import { getDraft } from '../utils/RegisterDraft';
 import { captureError, flushSentry } from '../config/sentry';
 import { hydrateDemoSession } from '../features/demo/demoSession';
 import { describeNav, notifNavLog } from '../utils/notifNavDebug';
-
-const circuitsData = {
-  bucketUrl: CIRCUITS_URL,
-  zipFileName: 'circuits',
-  circuitsWithChecksum: [
-    {
-      fileName: 'authV2.dat',
-      circuitId: 'authV2',
-      checksum: null,
-    },{
-      fileName: 'credentialAtomicQuerySigV2.dat',
-      circuitId: 'credentialAtomicQuerySigV2',
-      checksum: null,
-    },
-  ],
-}
-
-const CIRCUIT_DOWNLOAD_STATUS =
-  config?.CircuitDownloadStatus || {
-    DOWNLOADING: 'DOWNLOADING',
-    DONE: 'DONE',
-    ERROR: 'ERROR',
-  };
-
-const initDownloadCircuits = params => {
-  const initFn = config?.initDownloadCircuits;
-  if (!initFn) {
-    throw new Error('Circuit downloader not configured');
-  }
-  return initFn(params);
-};
-
-const circuitsAreDownloaded = async params => {
-  const checkFn = config?.circuitsAreDownloaded;
-  if (!checkFn) {
-    return false;
-  }
-  return checkFn(params);
-};
 
 const getDownloadSizeMB = async (url) => {
   try {
@@ -92,79 +55,14 @@ export const useSplashInit = (navigation) => {
     confirmDownloadResolveRef.current = null;
   }, []);
 
-  const waitForCircuitDownloadCompletion = useCallback(() => {
-    let subscription;
-    const promise = new Promise((resolve) => {
-      DeviceEventEmitter.removeAllListeners('downloadInfo');
-      subscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
-        const {status, info} = JSON.parse(data);
-        const safeInfo = String(info ?? '');
-
-        switch (status) {
-          case CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING:
-            if (safeInfo.startsWith('-')) {
-              setDownloadMessage([Strings.downloadingData + '-']);
-            } else {
-              setDownloadMessage([Strings.downloadingData, safeInfo]);
-            }
-            break;
-
-          case CIRCUIT_DOWNLOAD_STATUS.DONE:
-            setDownloadMessage([Strings.initApp]);
-            subscription?.remove();
-            resolve(true);
-            break;
-
-          case CIRCUIT_DOWNLOAD_STATUS.ERROR:
-            captureError(new Error('Circuit Download Error: ' + info), {
-              flow: 'init_app',
-              step: 'download_circuits',
-              critical: false,
-              status,
-              info: safeInfo,
-            });
-            flushSentry(2500).catch(() => {});
-            setDownloadMessage([Strings.downloadingFailed]);
-            subscription?.remove();
-            resolve(false);
-            break;
-
-          default:
-            captureError(new Error('Download Status Unknown: ' + status), {
-              flow: 'init_app',
-              step: 'download_circuits',
-              critical: false,
-              status,
-              info: safeInfo,
-            });
-            flushSentry(2000).catch(() => {});
-            subscription?.remove();
-            setDownloadMessage([Strings.downloadingFailed]);
-            resolve(false);
-            break;
-        }
-      });
-    });
-
-    const cancel = () => subscription?.remove();
-    return {promise, cancel};
-  }, []);
-
-  const isDownloadAlreadyInProgress = useCallback(() => {
-    return new Promise((resolve) => {
-      const probeSubscription = DeviceEventEmitter.addListener('downloadInfo', (data) => {
-        const {status} = JSON.parse(data);
-        if (status === CIRCUIT_DOWNLOAD_STATUS.DOWNLOADING ||
-            status === CIRCUIT_DOWNLOAD_STATUS.DONE) {
-          probeSubscription.remove();
-          resolve(true);
-        }
-      });
-      setTimeout(() => {
-        probeSubscription.remove();
-        resolve(false);
-      }, 1500);
-    });
+  const showDownloadProgress = useCallback(({phase, percent}) => {
+    if (phase === 'extracting') {
+      setDownloadMessage([Strings.initApp]);
+    } else if (percent === undefined) {
+      setDownloadMessage([Strings.downloadingData + '-']);
+    } else {
+      setDownloadMessage([Strings.downloadingData, `${Math.round(percent)}%`]);
+    }
   }, []);
 
   const initializeApp = useCallback(async () => {
@@ -177,31 +75,30 @@ export const useSplashInit = (navigation) => {
     await hydrateDemoSession();
 
     try {
-      try {
-        await wira.provision.ensureProvisioned({mock: true, gatewayBase: GATEWAY_BASE});
-      } catch (_provisionError) {}
-
-      const downloaded = await circuitsAreDownloaded(circuitsData);
-
-      const alreadyDownloading = await isDownloadAlreadyInProgress();
+      // El registro de circuitos del SDK vive en memoria: se rellena en cada
+      // arranque con lo que ya está extraído en la caché.
+      const alreadyDownloading = isCircuitDownloadInProgress();
+      const downloaded = !alreadyDownloading && (await registerCachedCircuits());
       notifNavLog('Splash', 'circuits status', { downloaded, alreadyDownloading });
-      const {promise: downloadComplete} = waitForCircuitDownloadCompletion();
 
-      if (!alreadyDownloading) {
-        if(!downloaded) {
+      if (!downloaded) {
+        if (!alreadyDownloading) {
           const sizeMB = await getDownloadSizeMB(CIRCUITS_URL);
           await requestDownloadConfirmation(sizeMB);
         }
-
-        await initDownloadCircuits(circuitsData);
+        setDownloadMessage([Strings.downloadingData + '-']);
+        const result = await downloadCircuits({ onProgress: showDownloadProgress });
+        setDownloadMessage([Strings.initApp]);
+        notifNavLog('Splash', 'circuits download finished', { status: result.status });
       }
-      const downloadOk = await downloadComplete;
-      notifNavLog('Splash', 'circuits download finished', { downloadOk });
-      if (!downloadOk) {
-        return;
-      }
-    } catch (_error) {
-      notifNavLog('Splash', 'circuits step threw', { error: _error?.message });
+    } catch (error) {
+      notifNavLog('Splash', 'circuits step threw', { error: error?.message });
+      captureError(error, {
+        flow: 'init_app',
+        step: 'download_circuits',
+        critical: false,
+      });
+      flushSentry(2500).catch(() => {});
       setDownloadMessage([Strings.downloadingFailed]);
       return;
     }
@@ -232,18 +129,6 @@ export const useSplashInit = (navigation) => {
         dispatchRef.current(changeThemeAction(colors.light));
       }
 
-      const pending = await StorageService.getItem(PENDINGRECOVERY);
-
-      if (pending === 'true') {
-        notifNavLog('Splash', 'navigate -> AuthNavigation/MyGuardiansStatus', {
-          current: describeNav(),
-        });
-        router.navigate(StackNav.AuthNavigation, {
-          screen: AuthNav.MyGuardiansStatus,
-        });
-        return;
-      }
-
       notifNavLog('Splash', 'replace -> AuthNavigation (Connect)', {
         current: describeNav(),
       });
@@ -255,38 +140,28 @@ export const useSplashInit = (navigation) => {
       });
       router.replace(StackNav.AuthNavigation);
     }
-  }, [navigation, waitForCircuitDownloadCompletion, isDownloadAlreadyInProgress, requestDownloadConfirmation]);
+  }, [navigation, requestDownloadConfirmation, showDownloadProgress]);
 
   useEffect(() => {
     const initAppWithSdk = async () => {
       try {
-        await wira.initWiraSdk({ appId: 'tuvotodecide', guardiansUrl: BACKEND_IDENTITY }, {
-          pushUrl: 'https://push-staging.polygonid.com/api/v1',
-          ipfsGatewayUrl: BACKEND_IDENTITY,
-          chainConfigs: {
-            "80002": {
-              blockchain: 'polygon',
-              network: 'amoy',
-              rpcUrl: 'https://polygon-amoy-bor-rpc.publicnode.com/',
-              stateContractAddr: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
-            }
-          },
-          didMethods: []
-        });
+        // Crea la sesión única del SDK; el resto de la app la obtiene con
+        // getPrivadoSession() / getPrivadoClient().
+        await getPrivadoSession();
       } catch (error) {
-        if (!error.message.includes('Type FilterMapper is already registered')) {
-          Alert.alert('Error', Strings.sdkInitError, [
-            {text: 'OK', style: 'default'},
-          ]);
-        }
+        captureError(error, {
+          flow: 'init_app',
+          step: 'privado_sdk_init',
+          critical: true,
+        });
+        Alert.alert('Error', Strings.sdkInitError, [
+          {text: 'OK', style: 'default'},
+        ]);
       }
       await initializeApp();
-    }
+    };
 
     initAppWithSdk();
-    return () => {
-      DeviceEventEmitter.removeAllListeners('downloadInfo');
-    };
   }, [initializeApp]);
 
   return {

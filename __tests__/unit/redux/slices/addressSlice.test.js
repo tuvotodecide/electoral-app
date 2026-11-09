@@ -3,7 +3,6 @@ import reducer, { setAddresses, clearAddresses } from '../../../../src/redux/sli
 describe('addressSlice', () => {
   const initialState = {
     account: null,
-    guardian: null,
   };
 
   it('should return the initial state', () => {
@@ -13,11 +12,9 @@ describe('addressSlice', () => {
   it('should handle setAddresses', () => {
     const payload = {
       account: '0x1234...account',
-      guardian: '0x5678...guardian',
     };
     const expectedState = {
       account: '0x1234...account',
-      guardian: '0x5678...guardian',
     };
     expect(reducer(initialState, setAddresses(payload))).toEqual(expectedState);
   });
@@ -25,7 +22,6 @@ describe('addressSlice', () => {
   it('should handle clearAddresses', () => {
     const currentState = {
       account: '0x1234...account',
-      guardian: '0x5678...guardian',
     };
     expect(reducer(currentState, clearAddresses())).toEqual(initialState);
   });
@@ -33,7 +29,6 @@ describe('addressSlice', () => {
   it('should not change state for an unknown action', () => {
     const currentState = {
       account: '0xabcd',
-      guardian: '0xefgh',
     };
     expect(reducer(currentState, { type: 'unknown/action' })).toEqual(currentState);
   });

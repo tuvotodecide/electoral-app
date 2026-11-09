@@ -43,8 +43,15 @@ jest.mock('axios', () => ({
   get: jest.fn(),
   post: jest.fn(),
 }));
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(async () => true),
+// authenticateWithBackend responde al verificador con el SDK de Privado ID.
+jest.mock('../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(async () => ({
+    offChainZk: {
+      getZkRequest: jest.fn(async () => ({})),
+      generateZkResponse: jest.fn(async () => ({})),
+      submitZkResponse: jest.fn(async () => ({})),
+    },
+  })),
 }));
 
 const basePayload = {

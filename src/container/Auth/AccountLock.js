@@ -20,7 +20,7 @@ export default function AccountLock({navigation}) {
   const colors = useSelector(state => state.theme.theme);
   
   const onPressNext = () => {
-    navigation.navigate(AuthNav.SelectRecuperation, {disableCI: true});
+    navigation.navigate(AuthNav.SelectRecuperation);
   };
 
   return (

@@ -26,21 +26,21 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Stub local wira-sdk link
-        # package.json depends on "wira-sdk": "link:../wira-sdk", a sibling
-        # repo not published/checked out in CI. Tests mock this module via
+      - name: Stub local @privado-id/expo-sdk link
+        # package.json depends on "@privado-id/expo-sdk": "link:../privado-sdk-expo",
+        # a sibling repo not checked out in CI. Tests mock this module via
         # jest.config.js moduleNameMapper, so a placeholder is enough to let
-        # pnpm resolve the link without cloning the real wira-sdk repo.
+        # pnpm resolve the link without cloning the real SDK repo.
         run: |
-          mkdir -p ../wira-sdk
-          cat > ../wira-sdk/package.json <<'EOF'
+          mkdir -p ../privado-sdk-expo
+          cat > ../privado-sdk-expo/package.json <<'EOF'
           {
-            "name": "wira-sdk",
+            "name": "@privado-id/expo-sdk",
             "version": "0.0.0",
             "main": "index.js"
           }
           EOF
-          echo "module.exports = {};" > ../wira-sdk/index.js
+          echo "module.exports = {};" > ../privado-sdk-expo/index.js
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

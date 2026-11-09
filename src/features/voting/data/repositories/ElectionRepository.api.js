@@ -6,9 +6,10 @@ import { getCredentialForVote } from '@/src/data/credentials';
 import { authenticateWithBackend, getVoteRequestForBackend } from '../../../../utils/offlineQueueHandler';
 import { clearVoteJournal, markVoteJournalChainConfirmed } from '../../offline/voteJournal';
 import { CREDITS_EMPTY_ERROR_MESSAGE } from '../voteErrors';
-import wira from 'wira-sdk';
 import { captureError } from '@/src/config/sentry';
 import { getOwnVoteInfo } from '@/src/api/vote';
+import { answerVerifierRequest, isVerifierRejection } from '@/src/services/privado/verifierProof';
+import { hashVoteNullifier } from '../../utils/dataHasher';
 
 const API_BASE = `${String(BACKEND_RESULT || '').replace(/\/+$/, '')}/api/v1`;
 const LANDING_CACHE_KEY = 'voting.cache.publicLanding';
@@ -73,24 +74,12 @@ const getCurrentDid = () => {
   ).trim();
 };
 
-const getCurrentPrivKey = () => {
-  const payload = getWalletPayload();
-  return String(
-    payload?.privKey ||
-      payload?.payloadQr?.privKey ||
-      '',
-  ).trim();
-};
-
 const getVotingAuthHeaders = async () => {
-  const did = getCurrentDid();
-  const privKey = getCurrentPrivKey();
-
-  if (!did || !privKey) {
+  if (!getCurrentDid()) {
     throw new Error('No se pudo validar tu acceso para esta votación');
   }
 
-  const apiKey = await authenticateWithBackend(did, privKey);
+  const apiKey = await authenticateWithBackend();
 
   return {
     Accept: 'application/json',
@@ -902,9 +891,6 @@ const ElectionRepositoryApi = {
     }
 
     try {
-      const did = getCurrentDid();
-      const privKey = getCurrentPrivKey();
-
       const voteRequest = await getVoteRequestForBackend();
       const callbackUrl = voteRequest.body.callbackUrl;
       if(!callbackUrl) {
@@ -912,27 +898,28 @@ const ElectionRepositoryApi = {
       }
       voteRequest.body.callbackUrl = callbackUrl + `?optionId=${candidateId}`
 
-      const credential = await getCredentialForVote(electionId, did, privKey);
+      const credential = await getCredentialForVote(electionId);
       const credNullifier = credential?.info?.credentialSubject?.nullifier
       if (!credential || !credNullifier) {
         throw new Error('No se pudo validar tu acceso para emitir el voto');
       }
 
       try {
-        // Check own vote info, if throws, user didn't voted yet, so execute vote
-        await getOwnVoteInfo(electionId, credNullifier);
+        // getOwnVoteInfo revierte ("Not voted yet") si el voto no está en la
+        // cadena; la cadena guarda el hash del nullifier, no el nullifier.
+        await getOwnVoteInfo(electionId, hashVoteNullifier(electionId, credNullifier));
       } catch {
-        await wira.authenticateWithVerifier(
-          JSON.stringify(voteRequest),
-          did,
-          privKey,
-          [credential.id]
-        );
+        // Prueba ZK de la credencial de voto (eventId y nullifier) al
+        // verificador de back-results, que emite el voto.
+        await answerVerifierRequest(voteRequest, {
+          credentialId: credential.id,
+          reason: 'Abre tu cuenta para emitir tu voto.',
+        });
       }
 
       await markVoteJournalChainConfirmed(electionId);
     } catch (error) {
-      if (error.message?.includes('the response has a status code of 409')) {
+      if (isVerifierRejection(error, 409)) {
         return {
           success: false,
           error: CREDITS_EMPTY_ERROR_MESSAGE,

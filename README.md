@@ -12,9 +12,8 @@
 |-------------------|--------------------------|
 | **Node.js**       | ≥ 18.x                   |
 | **pnpm**          | ≥ 9.x                    |
-| **Yarn**          | 3.6.x                    |
+| **npm**           | El que trae Node.js      |
 | **Expo CLI**      | Última versión           |
-| **Flutter SDK**   | 3.35.x (Dart 3.10.x)     |
 | **Git**           | Última versión           |
 
 ### Para desarrollo nativo (builds locales)
@@ -29,8 +28,7 @@
 ```bash
 node -v
 pnpm -v
-yarn -v
-flutter --version
+npm -v
 git --version
 ```
 
@@ -44,46 +42,38 @@ git --version
 
 ## 🚀 Instalación
 
-### 1. Clonar los 4 repositorios en la misma carpeta
+### 1. Clonar la app y el SDK de Privado ID en la misma carpeta
+
+La app usa `@privado-id/expo-sdk` desde la carpeta vecina `privado-sdk-expo`
+(`"link:../privado-sdk-expo"` en `package.json`; Metro la vigila en `metro.config.js`).
 
 ```bash
-mkdir electoral && cd electoral
+mkdir privado-id && cd privado-id
 
 git clone https://github.com/tuvotodecide/electoral-app.git electoral-app
-git clone -b feat-wallet --single-branch https://github.com/Wira-Ecosystem/wira-sdk.git wira-sdk
-git clone https://github.com/Wira-Ecosystem/wira-sdk-flutter-component.git wira-sdk-flutter-component
-git clone -b local-branch --single-branch https://github.com/ArevaloJuanCarlos/polygonid-flutter-sdk.git polygonid-flutter-sdk
+git clone git@gitlab.com:proyectos-propios-blockchain-consultora/billetera-con-aa/privado-sdk-expo.git privado-sdk-expo
 ```
 
 Estructura esperada:
 
 ```text
-electoral/
+privado-id/
 ├── electoral-app/
-├── wira-sdk/
-├── wira-sdk-flutter-component/
-└── polygonid-flutter-sdk/
+└── privado-sdk-expo/
 ```
 
-### 2. Compilar el módulo Flutter (AAR)
+### 2. Compilar el SDK
+
+La app importa la compilación (`dist/`), así que hay que volver a compilar después de cada cambio en el SDK:
 
 ```bash
-cd wira-sdk-flutter-component
-flutter pub get
-flutter build aar
+cd privado-sdk-expo
+npm install
+npm run build
 cd ..
 ```
 
-### 3. Preparar wira-sdk
-
-```bash
-cd wira-sdk
-yarn
-yarn prepare
-cd ..
-```
-
-### 4. Preparar y ejecutar la app Expo
+### 3. Preparar y ejecutar la app Expo
 
 Primero, configura variables de entorno de la app:
 

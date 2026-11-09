@@ -2,7 +2,19 @@ const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 
 const projectRoot = __dirname;
+// @privado-id/expo-sdk se instala con `link:../privado-sdk-expo` (symlink fuera
+// del proyecto): Metro tiene que vigilar esa carpeta para poder empaquetarlo.
+const privadoSdkRoot = path.resolve(projectRoot, '../privado-sdk-expo');
 const config = getDefaultConfig(projectRoot);
+
+const BROWSER_ESM_ONLY_PACKAGES = [
+  '@iden3/js-crypto',
+  '@iden3/js-iden3-core',
+  '@iden3/js-jsonld-merklization',
+  '@iden3/js-merkletree',
+  '@iden3/js-jwz',
+  '@0xpolygonid/js-sdk',
+];
 
 const { resolver } = config;
 
@@ -48,18 +60,19 @@ config.resolver = {
       return context.resolveRequest(context, browserPath, platform);
     }
 
-    // Polyfill pino for React Native (used by pino-caller in wira-sdk)
-    if (moduleName === 'pino' || moduleName.startsWith('pino/')) {
+    // Estos paquetes solo exponen "exports" con condiciones node/browser/umd
+    // (sin "main" ni "react-native"/"default"), así que Metro en Android/iOS no
+    // encuentra entrada. Se apunta directo al build browser ESM. Ruta directa:
+    // require.resolve respeta "exports" y este subpath no está exportado.
+    if (BROWSER_ESM_ONLY_PACKAGES.includes(moduleName)) {
       return {
-        filePath: path.resolve(__dirname, 'polyfills/pino.js'),
         type: 'sourceFile',
-      };
-    }
-
-    // Mock node-localstorage for React Native
-    if (moduleName === 'node-localstorage') {
-      return {
-        type: 'empty',
+        filePath: path.join(
+          privadoSdkRoot,
+          'node_modules',
+          moduleName,
+          'dist/browser/esm/index.js',
+        ),
       };
     }
 
@@ -73,9 +86,13 @@ config.resolver = {
 
     return context.resolveRequest(context, moduleName, platform);
   },
-  blockList: [/wira-sdk[\/\\]node_modules[\/\\]react-native[\/\\]/],
+  // Las dependencias nativas que el SDK pide como peer (react-native, expo-*,
+  // @iden3/react-native-*) solo están en node_modules de la app.
+  nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
+  // Una sola copia de React y React Native: nunca las del node_modules del SDK.
+  blockList: [/privado-sdk-expo[\/\\]node_modules[\/\\](react|react-native)[\/\\]/],
 };
 
-config.watchFolders = [path.resolve(projectRoot, "../wira-sdk")];
+config.watchFolders = [privadoSdkRoot];
 
 module.exports = config;

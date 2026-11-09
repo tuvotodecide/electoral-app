@@ -20,7 +20,14 @@ import { getSecondaryTextColor } from '../../utils/ThemeUtils';
 
 export default function RegisterUser8({navigation, route}) {
   const routeParams = route?.params ?? {};
-  const {ocrData, useBiometry, dni} = routeParams;
+  const {
+    ocrData,
+    useBiometry,
+    dni,
+    identityData,
+    identityToken,
+    identityTokenExpiresAt,
+  } = routeParams;
   const colors = useSelector(state => state.theme.theme);
   const [otp, setOtp] = useState('');
   const onOtpChange = text => {
@@ -32,6 +39,9 @@ export default function RegisterUser8({navigation, route}) {
       ocrData,
       useBiometry,
       dni,
+      identityData,
+      identityToken,
+      identityTokenExpiresAt,
     };
     navigation.navigate(AuthNav.RegisterUser9, params);
   };

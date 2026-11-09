@@ -1020,10 +1020,7 @@ const PhotoReviewScreen = () => {
               'Sin conexión. No se pudo comparar con el acta.',
             );
           } else {
-            const apiKey = await authenticateWithBackend(
-              userData.did,
-              userData.privKey,
-            );
+            const apiKey = await authenticateWithBackend();
             const {data} = await axios.post(
               `${BACKEND_RESULT}/api/v1/worksheets/compare`,
               {

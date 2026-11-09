@@ -26,16 +26,7 @@ const mockPaths = [
   '../../../src/container/Auth/VerifySuccess',
   '../../../src/container/Connect',
   '../../../src/container/OnBoarding',
-  '../../../src/container/OnBoardingGuardians',
   '../../../src/container/Splash',
-  '../../../src/container/TabBar/Recovery/FindMyUser',
-  '../../../src/container/TabBar/Recovery/RecoveryUserQrpin',
-  '../../../src/container/TabBar/Recovery/RecoveryUserQrpin2',
-  '../../../src/container/TabBar/Recovery/RecoveryQR',
-  '../../../src/container/TabBar/Recovery/MyGuardiansStatus',
-  '../../../src/container/TabBar/Recovery/RecoveryUser1Pin',
-  '../../../src/container/TabBar/Recovery/RecoveryUser2Pin',
-  '../../../src/container/TabBar/Recovery/RecoveryFinalize',
   '../../../src/container/Vote/UploadRecord/SearchTable',
   '../../../src/container/Vote/UploadRecord/TableDetail',
   '../../../src/container/Vote/UploadRecord/CameraScreen',
@@ -67,7 +58,6 @@ const mockPaths = [
   '../../../src/container/TabBar/Profile/More',
   '../../../src/container/TabBar/Profile/Security',
   '../../../src/container/TabBar/Profile/TermsAndCondition',
-  '../../../src/container/TabBar/Profile/RecuperationQR',
   '../../../src/container/TabBar/Home/Notification',
   '../../../src/container/TabBar/Home/NotificationDetails',
   '../../../src/container/Auth/RegisterUser1',
@@ -85,10 +75,6 @@ const mockPaths = [
   '../../../src/container/Auth/LoginUser',
   '../../../src/container/Auth/SelectRecuperation',
   '../../../src/container/Auth/AccountLock',
-  '../../../src/container/TabBar/Guardians/Guardians',
-  '../../../src/container/TabBar/Guardians/GuardiansAdmin',
-  '../../../src/container/TabBar/Guardians/AddGuardians',
-  '../../../src/container/TabBar/SignIn/FindSession',
   '../../../src/navigation/type/AuthNavigation',
   '../../../src/navigation/type/TabNavigation',
   '../../../src/navigation/type/HomeStackNavigation',
@@ -119,7 +105,25 @@ describe('NavigationRoute', () => {
   it('expone rutas de auth', () => {
     expect(AuthRoute.Login).toBeDefined();
     expect(AuthRoute.CreateNewPassword).toBeDefined();
-    expect(AuthRoute.RecoveryFinalize).toBeDefined();
+    expect(AuthRoute.SelectRecuperation).toBeDefined();
+  });
+
+  it('ya no expone guardianes ni la recuperación con QR o archivo', () => {
+    for (const name of [
+      'FindMyUser',
+      'MyGuardiansStatus',
+      'RecoveryUser1Pin',
+      'RecoveryUser2Pin',
+      'RecoveryFinalize',
+      'RecoveryQr',
+      'RecoveryUserQrpin',
+      'RecoveryUserQrpin2',
+    ]) {
+      expect(AuthRoute[name]).toBeUndefined();
+    }
+    for (const name of ['Guardians', 'GuardiansAdmin', 'AddGuardians', 'OnBoardingGuardians', 'RecuperationQR']) {
+      expect(StackRoute[name]).toBeUndefined();
+    }
   });
 
   it('expone rutas del tab', () => {

@@ -7,7 +7,20 @@ import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser4 from '../../../../src/container/Auth/RegisterUser4';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
-import wira from 'wira-sdk';
+import Strings from '../../../../src/i18n/String';
+import {
+  IdentityApiUnreachableError,
+  RegistryRecoveryError,
+} from '@privado-id/expo-sdk';
+import {getPrivadoClient} from '../../../../src/services/privado/privadoSession';
+
+jest.mock('../../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(),
+}));
+
+const mockClient = {
+  downloadRegistryBackup: jest.fn(),
+};
 
 // Estas pruebas cubren el flujo de foto simple; la prueba de vida tiene las suyas
 // en RegisterUser4.liveness.test.js.
@@ -32,6 +45,13 @@ describe('RegisterUser4', () => {
 
   beforeEach(() => {
     configurarMocksRegistro();
+    mockClient.downloadRegistryBackup.mockReset();
+    mockClient.downloadRegistryBackup.mockResolvedValue({
+      discoverableHash: '0xhash',
+      storedAt: '2026-11-06T00:00:00.000Z',
+      isPrivadoBackup: true,
+    });
+    getPrivadoClient.mockResolvedValue(mockClient);
   });
 
   const takeSelfieFromCameraModal = async getByTestId => {
@@ -115,7 +135,6 @@ describe('RegisterUser4', () => {
       width: 1200,
       height: 900,
     });
-    new wira.RecoveryService().recoveryAndSave.mockResolvedValueOnce(undefined);
 
     const localNavigation = {
       ...mockNavigation,
@@ -139,8 +158,12 @@ describe('RegisterUser4', () => {
     fireEvent.press(getByTestId('registerUser4NextButton'));
 
     await waitFor(() => {
-      expect(new wira.RecoveryService().recoveryAndSave).toHaveBeenCalledTimes(1);
+      expect(mockClient.downloadRegistryBackup).toHaveBeenCalledTimes(1);
     });
+    // resizeImage está mockeado: aquí solo importan el DNI y la falta de prueba de vida.
+    expect(mockClient.downloadRegistryBackup).toHaveBeenCalledWith(
+      expect.objectContaining({dni: '00000000', livenessResult: undefined}),
+    );
     await waitFor(() => {
       expect(getByTestId('loadingModalCloseButton')).toBeTruthy();
     });
@@ -167,7 +190,7 @@ describe('RegisterUser4', () => {
       width: 1200,
       height: 900,
     });
-    new wira.RecoveryService().recoveryAndSave.mockRejectedValueOnce(
+    mockClient.downloadRegistryBackup.mockRejectedValueOnce(
       new Error('Recovery failed'),
     );
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -211,9 +234,9 @@ describe('RegisterUser4', () => {
       width: 1200,
       height: 900,
     });
-    new wira.RecoveryService().recoveryAndSave
-      .mockRejectedValueOnce(new Error('Recovery failed'))
-      .mockResolvedValueOnce(undefined);
+    mockClient.downloadRegistryBackup.mockRejectedValueOnce(
+      new Error('Recovery failed'),
+    );
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const localNavigation = {
@@ -243,9 +266,61 @@ describe('RegisterUser4', () => {
     fireEvent.press(getByTestId('loadingModalCloseButton'));
 
     await waitFor(() => {
-      expect(new wira.RecoveryService().recoveryAndSave).toHaveBeenCalledTimes(2);
+      expect(mockClient.downloadRegistryBackup).toHaveBeenCalledTimes(2);
     });
 
     consoleErrorSpy.mockRestore();
+  });
+
+  const recoverWithError = async error => {
+    ExpoCamera.__takePictureAsyncMock.mockResolvedValueOnce({
+      uri: 'file://selfie.jpg',
+      width: 1200,
+      height: 900,
+    });
+    mockClient.downloadRegistryBackup.mockRejectedValueOnce(error);
+    const route = {
+      params: {
+        dni: '00000000',
+        frontImage: {uri: 'file://front.jpg'},
+        backImage: {uri: 'file://back.jpg'},
+        isRecovery: true,
+      },
+    };
+    const screen = renderWithProviders(
+      <RegisterUser4 navigation={{...mockNavigation, navigate: jest.fn()}} route={route} />,
+    );
+    await takeSelfieFromCameraModal(screen.getByTestId);
+    fireEvent.press(screen.getByTestId('registerUser4NextButton'));
+    await waitFor(() => {
+      expect(screen.getByTestId('loadingModalSecondButton')).toBeTruthy();
+    });
+    return screen;
+  };
+
+  it.each([
+    ['front-back-order', () => Strings.frontBackOrderError],
+    ['face-mismatch', () => Strings.faceMatchFailedError],
+    ['missing-data', () => Strings.missingDataError],
+    ['unavailable', () => Strings.analysisUnavailableError],
+  ])('muestra el mensaje del analysisCode %s', async (analysisCode, message) => {
+    const {getByText} = await recoverWithError(
+      new RegistryRecoveryError('ci-analysis-failed', analysisCode, 'detalle'),
+    );
+    expect(getByText(message())).toBeTruthy();
+  });
+
+  it('muestra el error generico cuando el DNI no tiene cuenta', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const {getByText} = await recoverWithError(new RegistryRecoveryError('not-found'));
+    expect(getByText(Strings.recoveryError)).toBeTruthy();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('muestra el error de red cuando backend-identity no responde', async () => {
+    const {getByText} = await recoverWithError(
+      new IdentityApiUnreachableError('registry/recovery-ci', new Error('Network request failed')),
+    );
+    expect(getByText(Strings.networkError)).toBeTruthy();
   });
 });

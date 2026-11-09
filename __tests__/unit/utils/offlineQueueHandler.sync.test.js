@@ -37,8 +37,15 @@ jest.mock('@env', () => ({
   CHAIN: 'testnet',
   VERIFIER_REQUEST_ENDPOINT: 'https://verifier.example',
 }));
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(async () => true),
+// authenticateWithBackend responde al verificador con el SDK de Privado ID.
+jest.mock('../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(async () => ({
+    offChainZk: {
+      getZkRequest: jest.fn(async () => ({})),
+      generateZkResponse: jest.fn(async () => ({})),
+      submitZkResponse: jest.fn(async () => ({})),
+    },
+  })),
 }));
 
 jest.mock('axios', () => ({
@@ -79,11 +86,11 @@ describe('offlineQueueHandler syncActaBackendHandler', () => {
           },
         },
       },
-      {did: 'did:1', privKey: '0xpriv', account: '0xacc'},
+      {did: 'did:1', account: '0xacc'},
     );
 
     expect(result).toEqual({success: true, backendBallotId: 'ballot1'});
-    expect(oracleReads.isUserJury).toHaveBeenCalledWith('testnet', '0xpriv', '0xacc');
+    expect(oracleReads.isUserJury).toHaveBeenCalledWith('testnet', '0xacc');
   });
 
   it('reintenta cuando backend responde 409', async () => {
@@ -107,7 +114,7 @@ describe('offlineQueueHandler syncActaBackendHandler', () => {
           },
         },
       },
-      {did: 'did:1', privKey: '0xpriv', account: '0xacc'},
+      {did: 'did:1', account: '0xacc'},
     );
 
     expect(result).toEqual({success: true, backendBallotId: 'ballot2'});

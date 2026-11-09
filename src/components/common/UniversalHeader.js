@@ -96,9 +96,9 @@ const UniversalHeader = ({
     if (notificationsApiKeyRef.current) {
       return notificationsApiKeyRef.current;
     }
-    if (!userData?.did || !userData?.privKey) return null;
+    if (!userData?.did) return null;
     try {
-      const key = await authenticateWithBackend(userData.did, userData.privKey);
+      const key = await authenticateWithBackend();
       notificationsApiKeyRef.current = key;
       notificationsAuthRetryAtRef.current = 0;
       return key;
@@ -108,7 +108,7 @@ const UniversalHeader = ({
         Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
       return null;
     }
-  }, [userData?.did, userData?.privKey]);
+  }, [userData?.did]);
 
   const refreshNotificationBadgeCount = useCallback(async () => {
     if (!showNotification || !auth?.isAuthenticated || !dni) {
@@ -200,7 +200,7 @@ const UniversalHeader = ({
   useEffect(() => {
     notificationsApiKeyRef.current = null;
     notificationsAuthRetryAtRef.current = 0;
-  }, [userData?.did, userData?.privKey, dni]);
+  }, [userData?.did, dni]);
 
   useFocusEffect(
     useCallback(() => {

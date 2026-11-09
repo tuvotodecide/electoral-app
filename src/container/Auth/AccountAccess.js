@@ -23,8 +23,8 @@ import typography from "../../themes/typography";
 /**
  * Acceso con cédula + PIN.
  *
- * Solo se alcanza cuando el dispositivo NO tiene billetera local (Connect.js
- * mantiene su comprobación `wira.Storage.checkUserData()`). Para las
+ * Solo se alcanza cuando el dispositivo NO tiene cuenta local (Connect.js lo
+ * comprueba con `hasLocalAccount`: titular y vault del SDK). Para las
  * credenciales de demostración activa el modo demostración; para cualquier otra
  * cédula explica que no hay datos en el dispositivo y lleva a recuperación,
  * que es lo único que puede hacer un usuario real en esta situación.

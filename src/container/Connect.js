@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 
 // custom import
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import wira from 'wira-sdk';
 import images from '../assets/images';
 import { deviceWidth, moderateScale } from '../common/constants';
 import CButton from '../components/common/CButton';
@@ -17,7 +16,21 @@ import { AuthNav, StackNav } from '../navigation/NavigationKey';
 import { describeNav, notifNavLog } from '../utils/notifNavDebug';
 import { styles } from '../themes';
 import { commonColor } from '../themes/colors';
-import { HandleModal } from './TabBar/SignIn/HandleModal';
+import { captureError } from '../config/sentry';
+import {
+  clearLocalDataOnFirstLaunch,
+  hasLocalAccount,
+} from '../services/privado/localAccount';
+
+/** Si hay cuenta local; ante un error del SDK se toma como que no hay. */
+const checkLocalAccount = async step => {
+  try {
+    return await hasLocalAccount();
+  } catch (error) {
+    captureError(error, { flow: 'Connect', step, critical: false });
+    return false;
+  }
+};
 
 export default function Connect({ navigation }) {
   const colors = useSelector(state => state.theme.theme);
@@ -25,11 +38,14 @@ export default function Connect({ navigation }) {
   useEffect(() => {
     notifNavLog('Connect', 'mounted', { current: describeNav() });
     const checkUserData = async () => {
-      if (Platform.OS === 'ios') {
-        await wira.Storage.checkFirstLaunch();
+      try {
+        // iOS: borra la cuenta que quedó en el Keychain de una instalación anterior.
+        await clearLocalDataOnFirstLaunch();
+      } catch (error) {
+        captureError(error, { flow: 'Connect', step: 'firstLaunch', critical: false });
       }
-      const response = await wira.Storage.checkUserData();
-      notifNavLog('Connect', 'checkUserData', { hasUserData: Boolean(response) });
+      const response = await checkLocalAccount('checkUserData');
+      notifNavLog('Connect', 'checkUserData', { hasUserData: response });
       if (response) {
         // Una billetera real siempre gana sobre una sesión demo persistida.
         notifNavLog('Connect', 'replace -> LoginUser', { current: describeNav() });
@@ -37,9 +53,8 @@ export default function Connect({ navigation }) {
         return;
       }
 
-      // No se retoma la demo en LoginUser: su efecto de montaje llama a
-      // wira.checkBiometricAuth() y, sin billetera, abre el modal de
-      // "no hay datos biométricos".
+      // La demo se retoma en AccountAccess, no en LoginUser: LoginUser abre el
+      // vault, y sin billetera no hay vault que abrir.
       const demoActive = await hydrateDemoSession();
       if (demoActive) {
         navigation.replace(AuthNav.AccountAccess, {resumeDemo: true});
@@ -48,16 +63,12 @@ export default function Connect({ navigation }) {
     checkUserData();
   }, []);
 
-  const onLoginWithWira = () => {
-    navigation.navigate(AuthNav.FindSession);
-  }
-
   const onPressRegister1 = () => {
     navigation.navigate(AuthNav.RegisterUser1);
   };
 
   const onPressLoginUser = async () => {
-    const response = await wira.Storage.checkUserData();
+    const response = await checkLocalAccount('onPressLoginUser');
     if (!response) {
       // Sin billetera local: pantalla de cédula + PIN, que deriva a
       // recuperación para cualquier cuenta real.
@@ -148,17 +159,8 @@ export default function Connect({ navigation }) {
             testID="connectLoginButton"
           />
 
-          {/*<CButton
-            onPress={onLoginWithWira}
-            title={String.signInWithWira}
-            type={'B16'}
-            containerStyle={localStyle.btnStyle}
-            color={colors.white}
-            bgColor={commonColor.gradient2}
-          />*/}
         </View>
       </View>
-      <HandleModal navigation={navigation} />
     </CSafeAreaViewAuth>
   );
 }

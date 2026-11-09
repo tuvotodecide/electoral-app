@@ -9,24 +9,6 @@ import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 
 // Mock dependencies
-jest.mock('wira-sdk', () => ({
-  __esModule: true,
-  default: {
-    provision: {
-      ensureProvisioned: jest.fn(() => Promise.resolve()),
-    },
-    initWiraSdk: jest.fn(() => Promise.resolve()),
-  },
-  config: {
-    initDownloadCircuits: jest.fn(() => Promise.resolve()),
-    CircuitDownloadStatus: {
-      DOWNLOADING: 'DOWNLOADING',
-      DONE: 'DONE',
-      ERROR: 'ERROR',
-    },
-  },
-}));
-
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
   setItem: jest.fn(() => Promise.resolve()),

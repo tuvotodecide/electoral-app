@@ -131,7 +131,7 @@ android {
         jniLibs {
             def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
             useLegacyPackaging enableLegacyPackaging.toBoolean()
-            // Handle duplicate native libraries from Flutter module dependencies
+            // Native libraries the @iden3 modules (rapidsnark, witnesscalc) may both ship
             pickFirsts += ['**/librapidsnark.so', '**/libgmp.so', '**/libcircom_witnesscalc.so']
         }
     }
@@ -161,9 +161,6 @@ android {
 }
 
 dependencies {
-    // Flutter module dependencies for wira-sdk
-    releaseImplementation 'com.wira.wira_flutter_module:flutter_release:1.0'
-
     // Sentry dependencies
     implementation platform("io.sentry:sentry-bom:8.31.0")
     implementation "io.sentry:sentry-android"

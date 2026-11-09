@@ -1,4 +1,4 @@
-import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, IDENTITY_KEY, BACKEND_RESULT, BUNDLER, BUNDLER_MAIN, GATEWAY_BASE, PROVIDER_NAME } from '@env';
+import { BACKEND, BACKEND_BLOCKCHAIN, BACKEND_IDENTITY, BACKEND_RESULT, PRIVADO_RPC_URL } from '@env';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,7 +23,20 @@ import typography from '../../themes/typography';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SHA256 } from 'crypto-js';
-import wira from 'wira-sdk';
+import { UserDataBackupError, VaultError } from '@privado-id/expo-sdk';
+import { getPrivadoVault } from '../../services/privado/privadoSession';
+import { syncPendingRegistryBackup } from '../../services/privado/registryBackupSync';
+import {
+  IdentityCredentialMissingError,
+  IdentityNotFoundError,
+  loadIdentityPayload,
+} from '../../services/privado/identityPayload';
+import {
+  RegistryBackupMissingError,
+  RegistryBackupUnsupportedError,
+  restoreRegistryBackup,
+} from '../../services/privado/registryRestore';
+import { getBiometryStatus } from '../../services/biometrics';
 import CButton from '../../components/common/CButton';
 import InfoModal from '../../components/modal/InfoModal';
 import String from '../../i18n/String';
@@ -43,12 +56,67 @@ import {markHomeEntryFromLogin} from '../../utils/homeEntry';
 
 let loginUserInstanceCounter = 0;
 
+/** Cancelar o fallar la biometría no es un error: queda el PIN. */
+const BIOMETRIC_SOFT_FAILURES = new Set([
+  'BIOMETRICS_CANCELLED',
+  'BIOMETRICS_FAILED',
+  'BIOMETRICS_UNAVAILABLE',
+  'BIOMETRICS_NOT_ENABLED',
+]);
 
-const sharedSession = new wira.SharedSession(
-  BACKEND_IDENTITY,
-  IDENTITY_KEY,
-  PROVIDER_NAME
-);
+const BIOMETRICS_INVALIDATED_MESSAGE =
+  'La biometría de tu dispositivo cambió, así que se desactivó el ingreso con huella o rostro. Ingresa tu PIN para continuar.';
+
+const RECOVERY_MISSING_MESSAGE =
+  'No encontramos el respaldo de tu cuenta en este dispositivo. Vuelve a recuperarla con tu carnet.';
+
+const RECOVERY_FAILED_MESSAGE =
+  'No pudimos restaurar el respaldo de tu cuenta. Vuelve a intentar la recuperación más tarde.';
+
+/**
+ * Tras la recuperación con carnet: restaura el respaldo descargado con el PIN.
+ * `restored`: el vault quedó creado y abierto. `no_backup`: no hay respaldo
+ * (p. ej. ya se restauró en un intento anterior).
+ */
+async function restoreFromRegistry(pin) {
+  try {
+    await restoreRegistryBackup(pin);
+    return { type: 'restored' };
+  } catch (error) {
+    if (error instanceof UserDataBackupError && error.code === 'INVALID_BACKUP_PASSWORD') {
+      return { ok: false, type: 'bad_pin' };
+    }
+    if (error instanceof RegistryBackupMissingError) {
+      return { type: 'no_backup' };
+    }
+    if (
+      error instanceof RegistryBackupUnsupportedError ||
+      (error instanceof UserDataBackupError && error.code === 'INVALID_BACKUP')
+    ) {
+      return { ok: false, type: 'recovery_failed', error };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Datos de la cuenta con el vault ya abierto. Si faltan la identidad o la
+ * credencial, vuelve a bloquearlo: no hay sesión que iniciar.
+ */
+async function loadPayloadOrLock(vault) {
+  try {
+    return { ok: true, payload: await loadIdentityPayload(), jwt: null };
+  } catch (error) {
+    vault.lock();
+    if (error instanceof IdentityNotFoundError) {
+      return { ok: false, type: 'no_local_secrets' };
+    }
+    if (error instanceof IdentityCredentialMissingError) {
+      return { ok: false, type: 'credential_missing', error };
+    }
+    throw error;
+  }
+}
 
 const EXTERNAL_ENDPOINTS = Object.fromEntries(
   Object.entries({
@@ -56,9 +124,7 @@ const EXTERNAL_ENDPOINTS = Object.fromEntries(
     BACKEND_BLOCKCHAIN,
     BACKEND_IDENTITY,
     BACKEND_RESULT,
-    GATEWAY_BASE,
-    BUNDLER,
-    BUNDLER_MAIN,
+    PRIVADO_RPC_URL,
   }).filter(([, value]) => typeof value === 'string' && value.trim().length),
 );
 
@@ -126,7 +192,7 @@ const logNetworkIssue = (label, error, extra = {}) => {
 };
 
 export default function LoginUser({ navigation, route }) {
-  const { sharedSessionId, sharedSessionSalt, isCIRecovery = false, dni } = route.params ?? {};
+  const { isCIRecovery = false } = route.params ?? {};
 
   const colors = useSelector(state => state.theme.theme);
   const [locked, setLocked] = useState(null);
@@ -172,7 +238,6 @@ export default function LoginUser({ navigation, route }) {
     dispatch(
       setAddresses({
         account: payload.account,
-        guardian: payload.guardian ?? null,
       }),
     );
     dispatch(setAuthenticated(true));
@@ -185,7 +250,7 @@ export default function LoginUser({ navigation, route }) {
         'FINLINE_FLAGS',
         JSON.stringify({
           PIN_HASH: SHA256(pin.trim()).toString(),
-          BIO_ENABLED: await wira.Biometric.getBioFlag(),
+          BIO_ENABLED: await (await getPrivadoVault()).isBiometricsEnabled(),
           HAS_WALLET: true,
         }),
       );
@@ -209,24 +274,27 @@ export default function LoginUser({ navigation, route }) {
 
   async function verifyPin(code) {
     try {
-      if (sharedSessionId && sharedSessionSalt) {
-        await sharedSession.signInWithSharedSession(
-          sharedSessionId,
-          sharedSessionSalt,
-          code.trim()
-        );
-      }
+      const vault = await getPrivadoVault();
 
-      let signInOptions = null;
+      // Recuperación con carnet: el respaldo descargado en RegisterUser4 se
+      // restaura con el PIN y reemplaza los datos del dispositivo.
       if (isCIRecovery) {
-        signInOptions = {
-          registryUrl: BACKEND_IDENTITY,
-          registryApiKey: IDENTITY_KEY,
-          sharedSessionSchema: PROVIDER_NAME,
-        };
+        const restore = await restoreFromRegistry(code.trim());
+        if (restore.type === 'restored') {
+          // Las banderas locales eran de la cuenta anterior: unlock() las reescribe.
+          await AsyncStorage.removeItem('FINLINE_FLAGS');
+          return await loadPayloadOrLock(vault);
+        }
+        if (restore.type !== 'no_backup') {
+          return restore;
+        }
+        if (!(await vault.exists())) {
+          return { ok: false, type: 'recovery_missing' };
+        }
+        // Sin respaldo pero con vault: ya se restauró antes; ingreso normal.
       }
 
-      const hasUserData = await wira.Storage.checkUserData();
+      const hasUserData = await vault.exists();
 
       // Red de seguridad para un dispositivo que registre una billetera real
       // después de activar la demo. Va condicionado a !hasUserData: si no,
@@ -235,29 +303,37 @@ export default function LoginUser({ navigation, route }) {
         return { ok: true, demo: true };
       }
 
-      if (hasUserData) {
-        let userData;
-        try {
-          userData = await wira.signIn(code.trim(), isCIRecovery, signInOptions, dni);
-        } catch (error) {
-          if (error?.message?.includes('Invalid PIN')) {
-            return { ok: false, type: 'bad_pin' };
-          } else {
-            captureError(error, {
-              flow: 'LoginUser',
-              step: 'verifyPin.wiraSignIn',
-              critical: true,
-            });
-            logNetworkIssue('wira.signIn', error, {
-              stage: 'verifyPin',
-            });
-            return { ok: false, type: 'unexpected', error };
-          }
-        }
-        return { ok: true, payload: userData, jwt: null };
-      } else {
+      if (!hasUserData) {
         return { ok: false, type: 'no_local_secrets' };
       }
+
+      try {
+        await vault.unlock({ type: 'pin', pin: code.trim() });
+      } catch (error) {
+        if (error instanceof VaultError && error.code === 'INVALID_PIN') {
+          return { ok: false, type: 'bad_pin' };
+        }
+        captureError(error, {
+          flow: 'LoginUser',
+          step: 'verifyPin.vaultUnlock',
+          critical: true,
+          code: error?.code,
+        });
+        return { ok: false, type: 'unexpected', error };
+      }
+      // Si una subida del respaldo al registro falló antes (p. ej. tras
+      // reclamar una credencial de voto), se reintenta con este PIN. En
+      // segundo plano: no retrasa ni bloquea el ingreso.
+      syncPendingRegistryBackup(code.trim()).then(result => {
+        if (result?.error) {
+          captureError(result.error, {
+            flow: 'LoginUser',
+            step: 'syncPendingRegistryBackup',
+            critical: false,
+          });
+        }
+      });
+      return await loadPayloadOrLock(vault);
     } catch (err) {
       captureError(err, {
         flow: 'LoginUser',
@@ -305,7 +381,7 @@ export default function LoginUser({ navigation, route }) {
                   ? 'Has agotado tus 5 intentos.\n¿Olvidaste tu PIN?, Recupera tu cuenta.'
                   : `PIN incorrecto.\nTe quedan ${5 - n} intentos.`,
               onClose: n >= 5
-                ? () => navigation.replace(AuthNav.SelectRecuperation, { disableCI: true })
+                ? () => navigation.replace(AuthNav.SelectRecuperation)
                 : undefined
             });
             if (n >= 5) {
@@ -324,6 +400,46 @@ export default function LoginUser({ navigation, route }) {
               msg:
                 'No pudimos migrar tu credencial desde el servidor antiguo.\n' +
                 'Intenta de nuevo cuando tengas conexión o vuelve a registrarte.',
+              onClose: hideModal,
+            });
+            return;
+          }
+
+          if (res.type === 'recovery_missing') {
+            setModal({
+              visible: true,
+              msg: RECOVERY_MISSING_MESSAGE,
+              onClose: () => {
+                hideModal();
+                navigation.replace(AuthNav.SelectRecuperation);
+              },
+            });
+            return;
+          }
+
+          if (res.type === 'recovery_failed') {
+            captureError(res.error, {
+              flow: 'login',
+              step: 'restore_registry_backup',
+              critical: true,
+            });
+            setModal({
+              visible: true,
+              msg: RECOVERY_FAILED_MESSAGE,
+              onClose: hideModal,
+            });
+            return;
+          }
+
+          if (res.type === 'credential_missing') {
+            captureError(res.error, {
+              flow: 'login',
+              step: 'load_identity_credential',
+              critical: true,
+            });
+            setModal({
+              visible: true,
+              msg: String.noBiometricData,
               onClose: hideModal,
             });
             return;
@@ -405,28 +521,57 @@ export default function LoginUser({ navigation, route }) {
     (async () => {
       setLoading(true);
       try {
-        const { error, userData } = await wira.checkBiometricAuth();
-        notifNavLog('LoginUser', `checkBiometricAuth instance #${instanceIdRef.current}`, {
-          hasUserData: Boolean(userData),
-          error: error ?? null,
+        const vault = await getPrivadoVault();
+        const enabled = (await vault.exists()) && (await vault.isBiometricsEnabled());
+        notifNavLog('LoginUser', `biometricUnlock instance #${instanceIdRef.current}`, {
+          enabled,
         });
+        if (!enabled || isCIRecovery) {
+          setLoading(false);
+          return;
+        }
 
-        if (!userData) {
-          if (error === 'No credentials stored') {
-            setLoading(false);
+        const { biometryType } = await getBiometryStatus();
+        try {
+          await vault.unlock({
+            type: 'biometrics',
+            prompt: biometryType === 'face' ? 'Escanea tu rostro' : 'Escanea tu huella dactilar',
+          });
+        } catch (error) {
+          setLoading(false);
+          if (error instanceof VaultError && BIOMETRIC_SOFT_FAILURES.has(error.code)) {
+            return;
+          }
+          if (error instanceof VaultError && error.code === 'BIOMETRICS_INVALIDATED') {
             setModal({
               visible: true,
-              msg: String.noBiometricData,
+              msg: BIOMETRICS_INVALIDATED_MESSAGE,
               btn: String.understand,
             });
             return;
-          } else {
-            setLoading(false);
-            return;
           }
+          throw error;
         }
 
-        await unlock(userData, null, '');
+        const res = await loadPayloadOrLock(vault);
+        if (!res.ok) {
+          setLoading(false);
+          if (res.type === 'credential_missing') {
+            captureError(res.error, {
+              flow: 'login',
+              step: 'load_identity_credential',
+              critical: true,
+            });
+          }
+          setModal({
+            visible: true,
+            msg: String.noBiometricData,
+            btn: String.understand,
+          });
+          return;
+        }
+
+        await unlock(res.payload, null, '');
         setLoading(false);
       } catch (e) {
         captureError(e, {

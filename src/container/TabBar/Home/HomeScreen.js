@@ -19,7 +19,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { clearWallet } from "../../../redux/action/walletAction";
 import { clearAuth } from "../../../redux/slices/authSlice";
-import MigrationModal from "../../Migration/MigrationModal";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -95,6 +94,8 @@ import {
 } from "../../../features/voting";
 import { getMockRewardsSummary } from "../../../features/rewards";
 import { checkClaimedCredForVote, claimForVote } from "@/src/data/credentials";
+import { VaultUnlockCancelledError } from "@/src/services/privado/vaultUnlock";
+import { ensureVaultUnlocked } from "@/src/services/privado/vaultSession";
 import { FlashList } from "@shopify/flash-list";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -1198,7 +1199,6 @@ export default function HomeScreen({ navigation, route }) {
     if (processingRef.current) return;
     if (
       !auth?.isAuthenticated ||
-      !userData?.privKey ||
       !userData?.account ||
       !userData?.did
     )
@@ -1218,6 +1218,22 @@ export default function HomeScreen({ navigation, route }) {
             probe,
           );
           return;
+        }
+
+        // Las tareas firman con las claves del vault. Si está bloqueado
+        // (inactividad o segundo plano) se pide desbloquearlo una vez; si el
+        // usuario cancela, se reintenta en una pasada posterior.
+        const queued = (await getOfflineQueue()) || [];
+        const nowMs = Date.now();
+        const hasDueTasks = queued.some(
+          (item) => !(Number(item?.nextAttemptAt) > nowMs),
+        );
+        if (hasDueTasks) {
+          const unlocked = await ensureVaultUnlocked({
+            reason:
+              "Tienes registros pendientes de enviar. Ingresa tu PIN para continuar.",
+          });
+          if (!unlocked) return;
         }
 
         const result = await processQueue(async (item) => {
@@ -1395,18 +1411,14 @@ export default function HomeScreen({ navigation, route }) {
         if (
           !auth?.isAuthenticated ||
           !dni ||
-          !userData?.did ||
-          !userData?.privKey
+          !userData?.did
         ) {
           await clearUserTopicSubscription();
           return;
         }
 
         try {
-          const apiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
+          const apiKey = await authenticateWithBackend();
 
           if (!apiKey) {
             return;
@@ -1480,7 +1492,7 @@ export default function HomeScreen({ navigation, route }) {
       return () => {
         cancelled = true;
       };
-    }, [auth?.isAuthenticated, dni, userData?.did, userData?.privKey]),
+    }, [auth?.isAuthenticated, dni, userData?.did]),
   );
 
   useEffect(() => {
@@ -2073,9 +2085,9 @@ export default function HomeScreen({ navigation, route }) {
     if (notificationsApiKeyRef.current) {
       return notificationsApiKeyRef.current;
     }
-    if (!userData?.did || !userData?.privKey) return null;
+    if (!userData?.did) return null;
     try {
-      const key = await authenticateWithBackend(userData.did, userData.privKey);
+      const key = await authenticateWithBackend();
       notificationsApiKeyRef.current = key;
       notificationsAuthRetryAtRef.current = 0;
       return key;
@@ -2085,7 +2097,7 @@ export default function HomeScreen({ navigation, route }) {
         Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
       return null;
     }
-  }, [userData?.did, userData?.privKey]);
+  }, [userData?.did]);
 
   const refreshNotificationBadgeCount = useCallback(async () => {
     if (!auth?.isAuthenticated || !dni) {
@@ -2207,7 +2219,7 @@ export default function HomeScreen({ navigation, route }) {
   useEffect(() => {
     notificationsApiKeyRef.current = null;
     notificationsAuthRetryAtRef.current = 0;
-  }, [userData?.did, userData?.privKey, dni]);
+  }, [userData?.did, dni]);
 
   useFocusEffect(
     useCallback(() => {
@@ -2501,11 +2513,7 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     try {
-      const hasCredential = await checkClaimedCredForVote(
-        selectedElection.id,
-        userData.did,
-        userData.privKey,
-      );
+      const hasCredential = await checkClaimedCredForVote(selectedElection.id);
       setLoadVoteMsg(null);
       if (!hasCredential) {
         setVotingPinModal({
@@ -2517,6 +2525,11 @@ export default function HomeScreen({ navigation, route }) {
         return;
       }
     } catch (error) {
+      // El usuario cerró el desbloqueo del vault: no es un error.
+      if (error instanceof VaultUnlockCancelledError) {
+        setLoadVoteMsg(null);
+        return;
+      }
       captureError(error, {
         flow: "voting_flow",
         step: "claim_nullifier",
@@ -2555,8 +2568,6 @@ export default function HomeScreen({ navigation, route }) {
     const { claimed, invalidPin } = await claimForVote(
       selectedElection.id,
       userData.dni,
-      userData.did,
-      userData.privKey,
       pin,
     );
     if (claimed) {
@@ -3328,7 +3339,6 @@ export default function HomeScreen({ navigation, route }) {
         }
         tertiaryVariant="danger"
       />
-      <MigrationModal userDid={userData?.did} />
       <VotingPinModal
         visible={votingPinModal.visible}
         loading={votingPinModal.loading}

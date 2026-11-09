@@ -1,10 +1,10 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import axios from 'axios';
 import {VERIFIER_REQUEST_ENDPOINT} from '@env';
-import wira from 'wira-sdk';
 import { getOwnVoteInfo, getRewardHash, getVoteInfo, getVoteReward, hasReceivedReward } from '@/src/api/vote';
 import { useSelector } from 'react-redux';
-import { getCredentialForVote } from '@/src/data/credentials';
+import { getCredentialForVote, listVoteCredentials } from '@/src/data/credentials';
+import { answerVerifierRequest } from '@/src/services/privado/verifierProof';
 import { captureError } from '@/src/config/sentry';
 import { hashVoteNullifier } from '../../voting/utils/dataHasher';
 import { isDemoActive } from '../../demo/demoSession';
@@ -38,9 +38,9 @@ const getClaimRequest = async () => {
   return data.request;
 }
 
-const claimVoteReward = async (electionId, account, did, privKey) => {
+export const claimVoteReward = async (electionId, account) => {
   try {
-    const credential = await getCredentialForVote(electionId, did, privKey);
+    const credential = await getCredentialForVote(electionId);
     if (!credential) {
       throw new Error('No se pudo validar tu acceso para emitir el voto');
     }
@@ -56,12 +56,12 @@ const claimVoteReward = async (electionId, account, did, privKey) => {
     }
     claimRequest.body.callbackUrl = callbackUrl + `?recipient=${account}`
 
-    await wira.authenticateWithVerifier(
-      JSON.stringify(claimRequest),
-      did,
-      privKey,
-      [credential.id]
-    ); 
+    // Prueba ZK de la credencial de voto (eventId y nullifier) al verificador
+    // de back-results, que envía la recompensa a `recipient`.
+    await answerVerifierRequest(claimRequest, {
+      credentialId: credential.id,
+      reason: 'Abre tu cuenta para reclamar tu recompensa.',
+    });
   } catch (error) {
     captureError(error, {
       flow: 'claimReward',
@@ -72,13 +72,18 @@ const claimVoteReward = async (electionId, account, did, privKey) => {
   }
 };
 
-const getUserElectionsFromVcs = async (did, privKey) => {
-  const creds = await wira.getUserCredentials(did, privKey);
-  return creds.filter(cred => cred.type === 'SelectedVoter')
+// Una credencial de voto por evento: su nullifier es el secreto del voto y de
+// la recompensa.
+const getUserElectionsFromVcs = async () => {
+  const creds = await listVoteCredentials({
+    reason: 'Abre tu cuenta para ver tus recompensas.',
+  });
+  return creds
     .map(cred => ({
       eventId: cred.info?.credentialSubject?.eventId,
       secret: cred.info?.credentialSubject?.nullifier,
-    }));
+    }))
+    .filter(item => item.eventId != null && item.secret != null);
 }
 
 const getRewardsStatusByElection = async (electionIdsWithSecrets) => {
@@ -108,7 +113,7 @@ const getRewardsStatusByElection = async (electionIdsWithSecrets) => {
     .map(result => result.value);
 }
 
-const fetchVoteRewards = async (did, privKey) => {
+export const fetchVoteRewards = async () => {
   // TokenRewardsCard está en HomeScreen y lleva a RewardsScreen -> getVoteReward()
   // -> RPC de cadena. En demo se devuelve vacío en lugar de una pantalla de error.
   if (isDemoActive()) {
@@ -116,7 +121,7 @@ const fetchVoteRewards = async (did, privKey) => {
   }
 
   const rewardAmount = await getVoteReward();
-  const electionsWithSecrets = await getUserElectionsFromVcs(did, privKey);
+  const electionsWithSecrets = await getUserElectionsFromVcs();
   const rewardsByElection = await getRewardsStatusByElection(electionsWithSecrets);
 
   let filteredRewards = [];
@@ -153,11 +158,9 @@ const fetchVoteRewards = async (did, privKey) => {
 };
 
 export const useRewardsQuery = (options = {}) => {
-  const userData = useSelector(state => state.wallet.payload);
-
   const {data, error, isLoading, isFetching, refetch} = useQuery({
     queryKey: ['rewards'],
-    queryFn: () => fetchVoteRewards(userData.did, userData.privKey),
+    queryFn: () => fetchVoteRewards(),
     ...options,
   });
 
@@ -175,7 +178,7 @@ export const useClaimVoteRewardMutation = () => {
   const userData = useSelector(state => state.wallet.payload);
 
   const {mutate, mutateAsync, isPending, error} = useMutation({
-    mutationFn: (electionId) => claimVoteReward(electionId, userData.account, userData.did, userData.privKey),
+    mutationFn: (electionId) => claimVoteReward(electionId, userData.account),
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['rewards']});
     },

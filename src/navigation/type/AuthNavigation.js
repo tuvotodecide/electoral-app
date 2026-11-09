@@ -76,38 +76,6 @@ export default function AuthNavigation() {
         name={AuthNav.RegisterUser11}
         component={AuthRoute.RegisterUser11}
       />
-      <Stack.Screen
-        name={AuthNav.FindMyUser}
-        component={AuthRoute.FindMyUser}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryQr}
-        component={AuthRoute.RecoveryQr}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryUserQrpin2}
-        component={AuthRoute.RecoveryUserQrpin2}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryUserQrpin}
-        component={AuthRoute.RecoveryUserQrpin}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryUser1Pin}
-        component={AuthRoute.RecoveryUser1Pin}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryUser2Pin}
-        component={AuthRoute.RecoveryUser2Pin}
-      />
-      <Stack.Screen
-        name={AuthNav.MyGuardiansStatus}
-        component={AuthRoute.MyGuardiansStatus}
-      />
-      <Stack.Screen
-        name={AuthNav.RecoveryFinalize}
-        component={AuthRoute.RecoveryFinalize}
-      />
 
       <Stack.Screen name={AuthNav.LoginUser} component={AuthRoute.LoginUser} />
 
@@ -176,10 +144,6 @@ export default function AuthNavigation() {
       <Stack.Screen
         name={AuthNav.VerifySuccess}
         component={AuthRoute.VerifySuccess}
-      />
-      <Stack.Screen
-        name={AuthNav.FindSession}
-        component={AuthRoute.FindSession}
       />
     </Stack.Navigator>
   );

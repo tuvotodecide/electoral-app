@@ -77,7 +77,10 @@
               "host": "shared.response"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "edgeToEdgeEnabled": true,
@@ -156,7 +159,8 @@
       "./plugins/withIOSNativeModules",
       "./plugins/withIOSOrientation",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "expo-sqlite"
     ],
     "experiments": {
       "reactCompiler": true
