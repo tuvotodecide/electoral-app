@@ -88,10 +88,13 @@ function withIOSNativeModules(config) {
       // ---- Post-install build-setting tweaks ----
       const postInstallTweaks = `
     # \u2500\u2500\u2500 Added by withIOSNativeModules plugin (build settings) \u2500\u2500\u2500
+    # Apple Silicon host? (sysctl reports the real hardware even when running under Rosetta)
+    apple_silicon_host = \`sysctl -n hw.optional.arm64 2>/dev/null\`.strip == '1'
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
-        # rapidsnark x86_64 static lib has missing ARM64 assembly symbols; force arm64 simulator via Rosetta
-        build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+        # rapidsnark x86_64 static lib has missing ARM64 assembly symbols; force arm64 simulator on Apple Silicon.
+        # Intel Macs only have an x86_64 simulator, so excluding x86_64 there drops every pod from the build.
+        build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64' if apple_silicon_host
         # Minimum deployment target
         build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0' if build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 16.0
       end

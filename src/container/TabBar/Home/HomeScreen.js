@@ -1159,6 +1159,9 @@ export default function HomeScreen({ navigation, route }) {
       setElectionStatus(cachedData);
     }
 
+    // En demo no hay backend real: la petición solo fallaría con Network Error.
+    if (isDemoActive()) return;
+
     try {
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
@@ -1893,8 +1896,12 @@ export default function HomeScreen({ navigation, route }) {
       return null;
     }
 
+    // En demo no hay contratos reales: no se pide ubicación ni se muestra el
+    // aviso de zona no habilitada.
+    const demoActive = isDemoActive();
+
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
-    if (locationStatus !== "granted") {
+    if (!demoActive && locationStatus !== "granted") {
       return (
         <TouchableOpacity
           style={stylesx.activateLocationBtn}
@@ -1922,6 +1929,7 @@ export default function HomeScreen({ navigation, route }) {
 
     // CASO 1: Ninguno habilitado -> Mostrar Aviso
     if (!showAlcalde && !showGobernador) {
+      if (demoActive) return null;
       return (
         <View style={stylesx.warningContractCard}>
           <Ionicons
