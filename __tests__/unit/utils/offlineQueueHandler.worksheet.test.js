@@ -146,7 +146,8 @@ describe('offlineQueueHandler publishWorksheetHandler', () => {
       }),
       expect.objectContaining({status: 'UPLOADED'}),
     );
-    expect(showLocalNotification).toHaveBeenCalled();
+    // La notificación worksheet_uploaded la emite el backend; no se duplica en local.
+    expect(showLocalNotification).not.toHaveBeenCalled();
     expect(removePersistedImage).toHaveBeenCalled();
   });
 

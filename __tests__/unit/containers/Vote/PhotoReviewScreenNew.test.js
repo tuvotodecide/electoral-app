@@ -253,10 +253,10 @@ describe('PhotoReviewScreen_new', () => {
     );
   });
 
-  test('Subir hoja de trabajo button sends user to CameraScreen with current table', () => {
+  test('Subir acta button sends user to CameraScreen with current table', () => {
     const {getByText} = render(<PhotoReviewScreenNew />);
 
-    fireEvent.press(getByText('Subir hoja de trabajo'));
+    fireEvent.press(getByText('Subir acta'));
 
     expect(mockNavigate).toHaveBeenCalledWith(
       StackNav.CameraScreen,
@@ -333,7 +333,7 @@ describe('PhotoReviewScreen_new', () => {
 
     await waitFor(() => {
       expect(getByTestId('infoModalTitle').props.children).toBe(
-        'La hoja de trabajo no coincide con el acta',
+        'El acta no coincide con la hoja de trabajo',
       );
     });
 
@@ -383,7 +383,7 @@ describe('PhotoReviewScreen_new', () => {
     const {getByTestId, getByText} = render(<PhotoReviewScreenNew />);
     fireEvent.press(getByTestId('baseRecordReviewAction-0'));
 
-    expect(getByText('Subir Acta')).toBeTruthy();
+    expect(getByText('Subir Hoja de Trabajo')).toBeTruthy();
     fireEvent.press(getByText('CONFIRMAR'));
 
     await waitFor(() => {
@@ -400,7 +400,7 @@ describe('PhotoReviewScreen_new', () => {
       );
     });
     expect(enqueue).not.toHaveBeenCalled();
-    expect(getByTestId('infoModalTitle').props.children).toBe('Acta');
+    expect(getByTestId('infoModalTitle').props.children).toBe('Hoja de trabajo');
 
     fireEvent.press(getByTestId('infoModalCloseButton'));
     expect(mockReset).toHaveBeenCalledWith({

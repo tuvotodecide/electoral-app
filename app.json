@@ -160,7 +160,8 @@
       "./plugins/withIOSOrientation",
       "expo-secure-store",
       "expo-localization",
-      "expo-sqlite"
+      "expo-sqlite",
+      "@privado-id/expo-sdk"
     ],
     "experiments": {
       "reactCompiler": true

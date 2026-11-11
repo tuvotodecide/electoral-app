@@ -85,6 +85,27 @@ describe('notifications service', () => {
 
       expect(result).toBe(false);
     });
+
+    it('comparte una sola solicitud de permisos entre llamadas concurrentes', async () => {
+      const {ensureFCMSetup} = require('../../../src/services/notifications');
+
+      const results = await Promise.all([ensureFCMSetup(), ensureFCMSetup()]);
+      await ensureFCMSetup();
+
+      expect(results).toEqual([true, true]);
+      expect(mockMessaging.registerDeviceForRemoteMessages).toHaveBeenCalledTimes(1);
+      expect(mockMessaging.requestPermission).toHaveBeenCalledTimes(1);
+    });
+
+    it('permite reintentar si la configuración falla', async () => {
+      const error = Object.assign(new Error('boom'), {code: 'messaging/unknown'});
+      mockMessaging.registerDeviceForRemoteMessages.mockRejectedValueOnce(error);
+      const {ensureFCMSetup} = require('../../../src/services/notifications');
+
+      await expect(ensureFCMSetup()).rejects.toThrow('boom');
+      await expect(ensureFCMSetup()).resolves.toBe(true);
+      expect(mockMessaging.registerDeviceForRemoteMessages).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('ensureNotifChannel', () => {

@@ -6,10 +6,7 @@ import { oracleCalls, oracleReads } from '../api/oracle';
 import { availableNetworks } from '../api/params';
 import { removePersistedImage } from '../utils/persistLocalImage';
 import { executeOperation } from '../api/account';
-import {
-  showActaDuplicateNotification,
-  showLocalNotification,
-} from '../notifications';
+import { showActaDuplicateNotification } from '../notifications';
 import { requestPushPermissionExplicit } from '../services/pushPermission';
 import { getPrivadoClient } from '../services/privado/privadoSession';
 import { captureError, addBlockchainBreadcrumb } from '../config/sentry';
@@ -1857,20 +1854,8 @@ export const publishWorksheetHandler = async (item, userData) => {
       retryPayload: null,
     });
 
-    try {
-      await showLocalNotification({
-        title: 'Acta subida',
-        body: `Mesa ${tableNumber}: tu acta ya está disponible para comparación.`,
-        data: {
-          type: 'worksheet_uploaded',
-          tableCode,
-          tableNumber,
-          electionId,
-        },
-        persistLocal: true,
-        dni: dniValue,
-      });
-    } catch {}
+    // El aviso "Hoja de trabajo subida" lo genera el backend (worksheet_uploaded)
+    // y Home lo muestra al sincronizar notificaciones; no se duplica en local.
 
     if (imageUri) {
       await removePersistedImage(imageUri).catch(() => {});

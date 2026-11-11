@@ -60,7 +60,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
 
       const {getByText} = renderPhotoConfirmation({params});
 
-      expect(getByText('Acta')).toBeTruthy();
+      expect(getByText('Hoja de trabajo')).toBeTruthy();
     });
 
     test('encola hoja de trabajo nueva correctamente', async () => {
@@ -253,7 +253,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
       const {getByText} = renderPhotoConfirmation({params});
 
       expect(
-        getByText('Aviso: la hoja de trabajo no coincide con el acta'),
+        getByText('Aviso: el acta no coincide con la hoja de trabajo'),
       ).toBeTruthy();
     });
 
@@ -268,7 +268,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
       const {queryByText} = renderPhotoConfirmation({params});
 
       expect(
-        queryByText('Aviso: la hoja de trabajo no coincide con el acta'),
+        queryByText('Aviso: el acta no coincide con la hoja de trabajo'),
       ).toBeNull();
     });
 
@@ -284,7 +284,7 @@ describe('PhotoConfirmationScreen - Extended Coverage', () => {
       const {queryByText} = renderPhotoConfirmation({params});
 
       expect(
-        queryByText('Aviso: la hoja de trabajo no coincide con el acta'),
+        queryByText('Aviso: el acta no coincide con la hoja de trabajo'),
       ).toBeNull();
     });
   });

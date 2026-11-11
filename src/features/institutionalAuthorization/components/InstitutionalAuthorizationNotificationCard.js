@@ -346,11 +346,13 @@ export default function InstitutionalAuthorizationNotificationCard({
         claim: preparedClaim.claim,
         smartAccountAddress,
       });
-      setRequest(prev => {
-        const normalized = normalizePayload({...prev, ...submitted});
-        onStatusChange?.(normalized.status);
-        return normalized;
-      });
+      // Keep the updater pure: React runs it during render, so notifying the
+      // parent (which sets state in Notification) from inside it triggers
+      // "Cannot update a component while rendering a different component".
+      setRequest(prev => normalizePayload({...prev, ...submitted}));
+      if (submitted?.status) {
+        onStatusChange?.(submitted.status);
+      }
     } catch (error) {
       if (error?.userOpHash) {
         const pending = normalizePayload({

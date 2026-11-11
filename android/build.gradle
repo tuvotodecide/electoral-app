@@ -29,3 +29,9 @@ allprojects {
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
 
+// @privado-id/expo-sdk: rapidsnark 16 KB page-size alignment
+allprojects {
+    configurations.all {
+        resolutionStrategy.force 'io.iden3:rapidsnark:0.0.1-beta.5'
+    }
+}

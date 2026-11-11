@@ -15,7 +15,24 @@ import notifee, {AndroidImportance} from '@notifee/react-native';
 import { buildNotificationTextFallback } from '../notifications';
 import { notifNavLog, summarizeNotification } from '../utils/notifNavDebug';
 
-export async function ensureFCMSetup() {
+// App.js e initNotifications llaman a ensureFCMSetup casi a la vez al montar la
+// raíz. Si cada llamada pidiera POST_NOTIFICATIONS, Android procesaría solo una
+// y la otra volvería como denegada; además el efecto de initNotifications se
+// repite cuando cambia el DNI. Se comparte una única solicitud por sesión y
+// solo se descarta si falla, para poder reintentar.
+let fcmSetupPromise = null;
+
+export function ensureFCMSetup() {
+  if (!fcmSetupPromise) {
+    fcmSetupPromise = runFCMSetup().catch(error => {
+      fcmSetupPromise = null;
+      throw error;
+    });
+  }
+  return fcmSetupPromise;
+}
+
+async function runFCMSetup() {
   const messaging = getMessaging();
 
   try {

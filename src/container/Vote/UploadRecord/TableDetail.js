@@ -209,7 +209,7 @@ const firstFulfilled = async promises => {
           if (rejected === tasks.length) {
             reject(
               errors.find(Boolean) ||
-              new Error('No se pudo obtener el acta.'),
+              new Error('No se pudo obtener la hoja de trabajo.'),
             );
           }
         });
@@ -220,7 +220,7 @@ const firstFulfilled = async promises => {
 const fetchWorksheetMetadataFromIpfs = async ipfsUri => {
   const candidateUrls = buildIpfsJsonUrls(ipfsUri);
   if (!candidateUrls.length) {
-    throw new Error('No se encontró URL IPFS para el acta.');
+    throw new Error('No se encontró URL IPFS para la hoja de trabajo.');
   }
   const attempts = candidateUrls.map(url =>
     axios
@@ -868,15 +868,15 @@ export default function TableDetail({ navigation, route }) {
         try {
           records = await fetchExistingRecordsByTable(matchedMesa.codigo);
         } catch (error) {
-          captureError(error, {
-            flow: 'TableDetail',
-            step: 'handleMesaSearch',
-            critical: false,
-          });
-          // Si no encuentra registros, continuar sin error
+          // 404 = la mesa aún no tiene actas: caso esperado, no es un error.
           if (error?.response?.status !== 404) {
-            records = [];
+            captureError(error, {
+              flow: 'TableDetail',
+              step: 'handleMesaSearch',
+              critical: false,
+            });
           }
+          records = [];
         }
       }
 
@@ -934,7 +934,7 @@ export default function TableDetail({ navigation, route }) {
 
     if (requiresOfficialParties && !hasOfficialParties) {
       setElectionContextFeedback(
-        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir la hoja de trabajo.',
+        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir el acta.',
       );
       return;
     }
@@ -1069,7 +1069,7 @@ export default function TableDetail({ navigation, route }) {
 
     if (requiresOfficialParties && !hasOfficialParties) {
       setElectionContextFeedback(
-        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir el acta.',
+        'No hay partidos oficiales cargados para esta eleccion y territorio. Vuelve a intentar con conexion antes de subir la hoja de trabajo.',
       );
       setWorksheetFeedback(
         'No hay partidos oficiales cargados para esta eleccion y territorio.',
@@ -1085,11 +1085,11 @@ export default function TableDetail({ navigation, route }) {
       .toLowerCase()
       .includes('ya tiene acta registrada');
     const worksheetBlockedMessage = recordsCount > 0
-      ? 'La mesa ya tiene hoja de trabajo registrada. El acta solo puede subirse antes de la hoja de trabajo.'
+      ? 'La mesa ya tiene acta registrada. La hoja de trabajo solo puede subirse antes del acta.'
       : hasPendingActaInQueue
-        ? 'Ya tienes una hoja de trabajo en cola para esta mesa. El acta debe subirse antes de la hoja de trabajo.'
+        ? 'Ya tienes un acta en cola para esta mesa. La hoja de trabajo debe subirse antes del acta.'
         : blockedByBackendRule
-          ? 'El acta quedó bloqueada porque el backend detectó que ya existe una hoja de trabajo para esta mesa.'
+          ? 'La hoja de trabajo quedó bloqueada porque el backend detectó que ya existe un acta para esta mesa.'
           : '';
     if (worksheetBlockedMessage) {
       setWorksheetFeedback(worksheetBlockedMessage);
@@ -1128,11 +1128,11 @@ export default function TableDetail({ navigation, route }) {
       .toLowerCase()
       .includes('ya tiene acta registrada');
     const worksheetBlockedMessage = recordsCount > 0
-      ? 'No se puede reintentar el acta porque la mesa ya tiene hoja de trabajo registrada.'
+      ? 'No se puede reintentar la hoja de trabajo porque la mesa ya tiene acta registrada.'
       : hasPendingActaInQueue
-        ? 'No se puede reintentar el acta mientras existe una hoja de trabajo en cola para esta mesa.'
+        ? 'No se puede reintentar la hoja de trabajo mientras existe un acta en cola para esta mesa.'
         : blockedByBackendRule
-          ? 'No se puede reintentar el acta porque la mesa ya tiene hoja de trabajo registrada.'
+          ? 'No se puede reintentar la hoja de trabajo porque la mesa ya tiene acta registrada.'
           : '';
     if (worksheetBlockedMessage) {
       setWorksheetFeedback(worksheetBlockedMessage);
@@ -1166,7 +1166,7 @@ export default function TableDetail({ navigation, route }) {
           ...(prev || {}),
           status: WorksheetStatus.PENDING,
         }));
-        setWorksheetFeedback('El acta ya está en cola para reintento automático.');
+        setWorksheetFeedback('La hoja de trabajo ya está en cola para reintento automático.');
         return;
       }
 
@@ -1259,7 +1259,7 @@ export default function TableDetail({ navigation, route }) {
         setWorksheetFeedback(
           error?.response?.data?.message ||
           error?.message ||
-          'No se pudo reintentar el acta.',
+          'No se pudo reintentar la hoja de trabajo.',
         );
       }
     } finally {
@@ -1332,7 +1332,7 @@ export default function TableDetail({ navigation, route }) {
 
       const backendStatus = String(data?.status || '').toUpperCase();
       if (backendStatus !== WorksheetStatus.UPLOADED) {
-        throw new Error('El acta aún no está subida.');
+        throw new Error('La hoja de trabajo aún no está subida.');
       }
 
       const backendIpfsUri = String(data?.ipfsUri || data?.nftLink || '').trim();
@@ -1346,7 +1346,7 @@ export default function TableDetail({ navigation, route }) {
       if (effectiveIpfsUri) {
         return loadFromIpfs(effectiveIpfsUri);
       }
-      throw new Error('El acta no tiene votos ni enlace IPFS disponible.');
+      throw new Error('La hoja de trabajo no tiene votos ni enlace IPFS disponible.');
     };
 
     setIsWorksheetActionLoading(true);
@@ -1354,7 +1354,7 @@ export default function TableDetail({ navigation, route }) {
     try {
       if (!resolvedIpfsUri && !canFetchDetailFromBackend) {
         setWorksheetFeedback(
-          'No se encontró el enlace IPFS del acta para visualizar.',
+          'No se encontró el enlace IPFS de la hoja de trabajo para visualizar.',
         );
         return;
       }
@@ -1373,7 +1373,7 @@ export default function TableDetail({ navigation, route }) {
       const resolvedIpfs = String(resolved?.ipfsUri || '').trim();
 
       if (!worksheetRecord) {
-        throw new Error('No se pudo cargar el acta subida.');
+        throw new Error('No se pudo cargar la hoja de trabajo subida.');
       }
       if (resolvedIpfs) {
         resolvedIpfsUri = resolvedIpfs;
@@ -1401,7 +1401,7 @@ export default function TableDetail({ navigation, route }) {
         });
         setWorksheetFeedback(
           error?.message ||
-          'No se pudo cargar el acta subida. Intenta nuevamente.',
+          'No se pudo cargar la hoja de trabajo subida. Intenta nuevamente.',
         );
       }
     } finally {
@@ -1429,11 +1429,11 @@ export default function TableDetail({ navigation, route }) {
     const isWorksheetBlockedByActa =
       recordsCount > 0 || hasPendingActaInQueue || blockedByBackendRule;
     const worksheetBlockedMessage = recordsCount > 0
-      ? 'La mesa ya tiene hoja de trabajo. El acta solo se permite antes de la hoja de trabajo.'
+      ? 'La mesa ya tiene acta. La hoja de trabajo solo se permite antes del acta.'
       : hasPendingActaInQueue
-        ? 'Hay una hoja de trabajo en cola para esta mesa. El acta debe subirse primero.'
+        ? 'Hay un acta en cola para esta mesa. La hoja de trabajo debe subirse primero.'
         : blockedByBackendRule
-          ? 'El acta no puede subirse porque ya existe una hoja de trabajo en esta mesa.'
+          ? 'La hoja de trabajo no puede subirse porque ya existe un acta en esta mesa.'
           : '';
 
     const canViewWorksheet =
@@ -1450,15 +1450,15 @@ export default function TableDetail({ navigation, route }) {
         ? handleRetryWorksheet
         : handleTakeWorksheetPhoto;
     const buttonText = canViewWorksheet
-      ? 'Ver acta'
-      : 'Subir acta';
+      ? 'Ver Hoja de Trabajo'
+      : 'Subir Hoja de Trabajo';
     const showWorksheetCheckingLoader =
       isWorksheetLoading && !isWorksheetActionLoading;
     const showViewWorksheetLoader = canViewWorksheet && isWorksheetActionLoading;
     const showWorksheetLoader = showWorksheetCheckingLoader || showViewWorksheetLoader;
     const worksheetLoaderText = showWorksheetCheckingLoader
-      ? 'Espere, revisando acta...'
-      : 'Cargando acta...';
+      ? 'Espere, revisando hoja de trabajo...'
+      : 'Cargando hoja de trabajo...';
 
     return (
       <View style={stylesx.worksheetContainer}>
@@ -1686,7 +1686,7 @@ export default function TableDetail({ navigation, route }) {
                         }}>
                         <View style={stylesx.recordHeader}>
                           <CText style={stylesx.recordTitle}>
-                            Hoja de trabajo #{index + 1}
+                            Acta #{index + 1}
                           </CText>
                         </View>
 
@@ -1731,7 +1731,7 @@ export default function TableDetail({ navigation, route }) {
                       activeOpacity={0.85}
                       onPress={handleTakePhoto}>
                       <CText style={stylesx.takePhotoBtnText}>
-                        {I18nStrings.takePhoto}
+                        Subir acta
                       </CText>
                     </TouchableOpacity>
                   </>
@@ -1828,7 +1828,7 @@ export default function TableDetail({ navigation, route }) {
                       activeOpacity={0.85}
                       onPress={handleTakePhoto}>
                       <CText style={stylesx.takePhotoBtnText}>
-                        {I18nStrings.takePhoto}
+                        Subir acta
                       </CText>
                     </TouchableOpacity>
                   </>

@@ -135,7 +135,7 @@ export default {
   activosTitle: "Identidad",
   activosDesc: "Ya tienes tu identidad digital soberana",
   transfiereTitle: "Atestiguamiento",
-  transfiereDesc: "Registra hojas de trabajo electorales",
+  transfiereDesc: "Registra actas electorales",
   historialTitle: "Historial",
   historialDesc: "Revisa tus propias operaciones",
   seguridadTitle: "Seguridad",
@@ -285,7 +285,7 @@ export default {
     "Para permitir tu participación de forma segura y privada, se necesita descargar archivos criptográficos (ZK).",
   exitApp: "Salir",
   onBoardingTitleText1: "Obtén tu identidad digital soberana",
-  onBoardingTitleText2: "Hojas de trabajo electorales inalterables con NFTs",
+  onBoardingTitleText2: "Actas electorales inalterables con NFTs",
   onBoardingTitleText3: "Validación abierta, con firma electrónica",
   onBoardingTitleText4:
     "Transparencia con Blockchain e Inteligencia Artificial",
@@ -293,9 +293,9 @@ export default {
   onBoardingDescriptionText1:
     "Al registrarte obtienes un sistema de identidad digital, que protege tus datos con contratos inteligentes.",
   onBoardingDescriptionText2:
-    "Al sacar fotos de las hojas de trabajo al momento del conteo de votos, las firmas electrónicamente y las conviertes en NFTs.",
+    "Al sacar fotos de las actas al momento del conteo de votos, las firmas electrónicamente y las conviertes en NFTs.",
   onBoardingDescriptionText3:
-    "Cualquier persona que descargue la app podrá verificar, validar y firmar las hojas de trabajo subidas.",
+    "Cualquier persona que descargue la app podrá verificar, validar y firmar las actas subidas.",
   onBoardingDescriptionText4:
     "El código de los contratos inteligentes y las transacciones en blockchain son públicos y procesado con IA",
   onBoardingDescriptionText5: "",
@@ -1028,10 +1028,10 @@ export default {
   // ========== VOTACIÓN / ELECTORAL COMPONENTS ==========
   // Home Screen
   homeWelcome: "¡Bienvenido,",
-  uploadActa: "Subir Hoja de Trabajo",
-  uploadActaDescription: "Sube la hoja de trabajo de tu mesa.",
-  witnessActa: "Atestiguar Hoja de Trabajo",
-  witnessActaDescription: "Valida una hoja de trabajo ya subida en una mesa.",
+  uploadActa: "Subir Acta",
+  uploadActaDescription: "Sube el acta de tu mesa.",
+  witnessActa: "Atestiguar Acta",
+  witnessActaDescription: "Valida un acta ya subida en una mesa.",
   announceCount: "Anunciar Conteo",
   announceCountDescription: "Avisar el inicio del conteo.",
   myWitnesses: `Mis atestiguamientos`,
@@ -1065,14 +1065,14 @@ export default {
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: "Mis Atestiguamientos",
-  selectDocumentToReview: "Selecciona la hoja de trabajo que deseas revisar",
+  selectDocumentToReview: "Selecciona el acta que deseas revisar",
   errorLoadingWitnesses: "Error al cargar los atestiguamientos",
   connectionError: "Error de conexión",
   connectionErrorMessage:
     "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
   selectionRequired: "Selección Requerida",
   pleaseSelectDocument:
-    "Por favor, selecciona una hoja de trabajo para continuar.",
+    "Por favor, selecciona un acta para continuar.",
 
   // Photo Review Screen
   unidad: "Unidad",
@@ -1110,7 +1110,7 @@ export default {
   // Detalle Mesa Screen
   photoSentTitle: "¡Foto Enviada!",
   photoSentMessage:
-    "Tu foto de la hoja de trabajo ha sido enviada exitosamente y está siendo procesada.",
+    "Tu foto del acta ha sido enviada exitosamente y está siendo procesada.",
   tableDetails: "Detalles de la Mesa",
   retakePhoto: "Tomar otra foto",
   confirmAndSend: "Confirmar y Enviar",
@@ -1142,7 +1142,7 @@ export default {
   loadingCountTables: "Cargando mesas de conteo...",
   searchTableForCount: "Buscar Mesa para Conteo",
   chooseTablePlease: "Elije una mesa por favor:",
-  tableCodePlaceholder: "Escribe el código de mesa de la hoja de trabajo",
+  tableCodePlaceholder: "Escribe el código de mesa del acta",
   listBasedOnLocation: "La siguiente lista se basa en su ubicación",
 
   // My Witnesses Detail Screen
@@ -1160,22 +1160,22 @@ export default {
 
   // WitnessRecord
   searchTablePlaceholder: "Buscar mesa",
-  couldNotLoadActas: "No se pudieron cargar las hojas de trabajo de esta mesa",
-  errorLoadingActas: "Error al cargar las hojas de trabajo",
+  couldNotLoadActas: "No se pudieron cargar las actas de esta mesa",
+  errorLoadingActas: "Error al cargar las actas",
   pleaseSelectImageFirst: "Por favor, selecciona una imagen primero.",
   information: "Información",
   dataReportedAsIncorrect: "Se ha reportado que los datos no son correctos.",
   table: "Mesa",
   whichIsCorrect: "¿Cuál de estas es la correcta?",
-  loadingActas: "Cargando hojas de trabajo de la mesa...",
+  loadingActas: "Cargando actas de la mesa...",
   seeMoreDetails: "Ver más detalles",
   dataNotCorrect: "Estos datos no son correctos",
   correctData: "Datos Correctos",
   itsData: "Están Correctos",
-  reviewActaData: "Revise los datos de la hoja de trabajo",
-  actaCertification: "Certificación de la Hoja de Trabajo",
+  reviewActaData: "Revise los datos del acta",
+  actaCertification: "Certificación del Acta",
   certificationText:
-    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en la hoja de trabajo de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
   certify: "Certifico",
   certifyInfoConfirmation:
     "¿Estás seguro de que deseas\nCertificar la información?",
@@ -1188,22 +1188,22 @@ export default {
   edit: "Editar",
   next: "Siguiente",
   save: "Guardar",
-  reviewPhotoPlease: "Revise la foto de la hoja de trabajo",
+  reviewPhotoPlease: "Revise la foto del acta",
   saved: "Guardado",
   changesSavedSuccessfully: "Los cambios han sido guardados correctamente.",
-  acta: "Hoja de Trabajo",
+  acta: "Acta",
   infoReadyToLoad: "Información lista para cargar",
   i: "Yo",
   publishAndCertify: "Publico y Certifico",
   actaCorrectConfirmation:
-    "que es la HOJA DE TRABAJO CORRECTA de la mesa: {tableNumber} ubicada en: {location}",
+    "que es el ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}",
   publishAndCertifyConfirmation:
     "¿Estás seguro de que deseas publicar y certificar la información?",
 
   // MyWitnesses
-  actaUploading: "Hoja de trabajo subiendo...",
+  actaUploading: "Acta subiendo...",
   actaUploadingDescription:
-    "Tu hoja de trabajo se está subiendo en segundo plano",
+    "Tu acta se está subiendo en segundo plano",
   loadingWitnesses: "Cargando atestiguamientos...",
   seeMore: "Ver más",
   understood: "Entendido",
@@ -1251,7 +1251,7 @@ export default {
   needBlockchainApp: "¿Necesitas una aplicación en Blockchain?",
 
   connectItem1: "Obtén tu identidad digital soberana",
-  connectItem2: "Registra hojas de trabajo electorales",
+  connectItem2: "Registra actas electorales",
   connectItem3: "Valida con tu firma electrónica",
   // connectBtnInfo: 'Más información',
 
@@ -1297,20 +1297,20 @@ export default {
   coincidences: "coincidencias",
   trust: "Confianza",
   nftsObtained: "NFTs obtenidos",
-  uploadActaNFT: "Subir Hoja de Trabajo 2025",
+  uploadActaNFT: "Subir Acta 2025",
   uploadActaNFTDesc:
-    "Participó subiendo hojas de trabajo - Elecciones generales Bolivia 2025",
+    "Participó subiendo actas - Elecciones generales Bolivia 2025",
   witnessNFT: "Atestiguamiento",
   witnessNFTDesc:
-    "Participó atestiguando hojas de trabajo - Elecciones generales Bolivia 2025",
+    "Participó atestiguando actas - Elecciones generales Bolivia 2025",
   selectFeaturedBadge: "Seleccionar insignia destacada",
 
   // Home Screen
   participate: "Participar",
-  sendAct: "Enviar Hoja de Trabajo",
-  sendActDescription: "Revisa o sube una hoja de trabajo",
+  sendAct: "Enviar Acta",
+  sendActDescription: "Revisa o sube un acta",
   participateDescription:
-    "Sube hojas de trabajo electorales o participa como testigo en el proceso de verificación ciudadana",
+    "Sube actas electorales o participa como testigo en el proceso de verificación ciudadana",
 
   // Oracle Participation
   oracleParticipationTitle: "Participación en oráculos",
@@ -1349,9 +1349,9 @@ export default {
   offlineNoCacheSubtitle:
     "No pudimos cargar la configuración electoral ni los recintos cercanos, y no hay datos guardados para usar sin conexión. Conéctate a internet e inténtalo de nuevo.",
 
-  duplicateBallotTitle: "Hoja de trabajo ya existe",
+  duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage:
-    "Ya existe una hoja de trabajo con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
+    "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
   genericError: "Ocurrió un error inesperado",
   uploadAnyway: "Subir de todos modos",
   attestationFailed:
@@ -1359,7 +1359,7 @@ export default {
   validationError: "Error de validación en el servidor",
   oracleRegisterFail:
     "No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo",
-  invalidActaData: "Datos de la hoja de trabajo no válidos",
+  invalidActaData: "Datos del acta no válidos",
   validationFailed: "Validación fallida",
   validationError400: "Datos de solicitud incorrectos",
   validationError401: "No autorizado para validar",

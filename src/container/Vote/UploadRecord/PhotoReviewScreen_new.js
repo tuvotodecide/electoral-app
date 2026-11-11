@@ -134,7 +134,7 @@ const formatWorksheetDiffsForModal = differences => {
         diff?.ballotValue === null || diff?.ballotValue === undefined
           ? 'sin dato'
           : String(diff.ballotValue);
-      return `${label}: acta **${worksheetValue}**, hoja de trabajo **${ballotValue}**`;
+      return `${label}: hoja de trabajo **${worksheetValue}**, acta **${ballotValue}**`;
     })
     .join('\n');
 };
@@ -638,7 +638,7 @@ const PhotoReviewScreen = () => {
       setInfoModalData({
         visible: true,
         title: 'Error',
-        message: 'No se encontró la información del acta para encolar.',
+        message: 'No se encontró la información de la hoja de trabajo para encolar.',
       });
       return;
     }
@@ -675,7 +675,7 @@ const PhotoReviewScreen = () => {
         setInfoModalData({
           visible: true,
           title: 'Error',
-          message: 'No se encontró la foto del acta.',
+          message: 'No se encontró la foto de la hoja de trabajo.',
         });
         setShowWorksheetConfirmModal(false);
         return;
@@ -723,7 +723,7 @@ const PhotoReviewScreen = () => {
           visible: true,
           title: 'Error',
           message:
-            'Faltan datos obligatorios de mesa o usuario para encolar el acta.',
+            'Faltan datos obligatorios de mesa o usuario para encolar la hoja de trabajo.',
         });
         setShowWorksheetConfirmModal(false);
         return;
@@ -767,8 +767,8 @@ const PhotoReviewScreen = () => {
         setShouldGoHomeAfterInfoModal(true);
         setInfoModalData({
           visible: true,
-          title: 'Acta',
-          message: 'El acta ya estaba en cola. Se subirá en segundo plano.',
+          title: 'Hoja de trabajo',
+          message: 'La hoja de trabajo ya estaba en cola. Se subirá en segundo plano.',
           buttonText: 'Ir al Inicio',
         });
         return;
@@ -825,8 +825,8 @@ const PhotoReviewScreen = () => {
       setShouldGoHomeAfterInfoModal(true);
       setInfoModalData({
         visible: true,
-        title: 'Acta',
-        message: 'Acta guardada. Se subirá en segundo plano.',
+        title: 'Hoja de trabajo',
+        message: 'Hoja de trabajo guardada. Se subirá en segundo plano.',
         buttonText: 'Ir al Inicio',
       });
     } catch (error) {
@@ -839,7 +839,7 @@ const PhotoReviewScreen = () => {
       setInfoModalData({
         visible: true,
         title: 'Error',
-        message: error?.message || 'No se pudo encolar el acta.',
+        message: error?.message || 'No se pudo encolar la hoja de trabajo.',
       });
     } finally {
       setIsWorksheetSubmitting(false);
@@ -914,7 +914,7 @@ const PhotoReviewScreen = () => {
         visible: true,
         title: 'Observacion requerida',
         message:
-          'Si marcas "Hoja de trabajo con observacion", debes escribir el texto de la observacion.',
+          'Si marcas "Acta con observacion", debes escribir el texto de la observacion.',
       });
       return;
     }
@@ -1006,7 +1006,7 @@ const PhotoReviewScreen = () => {
       if (!dniValue || !tableCode || !electionIdValue) {
         compareResult = buildResult(
           WorksheetCompareStatus.NOT_FOUND,
-          'No existe acta previa para esta mesa.',
+          'No existe hoja de trabajo previa para esta mesa.',
         );
       } else {
         setIsComparingWorksheet(true);
@@ -1017,7 +1017,7 @@ const PhotoReviewScreen = () => {
           if (!isOnline) {
             compareResult = buildResult(
               WorksheetCompareStatus.SKIPPED_OFFLINE,
-              'Sin conexión. No se pudo comparar con el acta.',
+              'Sin conexión. No se pudo comparar con la hoja de trabajo.',
             );
           } else {
             const apiKey = await authenticateWithBackend();
@@ -1045,19 +1045,19 @@ const PhotoReviewScreen = () => {
             if (status === WorksheetCompareStatus.MATCH) {
               compareResult = buildResult(
                 status,
-                'La hoja de trabajo coincide con el acta.',
+                'El acta coincide con la hoja de trabajo.',
                 data,
               );
             } else if (status === WorksheetCompareStatus.MISMATCH) {
               compareResult = buildResult(
                 status,
-                'La hoja de trabajo no coincide con el acta.',
+                'El acta no coincide con la hoja de trabajo.',
                 data,
               );
             } else if (status === WorksheetCompareStatus.NOT_AVAILABLE) {
               compareResult = buildResult(
                 status,
-                `No hay acta disponible para comparar la hoja de trabajo (${
+                `No hay hoja de trabajo disponible para comparar el acta (${
                   data?.worksheetStatus || 'SIN_ESTADO'
                 }).`,
                 data,
@@ -1065,7 +1065,7 @@ const PhotoReviewScreen = () => {
             } else {
               compareResult = buildResult(
                 WorksheetCompareStatus.NOT_FOUND,
-                'No existe acta previa para esta mesa.',
+                'No existe hoja de trabajo previa para esta mesa.',
                 data,
               );
             }
@@ -1073,7 +1073,7 @@ const PhotoReviewScreen = () => {
         } catch {
           compareResult = buildResult(
             WorksheetCompareStatus.ERROR,
-            'No se pudo comparar la hoja de trabajo con el acta por timeout o error de red.',
+            'No se pudo comparar el acta con la hoja de trabajo por timeout o error de red.',
           );
         } finally {
           setIsComparingWorksheet(false);
@@ -1120,10 +1120,10 @@ const PhotoReviewScreen = () => {
       });
       setInfoModalData({
         visible: true,
-        title: 'La hoja de trabajo no coincide con el acta',
+        title: 'El acta no coincide con la hoja de trabajo',
         message: diffMessage
-          ? `Se detectaron diferencias con el acta:\n${diffMessage}`
-          : 'Se detectaron diferencias con el acta.',
+          ? `Se detectaron diferencias con la hoja de trabajo:\n${diffMessage}`
+          : 'Se detectaron diferencias con la hoja de trabajo.',
         buttonText: 'Continuar',
         secondaryButtonText: 'Corregir',
         onSecondaryPress: () => {
@@ -1205,7 +1205,7 @@ const PhotoReviewScreen = () => {
             text:
               fromWhichIsCorrect && (actaCount ?? 0) > 1
                 ? 'Regresar'
-                : 'Subir hoja de trabajo',
+                : 'Subir acta',
             onPress:
               fromWhichIsCorrect && (actaCount ?? 0) > 1
                 ? () => navigation.goBack()
@@ -1230,7 +1230,7 @@ const PhotoReviewScreen = () => {
 
   const observationSection = isViewOnly || isWorksheetMode ? null : (
     <View style={styles.observationContainer}>
-      <CText style={styles.observationQuestionLabel}>¿Está la hoja de trabajo observada?</CText>
+      <CText style={styles.observationQuestionLabel}>¿Está el acta observada?</CText>
       <View style={styles.observationSwitchRow}>
         <TouchableOpacity
           activeOpacity={0.85}
@@ -1280,7 +1280,7 @@ const PhotoReviewScreen = () => {
         <TextInput
           value={observationText}
           onChangeText={setObservationText}
-          placeholder="Escribe la observacion de la hoja de trabajo"
+          placeholder="Escribe la observacion del acta"
           placeholderTextColor="#8A8A8A"
           multiline
           style={[
@@ -1301,7 +1301,7 @@ const PhotoReviewScreen = () => {
           }`}
         instructionsText={
           isWorksheetMode
-            ? 'Ingresa los resultados de tu acta.'
+            ? 'Ingresa los resultados de tu hoja de trabajo.'
             : offline
             ? 'Completa los datos por favor'
             : aiAnalysis
@@ -1330,10 +1330,10 @@ const PhotoReviewScreen = () => {
         secondaryLabel={officeLabels.secondary}
         highlightPhotoToggle={true}
         photoToggleLabelCollapsed={
-          isWorksheetMode ? 'Ver foto del acta' : 'Ver foto de la hoja de trabajo'
+          isWorksheetMode ? 'Ver foto de la hoja de trabajo' : 'Ver foto del acta'
         }
         photoToggleLabelExpanded={
-          isWorksheetMode ? 'Ocultar foto del acta' : 'Ocultar foto de la hoja de trabajo'
+          isWorksheetMode ? 'Ocultar foto de la hoja de trabajo' : 'Ocultar foto del acta'
         }
         extraContent={observationSection}
       />
@@ -1351,16 +1351,16 @@ const PhotoReviewScreen = () => {
             <View style={styles.iconCircleWarning}>
               <Ionicons name="alert-outline" size={48} color="#da2a2a" />
             </View>
-            <CText style={styles.confirmTitle}>Subir Acta</CText>
+            <CText style={styles.confirmTitle}>Subir Hoja de Trabajo</CText>
             <CText style={styles.confirmBody}>
-              Esta acta se sube como respaldo y funciona para comparar
-              resultados de la hoja de trabajo.
+              Esta hoja de trabajo se sube como respaldo y funciona para comparar
+              resultados del acta.
             </CText>
 
             {isWorksheetSubmitting ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color="#193b5e" />
-                <CText style={styles.loadingText}>Encolando acta...</CText>
+                <CText style={styles.loadingText}>Encolando hoja de trabajo...</CText>
               </View>
             ) : null}
 

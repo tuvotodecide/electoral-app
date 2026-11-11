@@ -34,6 +34,8 @@ const getDownloadSizeMB = async (url) => {
   }
 };
 
+const formatMB = (bytes) => `${Math.round(bytes / (1024 * 1024))}MB`;
+
 export const useSplashInit = (navigation) => {
   const [downloadMessage, setDownloadMessage] = useState([]);
   const [downloadPrompt, setDownloadPrompt] = useState({visible: false, sizeMB: null});
@@ -55,13 +57,21 @@ export const useSplashInit = (navigation) => {
     confirmDownloadResolveRef.current = null;
   }, []);
 
-  const showDownloadProgress = useCallback(({phase, percent}) => {
+  const showDownloadProgress = useCallback(({phase, percent, bytesWritten, totalBytes}) => {
     if (phase === 'extracting') {
       setDownloadMessage([Strings.initApp]);
     } else if (percent === undefined) {
-      setDownloadMessage([Strings.downloadingData + '-']);
+      // Sin Content-Length: al menos mostrar lo descargado.
+      setDownloadMessage(
+        bytesWritten > 0
+          ? [Strings.downloadingData, formatMB(bytesWritten)]
+          : [Strings.downloadingData + '-'],
+      );
     } else {
-      setDownloadMessage([Strings.downloadingData, `${Math.round(percent)}%`]);
+      const sizeText = totalBytes > 0
+        ? ` (${formatMB(bytesWritten ?? 0)} / ${formatMB(totalBytes)})`
+        : '';
+      setDownloadMessage([Strings.downloadingData, `${Math.round(percent)}%${sizeText}`]);
     }
   }, []);
 

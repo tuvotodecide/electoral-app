@@ -1,7 +1,9 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {Text} from 'react-native';
-import VoteReceiptScreen from '../../../../src/features/voting/screens/VoteReceiptScreen';
+import VoteReceiptScreen, {
+  formatReceiptDate,
+} from '../../../../src/features/voting/screens/VoteReceiptScreen';
 import {StackNav, TabNav} from '../../../../src/navigation/NavigationKey';
 
 jest.mock('@env', () => ({
@@ -628,6 +630,32 @@ describe('VoteReceiptScreen', () => {
           params: {screen: TabNav.HomeScreen},
         },
       ],
+    });
+  });
+
+  describe('formatReceiptDate', () => {
+    it('converts ISO UTC dates to a readable UTC-4 format', () => {
+      expect(formatReceiptDate('2026-01-01T14:05:00.000Z')).toBe(
+        '01 ene 2026, 10:05',
+      );
+    });
+
+    it('rolls back the day when UTC-4 crosses midnight', () => {
+      expect(formatReceiptDate('2026-03-01T02:30:00Z')).toBe(
+        '28 feb 2026, 22:30',
+      );
+    });
+
+    it('formats numeric timestamps', () => {
+      expect(formatReceiptDate(Date.UTC(2026, 10, 10, 18, 0))).toBe(
+        '10 nov 2026, 14:00',
+      );
+    });
+
+    it('returns already formatted or empty values unchanged', () => {
+      expect(formatReceiptDate('01 ene 2026, 10:00')).toBe('01 ene 2026, 10:00');
+      expect(formatReceiptDate('')).toBe('');
+      expect(formatReceiptDate(null)).toBe('');
     });
   });
 });

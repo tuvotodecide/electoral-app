@@ -521,6 +521,97 @@ describe('HomeScreen voting flow routing', () => {
     });
   });
 
+  describe('indicador de cola offline en Home', () => {
+    const {getAll, processQueue} = require('../../../../../src/utils/offlineQueue');
+    const vaultSession = require('@/src/services/privado/vaultSession');
+
+    beforeEach(() => {
+      const state = buildState();
+      useSelector.mockImplementation(selector =>
+        selector({
+          ...state,
+          wallet: {
+            payload: {
+              ...state.wallet.payload,
+              account: '0x1111111111111111111111111111111111111111',
+            },
+          },
+        }),
+      );
+      mockGetElections.mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+      getAll.mockImplementation(() => Promise.resolve([]));
+      jest.restoreAllMocks();
+    });
+
+    it('muestra registros pendientes cuando la cola tiene tareas en espera y permite reintentar', async () => {
+      const waitingItem = {
+        id: 'queue-pending',
+        task: {type: 'publishActa', payload: {}},
+        nextAttemptAt: Date.now() + 60 * 60 * 1000,
+      };
+      getAll.mockImplementation(() => Promise.resolve([waitingItem]));
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByText('1 registro pendiente de envío')).toBeTruthy();
+      });
+      expect(view.getByTestId('homeQueueStatusPendingIcon')).toBeTruthy();
+      expect(view.queryByTestId('homeQueueStatusSpinner')).toBeNull();
+
+      const callsBefore = processQueue.mock.calls.length;
+      await act(async () => {
+        fireEvent.press(view.getByTestId('homeQueueStatusBanner'));
+      });
+      await waitFor(() => {
+        expect(processQueue.mock.calls.length).toBeGreaterThan(callsBefore);
+      });
+    });
+
+    it('muestra el spinner mientras la cola envía y lo oculta al terminar', async () => {
+      const dueItem = {
+        id: 'queue-due',
+        task: {type: 'publishWorksheet', payload: {}},
+      };
+      let queueItems = [dueItem];
+      getAll.mockImplementation(() => Promise.resolve(queueItems));
+      jest.spyOn(vaultSession, 'ensureVaultUnlocked').mockResolvedValue(true);
+
+      let finishRun;
+      processQueue.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            finishRun = resolve;
+          }),
+      );
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('homeQueueStatusSpinner')).toBeTruthy();
+      });
+      expect(view.getByText('Enviando registros pendientes...')).toBeTruthy();
+
+      queueItems = [];
+      await act(async () => {
+        finishRun({remaining: 0, processed: 1, failed: 0, failedItems: []});
+      });
+
+      await waitFor(() => {
+        expect(view.queryByTestId('homeQueueStatusBanner')).toBeNull();
+      });
+    });
+  });
+
   it('KIO-SCN-P1-001 KIO-HAB-P0-001 | navega a CandidateScreen con isInPlaceVote true cuando la eleccion trae presentialKioskEnabled', async () => {
     const election = {
       id: 'event-qr',

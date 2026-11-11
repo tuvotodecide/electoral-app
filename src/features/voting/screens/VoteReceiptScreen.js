@@ -123,6 +123,46 @@ const hasPendingResults = params => {
   return votingEnded && (!resultsAt || resultsAt > Date.now());
 };
 
+const RECEIPT_UTC_OFFSET_HOURS = -4;
+const SHORT_MONTHS_ES = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+const pad2 = value => String(value).padStart(2, '0');
+
+/**
+ * Convierte fechas ISO (o timestamps) a "DD mmm YYYY, HH:mm" en UTC-4.
+ * Si el valor ya viene formateado (texto no ISO), se devuelve tal cual.
+ */
+export const formatReceiptDate = value => {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  const isTimestamp = typeof value === 'number';
+  const raw = String(value).trim();
+  if (!isTimestamp && !ISO_DATE_PATTERN.test(raw)) {
+    return raw;
+  }
+
+  const time = isTimestamp ? value : Date.parse(raw);
+  if (!Number.isFinite(time)) {
+    return raw;
+  }
+
+  // Se desplaza el instante y se leen los campos UTC para obtener la hora en UTC-4.
+  const shifted = new Date(time + RECEIPT_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+  const day = pad2(shifted.getUTCDate());
+  const month = SHORT_MONTHS_ES[shifted.getUTCMonth()];
+  const year = shifted.getUTCFullYear();
+  const hours = pad2(shifted.getUTCHours());
+  const minutes = pad2(shifted.getUTCMinutes());
+
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
+};
+
 const buildSelectionEntries = candidateSelected => {
   if (candidateSelected?.isReferendum) {
     const responseValue = String(candidateSelected?.presidentName || '').trim();
@@ -398,7 +438,7 @@ const VoteReceiptScreen = () => {
               {UI_STRINGS.dateTime}
             </CText>
             <CText type="M14" style={styles.detailValue}>
-              {participation.fullDate}
+              {formatReceiptDate(participation.fullDate)}
             </CText>
           </View>
 

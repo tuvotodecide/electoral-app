@@ -22,7 +22,10 @@ const PAUSA_ANTES_DE_REFERENCIA_MS = 1500;
 const PAUSA_ANTES_DE_CADA_RETO_MS = 2000;
 // Con los ojos cerrados no se ve la pantalla: más tiempo y aviso por vibración.
 const PAUSA_ANTES_DE_RETO_OJOS_MS = 3000;
-const VIBRACION_FIN_MS = 400;
+// Dos pulsos que suman más de 1 s: Android trata las vibraciones de 1 s o
+// menos sin categoría como "vibración al tocar" y las descarta si el usuario
+// la tiene apagada. [espera, vibra, pausa, vibra] en ms.
+const VIBRACION_FIN = [0, 500, 250, 500];
 const FOTOS_POR_RETO = 3;
 // La referencia (de frente) es también la selfie que se compara con el carnet.
 const REFERENCIA = { ancho: 1080, calidad: 0.85 };
@@ -239,7 +242,7 @@ export default function LivenessCapture({
           if (!activo.current) return;
           fotos.push({ challengePosition: posicion, image: await capturar(FOTO_RETO) });
         }
-        if (esOjos) Vibration.vibrate(VIBRACION_FIN_MS);
+        if (esOjos) Vibration.vibrate(VIBRACION_FIN);
       }
 
       if (!activo.current) return;
