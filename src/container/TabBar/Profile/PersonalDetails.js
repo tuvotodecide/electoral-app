@@ -15,7 +15,12 @@ import String from '../../../i18n/String';
 
 import {getCredentialSubjectFromPayload} from '../../../utils/Cifrate';
 import COptionItem from '../../../components/common/COptionItem';
-import { registryApi } from '../../../data/client/kyc';
+import {getPrivadoClient} from '../../../services/privado/privadoSession';
+import {
+  VaultUnlockCancelledError,
+  withVaultUnlockReason,
+} from '../../../services/privado/vaultUnlock';
+import {IdentityApiUnreachableError} from '@privado-id/expo-sdk';
 import CAlert from '../../../components/common/CAlert';
 import InfoModal from '../../../components/modal/InfoModal';
 import {isDemoActive, useIsDemoActive} from '../../../features/demo/demoSession';
@@ -24,6 +29,17 @@ import {StackNav} from '../../../navigation/NavigationKey';
 
 const PUBLIC_NAME_CONFIRM_MESSAGE =
   'Autorizas a que tu nombre será visible para otros usuarios';
+const PUBLIC_NAME_UNLOCK_REASON = 'Abre tu cuenta para cambiar tu nombre público.';
+
+// Sin red: el texto de red; si no, el código (p. ej. `not-found` de
+// RegistryProfileError) o el estado HTTP.
+const describeRegistryError = error => {
+  if (error instanceof IdentityApiUnreachableError) {
+    return String.networkError;
+  }
+  const detail = error?.code || (error?.status ? `HTTP ${error.status}` : 'unknown');
+  return String.error + ': ' + detail;
+};
 
 export default function PersonalDetails({navigation}) {
   const colors = useSelector(state => state.theme.theme);
@@ -46,20 +62,29 @@ export default function PersonalDetails({navigation}) {
         return;
       }
       if (!userData?.did) return;
-      const data = await registryApi.resolveByDid(userData.did);
-      if(!data.ok) {
+      // Registro público del titular (GET /registry/by-did): no abre el vault.
+      try {
+        const client = await getPrivadoClient();
+        const record = await client.getRegistryProfile();
+        if (!record) {
+          setShowName({
+            value: false,
+            loading: false,
+            errorMsg: String.error + ': not-found',
+          });
+          return;
+        }
+        setShowName({
+          value: !!record.displayNamePublic,
+          loading: false,
+        });
+      } catch (error) {
         setShowName({
           value: false,
           loading: false,
-          errorMsg: String.error + ': ' + data.error,
+          errorMsg: describeRegistryError(error),
         });
-        return;
       }
-
-      setShowName({
-        value: !!data?.record?.displayNamePublic,
-        loading: false,
-      });
     }
     fetchDisplayName();
   }, []);
@@ -96,7 +121,7 @@ export default function PersonalDetails({navigation}) {
     });
 
     if(!isDemo) {
-      const userName = userData?.vc?.credentialSubject?.fullName;
+      const userName = subject.fullName;
       if(!userName) {
         setShowName({
           value: showName.value,
@@ -106,7 +131,23 @@ export default function PersonalDetails({navigation}) {
         return;
       }
 
-      await registryApi.registryUpdateDisplayName(userData.did, value ? userName : null);
+      // PATCH /registry/profile con la sesión de wallet (firma con el vault).
+      // Vacío borra el nombre público.
+      try {
+        const client = await getPrivadoClient();
+        await withVaultUnlockReason(PUBLIC_NAME_UNLOCK_REASON, () =>
+          client.updateRegistryProfile({displayNamePublic: value ? userName : ''}),
+        );
+      } catch (error) {
+        // Cerrar el desbloqueo no es un error: el switch vuelve a su valor.
+        const cancelled = error instanceof VaultUnlockCancelledError;
+        setShowName({
+          value: showName.value,
+          loading: false,
+          errorMsg: cancelled ? null : describeRegistryError(error),
+        });
+        return;
+      }
     }
 
     setShowName({

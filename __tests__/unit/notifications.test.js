@@ -180,8 +180,8 @@ describe('notifications', () => {
         data: {type: 'acta_published', tableCode: 'A-22'},
       }),
     ).toMatchObject({
-      title: 'Hoja de trabajo subida exitosamente',
-      body: 'Tu hoja de trabajo de la mesa A-22 fue publicada correctamente.',
+      title: 'Acta subida exitosamente',
+      body: 'Tu acta de la mesa A-22 fue publicada correctamente.',
     });
   });
 
@@ -445,7 +445,7 @@ describe('notifications', () => {
     const notification = {
       _id: 'remote-1',
       createdAt: '2026-01-01T10:00:00.000Z',
-      title: 'Hoja de trabajo subida exitosamente',
+      title: 'Acta subida exitosamente',
       data: {type: 'acta_published', tableNumber: '8'},
     };
 

@@ -2,18 +2,9 @@ export default {
   sendInvitation: " Enviar invitación",
   finishingRecovery: "Finalizando recuperación",
   return: "Regresar",
-  guardiansDescriptionStatus: "Aquí verás el estado de aprobación de tu cuenta",
-  noGuardians: "Aún no hay votos de tus guardianes",
-  guardiansApprovedTitle: "¡Aprobado!",
-  guardiansApprovedMessage:
-    "Tus guardianes aprobaron la recuperación de tu cuenta, recuperando datos...",
   noRecoveryDni:
     "No se encontró el DNI de recuperación. Regresa e inténtalo de nuevo.",
-  guardiansTitleStatus: "Estado",
   connectBtnForgot: "Olvidé mi cuenta",
-  messagetorecovery:
-    "Solicitud de recuperación enviada.Los guardianes deben aprobarla en las siguientes horas desde su cuenta.",
-  recoveryAccountWithGuardians: "Recuperar cuenta con guardianes",
   confirmDataCorrect: "Confirma que los datos son correctos",
 
   //Register user
@@ -144,7 +135,7 @@ export default {
   activosTitle: "Identidad",
   activosDesc: "Ya tienes tu identidad digital soberana",
   transfiereTitle: "Atestiguamiento",
-  transfiereDesc: "Registra hojas de trabajo electorales",
+  transfiereDesc: "Registra actas electorales",
   historialTitle: "Historial",
   historialDesc: "Revisa tus propias operaciones",
   seguridadTitle: "Seguridad",
@@ -152,9 +143,6 @@ export default {
   goToWalletButton: "Ir a mi cuenta",
   creatingWallet: "Creando cuenta…",
   issuingVC: "Generando credenciales…",
-  migrating: "Migrando datos…",
-  migratingOnLogin:
-    "Estamos migrando su cuenta a la nueva versión, por favor espere...",
   noBiometricData:
     "No se encontró tu credencial local. Vuelve a registrarte para emitir una nueva credencial.",
   uploadingBlockchain: "Subiendo a la blockchain",
@@ -175,8 +163,6 @@ export default {
   personalDataValue: "Mira tu información",
   dataBackup: "Respaldo de identidad",
   dataBackupValue: "Guarda un archivo de recuperación",
-  guardians: "Guardianes",
-  guardianSettings: "Configuración de Guardianes",
   threshholdLabel:
     "Número mínimo de aprobaciones requeridas para recuperar cuenta:",
   invalidThreshold: "El umbral debe ser un número mayor a 0",
@@ -189,34 +175,15 @@ export default {
   notEnoughLegacyData: "Este QR no tiene suficientes datos",
   alreadyMigrated:
     "Esta cuenta ya fue migrada, intente recuperar usando su Carnet y PIN",
-  myProtectedInfo: "Personas de las cuales soy guardián",
   myInvitations: "Mis invitaciones",
   myRecovery: "Solicitudes de recuperación",
   protectedValue: "Administra solicitudes y recuperaciones",
   moresub: "Revisa más opciones",
-  onBoardingGuardiansTitleText1: "¿Qué son los guardianes?",
-  onBoardingGuardiansTitleText2: "¿Quién puede ser un guardián?",
-  onBoardingGuardiansTitleText3: "¿Cuántos guardianes se necesitan?",
-  onBoardingGuardiansTitleText4: "¿Cómo funciona la recuperación?",
-  onBoardingGuardiansDescriptionText1:
-    "Son personas o dispositivos que ayudan a confirmar tu identidad cuando necesitas recuperar tu cuenta. Funcionan como respaldo de seguridad ",
-  onBoardingGuardiansDescriptionText2:
-    "Puede ser un familiar, un amigo o incluso otro dispositivo de confianza que tengas registrado. Solo se debe elegir opciones seguras.",
-  onBoardingGuardiansDescriptionText3:
-    "Se requieren al menos 2 guardianes activos para autorizar una recuperación. Tener más aumenta la seguridad",
-  onBoardingGuardiansDescriptionText4:
-    "Al solicitar la recuperación, se notifica a tus guardianes. Ellos deben aprobar la solicitud para que puedas acceder nuevamente a tu cuenta.",
   totalBalance: "Saldo total",
   balanceByCoin: "Saldo por moneda",
   commomPayments: "Pagos frecuentes",
   help: "Ayuda",
   me: "Yo",
-  configGuardian: "Configuración de guardianes",
-  configGuardianSubtitle1:
-    "Número mínimo de aprobaciones requeridas para recuperar cuenta:",
-  configGuardianSubtitle2:
-    "Número mínimo de aprobaciones requeridas para transacciones grandes:",
-  guardiansValue: "Administra tus guardianes",
   transactionHistory: "Historial de transacciones",
   transactionHistoryValue: "Movimientos recientes",
   earnRewards: "Gana recompensas",
@@ -292,16 +259,9 @@ export default {
   connectBtnInfo: "Saber más",
   connectBtnRegister: "Registrar cuenta",
   register: "REGISTRARSE",
-  sessionReceived: "Sesión recibida",
-  sessionReceivedMessage: "Ingrese su pin para iniciar la sesión compartida.",
-  sharedSessionError: "Error al recibir archivos compartidos.",
-  sharedSessionTitle: "Solicitud para compartir la sesión de Wira",
-  sharedSessionMessage:
-    "¿Deseas compartir tu sesión actual con otra aplicación?",
 
   recoveryWallet: "Recuperar cuenta",
   recoverymethod: "Selecciona método para recuperar cuenta",
-  recoverymethodGuardians: "Recuperar con guardianes",
   recoverymethodFile: "Usar archivo de recuperación",
   recoveryWithCI: "Recuperar con Carnet y PIN",
   recoveryCIIntro: "También debes tener el PIN de acceso a tu cuenta.",
@@ -325,7 +285,7 @@ export default {
     "Para permitir tu participación de forma segura y privada, se necesita descargar archivos criptográficos (ZK).",
   exitApp: "Salir",
   onBoardingTitleText1: "Obtén tu identidad digital soberana",
-  onBoardingTitleText2: "Hojas de trabajo electorales inalterables con NFTs",
+  onBoardingTitleText2: "Actas electorales inalterables con NFTs",
   onBoardingTitleText3: "Validación abierta, con firma electrónica",
   onBoardingTitleText4:
     "Transparencia con Blockchain e Inteligencia Artificial",
@@ -333,9 +293,9 @@ export default {
   onBoardingDescriptionText1:
     "Al registrarte obtienes un sistema de identidad digital, que protege tus datos con contratos inteligentes.",
   onBoardingDescriptionText2:
-    "Al sacar fotos de las hojas de trabajo al momento del conteo de votos, las firmas electrónicamente y las conviertes en NFTs.",
+    "Al sacar fotos de las actas al momento del conteo de votos, las firmas electrónicamente y las conviertes en NFTs.",
   onBoardingDescriptionText3:
-    "Cualquier persona que descargue la app podrá verificar, validar y firmar las hojas de trabajo subidas.",
+    "Cualquier persona que descargue la app podrá verificar, validar y firmar las actas subidas.",
   onBoardingDescriptionText4:
     "El código de los contratos inteligentes y las transacciones en blockchain son públicos y procesado con IA",
   onBoardingDescriptionText5: "",
@@ -486,12 +446,6 @@ export default {
   - Confirmar que tienes suficiente saldo para cubrir el gas.
   - Verificar siempre la dirección del destinatario.`,
 
-  //guardianes
-  guardiansTitle: "Tus Guardianes",
-  addGuardian: "Agregar guardián",
-  addGuardianSubtitle:
-    "Ingresa el CI / N.°. de documento de la persona que quieres asignar como guardián.",
-  addGuardianSubtitleSpan: " Debe tener una cuenta abierta en Tu Voto Decide.",
   approved: "Aprobado",
   pending: "Pendiente",
   rejected: "Rechazado",
@@ -499,10 +453,6 @@ export default {
   carnet: "Carnet",
   foundUserName: "¿Eres tú? tu nombre aparecerá aquí si lo hiciste público:",
   nickname: "Apodo",
-  guardiansSubtitle:
-    "Administra las personas que pueden ayudarte a recuperar tu cuenta.",
-  guardianNotificationTitle:
-    "El guardián recibirá una notificación para aceptar su rol.",
   skip: "X",
   allInOneInvestmentPlatform: "All in One Investment Platform",
   continueWithEmail: "Continue with Email",
@@ -537,7 +487,7 @@ export default {
     "Detectamos múltiples intentos fallidos de ingreso. Por seguridad, el acceso ha sido temporalmente restringido.",
   forgotPassWord2: "¿Olvidaste tu acceso?",
   forgot2: "Tu cuenta ha sido bloqueada",
-  forgot3: "Recupéralo con tus guardianes o QR",
+  forgot3: "Recupéralo con tu carnet de identidad",
   and: "and",
   orSignUpWith: "Or Sign Up With",
   loginText: "Already have an account?",
@@ -1078,10 +1028,10 @@ export default {
   // ========== VOTACIÓN / ELECTORAL COMPONENTS ==========
   // Home Screen
   homeWelcome: "¡Bienvenido,",
-  uploadActa: "Subir Hoja de Trabajo",
-  uploadActaDescription: "Sube la hoja de trabajo de tu mesa.",
-  witnessActa: "Atestiguar Hoja de Trabajo",
-  witnessActaDescription: "Valida una hoja de trabajo ya subida en una mesa.",
+  uploadActa: "Subir Acta",
+  uploadActaDescription: "Sube el acta de tu mesa.",
+  witnessActa: "Atestiguar Acta",
+  witnessActaDescription: "Valida un acta ya subida en una mesa.",
   announceCount: "Anunciar Conteo",
   announceCountDescription: "Avisar el inicio del conteo.",
   myWitnesses: `Mis atestiguamientos`,
@@ -1115,14 +1065,14 @@ export default {
 
   // Mis Atestiguamientos Screen
   myWitnessesTitle: "Mis Atestiguamientos",
-  selectDocumentToReview: "Selecciona la hoja de trabajo que deseas revisar",
+  selectDocumentToReview: "Selecciona el acta que deseas revisar",
   errorLoadingWitnesses: "Error al cargar los atestiguamientos",
   connectionError: "Error de conexión",
   connectionErrorMessage:
     "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
   selectionRequired: "Selección Requerida",
   pleaseSelectDocument:
-    "Por favor, selecciona una hoja de trabajo para continuar.",
+    "Por favor, selecciona un acta para continuar.",
 
   // Photo Review Screen
   unidad: "Unidad",
@@ -1160,7 +1110,7 @@ export default {
   // Detalle Mesa Screen
   photoSentTitle: "¡Foto Enviada!",
   photoSentMessage:
-    "Tu foto de la hoja de trabajo ha sido enviada exitosamente y está siendo procesada.",
+    "Tu foto del acta ha sido enviada exitosamente y está siendo procesada.",
   tableDetails: "Detalles de la Mesa",
   retakePhoto: "Tomar otra foto",
   confirmAndSend: "Confirmar y Enviar",
@@ -1192,7 +1142,7 @@ export default {
   loadingCountTables: "Cargando mesas de conteo...",
   searchTableForCount: "Buscar Mesa para Conteo",
   chooseTablePlease: "Elije una mesa por favor:",
-  tableCodePlaceholder: "Escribe el código de mesa de la hoja de trabajo",
+  tableCodePlaceholder: "Escribe el código de mesa del acta",
   listBasedOnLocation: "La siguiente lista se basa en su ubicación",
 
   // My Witnesses Detail Screen
@@ -1210,22 +1160,22 @@ export default {
 
   // WitnessRecord
   searchTablePlaceholder: "Buscar mesa",
-  couldNotLoadActas: "No se pudieron cargar las hojas de trabajo de esta mesa",
-  errorLoadingActas: "Error al cargar las hojas de trabajo",
+  couldNotLoadActas: "No se pudieron cargar las actas de esta mesa",
+  errorLoadingActas: "Error al cargar las actas",
   pleaseSelectImageFirst: "Por favor, selecciona una imagen primero.",
   information: "Información",
   dataReportedAsIncorrect: "Se ha reportado que los datos no son correctos.",
   table: "Mesa",
   whichIsCorrect: "¿Cuál de estas es la correcta?",
-  loadingActas: "Cargando hojas de trabajo de la mesa...",
+  loadingActas: "Cargando actas de la mesa...",
   seeMoreDetails: "Ver más detalles",
   dataNotCorrect: "Estos datos no son correctos",
   correctData: "Datos Correctos",
   itsData: "Están Correctos",
-  reviewActaData: "Revise los datos de la hoja de trabajo",
-  actaCertification: "Certificación de la Hoja de Trabajo",
+  reviewActaData: "Revise los datos del acta",
+  actaCertification: "Certificación del Acta",
   certificationText:
-    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en la hoja de trabajo de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
+    'Yo, {userName}, en mi calidad de {userRole}, certifico que la información contenida en el acta de la Mesa {tableNumber} del recinto "{recinto}" es correcta y corresponde a los datos registrados.',
   certify: "Certifico",
   certifyInfoConfirmation:
     "¿Estás seguro de que deseas\nCertificar la información?",
@@ -1238,22 +1188,22 @@ export default {
   edit: "Editar",
   next: "Siguiente",
   save: "Guardar",
-  reviewPhotoPlease: "Revise la foto de la hoja de trabajo",
+  reviewPhotoPlease: "Revise la foto del acta",
   saved: "Guardado",
   changesSavedSuccessfully: "Los cambios han sido guardados correctamente.",
-  acta: "Hoja de Trabajo",
+  acta: "Acta",
   infoReadyToLoad: "Información lista para cargar",
   i: "Yo",
   publishAndCertify: "Publico y Certifico",
   actaCorrectConfirmation:
-    "que es la HOJA DE TRABAJO CORRECTA de la mesa: {tableNumber} ubicada en: {location}",
+    "que es el ACTA CORRECTA de la mesa: {tableNumber} ubicada en: {location}",
   publishAndCertifyConfirmation:
     "¿Estás seguro de que deseas publicar y certificar la información?",
 
   // MyWitnesses
-  actaUploading: "Hoja de trabajo subiendo...",
+  actaUploading: "Acta subiendo...",
   actaUploadingDescription:
-    "Tu hoja de trabajo se está subiendo en segundo plano",
+    "Tu acta se está subiendo en segundo plano",
   loadingWitnesses: "Cargando atestiguamientos...",
   seeMore: "Ver más",
   understood: "Entendido",
@@ -1293,7 +1243,6 @@ export default {
   photoPreview: "Vista previa de la foto",
 
   personaNotFound: "Persona no encontrada",
-  noGuardiansAssigned: "Este carnet no tiene guardianes asignados",
   removed: "Removido",
   sendRecovery: "Solicitar recuperación",
   learnMore: "Más info",
@@ -1302,13 +1251,11 @@ export default {
   needBlockchainApp: "¿Necesitas una aplicación en Blockchain?",
 
   connectItem1: "Obtén tu identidad digital soberana",
-  connectItem2: "Registra hojas de trabajo electorales",
+  connectItem2: "Registra actas electorales",
   connectItem3: "Valida con tu firma electrónica",
   // connectBtnInfo: 'Más información',
 
   active: "Aceptado",
-  whatIsGuardians: "¿Qué son los Guardianes?",
-  alertguardiansrequired: "Necesitas al menos un guardián activo",
   recoverywithFile: "Recuperación con archivo",
   recoveryFileSubtitle:
     "Para continuar con la recuperación de su cuenta, ingrese su PIN y seleccione su archivo de respaldo",
@@ -1350,20 +1297,20 @@ export default {
   coincidences: "coincidencias",
   trust: "Confianza",
   nftsObtained: "NFTs obtenidos",
-  uploadActaNFT: "Subir Hoja de Trabajo 2025",
+  uploadActaNFT: "Subir Acta 2025",
   uploadActaNFTDesc:
-    "Participó subiendo hojas de trabajo - Elecciones generales Bolivia 2025",
+    "Participó subiendo actas - Elecciones generales Bolivia 2025",
   witnessNFT: "Atestiguamiento",
   witnessNFTDesc:
-    "Participó atestiguando hojas de trabajo - Elecciones generales Bolivia 2025",
+    "Participó atestiguando actas - Elecciones generales Bolivia 2025",
   selectFeaturedBadge: "Seleccionar insignia destacada",
 
   // Home Screen
   participate: "Participar",
-  sendAct: "Enviar Hoja de Trabajo",
-  sendActDescription: "Revisa o sube una hoja de trabajo",
+  sendAct: "Enviar Acta",
+  sendActDescription: "Revisa o sube un acta",
   participateDescription:
-    "Sube hojas de trabajo electorales o participa como testigo en el proceso de verificación ciudadana",
+    "Sube actas electorales o participa como testigo en el proceso de verificación ciudadana",
 
   // Oracle Participation
   oracleParticipationTitle: "Participación en oráculos",
@@ -1402,9 +1349,9 @@ export default {
   offlineNoCacheSubtitle:
     "No pudimos cargar la configuración electoral ni los recintos cercanos, y no hay datos guardados para usar sin conexión. Conéctate a internet e inténtalo de nuevo.",
 
-  duplicateBallotTitle: "Hoja de trabajo ya existe",
+  duplicateBallotTitle: "Acta ya existe",
   duplicateBallotMessage:
-    "Ya existe una hoja de trabajo con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
+    "Ya existe un acta con los mismos datos de votación para esta mesa. ¿Deseas subir de todos modos?",
   genericError: "Ocurrió un error inesperado",
   uploadAnyway: "Subir de todos modos",
   attestationFailed:
@@ -1412,7 +1359,7 @@ export default {
   validationError: "Error de validación en el servidor",
   oracleRegisterFail:
     "No se pudo ver si eres jurado, asegúrate que la foto sea clara e inténtelo de nuevo",
-  invalidActaData: "Datos de la hoja de trabajo no válidos",
+  invalidActaData: "Datos del acta no válidos",
   validationFailed: "Validación fallida",
   validationError400: "Datos de solicitud incorrectos",
   validationError401: "No autorizado para validar",
@@ -1429,14 +1376,6 @@ export default {
     "El GPS está desactivado. Active la ubicación del dispositivo para continuar",
   locationPermissionDeniedMessage:
     "La aplicación no tiene permisos de ubicación. Active los permisos en configuración",
-  //Sign In with Wira
-  signInWithWira: "Ingresar con Wira",
-  enterDni: "Ingresa tu carnet",
-  deviceNotFound:
-    "No tiene una sesión en este dispositivo, regístrese o recupere su cuenta por favor.",
-  deviceGetError: "Error al buscar aplicaciones",
-  shareDeclined: "Rechazado",
-  shareDeclinedMessage: "El usuario rechazó la solicitud de compartir",
 
   //Credentials
   credentialReceived: "Votante habilitado",
@@ -1449,15 +1388,6 @@ export default {
     "Error al reclamar credenciales, inténtalo de nuevo o contacta al soporte si el problema persiste.",
   credentialsClaimedDesc:
     "Tus credenciales han sido reclamadas exitosamente, ahora puedes ir a la votación.",
-
-  //Migration
-  migrationModalDesc:
-    "Se ha detectado un respaldo antiguo en tu dispositivo. Para continuar, debes migrar tu respaldo a la nueva versión de la aplicación. Esto tomará un minuto.",
-  migrateBackup: "Migrar Respaldo",
-  migrationInProgress: "Migración en progreso...",
-  migrationSuccess: "Migración completada exitosamente",
-  migrationError:
-    "Error durante la migración, inténtalo de nuevo o contacta al soporte si el problema persiste.",
 
   //Demo mode
   demoModeBanner:

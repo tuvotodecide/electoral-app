@@ -5,6 +5,11 @@ import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser6 from '../../../../src/container/Auth/RegisterUser6';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 
+const TOKEN_PARAMS = {
+  identityToken: 'header.claims.signature',
+  identityTokenExpiresAt: '2026-11-06T12:10:00.000Z',
+};
+
 const route = {
   params: {
     dni: '00000000',
@@ -66,5 +71,23 @@ describe('RegisterUser6', () => {
     fireEvent.press(getByTestId('registerUser6HeaderBackButton'));
 
     expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.RegisterUser4);
+  });
+
+  it('reenvia el identityToken a RegisterUser7', () => {
+    const localNavigation = {...mockNavigation, navigate: jest.fn(), reset: jest.fn()};
+    const {getByTestId} = renderWithProviders(
+      <RegisterUser6
+        navigation={localNavigation}
+        route={{params: {...route.params, ...TOKEN_PARAMS}}}
+      />,
+    );
+
+    fireEvent.press(getByTestId('registerUser6CheckboxButton'));
+    fireEvent.press(getByTestId('registerUser6ConfirmButton'));
+
+    expect(localNavigation.navigate).toHaveBeenCalledWith(
+      AuthNav.RegisterUser7,
+      expect.objectContaining(TOKEN_PARAMS),
+    );
   });
 });

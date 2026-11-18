@@ -95,11 +95,11 @@ describe('TableDetailScreen - Estados y Props', () => {
 
     expect(
       getByText(
-        'La mesa ya tiene hoja de trabajo. El acta solo se permite antes de la hoja de trabajo.',
+        'La mesa ya tiene acta. La hoja de trabajo solo se permite antes del acta.',
       ),
     ).toBeTruthy();
 
-    fireEvent.press(getByText('Subir acta'));
+    fireEvent.press(getByText('Subir Hoja de Trabajo'));
     expect(navigation.navigate).not.toHaveBeenCalledWith(
       StackNav.CameraScreen,
       expect.objectContaining({mode: 'worksheet'}),
@@ -137,10 +137,10 @@ describe('TableDetailScreen - Estados y Props', () => {
     });
 
     await waitFor(() => {
-      expect(getByText('Ver acta')).toBeTruthy();
+      expect(getByText('Ver Hoja de Trabajo')).toBeTruthy();
     });
 
-    fireEvent.press(getByText('Ver acta'));
+    fireEvent.press(getByText('Ver Hoja de Trabajo'));
 
     await waitFor(() => {
       expect(navigation.navigate).toHaveBeenCalledWith(

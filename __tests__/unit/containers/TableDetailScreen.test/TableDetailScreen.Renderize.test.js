@@ -27,7 +27,7 @@ describe('TableDetailScreen - Renderizado', () => {
     expect(mesaInput.props.placeholder).toMatch(/mesa/i);
     // El componente muestra "Mesa {numero}" - el código lo ingresa el usuario
     expect(getByTestId('tableDetailTakePhotoButton')).toBeTruthy();
-    expect(getByText(String.takePhoto)).toBeTruthy();
+    expect(getByText('Subir acta')).toBeTruthy();
   });
 
   test('renderiza las actas existentes y navega a PhotoReview al seleccionarlas', () => {
@@ -81,8 +81,8 @@ describe('TableDetailScreen - Renderizado', () => {
     });
 
     expect(getByText('Atestiguar')).toBeTruthy();
-    expect(queryByText('Subir acta')).toBeNull();
-    expect(queryByText(/La mesa ya tiene hoja de trabajo.*acta/i)).toBeNull();
+    expect(queryByText('Subir Hoja de Trabajo')).toBeNull();
+    expect(queryByText(/La mesa ya tiene acta.*hoja de trabajo/i)).toBeNull();
   });
 
   test('si hay hoja subida (online) mantiene botón para verla aunque ya exista acta', async () => {
@@ -106,7 +106,7 @@ describe('TableDetailScreen - Renderizado', () => {
       await flushPromises();
     });
 
-    expect(getByText('Ver acta')).toBeTruthy();
+    expect(getByText('Ver Hoja de Trabajo')).toBeTruthy();
   });
 
   test('cuando no hay mesa válida muestra el modo de búsqueda', () => {

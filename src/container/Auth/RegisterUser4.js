@@ -1,4 +1,3 @@
-import { BACKEND_IDENTITY, IDENTITY_KEY } from "@env";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
@@ -15,7 +14,9 @@ import { AuthNav } from "../../navigation/NavigationKey";
 import { styles } from "../../themes";
 import { resizeImage } from "@/src/services/ImageManipulatorService";
 
-import wira from "wira-sdk";
+import { IdentityApiUnreachableError } from "@privado-id/expo-sdk";
+import { getPrivadoClient } from "@/src/services/privado/privadoSession";
+import { analysisErrorMessage } from "@/src/services/privado/registryErrors";
 import LoadingModal from "../../components/modal/LoadingModal";
 import { captureError } from "@/src/config/sentry";
 import { useCameraPermissions } from "expo-camera";
@@ -25,6 +26,18 @@ import { isFeatureEnabled } from "@/src/config/featureFlags";
 import LivenessSelfieStep from "@/src/components/liveness/LivenessSelfieStep";
 
 const USE_LIVENESS = isFeatureEnabled("ENABLE_FACE_LIVENESS");
+
+/** Mensaje del error de recuperación y si es un fallo esperado (no se reporta a Sentry). */
+const describeRecoveryError = (error) => {
+  if (error instanceof IdentityApiUnreachableError) {
+    return { message: String.networkError, expected: true };
+  }
+  const analysisMessage = analysisErrorMessage(error);
+  if (analysisMessage) {
+    return { message: analysisMessage, expected: true };
+  }
+  return { message: String.recoveryError, expected: false };
+};
 
 export default function RegisterUser4({ navigation, route }) {
   const { dni = "", frontImage, backImage, isRecovery = false } = route.params;
@@ -143,16 +156,16 @@ export default function RegisterUser4({ navigation, route }) {
       // Con prueba de vida la selfie ya viene verificada del servidor en base64.
       const resizedSelfieBase64 = verifiedSelfie?.base64 ?? (await resizeImage(verifiedSelfie.uri));
 
-      const recoveryService = new wira.RecoveryService();
-      await recoveryService.recoveryAndSave(
-        BACKEND_IDENTITY,
-        IDENTITY_KEY,
-        resizedFrontBase64,
-        resizedBackBase64,
-        resizedSelfieBase64,
+      // Descarga el respaldo de la cuenta y lo guarda cifrado en el dispositivo;
+      // se descifra con el PIN más adelante.
+      const client = await getPrivadoClient();
+      await client.downloadRegistryBackup({
         dni,
-        verifiedLiveness ?? undefined,
-      );
+        frontImage: resizedFrontBase64,
+        backImage: resizedBackBase64,
+        selfieImage: resizedSelfieBase64,
+        livenessResult: verifiedLiveness ?? undefined,
+      });
 
       setModal({
         visible: true,
@@ -161,22 +174,14 @@ export default function RegisterUser4({ navigation, route }) {
         success: true,
       });
     } catch (error) {
-      let errorMessage = String.recoveryError;
-      if (error.message.includes("front/back order")) {
-        errorMessage = String.frontBackOrderError;
-      } else if (error.message.includes("face match failed")) {
-        errorMessage = String.faceMatchFailedError;
-      } else if (error.message.includes("missing data")) {
-        errorMessage = String.missingDataError;
-      } else if (
-        error.message.includes("El análisis no está disponible temporalmente")
-      ) {
-        errorMessage = String.analysisUnavailableError;
-      } else {
+      const { message: errorMessage, expected } = describeRecoveryError(error);
+      if (!expected) {
         captureError(error, {
           flow: "recoveryWithDni",
           step: "triggerRecovery",
           critical: true,
+          code: error?.code,
+          analysisCode: error?.analysisCode,
         });
       }
 

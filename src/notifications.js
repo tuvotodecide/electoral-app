@@ -21,6 +21,7 @@ const MAX_BACKEND_ALERTED_KEYS = 200;
 const BACKEND_ONLY_NOTIFICATION_TYPES = new Set([
   'acta_published',
   'participation_certificate',
+  'worksheet_uploaded',
 ]);
 const NOTIFICATION_NAV_DEDUPE_TTL_MS = 5000;
 const PENDING_NOTIFICATION_NAV_TTL_MS = 10 * 60 * 1000;
@@ -252,16 +253,16 @@ const NotificationTypeStrategies = {
       : 'Tu atestiguamiento se registró correctamente.',
   },
   acta_published: {
-    getTitle: () => 'Hoja de trabajo subida exitosamente',
+    getTitle: () => 'Acta subida exitosamente',
     getBody: (tableLabel) => tableLabel
-      ? `Tu hoja de trabajo de la mesa ${tableLabel} fue publicada correctamente.`
-      : 'Tu hoja de trabajo fue publicada correctamente.',
+      ? `Tu acta de la mesa ${tableLabel} fue publicada correctamente.`
+      : 'Tu acta fue publicada correctamente.',
   },
   worksheet_uploaded: {
-    getTitle: () => 'Acta subida',
+    getTitle: () => 'Hoja de trabajo subida',
     getBody: (tableLabel) => tableLabel
-      ? `Mesa ${tableLabel}: tu acta ya está disponible para comparación.`
-      : 'Tu acta ya está disponible para comparación.',
+      ? `Mesa ${tableLabel}: tu hoja de trabajo ya está disponible para comparación.`
+      : 'Tu hoja de trabajo ya está disponible para comparación.',
     getRoute: () => ({
       name: StackNav.TabNavigation,
       params: {screen: TabNav.HomeScreen},
@@ -1057,7 +1058,7 @@ export async function showLocalNotification({
 }
 
 /**
- * Notificación local específica para “Hoja de trabajo publicada”.
+ * Notificación local específica para “Acta publicada”.
  * Navega a SuccessScreen con params serializados en data.routeParams.
  */
 export async function showActaPublishedNotification({
@@ -1082,11 +1083,11 @@ export async function showActaPublishedNotification({
       electionId || tableData?.electionId || '',
     ).trim();
     const notificationType = 'acta_published';
-    const notificationTitle = 'Hoja de trabajo subida exitosamente';
+    const notificationTitle = 'Acta subida exitosamente';
     const mesaLabel = tableNumber || tableCode || '';
     const notificationBody = mesaLabel
-      ? `Tu hoja de trabajo de la mesa ${mesaLabel} fue publicada correctamente.`
-      : 'Tu hoja de trabajo fue publicada correctamente.';
+      ? `Tu acta de la mesa ${mesaLabel} fue publicada correctamente.`
+      : 'Tu acta fue publicada correctamente.';
 
     await showLocalNotification({
       title: notificationTitle,
@@ -1114,7 +1115,7 @@ export async function showActaDuplicateNotification({
   reason = 'Ya atestiguaste esta mesa.',
 } = {}) {
   await showLocalNotification({
-    title: 'Hoja de trabajo descartada',
+    title: 'Acta descartada',
     body: reason,
   });
 }

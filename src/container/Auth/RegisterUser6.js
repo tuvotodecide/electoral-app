@@ -21,11 +21,12 @@ import String from '../../i18n/String';
 
 
 export default function RegisterUser6({navigation, route}) {
-  const {dni, ocrData} = route.params;
+  const {dni, ocrData, identityData, identityToken, identityTokenExpiresAt} =
+    route.params;
   const colors = useSelector(state => state.theme.theme);
   const [check, setCheck] = useState(false);
   const onPressNext = () => {
-    const params = {ocrData, dni};
+    const params = {ocrData, dni, identityData, identityToken, identityTokenExpiresAt};
     navigation.navigate(AuthNav.RegisterUser7, params);
   };
   const onPressReturn = () => {

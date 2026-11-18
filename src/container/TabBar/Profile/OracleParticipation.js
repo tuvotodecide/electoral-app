@@ -48,7 +48,7 @@ const OracleParticipation = ({ navigation }) => {
       {
         id: 2,
         tableNumber: '1213',
-        location: 'Hoja de trabajo',
+        location: 'Acta',
         status: 'coincide',
         date: '17 ago 2025',
         time: '16:22',

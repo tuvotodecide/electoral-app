@@ -437,7 +437,7 @@ export default function Notification({ navigation }) {
         bodyFromBackend ||
         'Resultados disponibles';
     } else if (String(data?.type || '').trim().toLowerCase() === 'acta_published') {
-      mesaLabel = titleFromBackend || bodyFromBackend || 'Hoja de trabajo publicada';
+      mesaLabel = titleFromBackend || bodyFromBackend || 'Acta publicada';
     } else if (data.tableNumber) {
       mesaLabel = `Mesa ${String(data.tableNumber)}`;
     } else if (data.tableCode) {
@@ -485,11 +485,11 @@ export default function Notification({ navigation }) {
     } else if (data?.type === 'announce_count') {
       tipo = 'Conteo de Votos';
     } else if (data?.type === 'acta_published') {
-      tipo = 'Hoja de trabajo publicada';
+      tipo = 'Acta publicada';
     } else if (data?.type === 'participation_certificate') {
       tipo = 'Certificado de participación';
     } else if (data?.type === 'worksheet_uploaded') {
-      tipo = 'Acta subida';
+      tipo = 'Hoja de trabajo subida';
     }
     if (notificationKind === 'generic' && String(data?.type || '').trim().toLowerCase() === 'acta_published' && bodyFromBackend) {
       tipo = bodyFromBackend;
@@ -577,10 +577,7 @@ export default function Notification({ navigation }) {
     setAuthResolved(false);
     (async () => {
       try {
-        const key = await authenticateWithBackend(
-          userData?.did,
-          userData?.privKey,
-        );
+        const key = await authenticateWithBackend();
         if (mounted) setApiKey(key);
       } catch (e) {
         captureError(e, {
@@ -596,7 +593,7 @@ export default function Notification({ navigation }) {
     return () => {
       mounted = false;
     };
-  }, [userData?.did, userData?.privKey]);
+  }, [userData?.did]);
 
 
   const fetchFromBackend = useCallback(
@@ -609,12 +606,9 @@ export default function Notification({ navigation }) {
       }
 
       let resolvedApiKey = apiKey;
-      if (!resolvedApiKey && authResolved && userData?.did && userData?.privKey) {
+      if (!resolvedApiKey && authResolved && userData?.did) {
         try {
-          resolvedApiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
+          resolvedApiKey = await authenticateWithBackend();
           setApiKey(resolvedApiKey);
         } catch {
           resolvedApiKey = null;
@@ -696,7 +690,6 @@ export default function Notification({ navigation }) {
       markNotificationsAsSeen,
       notificationNow,
       userData?.did,
-      userData?.privKey,
     ],
   );
 

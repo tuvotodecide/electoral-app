@@ -207,13 +207,6 @@ jest.mock('../../../../../src/features/voting', () => {
   };
 });
 
-jest.mock('wira-sdk', () => ({
-  MigrationService: jest.fn().mockImplementation(() => ({
-    checkMigration: jest.fn(() => Promise.resolve(false)),
-    startMigration: jest.fn(() => Promise.resolve()),
-  })),
-}));
-
 const buildState = () => ({
   auth: {isAuthenticated: true},
   wallet: {
@@ -525,6 +518,97 @@ describe('HomeScreen voting flow routing', () => {
         });
       });
       expect(releaseVoteForElection).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('indicador de cola offline en Home', () => {
+    const {getAll, processQueue} = require('../../../../../src/utils/offlineQueue');
+    const vaultSession = require('@/src/services/privado/vaultSession');
+
+    beforeEach(() => {
+      const state = buildState();
+      useSelector.mockImplementation(selector =>
+        selector({
+          ...state,
+          wallet: {
+            payload: {
+              ...state.wallet.payload,
+              account: '0x1111111111111111111111111111111111111111',
+            },
+          },
+        }),
+      );
+      mockGetElections.mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+      getAll.mockImplementation(() => Promise.resolve([]));
+      jest.restoreAllMocks();
+    });
+
+    it('muestra registros pendientes cuando la cola tiene tareas en espera y permite reintentar', async () => {
+      const waitingItem = {
+        id: 'queue-pending',
+        task: {type: 'publishActa', payload: {}},
+        nextAttemptAt: Date.now() + 60 * 60 * 1000,
+      };
+      getAll.mockImplementation(() => Promise.resolve([waitingItem]));
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByText('1 registro pendiente de envío')).toBeTruthy();
+      });
+      expect(view.getByTestId('homeQueueStatusPendingIcon')).toBeTruthy();
+      expect(view.queryByTestId('homeQueueStatusSpinner')).toBeNull();
+
+      const callsBefore = processQueue.mock.calls.length;
+      await act(async () => {
+        fireEvent.press(view.getByTestId('homeQueueStatusBanner'));
+      });
+      await waitFor(() => {
+        expect(processQueue.mock.calls.length).toBeGreaterThan(callsBefore);
+      });
+    });
+
+    it('muestra el spinner mientras la cola envía y lo oculta al terminar', async () => {
+      const dueItem = {
+        id: 'queue-due',
+        task: {type: 'publishWorksheet', payload: {}},
+      };
+      let queueItems = [dueItem];
+      getAll.mockImplementation(() => Promise.resolve(queueItems));
+      jest.spyOn(vaultSession, 'ensureVaultUnlocked').mockResolvedValue(true);
+
+      let finishRun;
+      processQueue.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            finishRun = resolve;
+          }),
+      );
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('homeQueueStatusSpinner')).toBeTruthy();
+      });
+      expect(view.getByText('Enviando registros pendientes...')).toBeTruthy();
+
+      queueItems = [];
+      await act(async () => {
+        finishRun({remaining: 0, processed: 1, failed: 0, failedItems: []});
+      });
+
+      await waitFor(() => {
+        expect(view.queryByTestId('homeQueueStatusBanner')).toBeNull();
+      });
     });
   });
 
@@ -869,10 +953,36 @@ describe('HomeScreen voting flow routing', () => {
 
       await openPinModal(view);
 
-      expect(checkClaimedCredForVote).toHaveBeenCalledWith(
-        'event-pin',
-        'did:test:123',
-        'priv-key-test',
+      expect(checkClaimedCredForVote).toHaveBeenCalledWith('event-pin');
+      expect(navigation.navigate).not.toHaveBeenCalledWith(
+        StackNav.VotingCandidateScreen,
+        expect.any(Object),
+      );
+    });
+
+    it('RA-P0-01-002 no muestra error ni el modal de PIN si el usuario cancela el desbloqueo del vault', async () => {
+      const {VaultUnlockCancelledError} = require('@/src/services/privado/vaultUnlock');
+      const {captureError} = require('../../../../../src/config/sentry');
+      mockGetElections.mockResolvedValueOnce([pinElection]);
+      checkClaimedCredForVote.mockRejectedValueOnce(new VaultUnlockCancelledError());
+
+      const view = render(<HomeScreen navigation={navigation} />);
+      act(() => {
+        runFocusEffects();
+      });
+
+      await waitFor(() => {
+        expect(view.getByTestId('votingCard_event-pin')).toBeTruthy();
+      });
+      fireEvent.press(view.getByTestId('votingCard_event-pin'));
+
+      await waitFor(() => {
+        expect(checkClaimedCredForVote).toHaveBeenCalledWith('event-pin');
+      });
+      expect(view.getByTestId('votingPinModal').props.visible).toBe(false);
+      expect(captureError).not.toHaveBeenCalledWith(
+        expect.any(VaultUnlockCancelledError),
+        expect.anything(),
       );
       expect(navigation.navigate).not.toHaveBeenCalledWith(
         StackNav.VotingCandidateScreen,
@@ -922,8 +1032,6 @@ describe('HomeScreen voting flow routing', () => {
         expect(claimForVote).toHaveBeenCalledWith(
           'event-pin',
           '12345678',
-          'did:test:123',
-          'priv-key-test',
           '4321',
         );
       });

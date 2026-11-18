@@ -144,13 +144,6 @@ jest.mock('../../../../../src/config/sentry', () => ({
   captureMessage: jest.fn(),
 }));
 
-jest.mock('wira-sdk', () => ({
-  MigrationService: jest.fn().mockImplementation(() => ({
-    checkMigration: jest.fn(() => Promise.resolve(false)),
-    startMigration: jest.fn(() => Promise.resolve()),
-  })),
-}));
-
 const mockedUseSelector = useSelector;
 const mockedUseDispatch = useDispatch;
 const mockedUseFocusEffect = useFocusEffect;
@@ -274,7 +267,7 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     });
   };
 
-  test('si hay internet, Enviar Hoja de Trabajo Alcalde dirige a ElectoralLocations', async () => {
+  test('si hay internet, Enviar Acta Alcalde dirige a ElectoralLocations', async () => {
     mockedUseSelector.mockImplementation(selector => selector(buildState({dni: null})));
     mockedIsStateEffectivelyOnline.mockReturnValue(true);
     mockedGetVotePlace.mockResolvedValue(null);
@@ -285,10 +278,10 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('Enviar Hoja de Trabajo Alcalde')).toBeTruthy();
+      expect(view.getByText('Enviar Acta Alcalde')).toBeTruthy();
     });
 
-    const titleNode = view.getByText('Enviar Hoja de Trabajo Alcalde');
+    const titleNode = view.getByText('Enviar Acta Alcalde');
     const pressable = findPressableAncestor(titleNode);
     fireEvent.press(pressable);
 
@@ -325,10 +318,10 @@ describe('HomeScreen - enrutamiento de Enviar Acta', () => {
     });
 
     await waitFor(() => {
-      expect(view.getByText('Enviar Hoja de Trabajo Alcalde')).toBeTruthy();
+      expect(view.getByText('Enviar Acta Alcalde')).toBeTruthy();
     });
 
-    const titleNode = view.getByText('Enviar Hoja de Trabajo Alcalde');
+    const titleNode = view.getByText('Enviar Acta Alcalde');
     const pressable = findPressableAncestor(titleNode);
     fireEvent.press(pressable);
 

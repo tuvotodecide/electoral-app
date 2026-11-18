@@ -4,6 +4,11 @@ import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
 import RegisterUser8Pin from '../../../../src/container/Auth/RegisterUser8Pin';
 
+const TOKEN_PARAMS = {
+  identityToken: 'header.claims.signature',
+  identityTokenExpiresAt: '2026-11-06T12:10:00.000Z',
+};
+
 jest.mock('react-native-otp-textinput', () => {
   const React = require('react');
   const {TextInput} = require('react-native');
@@ -79,5 +84,23 @@ describe('RegisterUser8Pin', () => {
       useBiometry: undefined,
       dni: undefined,
     });
+  });
+
+  it('reenvia el identityToken a RegisterUser9', () => {
+    const localNavigation = {...mockNavigation, navigate: jest.fn()};
+    const {getByTestId} = renderWithProviders(
+      <RegisterUser8Pin
+        navigation={localNavigation}
+        route={{params: {...route.params, ...TOKEN_PARAMS}}}
+      />,
+    );
+
+    fireEvent.changeText(getByTestId('registerUser8PinInput'), '1234');
+    fireEvent.press(getByTestId('registerUser8PinContinueButton'));
+
+    expect(localNavigation.navigate).toHaveBeenCalledWith(
+      AuthNav.RegisterUser9,
+      expect.objectContaining({originalPin: '1234', ...TOKEN_PARAMS}),
+    );
   });
 });

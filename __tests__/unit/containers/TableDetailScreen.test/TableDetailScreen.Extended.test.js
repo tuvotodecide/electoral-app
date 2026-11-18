@@ -12,6 +12,17 @@ import {
   WorksheetStatus,
   getOfflineQueue,
 } from './testUtils';
+import {captureError} from '../../../../src/config/sentry';
+
+jest.mock('../../../../src/config/sentry', () => ({
+  ...jest.requireActual('../../../../src/config/sentry'),
+  captureError: jest.fn(),
+}));
+
+const mesaSearchCaptureCalls = () =>
+  captureError.mock.calls.filter(
+    ([, ctx]) => ctx?.flow === 'TableDetail' && ctx?.step === 'handleMesaSearch',
+  );
 
 describe('TableDetailScreen - Extended Coverage', () => {
   beforeEach(() => {
@@ -300,6 +311,9 @@ describe('TableDetailScreen - Extended Coverage', () => {
         fireEvent.press(getByTestId('tableDetailSearchMesaButton'));
         await flushPromises();
       });
+
+      // Mesa sin actas todavía: caso esperado, no se reporta como error.
+      expect(mesaSearchCaptureCalls()).toHaveLength(0);
     });
 
     test('maneja otro error al buscar registros', async () => {
@@ -319,6 +333,8 @@ describe('TableDetailScreen - Extended Coverage', () => {
         fireEvent.press(getByTestId('tableDetailSearchMesaButton'));
         await flushPromises();
       });
+
+      expect(mesaSearchCaptureCalls()).toHaveLength(1);
     });
   });
 

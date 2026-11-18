@@ -144,9 +144,6 @@ const maskDni = value => {
   return `${text.slice(0, 2)}***${text.slice(-2)}`;
 };
 
-const getPrivateKey = payload =>
-  String(payload?.privKey || payload?.payloadQr?.privKey || '').trim();
-
 const getSmartAccountAddress = payload =>
   String(
     payload?.account ||
@@ -195,7 +192,6 @@ export default function InstitutionalAuthorizationNotificationCard({
   );
   const applicationId = initialSummary.applicationId;
   const walletPayload = useSelector(state => state.wallet?.payload);
-  const privateKey = useMemo(() => getPrivateKey(walletPayload), [walletPayload]);
   const smartAccountAddress = useMemo(
     () => getSmartAccountAddress(walletPayload),
     [walletPayload],
@@ -339,7 +335,7 @@ export default function InstitutionalAuthorizationNotificationCard({
     setBusy(true);
     setErrorMessage('');
     try {
-      if (!privateKey || !smartAccountAddress) {
+      if (!smartAccountAddress) {
         throw new Error('Esta solicitud debe firmarse con la billetera institucional asignada.');
       }
       const {submitted} = await sendInstitutionalAuthorizationSubmission({
@@ -348,14 +344,15 @@ export default function InstitutionalAuthorizationNotificationCard({
         walletAddress: smartAccountAddress,
         request: preparedClaim.request,
         claim: preparedClaim.claim,
-        privateKey,
         smartAccountAddress,
       });
-      setRequest(prev => {
-        const normalized = normalizePayload({...prev, ...submitted});
-        onStatusChange?.(normalized.status);
-        return normalized;
-      });
+      // Keep the updater pure: React runs it during render, so notifying the
+      // parent (which sets state in Notification) from inside it triggers
+      // "Cannot update a component while rendering a different component".
+      setRequest(prev => normalizePayload({...prev, ...submitted}));
+      if (submitted?.status) {
+        onStatusChange?.(submitted.status);
+      }
     } catch (error) {
       if (error?.userOpHash) {
         const pending = normalizePayload({

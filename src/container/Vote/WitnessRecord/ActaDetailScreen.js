@@ -260,7 +260,7 @@ const ActaDetailScreen = () => {
       icon: 'check-circle',
     },
     {
-      text: 'Subir hoja de trabajo',
+      text: 'Subir acta',
       onPress: handleUploadCorrectActa,
       testID: 'actaDetailUploadCorrectActaButton',
       style: {
@@ -297,7 +297,7 @@ const ActaDetailScreen = () => {
   }`;
 
   // Instructions text
-  const instructionsText = `Revise la foto de la hoja de trabajo`;
+  const instructionsText = `Revise la foto del acta`;
 
   // Custom photo component that uses our IPFS handler
   const PhotoComponent = ({photoUri, testID}) => (

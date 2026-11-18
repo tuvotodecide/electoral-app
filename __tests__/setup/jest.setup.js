@@ -172,6 +172,14 @@ jest.mock('react-native', () => ({
       })),
     };
   })(),
+  Easing: {
+    linear: jest.fn(t => t),
+    ease: jest.fn(t => t),
+    quad: jest.fn(t => t),
+    inOut: jest.fn(fn => fn),
+    in: jest.fn(fn => fn),
+    out: jest.fn(fn => fn),
+  },
   ScrollView: 'ScrollView',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',

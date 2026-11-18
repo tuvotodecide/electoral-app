@@ -25,7 +25,6 @@ export const sendOfficialPublicationSubmission = async ({
   deviceId,
   request,
   claim,
-  privateKey,
   smartAccountAddress,
   submitFn = submitOfficialPublication,
 }) => {
@@ -36,7 +35,6 @@ export const sendOfficialPublicationSubmission = async ({
   });
 
   const result = await sendOperationWithUserOpHash(
-    privateKey,
     smartAccountAddress,
     CHAIN,
     executionValidation.calls.map(call => ({

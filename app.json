@@ -2,7 +2,7 @@
   "expo": {
     "name": "TU VOTO DECIDE",
     "slug": "electoral-app-expo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/ic_launcher.png",
     "scheme": "electoralappexpo",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tuvotodecide",
-      "buildNumber": "66",
+      "buildNumber": "68",
       "icon": "./assets/images/ic_launcher.png",
       "googleServicesFile": "./native-files/GoogleService-Info.plist",
       "usesAppleSignIn": false,
@@ -55,13 +55,13 @@
         "ACCESS_COARSE_LOCATION",
         "WAKE_LOCK",
         "RECEIVE_BOOT_COMPLETED",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO",
         "VIBRATE",
         "FOREGROUND_SERVICE",
         "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
       ],
       "intentFilters": [
         {
@@ -156,7 +156,9 @@
       "./plugins/withIOSNativeModules",
       "./plugins/withIOSOrientation",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "expo-sqlite",
+      "@privado-id/expo-sdk"
     ],
     "experiments": {
       "reactCompiler": true

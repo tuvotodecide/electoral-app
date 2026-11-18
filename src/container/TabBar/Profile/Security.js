@@ -1,5 +1,6 @@
 import {
   Alert,
+  Platform,
   SectionList,
   StyleSheet,
   Switch,
@@ -20,44 +21,107 @@ import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useSelector} from 'react-redux';
 
 import { Ionicons, Entypo } from '@expo/vector-icons';
-import wira from 'wira-sdk';
-
+import { VaultError } from '@privado-id/expo-sdk';
 
 import { captureError } from '../../../config/sentry';
+import { getPrivadoVault } from '../../../services/privado/privadoSession';
+import { VaultUnlockCancelledError } from '../../../services/privado/vaultUnlock';
+import {
+  authenticateWithBiometrics,
+  getBiometryStatus,
+} from '../../../services/biometrics';
+
+const showBiometryUnavailable = () =>
+  Alert.alert('Biometría no disponible', 'Actívala en Ajustes del sistema');
+
+/**
+ * Activa la biometría del vault: guarda la clave del vault tras la biometría
+ * (`vault.enableBiometrics()`, que pide desbloquear el vault si está
+ * bloqueado). En Android ese guardado ya muestra el aviso biométrico del
+ * sistema; en iOS no, así que allí se confirma antes con la huella o el rostro.
+ * Desactivarla solo borra ese acceso: el PIN sigue funcionando.
+ */
+async function enableVaultBiometrics(vault) {
+  const {hasHardware, enrolled, biometryType} = await getBiometryStatus();
+  if (!hasHardware || !enrolled || !(await vault.canUseBiometrics())) {
+    showBiometryUnavailable();
+    return false;
+  }
+  if (Platform.OS === 'android') {
+    await vault.enableBiometrics();
+    return true;
+  }
+  const confirmation = await authenticateWithBiometrics(
+    biometryType === 'face' ? 'Escanea tu rostro' : 'Escanea tu huella dactilar',
+  );
+  if (!confirmation.ok) {
+    if (!confirmation.cancelled) {
+      Alert.alert(
+        'Biometría',
+        'La autenticación falló. Inténtalo de nuevo.',
+      );
+    }
+    return false;
+  }
+  await vault.enableBiometrics();
+  return true;
+}
+
 export default function Security({navigation}) {
   const color = useSelector(state => state.theme.theme);
-  const userData = useSelector(state => state.wallet.payload);
 
   const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
   useEffect(() => {
-    (async () => setBioEnabled(await wira.Biometric.getBioFlag()))();
+    (async () => {
+      try {
+        const vault = await getPrivadoVault();
+        setBioEnabled(await vault.isBiometricsEnabled());
+      } catch (err) {
+        captureError(err, {flow: 'Security', step: 'readBioFlag', critical: false});
+      }
+    })();
   }, []);
 
   const toggleBio = async val => {
+    if (bioBusy) return;
+    setBioBusy(true);
     try {
-      await wira.toggleBiometricAuth(userData, val);
-      setBioEnabled(val);
+      const vault = await getPrivadoVault();
+      if (val) {
+        setBioEnabled(await enableVaultBiometrics(vault));
+      } else {
+        await vault.disableBiometrics();
+        setBioEnabled(false);
+      }
     } catch (err) {
-      if(err.message === 'Biometric authentication is not available'){
-        Alert.alert(
-          'Biometría no disponible',
-          'Actívala en Ajustes del sistema',
-        );
-      } else if (err.message === 'User data is required to enable biometric authentication'){
+      const code = err?.code;
+      if (err instanceof VaultError && code === 'BIOMETRICS_UNAVAILABLE') {
+        showBiometryUnavailable();
+      } else if (err instanceof VaultError && code === 'VAULT_NOT_CREATED') {
         Alert.alert(
           'Sin datos',
           'Crea tu cuenta/PIN antes de activar la biometría',
         );
-      } else if (err.message === 'User cancelled biometric change'){
-        setBioEnabled(false);
+      } else if (
+        err instanceof VaultUnlockCancelledError ||
+        (err instanceof VaultError && code === 'BIOMETRICS_CANCELLED')
+      ) {
+        // El usuario cerró el desbloqueo o el aviso biométrico: no cambia nada.
       } else {
         captureError(err, {
           flow: 'Security',
           step: 'toggleBio',
           critical: true,
+          code,
         });
         Alert.alert('Error', err?.message || 'No se pudo cambiar la biometría');
       }
+      setBioEnabled(await getPrivadoVault()
+        .then(vault => vault.isBiometricsEnabled())
+        .catch(() => false));
+    } finally {
+      setBioBusy(false);
     }
   };
 
@@ -90,6 +154,7 @@ export default function Security({navigation}) {
           <Switch
             testID="securityBiometricSwitch"
             value={bioEnabled}
+            disabled={bioBusy}
             onValueChange={toggleBio}
             trackColor={{
               false: color.grayScale300,

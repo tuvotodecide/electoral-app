@@ -27,8 +27,7 @@ __tests__/
 │
 └── integration/                        # Pruebas de integración
     ├── auth-flow/                      # Flujo de autenticación
-    ├── voting-flow/                    # Flujo de votación
-    └── guardian-flow/                  # Flujo de guardianes
+    └── voting-flow/                    # Flujo de votación
 ```
 
 ## Cómo Usar

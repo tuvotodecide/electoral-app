@@ -18,14 +18,12 @@ describe('AccountLock', () => {
     expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.Connect);
   });
 
-  it('navega a SelectRecuperation con disableCI habilitado', () => {
+  it('navega a SelectRecuperation (recuperación con carnet)', () => {
     const localNavigation = {...mockNavigation, navigate: jest.fn()};
     const {getByTestId} = renderWithProviders(<AccountLock navigation={localNavigation} />);
 
     fireEvent.press(getByTestId('accountLockRecoveryButton'));
 
-    expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.SelectRecuperation, {
-      disableCI: true,
-    });
+    expect(localNavigation.navigate).toHaveBeenCalledWith(AuthNav.SelectRecuperation);
   });
 });

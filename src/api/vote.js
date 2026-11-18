@@ -1,21 +1,21 @@
 import { createPublicClient, formatEther, getContract, http } from "viem";
 import voteAbi from '../abi/VoteAbi.json';
-import { availableNetworks } from "./params";
+import { availableNetworks, getReadRpcUrl } from "./params";
 import { CHAIN } from "@env";
 import { poseidon2 } from "poseidon-lite";
 import { isDemoActive } from "../features/demo/demoSession";
 
 function getVoteReadContract() {
-  // Único punto donde se construye un cliente viem contra el RPC del bundler.
+  // Único punto donde se construye el cliente viem de lectura del contrato de votos.
   if (isDemoActive()) {
     throw new Error('Demo mode: on-chain reads are disabled');
   }
 
-  const { voteContract, bundler, chain } = availableNetworks[CHAIN];
+  const { voteContract, chain } = availableNetworks[CHAIN];
 
   const publicClient = createPublicClient({
     chain,
-    transport: http(bundler),
+    transport: http(getReadRpcUrl(chain)),
   });
 
   const vote = getContract({

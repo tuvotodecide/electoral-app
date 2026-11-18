@@ -36,7 +36,7 @@ describe('TableDetailScreen - Interacciones de Usuario', () => {
     const {getByText} = renderTableDetail({navigation});
 
     act(() => {
-      fireEvent.press(getByText(String.takePhoto));
+      fireEvent.press(getByText('Subir acta'));
     });
 
     expect(navigation.navigate).toHaveBeenNthCalledWith(1, StackNav.CameraScreen, expect.any(Object));

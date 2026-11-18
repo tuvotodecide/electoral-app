@@ -10,8 +10,9 @@ import {renderWithProviders, mockNavigation} from '../../../../setup/test-utils'
 import {StackNav} from '../../../../../src/navigation/NavigationKey';
 
 // Mocks
-jest.mock('wira-sdk', () => ({
-  checkPin: jest.fn(() => Promise.resolve(true)),
+const mockVerifyPin = jest.fn(() => Promise.resolve(true));
+jest.mock('../../../../../src/services/privado/privadoSession', () => ({
+  getPrivadoVault: jest.fn(async () => ({verifyPin: mockVerifyPin})),
 }));
 
 jest.mock('../../../../../src/utils/ThemeUtils', () => ({
@@ -172,8 +173,7 @@ describe('ChangePinVerify Screen', () => {
 
   describe('Verificación de PIN', () => {
     it('navega a ChangePinNew cuando el PIN es correcto', async () => {
-      const wira = require('wira-sdk');
-      wira.checkPin.mockResolvedValueOnce(true);
+      mockVerifyPin.mockResolvedValueOnce(true);
 
       const localNavigation = {...mockNavigation, replace: jest.fn()};
       const {getByTestId} = renderWithProviders(
@@ -193,8 +193,7 @@ describe('ChangePinVerify Screen', () => {
     });
 
     it('muestra error cuando el PIN es incorrecto', async () => {
-      const wira = require('wira-sdk');
-      wira.checkPin.mockResolvedValueOnce(false);
+      mockVerifyPin.mockResolvedValueOnce(false);
 
       const {getByTestId} = renderWithProviders(
         <ChangePinVerify navigation={mockNavigation} />,
@@ -210,8 +209,7 @@ describe('ChangePinVerify Screen', () => {
     });
 
     it('muestra mensaje de PIN incorrecto en el modal de error', async () => {
-      const wira = require('wira-sdk');
-      wira.checkPin.mockResolvedValueOnce(false);
+      mockVerifyPin.mockResolvedValueOnce(false);
 
       const {getByTestId} = renderWithProviders(
         <ChangePinVerify navigation={mockNavigation} />,
@@ -228,9 +226,8 @@ describe('ChangePinVerify Screen', () => {
   });
 
   describe('Manejo de Errores', () => {
-    it('muestra error cuando checkPin lanza excepción', async () => {
-      const wira = require('wira-sdk');
-      wira.checkPin.mockRejectedValueOnce(new Error('Check failed'));
+    it('muestra error cuando verifyPin lanza excepción', async () => {
+      mockVerifyPin.mockRejectedValueOnce(new Error('Check failed'));
 
       const {getByTestId} = renderWithProviders(
         <ChangePinVerify navigation={mockNavigation} />,
@@ -246,8 +243,7 @@ describe('ChangePinVerify Screen', () => {
     });
 
     it('cierra el modal de error al presionar el botón de cerrar', async () => {
-      const wira = require('wira-sdk');
-      wira.checkPin.mockResolvedValueOnce(false);
+      mockVerifyPin.mockResolvedValueOnce(false);
 
       const {getByTestId, queryByTestId} = renderWithProviders(
         <ChangePinVerify navigation={mockNavigation} />,
@@ -282,7 +278,6 @@ describe('ChangePinVerify Screen', () => {
 
   describe('Input de PIN', () => {
     it('no verifica el PIN si tiene menos de 4 dígitos', async () => {
-      const wira = require('wira-sdk');
 
       const {getByTestId} = renderWithProviders(
         <ChangePinVerify navigation={mockNavigation} />,
@@ -293,7 +288,7 @@ describe('ChangePinVerify Screen', () => {
       fireEvent.changeText(otpInput, '123');
 
       await waitFor(() => {
-        expect(wira.checkPin).not.toHaveBeenCalled();
+        expect(mockVerifyPin).not.toHaveBeenCalled();
       });
     });
   });

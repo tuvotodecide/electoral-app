@@ -1,5 +1,5 @@
 import axios from 'axios';
-import wira from 'wira-sdk';
+import {getPrivadoClient} from '../../../src/services/privado/privadoSession';
 import {authenticateWithBackend} from '../../../src/utils/offlineQueueHandler';
 
 jest.mock('../../../src/utils/pinataService', () => ({}));
@@ -39,28 +39,41 @@ jest.mock('axios', () => ({
   get: jest.fn(),
 }));
 
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(),
+jest.mock('../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(),
 }));
+
+const offChainZk = {
+  getZkRequest: jest.fn(async ({link}) => ({message: link})),
+  generateZkResponse: jest.fn(async () => ({token: 'jwz'})),
+  submitZkResponse: jest.fn(async () => ({status: 200})),
+};
 
 describe('offlineQueueHandler authenticateWithBackend', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getPrivadoClient.mockResolvedValue({offChainZk});
   });
 
   it('retorna apiKey cuando la respuesta es vÃ¡lida', async () => {
     axios.get.mockResolvedValueOnce({
       data: {apiKey: 'k1', request: {nonce: 'n1'}},
     });
-    wira.authenticateWithVerifier.mockResolvedValueOnce(true);
-
     const apiKey = await authenticateWithBackend('did:example', '0xpriv');
     expect(apiKey).toBe('k1');
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledWith(
-      JSON.stringify({nonce: 'n1'}),
-      'did:example',
-      '0xpriv',
-    );
+    expect(offChainZk.getZkRequest).toHaveBeenCalledWith({link: {nonce: 'n1'}});
+    expect(offChainZk.generateZkResponse).toHaveBeenCalledWith({
+      request: {message: {nonce: 'n1'}},
+    });
+    expect(offChainZk.submitZkResponse).toHaveBeenCalledWith({prepared: {token: 'jwz'}});
+  });
+
+  it('propaga el error si el verificador rechaza la respuesta', async () => {
+    axios.get.mockResolvedValueOnce({
+      data: {apiKey: 'k1', request: {nonce: 'n1'}},
+    });
+    offChainZk.submitZkResponse.mockRejectedValueOnce(new Error('verifier rejected'));
+    await expect(authenticateWithBackend()).rejects.toThrow('verifier rejected');
   });
 
   it('lanza error si falta request en la respuesta', async () => {
@@ -68,5 +81,6 @@ describe('offlineQueueHandler authenticateWithBackend', () => {
     await expect(
       authenticateWithBackend('did:example', '0xpriv'),
     ).rejects.toThrow('Invalid authentication request response');
+    expect(getPrivadoClient).not.toHaveBeenCalled();
   });
 });

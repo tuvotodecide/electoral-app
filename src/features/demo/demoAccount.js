@@ -8,18 +8,16 @@ const DEMO_BIRTH_DATE_SECONDS = Math.floor(Date.UTC(1990, 0, 1) / 1000);
 
 /**
  * Payload de wallet del modo demostración: lo que queda en
- * `state.wallet.payload`, igual que el resultado de `wira.signIn`.
+ * `state.wallet.payload`, con la misma forma que `loadIdentityPayload`.
  *
- * NO incluye `did` ni `privKey` a propósito. Todo el código que habla con el
- * backend de identidad exige ambos (HomeScreen.js:1141, :1319, :1961,
- * UniversalHeader.js:101), así que su ausencia desactiva esas rutas sin tener
- * que tocar esos ficheros.
+ * NO incluye `did` a propósito: el código que se autentica ante los backends
+ * exige el DID de la sesión, así que su ausencia desactiva esas rutas; el
+ * resto comprueba `isDemoActive()`.
  */
 export const DEMO_WALLET_PAYLOAD = Object.freeze({
   isDemo: true,
   dni: DEMO_DNI,
   account: "0xdededededededededededededededededededede",
-  guardian: null,
   vc: {
     credentialSubject: {
       fullName: "Cuenta demo",

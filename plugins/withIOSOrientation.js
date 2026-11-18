@@ -85,48 +85,9 @@ function withIOSNativeModules(config) {
 
       let podfileContents = fs.readFileSync(podfilePath, "utf-8");
 
-      // ---- Ensure Flutter podhelper lines are present ----
-      const flutterPathLine =
-        "flutter_application_path = '../../wira-sdk-flutter-component'";
-      const flutterLoadLine =
-        "load File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb')";
-
-      if (!podfileContents.includes(flutterPathLine)) {
-        const platformPattern = /(platform\s+:ios[^\n]*\n)/;
-        if (platformPattern.test(podfileContents)) {
-          podfileContents = podfileContents.replace(
-            platformPattern,
-            `$1\n${flutterPathLine}\n${flutterLoadLine}\n`,
-          );
-        }
-      } else if (!podfileContents.includes(flutterLoadLine)) {
-        const flutterPathPattern = /(flutter_application_path\s*=\s*['"][^'"]+['"]\n)/;
-        if (flutterPathPattern.test(podfileContents)) {
-          podfileContents = podfileContents.replace(
-            flutterPathPattern,
-            `$1${flutterLoadLine}\n`,
-          );
-        }
-      }
-
-      // ---- Ensure Flutter pods are installed in app target ----
-      const installFlutterPodsLine =
-        "  install_all_flutter_pods(flutter_application_path)";
-
-      if (!podfileContents.includes(installFlutterPodsLine.trim())) {
-        const targetBlockPattern = /(target\s+['"][^'"]+['"]\s+do\s*\n)/;
-        if (targetBlockPattern.test(podfileContents)) {
-          podfileContents = podfileContents.replace(
-            targetBlockPattern,
-            `$1${installFlutterPodsLine}\n\n`,
-          );
-        }
-      }
-
       // ---- Post-install build-setting tweaks ----
       const postInstallTweaks = `
     # \u2500\u2500\u2500 Added by withIOSNativeModules plugin (build settings) \u2500\u2500\u2500
-    flutter_post_install(installer) if defined?(flutter_post_install)
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         # rapidsnark x86_64 static lib has missing ARM64 assembly symbols; force arm64 simulator via Rosetta
@@ -168,24 +129,6 @@ function withIOSNativeModules(config) {
   ]);
 
   return config;
-}
-
-/**
- * Recursively copy a directory (handles .framework / .xcframework bundles).
- */
-function copyDirSync(src, dest) {
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true });
-  }
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDirSync(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
 }
 
 module.exports = withIOSNativeModules;

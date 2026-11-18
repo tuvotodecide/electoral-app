@@ -14,10 +14,11 @@ import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
 import {normalizeOcrForUI} from '../../utils/issuerClient';
-import { BACKEND_IDENTITY, IDENTITY_KEY } from '@env';
 
-import wira from 'wira-sdk';
+import { IdentityApiUnreachableError } from '@privado-id/expo-sdk';
 import { captureError } from '@/src/config/sentry';
+import { getPrivadoClient } from '@/src/services/privado/privadoSession';
+import { analysisErrorMessage } from '@/src/services/privado/registryErrors';
 import { resizeImage } from '@/src/services/ImageManipulatorService';
 
 function onlyDigits(s = '') {
@@ -34,45 +35,22 @@ export default function RegisterUser5({navigation, route}) {
   useEffect(() => {
     (async () => {
       try {
-        const idCardAnalyzer = wira.idCardAnalyzer;
         const frontImageB64 = await resizeImage(frontImage.uri);
         const backImageB64 = await resizeImage(backImage.uri);
         // Con prueba de vida la selfie ya viene verificada en base64.
         const selfieImageB64 = selfie.base64 ?? (await resizeImage(selfie.uri));
 
-        const res = await idCardAnalyzer.analyzeFromRegistry(
-          BACKEND_IDENTITY,
-          IDENTITY_KEY,
-          frontImageB64,
-          backImageB64,
-          selfieImageB64,
-          livenessResult
-        );
+        // El resultado de la prueba de vida se consume aquí aunque el análisis
+        // falle: para reintentar hay que repetir la verificación.
+        const client = await getPrivadoClient();
+        const {data, identityToken, identityTokenExpiresAt} =
+          await client.analyzeIdentityDocument({
+            frontImage: frontImageB64,
+            backImage: backImageB64,
+            selfieImage: selfieImageB64,
+            livenessResult,
+          });
 
-        if (!res.success) {
-          if(res.error === 'front/back order') {
-              setErrorMessage(String.frontBackOrderError);
-          } else if (res.error === 'face match failed') {
-              setErrorMessage(String.faceMatchFailedError);
-          } else if (res.error.includes('missing data')) {
-            setErrorMessage(String.missingDataError); 
-          } else if (res.error.includes('El análisis no está disponible temporalmente')) {
-            setErrorMessage(String.analysisUnavailableError);
-          } else {
-            captureError(
-              new Error('ID Card analysis failed: ' + res.error), {
-                flow: 'registerUser5',
-                critical: true,
-                step: 'ID Card analysis',
-              }
-            );
-            setErrorMessage(String.defaultVerificationError);
-          }
-          setErrorModalVisible(true);
-          return;
-        }
-
-        const {data} = res;
         const returnedDni = onlyDigits(data.numeroDoc);
         if (returnedDni !== onlyDigits(dni)) {
           setErrorMessage(
@@ -84,16 +62,40 @@ export default function RegisterUser5({navigation, route}) {
         }
 
         const ocrData = normalizeOcrForUI(data);
-        navigation.replace(AuthNav.RegisterUser6, {dni, ocrData});
-      } catch (_err) {
-        captureError(_err, {
-          flow: 'registerUser5',
-          critical: true,
-          step: 'ID Card analysis',
+        // identityToken lo exigen /credentials/identity y /registry/register
+        // (vence a los ~10 minutos). identityData son los datos tal como los
+        // leyó el backend: ocrData deja solo los dígitos del número de
+        // documento y el token certifica el número completo.
+        const identityData = {
+          numeroDoc: data.numeroDoc,
+          fullName: data.fullName,
+          fechaNacimiento: data.fechaNacimiento,
+          fechaExpedicion: data.fechaExpedicion,
+          lugarExpedicion: data.lugarExpedicion,
+        };
+        navigation.replace(AuthNav.RegisterUser6, {
+          dni,
+          ocrData,
+          identityData,
+          identityToken,
+          identityTokenExpiresAt,
         });
-        setErrorMessage(
-          'Error de verificación. Por favor intenta de nuevo y toma fotos más nítidas.',
-        );
+      } catch (err) {
+        const analysisMessage = analysisErrorMessage(err);
+        if (analysisMessage) {
+          setErrorMessage(analysisMessage);
+        } else if (err instanceof IdentityApiUnreachableError) {
+          setErrorMessage(String.networkError);
+        } else {
+          captureError(err, {
+            flow: 'registerUser5',
+            critical: true,
+            step: 'ID Card analysis',
+            code: err?.code,
+            analysisCode: err?.analysisCode,
+          });
+          setErrorMessage(String.defaultVerificationError);
+        }
         setErrorModalVisible(true);
       } finally {
         setLoading(false);

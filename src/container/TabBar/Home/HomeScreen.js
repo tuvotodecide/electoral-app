@@ -19,7 +19,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { clearWallet } from "../../../redux/action/walletAction";
 import { clearAuth } from "../../../redux/slices/authSlice";
-import MigrationModal from "../../Migration/MigrationModal";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -95,6 +94,8 @@ import {
 } from "../../../features/voting";
 import { getMockRewardsSummary } from "../../../features/rewards";
 import { checkClaimedCredForVote, claimForVote } from "@/src/data/credentials";
+import { VaultUnlockCancelledError } from "@/src/services/privado/vaultUnlock";
+import { ensureVaultUnlocked } from "@/src/services/privado/vaultSession";
 import { FlashList } from "@shopify/flash-list";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -211,6 +212,8 @@ const canOpenDisabledVotingDetail = (election) => {
 };
 
 const isQueueWriteTask = (taskType) => QUEUE_WRITE_TASK_TYPES.has(taskType);
+const countQueueWriteTasks = (list) =>
+  (list || []).filter((i) => isQueueWriteTask(i?.task?.type)).length;
 const RETRIABLE_NETWORK_ERROR_TYPES = new Set([
   "NETWORK_TIMEOUT",
   "NETWORK_DOWN",
@@ -302,12 +305,12 @@ const deriveQueueFailMessage = (failedItems) => {
     joinedErrors.includes("acta duplicada");
 
   if (alreadyAttested) {
-    return "Hoja de trabajo ya atestiguada.";
+    return "Acta ya atestiguada.";
   }
   if (duplicateVotes) {
-    return "Ya existe una hoja de trabajo con los mismos votos para esta mesa.";
+    return "Ya existe un acta con los mismos votos para esta mesa.";
   }
-  return "Reintenta o elimina para subir otra hoja de trabajo.";
+  return "Reintenta o elimina para subir otra acta.";
 };
 
 const deriveQueueFailTitle = (failedItems) => {
@@ -596,7 +599,9 @@ export default function HomeScreen({ navigation, route }) {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef(null);
-  const [hasPendingActa, setHasPendingActa] = useState(false);
+  const [pendingQueueCount, setPendingQueueCount] = useState(0);
+  const [isQueueRunning, setIsQueueRunning] = useState(false);
+  const hasPendingActa = pendingQueueCount > 0;
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const processingRef = useRef(false);
   const queueRunPromiseRef = useRef(null);
@@ -1154,6 +1159,9 @@ export default function HomeScreen({ navigation, route }) {
       setElectionStatus(cachedData);
     }
 
+    // En demo no hay backend real: la petición solo fallaría con Network Error.
+    if (isDemoActive()) return;
+
     try {
       const res = await axios.get(
         `${BACKEND_RESULT}/api/v1/elections/config/status`,
@@ -1198,7 +1206,6 @@ export default function HomeScreen({ navigation, route }) {
     if (processingRef.current) return;
     if (
       !auth?.isAuthenticated ||
-      !userData?.privKey ||
       !userData?.account ||
       !userData?.did
     )
@@ -1218,6 +1225,23 @@ export default function HomeScreen({ navigation, route }) {
             probe,
           );
           return;
+        }
+
+        // Las tareas firman con las claves del vault. Si está bloqueado
+        // (inactividad o segundo plano) se pide desbloquearlo una vez; si el
+        // usuario cancela, se reintenta en una pasada posterior.
+        const queued = (await getOfflineQueue()) || [];
+        const nowMs = Date.now();
+        const hasDueTasks = queued.some(
+          (item) => !(Number(item?.nextAttemptAt) > nowMs),
+        );
+        if (hasDueTasks) {
+          const unlocked = await ensureVaultUnlocked({
+            reason:
+              "Tienes registros pendientes de enviar. Ingresa tu PIN para continuar.",
+          });
+          if (!unlocked) return;
+          setIsQueueRunning(true);
         }
 
         const result = await processQueue(async (item) => {
@@ -1250,15 +1274,8 @@ export default function HomeScreen({ navigation, route }) {
         });
 
         // Actualiza badge/pending
-        if (typeof result?.remaining === "number") {
-          setHasPendingActa(result.remaining > 0);
-        } else {
-          const listAfter = await getOfflineQueue();
-          const pendingAfter = (listAfter || []).some((i) =>
-            isQueueWriteTask(i?.task?.type),
-          );
-          setHasPendingActa(pendingAfter);
-        }
+        const listAfter = await getOfflineQueue();
+        setPendingQueueCount(countQueueWriteTasks(listAfter));
 
         if ((Number(result?.processed) || 0) > 0) {
           try {
@@ -1336,6 +1353,7 @@ export default function HomeScreen({ navigation, route }) {
       } finally {
         processingRef.current = false;
         queueRunPromiseRef.current = null;
+        setIsQueueRunning(false);
       }
     })();
 
@@ -1395,18 +1413,14 @@ export default function HomeScreen({ navigation, route }) {
         if (
           !auth?.isAuthenticated ||
           !dni ||
-          !userData?.did ||
-          !userData?.privKey
+          !userData?.did
         ) {
           await clearUserTopicSubscription();
           return;
         }
 
         try {
-          const apiKey = await authenticateWithBackend(
-            userData.did,
-            userData.privKey,
-          );
+          const apiKey = await authenticateWithBackend();
 
           if (!apiKey) {
             return;
@@ -1480,7 +1494,7 @@ export default function HomeScreen({ navigation, route }) {
       return () => {
         cancelled = true;
       };
-    }, [auth?.isAuthenticated, dni, userData?.did, userData?.privKey]),
+    }, [auth?.isAuthenticated, dni, userData?.did]),
   );
 
   useEffect(() => {
@@ -1557,10 +1571,7 @@ export default function HomeScreen({ navigation, route }) {
       }));
 
       const listAfter = await getOfflineQueue();
-      const pendingAfter = (listAfter || []).some((i) =>
-        isQueueWriteTask(i?.task?.type),
-      );
-      setHasPendingActa(pendingAfter);
+      setPendingQueueCount(countQueueWriteTasks(listAfter));
     } catch (e) {
       setInfoModal({
         visible: true,
@@ -1801,6 +1812,60 @@ export default function HomeScreen({ navigation, route }) {
     );
   };
 
+  // Estado de la cola offline (actas, hojas de trabajo y votos pendientes).
+  const renderQueueStatusBanner = () => {
+    if (!isQueueRunning && pendingQueueCount === 0) return null;
+
+    const countLabel =
+      pendingQueueCount === 1
+        ? "1 registro pendiente"
+        : `${pendingQueueCount} registros pendientes`;
+    const title = isQueueRunning
+      ? "Enviando registros pendientes..."
+      : `${countLabel} de envío`;
+    const subtitle = isQueueRunning
+      ? `${pendingQueueCount > 0 ? `${countLabel}. ` : ""}Puedes seguir usando la app; no la cierres hasta que termine.`
+      : "Se enviarán automáticamente al tener conexión. Toca para reintentar ahora.";
+
+    return (
+      <TouchableOpacity
+        testID="homeQueueStatusBanner"
+        style={[
+          stylesx.queueStatusCard,
+          isQueueRunning
+            ? stylesx.queueStatusCardRunning
+            : stylesx.queueStatusCardPending,
+        ]}
+        activeOpacity={0.85}
+        disabled={isQueueRunning}
+        onPress={() => runOfflineQueueOnce()}
+        accessibilityRole="button"
+        accessibilityLabel={`${title} ${subtitle}`}
+      >
+        <View style={stylesx.availabilityLoaderRow}>
+          {isQueueRunning ? (
+            <ActivityIndicator
+              testID="homeQueueStatusSpinner"
+              size="small"
+              color="#41A44D"
+            />
+          ) : (
+            <Ionicons
+              testID="homeQueueStatusPendingIcon"
+              name="cloud-upload-outline"
+              size={20}
+              color="#B45309"
+            />
+          )}
+          <CText style={[stylesx.availabilityLoaderTitle, stylesx.queueStatusTitle]}>
+            {title}
+          </CText>
+        </View>
+        <CText style={stylesx.availabilityLoaderSubtitle}>{subtitle}</CText>
+      </TouchableOpacity>
+    );
+  };
+
   const ActionButtonsGroup = () => {
     // // Si está offline y no tiene recinto registrado, mostrar mensaje claro antes de acciones.
     // if (shouldShowRegisterAlert && !isHomeOnline) {
@@ -1831,8 +1896,12 @@ export default function HomeScreen({ navigation, route }) {
       return null;
     }
 
+    // En demo no hay contratos reales: no se pide ubicación ni se muestra el
+    // aviso de zona no habilitada.
+    const demoActive = isDemoActive();
+
     // CASO 0: No se ha concedido ubicación → mostrar botón "Activar Ubicación"
-    if (locationStatus !== "granted") {
+    if (!demoActive && locationStatus !== "granted") {
       return (
         <TouchableOpacity
           style={stylesx.activateLocationBtn}
@@ -1860,6 +1929,7 @@ export default function HomeScreen({ navigation, route }) {
 
     // CASO 1: Ninguno habilitado -> Mostrar Aviso
     if (!showAlcalde && !showGobernador) {
+      if (demoActive) return null;
       return (
         <View style={stylesx.warningContractCard}>
           <Ionicons
@@ -1870,7 +1940,7 @@ export default function HomeScreen({ navigation, route }) {
           />
           <View style={{ flex: 1 }}>
             <CText style={stylesx.warningContractTitle}>
-              No puedes enviar hojas de trabajo desde aquí
+              No puedes enviar actas desde aquí
             </CText>
             <CText style={stylesx.warningContractText}>
               Esta ubicación no está habilitada para el envío de hojas de
@@ -1897,10 +1967,10 @@ export default function HomeScreen({ navigation, route }) {
 
             <View style={stylesx.splitBtnContent}>
               <CText style={stylesx.cardTitle}>
-                Enviar Hoja de Trabajo Alcalde
+                Enviar Acta Alcalde
               </CText>
               <CText style={stylesx.cardDescription}>
-                Revisa o sube una hoja de trabajo municipal
+                Revisa o sube un acta municipal
               </CText>
             </View>
 
@@ -1921,10 +1991,10 @@ export default function HomeScreen({ navigation, route }) {
 
             <View style={stylesx.splitBtnContent}>
               <CText style={stylesx.cardTitle}>
-                Enviar Hoja de Trabajo Gobernador
+                Enviar Acta Gobernador
               </CText>
               <CText style={stylesx.cardDescription}>
-                Revisa o sube una hoja de trabajo departamental
+                Revisa o sube un acta departamental
               </CText>
             </View>
 
@@ -1940,12 +2010,7 @@ export default function HomeScreen({ navigation, route }) {
       const checkQueue = async () => {
         try {
           const list = await getOfflineQueue();
-
-          const pending = (list || []).some((i) =>
-            isQueueWriteTask(i?.task?.type),
-          );
-
-          if (isActive) setHasPendingActa(pending);
+          if (isActive) setPendingQueueCount(countQueueWriteTasks(list));
         } catch {}
       };
       checkQueue();
@@ -2073,9 +2138,9 @@ export default function HomeScreen({ navigation, route }) {
     if (notificationsApiKeyRef.current) {
       return notificationsApiKeyRef.current;
     }
-    if (!userData?.did || !userData?.privKey) return null;
+    if (!userData?.did) return null;
     try {
-      const key = await authenticateWithBackend(userData.did, userData.privKey);
+      const key = await authenticateWithBackend();
       notificationsApiKeyRef.current = key;
       notificationsAuthRetryAtRef.current = 0;
       return key;
@@ -2085,7 +2150,7 @@ export default function HomeScreen({ navigation, route }) {
         Date.now() + NOTIFICATIONS_AUTH_RETRY_MS;
       return null;
     }
-  }, [userData?.did, userData?.privKey]);
+  }, [userData?.did]);
 
   const refreshNotificationBadgeCount = useCallback(async () => {
     if (!auth?.isAuthenticated || !dni) {
@@ -2207,7 +2272,7 @@ export default function HomeScreen({ navigation, route }) {
   useEffect(() => {
     notificationsApiKeyRef.current = null;
     notificationsAuthRetryAtRef.current = 0;
-  }, [userData?.did, userData?.privKey, dni]);
+  }, [userData?.did, dni]);
 
   useFocusEffect(
     useCallback(() => {
@@ -2501,11 +2566,7 @@ export default function HomeScreen({ navigation, route }) {
     }
 
     try {
-      const hasCredential = await checkClaimedCredForVote(
-        selectedElection.id,
-        userData.did,
-        userData.privKey,
-      );
+      const hasCredential = await checkClaimedCredForVote(selectedElection.id);
       setLoadVoteMsg(null);
       if (!hasCredential) {
         setVotingPinModal({
@@ -2517,6 +2578,11 @@ export default function HomeScreen({ navigation, route }) {
         return;
       }
     } catch (error) {
+      // El usuario cerró el desbloqueo del vault: no es un error.
+      if (error instanceof VaultUnlockCancelledError) {
+        setLoadVoteMsg(null);
+        return;
+      }
       captureError(error, {
         flow: "voting_flow",
         step: "claim_nullifier",
@@ -2555,8 +2621,6 @@ export default function HomeScreen({ navigation, route }) {
     const { claimed, invalidPin } = await claimForVote(
       selectedElection.id,
       userData.dni,
-      userData.did,
-      userData.privKey,
       pin,
     );
     if (claimed) {
@@ -3023,6 +3087,7 @@ export default function HomeScreen({ navigation, route }) {
                   <ActionButtonsGroup />
                 )}
               </View>
+              {renderQueueStatusBanner()}
               {SHOW_HOME_PARTICIPATIONS_CARD && (
                 <View style={stylesx.gridRow2}>
                   {/* Anunciar conteo */}
@@ -3220,6 +3285,7 @@ export default function HomeScreen({ navigation, route }) {
                   <ActionButtonsGroup />
                 )}
               </View>
+              {renderQueueStatusBanner()}
               {SHOW_HOME_PARTICIPATIONS_CARD && (
                 <View style={stylesx.gridRow2}>
                   {/* Anunciar conteo */}
@@ -3328,7 +3394,6 @@ export default function HomeScreen({ navigation, route }) {
         }
         tertiaryVariant="danger"
       />
-      <MigrationModal userDid={userData?.did} />
       <VotingPinModal
         visible={votingPinModal.visible}
         loading={votingPinModal.loading}
@@ -3979,5 +4044,24 @@ const stylesx = StyleSheet.create({
     marginTop: 6,
     fontSize: getResponsiveSize(12, 13, 14),
     color: "#6B7280",
+  },
+
+  queueStatusCard: {
+    marginTop: getResponsiveSize(10, 12, 14),
+    borderRadius: getResponsiveSize(12, 14, 16),
+    paddingVertical: getResponsiveSize(12, 14, 16),
+    paddingHorizontal: getResponsiveSize(16, 20, 24),
+    borderWidth: 1,
+  },
+  queueStatusCardRunning: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+  queueStatusCardPending: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  queueStatusTitle: {
+    flex: 1,
   },
 });

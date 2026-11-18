@@ -7,15 +7,8 @@ export const StackNav = {
   ActaDetailScreen: 'ActaDetailScreen',
   Splash: 'Splash',
   OnBoarding: 'OnBoarding',
-  OnBoardingGuardians: 'OnBoardingGuardians',
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
-
-  // Recovery
-  MyGuardiansStatus: 'MyGuardiansStatus',
-  RecoveryUser1Pin: 'RecoveryUser1Pin',
-  RecoveryUser2Pin: 'RecoveryUser2Pin',
-  RecoveryFinalize: 'RecoveryFinalize',
 
   // Nuevas rutas para Mi Voto
 
@@ -58,10 +51,6 @@ export const StackNav = {
   // Profile y configuración
   PersonalDetails: 'PersonalDetails',
   DeleteAccount: 'DeleteAccount',
-  RecuperationQR: 'RecuperationQR',
-  Guardians: 'Guardians',
-  GuardiansAdmin: 'GuardiansAdmin',
-  AddGuardians: 'AddGuardians',
   SelectLanguage: 'SelectLanguage',
   PushNotification: 'PushNotification',
   HelpCenter: 'HelpCenter',
@@ -86,7 +75,6 @@ export const TabNav = {
 export const AuthNav = {
   Connect: 'Connect',
   OnBoarding: 'OnBoarding',
-  OnBoardingGuardians: 'OnBoardingGuardians',
   Login: 'Login',
   LoginUser: 'LoginUser',
   AccountAccess: 'AccountAccess',
@@ -118,13 +106,4 @@ export const AuthNav = {
   UploadPhotoId: 'UploadPhotoId',
   SelfieWithIdCard: 'SelfieWithIdCard',
   VerifySuccess: 'VerifySuccess',
-  FindMyUser: 'FindMyUser',
-  RecoveryUserQrpin: 'RecoveryUserQrpin',
-  RecoveryUserQrpin2: 'RecoveryUserQrpin2',
-  RecoveryQr: 'RecoveryQr',
-  RecoveryFinalize: 'RecoveryFinalize',
-  RecoveryUser1Pin: 'RecoveryUser1Pin',
-  RecoveryUser2Pin: 'RecoveryUser2Pin',
-  MyGuardiansStatus: 'MyGuardiansStatus',
-  FindSession: 'FindSession',
 };

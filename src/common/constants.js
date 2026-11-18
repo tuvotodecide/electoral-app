@@ -38,8 +38,13 @@ export function getHeight(value) {
   return (value / sampleHeight) * deviceHeight;
 }
 
+// Tope del factor de escala: en teléfonos (≤ ~430pt) el factor queda por
+// debajo de 1.15, pero en iPad (768–1024pt) llegaría a 2–2.7x y el texto se
+// vería enorme.
+const MAX_MODERATE_SCALE = 1.3;
+
 export function moderateScale(size) {
-  const newSize = size * scale;
+  const newSize = size * Math.min(scale, MAX_MODERATE_SCALE);
   return Math.round(newSize);
 }
 
@@ -57,19 +62,13 @@ export const JWT_KEY_EXPO= 'WIRA_JWT_EXPO';
 export const EXPIRES_KEY = `${JWT_KEY}_EXPIRES`;
 export const PENDING_DID = 'PENDING_DID';
 export const DEVICE_ID_KEY = 'DEVICE_ID';
-export const PENDINGRECOVERY = 'pendingRecovery';
 export const KEY = '@FIN/LOGIN_ATTEMPTS';
 export const LOCK_KEY = '@FIN/LOCK_UNTIL';
 export const LOCK_MS = 15 * 60_000;
 export const FLAG = 'BUNDLE_MIGRATED_v2';
-export const KEYCHAIN_ID = 'finline.wallet.vc';
 export const FLAGS_KEY = 'FINLINE_FLAGS';
 export const BIO_KEY = 'BIO_ENABLED';
-export const PENDING_OWNER_ACCOUNT = 'PENDING_OWNER_ACCOUNT';
-export const GUARDIAN_RECOVERY_DNI = 'GUARDIAN_RECOVERY_DNI';
-export const PENDING_OWNER_GUARDIAN_CT = 'PENDING_OWNER_GUARDIAN_CT';
 export const KEY_OFFLINE = '@offline_queue_v1';
-export const STORAGE_KEY = 'PROVISION_V1';
 export const LAST_TOPIC_KEY = 'LAST_LOCATION_TOPIC';
 export const LAST_USER_TOPIC_KEY = 'LAST_USER_TOPIC';
 export const SERVICE_TMP = 'tmpRegister';

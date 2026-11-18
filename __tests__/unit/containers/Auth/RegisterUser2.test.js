@@ -5,12 +5,27 @@ import {configurarMocksRegistro} from './helpers/registrationFlow.shared';
 import {AuthNav} from '../../../../src/navigation/NavigationKey';
 import RegisterUser2 from '../../../../src/container/Auth/RegisterUser2';
 import String from '../../../../src/i18n/String';
-import wira from 'wira-sdk';
+import {
+  IdentityApiError,
+  IdentityApiUnreachableError,
+} from '@privado-id/expo-sdk';
+import {getPrivadoClient} from '../../../../src/services/privado/privadoSession';
 import {mockNavigation, renderWithProviders} from '../../../setup/test-utils';
+
+jest.mock('../../../../src/services/privado/privadoSession', () => ({
+  getPrivadoClient: jest.fn(),
+}));
+
+const mockClient = {
+  registryCheckByDni: jest.fn(async () => ({exists: false})),
+};
 
 describe('RegisterUser2', () => {
   beforeEach(() => {
     configurarMocksRegistro();
+    mockClient.registryCheckByDni.mockReset();
+    mockClient.registryCheckByDni.mockResolvedValue({exists: false});
+    getPrivadoClient.mockResolvedValue(mockClient);
   });
 
   afterEach(() => {
@@ -80,7 +95,7 @@ describe('RegisterUser2', () => {
 
   it('el DNI que antes era puerta trasera de revision ya no salta a TabNavigation', async () => {
     jest.useFakeTimers();
-    new wira.RegistryApi().registryCheckByDni.mockResolvedValueOnce({
+    mockClient.registryCheckByDni.mockResolvedValueOnce({
       exists: false,
     });
     const localNavigation = {...mockNavigation, reset: jest.fn()};
@@ -95,14 +110,14 @@ describe('RegisterUser2', () => {
     });
 
     expect(localNavigation.reset).not.toHaveBeenCalled();
-    expect(new wira.RegistryApi().registryCheckByDni).toHaveBeenCalledWith(
+    expect(mockClient.registryCheckByDni).toHaveBeenCalledWith(
       '927643154',
     );
   });
 
   it('si el DNI ya existe en registro muestra modal y redirige a SelectRecuperation', async () => {
     jest.useFakeTimers();
-    new wira.RegistryApi().registryCheckByDni.mockResolvedValueOnce({exists: true});
+    mockClient.registryCheckByDni.mockResolvedValueOnce({exists: true});
     const localNavigation = {...mockNavigation, reset: jest.fn()};
     const {getByTestId} = renderWithProviders(
       <RegisterUser2 navigation={localNavigation} route={{params: {}}} />,
@@ -135,7 +150,7 @@ describe('RegisterUser2', () => {
 
   it('si es recovery y no existe DNI muestra modal y redirige a RegisterUser1', async () => {
     jest.useFakeTimers();
-    new wira.RegistryApi().registryCheckByDni.mockResolvedValueOnce({exists: false});
+    mockClient.registryCheckByDni.mockResolvedValueOnce({exists: false});
     const localNavigation = {...mockNavigation, reset: jest.fn()};
     const {getByTestId} = renderWithProviders(
       <RegisterUser2 navigation={localNavigation} route={{params: {isRecovery: true}}} />,
@@ -166,9 +181,11 @@ describe('RegisterUser2', () => {
     });
   });
 
-  it('si registryCheckByDni falla con Network Error muestra alerta de red', async () => {
+  it('si backend-identity no responde muestra alerta de red', async () => {
     jest.useFakeTimers();
-    new wira.RegistryApi().registryCheckByDni.mockRejectedValueOnce(new Error('Network Error'));
+    mockClient.registryCheckByDni.mockRejectedValueOnce(
+      new IdentityApiUnreachableError('registry/check', new Error('Network request failed')),
+    );
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     const {getByTestId} = renderWithProviders(
@@ -185,6 +202,35 @@ describe('RegisterUser2', () => {
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith(String.error, String.networkError);
     });
+
+    alertSpy.mockRestore();
+  });
+
+  it('si backend-identity responde con error muestra el mensaje', async () => {
+    jest.useFakeTimers();
+    const apiError = new IdentityApiError(
+      'backend-identity registry/check failed with HTTP 403: Access denied.',
+      403,
+      'registry/check',
+    );
+    mockClient.registryCheckByDni.mockRejectedValueOnce(apiError);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const {getByTestId} = renderWithProviders(
+      <RegisterUser2 navigation={mockNavigation} route={{params: {}}} />,
+    );
+
+    fireEvent.changeText(getByTestId('idNumberInput'), '12345678');
+    fireEvent(getByTestId('idNumberInput'), 'onEndEditing');
+
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(String.error, apiError.message);
+    });
+    expect(alertSpy).not.toHaveBeenCalledWith(String.error, String.networkError);
 
     alertSpy.mockRestore();
   });

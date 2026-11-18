@@ -17,10 +17,14 @@ import StepIndicator from '../../components/authComponents/StepIndicator';
 import {getSecondaryTextColor} from '../../utils/ThemeUtils';
 import String from '../../i18n/String';
 import InfoModal from '../../components/modal/InfoModal';
-import wira from 'wira-sdk';
+import {
+  authenticateWithBiometrics,
+  getBiometryStatus,
+} from '../../services/biometrics';
 
 export default function RegisterUser7({navigation, route}) {
-  const {ocrData, dni} = route.params;
+  const {ocrData, dni, identityData, identityToken, identityTokenExpiresAt} =
+    route.params;
   const colors = useSelector(state => state.theme.theme);
   const [modal, setModal] = useState({visible: false, msg: ''});
 
@@ -29,23 +33,25 @@ export default function RegisterUser7({navigation, route}) {
   };
 
   const handleActivateBio = async () => {
-    const {available, biometryType} = await wira.Biometric.biometryAvailability();
+    const {hasHardware, enrolled, biometryType} = await getBiometryStatus();
 
-    if (!available) {
+    if (!hasHardware) {
       return setModal({
         visible: true,
         msg: 'Este dispositivo no tiene habilitado el hardware biométrico.',
       });
     }
-    if (!biometryType) {
+    if (!enrolled) {
       return setModal({
         visible: true,
         msg: 'No hay huellas ni Face ID registradas. Agrega una en Ajustes del sistema.',
       });
     }
 
-    const ok = await wira.Biometric.biometricLogin(
-      biometryType === 'FaceID'
+    // Solo confirma que el usuario puede usar su biometría: el vault la activa
+    // en RegisterUser10, una vez creado con el PIN.
+    const {ok} = await authenticateWithBiometrics(
+      biometryType === 'face'
         ? 'Escanea tu rostro'
         : 'Escanea tu huella dactilar',
     );
@@ -61,6 +67,9 @@ export default function RegisterUser7({navigation, route}) {
       ocrData,
       useBiometry: true,
       dni,
+      identityData,
+      identityToken,
+      identityTokenExpiresAt,
     });
   };
 
@@ -69,6 +78,9 @@ export default function RegisterUser7({navigation, route}) {
       ocrData,
       useBiometry: false,
       dni,
+      identityData,
+      identityToken,
+      identityTokenExpiresAt,
     });
   };
 

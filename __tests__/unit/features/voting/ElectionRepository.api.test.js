@@ -1,5 +1,6 @@
 import axios from 'axios';
-import wira from 'wira-sdk';
+import {VerifierResponseError} from '@privado-id/expo-sdk';
+import {hashVoteNullifier} from '../../../../src/features/voting/utils/dataHasher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ElectionRepositoryApi from '../../../../src/features/voting/data/repositories/ElectionRepository.api';
 
@@ -61,13 +62,15 @@ jest.mock('../../../../src/features/voting/offline/voteJournal', () => ({
   markVoteJournalChainConfirmed: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(() => Promise.resolve()),
+jest.mock('@/src/services/privado/verifierProof', () => ({
+  ...jest.requireActual('@/src/services/privado/verifierProof'),
+  answerVerifierRequest: jest.fn(() => Promise.resolve()),
 }));
 
 const store = require('../../../../src/redux/store').default;
 const {getCredentialForVote} = require('@/src/data/credentials');
 const {getOwnVoteInfo} = require('@/src/api/vote');
+const {answerVerifierRequest} = require('@/src/services/privado/verifierProof');
 const {getVoteRequestForBackend} = require('../../../../src/utils/offlineQueueHandler');
 const {clearVoteJournal} = require('../../../../src/features/voting/offline/voteJournal');
 const {markVoteJournalChainConfirmed} = require('../../../../src/features/voting/offline/voteJournal');
@@ -79,7 +82,7 @@ describe('ElectionRepository.api', () => {
     // No conservar respuestas `mockResolvedValueOnce` de un caso a otro.
     axios.get.mockReset();
     axios.post.mockReset();
-    wira.authenticateWithVerifier.mockResolvedValue(undefined);
+    answerVerifierRequest.mockResolvedValue(undefined);
     getOwnVoteInfo.mockRejectedValue(new Error('Not voted yet'));
     store.getState.mockReturnValue(defaultWalletState());
   });
@@ -443,25 +446,20 @@ describe('ElectionRepository.api', () => {
       success: true,
       participationId: 'participation-1',
     });
-    expect(getCredentialForVote).toHaveBeenCalledWith(
-      '123abc',
-      'did:test:123',
-      'priv-key-test',
-    );
-    const verifierRequest = JSON.parse(wira.authenticateWithVerifier.mock.calls[0][0]);
+    expect(getCredentialForVote).toHaveBeenCalledWith('123abc');
+    const verifierRequest = answerVerifierRequest.mock.calls[0][0];
     expect(verifierRequest.body.callbackUrl).toContain(
       'https://callback.example/vote?optionId=option-1',
     );
     expect(verifierRequest.body.callbackUrl).not.toContain('12345678');
     expect(verifierRequest.body.callbackUrl).not.toContain('priv-key-test');
     expect(verifierRequest.body.callbackUrl).not.toContain('credential-1');
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledWith(
-      expect.any(String),
-      'did:test:123',
-      'priv-key-test',
-      ['credential-1'],
-    );
-    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', '0x123');
+    expect(answerVerifierRequest).toHaveBeenCalledWith(expect.any(Object), {
+      credentialId: 'credential-1',
+      reason: expect.any(String),
+    });
+    // La cadena guarda el hash del nullifier.
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('123abc', hashVoteNullifier('123abc', '0x123'));
     expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('123abc');
     expect(axios.post).toHaveBeenCalledWith(
       'https://test-backend.com/api/v1/voting/events/123abc/participations',
@@ -477,7 +475,7 @@ describe('ElectionRepository.api', () => {
     );
   });
 
-  it('realiza la generación de la prueba ZK con did, privKey y credentialId, y arma el callbackUrl con el optionId provisto', async () => {
+  it('responde al verificador con la credencial de voto del evento y arma el callbackUrl con el optionId provisto', async () => {
     store.getState.mockReturnValue({
       wallet: {
         payload: {
@@ -518,14 +516,10 @@ describe('ElectionRepository.api', () => {
 
     await ElectionRepositoryApi.submitVote('event-custom', 'option-custom-1', null);
 
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(1);
-    const [requestJson, did, privKey, credentialIds] =
-      wira.authenticateWithVerifier.mock.calls[0];
-    expect(did).toBe('did:test:custom-did');
-    expect(privKey).toBe('custom-priv-key');
-    expect(credentialIds).toEqual(['credential-custom-1']);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(1);
+    const [verifierRequest, options] = answerVerifierRequest.mock.calls[0];
+    expect(options).toMatchObject({credentialId: 'credential-custom-1'});
 
-    const verifierRequest = JSON.parse(requestJson);
     expect(verifierRequest.body.callbackUrl).toBe(
       'https://callback.example/vote?optionId=option-custom-1',
     );
@@ -553,17 +547,17 @@ describe('ElectionRepository.api', () => {
       },
     });
 
-    const result = await ElectionRepositoryApi.submitVote('event-retry', 'option-1', null);
+    const result = await ElectionRepositoryApi.submitVote('e7e47e1', 'option-1', null);
 
     expect(result).toMatchObject({
       success: true,
       participationId: 'participation-retry-1',
     });
-    expect(getOwnVoteInfo).toHaveBeenCalledWith('event-retry', '0x123');
-    expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
-    expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('event-retry');
+    expect(getOwnVoteInfo).toHaveBeenCalledWith('e7e47e1', hashVoteNullifier('e7e47e1', '0x123'));
+    expect(answerVerifierRequest).not.toHaveBeenCalled();
+    expect(markVoteJournalChainConfirmed).toHaveBeenCalledWith('e7e47e1');
     expect(axios.post).toHaveBeenCalledWith(
-      'https://test-backend.com/api/v1/voting/events/event-retry/participations',
+      'https://test-backend.com/api/v1/voting/events/e7e47e1/participations',
       {carnet: '12345678'},
       expect.any(Object),
     );
@@ -592,7 +586,7 @@ describe('ElectionRepository.api', () => {
     );
 
     expect(result.success).toBe(true);
-    expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+    expect(answerVerifierRequest).not.toHaveBeenCalled();
     expect(axios.post).toHaveBeenCalledWith(
       'https://test-backend.com/api/v1/voting/events/event-remote/participations',
       {
@@ -610,7 +604,7 @@ describe('ElectionRepository.api', () => {
         alreadyVoted: false,
       },
     });
-    wira.authenticateWithVerifier.mockRejectedValueOnce(new Error('vote failed'));
+    answerVerifierRequest.mockRejectedValueOnce(new Error('vote failed'));
 
     const result = await ElectionRepositoryApi.submitVote(
       'abc123',
@@ -659,7 +653,7 @@ describe('ElectionRepository.api', () => {
       shouldQueueBackendSync: true,
       presentialSessionId: 'session-pending-1',
     });
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(1);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(1);
   });
 
   describe('submitVote - validaciones y errores', () => {
@@ -706,7 +700,7 @@ describe('ElectionRepository.api', () => {
         success: false,
         error: 'No se pudo registrar la participación',
       });
-      expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+      expect(answerVerifierRequest).not.toHaveBeenCalled();
     });
 
     it('registra "No se pudo preparar la confirmación del voto" cuando falta el callbackUrl', async () => {
@@ -725,7 +719,7 @@ describe('ElectionRepository.api', () => {
         expect.objectContaining({message: 'No se pudo preparar la confirmación del voto'}),
       );
       expect(clearVoteJournal).toHaveBeenCalledWith('event-1');
-      expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+      expect(answerVerifierRequest).not.toHaveBeenCalled();
     });
 
     it('registra "No se pudo validar tu acceso para emitir el voto" cuando no hay credencial', async () => {
@@ -744,16 +738,18 @@ describe('ElectionRepository.api', () => {
         expect.objectContaining({message: 'No se pudo validar tu acceso para emitir el voto'}),
       );
       expect(clearVoteJournal).toHaveBeenCalledWith('event-1');
-      expect(wira.authenticateWithVerifier).not.toHaveBeenCalled();
+      expect(answerVerifierRequest).not.toHaveBeenCalled();
     });
 
     it('EA2-09-001 devuelve el mensaje de tokens agotados cuando el contrato responde 409', async () => {
       axios.get.mockResolvedValueOnce({
         data: {status: 'CAN_VOTE', canVote: true, alreadyVoted: false},
       });
-      wira.authenticateWithVerifier.mockRejectedValueOnce(
-        new Error(
-          'Error calling the verifier: the response has a status code of 409 instead of 200',
+      answerVerifierRequest.mockRejectedValueOnce(
+        new VerifierResponseError(
+          'https://callback.example/vote?optionId=option-1',
+          409,
+          'Current election has no credits',
         ),
       );
 
@@ -773,7 +769,7 @@ describe('ElectionRepository.api', () => {
       axios.get.mockResolvedValueOnce({
         data: {status: 'CAN_VOTE', canVote: true, alreadyVoted: false},
       });
-      wira.authenticateWithVerifier.mockRejectedValueOnce(new Error('vote failed'));
+      answerVerifierRequest.mockRejectedValueOnce(new Error('vote failed'));
 
       const result = await ElectionRepositoryApi.submitVote('event-1', 'option-1', null);
 

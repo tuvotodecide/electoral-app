@@ -1,9 +1,9 @@
 /**
  * Activación y salida del modo demostración.
  *
- * Es el análogo de `LoginUser.unlock()` (LoginUser.js:134-173) pero sin tocar
- * el Keychain de wira, sin FINLINE_FLAGS y sin consumir navegación pendiente
- * de notificaciones.
+ * Es el análogo del ingreso de `LoginUser` pero sin abrir el vault del SDK de
+ * Privado ID, sin FINLINE_FLAGS y sin consumir navegación pendiente de
+ * notificaciones.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -55,7 +55,6 @@ export const activateDemoSession = async ({dispatch, navigation}) => {
   dispatch(
     setAddresses({
       account: DEMO_WALLET_PAYLOAD.account,
-      guardian: null,
     }),
   );
   dispatch(setAuthenticated(true));

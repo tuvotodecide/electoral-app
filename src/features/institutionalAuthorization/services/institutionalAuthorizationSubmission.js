@@ -26,7 +26,6 @@ export const sendInstitutionalAuthorizationSubmission = async ({
   walletAddress,
   request,
   claim,
-  privateKey,
   smartAccountAddress,
   submitFn = submitInstitutionalAuthorization,
 }) => {
@@ -42,7 +41,6 @@ export const sendInstitutionalAuthorizationSubmission = async ({
     data: call.callData,
   }));
   const result = await sendOperationWithUserOpHash(
-    privateKey,
     smartAccountAddress,
     CHAIN,
     calls,

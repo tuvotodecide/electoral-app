@@ -7,7 +7,7 @@ import {
   startOfficialPublicationSigning,
   submitOfficialPublication,
 } from '../../../../src/features/officialPublication/api/officialPublicationApi';
-import wira from 'wira-sdk';
+import {answerVerifierRequest} from '../../../../src/services/privado/verifierProof';
 
 jest.mock('@env', () => ({
   BACKEND_RESULT: 'https://results.example/',
@@ -28,7 +28,6 @@ jest.mock('../../../../src/redux/store', () => ({
       wallet: {
         payload: {
           did: 'did:example:admin',
-          privKey: '0xpriv',
         },
       },
     }),
@@ -37,7 +36,6 @@ jest.mock('../../../../src/redux/store', () => ({
     wallet: {
       payload: {
         did: 'did:example:admin',
-        privKey: '0xpriv',
       },
     },
   }),
@@ -53,8 +51,8 @@ jest.mock('../../../../src/services/StorageService', () => ({
   },
 }));
 
-jest.mock('wira-sdk', () => ({
-  authenticateWithVerifier: jest.fn(async () => ({ok: true})),
+jest.mock('../../../../src/services/privado/verifierProof', () => ({
+  answerVerifierRequest: jest.fn(async () => ({httpStatus: 200})),
 }));
 
 describe('officialPublicationApi', () => {
@@ -78,10 +76,9 @@ describe('officialPublicationApi', () => {
   it('consulta detalle movil autenticado', async () => {
     const result = await getOfficialPublicationRequest('req-1');
 
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledWith(
-      expect.any(String),
-      'did:example:admin',
-      '0xpriv',
+    expect(answerVerifierRequest).toHaveBeenCalledWith(
+      {body: {callbackUrl: 'https://results.example/callback'}},
+      {reason: expect.any(String)},
     );
     expect(axios.get).toHaveBeenCalledWith(
       'https://results.example/api/v1/mobile/official-publication/requests/req-1',
@@ -90,6 +87,29 @@ describe('officialPublicationApi', () => {
       }),
     );
     expect(result.requestId).toBe('req-1');
+  });
+
+  it('sin sesión abierta no pide la solicitud ni responde al verificador', async () => {
+    const store = require('../../../../src/redux/store').default;
+    const originalGetState = store.getState;
+    store.getState = () => ({wallet: {payload: null}});
+    try {
+      await expect(getOrCreateOfficialPublicationApiKey('req-1')).rejects.toThrow(
+        'No se pudo validar tu acceso institucional',
+      );
+    } finally {
+      store.getState = originalGetState;
+    }
+    expect(axios.get).not.toHaveBeenCalled();
+    expect(answerVerifierRequest).not.toHaveBeenCalled();
+  });
+
+  it('propaga el rechazo del verificador sin guardar la API key', async () => {
+    const {StorageService} = require('../../../../src/services/StorageService');
+    answerVerifierRequest.mockRejectedValueOnce(new Error('Verifier rejected the response with HTTP 403'));
+
+    await expect(getOrCreateOfficialPublicationApiKey('req-1')).rejects.toThrow('HTTP 403');
+    expect(StorageService.setItem).not.toHaveBeenCalled();
   });
 
   it('genera API key especifica por request y la reutiliza', async () => {
@@ -103,7 +123,7 @@ describe('officialPublicationApi', () => {
     expect(axios.get).toHaveBeenCalledTimes(2);
     expect(axios.get.mock.calls[0][0]).toContain('/auth/req-1/request');
     expect(axios.get.mock.calls[1][0]).toContain('/auth/req-2/request');
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(2);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(2);
   });
 
   it('claim envia solamente deviceId', async () => {
@@ -131,7 +151,7 @@ describe('officialPublicationApi', () => {
       '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     );
 
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(1);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(1);
     expect(axios.post.mock.calls.every(call => call[2].headers['x-api-key'] === 'api-key')).toBe(
       true,
     );
@@ -140,7 +160,7 @@ describe('officialPublicationApi', () => {
   it('401 elimina y renueva una sola vez', async () => {
     axios.get.mockImplementation(url => {
       if (String(url).includes('/auth/')) {
-        const suffix = wira.authenticateWithVerifier.mock.calls.length + 1;
+        const suffix = answerVerifierRequest.mock.calls.length + 1;
         return Promise.resolve({
           data: {
             apiKey: `api-key-${suffix}`,
@@ -161,7 +181,7 @@ describe('officialPublicationApi', () => {
       String(call[0]).includes('/requests/req-1'),
     );
     expect(requestCalls).toHaveLength(2);
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(2);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(2);
   });
 
   it('elimina key local al completar o al limpiar explicitamente', async () => {
@@ -170,7 +190,7 @@ describe('officialPublicationApi', () => {
 
     await getOrCreateOfficialPublicationApiKey('req-1');
 
-    expect(wira.authenticateWithVerifier).toHaveBeenCalledTimes(2);
+    expect(answerVerifierRequest).toHaveBeenCalledTimes(2);
   });
 
   it('submission envia solo hashes y no acepta datos contractuales como autoridad', async () => {

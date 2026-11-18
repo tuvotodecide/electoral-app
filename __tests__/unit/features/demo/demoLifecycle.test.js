@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import wira from 'wira-sdk';
+import {createPersistentPrivadoExpoClient} from '@privado-id/expo-sdk';
 
 import {
   activateDemoSession,
@@ -45,7 +45,7 @@ describe('demoLifecycle', () => {
       );
       expect(acciones).toContainEqual(
         expect.objectContaining({
-          payload: {account: DEMO_WALLET_PAYLOAD.account, guardian: null},
+          payload: {account: DEMO_WALLET_PAYLOAD.account},
         }),
       );
       expect(acciones).toContainEqual(
@@ -60,13 +60,10 @@ describe('demoLifecycle', () => {
       expect(isDemoActive()).toBe(true);
     });
 
-    it('no toca el almacenamiento del SDK de wira', async () => {
+    it('no abre la sesión del SDK de Privado ID (ni el vault ni el almacenamiento)', async () => {
       await activateDemoSession({dispatch, navigation});
 
-      expect(wira.Storage.checkUserData).not.toHaveBeenCalled();
-      expect(wira.Storage.checkFirstLaunch).not.toHaveBeenCalled();
-      expect(wira.signIn).not.toHaveBeenCalled();
-      expect(wira.checkBiometricAuth).not.toHaveBeenCalled();
+      expect(createPersistentPrivadoExpoClient).not.toHaveBeenCalled();
     });
   });
 

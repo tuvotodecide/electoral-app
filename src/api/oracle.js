@@ -1,7 +1,6 @@
 import { createPublicClient, encodeFunctionData, getContract, http } from "viem";
 import oracleAbi from '../abi/OracleAbi.json';
-import { availableNetworks } from "./params";
-import { getAccount } from "./account";
+import { availableNetworks, getReadRpcUrl } from "./params";
 
 function requestRegister(chain, imageUri) {
   return {
@@ -39,20 +38,16 @@ function attest(chain, tableId, recordId, newJsonUri = "") {
   }
 }
 
-async function isRegistered(chainId, privateKey, accountAddress, attemps = 3) {
-  const {chain, oracle, userRole, juryRole, bundler} = availableNetworks[chainId];
-
-  let address = accountAddress;
-  if(privateKey) {
-    const {account} = await getAccount(privateKey, null, chainId);
-    address = account.address;
-  }
+// `accountAddress`: la smart wallet del titular (`payload.account`).
+async function isRegistered(chainId, accountAddress, attemps = 3) {
+  const {chain, oracle, userRole, juryRole} = availableNetworks[chainId];
+  const address = accountAddress;
 
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
   const publicClient = createPublicClient({
     chain,
-    transport: http(bundler),
+    transport: http(getReadRpcUrl(chain)),
   });
 
   const oracleContract = getContract({
@@ -86,18 +81,13 @@ async function isRegistered(chainId, privateKey, accountAddress, attemps = 3) {
   return false;
 }
 
-async function isUserJury(chainId, privateKey, accountAddress) {
-  const {chain, oracle, juryRole, bundler} = availableNetworks[chainId];
-
-  let address = accountAddress;
-  if(privateKey) {
-    const {account} = await getAccount(privateKey, null, chainId);
-    address = account.address;
-  }
+async function isUserJury(chainId, accountAddress) {
+  const {chain, oracle, juryRole} = availableNetworks[chainId];
+  const address = accountAddress;
 
   const publicClient = createPublicClient({
     chain: chain,
-    transport: http(bundler),
+    transport: http(getReadRpcUrl(chain)),
   });
 
   const oracleContract = getContract({
@@ -115,11 +105,11 @@ async function isUserJury(chainId, privateKey, accountAddress) {
 
 async function waitForOracleEvent(chain, eventName, txBlock, attemps = 3) {
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
-  const {chain: chainConfig, bundler} = availableNetworks[chain];
+  const {chain: chainConfig} = availableNetworks[chain];
 
   const publicClient = createPublicClient({
     chain: chainConfig,
-    transport: http(bundler),
+    transport: http(getReadRpcUrl(chainConfig)),
   });
 
   const normalizeBlockNumber = value => {

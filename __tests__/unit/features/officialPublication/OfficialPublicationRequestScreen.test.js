@@ -120,7 +120,6 @@ describe('OfficialPublicationRequestScreen', () => {
           wallet: {
             payload: {
               did: 'did:example:admin',
-              privKey: '0xpriv',
               account: '0x1111111111111111111111111111111111111111',
             },
           },
@@ -135,7 +134,6 @@ describe('OfficialPublicationRequestScreen', () => {
         wallet: {
           payload: {
             did: 'did:example:admin',
-            privKey: '0xpriv',
             account: '0x1111111111111111111111111111111111111111',
           },
         },
@@ -246,7 +244,6 @@ describe('OfficialPublicationRequestScreen', () => {
       'device-1',
     );
     expect(account.sendOperationWithUserOpHash).toHaveBeenCalledWith(
-      '0xpriv',
       '0x1111111111111111111111111111111111111111',
       'base-sepolia',
       [{to: targetAddress, value: '0', data: callData}],

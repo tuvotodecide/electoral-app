@@ -25,15 +25,6 @@ export const mockUsers = {
     biometricEnabled: false,
   },
   
-  guardian: {
-    id: 'user-guardian-789',
-    email: 'guardian@example.com',
-    phone: '+1122334455',
-    name: 'Guardian User',
-    isVerified: true,
-    pin: '5678',
-    biometricEnabled: false,
-  },
 };
 
 // Mock Voting Tables
@@ -64,34 +55,6 @@ export const mockVotingTables = [
     district: 'Sur',
     voters: 120,
     status: 'inactive',
-  },
-];
-
-// Mock Guardians
-export const mockGuardians = [
-  {
-    id: 'guardian-001',
-    name: 'Ana García',
-    email: 'ana.garcia@example.com',
-    phone: '+1234567890',
-    status: 'active',
-    relationship: 'friend',
-  },
-  {
-    id: 'guardian-002',
-    name: 'Carlos Mendez',
-    email: 'carlos.mendez@example.com',
-    phone: '+1234567891',
-    status: 'pending',
-    relationship: 'family',
-  },
-  {
-    id: 'guardian-003',
-    name: 'María Rodriguez',
-    email: 'maria.rodriguez@example.com',
-    phone: '+1234567892',
-    status: 'active',
-    relationship: 'colleague',
   },
 ];
 
@@ -245,11 +208,6 @@ export const mockReduxStates = {
       error: null,
     },
     
-    guardians: {
-      list: [],
-      loading: false,
-      error: null,
-    },
   },
   
   authenticated: {
@@ -268,11 +226,6 @@ export const mockReduxStates = {
       error: null,
     },
     
-    guardians: {
-      list: mockGuardians,
-      loading: false,
-      error: null,
-    },
   },
   
   loading: {

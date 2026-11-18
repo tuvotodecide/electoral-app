@@ -1,12 +1,4 @@
 import {
-  BACKEND_IDENTITY,
-  CHAIN,
-  CRED_TYPE,
-  CRED_EXP_DAYS,
-  PROVIDER_NAME,
-  IDENTITY_KEY,
-} from "@env";
-import {
   ActivityIndicator,
   AppState,
   Image,
@@ -28,14 +20,70 @@ import { getSecondaryTextColor } from "../../utils/ThemeUtils";
 import String from "../../i18n/String";
 import InfoModal from "../../components/modal/InfoModal";
 
-import { saveDraft, clearDraft, getDraft } from "../../utils/RegisterDraft";
+import { saveDraft, clearDraft, getDraft, updateDraft } from "../../utils/RegisterDraft";
 import { setAddresses } from "../../redux/slices/addressSlice";
 import { normalizeOcrForUI } from "../../utils/issuerClient";
-import wira from "wira-sdk";
+import {
+  IdentityApiUnreachableError,
+  IdentityCredentialError,
+  RegistryRegistrationError,
+  VaultError,
+} from "@privado-id/expo-sdk";
+import { getPrivadoSession } from "@/src/services/privado/privadoSession";
+import { withVaultPin } from "@/src/services/privado/vaultUnlock";
 
-import { availableNetworks, sponsorshipPolicyId } from "../../api/params";
 import { captureError } from "../../config/sentry";
 import { claimRegisterRewardIfAvailable } from "@/src/utils/account";
+
+/**
+ * Qué hacer al cerrar el modal de error:
+ * - `retry`: volver a ejecutar el registro (los pasos ya hechos se saltan).
+ * - `pin`: volver a elegir el PIN.
+ * - `verify`: repetir la verificación del carnet (token de identidad vencido o usado).
+ */
+const describeRegisterError = (err) => {
+  const code = err?.code;
+  if (err instanceof IdentityApiUnreachableError) {
+    return { message: String.networkError, next: "retry", expected: true };
+  }
+  if (err instanceof VaultError) {
+    if (code === "BIOMETRICS_CANCELLED") {
+      return { message: String.biometricRejected, next: "retry", expected: true };
+    }
+    if (code === "BIOMETRICS_UNAVAILABLE") {
+      return { message: String.biometryNotAvailable, next: "retry", expected: true };
+    }
+    if (code === "INVALID_PIN" || code === "PIN_TOO_SHORT") {
+      return {
+        message: "El PIN no coincide con el que elegiste al iniciar el registro. Vuelve a ingresarlo.",
+        next: "pin",
+        expected: true,
+      };
+    }
+  }
+  if (
+    (err instanceof IdentityCredentialError || err instanceof RegistryRegistrationError) &&
+    (code === "identity-invalid" || code === "identity-required")
+  ) {
+    return {
+      message: "La verificación de tu carnet expiró. Vuelve a verificar tu identidad para continuar.",
+      next: "verify",
+      expected: true,
+    };
+  }
+  if (err instanceof RegistryRegistrationError && code === "identity-conflict") {
+    return {
+      message: "Este carnet ya está registrado con otra cuenta.",
+      next: "verify",
+      expected: false,
+    };
+  }
+  return {
+    message: err?.message || "Ocurrió un error al registrar tu cuenta.",
+    next: "retry",
+    expected: false,
+  };
+};
 
 export default function RegisterUser10({ navigation, route }) {
   const {
@@ -43,13 +91,16 @@ export default function RegisterUser10({ navigation, route }) {
     dni,
     originalPin: pin,
     useBiometry,
-    isMigration,
+    identityData,
+    identityToken,
+    identityTokenExpiresAt,
   } = route.params;
 
   const colors = useSelector((state) => state.theme.theme);
   const [loading, setLoading] = useState(true);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorNext, setErrorNext] = useState("retry");
   const [stage, setStage] = useState("init");
   const watchdogRef = useRef(null);
   const dispatch = useDispatch();
@@ -99,26 +150,18 @@ export default function RegisterUser10({ navigation, route }) {
   useEffect(() => {
     (async () => {
       if (route.params?.fromDraft) {
-        initRegister();
+        initRegister(route.params.progress);
         return;
       }
 
+      // Llegada con datos nuevos (p. ej. tras repetir la verificación): se usan
+      // estos y solo se conserva el progreso del borrador del mismo DNI.
       const draft = await getDraft();
-
-      if (draft) {
-        navigation.replace(AuthNav.RegisterUser10, {
-          ...draft,
-          ocrData: draft.ocrData ?? route.params?.ocrData ?? null,
-          fromDraft: true,
-        });
-        return;
-      }
-
-      initRegister();
+      initRegister(draft && draft.dni === dni ? draft.progress : undefined);
     })();
   }, []);
 
-  const initRegister = useCallback(() => {
+  const initRegister = useCallback((previousProgress) => {
     if (startedRef.current) return;
     startedRef.current = true;
 
@@ -127,92 +170,134 @@ export default function RegisterUser10({ navigation, route }) {
       await new Promise((r) => requestAnimationFrame(() => r()));
       try {
         const yieldUI = () => new Promise((r) => setTimeout(r, 50));
-        if (isMigration) {
-          setStage("migrate");
-        } else {
-          setStage("issueVC");
-        }
+        setStage("issueVC");
         await yieldUI();
 
+        // Pasos ya hechos en un intento anterior: se saltan al reintentar.
+        const progress = { ...(previousProgress ?? {}) };
         await saveDraft({
-          step: isMigration ? "migrate" : "issueVC",
+          step: "issueVC",
           dni,
           useBiometry,
           originalPin: pin,
           ocrData: normalizeOcrForUI(ocrData),
+          identityData,
+          identityToken,
+          identityTokenExpiresAt,
+          progress: { ...progress },
+        });
+        const markDone = async (step) => {
+          progress[step] = true;
+          await updateDraft({ progress: { ...progress } });
+        };
+
+        const { client, vault } = await getPrivadoSession();
+
+        // El PIN elegido en RegisterUser8/9 crea el vault (claves privadas y
+        // clave de las credenciales) o lo abre si ya existe de un intento anterior.
+        const account = await withVaultPin(pin, async () => {
+          const holder = await client.createOrLoadHolderDid({ smartWallet: true });
+          const accountAddress = holder.wallet.address;
+          dispatch(setAddresses({ account: accountAddress }));
+
+          if (!progress.credentialClaimed) {
+            // /credentials/identity verifica el token sin consumirlo.
+            const issued = await client.requestIdentityCredential({
+              data: identityData,
+              identityToken,
+            });
+            const claim = await client.claimCredentialFromIssuer({ offer: issued.deepLink });
+            if (!claim.stored) {
+              throw new Error("No se pudo guardar tu credencial de identidad.");
+            }
+            await markDone("credentialClaimed");
+          }
+
+          setStage("save");
+          await yieldUI();
+
+          if (useBiometry && !(await vault.isBiometricsEnabled())) {
+            await vault.enableBiometrics();
+          }
+
+          if (!progress.registered) {
+            // El respaldo cifrado con el PIN es el que devuelve la recuperación
+            // con carnet. /registry/register consume el token: no se repite.
+            const backup = await client.createBackup(pin);
+            await client.registerAccount({ identityToken, backup });
+            await markDone("registered");
+          }
+
+          if (!progress.rewardClaimed) {
+            await claimRegisterRewardIfAvailable(accountAddress);
+            await markDone("rewardClaimed");
+          }
+
+          return accountAddress;
         });
 
-        const registerer = new wira.Registerer(
-          BACKEND_IDENTITY,
-          IDENTITY_KEY,
-          PROVIDER_NAME,
-          availableNetworks[CHAIN].bundler,
-          sponsorshipPolicyId,
-        );
-
-        await registerer.createVC(CHAIN, ocrData, CRED_TYPE, CRED_EXP_DAYS);
-
-        await yieldUI();
-        dispatch(
-          setAddresses({
-            account: registerer.walletData.address,
-            guardian: "",
-          }),
-        );
-
-        setStage("save");
-        await yieldUI();
-        await registerer.storeOnDevice(dni, pin, useBiometry);
-
-        const response = await registerer.storeDataOnServer();
-        if (!response.ok) {
-          throw new Error(`Error al registrar tu cuenta.`);
-        }
-
-        await claimRegisterRewardIfAvailable(
-          registerer.walletData.address,
-          registerer.userData.did,
-          registerer.userData.privKey,
-        );
-
-        await registerer.clear();
         await clearDraft();
         setStage("done");
         setLoading(false);
-        navigation.replace(AuthNav.RegisterUser11, {
-          account: registerer.walletData.address,
-        });
+        navigation.replace(AuthNav.RegisterUser11, { account });
       } catch (err) {
         if (wentToBackgroundRef.current) {
           return;
         }
 
-        captureError(err, {
-          flow: "registration",
-          step: stageRef.current,
-          critical: true,
-        });
-
-        let errMessage =
-          err?.message || "Ocurrió un error al registrar tu cuenta.";
-        if (errMessage.includes("User cancelled biometric change")) {
-          errMessage = String.biometricRejected;
+        const { message, next, expected } = describeRegisterError(err);
+        if (!expected) {
+          captureError(err, {
+            flow: "registration",
+            step: stageRef.current,
+            critical: true,
+            code: err?.code,
+          });
         }
 
         setLoading(false);
-        setErrorMessage(errMessage);
+        setErrorMessage(message);
+        setErrorNext(next);
         setErrorModalVisible(true);
       }
     })();
     return () => {};
-  }, [pin, dni, useBiometry, navigation]);
+  }, [pin, dni, useBiometry, navigation, identityData, identityToken]);
+
+  const onCloseError = () => {
+    setErrorModalVisible(false);
+    if (errorNext === "pin") {
+      navigation.replace(AuthNav.RegisterUser8, {
+        ocrData,
+        useBiometry,
+        dni,
+        identityData,
+        identityToken,
+        identityTokenExpiresAt,
+      });
+    } else if (errorNext === "verify") {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: AuthNav.RegisterUser2 }],
+      });
+    } else {
+      navigation.replace(AuthNav.RegisterUser10, {
+        ocrData,
+        dni,
+        originalPin: pin,
+        useBiometry,
+        identityData,
+        identityToken,
+        identityTokenExpiresAt,
+      });
+    }
+  };
 
   const stageMessage = {
     issueVC: String.issuingVC,
-    migrate: String.migrating,
     save: String.saveData,
     done: String.doneRegister,
-    stillWorking: "Aún trabajando\u2026 Esto puede tardar en tu dispositivo.",
+    stillWorking: "Aún trabajando… Esto puede tardar en tu dispositivo.",
   }[stage];
 
   return (
@@ -252,26 +337,7 @@ export default function RegisterUser10({ navigation, route }) {
         title="Registro fallido"
         message={errorMessage}
         buttonText="Reintentar"
-        onClose={() => {
-          setErrorModalVisible(false);
-          if (
-            errorMessage?.includes("PIN no disponible") ||
-            errorMessage?.includes("No hay PIN disponible")
-          ) {
-            navigation.replace(AuthNav.RegisterUser8, {
-              ocrData,
-              useBiometry,
-              dni,
-            });
-          } else {
-            navigation.replace(AuthNav.RegisterUser10, {
-              ocrData,
-              dni,
-              originalPin: pin,
-              useBiometry,
-            });
-          }
-        }}
+        onClose={onCloseError}
       />
     </CSafeAreaViewAuth>
   );

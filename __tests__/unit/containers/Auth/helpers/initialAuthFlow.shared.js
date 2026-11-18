@@ -1,5 +1,7 @@
-import {DeviceEventEmitter} from 'react-native';
-import wira, {config as wiraConfig} from 'wira-sdk';
+import {
+  createMockSession,
+  createPersistentPrivadoExpoClient,
+} from '@privado-id/expo-sdk';
 import {initialStorageValueGet} from '../../../../../src/utils/AsyncStorage';
 import {getDraft} from '../../../../../src/utils/RegisterDraft';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,29 +16,12 @@ jest.mock('../../../../../src/utils/RegisterDraft', () => ({
 }));
 
 export const configurarMocksFlujoInicial = () => {
-  let downloadInfoListener;
-
   jest.clearAllMocks();
 
-  wira.initWiraSdk.mockResolvedValue(undefined);
-  wira.provision.ensureProvisioned.mockResolvedValue(undefined);
-  wira.Storage.checkUserData.mockResolvedValue(false);
-
-  DeviceEventEmitter.addListener.mockImplementation((event, callback) => {
-    if (event === 'downloadInfo') {
-      downloadInfoListener = callback;
-    }
-    return {remove: jest.fn()};
-  });
-
-  wiraConfig.initDownloadCircuits.mockImplementation(async () => {
-    downloadInfoListener?.(
-      JSON.stringify({
-        status: wiraConfig.CircuitDownloadStatus.DONE,
-        info: 'ok',
-      }),
-    );
-  });
+  // Circuitos ya extraídos en la caché: el splash no descarga nada.
+  createPersistentPrivadoExpoClient.mockImplementation(async () =>
+    createMockSession(),
+  );
 
   initialStorageValueGet.mockResolvedValue({themeColor: 'light'});
   getDraft.mockResolvedValue(null);

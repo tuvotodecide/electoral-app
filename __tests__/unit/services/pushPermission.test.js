@@ -98,8 +98,9 @@ describe('pushPermission service', () => {
       const {requestPushPermissionExplicit} = require('../../../src/services/pushPermission');
       const result = await requestPushPermissionExplicit();
 
-      expect(notifee.requestPermission).toHaveBeenCalled();
-      expect(PermissionsAndroid.request).toHaveBeenCalled();
+      expect(notifee.requestPermission).toHaveBeenCalledTimes(1);
+      // Una sola solicitud: no se repite con PermissionsAndroid.
+      expect(PermissionsAndroid.request).not.toHaveBeenCalled();
       expect(notifee.createChannel).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'high_prio',
@@ -115,18 +116,20 @@ describe('pushPermission service', () => {
         authorizationStatus: notifee.AuthorizationStatus.NOT_DETERMINED,
       });
       notifee.requestPermission.mockResolvedValueOnce({
-        authorizationStatus: notifee.AuthorizationStatus.AUTHORIZED,
+        authorizationStatus: notifee.AuthorizationStatus.DENIED,
       });
-      PermissionsAndroid.request.mockResolvedValueOnce('denied');
 
       const {requestPushPermissionExplicit} = require('../../../src/services/pushPermission');
       const result = await requestPushPermissionExplicit();
 
+      expect(notifee.requestPermission).toHaveBeenCalledTimes(1);
+      expect(PermissionsAndroid.request).not.toHaveBeenCalled();
       expect(Alert.alert).toHaveBeenCalledWith(
         'Permiso requerido',
         'Activa las notificaciones para recibir avisos.',
         expect.any(Array),
       );
+      expect(notifee.createChannel).not.toHaveBeenCalled();
       expect(result).toBe(false);
     });
 

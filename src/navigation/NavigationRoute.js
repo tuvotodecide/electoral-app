@@ -22,17 +22,7 @@ import UploadPhotoId from '../container/Auth/UploadPhotoId';
 import VerifySuccess from '../container/Auth/VerifySuccess';
 import Connect from '../container/Connect';
 import OnBoarding from '../container/OnBoarding';
-import OnBoardingGuardians from '../container/OnBoardingGuardians';
 import Splash from '../container/Splash';
-import FindMyUser from '../container/TabBar/Recovery/FindMyUser';
-import RecoveryUserQrpin from '../container/TabBar/Recovery/RecoveryUserQrpin';
-import RecoveryUserQrpin2 from '../container/TabBar/Recovery/RecoveryUserQrpin2';
-//import RecoveryQr from '../container/TabBar/Recovery/RecoveryQr';
-import RecoveryQr from '../container/TabBar/Recovery/RecoveryQR';
-import MyGuardiansStatus from '../container/TabBar/Recovery/MyGuardiansStatus';
-import RecoveryUser1Pin from '../container/TabBar/Recovery/RecoveryUser1Pin';
-import RecoveryUser2Pin from '../container/TabBar/Recovery/RecoveryUser2Pin';
-import RecoveryFinalize from '../container/TabBar/Recovery/RecoveryFinalize';
 
 // Pantallas de Voto
 import SearchTable from '../container/Vote/UploadRecord/SearchTable';
@@ -91,7 +81,6 @@ import ChangePinNewConfirm from '../container/TabBar/Profile/ChangePinNewConfirm
 import More from '../container/TabBar/Profile/More';
 import Security from '../container/TabBar/Profile/Security';
 import TermsAndCondition from '../container/TabBar/Profile/TermsAndCondition';
-import RecuperationQR from '../container/TabBar/Profile/RecuperationQR';
 
 // Home screens necesarios
 import Notification from '../container/TabBar/Home/Notification';
@@ -115,11 +104,6 @@ import AccountAccess from '../container/Auth/AccountAccess';
 import SelectRecuperation from '../container/Auth/SelectRecuperation';
 import AccountLock from '../container/Auth/AccountLock';
 
-// Guardians
-import Guardians from '../container/TabBar/Guardians/Guardians';
-import GuardiansAdmin from '../container/TabBar/Guardians/GuardiansAdmin';
-import AddGuardians from '../container/TabBar/Guardians/AddGuardians';
-import FindSession from '../container/TabBar/SignIn/FindSession';
 
 export const StackRoute = {
   ElectoralLocations,
@@ -168,10 +152,6 @@ export const StackRoute = {
   // Profile y configuración
   PersonalDetails,
   DeleteAccount,
-  RecuperationQR,
-  Guardians,
-  GuardiansAdmin,
-  AddGuardians,
   SelectLanguage,
   PushNotification,
   HelpCenter,
@@ -185,7 +165,6 @@ export const StackRoute = {
 
   TermsAndCondition,
   Notification,
-  OnBoardingGuardians,
   NotificationDetails,
 };
 
@@ -223,15 +202,6 @@ export const AuthRoute = {
   UploadPhotoId,
   SelfieWithIdCard,
   VerifySuccess,
-  FindMyUser,
-  RecoveryUserQrpin,
-  RecoveryUserQrpin2,
-  RecoveryQr,
-  MyGuardiansStatus,
-  RecoveryUser1Pin,
-  RecoveryUser2Pin,
-  RecoveryFinalize,
-  FindSession,
 };
 
 export const TabRoute = {

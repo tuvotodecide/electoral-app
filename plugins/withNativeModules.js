@@ -132,7 +132,7 @@ function withNativeModules(config) {
 
 function addRepositories(contents) {
   // Check if already added
-  if (contents.includes('wira_flutter_module')) {
+  if (contents.includes('@notifee/react-native/android/libs')) {
     return contents;
   }
 
@@ -146,27 +146,15 @@ function addRepositories(contents) {
     );
   }
 
-  const storageUrlDef = `def storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"`;
-
   // Replace the entire repositories block with the new content
   const newRepositories = `
     // Native module repositories
-    maven {url file('../../../wira-sdk-flutter-component/build/host/outputs/repo') }
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
-    maven { url "$storageUrl/download.flutter.io" }
     maven {
       url "$rootDir/../node_modules/@notifee/react-native/android/libs"
     }`;
-
-  // Add storageUrl definition before allprojects block if not present
-  if (!contents.includes('FLUTTER_STORAGE_BASE_URL')) {
-    contents = contents.replace(
-      /allprojects\s*\{/,
-      `${storageUrlDef}\n\nallprojects {`
-    );
-  }
 
   // Replace the repositories block
   const repositoriesPattern = /allprojects\s*\{\s*repositories\s*\{[\s\S]*?\}/;
@@ -175,62 +163,33 @@ function addRepositories(contents) {
     `allprojects {\n  repositories {${newRepositories}`
   );
 
-  // Dependency resolution strategy to map legacy package_info_plus coordinates
-  const resolutionStrategy = `
-// Map the legacy package_info_plus coordinates to the actual published group in the local Flutter repo.
-// This is needed because polygonid_flutter_sdk transitively depends on package_info_plus with old coordinates.
-subprojects {
-  configurations.all { config ->
-    config.resolutionStrategy.eachDependency { details ->
-      if (details.requested.group == 'io.flutter.plugins.packageinfo' &&
-          details.requested.name == 'package_info_plus_release') {
-        details.useTarget('dev.fluttercommunity.plus.packageinfo:package_info_plus_release:1.0')
-      }
-    }
-  }
-}`;
-
-  // Add resolution strategy after the apply plugin lines at the end
-  if (!contents.includes('resolutionStrategy.eachDependency')) {
-    const applyPluginPattern = /(apply plugin: "com\.facebook\.react\.rootproject")/;
-    if (applyPluginPattern.test(contents)) {
-      contents = contents.replace(
-        applyPluginPattern,
-        `$1\n${resolutionStrategy}`
-      );
-    }
-  }
-
   return contents;
 }
 
 function addDependencies(contents) {
   // Check if already added
-  if (contents.includes('wira_flutter_module')) {
+  if (contents.includes('io.sentry:sentry-bom')) {
     return contents;
   }
 
-  const flutterDeps = `
-    // Flutter module dependencies for wira-sdk
-    releaseImplementation 'com.wira.wira_flutter_module:flutter_release:1.0'
-
+  const sentryDeps = `
     // Sentry dependencies
     implementation platform("io.sentry:sentry-bom:8.31.0")
     implementation "io.sentry:sentry-android"
     implementation "io.sentry:sentry-okhttp"
 `;
 
-  // Find the dependencies block and add the Flutter dependencies
+  // Find the dependencies block and add the Sentry dependencies
   const dependenciesPattern = /(dependencies\s*\{)/;
 
   if (dependenciesPattern.test(contents)) {
     contents = contents.replace(
       dependenciesPattern,
-      `$1${flutterDeps}`
+      `$1${sentryDeps}`
     );
   }
 
-  // Add pickFirst rules to handle duplicate native libraries from Flutter module
+  // Add pickFirst rules for native libraries the @iden3 modules may both ship
   if (!contents.includes('librapidsnark.so')) {
     const packagingPattern = /(packagingOptions\s*\{\s*\n\s*jniLibs\s*\{[^}]*useLegacyPackaging[^}]*\})/;
 
@@ -241,7 +200,7 @@ function addDependencies(contents) {
         jniLibs {
             def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
             useLegacyPackaging enableLegacyPackaging.toBoolean()
-            // Handle duplicate native libraries from Flutter module dependencies
+            // Native libraries the @iden3 modules (rapidsnark, witnesscalc) may both ship
             pickFirsts += ['**/librapidsnark.so', '**/libgmp.so', '**/libcircom_witnesscalc.so']
         }`
       );

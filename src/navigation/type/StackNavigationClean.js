@@ -75,22 +75,6 @@ export default function StackNavigation() {
         name={StackNav.DeleteAccount}
         component={StackRoute.DeleteAccount}
       />
-      <Stack.Screen
-        name={StackNav.RecuperationQR}
-        component={StackRoute.RecuperationQR}
-      />
-      <Stack.Screen
-        name={StackNav.Guardians}
-        component={StackRoute.Guardians}
-      />
-      <Stack.Screen
-        name={StackNav.GuardiansAdmin}
-        component={StackRoute.GuardiansAdmin}
-      />
-      <Stack.Screen
-        name={StackNav.AddGuardians}
-        component={StackRoute.AddGuardians}
-      />
 
       <Stack.Screen
         name={StackNav.SelectLanguage}

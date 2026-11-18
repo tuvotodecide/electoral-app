@@ -16,11 +16,24 @@ export const resetAuthOnRehydrate = createTransform(
   { whitelist: ['auth'] },
 );
 
+// `wallet` (DID, dirección y la credencial de identidad) no se persiste: está
+// cifrado en el vault del SDK y LoginUser lo vuelve a cargar tras el PIN o la
+// biometría. Versiones anteriores lo guardaban en AsyncStorage en claro (con la
+// clave privada): se descarta al rehidratar y la siguiente escritura lo borra.
+export const dropPersistedWallet = async state => {
+  if (!state || !('wallet' in state)) {
+    return state;
+  }
+  const { wallet: _wallet, ...rest } = state;
+  return rest;
+};
+
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['wallet','auth'],      // persiste sólo esas slices
+  whitelist: ['auth'],      // persiste sólo esas slices
   transforms: [resetAuthOnRehydrate],
+  migrate: dropPersistedWallet,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

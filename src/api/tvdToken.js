@@ -1,14 +1,14 @@
 import { TVD_TOKEN_ADDRESS, CHAIN } from '@env';
-import { availableNetworks } from "./params";
+import { availableNetworks, getReadRpcUrl } from "./params";
 import { createPublicClient, erc20Abi, formatEther, getContract, http } from 'viem';
 
 
 function getReadContract() {
-  const { bundler, chain } = availableNetworks[CHAIN];
+  const { chain } = availableNetworks[CHAIN];
 
   const publicClient = createPublicClient({
     chain,
-    transport: http(bundler),
+    transport: http(getReadRpcUrl(chain)),
   });
 
   const contract = getContract({

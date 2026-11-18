@@ -10,7 +10,6 @@ jest.mock('@env', () => ({
 const selectorState = {
   wallet: {
     payload: {
-      privKey: '0xpriv',
       account: '0x1111111111111111111111111111111111111111',
     },
   },
@@ -172,7 +171,6 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
       expect(account.sendOperationWithUserOpHash).toHaveBeenCalledTimes(1),
     );
     expect(account.sendOperationWithUserOpHash).toHaveBeenCalledWith(
-      '0xpriv',
       '0x1111111111111111111111111111111111111111',
       'base-sepolia',
       [{
@@ -307,7 +305,6 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
 
     await waitFor(() =>
       expect(account.sendOperationWithUserOpHash).toHaveBeenCalledWith(
-        '0xpriv',
         '0x1111111111111111111111111111111111111111',
         'base-sepolia',
         [{
@@ -363,7 +360,6 @@ describe('InstitutionalAuthorizationNotificationCard', () => {
 
     await waitFor(() =>
       expect(account.sendOperationWithUserOpHash).toHaveBeenCalledWith(
-        '0xpriv',
         '0x1111111111111111111111111111111111111111',
         'base-sepolia',
         [{

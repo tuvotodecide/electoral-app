@@ -9,6 +9,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BROADCAST_TOPIC } from '@env';
 import { LAST_TOPIC_KEY, LAST_USER_TOPIC_KEY } from './common/constants';
 import AppNavigator from './navigation';
+import VaultUnlockHost from './components/VaultUnlockHost';
+import {touchVaultActivity} from './services/privado/vaultSession';
 import { navigate } from './navigation/RootNavigation';
 import {
   buildNotificationTextFallback,
@@ -281,11 +283,13 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <View style={styles.flex}>
+      {/* Cada toque cuenta como uso para el bloqueo del vault por inactividad. */}
+      <View style={styles.flex} onTouchStartCapture={touchVaultActivity}>
         <StatusBar
           barStyle={colors?.dark === 'dark' ? 'light-content' : 'dark-content'}
         />
         <AppNavigator />
+        <VaultUnlockHost />
 
         <CustomModal
           visible={mustUpdate}

@@ -1,15 +1,22 @@
-import { SPONSORSHIP_POLICY, BUNDLER, BUNDLER_MAIN, BUNDLER_ARBITRUM, BUNDLER_MAIN_ARBITRUM } from '@env';
+import { PRIVADO_CHAIN_ID, PRIVADO_RPC_URL } from '@env';
 import { arbitrum, arbitrumSepolia, base, baseSepolia } from "viem/chains";
 import images from "../assets/images";
 import { Image } from "react-native";
 
 
-export const sponsorshipPolicyId = SPONSORSHIP_POLICY;
+/**
+ * RPC de lectura (eth_call, getBlock) de `chain`: PRIVADO_RPC_URL si es la red
+ * del SDK; para cualquier otra, `undefined` (viem usa el RPC público de la red).
+ * Las transacciones van por el paymaster de backend-identity (SDK), no por aquí.
+ */
+export const getReadRpcUrl = chain => {
+  const rpcUrl = String(PRIVADO_RPC_URL || '').trim();
+  return rpcUrl && Number(PRIVADO_CHAIN_ID) === chain?.id ? rpcUrl : undefined;
+};
 
 export const availableNetworks = {
 	'arbitrum-sepolia': {
     chain: arbitrumSepolia,
-    bundler: BUNDLER_ARBITRUM,
     explorer: 'https://sepolia.arbiscan.io/',
     nftExplorer: 'https://testnet.routescan.io/nft',
     oracle: '0x824CBE7b7C69e67D3E2A4757Aedb9D3E8eB63C80',
@@ -17,18 +24,9 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xdCa6d6E8f4E69C3Cf86B656f0bBf9b460727Bed9',
     participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
-    getCustomPaymasterParams: (pimlicoClient, policyId) => ({
-      paymasterContext: { sponsorshipPolicyId: policyId },
-      userOperation: {
-        estimateFeesPerGas: async () => {
-          return (await pimlicoClient.getUserOperationGasPrice()).standard;
-        },
-      },
-    }),
   },
   'arbitrum': {
     chain: arbitrum,
-    bundler: BUNDLER_MAIN_ARBITRUM,
     explorer: 'https://arbiscan.io/',
     nftExplorer: 'https://routescan.io/nft',
     oracle: '0xb558021F42209c4E08Dab884B25b89106Dc7D747',
@@ -36,18 +34,9 @@ export const availableNetworks = {
     juryRole: '0x9f70476b4563c57c3056cc4e8dffc8025828c99ea7a458e33c1502f84b53cc94',
     attestationNft: '0xF81508fC99Ffcfbbb5421150785c9820F8cBA9b2',
     participationNft: '0x9297845e37731480a090dB0d8eA2e2c65133523e',
-    getCustomPaymasterParams: (pimlicoClient, policyId) => ({
-      paymasterContext: { sponsorshipPolicyId: policyId },
-      userOperation: {
-        estimateFeesPerGas: async () => {
-          return (await pimlicoClient.getUserOperationGasPrice()).standard;
-        },
-      },
-    }),
   },
   'base-sepolia': {
     chain: baseSepolia,
-    bundler: BUNDLER,
     explorer: 'https://sepolia.basescan.org/',
     nftExplorer: 'https://testnet.routescan.io/nft',
     oracle: '0x91DB352d9836832364fDa5fFc6d7c8CF6FD78c38',
@@ -59,7 +48,6 @@ export const availableNetworks = {
   },
   'base': {
     chain: base,
-    bundler: BUNDLER_MAIN,
     explorer: 'https://basescan.org/',
     nftExplorer: 'https://routescan.io/nft',
     oracle: '0xF81508fC99Ffcfbbb5421150785c9820F8cBA9b2',
@@ -81,13 +69,3 @@ export const nativeTokens = {
     logo: Image.resolveAssetSource(images.EthImage).uri
   },
 }
-
-export const gasParams = {
-  maxFeePerGas: BigInt(3000000000), // 3 Gwei
-  maxPriorityFeePerGas: BigInt(100000000), // 0.1 Gwei (minimum required)
-  callGasLimit: BigInt(1000000),
-  verificationGasLimit: BigInt(110000),
-  preVerificationGas: BigInt(100000),
-	paymasterPostOpGasLimit: BigInt(90000),
-	paymasterVerificationGasLimit: BigInt(100000)
-};
