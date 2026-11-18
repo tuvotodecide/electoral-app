@@ -38,8 +38,13 @@ export function getHeight(value) {
   return (value / sampleHeight) * deviceHeight;
 }
 
+// Tope del factor de escala: en teléfonos (≤ ~430pt) el factor queda por
+// debajo de 1.15, pero en iPad (768–1024pt) llegaría a 2–2.7x y el texto se
+// vería enorme.
+const MAX_MODERATE_SCALE = 1.3;
+
 export function moderateScale(size) {
-  const newSize = size * scale;
+  const newSize = size * Math.min(scale, MAX_MODERATE_SCALE);
   return Math.round(newSize);
 }
 
