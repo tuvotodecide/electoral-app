@@ -55,13 +55,13 @@
         "ACCESS_COARSE_LOCATION",
         "WAKE_LOCK",
         "RECEIVE_BOOT_COMPLETED",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO",
         "VIBRATE",
         "FOREGROUND_SERVICE",
         "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
       ],
       "intentFilters": [
         {

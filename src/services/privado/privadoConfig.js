@@ -10,6 +10,7 @@ import {
   PRIVADO_DID_RESOLVER_URL,
   PRIVADO_ISSUER_DID,
   PRIVADO_ISSUER_BASE_URL,
+  PRIVADO_ISSUER_LEGACY_STATUS_ORIGINS,
   PRIVADO_CRED_TYPE,
   PRIVADO_CRED_SCHEMA_URL,
   PRIVADO_CRED_CONTEXT_URL,
@@ -73,9 +74,11 @@ export function buildPrivadoConfig() {
 
   const issuerDid = optionalEnv(PRIVADO_ISSUER_DID);
   if (issuerDid) {
+    const issuerBaseUrl = optionalEnv(PRIVADO_ISSUER_BASE_URL);
     config.issuer = {
       issuerDid,
-      issuerBaseUrl: optionalEnv(PRIVADO_ISSUER_BASE_URL),
+      issuerBaseUrl,
+      credentialStatusOriginRewrites: buildStatusOriginRewrites(issuerBaseUrl),
     };
   }
 
@@ -89,6 +92,28 @@ export function buildPrivadoConfig() {
   }
 
   return config;
+}
+
+/**
+ * PRIVADO_ISSUER_LEGACY_STATUS_ORIGINS: orígenes internos del issuer node (separados
+ * por coma, p. ej. `http://localhost:3001`) que quedaron grabados en el
+ * `credentialStatus.id` de credenciales ya emitidas. Al comprobar la revocación,
+ * el SDK los reemplaza por el origen de PRIVADO_ISSUER_BASE_URL.
+ */
+function buildStatusOriginRewrites(issuerBaseUrl) {
+  const origins = trim(PRIVADO_ISSUER_LEGACY_STATUS_ORIGINS)
+    .split(',')
+    .map(trim)
+    .filter(Boolean);
+  if (origins.length === 0) {
+    return undefined;
+  }
+  if (!issuerBaseUrl) {
+    throw new Error(
+      '[privado] PRIVADO_ISSUER_LEGACY_STATUS_ORIGINS requiere PRIVADO_ISSUER_BASE_URL.',
+    );
+  }
+  return Object.fromEntries(origins.map(origin => [origin, issuerBaseUrl]));
 }
 
 /**
